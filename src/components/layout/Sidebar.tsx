@@ -1,5 +1,6 @@
-import { FileText, LayoutTemplate, Sparkles } from 'lucide-react';
-import { useUIStore, type SidebarTab } from '@/stores/uiStore';
+import { useCallback, useRef } from 'react';
+import { FileText, LayoutTemplate, PanelLeftClose, PanelLeftOpen, Sparkles } from 'lucide-react';
+import { useUIStore, type SidebarTab, SIDEBAR_MIN_PX, SIDEBAR_MAX_RATIO } from '@/stores/uiStore';
 
 const tabs: { id: SidebarTab; label: string; icon: React.ReactNode }[] = [
   { id: 'content', label: 'Content', icon: <FileText className="h-4 w-4" /> },
@@ -8,25 +9,90 @@ const tabs: { id: SidebarTab; label: string; icon: React.ReactNode }[] = [
 ];
 
 export function Sidebar() {
-  const { activeSidebarTab, setActiveSidebarTab } = useUIStore();
+  const {
+    activeSidebarTab,
+    setActiveSidebarTab,
+    sidebarRatio,
+    sidebarCollapsed,
+    setSidebarRatio,
+    toggleSidebarCollapsed,
+  } = useUIStore();
+  const sidebarRef = useRef<HTMLElement>(null);
+
+  const onPointerDown = useCallback(
+    (e: React.PointerEvent) => {
+      e.preventDefault();
+      const sidebar = sidebarRef.current;
+      const vw = window.innerWidth;
+
+      const onPointerMove = (ev: PointerEvent) => {
+        const ratio = ev.clientX / vw;
+        const clampedPx = Math.max(SIDEBAR_MIN_PX, ratio * vw);
+        const clampedRatio = Math.min(SIDEBAR_MAX_RATIO, clampedPx / vw);
+        if (sidebar) {
+          sidebar.style.width = `${clampedRatio * 100}vw`;
+        }
+      };
+
+      const onPointerUp = (ev: PointerEvent) => {
+        const ratio = ev.clientX / vw;
+        setSidebarRatio(ratio);
+        document.removeEventListener('pointermove', onPointerMove);
+        document.removeEventListener('pointerup', onPointerUp);
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+      };
+
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
+      document.addEventListener('pointermove', onPointerMove);
+      document.addEventListener('pointerup', onPointerUp);
+    },
+    [setSidebarRatio]
+  );
+
+  if (sidebarCollapsed) {
+    return (
+      <aside className="flex shrink-0 flex-col border-r border-border bg-card">
+        <button
+          onClick={toggleSidebarCollapsed}
+          className="p-2.5 text-muted-foreground hover:text-foreground transition-colors"
+          aria-label="Expand sidebar"
+        >
+          <PanelLeftOpen className="h-4 w-4" />
+        </button>
+      </aside>
+    );
+  }
 
   return (
-    <aside className="flex w-80 shrink-0 flex-col border-r border-border bg-card">
-      <div className="flex border-b border-border">
+    <aside
+      ref={sidebarRef}
+      className="relative flex shrink-0 flex-col border-r border-border bg-card"
+      style={{ width: `max(${SIDEBAR_MIN_PX}px, ${sidebarRatio * 100}vw)` }}
+    >
+      <div className="flex border-b border-border @container/tabs">
         {tabs.map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActiveSidebarTab(tab.id)}
-            className={`flex flex-1 items-center justify-center gap-1.5 px-3 py-2.5 text-sm font-medium transition-colors ${
+            className={`flex flex-1 items-center justify-center gap-1.5 px-2 py-2.5 text-sm font-medium transition-colors ${
               activeSidebarTab === tab.id
                 ? 'border-b-2 border-amber-500 text-foreground'
                 : 'text-muted-foreground hover:text-foreground'
             }`}
           >
             {tab.icon}
-            {tab.label}
+            <span className="hidden @[18rem]/tabs:inline">{tab.label}</span>
           </button>
         ))}
+        <button
+          onClick={toggleSidebarCollapsed}
+          className="shrink-0 px-2 text-muted-foreground hover:text-foreground transition-colors"
+          aria-label="Collapse sidebar"
+        >
+          <PanelLeftClose className="h-4 w-4" />
+        </button>
       </div>
 
       <div className="flex-1 overflow-y-auto p-4">
@@ -42,6 +108,12 @@ export function Sidebar() {
           </div>
         )}
       </div>
+
+      {/* Resize handle */}
+      <div
+        onPointerDown={onPointerDown}
+        className="absolute top-0 right-0 bottom-0 w-1 cursor-col-resize hover:bg-amber-500/40 active:bg-amber-500/60 transition-colors"
+      />
     </aside>
   );
 }
