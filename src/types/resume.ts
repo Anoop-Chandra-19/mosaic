@@ -17,7 +17,12 @@ export interface ResumeEntry {
   id: string;
   selected: boolean;
   bullets: Bullet[];
-  [key: string]: unknown;
+  title?: string;
+  subtitle?: string;
+  text?: string;
+  startDate?: string;
+  endDate?: string;
+  meta?: Record<string, string>;
 }
 
 export interface ResumeSection {

@@ -1,5 +1,6 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { persist, createJSONStorage } from 'zustand/middleware';
+import { dexieStorage } from '@/lib/dexieStorage';
 
 export type SidebarTab = 'content' | 'templates' | 'ai';
 
@@ -34,6 +35,7 @@ export const useUIStore = create<UIState>()(
     }),
     {
       name: 'mosaic-ui',
+      storage: createJSONStorage(() => dexieStorage),
     }
   )
 );
