@@ -19,7 +19,7 @@ export function BulletItem({ bullet, onToggle, onUpdate, onRemove }: BulletItemP
       <InlineEditField
         value={bullet.text}
         onSave={onUpdate}
-        className={cn('text-sm leading-6 break-words', !bullet.selected && 'opacity-50')}
+        className={cn('text-sm leading-6 wrap-break-word', !bullet.selected && 'opacity-50')}
         inputClassName="h-8 text-sm leading-6"
       />
       <Button

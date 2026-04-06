@@ -8,7 +8,7 @@ export function PreviewPanel() {
       </div>
 
       <div className="flex-1 overflow-y-auto px-6 pb-6">
-        <div className="mx-auto w-full max-w-[640px] rounded-sm bg-white p-10 shadow-lg dark:shadow-zinc-900/50">
+        <div className="mx-auto w-full max-w-160 rounded-sm bg-white p-10 shadow-lg dark:shadow-zinc-900/50">
           <div className="text-center">
             <h1
               className="text-2xl font-bold text-zinc-900"

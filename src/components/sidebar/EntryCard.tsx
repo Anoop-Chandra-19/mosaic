@@ -75,7 +75,7 @@ export function EntryCard({
               value={entry.text ?? ''}
               onSave={(v) => updateEntry(sectionId, entry.id, { text: v })}
               placeholder="Click to edit..."
-              className="text-sm leading-7 break-words"
+              className="text-sm leading-7 wrap-break-word"
               inputClassName="h-8 text-sm leading-7"
             />
           ) : (
