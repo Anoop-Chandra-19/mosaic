@@ -10,9 +10,10 @@
 
 ## Commands
 
-- `npm run dev` — start dev server
-- `npm run build` — type-check + build
-- `npm run lint` — ESLint
+- `bun run dev` — start dev server
+- `bun run build` — type-check + build
+- `bun run lint` — ESLint
+- `bunx shadcn@latest add <component>` — add a shadcn component
 
 ## Git Hooks (enforced)
 
@@ -26,9 +27,13 @@ src/
   components/
     ui/         # shadcn-managed primitives — do NOT edit manually
     layout/     # App shell components (TopBar, Sidebar, PreviewPanel, AppShell)
+    sidebar/    # Sidebar sub-components (SectionList, EntryCard, ContactCard, etc.)
+    ai/         # AI-related components
+    modals/     # Modal dialogs
+    preview/    # Resume preview components
   stores/       # Zustand stores
   types/        # Shared TypeScript types
-  lib/          # Utilities (cn helper, etc.)
+  lib/          # Utilities (cn helper, Dexie DB, custom hooks)
 ```
 
 ## Core Principles
@@ -44,6 +49,7 @@ src/
 
 - Keep components small and focused
 - Zustand stores use `persist` middleware when state should survive reloads
+- Persistence layer: Zustand → custom Dexie storage adapter → IndexedDB
 - Don't add dependencies without asking
 - Don't create new CSS files — use Tailwind utilities
 - Don't modify files in `components/ui/` — those are shadcn-managed

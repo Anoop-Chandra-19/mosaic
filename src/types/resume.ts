@@ -29,7 +29,6 @@ export interface ResumeSection {
   id: string;
   type: SectionType;
   label: string;
-  icon: string;
   items: ResumeEntry[];
   order: number;
 }

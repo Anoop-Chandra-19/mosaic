@@ -44,7 +44,6 @@ const DEFAULT_RESUME: ResumeData = {
       id: 'sec-summary',
       type: 'summary',
       label: 'Professional Summary',
-      icon: '✦',
       order: 0,
       items: [
         {
@@ -59,7 +58,6 @@ const DEFAULT_RESUME: ResumeData = {
       id: 'sec-education',
       type: 'education',
       label: 'Education',
-      icon: '◈',
       order: 1,
       items: [
         {
@@ -87,7 +85,6 @@ const DEFAULT_RESUME: ResumeData = {
       id: 'sec-experience',
       type: 'experience',
       label: 'Work Experience',
-      icon: '▣',
       order: 2,
       items: [
         {
@@ -142,7 +139,6 @@ const DEFAULT_RESUME: ResumeData = {
       id: 'sec-projects',
       type: 'projects',
       label: 'Projects',
-      icon: '◇',
       order: 3,
       items: [
         {
@@ -187,7 +183,6 @@ const DEFAULT_RESUME: ResumeData = {
       id: 'sec-skills',
       type: 'skills',
       label: 'Skills',
-      icon: '⬡',
       order: 4,
       items: [
         { id: 'sk1', selected: true, text: 'Languages: Python, TypeScript, Go, SQL', bullets: [] },
@@ -214,9 +209,10 @@ const DEFAULT_RESUME: ResumeData = {
 interface ResumeState extends ResumeData {
   updateContact: (patch: Partial<ContactInfo>) => void;
 
-  addSection: (type: SectionType, label: string, icon: string) => void;
+  addSection: (type: SectionType, label: string) => void;
   removeSection: (sectionId: string) => void;
   reorderSections: (orderedIds: string[]) => void;
+  updateSectionLabel: (sectionId: string, label: string) => void;
 
   addEntry: (sectionId: string, entry: Omit<ResumeEntry, 'id'>) => void;
   updateEntry: (
@@ -226,6 +222,7 @@ interface ResumeState extends ResumeData {
   ) => void;
   removeEntry: (sectionId: string, entryId: string) => void;
   toggleEntry: (sectionId: string, entryId: string) => void;
+  reorderEntries: (sectionId: string, orderedIds: string[]) => void;
 
   addBullet: (sectionId: string, entryId: string, text: string) => void;
   updateBullet: (sectionId: string, entryId: string, bulletId: string, text: string) => void;
@@ -246,7 +243,7 @@ export const useResumeStore = create<ResumeState>()(
 
       // ── Section CRUD ──
 
-      addSection: (type, label, icon) =>
+      addSection: (type, label) =>
         set((state) => ({
           sections: [
             ...state.sections,
@@ -254,7 +251,6 @@ export const useResumeStore = create<ResumeState>()(
               id: crypto.randomUUID(),
               type,
               label,
-              icon,
               items: [],
               order: state.sections.length,
             },
@@ -267,11 +263,21 @@ export const useResumeStore = create<ResumeState>()(
         })),
 
       reorderSections: (orderedIds) =>
+        set((state) => {
+          const byId = new Map(state.sections.map((s) => [s.id, s]));
+          return {
+            sections: orderedIds
+              .map((id, i) => {
+                const s = byId.get(id);
+                return s ? { ...s, order: i } : null;
+              })
+              .filter((s): s is ResumeSection => s !== null),
+          };
+        }),
+
+      updateSectionLabel: (sectionId, label) =>
         set((state) => ({
-          sections: state.sections.map((s) => ({
-            ...s,
-            order: orderedIds.indexOf(s.id),
-          })),
+          sections: mapSection(state.sections, sectionId, (s) => ({ ...s, label })),
         })),
 
       // ── Entry CRUD ──
@@ -313,6 +319,19 @@ export const useResumeStore = create<ResumeState>()(
               };
             }),
           })),
+        })),
+
+      reorderEntries: (sectionId, orderedIds) =>
+        set((state) => ({
+          sections: mapSection(state.sections, sectionId, (s) => {
+            const byId = new Map(s.items.map((e) => [e.id, e]));
+            return {
+              ...s,
+              items: orderedIds
+                .map((id) => byId.get(id))
+                .filter((e): e is ResumeEntry => e !== undefined),
+            };
+          }),
         })),
 
       // ── Bullet CRUD ──
