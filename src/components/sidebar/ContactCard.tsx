@@ -1,27 +1,49 @@
-import { Mail, Phone, MapPin, Linkedin, Github, Globe, ChevronsUpDown } from 'lucide-react';
+import { useState } from 'react';
+import {
+  Mail,
+  Phone,
+  MapPin,
+  Linkedin,
+  Github,
+  Globe,
+  ChevronsUpDown,
+  ChevronsDownUp,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { InlineEditField } from './InlineEditField';
 import { useResumeStore } from '@/stores/resumeStore';
 import type { ContactInfo } from '@/types/resume';
 import type { LucideIcon } from 'lucide-react';
 
-const CONTACT_FIELDS: { key: keyof Omit<ContactInfo, 'name'>; label: string; icon: LucideIcon }[] =
-  [
-    { key: 'email', label: 'Email', icon: Mail },
-    { key: 'phone', label: 'Phone', icon: Phone },
-    { key: 'location', label: 'Location', icon: MapPin },
-    { key: 'linkedin', label: 'LinkedIn', icon: Linkedin },
-    { key: 'github', label: 'GitHub', icon: Github },
-    { key: 'website', label: 'Website', icon: Globe },
-  ];
+type ContactValueKey = 'email' | 'phone' | 'location' | 'linkedin' | 'github' | 'website';
+
+const CONTACT_FIELDS: { key: ContactValueKey; label: string; icon: LucideIcon }[] = [
+  { key: 'email', label: 'Email', icon: Mail },
+  { key: 'phone', label: 'Phone', icon: Phone },
+  { key: 'location', label: 'Location', icon: MapPin },
+  { key: 'linkedin', label: 'LinkedIn', icon: Linkedin },
+  { key: 'github', label: 'GitHub', icon: Github },
+  { key: 'website', label: 'Website', icon: Globe },
+];
+
+const SOCIAL_VISIBILITY: Record<
+  Exclude<ContactValueKey, 'email' | 'phone' | 'location'>,
+  keyof ContactInfo
+> = {
+  linkedin: 'showLinkedin',
+  github: 'showGithub',
+  website: 'showWebsite',
+};
 
 export function ContactCard() {
   const contact = useResumeStore((s) => s.contact);
   const updateContact = useResumeStore((s) => s.updateContact);
+  const [open, setOpen] = useState(true);
 
   return (
-    <Collapsible defaultOpen className="rounded-md border p-4">
+    <Collapsible open={open} onOpenChange={setOpen} className="rounded-md border p-4">
       <div className="flex items-center justify-between">
         <InlineEditField
           value={contact.name}
@@ -31,12 +53,12 @@ export function ContactCard() {
           as="h3"
         />
         <CollapsibleTrigger asChild>
-          <Button
-            variant="ghost"
-            size="icon-xs"
-            className="shrink-0 text-muted-foreground [&_svg]:size-3.5"
-          >
-            <ChevronsUpDown />
+          <Button variant="ghost" size="icon-sm" className="shrink-0 text-muted-foreground">
+            {open ? (
+              <ChevronsDownUp className="size-4 stroke-[1.75]" />
+            ) : (
+              <ChevronsUpDown className="size-4 stroke-[1.75]" />
+            )}
           </Button>
         </CollapsibleTrigger>
       </div>
@@ -52,6 +74,24 @@ export function ContactCard() {
                 className="truncate text-sm leading-6"
                 inputClassName="h-8 text-sm leading-6"
               />
+              {key in SOCIAL_VISIBILITY && (
+                <label className="inline-flex items-center gap-1 text-xs text-zinc-600 dark:text-zinc-400">
+                  <Checkbox
+                    checked={
+                      contact[SOCIAL_VISIBILITY[key as keyof typeof SOCIAL_VISIBILITY]] !== false
+                    }
+                    onCheckedChange={(checked) =>
+                      updateContact({
+                        [SOCIAL_VISIBILITY[key as keyof typeof SOCIAL_VISIBILITY]]:
+                          checked === true,
+                      })
+                    }
+                    aria-label={`Show ${label} in preview`}
+                    className="size-3.5"
+                  />
+                  Show
+                </label>
+              )}
             </div>
           ))}
         </div>

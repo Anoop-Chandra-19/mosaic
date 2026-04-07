@@ -27,7 +27,11 @@ function getNameClass(name: string) {
 export function PreviewHeader({ contact, variant = 'full', pageNumber = 1 }: PreviewHeaderProps) {
   const displayName = contact.name?.trim() || 'Your Name';
   const primaryLine = joinNonEmpty([contact.email, contact.phone, contact.location]);
-  const secondaryLine = joinNonEmpty([contact.linkedin, contact.github, contact.website]);
+  const secondaryLine = joinNonEmpty([
+    contact.showLinkedin !== false ? contact.linkedin : '',
+    contact.showGithub !== false ? contact.github : '',
+    contact.showWebsite !== false ? contact.website : '',
+  ]);
 
   if (variant === 'compact') {
     const compactLine = joinNonEmpty([contact.email, contact.phone, contact.location]);

@@ -38,6 +38,9 @@ const DEFAULT_RESUME: ResumeData = {
     linkedin: 'linkedin.com/in/alexj',
     github: 'github.com/alexj',
     website: '',
+    showLinkedin: true,
+    showGithub: true,
+    showWebsite: true,
   },
   sections: [
     {

@@ -41,6 +41,9 @@ export interface ContactInfo {
   linkedin: string;
   github: string;
   website: string;
+  showLinkedin?: boolean;
+  showGithub?: boolean;
+  showWebsite?: boolean;
 }
 
 export interface ResumeData {
