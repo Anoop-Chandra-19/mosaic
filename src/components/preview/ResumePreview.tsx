@@ -17,6 +17,7 @@ export interface ResumePreviewMeta {
 
 interface PaginationMeasurements {
   headerHeight: number;
+  continuationHeaderHeight: number;
   sectionTitleHeights: Record<string, number>;
   entryHeights: Record<string, number>;
   entryHeadingHeights: Record<string, number>;
@@ -43,6 +44,8 @@ const ENTRY_INTERNAL_GAP_PX = 4;
 const BULLET_GAP_PX = 2;
 const TEXT_CHARS_PER_LINE = 88;
 const MEASUREMENT_THROTTLE_MS = 100;
+const BODY_LINE_HEIGHT_PX = 18;
+const HEADING_LINE_HEIGHT_PX = 20;
 
 function mmToPx(mm: number) {
   return (mm / MM_PER_INCH) * PX_PER_INCH;
@@ -51,7 +54,11 @@ function mmToPx(mm: number) {
 const DEFAULT_PAGE_CONTENT_WIDTH_PX = mmToPx(A4_WIDTH_MM - PAGE_MARGIN_MM * 2);
 const DEFAULT_PAGE_CONTENT_HEIGHT_PX = mmToPx(A4_HEIGHT_MM - PAGE_MARGIN_MM * 2);
 
-function estimateTextHeight(text: string, lineHeight = 24, charsPerLine = TEXT_CHARS_PER_LINE) {
+function estimateTextHeight(
+  text: string,
+  lineHeight = BODY_LINE_HEIGHT_PX,
+  charsPerLine = TEXT_CHARS_PER_LINE
+) {
   const lines = Math.max(1, Math.ceil(text.trim().length / charsPerLine));
   return lines * lineHeight;
 }
@@ -119,12 +126,12 @@ function getEntryHeight(
   if (measuredHeight) return measuredHeight;
 
   if (TEXT_ONLY_TYPES.has(section.type)) {
-    return estimateTextHeight(entry.text ?? '', 24, TEXT_CHARS_PER_LINE);
+    return estimateTextHeight(entry.text ?? '', BODY_LINE_HEIGHT_PX, TEXT_CHARS_PER_LINE);
   }
 
-  const headingHeight = entry.title || entry.subtitle ? 24 : 0;
+  const headingHeight = entry.title || entry.subtitle ? HEADING_LINE_HEIGHT_PX : 0;
   const bulletsHeight = entry.bullets.reduce(
-    (sum, bullet) => sum + estimateTextHeight(bullet, 24, 92),
+    (sum, bullet) => sum + estimateTextHeight(bullet, BODY_LINE_HEIGHT_PX, 92),
     0
   );
   const bulletGaps = Math.max(0, entry.bullets.length - 1) * BULLET_GAP_PX;
@@ -170,10 +177,11 @@ function splitEntryByAvailableHeight(
 
   const entryKey = `${section.id}::${entry._sourceKey ?? entry.id}`;
   const headingHeight =
-    measurements.entryHeadingHeights[entryKey] ?? (entry.title || entry.subtitle ? 24 : 0);
+    measurements.entryHeadingHeights[entryKey] ??
+    (entry.title || entry.subtitle ? HEADING_LINE_HEIGHT_PX : 0);
   const bulletHeights =
     measurements.bulletHeights[entryKey] ??
-    entry.bullets.map((bullet) => estimateTextHeight(bullet, 24, 92));
+    entry.bullets.map((bullet) => estimateTextHeight(bullet, BODY_LINE_HEIGHT_PX, 92));
 
   const requiresHeadingGap = headingHeight > 0 && bulletHeights.length > 0;
   let used = headingHeight + (requiresHeadingGap ? ENTRY_INTERNAL_GAP_PX : 0);
@@ -208,7 +216,9 @@ function splitEntryByAvailableHeight(
         id: `${entry.id}-cont-${continuationIndex}`,
         bullets: [firstBulletPart],
         _height:
-          headingHeight + ENTRY_INTERNAL_GAP_PX + estimateTextHeight(firstBulletPart, 24, 92),
+          headingHeight +
+          ENTRY_INTERNAL_GAP_PX +
+          estimateTextHeight(firstBulletPart, BODY_LINE_HEIGHT_PX, 92),
       },
       rest: restBullets.length
         ? {
@@ -239,8 +249,12 @@ function splitEntryByAvailableHeight(
   };
 }
 
-function createEmptyPage(headerHeight: number): PageLayout {
-  return { sections: [], usedHeight: headerHeight };
+function getHeaderHeightForPage(pageIndex: number, measurements: PaginationMeasurements) {
+  return pageIndex === 0 ? measurements.headerHeight : measurements.continuationHeaderHeight;
+}
+
+function createEmptyPage(pageIndex: number, measurements: PaginationMeasurements): PageLayout {
+  return { sections: [], usedHeight: getHeaderHeightForPage(pageIndex, measurements) };
 }
 
 function paginateSections(
@@ -248,7 +262,7 @@ function paginateSections(
   measurements: PaginationMeasurements,
   pageContentHeight: number
 ): PreviewRenderableSection[][] {
-  const pages: PageLayout[] = [createEmptyPage(measurements.headerHeight)];
+  const pages: PageLayout[] = [createEmptyPage(0, measurements)];
   let continuationIndex = 0;
 
   const ensureSection = (page: PageLayout, section: PreviewRenderableSection) => {
@@ -274,7 +288,7 @@ function paginateSections(
 
       let page = pages[pages.length - 1];
       const pageSection = page.sections.find((item) => item.id === section.id);
-      const sectionTitleHeight = measurements.sectionTitleHeights[section.id] ?? 26;
+      const sectionTitleHeight = measurements.sectionTitleHeights[section.id] ?? 22;
       const sectionOpenCost = pageSection
         ? 0
         : SECTION_TOP_PADDING_PX + sectionTitleHeight + SECTION_CONTENT_TOP_PADDING_PX;
@@ -307,13 +321,13 @@ function paginateSections(
 
         if (split.rest) {
           queue.unshift(split.rest);
-          pages.push(createEmptyPage(measurements.headerHeight));
+          pages.push(createEmptyPage(pages.length, measurements));
         }
 
         continue;
       }
 
-      pages.push(createEmptyPage(measurements.headerHeight));
+      pages.push(createEmptyPage(pages.length, measurements));
       page = pages[pages.length - 1];
 
       const freshSectionCost =
@@ -364,18 +378,23 @@ function createFallbackMeasurements(sections: PreviewRenderableSection[]): Pagin
   const entryHeights: Record<string, number> = {};
 
   for (const section of sections) {
-    sectionTitleHeights[section.id] = 26;
+    sectionTitleHeights[section.id] = 22;
 
     for (const entry of section.entries as PaginatedEntry[]) {
       const key = `${section.id}::${entry._sourceKey ?? entry.id}`;
       entryHeights[key] = TEXT_ONLY_TYPES.has(section.type)
-        ? estimateTextHeight(entry.text ?? '', 24)
-        : 24 + entry.bullets.reduce((sum, bullet) => sum + estimateTextHeight(bullet, 24, 92), 0);
+        ? estimateTextHeight(entry.text ?? '', BODY_LINE_HEIGHT_PX)
+        : HEADING_LINE_HEIGHT_PX +
+          entry.bullets.reduce(
+            (sum, bullet) => sum + estimateTextHeight(bullet, BODY_LINE_HEIGHT_PX, 92),
+            0
+          );
     }
   }
 
   return {
     headerHeight: 110,
+    continuationHeaderHeight: 40,
     sectionTitleHeights,
     entryHeights,
     entryHeadingHeights: {},
@@ -394,7 +413,6 @@ export function ResumePreview({ onMetaChange }: ResumePreviewProps) {
     width: DEFAULT_PAGE_CONTENT_WIDTH_PX,
     height: DEFAULT_PAGE_CONTENT_HEIGHT_PX,
   });
-  const [visibleOverflowDetected, setVisibleOverflowDetected] = useState(false);
 
   const normalizedSections = useMemo(() => normalizeSections(sections), [sections]);
 
@@ -418,8 +436,14 @@ export function ResumePreview({ onMetaChange }: ResumePreviewProps) {
       const entryHeadingHeights: Record<string, number> = {};
       const bulletHeights: Record<string, number[]> = {};
 
-      const headerNode = root.querySelector('[data-preview-header]') as HTMLElement | null;
-      const headerHeight = headerNode?.getBoundingClientRect().height ?? 110;
+      const fullHeaderNode = root.querySelector(
+        '[data-preview-header-variant="full"]'
+      ) as HTMLElement | null;
+      const compactHeaderNode = root.querySelector(
+        '[data-preview-header-variant="compact"]'
+      ) as HTMLElement | null;
+      const headerHeight = fullHeaderNode?.getBoundingClientRect().height ?? 110;
+      const continuationHeaderHeight = compactHeaderNode?.getBoundingClientRect().height ?? 40;
 
       root.querySelectorAll<HTMLElement>('[data-preview-section-title-id]').forEach((node) => {
         const sectionId = node.dataset.previewSectionTitleId;
@@ -452,6 +476,7 @@ export function ResumePreview({ onMetaChange }: ResumePreviewProps) {
 
       setMeasurements({
         headerHeight,
+        continuationHeaderHeight,
         sectionTitleHeights,
         entryHeights,
         entryHeadingHeights,
@@ -510,13 +535,13 @@ export function ResumePreview({ onMetaChange }: ResumePreviewProps) {
   );
 
   const meta = useMemo<ResumePreviewMeta>(() => {
-    const totalPages = Math.max(paginated.length, visibleOverflowDetected ? 2 : 1);
+    const totalPages = paginated.length;
     return {
       visiblePages: Math.min(2, totalPages),
       totalPages,
       hasOverflowBeyondTwo: totalPages > 2,
     };
-  }, [paginated, visibleOverflowDetected]);
+  }, [paginated]);
 
   useEffect(() => {
     onMetaChange(meta);
@@ -527,27 +552,17 @@ export function ResumePreview({ onMetaChange }: ResumePreviewProps) {
     (_, index) => paginated[index] ?? []
   );
 
-  useEffect(() => {
-    const pageRoot = visiblePageRootRef.current;
-    if (!pageRoot) return;
-
-    const contentNode = pageRoot.querySelector('[data-preview-page-content]') as HTMLElement | null;
-    if (!contentNode) return;
-
-    const frame = window.requestAnimationFrame(() => {
-      setVisibleOverflowDetected(contentNode.scrollHeight - contentNode.clientHeight > 1);
-    });
-
-    return () => window.cancelAnimationFrame(frame);
-  }, [contact, paginated, pageContentSize.width, pageContentSize.height]);
-
   return (
     <>
       <div ref={visiblePageRootRef}>
         <div className="space-y-4">
           {visiblePages.map((pageSections, pageIndex) => (
             <PreviewPage key={`preview-page-${pageIndex}`}>
-              <PreviewHeader contact={contact} />
+              <PreviewHeader
+                contact={contact}
+                variant={pageIndex === 0 ? 'full' : 'compact'}
+                pageNumber={pageIndex + 1}
+              />
               <div className="space-y-1">
                 {pageSections.map((section) => (
                   <PreviewSection key={`${section.id}-${pageIndex}`} section={section} />
@@ -564,7 +579,10 @@ export function ResumePreview({ onMetaChange }: ResumePreviewProps) {
           className="text-zinc-900"
           style={{ width: `${pageContentSize.width}px` }}
         >
-          <PreviewHeader contact={contact} />
+          <PreviewHeader contact={contact} variant="full" pageNumber={1} />
+          <div className="mt-4">
+            <PreviewHeader contact={contact} variant="compact" pageNumber={2} />
+          </div>
           <div className="space-y-1">
             {activeSections.map((section) => (
               <PreviewSection key={`measure-${section.id}`} section={section} />

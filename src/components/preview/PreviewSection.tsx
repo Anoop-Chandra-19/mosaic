@@ -26,12 +26,12 @@ export function PreviewSection({ section }: PreviewSectionProps) {
 
   return (
     <section
-      className="pt-3"
+      className="pt-4 first:pt-2"
       style={{ fontFamily: 'Georgia, serif' }}
       data-preview-section-id={section.id}
     >
       <h2
-        className="border-b border-zinc-300 pb-1 text-xs font-bold tracking-[0.18em] text-zinc-800 uppercase"
+        className="border-b border-zinc-300 pb-1 text-[0.74rem] font-bold tracking-[0.1em] text-zinc-900 uppercase"
         data-preview-section-title-id={section.id}
       >
         {section.label}
@@ -42,7 +42,7 @@ export function PreviewSection({ section }: PreviewSectionProps) {
           isTextOnly ? (
             <p
               key={entry.id}
-              className="text-sm leading-6 text-zinc-800"
+              className="text-[0.82rem] leading-[1.35] text-zinc-800"
               data-preview-entry-id={entry.id}
               data-preview-entry-key={`${section.id}::${entry.id}`}
               data-preview-section-id={section.id}
@@ -62,9 +62,11 @@ export function PreviewSection({ section }: PreviewSectionProps) {
                   className="flex items-baseline justify-between gap-3"
                   data-preview-entry-heading-key={`${section.id}::${entry.id}`}
                 >
-                  <h3 className="text-sm leading-6 font-semibold text-zinc-900">{entry.title}</h3>
+                  <h3 className="text-[0.84rem] leading-[1.25] font-semibold text-zinc-900">
+                    {entry.title}
+                  </h3>
                   {entry.subtitle && (
-                    <p className="shrink-0 text-right text-xs leading-5 text-zinc-600">
+                    <p className="shrink-0 text-right text-[0.72rem] leading-[1.2] text-zinc-600">
                       {entry.subtitle}
                     </p>
                   )}
@@ -72,7 +74,7 @@ export function PreviewSection({ section }: PreviewSectionProps) {
               )}
 
               {entry.bullets.length > 0 && (
-                <ul className="list-disc space-y-0.5 pl-4 text-sm leading-6 text-zinc-800">
+                <ul className="list-disc space-y-0.5 pl-4 text-[0.82rem] leading-[1.35] text-zinc-800">
                   {entry.bullets.map((bullet, idx) => (
                     <li
                       key={`${entry.id}-${idx}`}
