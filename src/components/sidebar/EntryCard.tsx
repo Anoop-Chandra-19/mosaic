@@ -18,9 +18,11 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
+import { useIsMobile } from '@/lib/useIsMobile';
 import { InlineEditField } from './InlineEditField';
 import { BulletItem } from './BulletItem';
 import { AddBulletInput } from './AddBulletInput';
+import { EntryDrawer } from './EntryDrawer';
 import type { ResumeEntry, SectionType } from '@/types/resume';
 import { useResumeStore } from '@/stores/resumeStore';
 
@@ -53,7 +55,9 @@ export function EntryCard({
   const removeBullet = useResumeStore((s) => s.removeBullet);
   const toggleBullet = useResumeStore((s) => s.toggleBullet);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const [actionsOpen, setActionsOpen] = useState(false);
+  const isMobile = useIsMobile();
   const isTextOnly = TEXT_ONLY_TYPES.includes(sectionType);
 
   return (
@@ -68,9 +72,40 @@ export function EntryCard({
           checked={entry.selected}
           onCheckedChange={() => toggleEntry(sectionId, entry.id)}
           className="mt-1 shrink-0"
+          aria-label="Toggle entry visibility"
         />
+
         <div className="min-w-0 flex-1">
-          {isTextOnly ? (
+          {isMobile ? (
+            <Button
+              variant="ghost"
+              className="h-auto w-full justify-start px-1 py-0.5 text-left hover:bg-transparent"
+              onClick={() => setDrawerOpen(true)}
+              aria-label="Edit entry"
+            >
+              <div className="min-w-0">
+                {isTextOnly ? (
+                  <p className="text-sm leading-7 wrap-break-word">
+                    {entry.text || <span className="text-muted-foreground">Tap to edit…</span>}
+                  </p>
+                ) : (
+                  <>
+                    <p className="text-base leading-6 font-medium wrap-break-word">
+                      {entry.title || (
+                        <span className="text-muted-foreground">Tap to edit title…</span>
+                      )}
+                    </p>
+                    <p className="text-sm leading-6 text-muted-foreground wrap-break-word">
+                      {entry.subtitle || <span>Tap to edit subtitle…</span>}
+                    </p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {entry.bullets.length} bullet{entry.bullets.length === 1 ? '' : 's'}
+                    </p>
+                  </>
+                )}
+              </div>
+            </Button>
+          ) : isTextOnly ? (
             <InlineEditField
               value={entry.text ?? ''}
               onSave={(v) => updateEntry(sectionId, entry.id, { text: v })}
@@ -99,10 +134,11 @@ export function EntryCard({
             </>
           )}
         </div>
+
         <div
           className={cn(
             'flex shrink-0 items-center transition-opacity',
-            actionsOpen
+            isMobile || actionsOpen
               ? 'opacity-100'
               : 'opacity-0 group-hover/entry:opacity-100 group-focus-within/entry:opacity-100'
           )}
@@ -112,6 +148,7 @@ export function EntryCard({
               <Button
                 variant="ghost"
                 size="icon-xs"
+                aria-label="Entry actions"
                 className="text-muted-foreground data-[state=open]:bg-accent data-[state=open]:text-foreground [&_svg]:size-3.5"
               >
                 <Ellipsis />
@@ -137,7 +174,7 @@ export function EntryCard({
         </div>
       </div>
 
-      {!isTextOnly && (
+      {!isMobile && !isTextOnly && (
         <div className="mt-2 ml-6 space-y-1.5">
           {entry.bullets.map((b) => (
             <BulletItem
@@ -150,6 +187,20 @@ export function EntryCard({
           ))}
           <AddBulletInput onAdd={(text) => addBullet(sectionId, entry.id, text)} />
         </div>
+      )}
+
+      {isMobile && (
+        <EntryDrawer
+          entry={entry}
+          sectionId={sectionId}
+          sectionType={sectionType}
+          open={drawerOpen}
+          onOpenChange={setDrawerOpen}
+          onRequestDelete={() => {
+            setDrawerOpen(false);
+            setConfirmOpen(true);
+          }}
+        />
       )}
 
       <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>

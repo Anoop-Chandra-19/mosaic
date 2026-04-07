@@ -6,10 +6,13 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { cn } from '@/lib/utils';
+import { useIsMobile } from '@/lib/useIsMobile';
 import { useUIStore } from '@/stores/uiStore';
 
 export function TopBar() {
-  const { darkMode, toggleDarkMode } = useUIStore();
+  const { darkMode, mobilePane, toggleDarkMode, setMobilePane } = useUIStore();
+  const isMobile = useIsMobile();
 
   return (
     <header className="flex h-14 shrink-0 items-center justify-between border-b border-border bg-card px-4">
@@ -21,17 +24,44 @@ export function TopBar() {
       </div>
 
       <div className="flex items-center gap-1">
-        <Button variant="ghost" size="icon" onClick={toggleDarkMode}>
+        {isMobile && (
+          <div className="mr-1 flex items-center rounded-md border border-border p-0.5">
+            <Button
+              variant="ghost"
+              size="xs"
+              onClick={() => setMobilePane('editor')}
+              className={cn(
+                'h-7 px-2 text-xs',
+                mobilePane === 'editor' && 'bg-muted text-foreground'
+              )}
+            >
+              Edit
+            </Button>
+            <Button
+              variant="ghost"
+              size="xs"
+              onClick={() => setMobilePane('preview')}
+              className={cn(
+                'h-7 px-2 text-xs',
+                mobilePane === 'preview' && 'bg-muted text-foreground'
+              )}
+            >
+              Preview
+            </Button>
+          </div>
+        )}
+
+        <Button variant="ghost" size="icon" onClick={toggleDarkMode} aria-label="Toggle theme">
           {darkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
         </Button>
 
-        <Button variant="ghost" size="icon">
+        <Button variant="ghost" size="icon" aria-label="Open settings">
           <Settings className="h-4 w-4" />
         </Button>
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon">
+            <Button variant="ghost" size="icon" aria-label="Export resume">
               <Download className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>

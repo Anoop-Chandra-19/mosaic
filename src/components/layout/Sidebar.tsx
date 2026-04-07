@@ -2,6 +2,7 @@ import { useCallback, useRef } from 'react';
 import { FileText, LayoutTemplate, PanelLeftClose, PanelLeftOpen, Sparkles } from 'lucide-react';
 import { useUIStore, type SidebarTab, SIDEBAR_MIN_PX, SIDEBAR_MAX_RATIO } from '@/stores/uiStore';
 import { ContentTab } from '@/components/sidebar/ContentTab';
+import { useIsMobile } from '@/lib/useIsMobile';
 
 const tabs: { id: SidebarTab; label: string; icon: React.ReactNode }[] = [
   { id: 'content', label: 'Content', icon: <FileText className="h-4 w-4" /> },
@@ -18,6 +19,7 @@ export function Sidebar() {
     setSidebarRatio,
     toggleSidebarCollapsed,
   } = useUIStore();
+  const isMobile = useIsMobile();
   const sidebarRef = useRef<HTMLElement>(null);
 
   const onPointerDown = useCallback(
@@ -52,12 +54,12 @@ export function Sidebar() {
     [setSidebarRatio]
   );
 
-  if (sidebarCollapsed) {
+  if (!isMobile && sidebarCollapsed) {
     return (
       <aside className="flex shrink-0 flex-col border-r border-border bg-card">
         <button
           onClick={toggleSidebarCollapsed}
-          className="p-2.5 text-muted-foreground hover:text-foreground transition-colors"
+          className="p-2.5 text-muted-foreground transition-colors hover:text-foreground"
           aria-label="Expand sidebar"
         >
           <PanelLeftOpen className="h-4 w-4" />
@@ -69,15 +71,20 @@ export function Sidebar() {
   return (
     <aside
       ref={sidebarRef}
-      className="relative flex shrink-0 flex-col border-r border-border bg-card"
-      style={{ width: `max(${SIDEBAR_MIN_PX}px, ${sidebarRatio * 100}vw)` }}
+      className="relative flex flex-1 flex-col border-r border-border bg-card md:shrink-0 md:flex-none"
+      style={
+        isMobile
+          ? { width: '100%' }
+          : { width: `max(${SIDEBAR_MIN_PX}px, ${sidebarRatio * 100}vw)` }
+      }
     >
       <div className="flex border-b border-border @container/tabs">
         {tabs.map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActiveSidebarTab(tab.id)}
-            className={`flex flex-1 items-center justify-center gap-1.5 px-2 py-3 text-sm @[18rem]/tabs:text-base font-medium transition-colors ${
+            aria-label={tab.label}
+            className={`flex flex-1 items-center justify-center gap-1.5 px-2 py-3 text-sm font-medium transition-colors @[18rem]/tabs:text-base ${
               activeSidebarTab === tab.id
                 ? 'border-b-2 border-amber-500 text-foreground'
                 : 'text-muted-foreground hover:text-foreground'
@@ -87,13 +94,15 @@ export function Sidebar() {
             <span className="hidden @[18rem]/tabs:inline">{tab.label}</span>
           </button>
         ))}
-        <button
-          onClick={toggleSidebarCollapsed}
-          className="shrink-0 px-2 text-muted-foreground hover:text-foreground transition-colors"
-          aria-label="Collapse sidebar"
-        >
-          <PanelLeftClose className="h-4 w-4" />
-        </button>
+        {!isMobile && (
+          <button
+            onClick={toggleSidebarCollapsed}
+            className="shrink-0 px-2 text-muted-foreground transition-colors hover:text-foreground"
+            aria-label="Collapse sidebar"
+          >
+            <PanelLeftClose className="h-4 w-4" />
+          </button>
+        )}
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 md:p-5">
@@ -108,11 +117,12 @@ export function Sidebar() {
         )}
       </div>
 
-      {/* Resize handle */}
-      <div
-        onPointerDown={onPointerDown}
-        className="absolute top-0 right-0 bottom-0 w-1 cursor-col-resize hover:bg-amber-500/40 active:bg-amber-500/60 transition-colors"
-      />
+      {!isMobile && (
+        <div
+          onPointerDown={onPointerDown}
+          className="absolute top-0 right-0 bottom-0 w-1 cursor-col-resize transition-colors hover:bg-amber-500/40 active:bg-amber-500/60"
+        />
+      )}
     </aside>
   );
 }

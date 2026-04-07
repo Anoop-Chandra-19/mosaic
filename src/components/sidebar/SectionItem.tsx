@@ -66,6 +66,7 @@ export function SectionItem({ section, isFirst, isLast, onMoveUp, onMoveDown }: 
           <Button
             variant="ghost"
             size="icon-xs"
+            aria-label={open ? `Collapse ${section.label}` : `Expand ${section.label}`}
             className="shrink-0 text-muted-foreground [&_svg]:size-3.5"
           >
             {open ? <ChevronDown /> : <ChevronRight />}
@@ -92,6 +93,7 @@ export function SectionItem({ section, isFirst, isLast, onMoveUp, onMoveDown }: 
             variant="ghost"
             size="icon-xs"
             onClick={handleAddEntry}
+            aria-label={`Add entry to ${section.label}`}
             className="text-muted-foreground [&_svg]:size-3.5"
           >
             <Plus />
@@ -101,6 +103,7 @@ export function SectionItem({ section, isFirst, isLast, onMoveUp, onMoveDown }: 
               <Button
                 variant="ghost"
                 size="icon-xs"
+                aria-label={`${section.label} actions`}
                 className="text-muted-foreground data-[state=open]:bg-accent data-[state=open]:text-foreground [&_svg]:size-3.5"
               >
                 <Ellipsis />
@@ -127,7 +130,7 @@ export function SectionItem({ section, isFirst, isLast, onMoveUp, onMoveDown }: 
       </div>
 
       <CollapsibleContent>
-        <div className="ml-4 space-y-2 pl-4 pb-3">
+        <div className="ml-4 space-y-2 pb-3 pl-4">
           {section.items.length === 0 ? (
             <p className="py-2 text-sm text-muted-foreground">
               No entries yet. Click + to add one.
