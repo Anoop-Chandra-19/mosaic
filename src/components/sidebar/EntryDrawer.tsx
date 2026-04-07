@@ -59,7 +59,7 @@ export function EntryDrawer({
         </DrawerHeader>
 
         <div className="space-y-4 overflow-y-auto px-4 pb-2 overscroll-contain">
-          <div className="flex items-center justify-between rounded-md border border-border/70 bg-muted/40 px-3 py-2">
+          <div className="flex items-center justify-between rounded-md border border-zinc-300 bg-zinc-100 px-3 py-2 dark:border-zinc-700 dark:bg-zinc-900">
             <span className="text-sm font-medium">Include This Entry</span>
             <Checkbox
               checked={entry.selected}
@@ -122,7 +122,7 @@ export function EntryDrawer({
 
               <div className="space-y-2">
                 <h4 className="text-sm font-medium">Bullets</h4>
-                <div className="space-y-2 rounded-md border border-border/70 bg-muted/20 p-2">
+                <div className="space-y-2 rounded-md border border-zinc-300 bg-zinc-50 p-2 dark:border-zinc-700 dark:bg-zinc-950">
                   {entry.bullets.length === 0 ? (
                     <p className="px-1 py-2 text-sm text-muted-foreground">No bullets yet.</p>
                   ) : (

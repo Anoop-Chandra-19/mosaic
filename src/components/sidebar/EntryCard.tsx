@@ -63,8 +63,8 @@ export function EntryCard({
   return (
     <div
       className={cn(
-        'group/entry rounded-md px-2.5 py-2 transition-colors hover:bg-muted/50',
-        !entry.selected && 'opacity-50'
+        'group/entry rounded-md px-2.5 py-2 transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-900',
+        !entry.selected && 'text-zinc-500 dark:text-zinc-500'
       )}
     >
       <div className="flex items-start gap-2">
@@ -137,10 +137,10 @@ export function EntryCard({
 
         <div
           className={cn(
-            'flex shrink-0 items-center transition-opacity',
+            'flex shrink-0 items-center',
             isMobile || actionsOpen
-              ? 'opacity-100'
-              : 'opacity-0 group-hover/entry:opacity-100 group-focus-within/entry:opacity-100'
+              ? 'visible'
+              : 'invisible group-hover/entry:visible group-focus-within/entry:visible'
           )}
         >
           <DropdownMenu open={actionsOpen} onOpenChange={setActionsOpen}>

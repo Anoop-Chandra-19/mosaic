@@ -83,10 +83,10 @@ export function SectionItem({ section, isFirst, isLast, onMoveUp, onMoveDown }: 
           {section.items.length}
         </span>
         <div
-          className={`flex shrink-0 items-center transition-opacity ${
+          className={`flex shrink-0 items-center ${
             actionsOpen
-              ? 'opacity-100'
-              : 'opacity-0 group-hover/section:opacity-100 group-focus-within/section:opacity-100'
+              ? 'visible'
+              : 'invisible group-hover/section:visible group-focus-within/section:visible'
           }`}
         >
           <Button

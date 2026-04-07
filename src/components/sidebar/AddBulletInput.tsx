@@ -95,7 +95,7 @@ export function AddBulletInput({ onAdd }: AddBulletInputProps) {
   return (
     <div
       ref={rootRef}
-      className="space-y-1.5 rounded-md border border-border/60 bg-muted/40 p-1.5 transition-[border-color,background-color] focus-within:border-ring/60 focus-within:bg-background"
+      className="space-y-1.5 rounded-md border border-zinc-300 bg-zinc-100 p-1.5 transition-[border-color,background-color] focus-within:border-zinc-500 focus-within:bg-background dark:border-zinc-700 dark:bg-zinc-900 dark:focus-within:border-zinc-500"
     >
       <label id={labelId} htmlFor={inputId} className="sr-only">
         Add a bullet point

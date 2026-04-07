@@ -54,3 +54,10 @@ src/
 - Don't create new CSS files — use Tailwind utilities
 - Don't modify files in `components/ui/` — those are shadcn-managed
 - Tailwind v4: use CSS-first config, native container queries, `scrollbar-none`, etc. — no legacy plugin patterns
+
+### UI Color Hierarchy (App Components)
+
+- For app-owned components (`components/layout`, `components/sidebar`, `components/preview`, etc.), do not use opacity utilities for hierarchy (`text-*/..`, `bg-*/..`, `border-*/..`, `ring-*/..`, `opacity-*`)
+- Use explicit tone steps instead (e.g., `zinc-100/300/500/900` or semantic tokens mapped to those tones) to express emphasis levels
+- Keep hierarchy consistent: stronger titles/actions use higher-contrast tones; metadata and secondary copy use lower-contrast fixed tones
+- Do not edit shadcn-managed files in `components/ui/`; if needed, adjust app-level usage or theme tokens instead

@@ -120,7 +120,7 @@ export function Sidebar() {
       {!isMobile && (
         <div
           onPointerDown={onPointerDown}
-          className="absolute top-0 right-0 bottom-0 w-1 cursor-col-resize transition-colors hover:bg-amber-500/40 active:bg-amber-500/60"
+          className="absolute top-0 right-0 bottom-0 w-1 cursor-col-resize transition-colors hover:bg-amber-500 active:bg-amber-600"
         />
       )}
     </aside>

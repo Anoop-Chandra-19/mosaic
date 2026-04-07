@@ -14,11 +14,13 @@ interface UIState {
   darkMode: boolean;
   activeSidebarTab: SidebarTab;
   mobilePane: MobilePane;
+  currentPreviewPage: number;
   sidebarRatio: number;
   sidebarCollapsed: boolean;
   toggleDarkMode: () => void;
   setActiveSidebarTab: (tab: SidebarTab) => void;
   setMobilePane: (pane: MobilePane) => void;
+  setCurrentPreviewPage: (page: number) => void;
   setSidebarRatio: (ratio: number) => void;
   toggleSidebarCollapsed: () => void;
 }
@@ -29,11 +31,13 @@ export const useUIStore = create<UIState>()(
       darkMode: true,
       activeSidebarTab: 'content',
       mobilePane: 'editor',
+      currentPreviewPage: 1,
       sidebarRatio: SIDEBAR_DEFAULT_RATIO,
       sidebarCollapsed: false,
       toggleDarkMode: () => set((state) => ({ darkMode: !state.darkMode })),
       setActiveSidebarTab: (tab) => set({ activeSidebarTab: tab }),
       setMobilePane: (pane) => set({ mobilePane: pane }),
+      setCurrentPreviewPage: (page) => set({ currentPreviewPage: Math.max(1, Math.floor(page)) }),
       setSidebarRatio: (ratio) =>
         set({ sidebarRatio: Math.min(SIDEBAR_MAX_RATIO, Math.max(0.1, ratio)) }),
       toggleSidebarCollapsed: () => set((state) => ({ sidebarCollapsed: !state.sidebarCollapsed })),

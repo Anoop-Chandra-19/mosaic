@@ -24,7 +24,10 @@ export function BulletItem({ bullet, onToggle, onUpdate, onRemove }: BulletItemP
       <InlineEditField
         value={bullet.text}
         onSave={onUpdate}
-        className={cn('text-sm leading-6 wrap-break-word', !bullet.selected && 'opacity-50')}
+        className={cn(
+          'text-sm leading-6 wrap-break-word',
+          !bullet.selected && 'text-zinc-500 dark:text-zinc-500'
+        )}
         inputClassName="h-8 text-sm leading-6"
       />
       <Button
@@ -32,7 +35,7 @@ export function BulletItem({ bullet, onToggle, onUpdate, onRemove }: BulletItemP
         size="icon-xs"
         onClick={onRemove}
         aria-label="Delete bullet"
-        className="shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100 hover:text-destructive [&_svg]:size-3.5"
+        className="invisible shrink-0 text-muted-foreground group-hover:visible group-focus-within:visible hover:text-destructive [&_svg]:size-3.5"
       >
         <Trash2 />
       </Button>
