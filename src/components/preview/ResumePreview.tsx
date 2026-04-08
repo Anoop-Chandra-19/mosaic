@@ -1,11 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useResumeStore } from '@/stores/resumeStore';
+import type { PaperSize } from '@/types/ui';
 import type { ResumeEntry, ResumeSection, SectionType } from '@/types/resume';
 import { PreviewHeader } from './PreviewHeader';
-import { A4_HEIGHT_MM, A4_WIDTH_MM, PAGE_MARGIN_MM, PreviewPage } from './PreviewPage';
+import { PreviewPage } from './PreviewPage';
 import { PreviewSection, type PreviewEntry, type PreviewRenderableSection } from './PreviewSection';
+import { PAGE_MARGIN_MM, PAPER_DIMENSIONS_MM } from './paper';
 
 interface ResumePreviewProps {
+  paperSize: PaperSize;
   onMetaChange: (meta: ResumePreviewMeta) => void;
 }
 
@@ -51,8 +54,13 @@ function mmToPx(mm: number) {
   return (mm / MM_PER_INCH) * PX_PER_INCH;
 }
 
-const DEFAULT_PAGE_CONTENT_WIDTH_PX = mmToPx(A4_WIDTH_MM - PAGE_MARGIN_MM * 2);
-const DEFAULT_PAGE_CONTENT_HEIGHT_PX = mmToPx(A4_HEIGHT_MM - PAGE_MARGIN_MM * 2);
+function getDefaultPageContentSize(paperSize: PaperSize) {
+  const paper = PAPER_DIMENSIONS_MM[paperSize];
+  return {
+    width: mmToPx(paper.width - PAGE_MARGIN_MM * 2),
+    height: mmToPx(paper.height - PAGE_MARGIN_MM * 2),
+  };
+}
 
 function estimateTextHeight(
   text: string,
@@ -402,19 +410,22 @@ function createFallbackMeasurements(sections: PreviewRenderableSection[]): Pagin
   };
 }
 
-export function ResumePreview({ onMetaChange }: ResumePreviewProps) {
+export function ResumePreview({ paperSize, onMetaChange }: ResumePreviewProps) {
   const contact = useResumeStore((s) => s.contact);
   const sections = useResumeStore((s) => s.sections);
   const measureRootRef = useRef<HTMLDivElement | null>(null);
   const visiblePageRootRef = useRef<HTMLDivElement | null>(null);
   const [throttledSections, setThrottledSections] = useState<PreviewRenderableSection[]>([]);
   const [measurements, setMeasurements] = useState<PaginationMeasurements | null>(null);
-  const [pageContentSize, setPageContentSize] = useState({
-    width: DEFAULT_PAGE_CONTENT_WIDTH_PX,
-    height: DEFAULT_PAGE_CONTENT_HEIGHT_PX,
-  });
+  const [pageContentSize, setPageContentSize] = useState(() =>
+    getDefaultPageContentSize(paperSize)
+  );
 
   const normalizedSections = useMemo(() => normalizeSections(sections), [sections]);
+
+  useEffect(() => {
+    setPageContentSize(getDefaultPageContentSize(paperSize));
+  }, [paperSize]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -557,7 +568,7 @@ export function ResumePreview({ onMetaChange }: ResumePreviewProps) {
       <div ref={visiblePageRootRef}>
         <div className="space-y-4">
           {visiblePages.map((pageSections, pageIndex) => (
-            <PreviewPage key={`preview-page-${pageIndex}`}>
+            <PreviewPage key={`preview-page-${pageIndex}`} paperSize={paperSize}>
               <PreviewHeader
                 contact={contact}
                 variant={pageIndex === 0 ? 'full' : 'compact'}

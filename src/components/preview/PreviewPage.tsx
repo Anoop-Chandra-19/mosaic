@@ -1,26 +1,33 @@
 import type { ReactNode } from 'react';
+import type { PaperSize } from '@/types/ui';
+import { PAGE_MARGIN_MM, PAPER_DIMENSIONS_MM } from './paper';
 
 interface PreviewPageProps {
   children: ReactNode;
+  paperSize: PaperSize;
 }
 
-export const A4_WIDTH_MM = 210;
-export const A4_HEIGHT_MM = 297;
-export const PAGE_MARGIN_MM = 12;
+function getPagePadding(paperSize: PaperSize) {
+  const paper = PAPER_DIMENSIONS_MM[paperSize];
+  return {
+    horizontal: `${(PAGE_MARGIN_MM / paper.width) * 100}%`,
+    vertical: `${(PAGE_MARGIN_MM / paper.height) * 100}%`,
+  };
+}
 
-const horizontalPaddingPercent = `${(PAGE_MARGIN_MM / A4_WIDTH_MM) * 100}%`;
-const verticalPaddingPercent = `${(PAGE_MARGIN_MM / A4_HEIGHT_MM) * 100}%`;
+export function PreviewPage({ children, paperSize }: PreviewPageProps) {
+  const paper = PAPER_DIMENSIONS_MM[paperSize];
+  const padding = getPagePadding(paperSize);
 
-export function PreviewPage({ children }: PreviewPageProps) {
   return (
     <article
       className="mx-auto w-full max-w-[44rem] overflow-hidden rounded-sm border border-zinc-200 bg-white shadow-lg dark:border-zinc-800 dark:shadow-zinc-900"
-      style={{ aspectRatio: `${A4_WIDTH_MM} / ${A4_HEIGHT_MM}` }}
+      style={{ aspectRatio: `${paper.width} / ${paper.height}` }}
     >
       <div
         className="h-full text-zinc-900"
         data-preview-page-content
-        style={{ paddingInline: horizontalPaddingPercent, paddingBlock: verticalPaddingPercent }}
+        style={{ paddingInline: padding.horizontal, paddingBlock: padding.vertical }}
       >
         {children}
       </div>

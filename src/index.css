@@ -124,8 +124,21 @@
 }
 
 @media print {
-  @page {
+  @page a4 {
     size: A4 portrait;
     margin: 0;
+  }
+
+  @page letter {
+    size: Letter portrait;
+    margin: 0;
+  }
+
+  html[data-paper-size='a4'] body {
+    page: a4;
+  }
+
+  html[data-paper-size='letter'] body {
+    page: letter;
   }
 }

@@ -1,6 +1,8 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { TriangleAlert } from 'lucide-react';
 import { ResumePreview, type ResumePreviewMeta } from '@/components/preview/ResumePreview';
+import type { PaperSize } from '@/types/ui';
+import { useUIStore } from '@/stores/uiStore';
 
 const DEFAULT_META: ResumePreviewMeta = {
   visiblePages: 1,
@@ -9,7 +11,13 @@ const DEFAULT_META: ResumePreviewMeta = {
 };
 
 export function PreviewPanel() {
+  const paperSize = useUIStore((s) => s.paperSize);
+  const setPaperSize = useUIStore((s) => s.setPaperSize);
   const [meta, setMeta] = useState<ResumePreviewMeta>(DEFAULT_META);
+
+  useEffect(() => {
+    document.documentElement.dataset.paperSize = paperSize;
+  }, [paperSize]);
 
   const pageLabel = meta.hasOverflowBeyondTwo ? '2+' : `${meta.visiblePages}`;
 
@@ -21,6 +29,25 @@ export function PreviewPanel() {
         </span>
 
         <div className="flex items-center gap-1.5">
+          <div className="inline-flex items-center rounded-md border border-zinc-300 bg-background p-0.5 dark:border-zinc-700">
+            {(['a4', 'letter'] as PaperSize[]).map((size) => (
+              <button
+                key={size}
+                type="button"
+                onClick={() => setPaperSize(size)}
+                className={[
+                  'rounded px-2 py-0.5 text-xs font-semibold uppercase transition-colors',
+                  paperSize === size
+                    ? 'bg-zinc-200 text-zinc-900 dark:bg-zinc-700 dark:text-zinc-100'
+                    : 'text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800',
+                ].join(' ')}
+                aria-label={`Switch paper size to ${size === 'a4' ? 'A4' : 'US Letter'}`}
+              >
+                {size === 'a4' ? 'A4' : 'Letter'}
+              </button>
+            ))}
+          </div>
+
           {meta.hasOverflowBeyondTwo && (
             <span className="inline-flex items-center gap-1 rounded-full border border-amber-300 bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-900 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-300">
               <TriangleAlert className="size-3" />
@@ -36,7 +63,7 @@ export function PreviewPanel() {
       </div>
 
       <div className="flex-1 overflow-y-auto px-3 py-4 md:px-6 md:py-6">
-        <ResumePreview onMetaChange={setMeta} />
+        <ResumePreview paperSize={paperSize} onMetaChange={setMeta} />
       </div>
     </main>
   );

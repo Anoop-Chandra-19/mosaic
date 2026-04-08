@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { dexieStorage } from '@/lib/dexieStorage';
+import type { PaperSize } from '@/types/ui';
 
 export type SidebarTab = 'content' | 'templates' | 'ai';
 export type MobilePane = 'editor' | 'preview';
@@ -15,12 +16,14 @@ interface UIState {
   activeSidebarTab: SidebarTab;
   mobilePane: MobilePane;
   currentPreviewPage: number;
+  paperSize: PaperSize;
   sidebarRatio: number;
   sidebarCollapsed: boolean;
   toggleDarkMode: () => void;
   setActiveSidebarTab: (tab: SidebarTab) => void;
   setMobilePane: (pane: MobilePane) => void;
   setCurrentPreviewPage: (page: number) => void;
+  setPaperSize: (size: PaperSize) => void;
   setSidebarRatio: (ratio: number) => void;
   toggleSidebarCollapsed: () => void;
 }
@@ -32,12 +35,14 @@ export const useUIStore = create<UIState>()(
       activeSidebarTab: 'content',
       mobilePane: 'editor',
       currentPreviewPage: 1,
+      paperSize: 'a4',
       sidebarRatio: SIDEBAR_DEFAULT_RATIO,
       sidebarCollapsed: false,
       toggleDarkMode: () => set((state) => ({ darkMode: !state.darkMode })),
       setActiveSidebarTab: (tab) => set({ activeSidebarTab: tab }),
       setMobilePane: (pane) => set({ mobilePane: pane }),
       setCurrentPreviewPage: (page) => set({ currentPreviewPage: Math.max(1, Math.floor(page)) }),
+      setPaperSize: (size) => set({ paperSize: size }),
       setSidebarRatio: (ratio) =>
         set({ sidebarRatio: Math.min(SIDEBAR_MAX_RATIO, Math.max(0.1, ratio)) }),
       toggleSidebarCollapsed: () => set((state) => ({ sidebarCollapsed: !state.sidebarCollapsed })),
