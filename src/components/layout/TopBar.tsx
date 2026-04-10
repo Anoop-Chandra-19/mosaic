@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react';
 import { Moon, Sun, Settings, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -6,13 +7,128 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { useResumeStore } from '@/stores/resumeStore';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/lib/useIsMobile';
 import { useUIStore } from '@/stores/uiStore';
+import { normalizeResumeForExport } from '@/lib/export/normalizeResumeExport';
+import { createMarkdownExport } from '@/lib/export/markdown';
+import { createPlaintextExport } from '@/lib/export/plaintext';
+import { buildPdfFileName } from '@/lib/export/filename';
+import { openResumePdfPreview } from '@/lib/export/pdf';
+
+type ExportFeedback = {
+  tone: 'success' | 'error';
+  message: string;
+};
+
+async function copyTextToClipboard(text: string) {
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch {
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.setAttribute('readonly', '');
+    textarea.style.position = 'fixed';
+    textarea.style.top = '-9999px';
+    textarea.style.left = '-9999px';
+    document.body.appendChild(textarea);
+    textarea.focus();
+    textarea.select();
+    const copied = document.execCommand('copy');
+    document.body.removeChild(textarea);
+    return copied;
+  }
+}
 
 export function TopBar() {
-  const { darkMode, mobilePane, toggleDarkMode, setMobilePane } = useUIStore();
+  const darkMode = useUIStore((state) => state.darkMode);
+  const mobilePane = useUIStore((state) => state.mobilePane);
+  const toggleDarkMode = useUIStore((state) => state.toggleDarkMode);
+  const setMobilePane = useUIStore((state) => state.setMobilePane);
+  const paperSize = useUIStore((state) => state.paperSize);
+  const contact = useResumeStore((state) => state.contact);
+  const sections = useResumeStore((state) => state.sections);
   const isMobile = useIsMobile();
+  const [isExportingPdf, setIsExportingPdf] = useState(false);
+  const [feedback, setFeedback] = useState<ExportFeedback | null>(null);
+  const feedbackTimeoutRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (feedbackTimeoutRef.current) {
+        window.clearTimeout(feedbackTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  const showFeedback = (nextFeedback: ExportFeedback) => {
+    setFeedback(nextFeedback);
+    if (feedbackTimeoutRef.current) {
+      window.clearTimeout(feedbackTimeoutRef.current);
+    }
+    feedbackTimeoutRef.current = window.setTimeout(() => {
+      setFeedback(null);
+    }, 2200);
+  };
+
+  const handleCopyMarkdown = async () => {
+    const normalized = normalizeResumeForExport({ contact, sections });
+    const markdown = createMarkdownExport(normalized);
+    const copied = await copyTextToClipboard(markdown);
+
+    if (copied) {
+      showFeedback({ tone: 'success', message: 'Markdown copied' });
+      return;
+    }
+
+    showFeedback({ tone: 'error', message: 'Could not copy markdown' });
+  };
+
+  const handleCopyPlaintext = async () => {
+    const normalized = normalizeResumeForExport({ contact, sections });
+    const plaintext = createPlaintextExport(normalized);
+    const copied = await copyTextToClipboard(plaintext);
+
+    if (copied) {
+      showFeedback({ tone: 'success', message: 'Plaintext copied' });
+      return;
+    }
+
+    showFeedback({ tone: 'error', message: 'Could not copy plaintext' });
+  };
+
+  const handleExportPdf = async () => {
+    if (isExportingPdf) {
+      return;
+    }
+
+    setIsExportingPdf(true);
+
+    try {
+      const normalized = normalizeResumeForExport({ contact, sections });
+      const fileName = buildPdfFileName({
+        contactName: normalized.contact.name,
+        paperSize,
+      });
+      const result = await openResumePdfPreview({
+        data: normalized,
+        paperSize,
+        fileName,
+      });
+      showFeedback({
+        tone: 'success',
+        message: result.openedPreview
+          ? 'PDF preview opened in a new tab'
+          : `Popup blocked, downloaded: ${fileName}`,
+      });
+    } catch {
+      showFeedback({ tone: 'error', message: 'Could not export PDF' });
+    } finally {
+      setIsExportingPdf(false);
+    }
+  };
 
   return (
     <header className="flex h-14 shrink-0 items-center justify-between border-b border-border bg-card px-4">
@@ -24,6 +140,17 @@ export function TopBar() {
       </div>
 
       <div className="flex items-center gap-1">
+        {feedback && (
+          <span
+            className={cn(
+              'hidden pr-1 text-xs font-medium md:inline',
+              feedback.tone === 'success' ? 'text-zinc-600 dark:text-zinc-300' : 'text-red-700'
+            )}
+          >
+            {feedback.message}
+          </span>
+        )}
+
         {isMobile && (
           <div className="mr-1 flex items-center rounded-md border border-border p-0.5">
             <Button
@@ -66,9 +193,11 @@ export function TopBar() {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem>Export as PDF</DropdownMenuItem>
-            <DropdownMenuItem>Copy as Markdown</DropdownMenuItem>
-            <DropdownMenuItem>Copy as Plaintext</DropdownMenuItem>
+            <DropdownMenuItem disabled={isExportingPdf} onSelect={handleExportPdf}>
+              {isExportingPdf ? 'Exporting PDF...' : 'Export as PDF'}
+            </DropdownMenuItem>
+            <DropdownMenuItem onSelect={handleCopyMarkdown}>Copy as Markdown</DropdownMenuItem>
+            <DropdownMenuItem onSelect={handleCopyPlaintext}>Copy as Plaintext</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>

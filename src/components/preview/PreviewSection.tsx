@@ -27,7 +27,7 @@ export function PreviewSection({ section }: PreviewSectionProps) {
   return (
     <section
       className="pt-4 first:pt-2"
-      style={{ fontFamily: 'Georgia, serif' }}
+      style={{ fontFamily: '"Source Serif 4", serif' }}
       data-preview-section-id={section.id}
     >
       <h2

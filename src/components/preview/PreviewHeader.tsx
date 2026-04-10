@@ -39,7 +39,7 @@ export function PreviewHeader({ contact, variant = 'full', pageNumber = 1 }: Pre
     return (
       <header
         className="pb-1.5"
-        style={{ fontFamily: 'Georgia, serif' }}
+        style={{ fontFamily: '"Source Serif 4", serif' }}
         data-preview-header
         data-preview-header-variant="compact"
       >
@@ -58,7 +58,7 @@ export function PreviewHeader({ contact, variant = 'full', pageNumber = 1 }: Pre
   return (
     <header
       className="pb-3 text-center"
-      style={{ fontFamily: 'Georgia, serif' }}
+      style={{ fontFamily: '"Source Serif 4", serif' }}
       data-preview-header
       data-preview-header-variant="full"
     >
