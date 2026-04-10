@@ -15,7 +15,7 @@ import { normalizeResumeForExport } from '@/lib/export/normalizeResumeExport';
 import { createMarkdownExport } from '@/lib/export/markdown';
 import { createPlaintextExport } from '@/lib/export/plaintext';
 import { buildPdfFileName } from '@/lib/export/filename';
-import { openResumePdfPreview } from '@/lib/export/pdf';
+import { downloadResumePdf, openResumePdfPreview } from '@/lib/export/pdf';
 
 type ExportFeedback = {
   tone: 'success' | 'error';
@@ -51,9 +51,11 @@ export function TopBar() {
   const contact = useResumeStore((state) => state.contact);
   const sections = useResumeStore((state) => state.sections);
   const isMobile = useIsMobile();
-  const [isExportingPdf, setIsExportingPdf] = useState(false);
+  const [isSavingPdf, setIsSavingPdf] = useState(false);
+  const [isPreviewingPdf, setIsPreviewingPdf] = useState(false);
   const [feedback, setFeedback] = useState<ExportFeedback | null>(null);
   const feedbackTimeoutRef = useRef<number | null>(null);
+  const isPdfBusy = isSavingPdf || isPreviewingPdf;
 
   useEffect(() => {
     return () => {
@@ -100,11 +102,37 @@ export function TopBar() {
   };
 
   const handleExportPdf = async () => {
-    if (isExportingPdf) {
+    if (isPdfBusy) {
       return;
     }
 
-    setIsExportingPdf(true);
+    setIsSavingPdf(true);
+
+    try {
+      const normalized = normalizeResumeForExport({ contact, sections });
+      const fileName = buildPdfFileName({
+        contactName: normalized.contact.name,
+        paperSize,
+      });
+      await downloadResumePdf({
+        data: normalized,
+        paperSize,
+        fileName,
+      });
+      showFeedback({ tone: 'success', message: `Saved PDF: ${fileName}` });
+    } catch {
+      showFeedback({ tone: 'error', message: 'Could not export PDF' });
+    } finally {
+      setIsSavingPdf(false);
+    }
+  };
+
+  const handlePreviewPdf = async () => {
+    if (isPdfBusy) {
+      return;
+    }
+
+    setIsPreviewingPdf(true);
 
     try {
       const normalized = normalizeResumeForExport({ contact, sections });
@@ -120,13 +148,13 @@ export function TopBar() {
       showFeedback({
         tone: 'success',
         message: result.openedPreview
-          ? 'PDF preview opened in a new tab'
+          ? 'Preview opened in a new tab'
           : `Popup blocked, downloaded: ${fileName}`,
       });
     } catch {
-      showFeedback({ tone: 'error', message: 'Could not export PDF' });
+      showFeedback({ tone: 'error', message: 'Could not preview PDF' });
     } finally {
-      setIsExportingPdf(false);
+      setIsPreviewingPdf(false);
     }
   };
 
@@ -193,8 +221,11 @@ export function TopBar() {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem disabled={isExportingPdf} onSelect={handleExportPdf}>
-              {isExportingPdf ? 'Exporting PDF...' : 'Export as PDF'}
+            <DropdownMenuItem disabled={isPdfBusy} onSelect={handleExportPdf}>
+              {isSavingPdf ? 'Saving PDF...' : 'Export as PDF'}
+            </DropdownMenuItem>
+            <DropdownMenuItem disabled={isPdfBusy} onSelect={handlePreviewPdf}>
+              {isPreviewingPdf ? 'Opening preview...' : 'Preview PDF'}
             </DropdownMenuItem>
             <DropdownMenuItem onSelect={handleCopyMarkdown}>Copy as Markdown</DropdownMenuItem>
             <DropdownMenuItem onSelect={handleCopyPlaintext}>Copy as Plaintext</DropdownMenuItem>
