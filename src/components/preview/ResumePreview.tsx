@@ -40,15 +40,17 @@ type PaginatedEntry = PreviewEntry & {
 const TEXT_ONLY_TYPES = new Set<SectionType>(['summary', 'skills']);
 const PX_PER_INCH = 96;
 const MM_PER_INCH = 25.4;
-const SECTION_TOP_PADDING_PX = 12;
-const SECTION_CONTENT_TOP_PADDING_PX = 8;
-const ENTRY_GAP_PX = 10;
-const ENTRY_INTERNAL_GAP_PX = 4;
-const BULLET_GAP_PX = 2;
+const SECTION_TOP_PADDING_PX = 10;
+const SECTION_CONTENT_TOP_PADDING_PX = 4.8;
+const TEXT_ONLY_SECTION_CONTENT_TOP_PADDING_PX = 2.4;
+const ENTRY_GAP_PX = 6;
+const TEXT_ONLY_ENTRY_GAP_PX = 1.6;
+const ENTRY_INTERNAL_GAP_PX = 1.8;
+const BULLET_GAP_PX = 1.6;
 const TEXT_CHARS_PER_LINE = 88;
 const MEASUREMENT_THROTTLE_MS = 100;
-const BODY_LINE_HEIGHT_PX = 18;
-const HEADING_LINE_HEIGHT_PX = 20;
+const BODY_LINE_HEIGHT_PX = 17;
+const HEADING_LINE_HEIGHT_PX = 15.8;
 
 function mmToPx(mm: number) {
   return (mm / MM_PER_INCH) * PX_PER_INCH;
@@ -297,10 +299,14 @@ function paginateSections(
       let page = pages[pages.length - 1];
       const pageSection = page.sections.find((item) => item.id === section.id);
       const sectionTitleHeight = measurements.sectionTitleHeights[section.id] ?? 22;
+      const sectionBodyTopPadding = TEXT_ONLY_TYPES.has(section.type)
+        ? TEXT_ONLY_SECTION_CONTENT_TOP_PADDING_PX
+        : SECTION_CONTENT_TOP_PADDING_PX;
       const sectionOpenCost = pageSection
         ? 0
-        : SECTION_TOP_PADDING_PX + sectionTitleHeight + SECTION_CONTENT_TOP_PADDING_PX;
-      const entryGap = pageSection && pageSection.entries.length > 0 ? ENTRY_GAP_PX : 0;
+        : SECTION_TOP_PADDING_PX + sectionTitleHeight + sectionBodyTopPadding;
+      const entryGapPx = TEXT_ONLY_TYPES.has(section.type) ? TEXT_ONLY_ENTRY_GAP_PX : ENTRY_GAP_PX;
+      const entryGap = pageSection && pageSection.entries.length > 0 ? entryGapPx : 0;
       const candidateHeight = getEntryHeight(section, candidate, measurements);
       const candidateCost = sectionOpenCost + entryGap + candidateHeight;
 
@@ -338,8 +344,7 @@ function paginateSections(
       pages.push(createEmptyPage(pages.length, measurements));
       page = pages[pages.length - 1];
 
-      const freshSectionCost =
-        SECTION_TOP_PADDING_PX + sectionTitleHeight + SECTION_CONTENT_TOP_PADDING_PX;
+      const freshSectionCost = SECTION_TOP_PADDING_PX + sectionTitleHeight + sectionBodyTopPadding;
       const freshAvailable = pageContentHeight - page.usedHeight - freshSectionCost;
       const forcedSplit = splitEntryByAvailableHeight(
         section,
@@ -574,7 +579,7 @@ export function ResumePreview({ paperSize, onMetaChange }: ResumePreviewProps) {
                 variant={pageIndex === 0 ? 'full' : 'compact'}
                 pageNumber={pageIndex + 1}
               />
-              <div className="space-y-1">
+              <div className="space-y-0">
                 {pageSections.map((section) => (
                   <PreviewSection key={`${section.id}-${pageIndex}`} section={section} />
                 ))}
@@ -594,7 +599,7 @@ export function ResumePreview({ paperSize, onMetaChange }: ResumePreviewProps) {
           <div className="mt-4">
             <PreviewHeader contact={contact} variant="compact" pageNumber={2} />
           </div>
-          <div className="space-y-1">
+          <div className="space-y-0">
             {activeSections.map((section) => (
               <PreviewSection key={`measure-${section.id}`} section={section} />
             ))}

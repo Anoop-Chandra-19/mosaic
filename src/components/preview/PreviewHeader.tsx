@@ -14,14 +14,14 @@ function getNameClass(name: string) {
   const length = name.trim().length;
 
   if (length <= 18) {
-    return 'text-[clamp(1.6rem,2.7vw,2.1rem)] leading-tight';
+    return 'text-[clamp(1.46rem,2.45vw,1.9rem)] leading-tight';
   }
 
   if (length <= 26) {
-    return 'text-[clamp(1.4rem,2.3vw,1.9rem)] leading-tight';
+    return 'text-[clamp(1.28rem,2.05vw,1.68rem)] leading-tight';
   }
 
-  return 'text-[clamp(1.2rem,2vw,1.6rem)] leading-snug break-words';
+  return 'text-[clamp(1.1rem,1.8vw,1.42rem)] leading-snug break-words';
 }
 
 export function PreviewHeader({ contact, variant = 'full', pageNumber = 1 }: PreviewHeaderProps) {
@@ -57,17 +57,17 @@ export function PreviewHeader({ contact, variant = 'full', pageNumber = 1 }: Pre
 
   return (
     <header
-      className="pb-3 text-center"
+      className="pt-[0.4rem] pb-[0.5rem] text-center"
       style={{ fontFamily: '"Source Serif 4", serif' }}
       data-preview-header
       data-preview-header-variant="full"
     >
       <h1 className={`${getNameClass(displayName)} font-bold text-zinc-900`}>{displayName}</h1>
       {primaryLine && (
-        <p className="mt-1 text-[0.82rem] leading-[1.3] text-zinc-700">{primaryLine}</p>
+        <p className="mt-[0.28rem] text-[0.79rem] leading-[1.24] text-zinc-700">{primaryLine}</p>
       )}
       {secondaryLine && (
-        <p className="mt-0.5 text-[0.8rem] leading-[1.25] text-zinc-700">{secondaryLine}</p>
+        <p className="mt-[0.12rem] text-[0.77rem] leading-[1.2] text-zinc-700">{secondaryLine}</p>
       )}
     </header>
   );
