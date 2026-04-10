@@ -14,14 +14,14 @@ function getNameClass(name: string) {
   const length = name.trim().length;
 
   if (length <= 18) {
-    return 'text-[clamp(1.46rem,2.45vw,1.9rem)] leading-tight';
+    return 'text-[clamp(1.42rem,2.4vw,1.85rem)] leading-tight';
   }
 
   if (length <= 26) {
-    return 'text-[clamp(1.28rem,2.05vw,1.68rem)] leading-tight';
+    return 'text-[clamp(1.24rem,2vw,1.64rem)] leading-tight';
   }
 
-  return 'text-[clamp(1.1rem,1.8vw,1.42rem)] leading-snug break-words';
+  return 'text-[clamp(1.08rem,1.76vw,1.38rem)] leading-snug break-words';
 }
 
 export function PreviewHeader({ contact, variant = 'full', pageNumber = 1 }: PreviewHeaderProps) {
