@@ -16,6 +16,7 @@ import { createMarkdownExport } from '@/lib/export/markdown';
 import { createPlaintextExport } from '@/lib/export/plaintext';
 import { buildPdfFileName } from '@/lib/export/filename';
 import { downloadResumePdf, openResumePdfPreview } from '@/lib/export/pdf';
+import { SettingsDialog } from '@/components/settings/SettingsDialog';
 
 type ExportFeedback = {
   tone: 'success' | 'error';
@@ -53,6 +54,7 @@ export function TopBar() {
   const isMobile = useIsMobile();
   const [isSavingPdf, setIsSavingPdf] = useState(false);
   const [isPreviewingPdf, setIsPreviewingPdf] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [feedback, setFeedback] = useState<ExportFeedback | null>(null);
   const feedbackTimeoutRef = useRef<number | null>(null);
   const isPdfBusy = isSavingPdf || isPreviewingPdf;
@@ -159,79 +161,88 @@ export function TopBar() {
   };
 
   return (
-    <header className="flex h-14 shrink-0 items-center justify-between border-b border-border bg-card px-4">
-      <div className="flex items-center gap-2">
-        <div className="flex h-8 w-8 items-center justify-center rounded-md bg-amber-500 font-bold text-white">
-          M
-        </div>
-        <span className="text-lg font-semibold">Mosaic</span>
-      </div>
-
-      <div className="flex items-center gap-1">
-        {feedback && (
-          <span
-            className={cn(
-              'hidden pr-1 text-xs font-medium md:inline',
-              feedback.tone === 'success' ? 'text-zinc-600 dark:text-zinc-300' : 'text-red-700'
-            )}
-          >
-            {feedback.message}
-          </span>
-        )}
-
-        {isMobile && (
-          <div className="mr-1 flex items-center rounded-md border border-border p-0.5">
-            <Button
-              variant="ghost"
-              size="xs"
-              onClick={() => setMobilePane('editor')}
-              className={cn(
-                'h-7 px-2 text-xs',
-                mobilePane === 'editor' && 'bg-muted text-foreground'
-              )}
-            >
-              Edit
-            </Button>
-            <Button
-              variant="ghost"
-              size="xs"
-              onClick={() => setMobilePane('preview')}
-              className={cn(
-                'h-7 px-2 text-xs',
-                mobilePane === 'preview' && 'bg-muted text-foreground'
-              )}
-            >
-              Preview
-            </Button>
+    <>
+      <header className="flex h-14 shrink-0 items-center justify-between border-b border-border bg-card px-4">
+        <div className="flex items-center gap-2">
+          <div className="flex h-8 w-8 items-center justify-center rounded-md bg-amber-500 font-bold text-white">
+            M
           </div>
-        )}
+          <span className="text-lg font-semibold">Mosaic</span>
+        </div>
 
-        <Button variant="ghost" size="icon" onClick={toggleDarkMode} aria-label="Toggle theme">
-          {darkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-        </Button>
+        <div className="flex items-center gap-1">
+          {feedback && (
+            <span
+              className={cn(
+                'hidden pr-1 text-xs font-medium md:inline',
+                feedback.tone === 'success' ? 'text-zinc-600 dark:text-zinc-300' : 'text-red-700'
+              )}
+            >
+              {feedback.message}
+            </span>
+          )}
 
-        <Button variant="ghost" size="icon" aria-label="Open settings">
-          <Settings className="h-4 w-4" />
-        </Button>
+          {isMobile && (
+            <div className="mr-1 flex items-center rounded-md border border-border p-0.5">
+              <Button
+                variant="ghost"
+                size="xs"
+                onClick={() => setMobilePane('editor')}
+                className={cn(
+                  'h-7 px-2 text-xs',
+                  mobilePane === 'editor' && 'bg-muted text-foreground'
+                )}
+              >
+                Edit
+              </Button>
+              <Button
+                variant="ghost"
+                size="xs"
+                onClick={() => setMobilePane('preview')}
+                className={cn(
+                  'h-7 px-2 text-xs',
+                  mobilePane === 'preview' && 'bg-muted text-foreground'
+                )}
+              >
+                Preview
+              </Button>
+            </div>
+          )}
 
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" aria-label="Export resume">
-              <Download className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem disabled={isPdfBusy} onSelect={handleExportPdf}>
-              {isSavingPdf ? 'Saving PDF...' : 'Export as PDF'}
-            </DropdownMenuItem>
-            <DropdownMenuItem disabled={isPdfBusy} onSelect={handlePreviewPdf}>
-              {isPreviewingPdf ? 'Opening preview...' : 'Preview PDF'}
-            </DropdownMenuItem>
-            <DropdownMenuItem onSelect={handleCopyMarkdown}>Copy as Markdown</DropdownMenuItem>
-            <DropdownMenuItem onSelect={handleCopyPlaintext}>Copy as Plaintext</DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
-    </header>
+          <Button variant="ghost" size="icon" onClick={toggleDarkMode} aria-label="Toggle theme">
+            {darkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+          </Button>
+
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setIsSettingsOpen(true)}
+            aria-label="Open settings"
+          >
+            <Settings className="h-4 w-4" />
+          </Button>
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" aria-label="Export resume">
+                <Download className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem disabled={isPdfBusy} onSelect={handleExportPdf}>
+                {isSavingPdf ? 'Saving PDF...' : 'Export as PDF'}
+              </DropdownMenuItem>
+              <DropdownMenuItem disabled={isPdfBusy} onSelect={handlePreviewPdf}>
+                {isPreviewingPdf ? 'Opening preview...' : 'Preview PDF'}
+              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={handleCopyMarkdown}>Copy as Markdown</DropdownMenuItem>
+              <DropdownMenuItem onSelect={handleCopyPlaintext}>Copy as Plaintext</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </header>
+
+      <SettingsDialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen} />
+    </>
   );
 }

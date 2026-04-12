@@ -207,10 +207,15 @@ const DEFAULT_RESUME: ResumeData = {
   ],
 };
 
+function createDefaultResume(): ResumeData {
+  return structuredClone(DEFAULT_RESUME);
+}
+
 /* ── Store Interface ─────────────────────────────────────── */
 
 interface ResumeState extends ResumeData {
   updateContact: (patch: Partial<ContactInfo>) => void;
+  resetResume: () => void;
 
   addSection: (type: SectionType, label: string) => void;
   removeSection: (sectionId: string) => void;
@@ -238,11 +243,12 @@ interface ResumeState extends ResumeData {
 export const useResumeStore = create<ResumeState>()(
   persist(
     (set) => ({
-      ...DEFAULT_RESUME,
+      ...createDefaultResume(),
 
       // ── Contact ──
 
       updateContact: (patch) => set((state) => ({ contact: { ...state.contact, ...patch } })),
+      resetResume: () => set(() => ({ ...createDefaultResume() })),
 
       // ── Section CRUD ──
 

@@ -59,12 +59,11 @@ export interface Template {
   updatedAt: string;
 }
 
-export type AIProvider = 'openai' | 'gemini' | 'ollama';
+export type AIProvider = 'openai' | 'anthropic' | 'gemini' | 'ollama' | 'openrouter';
 
 export interface AISettings {
   enabled: boolean;
   provider: AIProvider;
   model: string;
-  openaiKey: string | null;
-  geminiKey: string | null;
+  keyStorageMode: 'session' | 'keychain';
 }

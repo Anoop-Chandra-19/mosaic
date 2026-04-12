@@ -15,11 +15,14 @@ Implemented today:
 - PDF export, plus copy as Markdown and plaintext
 - Persisted local state via Zustand + IndexedDB (Dexie)
 - Responsive UI with desktop and mobile editing behavior
+- Settings workspace with Discord-style navigation
+- Local privacy controls (clear keys, reset resume/UI, full local reset)
+- AI config foundation (provider and model settings)
 
 Scaffolded but not fully implemented yet:
 
 - Templates panel logic
-- AI settings and tools UI logic
+- AI action flows and provider-router execution logic
 - Resume import/parser flow
 - Electron packaging and OS keychain integration
 

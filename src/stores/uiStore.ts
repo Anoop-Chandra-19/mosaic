@@ -11,6 +11,16 @@ export const SIDEBAR_DEFAULT_RATIO = 0.22;
 export const SIDEBAR_MIN_PX = 200;
 export const SIDEBAR_MAX_RATIO = 0.4;
 
+export const DEFAULT_UI_STATE = {
+  darkMode: true,
+  activeSidebarTab: 'content' as SidebarTab,
+  mobilePane: 'editor' as MobilePane,
+  currentPreviewPage: 1,
+  paperSize: 'a4' as PaperSize,
+  sidebarRatio: SIDEBAR_DEFAULT_RATIO,
+  sidebarCollapsed: false,
+};
+
 interface UIState {
   darkMode: boolean;
   activeSidebarTab: SidebarTab;
@@ -20,25 +30,22 @@ interface UIState {
   sidebarRatio: number;
   sidebarCollapsed: boolean;
   toggleDarkMode: () => void;
+  setDarkMode: (enabled: boolean) => void;
   setActiveSidebarTab: (tab: SidebarTab) => void;
   setMobilePane: (pane: MobilePane) => void;
   setCurrentPreviewPage: (page: number) => void;
   setPaperSize: (size: PaperSize) => void;
   setSidebarRatio: (ratio: number) => void;
   toggleSidebarCollapsed: () => void;
+  resetUIState: () => void;
 }
 
 export const useUIStore = create<UIState>()(
   persist(
     (set) => ({
-      darkMode: true,
-      activeSidebarTab: 'content',
-      mobilePane: 'editor',
-      currentPreviewPage: 1,
-      paperSize: 'a4',
-      sidebarRatio: SIDEBAR_DEFAULT_RATIO,
-      sidebarCollapsed: false,
+      ...DEFAULT_UI_STATE,
       toggleDarkMode: () => set((state) => ({ darkMode: !state.darkMode })),
+      setDarkMode: (enabled) => set({ darkMode: enabled }),
       setActiveSidebarTab: (tab) => set({ activeSidebarTab: tab }),
       setMobilePane: (pane) => set({ mobilePane: pane }),
       setCurrentPreviewPage: (page) => set({ currentPreviewPage: Math.max(1, Math.floor(page)) }),
@@ -46,6 +53,7 @@ export const useUIStore = create<UIState>()(
       setSidebarRatio: (ratio) =>
         set({ sidebarRatio: Math.min(SIDEBAR_MAX_RATIO, Math.max(0.1, ratio)) }),
       toggleSidebarCollapsed: () => set((state) => ({ sidebarCollapsed: !state.sidebarCollapsed })),
+      resetUIState: () => set({ ...DEFAULT_UI_STATE }),
     }),
     {
       name: 'mosaic-ui',
