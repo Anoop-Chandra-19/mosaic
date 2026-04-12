@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Bot, KeyRound, Server, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -113,6 +113,8 @@ export function AISettingsSection() {
   );
   const [isMutatingProvider, setIsMutatingProvider] = useState<AIProvider | null>(null);
   const [feedback, setFeedback] = useState<ProviderFeedback | null>(null);
+  const [flashCredentials, setFlashCredentials] = useState(false);
+  const flashTimeoutRef = useRef<number | null>(null);
 
   const activeProvider = AI_PROVIDER_BY_ID[provider];
   const activeModel = modelsByProvider[provider] ?? AI_PROVIDER_DEFAULT_MODEL[provider];
@@ -123,6 +125,9 @@ export function AISettingsSection() {
 
   const modelInputId = `ai-model-${provider}`;
   const keyInputId = `ai-key-${provider}`;
+  const credentialsHighlightClass = flashCredentials
+    ? 'motion-safe:animate-settings-credentials-flash motion-reduce:animate-none'
+    : undefined;
 
   useEffect(() => {
     let alive = true;
@@ -164,6 +169,41 @@ export function AISettingsSection() {
       alive = false;
     };
   }, [secrets]);
+
+  useEffect(() => {
+    return () => {
+      if (flashTimeoutRef.current !== null) {
+        window.clearTimeout(flashTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  const triggerCredentialsFlash = () => {
+    if (flashTimeoutRef.current !== null) {
+      window.clearTimeout(flashTimeoutRef.current);
+      flashTimeoutRef.current = null;
+    }
+
+    setFlashCredentials(false);
+
+    window.requestAnimationFrame(() => {
+      setFlashCredentials(true);
+      flashTimeoutRef.current = window.setTimeout(() => {
+        setFlashCredentials(false);
+        flashTimeoutRef.current = null;
+      }, 840);
+    });
+  };
+
+  const handleEnabledChange = (checked: boolean | 'indeterminate') => {
+    const nextEnabled = Boolean(checked);
+
+    if (!enabled && nextEnabled) {
+      triggerCredentialsFlash();
+    }
+
+    setEnabled(nextEnabled);
+  };
 
   const handleSelectProvider = (nextProvider: AIProvider) => {
     setProvider(nextProvider);
@@ -289,11 +329,7 @@ export function AISettingsSection() {
             htmlFor="ai-enabled"
             className="inline-flex items-center gap-2 text-sm font-medium text-zinc-700 dark:text-zinc-200"
           >
-            <Checkbox
-              id="ai-enabled"
-              checked={enabled}
-              onCheckedChange={(checked) => setEnabled(Boolean(checked))}
-            />
+            <Checkbox id="ai-enabled" checked={enabled} onCheckedChange={handleEnabledChange} />
             Enable AI
           </label>
         </div>
@@ -309,14 +345,14 @@ export function AISettingsSection() {
 
         <div className="mt-3 grid gap-3 lg:grid-cols-[15rem_1fr]">
           <nav
-            className="rounded-xl border border-zinc-300 bg-background p-2 dark:border-zinc-700"
+            className="rounded-xl border border-zinc-300 bg-background p-4 dark:border-zinc-700"
             aria-label="AI provider profiles"
           >
-            <p className="px-2 text-xs font-semibold tracking-widest text-zinc-500 uppercase dark:text-zinc-400">
+            <p className="px-1 text-xs font-semibold tracking-widest text-zinc-500 uppercase dark:text-zinc-400">
               Providers
             </p>
 
-            <div className="mt-2 space-y-1">
+            <div className="mt-3 space-y-3">
               {AI_PROVIDER_OPTIONS.map((option) => {
                 const isActive = option.id === provider;
                 const providerKeyStatus = keyStatusByProvider[option.id];
@@ -327,7 +363,7 @@ export function AISettingsSection() {
                     type="button"
                     onClick={() => handleSelectProvider(option.id)}
                     className={cn(
-                      'w-full rounded-lg border px-2.5 py-2 text-left transition-colors',
+                      'w-full rounded-lg border px-3 py-3 text-left transition-colors',
                       isActive
                         ? 'border-amber-500 bg-amber-100 text-zinc-900 dark:border-amber-500 dark:bg-zinc-800 dark:text-zinc-100'
                         : 'border-zinc-300 bg-background text-zinc-700 hover:border-zinc-400 hover:bg-zinc-200 hover:text-zinc-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-amber-500 dark:hover:bg-zinc-800 dark:hover:text-zinc-100'
@@ -358,7 +394,7 @@ export function AISettingsSection() {
 
                     <span
                       className={cn(
-                        'mt-1 inline-flex rounded-full border px-1.5 py-0.5 text-[0.62rem] font-semibold tracking-widest uppercase',
+                        'mt-2 inline-flex rounded-full border px-1.5 py-0.5 text-[0.62rem] font-semibold tracking-widest uppercase',
                         keyStatusClass(providerKeyStatus, option.requiresKey)
                       )}
                     >
@@ -370,7 +406,12 @@ export function AISettingsSection() {
             </div>
           </nav>
 
-          <div className="rounded-xl border border-zinc-300 bg-background p-4 dark:border-zinc-700">
+          <div
+            className={cn(
+              'rounded-xl border border-zinc-300 bg-background p-4 dark:border-zinc-700',
+              credentialsHighlightClass
+            )}
+          >
             <header className="flex flex-wrap items-start justify-between gap-3">
               <div className="min-w-0">
                 <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">

@@ -93,6 +93,24 @@
   --color-sidebar-ring: var(--sidebar-ring);
 }
 
+@theme {
+  --animate-settings-credentials-flash: settings-credentials-flash-ring 840ms ease-out 1;
+
+  @keyframes settings-credentials-flash-ring {
+    0% {
+      box-shadow: 0 0 0 0 rgba(245, 158, 11, 0);
+    }
+    22% {
+      box-shadow:
+        0 0 0 2px rgba(245, 158, 11, 0.92),
+        0 0 0 6px rgba(245, 158, 11, 0.22);
+    }
+    100% {
+      box-shadow: 0 0 0 0 rgba(245, 158, 11, 0);
+    }
+  }
+}
+
 :root {
   --radius: 0.625rem;
   --background: oklch(1 0 0);
