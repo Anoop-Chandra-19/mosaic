@@ -10,7 +10,29 @@ interface DangerActionRowProps {
   confirmLabel?: string;
   onConfirm: () => Promise<void> | void;
   disabled?: boolean;
+  severity?: 'safe' | 'caution' | 'danger';
 }
+
+const actionButtonToneClass = {
+  safe: 'border-zinc-300 bg-background text-zinc-900 hover:border-emerald-500 hover:bg-emerald-100 hover:text-emerald-900 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:border-emerald-500 dark:hover:bg-zinc-800 dark:hover:text-zinc-100',
+  caution:
+    'border-zinc-300 bg-background text-zinc-900 hover:border-amber-500 hover:bg-amber-100 hover:text-amber-900 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:border-amber-500 dark:hover:bg-zinc-800 dark:hover:text-zinc-100',
+  danger:
+    'border-zinc-300 bg-background text-zinc-900 hover:border-red-500 hover:bg-red-100 hover:text-red-900 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:border-red-500 dark:hover:bg-zinc-800 dark:hover:text-zinc-100',
+} as const;
+
+const rowToneClass = {
+  safe: 'border-zinc-300 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900',
+  caution: 'border-zinc-300 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900',
+  danger: 'border-zinc-300 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900',
+} as const;
+
+const confirmButtonToneClass = {
+  safe: 'border-emerald-500 bg-background text-emerald-700 hover:border-emerald-600 hover:bg-emerald-100 dark:border-emerald-600 dark:bg-zinc-900 dark:text-emerald-300 dark:hover:bg-emerald-950',
+  caution:
+    'border-amber-500 bg-background text-amber-700 hover:border-amber-600 hover:bg-amber-100 dark:border-amber-600 dark:bg-zinc-900 dark:text-amber-300 dark:hover:bg-amber-950',
+  danger: '',
+} as const;
 
 export function DangerActionRow({
   title,
@@ -19,6 +41,7 @@ export function DangerActionRow({
   confirmLabel = 'Confirm',
   onConfirm,
   disabled = false,
+  severity = 'caution',
 }: DangerActionRowProps) {
   const [isConfirming, setIsConfirming] = useState(false);
   const [isRunning, setIsRunning] = useState(false);
@@ -39,7 +62,7 @@ export function DangerActionRow({
   };
 
   return (
-    <div className="rounded-xl border border-zinc-300 bg-zinc-50 p-3 dark:border-zinc-700 dark:bg-zinc-900">
+    <div className={cn('rounded-xl border p-3', rowToneClass[severity])}>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="max-w-[44rem]">
           <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">{title}</p>
@@ -59,7 +82,7 @@ export function DangerActionRow({
               variant="outline"
               onClick={() => setIsConfirming(true)}
               disabled={disabled || isRunning}
-              className="border-zinc-300 bg-background text-zinc-900 hover:bg-zinc-200 dark:border-zinc-600 dark:text-zinc-100 dark:hover:bg-zinc-800"
+              className={actionButtonToneClass[severity]}
             >
               {actionLabel}
             </Button>
@@ -82,11 +105,12 @@ export function DangerActionRow({
               </Button>
               <Button
                 type="button"
-                variant="destructive"
+                variant={severity === 'danger' ? 'destructive' : 'outline'}
                 onClick={handleConfirm}
                 disabled={isRunning}
+                className={cn(severity === 'danger' ? undefined : confirmButtonToneClass[severity])}
               >
-                {isRunning ? 'Working...' : confirmLabel}
+                {isRunning ? 'Working…' : confirmLabel}
               </Button>
             </div>
           )}

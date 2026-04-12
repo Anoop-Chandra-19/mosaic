@@ -11,21 +11,57 @@ export const AI_PROVIDER_DEFAULT_MODEL: Record<AIProvider, string> = {
   openrouter: 'openai/gpt-4o-mini',
 };
 
+function createDefaultModelsByProvider(): Record<AIProvider, string> {
+  return { ...AI_PROVIDER_DEFAULT_MODEL };
+}
+
 export const DEFAULT_AI_STATE = {
   enabled: false,
   provider: 'openai' as AIProvider,
-  model: AI_PROVIDER_DEFAULT_MODEL.openai,
+  modelsByProvider: createDefaultModelsByProvider(),
 };
 
 interface AIStoreState {
   enabled: boolean;
   provider: AIProvider;
-  model: string;
+  modelsByProvider: Record<AIProvider, string>;
   setEnabled: (enabled: boolean) => void;
   setProvider: (provider: AIProvider) => void;
-  setModel: (model: string) => void;
-  useSuggestedModel: () => void;
+  setModelForProvider: (provider: AIProvider, model: string) => void;
+  setModelForActiveProvider: (model: string) => void;
+  resetModelForProvider: (provider: AIProvider) => void;
   resetAIConfig: () => void;
+}
+
+type LegacyAIState = {
+  enabled?: boolean;
+  provider?: AIProvider;
+  model?: string;
+  modelsByProvider?: Partial<Record<AIProvider, string>>;
+};
+
+function normalizePersistedAIState(persisted: unknown): typeof DEFAULT_AI_STATE {
+  const parsed = (persisted ?? {}) as LegacyAIState;
+
+  const provider = parsed.provider ?? DEFAULT_AI_STATE.provider;
+  const modelsByProvider = {
+    ...createDefaultModelsByProvider(),
+    ...(parsed.modelsByProvider ?? {}),
+  };
+
+  if (
+    !parsed.modelsByProvider &&
+    typeof parsed.model === 'string' &&
+    parsed.model.trim().length > 0
+  ) {
+    modelsByProvider[provider] = parsed.model;
+  }
+
+  return {
+    enabled: parsed.enabled ?? DEFAULT_AI_STATE.enabled,
+    provider,
+    modelsByProvider,
+  };
 }
 
 export const useAIStore = create<AIStoreState>()(
@@ -34,15 +70,36 @@ export const useAIStore = create<AIStoreState>()(
       ...DEFAULT_AI_STATE,
       setEnabled: (enabled) => set({ enabled }),
       setProvider: (provider) => set({ provider }),
-      setModel: (model) => set({ model }),
-      useSuggestedModel: () => {
+      setModelForProvider: (provider, model) =>
+        set((state) => ({
+          modelsByProvider: {
+            ...state.modelsByProvider,
+            [provider]: model,
+          },
+        })),
+      setModelForActiveProvider: (model) => {
         const provider = get().provider;
-        set({ model: AI_PROVIDER_DEFAULT_MODEL[provider] });
+        set((state) => ({
+          modelsByProvider: {
+            ...state.modelsByProvider,
+            [provider]: model,
+          },
+        }));
       },
-      resetAIConfig: () => set({ ...DEFAULT_AI_STATE }),
+      resetModelForProvider: (provider) =>
+        set((state) => ({
+          modelsByProvider: {
+            ...state.modelsByProvider,
+            [provider]: AI_PROVIDER_DEFAULT_MODEL[provider],
+          },
+        })),
+      resetAIConfig: () =>
+        set({ ...DEFAULT_AI_STATE, modelsByProvider: createDefaultModelsByProvider() }),
     }),
     {
       name: 'mosaic-ai',
+      version: 1,
+      migrate: (persistedState) => normalizePersistedAIState(persistedState),
       storage: createJSONStorage(() => dexieStorage),
     }
   )

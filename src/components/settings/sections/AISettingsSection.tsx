@@ -3,175 +3,294 @@ import { Bot, KeyRound, Server, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
-import { useAIStore, AI_PROVIDER_DEFAULT_MODEL } from '@/stores/aiStore';
 import { getSecretsClient } from '@/lib/secrets';
 import { cn } from '@/lib/utils';
+import { AI_PROVIDER_DEFAULT_MODEL, useAIStore } from '@/stores/aiStore';
 import type { AIProvider } from '@/types/resume';
+import {
+  AI_PROVIDER_BY_ID,
+  AI_PROVIDER_OPTIONS,
+  type ProviderOption,
+  type ProviderTrust,
+} from './ai-provider-meta';
 
-type ProviderTrust = 'Direct API' | 'Proxy' | 'Local';
+type KeyStatus = 'loading' | 'set' | 'missing' | 'error';
 
-interface ProviderOption {
-  id: AIProvider;
-  label: string;
-  trust: ProviderTrust;
-  requiresKey: boolean;
-  hint: string;
+type ProviderMap<T> = Record<AIProvider, T>;
+
+interface ProviderFeedback {
+  provider: AIProvider;
+  tone: 'success' | 'error' | 'info';
+  message: string;
 }
 
-const providerOptions: ProviderOption[] = [
-  {
-    id: 'openai',
-    label: 'OpenAI',
-    trust: 'Direct API',
-    requiresKey: true,
-    hint: 'Balanced quality and speed for writing workflows.',
-  },
-  {
-    id: 'anthropic',
-    label: 'Anthropic',
-    trust: 'Direct API',
-    requiresKey: true,
-    hint: 'Strong reasoning and long-form response quality.',
-  },
-  {
-    id: 'gemini',
-    label: 'Gemini',
-    trust: 'Direct API',
-    requiresKey: true,
-    hint: 'Good cost-performance for frequent iterations.',
-  },
-  {
-    id: 'openrouter',
-    label: 'OpenRouter',
-    trust: 'Proxy',
-    requiresKey: true,
-    hint: 'One gateway for multiple hosted providers.',
-  },
-  {
-    id: 'ollama',
-    label: 'Ollama',
-    trust: 'Local',
-    requiresKey: false,
-    hint: 'Runs locally for maximum privacy.',
-  },
-];
+function createProviderMap<T>(factory: (provider: ProviderOption) => T): ProviderMap<T> {
+  const map = {} as ProviderMap<T>;
 
-const providerById = providerOptions.reduce(
-  (acc, option) => ({ ...acc, [option.id]: option }),
-  {} as Record<AIProvider, ProviderOption>
-);
+  for (const provider of AI_PROVIDER_OPTIONS) {
+    map[provider.id] = factory(provider);
+  }
+
+  return map;
+}
 
 function storageModeDescription(mode: 'session' | 'keychain') {
   if (mode === 'keychain') {
-    return 'Secure keychain storage (desktop)';
+    return 'Secure keychain storage on desktop';
   }
 
-  return 'Session memory storage (web default)';
+  return 'Session memory storage on web';
+}
+
+function keyStatusLabel(status: KeyStatus, requiresKey: boolean) {
+  if (!requiresKey) {
+    return 'No key required';
+  }
+
+  if (status === 'loading') {
+    return 'Checking…';
+  }
+
+  if (status === 'set') {
+    return 'Key configured';
+  }
+
+  if (status === 'missing') {
+    return 'Key missing';
+  }
+
+  return 'Status unavailable';
+}
+
+function trustBadgeClass(trust: ProviderTrust) {
+  if (trust === 'Local') {
+    return 'border-emerald-300 text-emerald-700 dark:border-emerald-700 dark:text-emerald-300';
+  }
+
+  if (trust === 'Proxy') {
+    return 'border-amber-300 text-amber-700 dark:border-amber-700 dark:text-amber-300';
+  }
+
+  return 'border-zinc-300 text-zinc-700 dark:border-zinc-700 dark:text-zinc-300';
+}
+
+function keyStatusClass(status: KeyStatus, requiresKey: boolean) {
+  if (!requiresKey) {
+    return 'border-zinc-300 bg-zinc-100 text-zinc-700 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300';
+  }
+
+  if (status === 'set') {
+    return 'border-emerald-300 bg-emerald-100 text-emerald-700 dark:border-emerald-700 dark:bg-zinc-800 dark:text-emerald-300';
+  }
+
+  if (status === 'error') {
+    return 'border-red-300 bg-red-100 text-red-700 dark:border-red-700 dark:bg-zinc-800 dark:text-red-300';
+  }
+
+  if (status === 'loading') {
+    return 'border-zinc-300 bg-zinc-100 text-zinc-700 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300';
+  }
+
+  return 'border-zinc-300 bg-zinc-100 text-zinc-700 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300';
 }
 
 export function AISettingsSection() {
-  const enabled = useAIStore((s) => s.enabled);
-  const provider = useAIStore((s) => s.provider);
-  const model = useAIStore((s) => s.model);
-  const setEnabled = useAIStore((s) => s.setEnabled);
-  const setProvider = useAIStore((s) => s.setProvider);
-  const setModel = useAIStore((s) => s.setModel);
-  const useSuggestedModel = useAIStore((s) => s.useSuggestedModel);
+  const enabled = useAIStore((state) => state.enabled);
+  const provider = useAIStore((state) => state.provider);
+  const modelsByProvider = useAIStore((state) => state.modelsByProvider);
+  const setEnabled = useAIStore((state) => state.setEnabled);
+  const setProvider = useAIStore((state) => state.setProvider);
+  const setModelForActiveProvider = useAIStore((state) => state.setModelForActiveProvider);
+  const resetModelForProvider = useAIStore((state) => state.resetModelForProvider);
 
   const secrets = useMemo(() => getSecretsClient(), []);
-  const [keyInput, setKeyInput] = useState('');
-  const [hasApiKey, setHasApiKey] = useState(false);
-  const [loadingKeyStatus, setLoadingKeyStatus] = useState(true);
-  const [isKeyMutationRunning, setIsKeyMutationRunning] = useState(false);
-  const [keyFeedback, setKeyFeedback] = useState<string | null>(null);
 
-  const activeProvider = providerById[provider];
-  const suggestedModel = AI_PROVIDER_DEFAULT_MODEL[provider];
+  const [keyStatusByProvider, setKeyStatusByProvider] = useState<ProviderMap<KeyStatus>>(() =>
+    createProviderMap((currentProvider) => (currentProvider.requiresKey ? 'loading' : 'missing'))
+  );
+  const [keyInputByProvider, setKeyInputByProvider] = useState<ProviderMap<string>>(() =>
+    createProviderMap(() => '')
+  );
+  const [isMutatingProvider, setIsMutatingProvider] = useState<AIProvider | null>(null);
+  const [feedback, setFeedback] = useState<ProviderFeedback | null>(null);
+
+  const activeProvider = AI_PROVIDER_BY_ID[provider];
+  const activeModel = modelsByProvider[provider] ?? AI_PROVIDER_DEFAULT_MODEL[provider];
+  const activeKeyStatus = keyStatusByProvider[provider];
+  const activeKeyInput = keyInputByProvider[provider];
   const storageMode = secrets.getStorageMode();
+  const isMutatingActiveProvider = isMutatingProvider === provider;
+
+  const modelInputId = `ai-model-${provider}`;
+  const keyInputId = `ai-key-${provider}`;
 
   useEffect(() => {
     let alive = true;
 
-    const loadStatus = async () => {
-      if (!activeProvider.requiresKey) {
-        if (alive) {
-          setHasApiKey(false);
-          setLoadingKeyStatus(false);
-          setKeyFeedback(null);
-        }
+    const loadKeyStatus = async () => {
+      const providersThatNeedKeys = AI_PROVIDER_OPTIONS.filter((item) => item.requiresKey).map(
+        (item) => item.id
+      );
+
+      const results = await Promise.all(
+        providersThatNeedKeys.map(async (providerId) => {
+          try {
+            const key = await secrets.getApiKey(providerId);
+            return [providerId, key ? 'set' : 'missing'] as const;
+          } catch {
+            return [providerId, 'error'] as const;
+          }
+        })
+      );
+
+      if (!alive) {
         return;
       }
 
-      setLoadingKeyStatus(true);
-      try {
-        const stored = await secrets.getApiKey(provider);
-        if (alive) {
-          setHasApiKey(Boolean(stored));
+      setKeyStatusByProvider((previous) => {
+        const next = { ...previous };
+
+        for (const [providerId, status] of results) {
+          next[providerId] = status;
         }
-      } finally {
-        if (alive) {
-          setLoadingKeyStatus(false);
-        }
-      }
+
+        return next;
+      });
     };
 
-    void loadStatus();
+    void loadKeyStatus();
 
     return () => {
       alive = false;
     };
-  }, [activeProvider.requiresKey, provider, secrets]);
+  }, [secrets]);
+
+  const handleSelectProvider = (nextProvider: AIProvider) => {
+    setProvider(nextProvider);
+    setFeedback(null);
+  };
+
+  const handleModelChange = (nextModel: string) => {
+    setModelForActiveProvider(nextModel);
+  };
+
+  const handleUseSuggestedModel = () => {
+    resetModelForProvider(provider);
+    setFeedback({
+      provider,
+      tone: 'info',
+      message: `${activeProvider.label} model reset to suggested default.`,
+    });
+  };
+
+  const handleKeyInputChange = (value: string) => {
+    setKeyInputByProvider((previous) => ({
+      ...previous,
+      [provider]: value,
+    }));
+  };
 
   const handleSaveApiKey = async () => {
-    const nextKey = keyInput.trim();
-    if (!nextKey) {
-      setKeyFeedback('Enter a key before saving.');
+    const key = activeKeyInput.trim();
+
+    if (!key) {
+      setFeedback({
+        provider,
+        tone: 'error',
+        message: 'Enter an API key before saving.',
+      });
       return;
     }
 
-    setIsKeyMutationRunning(true);
-    setKeyFeedback(null);
+    setIsMutatingProvider(provider);
+    setFeedback(null);
 
     try {
-      await secrets.setApiKey(provider, nextKey);
-      setHasApiKey(true);
-      setKeyInput('');
-      setKeyFeedback('API key saved for current storage mode.');
+      await secrets.setApiKey(provider, key);
+
+      setKeyStatusByProvider((previous) => ({
+        ...previous,
+        [provider]: 'set',
+      }));
+
+      setKeyInputByProvider((previous) => ({
+        ...previous,
+        [provider]: '',
+      }));
+
+      setFeedback({
+        provider,
+        tone: 'success',
+        message: `${activeProvider.label} API key saved for current storage mode.`,
+      });
     } catch {
-      setKeyFeedback('Could not save key. Try again.');
+      setKeyStatusByProvider((previous) => ({
+        ...previous,
+        [provider]: 'error',
+      }));
+
+      setFeedback({
+        provider,
+        tone: 'error',
+        message: 'Could not save API key. Check the key format and try again.',
+      });
     } finally {
-      setIsKeyMutationRunning(false);
+      setIsMutatingProvider(null);
     }
   };
 
-  const handleDeleteApiKey = async () => {
-    setIsKeyMutationRunning(true);
-    setKeyFeedback(null);
+  const handleRemoveApiKey = async () => {
+    setIsMutatingProvider(provider);
+    setFeedback(null);
 
     try {
       await secrets.deleteApiKey(provider);
-      setHasApiKey(false);
-      setKeyFeedback('API key removed.');
+
+      setKeyStatusByProvider((previous) => ({
+        ...previous,
+        [provider]: 'missing',
+      }));
+
+      setFeedback({
+        provider,
+        tone: 'success',
+        message: `${activeProvider.label} API key removed.`,
+      });
     } catch {
-      setKeyFeedback('Could not remove key. Try again.');
+      setKeyStatusByProvider((previous) => ({
+        ...previous,
+        [provider]: 'error',
+      }));
+
+      setFeedback({
+        provider,
+        tone: 'error',
+        message: 'Could not remove API key. Try again.',
+      });
     } finally {
-      setIsKeyMutationRunning(false);
+      setIsMutatingProvider(null);
     }
   };
+
+  const activeFeedback = feedback?.provider === provider ? feedback : null;
 
   return (
     <section className="space-y-4">
       <article className="rounded-xl border border-zinc-300 bg-zinc-100 p-4 dark:border-zinc-700 dark:bg-zinc-900">
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">AI Features</h3>
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="min-w-0">
+            <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">General</h3>
             <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
               Keep AI optional. Core editing works with AI disabled.
             </p>
           </div>
 
-          <label className="inline-flex items-center gap-2 text-sm font-medium text-zinc-700 dark:text-zinc-200">
+          <label
+            htmlFor="ai-enabled"
+            className="inline-flex items-center gap-2 text-sm font-medium text-zinc-700 dark:text-zinc-200"
+          >
             <Checkbox
+              id="ai-enabled"
               checked={enabled}
               onCheckedChange={(checked) => setEnabled(Boolean(checked))}
             />
@@ -181,150 +300,227 @@ export function AISettingsSection() {
       </article>
 
       <article className="rounded-xl border border-zinc-300 bg-zinc-100 p-4 dark:border-zinc-700 dark:bg-zinc-900">
-        <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Provider Router</h3>
+        <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+          Provider Profiles
+        </h3>
         <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
-          Choose the active provider and keep one unified app-level AI interface.
+          Select a provider and configure model + credentials together.
         </p>
 
-        <div className="mt-3 grid gap-2 sm:grid-cols-2">
-          {providerOptions.map((option) => {
-            const isActive = option.id === provider;
+        <div className="mt-3 grid gap-3 lg:grid-cols-[15rem_1fr]">
+          <nav
+            className="rounded-xl border border-zinc-300 bg-background p-2 dark:border-zinc-700"
+            aria-label="AI provider profiles"
+          >
+            <p className="px-2 text-xs font-semibold tracking-widest text-zinc-500 uppercase dark:text-zinc-400">
+              Providers
+            </p>
 
-            return (
-              <button
-                key={option.id}
-                type="button"
-                onClick={() => {
-                  setProvider(option.id);
-                  setKeyFeedback(null);
-                }}
+            <div className="mt-2 space-y-1">
+              {AI_PROVIDER_OPTIONS.map((option) => {
+                const isActive = option.id === provider;
+                const providerKeyStatus = keyStatusByProvider[option.id];
+
+                return (
+                  <button
+                    key={option.id}
+                    type="button"
+                    onClick={() => handleSelectProvider(option.id)}
+                    className={cn(
+                      'w-full rounded-lg border px-2.5 py-2 text-left transition-colors',
+                      isActive
+                        ? 'border-amber-500 bg-amber-100 text-zinc-900 dark:border-amber-500 dark:bg-zinc-800 dark:text-zinc-100'
+                        : 'border-zinc-300 bg-background text-zinc-700 hover:border-zinc-400 hover:bg-zinc-200 hover:text-zinc-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-amber-500 dark:hover:bg-zinc-800 dark:hover:text-zinc-100'
+                    )}
+                    aria-current={isActive ? 'page' : undefined}
+                  >
+                    <span className="flex items-center justify-between gap-2">
+                      <span
+                        className={cn(
+                          'min-w-0 text-sm font-semibold',
+                          isActive
+                            ? 'text-zinc-900 dark:text-zinc-100'
+                            : 'text-zinc-900 dark:text-zinc-100'
+                        )}
+                      >
+                        {option.label}
+                      </span>
+
+                      <span
+                        className={cn(
+                          'rounded-full border px-2 py-0.5 text-[0.65rem] font-semibold tracking-widest uppercase',
+                          trustBadgeClass(option.trust)
+                        )}
+                      >
+                        {option.trust}
+                      </span>
+                    </span>
+
+                    <span
+                      className={cn(
+                        'mt-1 inline-flex rounded-full border px-1.5 py-0.5 text-[0.62rem] font-semibold tracking-widest uppercase',
+                        keyStatusClass(providerKeyStatus, option.requiresKey)
+                      )}
+                    >
+                      {keyStatusLabel(providerKeyStatus, option.requiresKey)}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </nav>
+
+          <div className="rounded-xl border border-zinc-300 bg-background p-4 dark:border-zinc-700">
+            <header className="flex flex-wrap items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+                  {activeProvider.label}
+                </p>
+                <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
+                  {activeProvider.hint}
+                </p>
+              </div>
+
+              <span
                 className={cn(
-                  'rounded-xl border px-3 py-3 text-left transition-colors',
-                  isActive
-                    ? 'border-amber-500 bg-amber-100 dark:bg-zinc-800'
-                    : 'border-zinc-300 bg-background hover:bg-zinc-200 dark:border-zinc-700 dark:hover:bg-zinc-800'
+                  'rounded-full border px-2 py-1 text-xs font-semibold tracking-widest uppercase',
+                  trustBadgeClass(activeProvider.trust)
                 )}
               >
-                <span className="flex items-center justify-between gap-2">
-                  <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-                    {option.label}
-                  </span>
-                  <span className="rounded-full border border-zinc-300 px-2 py-0.5 text-[0.65rem] font-semibold tracking-widest text-zinc-600 uppercase dark:border-zinc-700 dark:text-zinc-300">
-                    {option.trust}
-                  </span>
-                </span>
+                {activeProvider.trust}
+              </span>
+            </header>
 
-                <span className="mt-1 block text-xs text-zinc-600 dark:text-zinc-400">
-                  {option.hint}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-      </article>
-
-      <article className="rounded-xl border border-zinc-300 bg-zinc-100 p-4 dark:border-zinc-700 dark:bg-zinc-900">
-        <h3 className="inline-flex items-center gap-2 text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-          <Bot className="size-4" />
-          Model Selection
-        </h3>
-        <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
-          Model is config-only state. Secrets are handled separately.
-        </p>
-
-        <div className="mt-3 grid gap-2 sm:grid-cols-[1fr_auto]">
-          <Input
-            value={model}
-            onChange={(event) => setModel(event.target.value)}
-            placeholder={suggestedModel}
-            className="border-zinc-300 bg-background dark:border-zinc-700"
-            aria-label="AI model"
-          />
-
-          <Button
-            type="button"
-            variant="outline"
-            onClick={useSuggestedModel}
-            className="border-zinc-300 bg-background text-zinc-800 hover:bg-zinc-200 dark:border-zinc-700 dark:text-zinc-100 dark:hover:bg-zinc-800"
-          >
-            Use Suggested Model
-          </Button>
-        </div>
-      </article>
-
-      <article className="rounded-xl border border-zinc-300 bg-zinc-100 p-4 dark:border-zinc-700 dark:bg-zinc-900">
-        <h3 className="inline-flex items-center gap-2 text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-          <KeyRound className="size-4" />
-          API Key Handling
-        </h3>
-        <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
-          Storage mode: {storageModeDescription(storageMode)}
-        </p>
-
-        {!activeProvider.requiresKey ? (
-          <div className="mt-3 rounded-lg border border-zinc-300 bg-background p-3 dark:border-zinc-700">
-            <p className="inline-flex items-center gap-2 text-sm font-medium text-zinc-800 dark:text-zinc-100">
-              <Server className="size-4" />
-              {activeProvider.label} does not require an API key.
-            </p>
-            <p className="mt-1 text-xs text-zinc-600 dark:text-zinc-400">
-              Ensure your local Ollama server is running and reachable.
-            </p>
-          </div>
-        ) : (
-          <>
-            <div className="mt-3 rounded-lg border border-zinc-300 bg-background p-3 dark:border-zinc-700">
-              <p className="text-sm font-medium text-zinc-800 dark:text-zinc-200">
-                Key status:{' '}
-                {loadingKeyStatus
-                  ? 'Checking...'
-                  : hasApiKey
-                    ? 'Set for current storage mode'
-                    : 'Not set'}
+            <section className="mt-4 border-t border-zinc-300 pt-4 dark:border-zinc-700">
+              <h4 className="inline-flex items-center gap-2 text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+                <Bot className="size-4" aria-hidden="true" />
+                Model
+              </h4>
+              <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
+                Stored per provider so switching providers keeps each model intact.
               </p>
-              <p className="mt-1 text-xs text-zinc-600 dark:text-zinc-400">
-                Keys are never stored in normal persisted Zustand state.
+
+              <label
+                htmlFor={modelInputId}
+                className="mt-3 block text-xs font-semibold tracking-widest text-zinc-500 uppercase dark:text-zinc-400"
+              >
+                Model Name
+              </label>
+
+              <div className="mt-2 grid gap-2 sm:grid-cols-[1fr_auto]">
+                <Input
+                  id={modelInputId}
+                  name={modelInputId}
+                  value={activeModel}
+                  onChange={(event) => handleModelChange(event.target.value)}
+                  placeholder={`e.g. ${AI_PROVIDER_DEFAULT_MODEL[provider]}…`}
+                  className="border-zinc-300 bg-background dark:border-zinc-700"
+                  autoComplete="off"
+                  spellCheck={false}
+                  aria-label={`${activeProvider.label} model`}
+                />
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleUseSuggestedModel}
+                  className="border-zinc-300 bg-background text-zinc-800 hover:bg-zinc-200 dark:border-zinc-700 dark:text-zinc-100 dark:hover:bg-zinc-800"
+                >
+                  Use Suggested Model
+                </Button>
+              </div>
+            </section>
+
+            <section className="mt-4 border-t border-zinc-300 pt-4 dark:border-zinc-700">
+              <h4 className="inline-flex items-center gap-2 text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+                <KeyRound className="size-4" aria-hidden="true" />
+                Credentials
+              </h4>
+              <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
+                Storage mode: {storageModeDescription(storageMode)}
               </p>
-            </div>
 
-            <div className="mt-3 grid gap-2 sm:grid-cols-[1fr_auto_auto]">
-              <Input
-                type="password"
-                value={keyInput}
-                onChange={(event) => setKeyInput(event.target.value)}
-                placeholder={`Paste ${activeProvider.label} key`}
-                className="border-zinc-300 bg-background dark:border-zinc-700"
-                aria-label={`${activeProvider.label} API key`}
-              />
+              {!activeProvider.requiresKey ? (
+                <div className="mt-3 rounded-lg border border-zinc-300 bg-zinc-100 p-3 dark:border-zinc-700 dark:bg-zinc-900">
+                  <p className="inline-flex items-center gap-1 text-sm font-medium text-zinc-800 dark:text-zinc-100">
+                    <Server className="size-4" aria-hidden="true" />
+                    No API key required for {activeProvider.label}.
+                  </p>
+                  <p className="mt-1 text-xs text-zinc-600 dark:text-zinc-400">
+                    Ensure local runtime is available before running AI actions.
+                  </p>
+                </div>
+              ) : (
+                <>
+                  <div className="mt-3 rounded-lg border border-zinc-300 bg-zinc-100 p-3 dark:border-zinc-700 dark:bg-zinc-900">
+                    <p className="text-sm font-medium text-zinc-800 dark:text-zinc-200">
+                      Key status: {keyStatusLabel(activeKeyStatus, activeProvider.requiresKey)}
+                    </p>
+                    <p className="mt-1 text-xs text-zinc-600 dark:text-zinc-400">
+                      Keys are handled separately from normal persisted app state.
+                    </p>
+                  </div>
 
-              <Button
-                type="button"
-                onClick={handleSaveApiKey}
-                disabled={isKeyMutationRunning}
-                className="bg-zinc-900 text-zinc-100 hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
+                  <label
+                    htmlFor={keyInputId}
+                    className="mt-3 block text-xs font-semibold tracking-widest text-zinc-500 uppercase dark:text-zinc-400"
+                  >
+                    API Key
+                  </label>
+
+                  <div className="mt-2 grid gap-2 sm:grid-cols-[1fr_auto_auto]">
+                    <Input
+                      id={keyInputId}
+                      type="password"
+                      name={keyInputId}
+                      value={activeKeyInput}
+                      onChange={(event) => handleKeyInputChange(event.target.value)}
+                      placeholder={`Paste ${activeProvider.label} API key…`}
+                      className="border-zinc-300 bg-background dark:border-zinc-700"
+                      autoComplete="off"
+                      spellCheck={false}
+                      aria-label={`${activeProvider.label} API key`}
+                    />
+
+                    <Button
+                      type="button"
+                      onClick={handleSaveApiKey}
+                      disabled={isMutatingActiveProvider}
+                      className="bg-zinc-900 text-zinc-100 hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
+                    >
+                      {isMutatingActiveProvider ? 'Saving…' : 'Save API Key'}
+                    </Button>
+
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={handleRemoveApiKey}
+                      disabled={isMutatingActiveProvider || activeKeyStatus !== 'set'}
+                      className="border-zinc-300 bg-background text-zinc-800 hover:bg-zinc-200 dark:border-zinc-700 dark:text-zinc-100 dark:hover:bg-zinc-800"
+                    >
+                      Remove API Key
+                    </Button>
+                  </div>
+                </>
+              )}
+            </section>
+
+            {activeFeedback && (
+              <p
+                className={cn(
+                  'mt-3 inline-flex items-center gap-1 text-xs font-medium',
+                  activeFeedback.tone === 'error'
+                    ? 'text-red-700 dark:text-red-300'
+                    : 'text-zinc-700 dark:text-zinc-300'
+                )}
+                aria-live="polite"
               >
-                Save Key
-              </Button>
-
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleDeleteApiKey}
-                disabled={isKeyMutationRunning || !hasApiKey}
-                className="border-zinc-300 bg-background text-zinc-800 hover:bg-zinc-200 dark:border-zinc-700 dark:text-zinc-100 dark:hover:bg-zinc-800"
-              >
-                Remove Key
-              </Button>
-            </div>
-
-            {keyFeedback && (
-              <p className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-zinc-700 dark:text-zinc-300">
-                <ShieldCheck className="size-3" />
-                {keyFeedback}
+                <ShieldCheck className="size-3" aria-hidden="true" />
+                {activeFeedback.message}
               </p>
             )}
-          </>
-        )}
+          </div>
+        </div>
       </article>
     </section>
   );

@@ -75,7 +75,7 @@ export function SettingsNavRail({
                         'group flex w-full items-start gap-2 rounded-lg border px-2.5 py-2 text-left transition-colors',
                         isActive
                           ? 'border-amber-500 bg-amber-100 text-zinc-900 dark:border-amber-500 dark:bg-zinc-800 dark:text-zinc-100'
-                          : 'border-transparent text-zinc-700 hover:border-zinc-300 hover:bg-zinc-200 dark:text-zinc-300 dark:hover:border-zinc-700 dark:hover:bg-zinc-900'
+                          : 'border-transparent text-zinc-700 hover:border-zinc-300 hover:bg-zinc-200 dark:text-zinc-300 dark:hover:border-amber-500 dark:hover:bg-zinc-800 dark:hover:text-zinc-100'
                       )}
                       aria-current={isActive ? 'page' : undefined}
                     >
@@ -87,7 +87,7 @@ export function SettingsNavRail({
                             'mt-0.5 block text-xs',
                             isActive
                               ? 'text-zinc-700 dark:text-zinc-300'
-                              : 'text-zinc-500 dark:text-zinc-500'
+                              : 'text-zinc-500 dark:text-zinc-400'
                           )}
                         >
                           {section.description}

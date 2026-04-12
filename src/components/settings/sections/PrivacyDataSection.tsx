@@ -53,6 +53,7 @@ export function PrivacyDataSection() {
             actionLabel="Clear Keys"
             confirmLabel="Clear Keys Now"
             onConfirm={clearApiKeys}
+            severity="safe"
           />
 
           <DangerActionRow
@@ -61,6 +62,7 @@ export function PrivacyDataSection() {
             actionLabel="Reset Resume"
             confirmLabel="Reset Resume"
             onConfirm={clearResumeData}
+            severity="caution"
           />
 
           <DangerActionRow
@@ -69,6 +71,7 @@ export function PrivacyDataSection() {
             actionLabel="Reset UI"
             confirmLabel="Reset UI"
             onConfirm={clearUIPreferences}
+            severity="caution"
           />
 
           <DangerActionRow
@@ -77,6 +80,7 @@ export function PrivacyDataSection() {
             actionLabel="Clear Everything"
             confirmLabel="Confirm Full Reset"
             onConfirm={clearEverything}
+            severity="danger"
           />
         </div>
 
