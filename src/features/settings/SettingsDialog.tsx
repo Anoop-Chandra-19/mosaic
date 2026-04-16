@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
-import { useIsMobile } from '@/lib/useIsMobile';
+import { useIsMobile } from '@/lib/hooks/useIsMobile';
 import { cn } from '@/lib/utils';
 import { SettingsContent } from './SettingsContent';
 import { SettingsNavRail } from './SettingsNavRail';

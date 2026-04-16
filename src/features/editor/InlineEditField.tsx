@@ -1,6 +1,6 @@
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
-import { useInlineEdit } from '@/lib/useInlineEdit';
+import { useInlineEdit } from '@/lib/hooks/useInlineEdit';
 
 interface InlineEditFieldProps {
   value: string;

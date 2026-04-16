@@ -26,6 +26,7 @@
 src/
   components/
     ui/           # shadcn-managed primitives — do NOT edit manually
+    *.tsx         # Shared reusable components (ConfirmDeleteDialog, ItemActionsMenu, etc.)
   features/
     shell/        # App chrome (AppShell, TopBar, Sidebar, PreviewPanel)
     editor/       # Resume editing UI (ContentTab, SectionList, EntryCard, etc.)
@@ -33,7 +34,13 @@ src/
     settings/     # Settings dialog + sections
   stores/         # Zustand stores
   types/          # Shared TypeScript types
-  lib/            # Utilities (cn helper, Dexie DB, custom hooks)
+  lib/
+    hooks/        # Custom React hooks (useDarkMode, useResumeExport, etc.)
+    export/       # Export utilities (PDF, markdown, plaintext)
+    secrets/      # Secrets client
+    utils.ts      # cn helper
+    db.ts         # Dexie DB
+    dexieStorage.ts
 ```
 
 ## Core Principles

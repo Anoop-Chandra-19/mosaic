@@ -1,24 +1,10 @@
 import { useState } from 'react';
-import { Ellipsis, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { Checkbox } from '@/components/ui/checkbox';
+import { ConfirmDeleteDialog } from '@/components/ConfirmDeleteDialog';
+import { ItemActionsMenu } from '@/components/ItemActionsMenu';
 import { cn } from '@/lib/utils';
-import { useIsMobile } from '@/lib/useIsMobile';
+import { useIsMobile } from '@/lib/hooks/useIsMobile';
 import { InlineEditField } from './InlineEditField';
 import { BulletItem } from './BulletItem';
 import { AddBulletInput } from './AddBulletInput';
@@ -143,34 +129,17 @@ export function EntryCard({
               : 'invisible group-hover/entry:visible group-focus-within/entry:visible'
           )}
         >
-          <DropdownMenu open={actionsOpen} onOpenChange={setActionsOpen}>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon-xs"
-                aria-label="Entry actions"
-                className="text-muted-foreground data-[state=open]:bg-accent data-[state=open]:text-foreground [&_svg]:size-3.5"
-              >
-                <Ellipsis />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={onMoveUp} disabled={isFirst}>
-                Move Up
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={onMoveDown} disabled={isLast}>
-                Move Down
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                onClick={() => setConfirmOpen(true)}
-                className="text-destructive focus:text-destructive"
-              >
-                <Trash2 />
-                Delete Entry
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <ItemActionsMenu
+            label="Entry actions"
+            deleteLabel="Delete Entry"
+            isFirst={isFirst}
+            isLast={isLast}
+            onMoveUp={onMoveUp}
+            onMoveDown={onMoveDown}
+            onDelete={() => setConfirmOpen(true)}
+            open={actionsOpen}
+            onOpenChange={setActionsOpen}
+          />
         </div>
       </div>
 
@@ -203,31 +172,13 @@ export function EntryCard({
         />
       )}
 
-      <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Delete entry?</DialogTitle>
-            <DialogDescription>
-              This will permanently remove &ldquo;{entry.title || entry.text || 'this entry'}&rdquo;
-              and all its bullets.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setConfirmOpen(false)}>
-              Cancel
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={() => {
-                removeEntry(sectionId, entry.id);
-                setConfirmOpen(false);
-              }}
-            >
-              Delete
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <ConfirmDeleteDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        title="Delete entry?"
+        description={`This will permanently remove \u201c${entry.title || entry.text || 'this entry'}\u201d and all its bullets.`}
+        onConfirm={() => removeEntry(sectionId, entry.id)}
+      />
     </div>
   );
 }

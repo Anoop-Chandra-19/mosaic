@@ -1,18 +1,14 @@
-import { useEffect } from 'react';
 import { TopBar } from './TopBar';
 import { Sidebar } from './Sidebar';
 import { PreviewPanel } from './PreviewPanel';
-import { useIsMobile } from '@/lib/useIsMobile';
+import { useIsMobile } from '@/lib/hooks/useIsMobile';
 import { useUIStore } from '@/stores/uiStore';
+import { useDarkMode } from '@/lib/hooks/useDarkMode';
 
 export function AppShell() {
-  const darkMode = useUIStore((s) => s.darkMode);
+  useDarkMode();
   const mobilePane = useUIStore((s) => s.mobilePane);
   const isMobile = useIsMobile();
-
-  useEffect(() => {
-    document.documentElement.classList.toggle('dark', darkMode);
-  }, [darkMode]);
 
   return (
     <div className="flex h-screen flex-col">

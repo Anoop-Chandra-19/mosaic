@@ -2,7 +2,7 @@ import { useCallback, useRef } from 'react';
 import { FileText, LayoutTemplate, PanelLeftClose, PanelLeftOpen, Sparkles } from 'lucide-react';
 import { useUIStore, type SidebarTab, SIDEBAR_MIN_PX, SIDEBAR_MAX_RATIO } from '@/stores/uiStore';
 import { ContentTab } from '@/features/editor/ContentTab';
-import { useIsMobile } from '@/lib/useIsMobile';
+import { useIsMobile } from '@/lib/hooks/useIsMobile';
 
 const tabs: { id: SidebarTab; label: string; icon: React.ReactNode }[] = [
   { id: 'content', label: 'Content', icon: <FileText className="h-4 w-4" /> },

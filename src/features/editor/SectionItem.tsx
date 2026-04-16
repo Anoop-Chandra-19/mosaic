@@ -1,22 +1,9 @@
 import { useState } from 'react';
-import { ChevronDown, ChevronRight, Ellipsis, Plus, Trash2 } from 'lucide-react';
+import { ChevronDown, ChevronRight, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+import { ConfirmDeleteDialog } from '@/components/ConfirmDeleteDialog';
+import { ItemActionsMenu } from '@/components/ItemActionsMenu';
 import { InlineEditField } from './InlineEditField';
 import { SECTION_ICONS } from './section-icons';
 import { EntryCard } from './EntryCard';
@@ -98,34 +85,17 @@ export function SectionItem({ section, isFirst, isLast, onMoveUp, onMoveDown }: 
           >
             <Plus />
           </Button>
-          <DropdownMenu open={actionsOpen} onOpenChange={setActionsOpen}>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon-xs"
-                aria-label={`${section.label} actions`}
-                className="text-muted-foreground data-[state=open]:bg-accent data-[state=open]:text-foreground [&_svg]:size-3.5"
-              >
-                <Ellipsis />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={onMoveUp} disabled={isFirst}>
-                Move Up
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={onMoveDown} disabled={isLast}>
-                Move Down
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                onClick={() => setConfirmOpen(true)}
-                className="text-destructive focus:text-destructive"
-              >
-                <Trash2 />
-                Delete Section
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <ItemActionsMenu
+            label={`${section.label} actions`}
+            deleteLabel="Delete Section"
+            isFirst={isFirst}
+            isLast={isLast}
+            onMoveUp={onMoveUp}
+            onMoveDown={onMoveDown}
+            onDelete={() => setConfirmOpen(true)}
+            open={actionsOpen}
+            onOpenChange={setActionsOpen}
+          />
         </div>
       </div>
 
@@ -152,30 +122,13 @@ export function SectionItem({ section, isFirst, isLast, onMoveUp, onMoveDown }: 
         </div>
       </CollapsibleContent>
 
-      <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Delete section?</DialogTitle>
-            <DialogDescription>
-              This will permanently remove &ldquo;{section.label}&rdquo; and all its entries.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setConfirmOpen(false)}>
-              Cancel
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={() => {
-                removeSection(section.id);
-                setConfirmOpen(false);
-              }}
-            >
-              Delete
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <ConfirmDeleteDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        title="Delete section?"
+        description={`This will permanently remove \u201c${section.label}\u201d and all its entries.`}
+        onConfirm={() => removeSection(section.id)}
+      />
     </Collapsible>
   );
 }

@@ -13,6 +13,8 @@ import {
 } from '@/components/ui/drawer';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { EditableBullet } from '@/components/EditableBullet';
+import { useSaveOnBlur } from '@/lib/hooks/useSaveOnBlur';
 import type { ResumeEntry, SectionType } from '@/types/resume';
 import { useResumeStore } from '@/stores/resumeStore';
 
@@ -44,11 +46,15 @@ export function EntryDrawer({
 
   const isTextOnly = TEXT_ONLY_TYPES.includes(sectionType);
 
-  const saveIfValid = (nextRaw: string, current: string, onSave: (value: string) => void) => {
-    const next = nextRaw.trim();
-    if (!next || next === current) return;
-    onSave(next);
-  };
+  const textBlur = useSaveOnBlur(entry.text ?? '', (text) =>
+    updateEntry(sectionId, entry.id, { text })
+  );
+  const titleBlur = useSaveOnBlur(entry.title ?? '', (title) =>
+    updateEntry(sectionId, entry.id, { title })
+  );
+  const subtitleBlur = useSaveOnBlur(entry.subtitle ?? '', (subtitle) =>
+    updateEntry(sectionId, entry.id, { subtitle })
+  );
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange} shouldScaleBackground={false}>
@@ -78,11 +84,7 @@ export function EntryDrawer({
                 defaultValue={entry.text ?? ''}
                 placeholder="Write this entry…"
                 autoComplete="off"
-                onBlur={(e) =>
-                  saveIfValid(e.target.value, entry.text ?? '', (text) =>
-                    updateEntry(sectionId, entry.id, { text })
-                  )
-                }
+                onBlur={textBlur.onBlur}
               />
             </div>
           ) : (
@@ -96,11 +98,7 @@ export function EntryDrawer({
                   defaultValue={entry.title ?? ''}
                   placeholder="e.g. Senior Software Engineer…"
                   autoComplete="off"
-                  onBlur={(e) =>
-                    saveIfValid(e.target.value, entry.title ?? '', (title) =>
-                      updateEntry(sectionId, entry.id, { title })
-                    )
-                  }
+                  onBlur={titleBlur.onBlur}
                 />
               </div>
               <div className="space-y-1.5">
@@ -112,11 +110,7 @@ export function EntryDrawer({
                   defaultValue={entry.subtitle ?? ''}
                   placeholder="e.g. Acme Corp · Remote…"
                   autoComplete="off"
-                  onBlur={(e) =>
-                    saveIfValid(e.target.value, entry.subtitle ?? '', (subtitle) =>
-                      updateEntry(sectionId, entry.id, { subtitle })
-                    )
-                  }
+                  onBlur={subtitleBlur.onBlur}
                 />
               </div>
 
@@ -127,34 +121,14 @@ export function EntryDrawer({
                     <p className="px-1 py-2 text-sm text-muted-foreground">No bullets yet.</p>
                   ) : (
                     entry.bullets.map((bullet) => (
-                      <div key={bullet.id} className="flex items-start gap-1.5">
-                        <Checkbox
-                          checked={bullet.selected}
-                          onCheckedChange={() => toggleBullet(sectionId, entry.id, bullet.id)}
-                          className="mt-2 shrink-0"
-                          aria-label="Toggle bullet visibility"
-                        />
-                        <Input
-                          defaultValue={bullet.text}
-                          autoComplete="off"
-                          onBlur={(e) =>
-                            saveIfValid(e.target.value, bullet.text, (text) =>
-                              updateBullet(sectionId, entry.id, bullet.id, text)
-                            )
-                          }
-                          placeholder="Add achievement detail…"
-                          className="min-w-0 flex-1"
-                        />
-                        <Button
-                          variant="ghost"
-                          size="icon-xs"
-                          onClick={() => removeBullet(sectionId, entry.id, bullet.id)}
-                          aria-label="Delete bullet"
-                          className="mt-1 shrink-0 text-muted-foreground hover:text-destructive"
-                        >
-                          <Trash2 />
-                        </Button>
-                      </div>
+                      <EditableBullet
+                        key={bullet.id}
+                        text={bullet.text}
+                        selected={bullet.selected}
+                        onToggle={() => toggleBullet(sectionId, entry.id, bullet.id)}
+                        onUpdate={(text) => updateBullet(sectionId, entry.id, bullet.id, text)}
+                        onRemove={() => removeBullet(sectionId, entry.id, bullet.id)}
+                      />
                     ))
                   )}
                   <AddBulletInput onAdd={(text) => addBullet(sectionId, entry.id, text)} />
