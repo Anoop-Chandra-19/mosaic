@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { AppShell } from '@/components/layout/AppShell';
+import { AppShell } from '@/features/shell/AppShell';
 
 const SCROLLBAR_IDLE_MS = 900;
 const SCROLL_KEYS = new Set([

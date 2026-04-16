@@ -16,7 +16,7 @@ import { createMarkdownExport } from '@/lib/export/markdown';
 import { createPlaintextExport } from '@/lib/export/plaintext';
 import { buildPdfFileName } from '@/lib/export/filename';
 import { downloadResumePdf, openResumePdfPreview } from '@/lib/export/pdf';
-import { SettingsDialog } from '@/components/settings/SettingsDialog';
+import { SettingsDialog } from '@/features/settings/SettingsDialog';
 
 type ExportFeedback = {
   tone: 'success' | 'error';

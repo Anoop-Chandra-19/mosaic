@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { TriangleAlert } from 'lucide-react';
-import { ResumePreview, type ResumePreviewMeta } from '@/components/preview/ResumePreview';
+import { ResumePreview, type ResumePreviewMeta } from '@/features/preview/ResumePreview';
 import type { PaperSize } from '@/types/ui';
 import { useUIStore } from '@/stores/uiStore';
 

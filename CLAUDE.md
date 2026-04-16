@@ -25,15 +25,15 @@
 ```
 src/
   components/
-    ui/         # shadcn-managed primitives — do NOT edit manually
-    layout/     # App shell components (TopBar, Sidebar, PreviewPanel, AppShell)
-    sidebar/    # Sidebar sub-components (SectionList, EntryCard, ContactCard, etc.)
-    ai/         # AI-related components
-    modals/     # Modal dialogs
-    preview/    # Resume preview components
-  stores/       # Zustand stores
-  types/        # Shared TypeScript types
-  lib/          # Utilities (cn helper, Dexie DB, custom hooks)
+    ui/           # shadcn-managed primitives — do NOT edit manually
+  features/
+    shell/        # App chrome (AppShell, TopBar, Sidebar, PreviewPanel)
+    editor/       # Resume editing UI (ContentTab, SectionList, EntryCard, etc.)
+    preview/      # Resume preview (ResumePreview, PreviewHeader, etc.)
+    settings/     # Settings dialog + sections
+  stores/         # Zustand stores
+  types/          # Shared TypeScript types
+  lib/            # Utilities (cn helper, Dexie DB, custom hooks)
 ```
 
 ## Core Principles
@@ -57,7 +57,7 @@ src/
 
 ### UI Color Hierarchy (App Components)
 
-- For app-owned components (`components/layout`, `components/sidebar`, `components/preview`, etc.), do not use opacity utilities for hierarchy (`text-*/..`, `bg-*/..`, `border-*/..`, `ring-*/..`, `opacity-*`)
+- For app-owned components (`features/shell`, `features/editor`, `features/preview`, etc.), do not use opacity utilities for hierarchy (`text-*/..`, `bg-*/..`, `border-*/..`, `ring-*/..`, `opacity-*`)
 - Use explicit tone steps instead (e.g., `zinc-100/300/500/900` or semantic tokens mapped to those tones) to express emphasis levels
 - Keep hierarchy consistent: stronger titles/actions use higher-contrast tones; metadata and secondary copy use lower-contrast fixed tones
 - Do not edit shadcn-managed files in `components/ui/`; if needed, adjust app-level usage or theme tokens instead

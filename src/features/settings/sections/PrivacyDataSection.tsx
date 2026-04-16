@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { ShieldCheck } from 'lucide-react';
-import { DangerActionRow } from '@/components/settings/DangerActionRow';
+import { DangerActionRow } from '@/features/settings/DangerActionRow';
 import { getSecretsClient } from '@/lib/secrets';
 import { useResumeStore } from '@/stores/resumeStore';
 import { useUIStore } from '@/stores/uiStore';
