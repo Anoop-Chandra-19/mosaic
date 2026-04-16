@@ -1,7 +1,5 @@
-import { pdf } from '@react-pdf/renderer';
 import type { PaperSize } from '@/types/ui';
 import type { NormalizedResumeExport } from '../normalizeResumeExport';
-import { PDFResumeDocument } from './document';
 
 interface DownloadResumePdfOptions {
   data: NormalizedResumeExport;
@@ -10,6 +8,10 @@ interface DownloadResumePdfOptions {
 }
 
 async function createResumePdfBlob(options: DownloadResumePdfOptions) {
+  const [{ pdf }, { PDFResumeDocument }] = await Promise.all([
+    import('@react-pdf/renderer'),
+    import('./document'),
+  ]);
   return pdf(<PDFResumeDocument data={options.data} paperSize={options.paperSize} />).toBlob();
 }
 
