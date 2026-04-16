@@ -4,27 +4,18 @@ Mosaic is a local-first, modular resume builder with a live print-style preview.
 
 It is built for fast editing, precise content selection, and clean exports, while keeping user data on the user's machine.
 
-## Current Status
-
-Implemented today:
+## Features
 
 - Content editing for contact details, sections, entries, and bullets
 - Include/exclude toggles for entries and bullets
 - Live multi-page preview with measured pagination logic
 - A4 and US Letter paper support
-- PDF export, plus copy as Markdown and plaintext
+- PDF export, copy as Markdown and plaintext
 - Persisted local state via Zustand + IndexedDB (Dexie)
-- Responsive UI with desktop and mobile editing behavior
+- Responsive UI with desktop and mobile editing
 - Settings workspace with Discord-style navigation
 - Local privacy controls (clear keys, reset resume/UI, full local reset)
 - AI config foundation (provider and model settings)
-
-Scaffolded but not fully implemented yet:
-
-- Templates panel logic
-- AI action flows and provider-router execution logic
-- Resume import/parser flow
-- Electron packaging and OS keychain integration
 
 ## Tech Stack
 
@@ -41,20 +32,22 @@ Scaffolded but not fully implemented yet:
 ```text
 src/
   components/
-    layout/   # App shell (TopBar, Sidebar, PreviewPanel)
-    sidebar/  # Resume editing UI
-    preview/  # Live resume preview + pagination rendering
-    ui/       # shadcn/radix wrappers (shared primitives)
-  stores/
-    resumeStore.ts  # resume content data + CRUD actions
-    uiStore.ts      # app UI state (theme, pane, paper size, sidebar)
+    ui/           # shadcn-managed primitives
+    *.tsx         # Shared reusable components
+  features/
+    shell/        # App chrome (AppShell, TopBar, Sidebar, PreviewPanel)
+    editor/       # Resume editing UI
+    preview/      # Resume preview
+    settings/     # Settings dialog + sections
+  stores/         # Zustand stores
+  types/          # Shared TypeScript types
   lib/
-    db.ts           # Dexie database instance
+    hooks/        # Custom React hooks
+    export/       # Export utilities (PDF, markdown, plaintext)
+    secrets/      # Secrets client
+    utils.ts      # cn helper
+    db.ts         # Dexie database instance
     dexieStorage.ts # Zustand persist adapter -> IndexedDB
-    export/         # export normalization + formatters + PDF
-  types/
-    resume.ts       # domain types
-    ui.ts           # UI types (paper size, etc.)
 ```
 
 ## Data Flow
@@ -79,17 +72,9 @@ Current persisted keys:
 
 ## Privacy and Security Model
 
-Current:
-
-- Core app is local-first.
-- Resume data and UI preferences stay in local IndexedDB.
-- No backend is required for editing/preview/export.
-
-Planned key handling for AI features:
-
-- Web: API keys are session-only by default (memory, not persisted).
-- Electron: API keys will use OS keychain-backed storage via secure preload IPC.
-- API keys will get special handling and will not live in normal persisted app state.
+- Local-first — resume data and UI preferences stay in local IndexedDB.
+- No backend is required for editing, preview, or export.
+- API keys for AI features are session-only by default and are not persisted alongside app state.
 
 ## Development
 
