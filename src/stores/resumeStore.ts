@@ -1,31 +1,8 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
+import { immer } from 'zustand/middleware/immer';
 import { dexieStorage } from '@/lib/dexieStorage';
-import type {
-  ResumeData,
-  ResumeSection,
-  ResumeEntry,
-  ContactInfo,
-  SectionType,
-} from '@/types/resume';
-
-/* ── Helpers ─────────────────────────────────────────────── */
-
-function mapSection(
-  sections: ResumeSection[],
-  sectionId: string,
-  fn: (section: ResumeSection) => ResumeSection
-): ResumeSection[] {
-  return sections.map((s) => (s.id === sectionId ? fn(s) : s));
-}
-
-function mapEntry(
-  items: ResumeEntry[],
-  entryId: string,
-  fn: (entry: ResumeEntry) => ResumeEntry
-): ResumeEntry[] {
-  return items.map((e) => (e.id === entryId ? fn(e) : e));
-}
+import type { ResumeData, ResumeEntry, ContactInfo, SectionType } from '@/types/resume';
 
 /* ── Seed Data ───────────────────────────────────────────── */
 
@@ -242,155 +219,140 @@ interface ResumeState extends ResumeData {
 
 export const useResumeStore = create<ResumeState>()(
   persist(
-    (set) => ({
+    immer((set) => ({
       ...createDefaultResume(),
 
       // ── Contact ──
 
-      updateContact: (patch) => set((state) => ({ contact: { ...state.contact, ...patch } })),
-      resetResume: () => set(() => ({ ...createDefaultResume() })),
+      updateContact: (patch) =>
+        set((state) => {
+          Object.assign(state.contact, patch);
+        }),
+
+      resetResume: () =>
+        set((state) => {
+          const fresh = createDefaultResume();
+          state.contact = fresh.contact;
+          state.sections = fresh.sections;
+        }),
 
       // ── Section CRUD ──
 
       addSection: (type, label) =>
-        set((state) => ({
-          sections: [
-            ...state.sections,
-            {
-              id: crypto.randomUUID(),
-              type,
-              label,
-              items: [],
-              order: state.sections.length,
-            },
-          ],
-        })),
+        set((state) => {
+          state.sections.push({
+            id: crypto.randomUUID(),
+            type,
+            label,
+            items: [],
+            order: state.sections.length,
+          });
+        }),
 
       removeSection: (sectionId) =>
-        set((state) => ({
-          sections: state.sections.filter((s) => s.id !== sectionId),
-        })),
+        set((state) => {
+          state.sections = state.sections.filter((s) => s.id !== sectionId);
+        }),
 
       reorderSections: (orderedIds) =>
         set((state) => {
           const byId = new Map(state.sections.map((s) => [s.id, s]));
-          return {
-            sections: orderedIds
-              .map((id, i) => {
-                const s = byId.get(id);
-                return s ? { ...s, order: i } : null;
-              })
-              .filter((s): s is ResumeSection => s !== null),
-          };
+          state.sections = orderedIds
+            .map((id, i) => {
+              const s = byId.get(id);
+              if (s) s.order = i;
+              return s;
+            })
+            .filter((s): s is (typeof state.sections)[number] => s != null);
         }),
 
       updateSectionLabel: (sectionId, label) =>
-        set((state) => ({
-          sections: mapSection(state.sections, sectionId, (s) => ({ ...s, label })),
-        })),
+        set((state) => {
+          const section = state.sections.find((s) => s.id === sectionId);
+          if (section) section.label = label;
+        }),
 
       // ── Entry CRUD ──
 
       addEntry: (sectionId, entry) =>
-        set((state) => ({
-          sections: mapSection(state.sections, sectionId, (s) => ({
-            ...s,
-            items: [...s.items, { ...entry, id: crypto.randomUUID() }],
-          })),
-        })),
+        set((state) => {
+          const section = state.sections.find((s) => s.id === sectionId);
+          if (section) section.items.push({ ...entry, id: crypto.randomUUID() });
+        }),
 
       updateEntry: (sectionId, entryId, patch) =>
-        set((state) => ({
-          sections: mapSection(state.sections, sectionId, (s) => ({
-            ...s,
-            items: mapEntry(s.items, entryId, (e) => ({ ...e, ...patch })),
-          })),
-        })),
+        set((state) => {
+          const section = state.sections.find((s) => s.id === sectionId);
+          if (!section) return;
+          const entry = section.items.find((e) => e.id === entryId);
+          if (entry) Object.assign(entry, patch);
+        }),
 
       removeEntry: (sectionId, entryId) =>
-        set((state) => ({
-          sections: mapSection(state.sections, sectionId, (s) => ({
-            ...s,
-            items: s.items.filter((e) => e.id !== entryId),
-          })),
-        })),
+        set((state) => {
+          const section = state.sections.find((s) => s.id === sectionId);
+          if (section) section.items = section.items.filter((e) => e.id !== entryId);
+        }),
 
       toggleEntry: (sectionId, entryId) =>
-        set((state) => ({
-          sections: mapSection(state.sections, sectionId, (s) => ({
-            ...s,
-            items: mapEntry(s.items, entryId, (e) => {
-              const next = !e.selected;
-              return {
-                ...e,
-                selected: next,
-                bullets: e.bullets.map((b) => ({ ...b, selected: next })),
-              };
-            }),
-          })),
-        })),
+        set((state) => {
+          const section = state.sections.find((s) => s.id === sectionId);
+          if (!section) return;
+          const entry = section.items.find((e) => e.id === entryId);
+          if (!entry) return;
+          const next = !entry.selected;
+          entry.selected = next;
+          for (const b of entry.bullets) b.selected = next;
+        }),
 
       reorderEntries: (sectionId, orderedIds) =>
-        set((state) => ({
-          sections: mapSection(state.sections, sectionId, (s) => {
-            const byId = new Map(s.items.map((e) => [e.id, e]));
-            return {
-              ...s,
-              items: orderedIds
-                .map((id) => byId.get(id))
-                .filter((e): e is ResumeEntry => e !== undefined),
-            };
-          }),
-        })),
+        set((state) => {
+          const section = state.sections.find((s) => s.id === sectionId);
+          if (!section) return;
+          const byId = new Map(section.items.map((e) => [e.id, e]));
+          section.items = orderedIds
+            .map((id) => byId.get(id))
+            .filter((e): e is (typeof section.items)[number] => e !== undefined);
+        }),
 
       // ── Bullet CRUD ──
 
       addBullet: (sectionId, entryId, text) =>
-        set((state) => ({
-          sections: mapSection(state.sections, sectionId, (s) => ({
-            ...s,
-            items: mapEntry(s.items, entryId, (e) => ({
-              ...e,
-              bullets: [...e.bullets, { id: crypto.randomUUID(), text, selected: true }],
-            })),
-          })),
-        })),
+        set((state) => {
+          const section = state.sections.find((s) => s.id === sectionId);
+          if (!section) return;
+          const entry = section.items.find((e) => e.id === entryId);
+          if (entry) entry.bullets.push({ id: crypto.randomUUID(), text, selected: true });
+        }),
 
       updateBullet: (sectionId, entryId, bulletId, text) =>
-        set((state) => ({
-          sections: mapSection(state.sections, sectionId, (s) => ({
-            ...s,
-            items: mapEntry(s.items, entryId, (e) => ({
-              ...e,
-              bullets: e.bullets.map((b) => (b.id === bulletId ? { ...b, text } : b)),
-            })),
-          })),
-        })),
+        set((state) => {
+          const section = state.sections.find((s) => s.id === sectionId);
+          if (!section) return;
+          const entry = section.items.find((e) => e.id === entryId);
+          if (!entry) return;
+          const bullet = entry.bullets.find((b) => b.id === bulletId);
+          if (bullet) bullet.text = text;
+        }),
 
       removeBullet: (sectionId, entryId, bulletId) =>
-        set((state) => ({
-          sections: mapSection(state.sections, sectionId, (s) => ({
-            ...s,
-            items: mapEntry(s.items, entryId, (e) => ({
-              ...e,
-              bullets: e.bullets.filter((b) => b.id !== bulletId),
-            })),
-          })),
-        })),
+        set((state) => {
+          const section = state.sections.find((s) => s.id === sectionId);
+          if (!section) return;
+          const entry = section.items.find((e) => e.id === entryId);
+          if (entry) entry.bullets = entry.bullets.filter((b) => b.id !== bulletId);
+        }),
 
       toggleBullet: (sectionId, entryId, bulletId) =>
-        set((state) => ({
-          sections: mapSection(state.sections, sectionId, (s) => ({
-            ...s,
-            items: mapEntry(s.items, entryId, (e) => ({
-              ...e,
-              bullets: e.bullets.map((b) =>
-                b.id === bulletId ? { ...b, selected: !b.selected } : b
-              ),
-            })),
-          })),
-        })),
-    }),
+        set((state) => {
+          const section = state.sections.find((s) => s.id === sectionId);
+          if (!section) return;
+          const entry = section.items.find((e) => e.id === entryId);
+          if (!entry) return;
+          const bullet = entry.bullets.find((b) => b.id === bulletId);
+          if (bullet) bullet.selected = !bullet.selected;
+        }),
+    })),
     {
       name: 'mosaic-resume',
       storage: createJSONStorage(() => dexieStorage),

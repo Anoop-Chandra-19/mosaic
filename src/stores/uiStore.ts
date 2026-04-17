@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
+import { immer } from 'zustand/middleware/immer';
 import { dexieStorage } from '@/lib/dexieStorage';
 import type { PaperSize } from '@/types/ui';
 
@@ -42,19 +43,45 @@ interface UIState {
 
 export const useUIStore = create<UIState>()(
   persist(
-    (set) => ({
+    immer((set) => ({
       ...DEFAULT_UI_STATE,
-      toggleDarkMode: () => set((state) => ({ darkMode: !state.darkMode })),
-      setDarkMode: (enabled) => set({ darkMode: enabled }),
-      setActiveSidebarTab: (tab) => set({ activeSidebarTab: tab }),
-      setMobilePane: (pane) => set({ mobilePane: pane }),
-      setCurrentPreviewPage: (page) => set({ currentPreviewPage: Math.max(1, Math.floor(page)) }),
-      setPaperSize: (size) => set({ paperSize: size }),
+      toggleDarkMode: () =>
+        set((state) => {
+          state.darkMode = !state.darkMode;
+        }),
+      setDarkMode: (enabled) =>
+        set((state) => {
+          state.darkMode = enabled;
+        }),
+      setActiveSidebarTab: (tab) =>
+        set((state) => {
+          state.activeSidebarTab = tab;
+        }),
+      setMobilePane: (pane) =>
+        set((state) => {
+          state.mobilePane = pane;
+        }),
+      setCurrentPreviewPage: (page) =>
+        set((state) => {
+          state.currentPreviewPage = Math.max(1, Math.floor(page));
+        }),
+      setPaperSize: (size) =>
+        set((state) => {
+          state.paperSize = size;
+        }),
       setSidebarRatio: (ratio) =>
-        set({ sidebarRatio: Math.min(SIDEBAR_MAX_RATIO, Math.max(0.1, ratio)) }),
-      toggleSidebarCollapsed: () => set((state) => ({ sidebarCollapsed: !state.sidebarCollapsed })),
-      resetUIState: () => set({ ...DEFAULT_UI_STATE }),
-    }),
+        set((state) => {
+          state.sidebarRatio = Math.min(SIDEBAR_MAX_RATIO, Math.max(0.1, ratio));
+        }),
+      toggleSidebarCollapsed: () =>
+        set((state) => {
+          state.sidebarCollapsed = !state.sidebarCollapsed;
+        }),
+      resetUIState: () =>
+        set((state) => {
+          Object.assign(state, DEFAULT_UI_STATE);
+        }),
+    })),
     {
       name: 'mosaic-ui',
       storage: createJSONStorage(() => dexieStorage),
