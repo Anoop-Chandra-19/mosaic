@@ -4,9 +4,10 @@ import { immer } from 'zustand/middleware/immer';
 import { dexieStorage } from '@/lib/dexieStorage';
 import type { ResumeData, ResumeEntry, ContactInfo, SectionType } from '@/types/resume';
 
-/* ── Seed Data ───────────────────────────────────────────── */
+/* Seed Data */
 
 const DEFAULT_RESUME: ResumeData = {
+  schemaVersion: 1,
   contact: {
     name: 'Alex Johnson',
     email: 'alex.johnson@email.com',
@@ -188,10 +189,11 @@ function createDefaultResume(): ResumeData {
   return structuredClone(DEFAULT_RESUME);
 }
 
-/* ── Store Interface ─────────────────────────────────────── */
+/* Store Interface */
 
 interface ResumeState extends ResumeData {
   updateContact: (patch: Partial<ContactInfo>) => void;
+  replaceResume: (data: ResumeData) => void;
   resetResume: () => void;
 
   addSection: (type: SectionType, label: string) => void;
@@ -215,28 +217,36 @@ interface ResumeState extends ResumeData {
   toggleBullet: (sectionId: string, entryId: string, bulletId: string) => void;
 }
 
-/* ── Store ───────────────────────────────────────────────── */
+/* Store */
 
 export const useResumeStore = create<ResumeState>()(
   persist(
     immer((set) => ({
       ...createDefaultResume(),
 
-      // ── Contact ──
+      // Contact
 
       updateContact: (patch) =>
         set((state) => {
           Object.assign(state.contact, patch);
         }),
 
+      replaceResume: (data) =>
+        set((state) => {
+          state.schemaVersion = data.schemaVersion;
+          state.contact = data.contact;
+          state.sections = data.sections;
+        }),
+
       resetResume: () =>
         set((state) => {
           const fresh = createDefaultResume();
+          state.schemaVersion = fresh.schemaVersion;
           state.contact = fresh.contact;
           state.sections = fresh.sections;
         }),
 
-      // ── Section CRUD ──
+      // Section CRUD
 
       addSection: (type, label) =>
         set((state) => {
@@ -272,7 +282,7 @@ export const useResumeStore = create<ResumeState>()(
           if (section) section.label = label;
         }),
 
-      // ── Entry CRUD ──
+      // Entry CRUD
 
       addEntry: (sectionId, entry) =>
         set((state) => {
@@ -315,7 +325,7 @@ export const useResumeStore = create<ResumeState>()(
             .filter((e): e is (typeof section.items)[number] => e !== undefined);
         }),
 
-      // ── Bullet CRUD ──
+      // Bullet CRUD
 
       addBullet: (sectionId, entryId, text) =>
         set((state) => {
@@ -355,7 +365,20 @@ export const useResumeStore = create<ResumeState>()(
     })),
     {
       name: 'mosaic-resume',
+      version: 1,
       storage: createJSONStorage(() => dexieStorage),
+      migrate: (persisted: unknown, version: number) => {
+        const state = persisted as ResumeData;
+        if (version < 1) {
+          return { ...state, schemaVersion: 1 };
+        }
+        return state;
+      },
     }
   )
 );
+
+export function getResumeSnapshot(): ResumeData {
+  const { schemaVersion, contact, sections } = useResumeStore.getState();
+  return structuredClone({ schemaVersion, contact, sections });
+}

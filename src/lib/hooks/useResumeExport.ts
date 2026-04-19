@@ -34,6 +34,7 @@ async function copyTextToClipboard(text: string) {
 }
 
 export function useResumeExport() {
+  const schemaVersion = useResumeStore((s) => s.schemaVersion);
   const contact = useResumeStore((s) => s.contact);
   const sections = useResumeStore((s) => s.sections);
   const paperSize = useUIStore((s) => s.paperSize);
@@ -43,7 +44,7 @@ export function useResumeExport() {
   const isPdfBusy = isSavingPdf || isPreviewingPdf;
 
   const handleCopyMarkdown = async () => {
-    const normalized = normalizeResumeForExport({ contact, sections });
+    const normalized = normalizeResumeForExport({ schemaVersion, contact, sections });
     const markdown = createMarkdownExport(normalized);
     const copied = await copyTextToClipboard(markdown);
     setFeedback(
@@ -54,7 +55,7 @@ export function useResumeExport() {
   };
 
   const handleCopyPlaintext = async () => {
-    const normalized = normalizeResumeForExport({ contact, sections });
+    const normalized = normalizeResumeForExport({ schemaVersion, contact, sections });
     const plaintext = createPlaintextExport(normalized);
     const copied = await copyTextToClipboard(plaintext);
     setFeedback(
@@ -68,7 +69,7 @@ export function useResumeExport() {
     if (isPdfBusy) return;
     setIsSavingPdf(true);
     try {
-      const normalized = normalizeResumeForExport({ contact, sections });
+      const normalized = normalizeResumeForExport({ schemaVersion, contact, sections });
       const fileName = buildPdfFileName({ contactName: normalized.contact.name, paperSize });
       await downloadResumePdf({ data: normalized, paperSize, fileName });
       setFeedback({ tone: 'success', message: `Saved PDF: ${fileName}` });
@@ -83,7 +84,7 @@ export function useResumeExport() {
     if (isPdfBusy) return;
     setIsPreviewingPdf(true);
     try {
-      const normalized = normalizeResumeForExport({ contact, sections });
+      const normalized = normalizeResumeForExport({ schemaVersion, contact, sections });
       const fileName = buildPdfFileName({ contactName: normalized.contact.name, paperSize });
       const result = await openResumePdfPreview({ data: normalized, paperSize, fileName });
       setFeedback({

@@ -47,16 +47,48 @@ export interface ContactInfo {
 }
 
 export interface ResumeData {
+  schemaVersion: number;
   contact: ContactInfo;
   sections: ResumeSection[];
 }
 
-export interface Template {
+export interface TemplateRecord {
   id: string;
   name: string;
-  snapshot: ResumeData;
   createdAt: string;
   updatedAt: string;
+  headVersionId: string;
+}
+
+export type TemplateVersionSource = 'save-new' | 'update' | 'restore' | 'import-save' | 'ai-batch';
+
+export interface TemplateVersion {
+  id: string;
+  templateId: string;
+  parentVersionId: string | null;
+  createdAt: string;
+  message: string;
+  source: TemplateVersionSource;
+  snapshot: ResumeData;
+}
+
+export interface PendingTextAiChange {
+  id: string;
+  createdAt: string;
+  target:
+    | { kind: 'entry-text'; sectionId: string; entryId: string }
+    | { kind: 'bullet-text'; sectionId: string; entryId: string; bulletId: string };
+  before: string;
+  after: string;
+  reason?: string;
+}
+
+export type RollbackReason = 'before-import' | 'before-restore';
+
+export interface LocalCheckpoint {
+  createdAt: string;
+  reason: RollbackReason;
+  snapshot: ResumeData;
 }
 
 export type AIProvider = 'openai' | 'anthropic' | 'gemini' | 'ollama' | 'openrouter';

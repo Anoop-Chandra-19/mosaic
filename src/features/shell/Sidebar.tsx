@@ -2,6 +2,7 @@ import { useCallback, useRef } from 'react';
 import { FileText, LayoutTemplate, PanelLeftClose, PanelLeftOpen, Sparkles } from 'lucide-react';
 import { useUIStore, type SidebarTab, SIDEBAR_MIN_PX, SIDEBAR_MAX_RATIO } from '@/stores/uiStore';
 import { ContentTab } from '@/features/editor/ContentTab';
+import { TemplatesTab } from '@/features/templates/TemplatesTab';
 import { useIsMobile } from '@/lib/hooks/useIsMobile';
 
 const tabs: { id: SidebarTab; label: string; icon: React.ReactNode }[] = [
@@ -107,9 +108,7 @@ export function Sidebar() {
 
       <div className="flex-1 overflow-y-auto p-4 md:p-5">
         {activeSidebarTab === 'content' && <ContentTab />}
-        {activeSidebarTab === 'templates' && (
-          <div className="text-sm text-muted-foreground">Saved templates will appear here.</div>
-        )}
+        {activeSidebarTab === 'templates' && <TemplatesTab />}
         {activeSidebarTab === 'ai' && (
           <div className="text-sm text-muted-foreground">
             AI tools and settings will appear here.

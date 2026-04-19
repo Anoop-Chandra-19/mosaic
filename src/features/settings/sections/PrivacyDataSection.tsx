@@ -3,11 +3,13 @@ import { ShieldCheck } from 'lucide-react';
 import { DangerActionRow } from '@/features/settings/DangerActionRow';
 import { getSecretsClient } from '@/lib/secrets';
 import { useResumeStore } from '@/stores/resumeStore';
+import { useTemplateStore } from '@/stores/templateStore';
 import { useUIStore } from '@/stores/uiStore';
 import { useAIStore } from '@/stores/aiStore';
 
 export function PrivacyDataSection() {
   const resetResume = useResumeStore((s) => s.resetResume);
+  const resetTemplates = useTemplateStore((s) => s.resetTemplates);
   const resetUIState = useUIStore((s) => s.resetUIState);
   const resetAIConfig = useAIStore((s) => s.resetAIConfig);
   const secrets = useMemo(() => getSecretsClient(), []);
@@ -28,9 +30,15 @@ export function PrivacyDataSection() {
     setFeedback('UI preferences were restored to defaults.');
   };
 
+  const clearTemplates = () => {
+    resetTemplates();
+    setFeedback('All templates and version history were cleared.');
+  };
+
   const clearEverything = async () => {
     await secrets.clearAllApiKeys();
     resetResume();
+    resetTemplates();
     resetUIState();
     resetAIConfig();
     setFeedback('Local app state was reset.');
@@ -62,6 +70,15 @@ export function PrivacyDataSection() {
             actionLabel="Reset Resume"
             confirmLabel="Reset Resume"
             onConfirm={clearResumeData}
+            severity="caution"
+          />
+
+          <DangerActionRow
+            title="Reset Templates"
+            description="Delete all saved templates and their version history."
+            actionLabel="Reset Templates"
+            confirmLabel="Reset Templates"
+            onConfirm={clearTemplates}
             severity="caution"
           />
 
