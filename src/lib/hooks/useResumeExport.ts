@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useResumeStore } from '@/stores/resumeStore';
 import { useUIStore } from '@/stores/uiStore';
+import { useTemplateStore } from '@/stores/templateStore';
 import { normalizeResumeForExport } from '@/lib/export/normalizeResumeExport';
 import { createMarkdownExport } from '@/lib/export/markdown';
 import { createPlaintextExport } from '@/lib/export/plaintext';
@@ -38,10 +39,30 @@ export function useResumeExport() {
   const contact = useResumeStore((s) => s.contact);
   const sections = useResumeStore((s) => s.sections);
   const paperSize = useUIStore((s) => s.paperSize);
+  const activeTemplateId = useTemplateStore((s) => s.activeTemplateId);
+  const templates = useTemplateStore((s) => s.templates);
   const [feedback, setFeedback] = useTemporaryState<ExportFeedback | null>(null, 2200);
   const [isSavingPdf, setIsSavingPdf] = useState(false);
   const [isPreviewingPdf, setIsPreviewingPdf] = useState(false);
   const isPdfBusy = isSavingPdf || isPreviewingPdf;
+  const activeTemplateName = templates.find((template) => template.id === activeTemplateId)?.name;
+  const defaultPdfFileName = buildPdfFileName({
+    contactName: contact.name,
+    templateName: activeTemplateName,
+    paperSize,
+  });
+  const selectedBulletCount = sections.reduce(
+    (total, section) =>
+      total +
+      section.items
+        .filter((entry) => entry.selected)
+        .reduce(
+          (entryTotal, entry) =>
+            entryTotal + entry.bullets.filter((bullet) => bullet.selected).length,
+          0
+        ),
+    0
+  );
 
   const handleCopyMarkdown = async () => {
     const normalized = normalizeResumeForExport({ schemaVersion, contact, sections });
@@ -65,12 +86,12 @@ export function useResumeExport() {
     );
   };
 
-  const handleExportPdf = async () => {
+  const handleExportPdf = async (fileNameOverride?: string) => {
     if (isPdfBusy) return;
     setIsSavingPdf(true);
     try {
       const normalized = normalizeResumeForExport({ schemaVersion, contact, sections });
-      const fileName = buildPdfFileName({ contactName: normalized.contact.name, paperSize });
+      const fileName = fileNameOverride?.trim() || defaultPdfFileName;
       await downloadResumePdf({ data: normalized, paperSize, fileName });
       setFeedback({ tone: 'success', message: `Saved PDF: ${fileName}` });
     } catch {
@@ -85,7 +106,7 @@ export function useResumeExport() {
     setIsPreviewingPdf(true);
     try {
       const normalized = normalizeResumeForExport({ schemaVersion, contact, sections });
-      const fileName = buildPdfFileName({ contactName: normalized.contact.name, paperSize });
+      const fileName = defaultPdfFileName;
       const result = await openResumePdfPreview({ data: normalized, paperSize, fileName });
       setFeedback({
         tone: 'success',
@@ -102,6 +123,13 @@ export function useResumeExport() {
 
   return {
     feedback,
+    defaultPdfFileName,
+    exportSummary: {
+      contactName: contact.name.trim() || 'Untitled resume',
+      templateName: activeTemplateName?.trim() || 'No template',
+      selectedBulletCount,
+      paperSize,
+    },
     isPdfBusy,
     isSavingPdf,
     isPreviewingPdf,

@@ -9,6 +9,7 @@ import { PAGE_MARGIN_MM, PAPER_DIMENSIONS_MM } from './paper';
 
 interface ResumePreviewProps {
   paperSize: PaperSize;
+  previewZoom?: number;
   onMetaChange: (meta: ResumePreviewMeta) => void;
 }
 
@@ -51,6 +52,14 @@ const TEXT_CHARS_PER_LINE = 88;
 const MEASUREMENT_THROTTLE_MS = 100;
 const BODY_LINE_HEIGHT_PX = 17;
 const HEADING_LINE_HEIGHT_PX = 15.8;
+const PREVIEW_ZOOM_CLASS_NAMES: Record<number, string> = {
+  0.75: '[zoom:0.75]',
+  0.9: '[zoom:0.9]',
+  1: '[zoom:1]',
+  1.1: '[zoom:1.1]',
+  1.25: '[zoom:1.25]',
+  1.5: '[zoom:1.5]',
+};
 
 function mmToPx(mm: number) {
   return (mm / MM_PER_INCH) * PX_PER_INCH;
@@ -415,7 +424,7 @@ function createFallbackMeasurements(sections: PreviewRenderableSection[]): Pagin
   };
 }
 
-export function ResumePreview({ paperSize, onMetaChange }: ResumePreviewProps) {
+export function ResumePreview({ paperSize, previewZoom = 1, onMetaChange }: ResumePreviewProps) {
   const contact = useResumeStore((s) => s.contact);
   const sections = useResumeStore((s) => s.sections);
   const measureRootRef = useRef<HTMLDivElement | null>(null);
@@ -520,8 +529,10 @@ export function ResumePreview({ paperSize, onMetaChange }: ResumePreviewProps) {
       const paddingTop = Number.parseFloat(styles.paddingTop) || 0;
       const paddingBottom = Number.parseFloat(styles.paddingBottom) || 0;
 
-      const usableWidth = Math.max(1, rect.width - paddingLeft - paddingRight);
-      const usableHeight = Math.max(1, rect.height - paddingTop - paddingBottom);
+      const measuredWidth = rect.width / previewZoom;
+      const measuredHeight = rect.height / previewZoom;
+      const usableWidth = Math.max(1, measuredWidth - paddingLeft - paddingRight);
+      const usableHeight = Math.max(1, measuredHeight - paddingTop - paddingBottom);
 
       setPageContentSize((prev) => {
         if (
@@ -540,7 +551,7 @@ export function ResumePreview({ paperSize, onMetaChange }: ResumePreviewProps) {
     observer.observe(contentNode);
 
     return () => observer.disconnect();
-  }, []);
+  }, [previewZoom]);
 
   const activeSections = throttledSections.length > 0 ? throttledSections : normalizedSections;
   const paginationMeasurements = measurements ?? createFallbackMeasurements(activeSections);
@@ -570,7 +581,10 @@ export function ResumePreview({ paperSize, onMetaChange }: ResumePreviewProps) {
 
   return (
     <>
-      <div ref={visiblePageRootRef}>
+      <div
+        ref={visiblePageRootRef}
+        className={`origin-top ${PREVIEW_ZOOM_CLASS_NAMES[previewZoom] ?? '[zoom:1]'}`}
+      >
         <div className="space-y-4">
           {visiblePages.map((pageSections, pageIndex) => (
             <PreviewPage key={`preview-page-${pageIndex}`} paperSize={paperSize}>

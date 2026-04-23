@@ -11,6 +11,14 @@ export type MobilePane = 'editor' | 'preview';
 export const SIDEBAR_DEFAULT_RATIO = 0.22;
 export const SIDEBAR_MIN_PX = 200;
 export const SIDEBAR_MAX_RATIO = 0.4;
+export const PREVIEW_ZOOM_STEPS = [0.75, 0.9, 1, 1.1, 1.25, 1.5] as const;
+export const PREVIEW_DEFAULT_ZOOM = 1;
+
+function normalizePreviewZoom(zoom: number) {
+  return PREVIEW_ZOOM_STEPS.reduce((closest, step) =>
+    Math.abs(step - zoom) < Math.abs(closest - zoom) ? step : closest
+  );
+}
 
 export const DEFAULT_UI_STATE = {
   darkMode: true,
@@ -18,6 +26,7 @@ export const DEFAULT_UI_STATE = {
   mobilePane: 'editor' as MobilePane,
   currentPreviewPage: 1,
   paperSize: 'a4' as PaperSize,
+  previewZoom: PREVIEW_DEFAULT_ZOOM,
   sidebarRatio: SIDEBAR_DEFAULT_RATIO,
   sidebarCollapsed: false,
 };
@@ -28,6 +37,7 @@ interface UIState {
   mobilePane: MobilePane;
   currentPreviewPage: number;
   paperSize: PaperSize;
+  previewZoom: number;
   sidebarRatio: number;
   sidebarCollapsed: boolean;
   toggleDarkMode: () => void;
@@ -36,6 +46,9 @@ interface UIState {
   setMobilePane: (pane: MobilePane) => void;
   setCurrentPreviewPage: (page: number) => void;
   setPaperSize: (size: PaperSize) => void;
+  setPreviewZoom: (zoom: number) => void;
+  zoomPreviewIn: () => void;
+  zoomPreviewOut: () => void;
   setSidebarRatio: (ratio: number) => void;
   toggleSidebarCollapsed: () => void;
   resetUIState: () => void;
@@ -68,6 +81,21 @@ export const useUIStore = create<UIState>()(
       setPaperSize: (size) =>
         set((state) => {
           state.paperSize = size;
+        }),
+      setPreviewZoom: (zoom) =>
+        set((state) => {
+          state.previewZoom = normalizePreviewZoom(zoom);
+        }),
+      zoomPreviewIn: () =>
+        set((state) => {
+          const index = PREVIEW_ZOOM_STEPS.indexOf(normalizePreviewZoom(state.previewZoom));
+          state.previewZoom =
+            PREVIEW_ZOOM_STEPS[Math.min(PREVIEW_ZOOM_STEPS.length - 1, index + 1)];
+        }),
+      zoomPreviewOut: () =>
+        set((state) => {
+          const index = PREVIEW_ZOOM_STEPS.indexOf(normalizePreviewZoom(state.previewZoom));
+          state.previewZoom = PREVIEW_ZOOM_STEPS[Math.max(0, index - 1)];
         }),
       setSidebarRatio: (ratio) =>
         set((state) => {

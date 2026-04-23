@@ -7,9 +7,9 @@ const STATUS_STYLES: Record<TemplateStatus, string> = {
 };
 
 const STATUS_LABELS: Record<TemplateStatus, string> = {
-  clean: 'Clean',
-  modified: 'Modified',
-  untracked: 'Untracked',
+  clean: 'clean',
+  modified: 'modified',
+  untracked: 'untracked',
 };
 
 export function TemplateStatusBadge({ status }: { status: TemplateStatus }) {
