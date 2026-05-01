@@ -48,7 +48,7 @@ export function PreviewHeader({ contact, variant = 'full', pageNumber = 1 }: Pre
           <span>Page {pageNumber}</span>
         </div>
         {compactLine && (
-          <p className="mt-0.5 text-[0.72rem] leading-[1.25] text-zinc-600">{compactLine}</p>
+          <p className="mt-0.5 text-[0.72rem] leading-tight text-zinc-600">{compactLine}</p>
         )}
         <div className="mt-1.5 border-b border-zinc-300" />
       </header>
@@ -57,7 +57,7 @@ export function PreviewHeader({ contact, variant = 'full', pageNumber = 1 }: Pre
 
   return (
     <header
-      className="pt-[0.4rem] pb-[0.5rem] text-center"
+      className="pt-[0.4rem] pb-2 text-center"
       style={{ fontFamily: '"Source Serif 4", serif' }}
       data-preview-header
       data-preview-header-variant="full"

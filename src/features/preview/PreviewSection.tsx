@@ -34,7 +34,7 @@ export function PreviewSection({ section }: PreviewSectionProps) {
       data-preview-section-id={section.id}
     >
       <h2
-        className="border-b border-zinc-300 pb-[0.12rem] text-[0.76rem] font-bold tracking-[0.1em] text-zinc-900 uppercase"
+        className="border-b border-zinc-300 pb-[0.12rem] text-[0.76rem] font-bold tracking-widest text-zinc-900 uppercase"
         data-preview-section-title-id={section.id}
       >
         {section.label}

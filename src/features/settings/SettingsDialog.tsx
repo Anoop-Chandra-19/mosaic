@@ -49,7 +49,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent
         showCloseButton={false}
-        className="h-[90vh] w-[96vw] max-w-none translate-x-[-50%] translate-y-[-50%] overflow-hidden border-zinc-300 p-0 shadow-2xl dark:border-zinc-700 md:h-[86vh] md:max-h-[56rem] md:w-[92vw] md:max-w-[74rem]"
+        className="h-[90vh] w-[96vw] max-w-none translate-x-[-50%] translate-y-[-50%] overflow-hidden border-zinc-300 p-0 shadow-2xl dark:border-zinc-700 md:h-[86vh] md:max-h-224 md:w-[92vw] md:max-w-296"
       >
         <DialogTitle className="sr-only">Mosaic Settings</DialogTitle>
         <DialogDescription className="sr-only">

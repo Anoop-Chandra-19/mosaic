@@ -21,7 +21,7 @@ export function PreviewPage({ children, paperSize }: PreviewPageProps) {
 
   return (
     <article
-      className="mx-auto w-full max-w-[44rem] overflow-hidden rounded-sm border border-zinc-200 bg-white shadow-lg dark:border-zinc-800 dark:shadow-zinc-900"
+      className="mx-auto w-full max-w-176 overflow-hidden rounded-sm border border-zinc-200 bg-white shadow-lg dark:border-zinc-800 dark:shadow-zinc-900"
       style={{ aspectRatio: `${paper.width} / ${paper.height}` }}
     >
       <div

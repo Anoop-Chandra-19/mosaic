@@ -64,7 +64,7 @@ export function DangerActionRow({
   return (
     <div className={cn('rounded-xl border p-3', rowToneClass[severity])}>
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="max-w-[44rem]">
+        <div className="max-w-176">
           <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">{title}</p>
           <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">{description}</p>
           {error && (
