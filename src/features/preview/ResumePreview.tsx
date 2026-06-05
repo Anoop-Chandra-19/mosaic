@@ -70,6 +70,7 @@ export function ResumePreview({ paperSize, previewZoom = 1, onMetaChange }: Resu
   }, [paperSize]);
 
   useEffect(() => {
+    // Avoid re-measuring the resume on every keystroke while the user is typing.
     const timer = window.setTimeout(() => {
       setThrottledSections(normalizedSections);
     }, MEASUREMENT_THROTTLE_MS);
@@ -83,6 +84,8 @@ export function ResumePreview({ paperSize, previewZoom = 1, onMetaChange }: Resu
     const frame = window.requestAnimationFrame(() => {
       const root = measureRootRef.current;
       if (!root) return;
+
+      // Measure an offscreen, unpaginated render to drive page splitting accurately.
 
       const sectionTitleHeights: Record<string, number> = {};
       const entryHeights: Record<string, number> = {};
@@ -157,6 +160,7 @@ export function ResumePreview({ paperSize, previewZoom = 1, onMetaChange }: Resu
       const paddingTop = Number.parseFloat(styles.paddingTop) || 0;
       const paddingBottom = Number.parseFloat(styles.paddingBottom) || 0;
 
+      // getBoundingClientRect includes CSS zoom, so convert back to unzoomed page units.
       const measuredWidth = rect.width / previewZoom;
       const measuredHeight = rect.height / previewZoom;
       const usableWidth = Math.max(1, measuredWidth - paddingLeft - paddingRight);

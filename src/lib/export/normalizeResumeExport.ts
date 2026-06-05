@@ -64,6 +64,7 @@ function normalizeTextOnlyEntry(id: string, text: string): ExportEntry | null {
 }
 
 export function normalizeResumeForExport(resume: ResumeData): NormalizedResumeExport {
+  // Export only selected, non-empty content so all output formats share the same rules.
   const sections = resume.sections
     .slice()
     .sort((a, b) => a.order - b.order)

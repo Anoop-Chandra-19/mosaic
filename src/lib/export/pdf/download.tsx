@@ -8,6 +8,7 @@ interface DownloadResumePdfOptions {
 }
 
 async function createResumePdfBlob(options: DownloadResumePdfOptions) {
+  // Lazy-load PDF rendering so the editor stays lighter on initial load.
   const [{ pdf }, { PDFResumeDocument }] = await Promise.all([
     import('@react-pdf/renderer'),
     import('./document'),
@@ -32,6 +33,7 @@ export async function openResumePdfPreview(options: DownloadResumePdfOptions) {
   const previewWindow = window.open(url, '_blank');
 
   if (previewWindow) {
+    // Keep the blob URL alive long enough for the new tab to finish loading it.
     window.setTimeout(() => {
       URL.revokeObjectURL(url);
     }, 60000);

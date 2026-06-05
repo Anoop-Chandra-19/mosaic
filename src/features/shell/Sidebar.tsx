@@ -30,6 +30,7 @@ export function Sidebar() {
       const vw = window.innerWidth;
 
       const onPointerMove = (ev: PointerEvent) => {
+        // Update the inline width during drag for immediate feedback; persist on release.
         const ratio = ev.clientX / vw;
         const clampedPx = Math.max(SIDEBAR_MIN_PX, ratio * vw);
         const clampedRatio = Math.min(SIDEBAR_MAX_RATIO, clampedPx / vw);
@@ -118,6 +119,7 @@ export function Sidebar() {
 
       {!isMobile && (
         <div
+          // Thin resize handle keeps the sidebar adjustable without adding visual weight.
           onPointerDown={onPointerDown}
           className="absolute top-0 right-0 bottom-0 w-1 cursor-col-resize transition-colors hover:bg-amber-500 active:bg-amber-600"
         />

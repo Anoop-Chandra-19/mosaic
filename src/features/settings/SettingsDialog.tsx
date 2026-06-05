@@ -38,6 +38,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
 
   const handleOpenChange = (nextOpen: boolean) => {
     if (!nextOpen) {
+      // Reopen settings at the default view instead of preserving stale search state.
       setSearchValue('');
       setSelectedSection('app');
     }

@@ -11,6 +11,7 @@ export function AppShell() {
   const isMobile = useIsMobile();
 
   return (
+    // Mobile shows one pane at a time; desktop keeps editor and preview side by side.
     <div className="flex h-screen flex-col">
       <TopBar />
       <div className="flex flex-1 overflow-hidden">

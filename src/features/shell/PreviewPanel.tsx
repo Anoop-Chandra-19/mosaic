@@ -20,6 +20,7 @@ export function PreviewPanel() {
   const [meta, setMeta] = useState<ResumePreviewMeta>(DEFAULT_META);
 
   useEffect(() => {
+    // Expose paper size to global CSS for page-specific print/preview styling.
     document.documentElement.dataset.paperSize = paperSize;
   }, [paperSize]);
 

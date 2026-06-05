@@ -28,6 +28,7 @@ const ENTRY_GAP_PX = 6;
 const TEXT_ONLY_ENTRY_GAP_PX = 1.6;
 const ENTRY_INTERNAL_GAP_PX = 1.8;
 const BULLET_GAP_PX = 1.6;
+// Estimates are used before DOM measurements exist and when splitting overflow text.
 const TEXT_CHARS_PER_LINE = 88;
 const BODY_LINE_HEIGHT_PX = 17;
 const HEADING_LINE_HEIGHT_PX = 15.8;
@@ -84,6 +85,7 @@ export function normalizeSections(sections: ResumeSection[]): PreviewRenderableS
 }
 
 function splitTextByChars(text: string, maxChars: number) {
+  // Prefer word boundaries so continued text does not split in the middle of words.
   const normalized = text.trim();
   if (normalized.length <= maxChars) return [normalized, ''] as const;
 
@@ -179,6 +181,7 @@ function splitEntryByAvailableHeight(
   }
 
   if (keptBullets.length === 0) {
+    // Split a single oversized bullet instead of dropping the whole entry from the page.
     const firstBullet = entry.bullets[0];
     if (!firstBullet) return null;
 
@@ -338,6 +341,7 @@ export function paginateSections(
     }
 
     if (pages.length >= 3) {
+      // The UI previews up to three pages and reports any extra overflow separately.
       break;
     }
   }

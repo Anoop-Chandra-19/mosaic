@@ -108,6 +108,7 @@ export function TopBar() {
 
       <SettingsDialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen} />
       <ExportDialog
+        // Remount when the suggested filename changes so the input resets cleanly.
         key={defaultPdfFileName}
         open={isExportOpen}
         onOpenChange={setIsExportOpen}

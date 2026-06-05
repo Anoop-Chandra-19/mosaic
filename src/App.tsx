@@ -17,6 +17,7 @@ const SCROLL_KEYS = new Set([
 
 function App() {
   useEffect(() => {
+    // Keep custom scrollbars visible only while the user is actively scrolling.
     const root = document.documentElement;
     let hideTimeout: number | undefined;
 
