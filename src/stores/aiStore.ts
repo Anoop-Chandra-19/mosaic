@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
-import { dexieStorage } from '@/lib/dexieStorage';
+import { getStorage } from '@/lib/storage';
 import type { AIProvider } from '@/types/resume';
 
 export const AI_PROVIDER_DEFAULT_MODEL: Record<AIProvider, string> = {
@@ -100,7 +100,7 @@ export const useAIStore = create<AIStoreState>()(
       name: 'mosaic-ai',
       version: 1,
       migrate: (persistedState) => normalizePersistedAIState(persistedState),
-      storage: createJSONStorage(() => dexieStorage),
+      storage: createJSONStorage(() => getStorage()),
     }
   )
 );

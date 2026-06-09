@@ -1,8 +1,10 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { immer } from 'zustand/middleware/immer';
-import { dexieStorage } from '@/lib/dexieStorage';
+import { getStorage } from '@/lib/storage';
 import { migrateResume } from '@/lib/resume/migrateResume';
+import { migrateTemplateState } from '@/lib/template/migrateTemplateState';
+import type { PersistedTemplateState } from '@/types/vault';
 import { getResumeSnapshot, useResumeStore } from '@/stores/resumeStore';
 import type {
   ResumeData,
@@ -376,15 +378,20 @@ export const useTemplateStore = create<TemplateState>()(
     })),
     {
       name: 'mosaic-templates',
-      storage: createJSONStorage(() => dexieStorage),
-      partialize: (state) => ({
-        templates: state.templates,
-        versionsByTemplateId: state.versionsByTemplateId,
-        activeTemplateId: state.activeTemplateId,
-        activeVersionId: state.activeVersionId,
-        // pendingAiChanges and rollbackSnapshots are intentionally excluded.
-        // They are ephemeral and should not survive page reloads.
-      }),
+      version: 1,
+      storage: createJSONStorage(() => getStorage()),
+      // Pre-versioning envelopes arrive as version 0; the migration is
+      // idempotent and repairs partial/corrupt data instead of rejecting it.
+      migrate: (persisted) => migrateTemplateState(persisted),
+      partialize: (state) =>
+        ({
+          templates: state.templates,
+          versionsByTemplateId: state.versionsByTemplateId,
+          activeTemplateId: state.activeTemplateId,
+          activeVersionId: state.activeVersionId,
+          // pendingAiChanges and rollbackSnapshots are intentionally excluded.
+          // They are ephemeral and should not survive page reloads.
+        }) satisfies PersistedTemplateState,
     }
   )
 );
