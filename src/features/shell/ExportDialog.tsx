@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Check, File, FileCode2, FileText } from 'lucide-react';
+import { Check, File, FileCode2, FileJson2, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -13,7 +13,7 @@ import { Input } from '@/components/ui/input';
 import type { PaperSize } from '@/types/ui';
 import { cn } from '@/lib/utils';
 
-type ExportFormat = 'pdf' | 'markdown' | 'plaintext';
+type ExportFormat = 'pdf' | 'markdown' | 'plaintext' | 'json-resume';
 type FormatOptionId = ExportFormat | 'docx';
 
 interface ExportSummary {
@@ -33,6 +33,7 @@ interface ExportDialogProps {
   handleExportPdf: (fileName?: string) => Promise<void>;
   handleCopyMarkdown: () => Promise<void>;
   handleCopyPlaintext: () => Promise<void>;
+  handleExportJsonResume: () => Promise<void>;
 }
 
 interface FormatOption {
@@ -74,6 +75,13 @@ const FORMAT_OPTIONS: FormatOption[] = [
     description: 'Copy-paste friendly for ATS fields',
     icon: FileText,
   },
+  {
+    id: 'json-resume',
+    label: 'JSON Resume',
+    eyebrow: 'JSON',
+    description: 'Open jsonresume.org format for other tools',
+    icon: FileJson2,
+  },
 ];
 
 export function ExportDialog({
@@ -86,6 +94,7 @@ export function ExportDialog({
   handleExportPdf,
   handleCopyMarkdown,
   handleCopyPlaintext,
+  handleExportJsonResume,
 }: ExportDialogProps) {
   const [selectedFormat, setSelectedFormat] = useState<ExportFormat>('pdf');
   const [fileName, setFileName] = useState(defaultPdfFileName);
@@ -100,17 +109,19 @@ export function ExportDialog({
     if (selectedFormat === 'plaintext') {
       await handleCopyPlaintext();
     }
+    if (selectedFormat === 'json-resume') {
+      await handleExportJsonResume();
+    }
     onOpenChange(false);
   };
 
-  const primaryLabel =
-    selectedFormat === 'pdf'
-      ? isSavingPdf
-        ? 'Saving...'
-        : 'Save PDF'
-      : selectedFormat === 'markdown'
-        ? 'Copy Markdown'
-        : 'Copy Plain Text';
+  const primaryLabels: Record<ExportFormat, string> = {
+    pdf: isSavingPdf ? 'Saving...' : 'Save PDF',
+    markdown: 'Copy Markdown',
+    plaintext: 'Copy Plain Text',
+    'json-resume': 'Download JSON',
+  };
+  const primaryLabel = primaryLabels[selectedFormat];
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

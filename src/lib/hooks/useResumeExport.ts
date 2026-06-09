@@ -5,7 +5,9 @@ import { useTemplateStore } from '@/stores/templateStore';
 import { normalizeResumeForExport } from '@/lib/export/normalizeResumeExport';
 import { createMarkdownExport } from '@/lib/export/markdown';
 import { createPlaintextExport } from '@/lib/export/plaintext';
-import { buildPdfFileName } from '@/lib/export/filename';
+import { createJsonResumeExport } from '@/lib/export/jsonResume';
+import { buildJsonResumeFileName, buildPdfFileName } from '@/lib/export/filename';
+import { downloadTextFile } from '@/lib/export/downloadFile';
 import { downloadResumePdf, openResumePdfPreview } from '@/lib/export/pdf';
 import { useTemporaryState } from '@/lib/hooks/useTemporaryState';
 
@@ -86,6 +88,20 @@ export function useResumeExport() {
     );
   };
 
+  const handleExportJsonResume = async () => {
+    try {
+      const normalized = normalizeResumeForExport({ schemaVersion, contact, sections });
+      const fileName = buildJsonResumeFileName({
+        contactName: contact.name,
+        templateName: activeTemplateName,
+      });
+      downloadTextFile({ fileName, content: createJsonResumeExport(normalized) });
+      setFeedback({ tone: 'success', message: `Saved JSON Resume: ${fileName}` });
+    } catch {
+      setFeedback({ tone: 'error', message: 'Could not export JSON Resume' });
+    }
+  };
+
   const handleExportPdf = async (fileNameOverride?: string) => {
     if (isPdfBusy) return;
     setIsSavingPdf(true);
@@ -135,6 +151,7 @@ export function useResumeExport() {
     isPreviewingPdf,
     handleCopyMarkdown,
     handleCopyPlaintext,
+    handleExportJsonResume,
     handleExportPdf,
     handlePreviewPdf,
   };
