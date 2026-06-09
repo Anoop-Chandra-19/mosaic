@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { immer } from 'zustand/middleware/immer';
-import { dexieStorage } from '@/lib/dexieStorage';
+import { getStorage } from '@/lib/storage';
 import type { ResumeData, ResumeEntry, ContactInfo, SectionType } from '@/types/resume';
 
 /* Seed Data */
@@ -366,7 +366,7 @@ export const useResumeStore = create<ResumeState>()(
     {
       name: 'mosaic-resume',
       version: 1,
-      storage: createJSONStorage(() => dexieStorage),
+      storage: createJSONStorage(() => getStorage()),
       migrate: (persisted: unknown, version: number) => {
         const state = persisted as ResumeData;
         if (version < 1) {

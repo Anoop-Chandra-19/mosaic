@@ -37,6 +37,7 @@ export function TopBar() {
     isSavingPdf,
     handleCopyMarkdown,
     handleCopyPlaintext,
+    handleExportJsonResume,
     handleExportPdf,
   } = useResumeExport();
 
@@ -119,6 +120,7 @@ export function TopBar() {
         handleExportPdf={handleExportPdf}
         handleCopyMarkdown={handleCopyMarkdown}
         handleCopyPlaintext={handleCopyPlaintext}
+        handleExportJsonResume={handleExportJsonResume}
       />
     </>
   );

@@ -25,8 +25,5 @@ dist-ssr
 .codex
 
 # Planning docs
-modular_resume_builder_hybrid_ai_outline.md
-modular_resume_builder_milestone_plan.md
-mosaic_build_plan.md
-mosaic_templates_implementation_plan.md
+plans/
 wireframe.jsx

@@ -25,10 +25,37 @@ function formatDate(date: Date) {
   return `${year}${month}${day}`;
 }
 
+function formatDateDashed(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function buildBaseSlug(templateName?: string, contactName?: string) {
+  const baseCandidate = (templateName ?? '').trim() || (contactName ?? '').trim();
+  return slugify(baseCandidate || 'mosaic');
+}
+
 export function buildPdfFileName(options: PdfFileNameOptions) {
-  const baseCandidate = (options.templateName ?? '').trim() || (options.contactName ?? '').trim();
-  const base = slugify(baseCandidate || 'mosaic');
+  const base = buildBaseSlug(options.templateName, options.contactName);
   const paper = options.paperSize;
   const date = formatDate(options.now ?? new Date());
   return `${base}-resume-${paper}-${date}.pdf`;
+}
+
+interface JsonResumeFileNameOptions {
+  contactName?: string;
+  templateName?: string;
+  now?: Date;
+}
+
+export function buildJsonResumeFileName(options: JsonResumeFileNameOptions = {}) {
+  const base = buildBaseSlug(options.templateName, options.contactName);
+  const date = formatDate(options.now ?? new Date());
+  return `${base}-resume-${date}.json`;
+}
+
+export function buildVaultFileName(now: Date = new Date()) {
+  return `mosaic-vault-${formatDateDashed(now)}.json`;
 }

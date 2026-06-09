@@ -1,6 +1,6 @@
 import type { ResumeData } from '@/types/resume';
 
-const CURRENT_SCHEMA_VERSION = 1;
+export const CURRENT_SCHEMA_VERSION = 1;
 
 /**
  * Migrate a ResumeData snapshot to the current schema version.

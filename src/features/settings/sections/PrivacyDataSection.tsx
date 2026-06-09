@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { ShieldCheck } from 'lucide-react';
 import { DangerActionRow } from '@/features/settings/DangerActionRow';
+import { BackupControls } from '@/features/settings/sections/BackupControls';
 import { getSecretsClient } from '@/lib/secrets';
 import { useResumeStore } from '@/stores/resumeStore';
 import { useTemplateStore } from '@/stores/templateStore';
@@ -46,6 +47,8 @@ export function PrivacyDataSection() {
 
   return (
     <section className="space-y-4">
+      <BackupControls />
+
       <article className="rounded-xl border border-zinc-300 bg-zinc-100 p-4 dark:border-zinc-700 dark:bg-zinc-900">
         <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
           Local Data Controls
