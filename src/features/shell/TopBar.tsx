@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Download, Moon, Settings, Sun } from 'lucide-react';
+import { Download, FileInput, Moon, Settings, Sun } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { MobileViewTabs } from '@/components/MobileViewTabs';
 import { cn } from '@/lib/utils';
@@ -12,6 +12,7 @@ import { useTemplateStatus } from '@/lib/hooks/useTemplateStatus';
 import { TemplateStatusBadge } from '@/features/templates/TemplateStatusBadge';
 import { SettingsDialog } from '@/features/settings/SettingsDialog';
 import { ExportDialog } from '@/features/shell/ExportDialog';
+import { ImportResumeDialog } from '@/features/import/ImportResumeDialog';
 
 const MOBILE_PANE_OPTIONS = [
   { value: 'editor' as const, label: 'Edit' },
@@ -25,6 +26,7 @@ export function TopBar() {
   const { darkMode, toggleDarkMode } = useDarkMode();
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isExportOpen, setIsExportOpen] = useState(false);
+  const [isImportOpen, setIsImportOpen] = useState(false);
   const activeTemplateId = useTemplateStore((s) => s.activeTemplateId);
   const templates = useTemplateStore((s) => s.templates);
   const templateStatus = useTemplateStatus();
@@ -89,6 +91,15 @@ export function TopBar() {
           <Button
             variant="ghost"
             size="icon-sm"
+            onClick={() => setIsImportOpen(true)}
+            aria-label="Import resume"
+          >
+            <FileInput className="h-4 w-4" />
+          </Button>
+
+          <Button
+            variant="ghost"
+            size="icon-sm"
             onClick={() => setIsSettingsOpen(true)}
             aria-label="Open settings"
           >
@@ -108,6 +119,7 @@ export function TopBar() {
       </header>
 
       <SettingsDialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen} />
+      <ImportResumeDialog open={isImportOpen} onOpenChange={setIsImportOpen} />
       <ExportDialog
         // Remount when the suggested filename changes so the input resets cleanly.
         key={defaultPdfFileName}
