@@ -1,8 +1,19 @@
 import type { PaperSize } from '@/types/ui';
+import { HEADLESS_LAYOUT, PAPER_SIZE_PT, getPageContentSizePt } from '@/lib/resume/headlessLayout';
 
-export const PAGE_MARGIN_MM = 12;
+/**
+ * The preview works in points rendered 1:1 as CSS pixels, the same units the
+ * PDF export uses, so both lay text out on an identical grid. The page is then
+ * scaled visually to fit the panel rather than reflowed.
+ */
+export const PAPER_DIMENSIONS_PT = PAPER_SIZE_PT;
 
-export const PAPER_DIMENSIONS_MM: Record<PaperSize, { width: number; height: number }> = {
-  a4: { width: 210, height: 297 },
-  letter: { width: 215.9, height: 279.4 },
+export const PAGE_MARGINS_PT = {
+  top: HEADLESS_LAYOUT.marginTop,
+  bottom: HEADLESS_LAYOUT.marginBottom,
+  side: HEADLESS_LAYOUT.marginSide,
 };
+
+export function getPageContentSize(paperSize: PaperSize) {
+  return getPageContentSizePt(paperSize);
+}

@@ -10,7 +10,7 @@ import {
   paginateSections,
   type PaginationMeasurements,
 } from './pagination';
-import { PAGE_MARGIN_MM, PAPER_DIMENSIONS_MM } from './paper';
+import { PAPER_DIMENSIONS_PT, getPageContentSize } from './paper';
 
 interface ResumePreviewProps {
   paperSize: PaperSize;
@@ -24,50 +24,23 @@ export interface ResumePreviewMeta {
   hasOverflowBeyondTwo: boolean;
 }
 
-const PX_PER_INCH = 96;
-const MM_PER_INCH = 25.4;
 const MEASUREMENT_THROTTLE_MS = 100;
-const PREVIEW_ZOOM_CLASS_NAMES: Record<number, string> = {
-  0.75: '[zoom:0.75]',
-  0.9: '[zoom:0.9]',
-  1: '[zoom:1]',
-  1.1: '[zoom:1.1]',
-  1.25: '[zoom:1.25]',
-  1.5: '[zoom:1.5]',
-};
-
-function mmToPx(mm: number) {
-  return (mm / MM_PER_INCH) * PX_PER_INCH;
-}
-
-function getDefaultPageContentSize(paperSize: PaperSize) {
-  const paper = PAPER_DIMENSIONS_MM[paperSize];
-  return {
-    width: mmToPx(paper.width - PAGE_MARGIN_MM * 2),
-    height: mmToPx(paper.height - PAGE_MARGIN_MM * 2),
-  };
-}
+const PAGE_GAP_PX = 16;
 
 export function ResumePreview({ paperSize, previewZoom = 1, onMetaChange }: ResumePreviewProps) {
   const contact = useResumeStore((s) => s.contact);
   const sections = useResumeStore((s) => s.sections);
   const measureRootRef = useRef<HTMLDivElement | null>(null);
-  const visiblePageRootRef = useRef<HTMLDivElement | null>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
   const [throttledSections, setThrottledSections] = useState<PreviewRenderableSection[]>([]);
   const [measurements, setMeasurements] = useState<PaginationMeasurements | null>(null);
-  const [pageContentSize, setPageContentSize] = useState(() =>
-    getDefaultPageContentSize(paperSize)
-  );
+  const [availableWidth, setAvailableWidth] = useState(0);
+
+  // The sheet is a known fixed size in points, so there is nothing to measure.
+  const paper = PAPER_DIMENSIONS_PT[paperSize];
+  const pageContentSize = getPageContentSize(paperSize);
 
   const normalizedSections = useMemo(() => normalizeSections(sections), [sections]);
-
-  useEffect(() => {
-    const frame = window.requestAnimationFrame(() => {
-      setPageContentSize(getDefaultPageContentSize(paperSize));
-    });
-
-    return () => window.cancelAnimationFrame(frame);
-  }, [paperSize]);
 
   useEffect(() => {
     // Avoid re-measuring the resume on every keystroke while the user is typing.
@@ -143,47 +116,20 @@ export function ResumePreview({ paperSize, previewZoom = 1, onMetaChange }: Resu
     return () => window.cancelAnimationFrame(frame);
   }, [contact, throttledSections, pageContentSize.width]);
 
+  // Track only how much room the panel gives us, so a page wider than the panel
+  // can be scaled down to fit instead of overflowing.
   useEffect(() => {
-    const pageRoot = visiblePageRootRef.current;
-    if (!pageRoot) return;
+    const node = containerRef.current;
+    if (!node) return;
 
-    const contentNode = pageRoot.querySelector('[data-preview-page-content]') as HTMLElement | null;
-    if (!contentNode) return;
+    const sync = () => setAvailableWidth(node.clientWidth);
+    sync();
 
-    const syncSize = () => {
-      const rect = contentNode.getBoundingClientRect();
-      if (rect.width <= 0 || rect.height <= 0) return;
-
-      const styles = window.getComputedStyle(contentNode);
-      const paddingLeft = Number.parseFloat(styles.paddingLeft) || 0;
-      const paddingRight = Number.parseFloat(styles.paddingRight) || 0;
-      const paddingTop = Number.parseFloat(styles.paddingTop) || 0;
-      const paddingBottom = Number.parseFloat(styles.paddingBottom) || 0;
-
-      // getBoundingClientRect includes CSS zoom, so convert back to unzoomed page units.
-      const measuredWidth = rect.width / previewZoom;
-      const measuredHeight = rect.height / previewZoom;
-      const usableWidth = Math.max(1, measuredWidth - paddingLeft - paddingRight);
-      const usableHeight = Math.max(1, measuredHeight - paddingTop - paddingBottom);
-
-      setPageContentSize((prev) => {
-        if (
-          Math.abs(prev.width - usableWidth) < 0.5 &&
-          Math.abs(prev.height - usableHeight) < 0.5
-        ) {
-          return prev;
-        }
-        return { width: usableWidth, height: usableHeight };
-      });
-    };
-
-    syncSize();
-
-    const observer = new ResizeObserver(syncSize);
-    observer.observe(contentNode);
+    const observer = new ResizeObserver(sync);
+    observer.observe(node);
 
     return () => observer.disconnect();
-  }, [previewZoom]);
+  }, []);
 
   const activeSections = throttledSections.length > 0 ? throttledSections : normalizedSections;
   const paginationMeasurements = measurements ?? createFallbackMeasurements(activeSections);
@@ -211,45 +157,52 @@ export function ResumePreview({ paperSize, previewZoom = 1, onMetaChange }: Resu
     (_, index) => paginated[index] ?? []
   );
 
+  // Chrome's PDF viewer model: the page's layout never changes, it is just
+  // drawn larger or smaller. transform (not CSS zoom) is what guarantees that,
+  // because transform is applied after layout and so cannot re-wrap any text.
+  const fitScale = availableWidth > 0 ? Math.min(1, availableWidth / paper.width) : 1;
+  const scale = fitScale * previewZoom;
+  const scaledHeight =
+    (paper.height * visiblePages.length + PAGE_GAP_PX * Math.max(0, visiblePages.length - 1)) *
+    scale;
+
   return (
     <>
-      <div
-        ref={visiblePageRootRef}
-        className={`origin-top ${PREVIEW_ZOOM_CLASS_NAMES[previewZoom] ?? '[zoom:1]'}`}
-      >
-        <div className="space-y-4">
-          {visiblePages.map((pageSections, pageIndex) => (
-            <PreviewPage key={`preview-page-${pageIndex}`} paperSize={paperSize}>
-              <PreviewHeader
-                contact={contact}
-                variant={pageIndex === 0 ? 'full' : 'compact'}
-                pageNumber={pageIndex + 1}
-              />
-              <div className="space-y-0">
+      <div ref={containerRef} className="w-full">
+        {/* Reserves the post-scale footprint, since transform does not affect layout. */}
+        <div style={{ width: `${paper.width * scale}px`, height: `${scaledHeight}px` }}>
+          <div
+            className="flex flex-col items-start"
+            style={{
+              gap: `${PAGE_GAP_PX}px`,
+              transform: `scale(${scale})`,
+              transformOrigin: 'top left',
+            }}
+          >
+            {visiblePages.map((pageSections, pageIndex) => (
+              <PreviewPage key={`preview-page-${pageIndex}`} paperSize={paperSize}>
+                <PreviewHeader
+                  contact={contact}
+                  variant={pageIndex === 0 ? 'full' : 'compact'}
+                  pageNumber={pageIndex + 1}
+                />
                 {pageSections.map((section) => (
                   <PreviewSection key={`${section.id}-${pageIndex}`} section={section} />
                 ))}
-              </div>
-            </PreviewPage>
-          ))}
+              </PreviewPage>
+            ))}
+          </div>
         </div>
       </div>
 
-      <div className="fixed top-0 -left-24999.75 pointer-events-none" aria-hidden>
-        <div
-          ref={measureRootRef}
-          className="text-zinc-900"
-          style={{ width: `${pageContentSize.width}px` }}
-        >
+      {/* Offscreen, unpaginated, unscaled render that page splitting measures. */}
+      <div className="pointer-events-none fixed top-0 -left-24999.75" aria-hidden>
+        <div ref={measureRootRef} style={{ width: `${pageContentSize.width}px` }}>
           <PreviewHeader contact={contact} variant="full" pageNumber={1} />
-          <div className="mt-4">
-            <PreviewHeader contact={contact} variant="compact" pageNumber={2} />
-          </div>
-          <div className="space-y-0">
-            {activeSections.map((section) => (
-              <PreviewSection key={`measure-${section.id}`} section={section} />
-            ))}
-          </div>
+          <PreviewHeader contact={contact} variant="compact" pageNumber={2} />
+          {activeSections.map((section) => (
+            <PreviewSection key={`measure-${section.id}`} section={section} />
+          ))}
         </div>
       </div>
     </>

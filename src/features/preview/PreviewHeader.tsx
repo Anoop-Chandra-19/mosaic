@@ -1,4 +1,5 @@
 import type { ContactInfo } from '@/types/resume';
+import { HEADLESS_LAYOUT as L } from '@/lib/resume/headlessLayout';
 
 interface PreviewHeaderProps {
   contact: ContactInfo;
@@ -10,20 +11,11 @@ function joinNonEmpty(parts: string[]) {
   return parts.filter((part) => part.trim().length > 0).join(' | ');
 }
 
-function getNameClass(name: string) {
-  const length = name.trim().length;
-
-  if (length <= 18) {
-    return 'text-[clamp(1.42rem,2.4vw,1.85rem)] leading-tight';
-  }
-
-  if (length <= 26) {
-    return 'text-[clamp(1.24rem,2vw,1.64rem)] leading-tight';
-  }
-
-  return 'text-[clamp(1.08rem,1.76vw,1.38rem)] leading-snug break-words';
-}
-
+/**
+ * Three centered lines: name, contact, then citizenship status and location.
+ * Sizes are the PDF's point values rendered as pixels, so this block occupies
+ * exactly the height it will occupy in the export.
+ */
 export function PreviewHeader({ contact, variant = 'full', pageNumber = 1 }: PreviewHeaderProps) {
   const displayName = contact.name?.trim() || 'Your Name';
   const primaryLine = joinNonEmpty([contact.email, contact.phone, contact.location]);
@@ -38,36 +30,64 @@ export function PreviewHeader({ contact, variant = 'full', pageNumber = 1 }: Pre
 
     return (
       <header
-        className="pb-1.5"
-        style={{ fontFamily: '"Source Serif 4", serif' }}
+        style={{
+          fontFamily: L.fontStack,
+          color: L.color,
+          marginBottom: `${L.bodyLeading}px`,
+        }}
         data-preview-header
         data-preview-header-variant="compact"
       >
-        <div className="flex items-center justify-between gap-3 text-[0.68rem] font-semibold tracking-[0.08em] text-zinc-700 uppercase">
-          <span className="truncate">{displayName}</span>
+        <div
+          className="flex items-baseline justify-between gap-3"
+          style={{
+            fontSize: `${L.bodyFontSize}px`,
+            lineHeight: `${L.bodyLeading}px`,
+          }}
+        >
+          <span className="truncate font-bold">{displayName}</span>
           <span>Page {pageNumber}</span>
         </div>
         {compactLine && (
-          <p className="mt-0.5 text-[0.72rem] leading-tight text-zinc-600">{compactLine}</p>
+          <p style={{ fontSize: `${L.bodyFontSize}px`, lineHeight: `${L.bodyLeading}px` }}>
+            {compactLine}
+          </p>
         )}
-        <div className="mt-1.5 border-b border-zinc-300" />
       </header>
     );
   }
 
   return (
     <header
-      className="pt-[0.4rem] pb-2 text-center"
-      style={{ fontFamily: '"Source Serif 4", serif' }}
+      className="text-center"
+      style={{
+        fontFamily: L.fontStack,
+        color: L.color,
+        marginBottom: `${L.headerMarginBottom}px`,
+      }}
       data-preview-header
       data-preview-header-variant="full"
     >
-      <h1 className={`${getNameClass(displayName)} font-bold text-zinc-900`}>{displayName}</h1>
+      <h1
+        className="font-bold"
+        style={{
+          fontSize: `${L.nameFontSize}px`,
+          lineHeight: L.nameLineHeight,
+          marginTop: `${L.nameMarginTop}px`,
+          marginBottom: `${L.nameMarginBottom}px`,
+        }}
+      >
+        {displayName}
+      </h1>
       {primaryLine && (
-        <p className="mt-[0.28rem] text-[0.79rem] leading-[1.24] text-zinc-700">{primaryLine}</p>
+        <p style={{ fontSize: `${L.contactFontSize}px`, lineHeight: L.contactLineHeight }}>
+          {primaryLine}
+        </p>
       )}
       {secondaryLine && (
-        <p className="mt-[0.12rem] text-[0.77rem] leading-[1.2] text-zinc-700">{secondaryLine}</p>
+        <p style={{ fontSize: `${L.contactFontSize}px`, lineHeight: L.contactLineHeight }}>
+          {secondaryLine}
+        </p>
       )}
     </header>
   );

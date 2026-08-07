@@ -1,243 +1,133 @@
-import { Document, Font, Page, StyleSheet, Text, View } from '@react-pdf/renderer';
+import { Document, Page, StyleSheet, Text, View } from '@react-pdf/renderer';
 import type { PaperSize } from '@/types/ui';
 import {
   getContactPrimaryLine,
   getContactSecondaryLine,
   type NormalizedResumeExport,
 } from '@/lib/export/normalizeResumeExport';
+import { HEADLESS_LAYOUT } from '@/lib/resume/headlessLayout';
 
 interface PDFResumeDocumentProps {
   data: NormalizedResumeExport;
   paperSize: PaperSize;
 }
 
-interface PdfLayoutProfile {
-  pagePaddingTopMm: number;
-  pagePaddingBottomMm: number;
-  pagePaddingHorizontalMm: number;
-  bodyFontSize: number;
-  headerMarginBottom: number;
-  headerNameRowMarginBottom: number;
-  headerContactRowMarginTop: number;
-  nameFontSize: number;
-  nameLineHeight: number;
-  contactFontSize: number;
-  contactLineHeight: number;
-  sectionTop: number;
-  firstSectionTop: number;
-  sectionTitleFontSize: number;
-  sectionTitleLineHeight: number;
-  sectionTitlePaddingBottom: number;
-  sectionBodyTop: number;
-  textOnlySectionBodyTop: number;
-  entryMarginBottom: number;
-  entryHeadingGap: number;
-  entryTitleFontSize: number;
-  entryTitleLineHeight: number;
-  entrySubtitleFontSize: number;
-  entrySubtitleLineHeight: number;
-  bulletMarginBottom: number;
-  bulletMarkerWidth: number;
-  bulletPaddingRight: number;
-  bulletLineHeight: number;
-}
+const L = HEADLESS_LAYOUT;
 
-const A4_PROFILE: PdfLayoutProfile = {
-  pagePaddingTopMm: 12,
-  pagePaddingBottomMm: 12,
-  pagePaddingHorizontalMm: 12,
-  bodyFontSize: 10,
-  headerMarginBottom: 10,
-  headerNameRowMarginBottom: 4,
-  headerContactRowMarginTop: 1,
-  nameFontSize: 24,
-  nameLineHeight: 1.1,
-  contactFontSize: 9.5,
-  contactLineHeight: 1.3,
-  sectionTop: 9,
-  firstSectionTop: 6,
-  sectionTitleFontSize: 9.5,
-  sectionTitleLineHeight: 1.2,
-  sectionTitlePaddingBottom: 2,
-  sectionBodyTop: 5,
-  textOnlySectionBodyTop: 3,
-  entryMarginBottom: 6,
-  entryHeadingGap: 2,
-  entryTitleFontSize: 10.2,
-  entryTitleLineHeight: 1.25,
-  entrySubtitleFontSize: 9,
-  entrySubtitleLineHeight: 1.2,
-  bulletMarginBottom: 2,
-  bulletMarkerWidth: 9,
-  bulletPaddingRight: 3,
-  bulletLineHeight: 1.35,
-};
+// Helvetica is one of the 14 fonts built into every PDF reader and is metrically
+// identical to Arial, so lines wrap at the same points without shipping a font file.
+const FONT = 'Helvetica';
+const FONT_BOLD = 'Helvetica-Bold';
+const FONT_ITALIC = 'Helvetica-Oblique';
 
-const LETTER_PROFILE: PdfLayoutProfile = {
-  pagePaddingTopMm: 12,
-  pagePaddingBottomMm: 12,
-  pagePaddingHorizontalMm: 12,
-  bodyFontSize: 10,
-  headerMarginBottom: 10,
-  headerNameRowMarginBottom: 4,
-  headerContactRowMarginTop: 1,
-  nameFontSize: 24,
-  nameLineHeight: 1.1,
-  contactFontSize: 9.5,
-  contactLineHeight: 1.3,
-  sectionTop: 9,
-  firstSectionTop: 6,
-  sectionTitleFontSize: 9.5,
-  sectionTitleLineHeight: 1.2,
-  sectionTitlePaddingBottom: 2,
-  sectionBodyTop: 5,
-  textOnlySectionBodyTop: 3,
-  entryMarginBottom: 6,
-  entryHeadingGap: 2,
-  entryTitleFontSize: 10.2,
-  entryTitleLineHeight: 1.25,
-  entrySubtitleFontSize: 9,
-  entrySubtitleLineHeight: 1.2,
-  bulletMarginBottom: 2,
-  bulletMarkerWidth: 9,
-  bulletPaddingRight: 3,
-  bulletLineHeight: 1.35,
-};
-
-let isSourceSerifRegistered = false;
-
-function ensureSourceSerifFonts() {
-  if (isSourceSerifRegistered) {
-    return;
-  }
-
-  Font.register({
-    family: 'SourceSerif4',
-    fonts: [
-      { src: '/fonts/source-serif-4/SourceSerif4-Regular.ttf', fontWeight: 400 },
-      { src: '/fonts/source-serif-4/SourceSerif4-Bold.ttf', fontWeight: 700 },
-    ],
-  });
-
-  isSourceSerifRegistered = true;
-}
-
-function mmToPt(mm: number) {
-  return mm * 2.83464567;
-}
-
-function createStyles(profile: PdfLayoutProfile) {
-  return StyleSheet.create({
-    page: {
-      paddingTop: mmToPt(profile.pagePaddingTopMm),
-      paddingBottom: mmToPt(profile.pagePaddingBottomMm),
-      paddingHorizontal: mmToPt(profile.pagePaddingHorizontalMm),
-      fontFamily: 'SourceSerif4',
-      color: '#18181b',
-      fontSize: profile.bodyFontSize,
-    },
-    header: {
-      marginBottom: profile.headerMarginBottom,
-      textAlign: 'center',
-    },
-    headerNameRow: {
-      marginBottom: profile.headerNameRowMarginBottom,
-    },
-    headerContactRow: {
-      marginTop: profile.headerContactRowMarginTop,
-    },
-    name: {
-      fontSize: profile.nameFontSize,
-      lineHeight: profile.nameLineHeight,
-      fontFamily: 'SourceSerif4',
-      fontWeight: 700,
-    },
-    contactLine: {
-      fontSize: profile.contactFontSize,
-      lineHeight: profile.contactLineHeight,
-      color: '#3f3f46',
-    },
-    section: {
-      marginTop: profile.sectionTop,
-    },
-    firstSection: {
-      marginTop: profile.firstSectionTop,
-    },
-    sectionTitle: {
-      fontFamily: 'SourceSerif4',
-      fontWeight: 700,
-      fontSize: profile.sectionTitleFontSize,
-      lineHeight: profile.sectionTitleLineHeight,
-      textTransform: 'uppercase',
-      letterSpacing: 0.9,
-      paddingBottom: profile.sectionTitlePaddingBottom,
-      borderBottomWidth: 1,
-      borderBottomColor: '#d4d4d8',
-    },
-    sectionBody: {
-      marginTop: profile.sectionBodyTop,
-    },
-    textOnlySectionBody: {
-      marginTop: profile.textOnlySectionBodyTop,
-    },
-    textOnlyEntry: {
-      marginBottom: profile.bulletMarginBottom,
-      fontSize: profile.bodyFontSize,
-      lineHeight: profile.bulletLineHeight,
-    },
-    lastTextOnlyEntry: {
-      marginBottom: 0,
-    },
-    entry: {
-      marginBottom: profile.entryMarginBottom,
-    },
-    entryHeading: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      gap: 8,
-      marginBottom: profile.entryHeadingGap,
-    },
-    entryTitle: {
-      fontFamily: 'SourceSerif4',
-      fontWeight: 700,
-      fontSize: profile.entryTitleFontSize,
-      lineHeight: profile.entryTitleLineHeight,
-    },
-    entrySubtitle: {
-      fontSize: profile.entrySubtitleFontSize,
-      lineHeight: profile.entrySubtitleLineHeight,
-      color: '#52525b',
-      textAlign: 'right',
-    },
-    bulletRow: {
-      marginBottom: profile.bulletMarginBottom,
-      flexDirection: 'row',
-      alignItems: 'flex-start',
-      paddingRight: profile.bulletPaddingRight,
-    },
-    bulletMarker: {
-      width: profile.bulletMarkerWidth,
-      fontSize: profile.bodyFontSize,
-      lineHeight: profile.bulletLineHeight,
-    },
-    bulletText: {
-      flexGrow: 1,
-      flexShrink: 1,
-      fontSize: profile.bodyFontSize,
-      lineHeight: profile.bulletLineHeight,
-    },
-  });
-}
-
-const stylesByPaper = {
-  a4: createStyles(A4_PROFILE),
-  letter: createStyles(LETTER_PROFILE),
-} as const;
+const styles = StyleSheet.create({
+  page: {
+    paddingTop: L.marginTop,
+    paddingBottom: L.marginBottom,
+    paddingHorizontal: L.marginSide,
+    fontFamily: FONT,
+    color: L.color,
+    fontSize: L.bodyFontSize,
+  },
+  header: {
+    marginBottom: L.headerMarginBottom,
+    textAlign: 'center',
+  },
+  name: {
+    fontFamily: FONT_BOLD,
+    fontSize: L.nameFontSize,
+    lineHeight: L.nameLineHeight,
+    marginTop: L.nameMarginTop,
+    marginBottom: L.nameMarginBottom,
+  },
+  contactLine: {
+    fontSize: L.contactFontSize,
+    lineHeight: L.contactLineHeight,
+    color: L.color,
+  },
+  // One blank body line above each section header, none above the first.
+  section: {
+    marginTop: L.bodyLeading,
+  },
+  firstSection: {
+    marginTop: 0,
+  },
+  // Section headers are the only bold text below the name. No uppercase and no
+  // letter-spacing: both mangle text extraction for ATS parsers.
+  sectionTitle: {
+    fontFamily: FONT_BOLD,
+    fontSize: L.bodyFontSize,
+    lineHeight: L.bodyLineHeight,
+  },
+  sectionBody: {
+    marginTop: 0,
+  },
+  textOnlySectionBody: {
+    marginTop: 0,
+  },
+  textOnlyEntry: {
+    fontSize: L.bodyFontSize,
+    lineHeight: L.bodyLineHeight,
+  },
+  lastTextOnlyEntry: {
+    marginBottom: 0,
+  },
+  // No margin between entries: the blank line the format wants comes from the
+  // 18pt grid, and anything extra accumulates into visible drift.
+  entry: {
+    marginBottom: 0,
+  },
+  // Job and project lines are italic, never bold.
+  entryHeading: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'baseline',
+    gap: L.entryHeadingGap,
+  },
+  // Only an entry that actually has bullets needs the gap under its title line.
+  // Education rows have none, and the gap there pushes the next section off grid.
+  entryHeadingWithBullets: {
+    marginBottom: L.entryHeadingMarginBottom,
+  },
+  entryTitle: {
+    fontFamily: FONT_ITALIC,
+    fontSize: L.bodyFontSize,
+    lineHeight: L.bodyLineHeight,
+  },
+  entrySubtitle: {
+    fontFamily: FONT_ITALIC,
+    fontSize: L.bodyFontSize,
+    lineHeight: L.bodyLineHeight,
+    color: L.color,
+    textAlign: 'right',
+  },
+  // Bullet spacing comes entirely from the 1.5-line leading. Adding margin here
+  // is what makes a rendering drift away from the Word template.
+  // marginLeft, not paddingLeft: padding leaves the row at full content width in
+  // @react-pdf's flex, so the text runs past the right margin.
+  bulletRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginLeft: L.bulletMarkerIndent,
+  },
+  bulletMarker: {
+    width: L.bulletTextIndent - L.bulletMarkerIndent,
+    fontSize: L.bodyFontSize,
+    lineHeight: L.bodyLineHeight,
+  },
+  // flexBasis 0 makes the text size from the row's free space. Left on `auto` it
+  // sizes from its own unwrapped content and spills past the right margin.
+  bulletText: {
+    flexGrow: 1,
+    flexShrink: 1,
+    flexBasis: 0,
+    fontSize: L.bodyFontSize,
+    lineHeight: L.bodyLineHeight,
+  },
+});
 
 export function PDFResumeDocument({ data, paperSize }: PDFResumeDocumentProps) {
-  ensureSourceSerifFonts();
   const size = paperSize === 'a4' ? 'A4' : 'LETTER';
-  const styles = stylesByPaper[paperSize];
   const name = data.contact.name || 'Mosaic Resume';
   const primaryLine = getContactPrimaryLine(data.contact);
   const secondaryLine = getContactSecondaryLine(data.contact);
@@ -245,20 +135,11 @@ export function PDFResumeDocument({ data, paperSize }: PDFResumeDocumentProps) {
   return (
     <Document title={name}>
       <Page size={size} style={styles.page} wrap>
+        {/* Three centered lines: name, contact, then citizenship status and location. */}
         <View style={styles.header}>
-          <View style={styles.headerNameRow}>
-            <Text style={styles.name}>{name}</Text>
-          </View>
-          {primaryLine ? (
-            <View style={styles.headerContactRow}>
-              <Text style={styles.contactLine}>{primaryLine}</Text>
-            </View>
-          ) : null}
-          {secondaryLine ? (
-            <View style={styles.headerContactRow}>
-              <Text style={styles.contactLine}>{secondaryLine}</Text>
-            </View>
-          ) : null}
+          <Text style={styles.name}>{name}</Text>
+          {primaryLine ? <Text style={styles.contactLine}>{primaryLine}</Text> : null}
+          {secondaryLine ? <Text style={styles.contactLine}>{secondaryLine}</Text> : null}
         </View>
 
         {data.sections.map((section, sectionIndex) => {
@@ -291,7 +172,13 @@ export function PDFResumeDocument({ data, paperSize }: PDFResumeDocumentProps) {
                   return (
                     <View key={entry.id} style={styles.entry}>
                       {entry.title || entry.subtitle ? (
-                        <View style={styles.entryHeading}>
+                        <View
+                          style={
+                            entry.bullets.length > 0
+                              ? [styles.entryHeading, styles.entryHeadingWithBullets]
+                              : styles.entryHeading
+                          }
+                        >
                           <Text style={styles.entryTitle}>{entry.title}</Text>
                           <Text style={styles.entrySubtitle}>{entry.subtitle}</Text>
                         </View>

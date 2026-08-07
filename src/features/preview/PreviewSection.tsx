@@ -1,4 +1,5 @@
 import type { SectionType } from '@/types/resume';
+import { HEADLESS_LAYOUT as L } from '@/lib/resume/headlessLayout';
 
 export interface PreviewEntry {
   id: string;
@@ -21,31 +22,40 @@ interface PreviewSectionProps {
 
 const TEXT_ONLY_TYPES = new Set<SectionType>(['summary', 'skills']);
 
+const bodyText = {
+  fontSize: `${L.bodyFontSize}px`,
+  lineHeight: `${L.bodyLeading}px`,
+};
+
 export function PreviewSection({ section }: PreviewSectionProps) {
   const isTextOnly = TEXT_ONLY_TYPES.has(section.type);
-  const sectionBodyClass = isTextOnly
-    ? 'space-y-[0.08rem] pt-[0.14rem]'
-    : 'space-y-[0.34rem] pt-[0.28rem]';
 
   return (
     <section
-      className="pt-[0.62rem] first:pt-[0.44rem]"
-      style={{ fontFamily: '"Source Serif 4", serif' }}
+      style={{
+        fontFamily: L.fontStack,
+        color: L.color,
+        // One blank body line above each section header, none above the first.
+        marginTop: `${L.bodyLeading}px`,
+      }}
+      className="first:mt-0"
       data-preview-section-id={section.id}
     >
-      <h2
-        className="border-b border-zinc-300 pb-[0.12rem] text-[0.76rem] font-bold tracking-widest text-zinc-900 uppercase"
-        data-preview-section-title-id={section.id}
-      >
+      {/*
+        Section headers are the only bold text below the name, and are
+        deliberately not uppercased or letter-spaced: both mangle the text
+        extraction that ATS parsers rely on.
+      */}
+      <h2 className="font-bold" style={bodyText} data-preview-section-title-id={section.id}>
         {section.label}
       </h2>
 
-      <div className={sectionBodyClass}>
+      <div>
         {section.entries.map((entry) =>
           isTextOnly ? (
             <p
               key={entry.id}
-              className="text-[0.81rem] leading-[1.31] text-zinc-800"
+              style={bodyText}
               data-preview-entry-id={entry.id}
               data-preview-entry-key={`${section.id}::${entry.id}`}
               data-preview-section-id={section.id}
@@ -55,29 +65,37 @@ export function PreviewSection({ section }: PreviewSectionProps) {
           ) : (
             <article
               key={entry.id}
-              className="space-y-[0.1rem]"
               data-preview-entry-id={entry.id}
               data-preview-entry-key={`${section.id}::${entry.id}`}
               data-preview-section-id={section.id}
             >
               {(entry.title || entry.subtitle) && (
+                // Job and project lines are italic, never bold. Only an entry
+                // that has bullets needs the gap beneath its title line.
                 <div
-                  className="flex items-baseline justify-between gap-3"
+                  className="flex items-baseline justify-between italic"
+                  style={{
+                    ...bodyText,
+                    gap: `${L.entryHeadingGap}px`,
+                    marginBottom: entry.bullets.length > 0 ? `${L.entryHeadingMarginBottom}px` : 0,
+                  }}
                   data-preview-entry-heading-key={`${section.id}::${entry.id}`}
                 >
-                  <h3 className="text-[0.83rem] leading-[1.2] font-semibold text-zinc-900">
-                    {entry.title}
-                  </h3>
-                  {entry.subtitle && (
-                    <p className="shrink-0 text-right text-[0.72rem] leading-[1.14] text-zinc-600">
-                      {entry.subtitle}
-                    </p>
-                  )}
+                  <h3>{entry.title}</h3>
+                  {entry.subtitle && <p className="shrink-0 text-right">{entry.subtitle}</p>}
                 </div>
               )}
 
               {entry.bullets.length > 0 && (
-                <ul className="list-disc space-y-[0.1rem] pl-4 text-[0.81rem] leading-[1.31] text-zinc-800">
+                // Bullet spacing comes entirely from the 18pt leading. Any extra
+                // margin here is what pushes a rendering off the format's grid.
+                <ul
+                  className="list-disc"
+                  style={{
+                    ...bodyText,
+                    paddingLeft: `${L.bulletTextIndent}px`,
+                  }}
+                >
                   {entry.bullets.map((bullet, idx) => (
                     <li
                       key={`${entry.id}-${idx}`}

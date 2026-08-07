@@ -1,4 +1,5 @@
 import type { ResumeEntry, ResumeSection, SectionType } from '@/types/resume';
+import { HEADLESS_LAYOUT } from '@/lib/resume/headlessLayout';
 import type { PreviewEntry, PreviewRenderableSection } from './PreviewSection';
 
 export interface PaginationMeasurements {
@@ -21,17 +22,26 @@ type PaginatedEntry = PreviewEntry & {
 };
 
 const TEXT_ONLY_TYPES = new Set<SectionType>(['summary', 'skills']);
-const SECTION_TOP_PADDING_PX = 10;
-const SECTION_CONTENT_TOP_PADDING_PX = 4.8;
-const TEXT_ONLY_SECTION_CONTENT_TOP_PADDING_PX = 2.4;
-const ENTRY_GAP_PX = 6;
-const TEXT_ONLY_ENTRY_GAP_PX = 1.6;
-const ENTRY_INTERNAL_GAP_PX = 1.8;
-const BULLET_GAP_PX = 1.6;
-// Estimates are used before DOM measurements exist and when splitting overflow text.
-const TEXT_CHARS_PER_LINE = 88;
-const BODY_LINE_HEIGHT_PX = 17;
-const HEADING_LINE_HEIGHT_PX = 15.8;
+
+// The Headless format puts everything on a single 18pt leading grid: one blank
+// line above each section header, and no gaps anywhere else. Spacing between
+// bullets and between entries comes from the leading itself, so the gaps below
+// are zero on purpose -- adding any pushes the page off the grid.
+const SECTION_TOP_PADDING_PX = HEADLESS_LAYOUT.bodyLeading;
+const SECTION_CONTENT_TOP_PADDING_PX = 0;
+const TEXT_ONLY_SECTION_CONTENT_TOP_PADDING_PX = 0;
+const ENTRY_GAP_PX = 0;
+const TEXT_ONLY_ENTRY_GAP_PX = 0;
+const ENTRY_INTERNAL_GAP_PX = HEADLESS_LAYOUT.entryHeadingMarginBottom;
+const BULLET_GAP_PX = 0;
+
+// Estimates are used before DOM measurements exist and when splitting overflow
+// text. Arial averages close to half its point size per character, so a 468pt
+// column fits ~89 characters and a bullet's 432pt column fits ~82.
+const TEXT_CHARS_PER_LINE = 89;
+const BULLET_CHARS_PER_LINE = 82;
+const BODY_LINE_HEIGHT_PX = HEADLESS_LAYOUT.bodyLeading;
+const HEADING_LINE_HEIGHT_PX = HEADLESS_LAYOUT.bodyLeading;
 
 function estimateTextHeight(
   text: string,
@@ -111,7 +121,7 @@ function getEntryHeight(
 
   const headingHeight = entry.title || entry.subtitle ? HEADING_LINE_HEIGHT_PX : 0;
   const bulletsHeight = entry.bullets.reduce(
-    (sum, bullet) => sum + estimateTextHeight(bullet, BODY_LINE_HEIGHT_PX, 92),
+    (sum, bullet) => sum + estimateTextHeight(bullet, BODY_LINE_HEIGHT_PX, BULLET_CHARS_PER_LINE),
     0
   );
   const bulletGaps = Math.max(0, entry.bullets.length - 1) * BULLET_GAP_PX;
@@ -161,7 +171,9 @@ function splitEntryByAvailableHeight(
     (entry.title || entry.subtitle ? HEADING_LINE_HEIGHT_PX : 0);
   const bulletHeights =
     measurements.bulletHeights[entryKey] ??
-    entry.bullets.map((bullet) => estimateTextHeight(bullet, BODY_LINE_HEIGHT_PX, 92));
+    entry.bullets.map((bullet) =>
+      estimateTextHeight(bullet, BODY_LINE_HEIGHT_PX, BULLET_CHARS_PER_LINE)
+    );
 
   const requiresHeadingGap = headingHeight > 0 && bulletHeights.length > 0;
   let used = headingHeight + (requiresHeadingGap ? ENTRY_INTERNAL_GAP_PX : 0);
@@ -199,7 +211,7 @@ function splitEntryByAvailableHeight(
         _height:
           headingHeight +
           ENTRY_INTERNAL_GAP_PX +
-          estimateTextHeight(firstBulletPart, BODY_LINE_HEIGHT_PX, 92),
+          estimateTextHeight(firstBulletPart, BODY_LINE_HEIGHT_PX, BULLET_CHARS_PER_LINE),
       },
       rest: restBullets.length
         ? {
@@ -269,7 +281,8 @@ export function paginateSections(
 
       let page = pages[pages.length - 1];
       const pageSection = page.sections.find((item) => item.id === section.id);
-      const sectionTitleHeight = measurements.sectionTitleHeights[section.id] ?? 22;
+      const sectionTitleHeight =
+        measurements.sectionTitleHeights[section.id] ?? HEADLESS_LAYOUT.bodyLeading;
       const sectionBodyTopPadding = TEXT_ONLY_TYPES.has(section.type)
         ? TEXT_ONLY_SECTION_CONTENT_TOP_PADDING_PX
         : SECTION_CONTENT_TOP_PADDING_PX;
@@ -365,7 +378,7 @@ export function createFallbackMeasurements(
   const entryHeights: Record<string, number> = {};
 
   for (const section of sections) {
-    sectionTitleHeights[section.id] = 22;
+    sectionTitleHeights[section.id] = HEADLESS_LAYOUT.bodyLeading;
 
     for (const entry of section.entries as PaginatedEntry[]) {
       const key = `${section.id}::${entry._sourceKey ?? entry.id}`;
@@ -373,15 +386,18 @@ export function createFallbackMeasurements(
         ? estimateTextHeight(entry.text ?? '', BODY_LINE_HEIGHT_PX)
         : HEADING_LINE_HEIGHT_PX +
           entry.bullets.reduce(
-            (sum, bullet) => sum + estimateTextHeight(bullet, BODY_LINE_HEIGHT_PX, 92),
+            (sum, bullet) =>
+              sum + estimateTextHeight(bullet, BODY_LINE_HEIGHT_PX, BULLET_CHARS_PER_LINE),
             0
           );
     }
   }
 
   return {
-    headerHeight: 110,
-    continuationHeaderHeight: 40,
+    // nameMarginTop + name line + nameMarginBottom + two contact lines + gap.
+    headerHeight: 89,
+    // Name/page row + contact line + one blank line.
+    continuationHeaderHeight: 54,
     sectionTitleHeights,
     entryHeights,
     entryHeadingHeights: {},
