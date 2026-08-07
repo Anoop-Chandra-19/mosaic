@@ -169,8 +169,13 @@ export function ResumePreview({ paperSize, previewZoom = 1, onMetaChange }: Resu
   return (
     <>
       <div ref={containerRef} className="w-full">
-        {/* Reserves the post-scale footprint, since transform does not affect layout. */}
-        <div style={{ width: `${paper.width * scale}px`, height: `${scaledHeight}px` }}>
+        {/* Reserves the post-scale footprint, since transform does not affect
+            layout. mx-auto centers it when it fits and falls back to flush left
+            (auto margins resolve to zero) once it is wider than the panel. */}
+        <div
+          className="mx-auto"
+          style={{ width: `${paper.width * scale}px`, height: `${scaledHeight}px` }}
+        >
           <div
             className="flex flex-col items-start"
             style={{
