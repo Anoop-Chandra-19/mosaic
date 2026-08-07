@@ -8,6 +8,7 @@ const exportData: NormalizedResumeExport = {
     email: 'alex@example.com',
     phone: '555-0100',
     location: 'Detroit, MI',
+    citizenshipStatus: '',
     linkedin: 'linkedin.com/in/alex',
     github: 'github.com/alex',
     website: '',
@@ -41,8 +42,8 @@ const exportData: NormalizedResumeExport = {
 describe('createMarkdownExport', () => {
   it('formats contact lines, sections, text entries, and bullet entries', () => {
     expect(createMarkdownExport(exportData)).toBe(`# Alex Johnson
-alex@example.com | 555-0100 | Detroit, MI
-linkedin.com/in/alex | github.com/alex
+555-0100 | alex@example.com | linkedin.com/in/alex | github.com/alex
+Detroit, MI
 
 ## Summary
 
@@ -63,6 +64,7 @@ Focused builder.
           email: '',
           phone: '',
           location: '',
+          citizenshipStatus: '',
           linkedin: '',
           github: '',
           website: '',

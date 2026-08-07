@@ -8,6 +8,7 @@ const exportData: NormalizedResumeExport = {
     email: 'alex@example.com',
     phone: '555-0100',
     location: 'Detroit, MI',
+    citizenshipStatus: '',
     linkedin: 'linkedin.com/in/alex',
     github: 'github.com/alex',
     website: '',
@@ -41,8 +42,8 @@ const exportData: NormalizedResumeExport = {
 describe('createPlaintextExport', () => {
   it('formats readable plaintext with uppercase section labels', () => {
     expect(createPlaintextExport(exportData)).toBe(`Alex Johnson
-alex@example.com | 555-0100 | Detroit, MI
-linkedin.com/in/alex | github.com/alex
+555-0100 | alex@example.com | linkedin.com/in/alex | github.com/alex
+Detroit, MI
 
 SUMMARY
 Focused builder.
@@ -61,6 +62,7 @@ Engineer | Mosaic
           email: '',
           phone: '',
           location: '',
+          citizenshipStatus: '',
           linkedin: '',
           github: '',
           website: '',

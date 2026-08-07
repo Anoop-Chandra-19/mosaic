@@ -6,6 +6,7 @@ import {
   Linkedin,
   Github,
   Globe,
+  BadgeCheck,
   ChevronsUpDown,
   ChevronsDownUp,
 } from 'lucide-react';
@@ -17,19 +18,27 @@ import { useResumeStore } from '@/stores/resumeStore';
 import type { ContactInfo } from '@/types/resume';
 import type { LucideIcon } from 'lucide-react';
 
-type ContactValueKey = 'email' | 'phone' | 'location' | 'linkedin' | 'github' | 'website';
+type ContactValueKey =
+  | 'email'
+  | 'phone'
+  | 'location'
+  | 'citizenshipStatus'
+  | 'linkedin'
+  | 'github'
+  | 'website';
 
 const CONTACT_FIELDS: { key: ContactValueKey; label: string; icon: LucideIcon }[] = [
   { key: 'email', label: 'Email', icon: Mail },
   { key: 'phone', label: 'Phone', icon: Phone },
   { key: 'location', label: 'Location', icon: MapPin },
+  { key: 'citizenshipStatus', label: 'Work authorization', icon: BadgeCheck },
   { key: 'linkedin', label: 'LinkedIn', icon: Linkedin },
   { key: 'github', label: 'GitHub', icon: Github },
   { key: 'website', label: 'Website', icon: Globe },
 ];
 
 const SOCIAL_VISIBILITY: Record<
-  Exclude<ContactValueKey, 'email' | 'phone' | 'location'>,
+  Exclude<ContactValueKey, 'email' | 'phone' | 'location' | 'citizenshipStatus'>,
   keyof ContactInfo
 > = {
   linkedin: 'showLinkedin',
@@ -68,7 +77,7 @@ export function ContactCard() {
             <div key={key} className="flex items-center gap-2.5">
               <Icon className="size-4 shrink-0 text-muted-foreground" />
               <InlineEditField
-                value={contact[key]}
+                value={contact[key] ?? ''}
                 onSave={(v) => updateContact({ [key]: v })}
                 placeholder={label}
                 className="truncate text-sm leading-6"

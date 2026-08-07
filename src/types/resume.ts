@@ -38,6 +38,11 @@ export interface ContactInfo {
   email: string;
   phone: string;
   location: string;
+  /** Work authorization, e.g. "US Citizen" or "F-1 STEM OPT, work authorized
+   *  through July 2028". Renders on the header's third line as
+   *  "<status> | <location>". Optional: leave it empty and the line falls back
+   *  to the location alone. */
+  citizenshipStatus?: string;
   linkedin: string;
   github: string;
   website: string;

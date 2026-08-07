@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { normalizeResumeForExport } from '../normalizeResumeExport';
+import { getContactLines, normalizeResumeForExport } from '../normalizeResumeExport';
 import type { ResumeData } from '@/types/resume';
 
 function createResumeFixture(): ResumeData {
@@ -10,6 +10,7 @@ function createResumeFixture(): ResumeData {
       email: ' alex@example.com ',
       phone: ' 555-0100 ',
       location: ' Detroit, MI ',
+      citizenshipStatus: '',
       linkedin: ' linkedin.com/in/alex ',
       github: ' github.com/alex ',
       website: ' alex.dev ',
@@ -90,6 +91,7 @@ describe('normalizeResumeForExport', () => {
       email: 'alex@example.com',
       phone: '555-0100',
       location: 'Detroit, MI',
+      citizenshipStatus: '',
       linkedin: '',
       github: 'github.com/alex',
       website: '',
@@ -151,5 +153,39 @@ describe('normalizeResumeForExport', () => {
     const entry = normalized.sections.find((s) => s.type === 'summary')!.entries[0];
 
     expect(entry.startDate).toBeUndefined();
+  });
+});
+
+describe('getContactLines', () => {
+  const base = createResumeFixture().contact;
+
+  it('puts phone first and keeps visible links on the contact line', () => {
+    const { primary } = getContactLines(base);
+
+    expect(primary).toBe('555-0100 | alex@example.com | github.com/alex');
+  });
+
+  it('leaves location off the contact line', () => {
+    expect(getContactLines(base).primary).not.toContain('Detroit');
+  });
+
+  it('joins work authorization and location with a pipe', () => {
+    const { secondary } = getContactLines({
+      ...base,
+      citizenshipStatus: 'F-1 STEM OPT, work authorized through July 2028',
+      location: 'Cleveland, OH',
+    });
+
+    expect(secondary).toBe('F-1 STEM OPT, work authorized through July 2028 | Cleveland, OH');
+  });
+
+  it('falls back to whichever half is present', () => {
+    expect(
+      getContactLines({ ...base, citizenshipStatus: '', location: 'Cleveland, OH' }).secondary
+    ).toBe('Cleveland, OH');
+    expect(
+      getContactLines({ ...base, citizenshipStatus: 'US Citizen', location: '' }).secondary
+    ).toBe('US Citizen');
+    expect(getContactLines({ ...base, citizenshipStatus: '', location: '' }).secondary).toBe('');
   });
 });

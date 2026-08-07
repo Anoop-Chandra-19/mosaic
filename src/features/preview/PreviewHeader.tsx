@@ -1,14 +1,11 @@
 import type { ContactInfo } from '@/types/resume';
 import { HEADLESS_LAYOUT as L } from '@/lib/resume/headlessLayout';
+import { getContactLines } from '@/lib/export/normalizeResumeExport';
 
 interface PreviewHeaderProps {
   contact: ContactInfo;
   variant?: 'full' | 'compact';
   pageNumber?: number;
-}
-
-function joinNonEmpty(parts: string[]) {
-  return parts.filter((part) => part.trim().length > 0).join(' | ');
 }
 
 /**
@@ -18,15 +15,10 @@ function joinNonEmpty(parts: string[]) {
  */
 export function PreviewHeader({ contact, variant = 'full', pageNumber = 1 }: PreviewHeaderProps) {
   const displayName = contact.name?.trim() || 'Your Name';
-  const primaryLine = joinNonEmpty([contact.email, contact.phone, contact.location]);
-  const secondaryLine = joinNonEmpty([
-    contact.showLinkedin !== false ? contact.linkedin : '',
-    contact.showGithub !== false ? contact.github : '',
-    contact.showWebsite !== false ? contact.website : '',
-  ]);
+  const { primary: primaryLine, secondary: secondaryLine } = getContactLines(contact);
 
   if (variant === 'compact') {
-    const compactLine = joinNonEmpty([contact.email, contact.phone, contact.location]);
+    const compactLine = primaryLine;
 
     return (
       <header

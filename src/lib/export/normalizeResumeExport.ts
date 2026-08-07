@@ -24,6 +24,7 @@ export interface ExportContact {
   email: string;
   phone: string;
   location: string;
+  citizenshipStatus: string;
   linkedin: string;
   github: string;
   website: string;
@@ -44,6 +45,7 @@ function normalizeContact(contact: ContactInfo): ExportContact {
     email: trim(contact.email),
     phone: trim(contact.phone),
     location: trim(contact.location),
+    citizenshipStatus: trim(contact.citizenshipStatus),
     linkedin: contact.showLinkedin === false ? '' : trim(contact.linkedin),
     github: contact.showGithub === false ? '' : trim(contact.github),
     website: contact.showWebsite === false ? '' : trim(contact.website),
@@ -116,10 +118,35 @@ export function normalizeResumeForExport(resume: ResumeData): NormalizedResumeEx
   };
 }
 
+/**
+ * The Headless header is three lines: name, then contact, then status.
+ *
+ *   Phone | Email | LinkedIn/Portfolio
+ *   Citizenship status at City, State
+ *
+ * Phone leads because the template puts it first. The links stay on line one
+ * rather than getting a line of their own, which is what leaves line two free
+ * for the status.
+ */
 export function getContactPrimaryLine(contact: ExportContact) {
-  return [contact.email, contact.phone, contact.location].filter(Boolean).join(' | ');
+  return [contact.phone, contact.email, contact.linkedin, contact.github, contact.website]
+    .filter(Boolean)
+    .join(' | ');
 }
 
 export function getContactSecondaryLine(contact: ExportContact) {
-  return [contact.linkedin, contact.github, contact.website].filter(Boolean).join(' | ');
+  // Pipe, not "at": the status is often a whole clause ("F-1 STEM OPT, work
+  // authorized through July 2028"), which "at" reads wrong against. Pipe also
+  // matches the separator the line above uses.
+  return [contact.citizenshipStatus, contact.location].filter(Boolean).join(' | ');
+}
+
+/** Header lines straight from stored contact info, for the on-screen preview.
+ *  Shares the builders above so the preview cannot drift from the export. */
+export function getContactLines(contact: ContactInfo) {
+  const normalized = normalizeContact(contact);
+  return {
+    primary: getContactPrimaryLine(normalized),
+    secondary: getContactSecondaryLine(normalized),
+  };
 }
