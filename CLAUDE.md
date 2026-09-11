@@ -32,6 +32,7 @@ src/
   features/
     shell/        # App chrome (AppShell, TopBar, Sidebar, PreviewPanel)
     editor/       # Resume editing UI (ContentTab, SectionList, EntryCard, etc.)
+    import/       # Import dialog, parsing, store application, and tests
     preview/      # Resume preview (ResumePreview, PreviewHeader, etc.)
     settings/     # Settings dialog + sections
   stores/         # Zustand stores
@@ -44,6 +45,24 @@ src/
     db.ts         # Dexie DB
     dexieStorage.ts
 ```
+
+### Code placement
+
+- Keep feature-specific components, hooks, helpers, types, and tests together in
+  `src/features/<feature>/`. Feature folders are not limited to UI components.
+- Use `src/lib/` for shared domain logic, infrastructure, and feature-independent
+  utilities. A function being pure, or a file containing a hook, is not by itself
+  a reason to put it in `lib/`.
+- Code used by multiple screens can still belong to one feature. Keep it with
+  that owner rather than moving it into a shared folder solely because it has
+  multiple consumers.
+- Use `src/components/` for feature-independent reusable UI, `src/stores/` for
+  shared application state, and `src/types/` for application-wide types.
+- Keep feature folders flat until subfolders improve navigation, and keep tests
+  near the code they cover. Do not add layers or shared abstractions for
+  hypothetical future reuse.
+- Apply these rules to new code and make existing placement improvements when
+  working on the relevant area; do not reorganize unrelated code just for consistency.
 
 ## Core Principles
 
