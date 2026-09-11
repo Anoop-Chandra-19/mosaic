@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { useResumeStore } from '@/stores/resumeStore';
 import { useTemplateStore } from '@/stores/templateStore';
-import { resumeEqual } from '@/lib/template/compareResume';
+import { resumeEqual } from './compareResume';
 
 export type TemplateStatus = 'clean' | 'modified' | 'untracked';
 

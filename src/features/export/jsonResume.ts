@@ -1,4 +1,4 @@
-import type { ExportEntry, NormalizedResumeExport } from '@/lib/export/normalizeResumeExport';
+import type { ExportEntry, NormalizedResumeExport } from './normalizeResumeExport';
 
 /**
  * Minimal subset of the JSON Resume schema (jsonresume.org, v1.0.0). Every

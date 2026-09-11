@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { useTemplateStore } from '@/stores/templateStore';
 import { getResumeSnapshot } from '@/stores/resumeStore';
 import { useUIStore } from '@/stores/uiStore';
-import { useTemplateStatus } from '@/lib/hooks/useTemplateStatus';
+import { useTemplateStatus } from './useTemplateStatus';
 import { TemplateCard } from './TemplateCard';
 import { UnsavedChangesDialog } from './dialogs/UnsavedChangesDialog';
 

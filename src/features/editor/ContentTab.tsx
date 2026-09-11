@@ -1,7 +1,7 @@
 import { Button } from '@/components/ui/button';
 import { useTemplateStore } from '@/stores/templateStore';
 import { getResumeSnapshot } from '@/stores/resumeStore';
-import { useTemplateStatus } from '@/lib/hooks/useTemplateStatus';
+import { useTemplateStatus } from '@/features/templates/useTemplateStatus';
 import { ContactCard } from './ContactCard';
 import { SectionList } from './SectionList';
 

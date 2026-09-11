@@ -2,13 +2,13 @@ import { useState } from 'react';
 import { useResumeStore } from '@/stores/resumeStore';
 import { useUIStore } from '@/stores/uiStore';
 import { useTemplateStore } from '@/stores/templateStore';
-import { normalizeResumeForExport } from '@/lib/export/normalizeResumeExport';
-import { createMarkdownExport } from '@/lib/export/markdown';
-import { createPlaintextExport } from '@/lib/export/plaintext';
-import { createJsonResumeExport } from '@/lib/export/jsonResume';
-import { buildJsonResumeFileName, buildPdfFileName } from '@/lib/export/filename';
-import { downloadTextFile } from '@/lib/export/downloadFile';
-import { downloadResumePdf, openResumePdfPreview } from '@/lib/export/pdf';
+import { normalizeResumeForExport } from './normalizeResumeExport';
+import { createMarkdownExport } from './markdown';
+import { createPlaintextExport } from './plaintext';
+import { createJsonResumeExport } from './jsonResume';
+import { buildJsonResumeFileName, buildPdfFileName } from '@/lib/files/filename';
+import { downloadTextFile } from '@/lib/files/downloadFile';
+import { downloadResumePdf, openResumePdfPreview } from '@/features/export/pdf';
 import { useTemporaryState } from '@/lib/hooks/useTemporaryState';
 
 export type ExportFeedback = {

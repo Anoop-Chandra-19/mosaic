@@ -7,11 +7,11 @@ import { useIsMobile } from '@/lib/hooks/useIsMobile';
 import { useUIStore } from '@/stores/uiStore';
 import { useTemplateStore } from '@/stores/templateStore';
 import { useDarkMode } from '@/lib/hooks/useDarkMode';
-import { useResumeExport } from '@/lib/hooks/useResumeExport';
-import { useTemplateStatus } from '@/lib/hooks/useTemplateStatus';
+import { ExportDialog } from '@/features/export/ExportDialog';
+import { useResumeExport } from '@/features/export/useResumeExport';
+import { useTemplateStatus } from '@/features/templates/useTemplateStatus';
 import { TemplateStatusBadge } from '@/features/templates/TemplateStatusBadge';
 import { SettingsDialog } from '@/features/settings/SettingsDialog';
-import { ExportDialog } from '@/features/shell/ExportDialog';
 import { ImportResumeDialog } from '@/features/import/ImportResumeDialog';
 
 const MOBILE_PANE_OPTIONS = [

@@ -1,6 +1,6 @@
 import type { ContactInfo } from '@/types/resume';
 import { HEADLESS_LAYOUT as L } from '@/lib/resume/headlessLayout';
-import { getContactLines } from '@/lib/export/normalizeResumeExport';
+import { getContactLines } from '@/lib/resume/contactFormatting';
 
 interface PreviewHeaderProps {
   contact: ContactInfo;

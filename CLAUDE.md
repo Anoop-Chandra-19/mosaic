@@ -33,17 +33,21 @@ src/
     shell/        # App chrome (AppShell, TopBar, Sidebar, PreviewPanel)
     editor/       # Resume editing UI (ContentTab, SectionList, EntryCard, etc.)
     import/       # Import dialog, parsing, store application, and tests
+    export/       # Export dialog, workflow, formatters, PDF generation, and tests
+    templates/    # Template UI, status, and comparison logic
     preview/      # Resume preview (ResumePreview, PreviewHeader, etc.)
     settings/     # Settings dialog + sections
   stores/         # Zustand stores
   types/          # Shared TypeScript types
   lib/
-    hooks/        # Custom React hooks (useDarkMode, useResumeExport, etc.)
-    export/       # Export utilities (PDF, markdown, plaintext)
+    hooks/        # Shared React hooks (useDarkMode, useTemporaryState, etc.)
+    files/        # File naming and download helpers shared by export and vault
+    resume/       # Shared layout, contact formatting, and resume schema migration
+    template/     # Shared template persistence schema migration
+    storage/      # Storage backend, Dexie DB, adapters, and tests
+    vault/        # Backup serialization, validation, and restore
     secrets/      # Secrets client
     utils.ts      # cn helper
-    db.ts         # Dexie DB
-    dexieStorage.ts
 ```
 
 ### Code placement

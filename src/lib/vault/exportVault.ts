@@ -1,5 +1,5 @@
-import { buildVaultFileName } from '@/lib/export/filename';
-import { downloadTextFile } from '@/lib/export/downloadFile';
+import { buildVaultFileName } from '@/lib/files/filename';
+import { downloadTextFile } from '@/lib/files/downloadFile';
 import { getResumeSnapshot } from '@/stores/resumeStore';
 import { useTemplateStore } from '@/stores/templateStore';
 import { VAULT_VERSION, type MosaicVault, type PersistedTemplateState } from '@/types/vault';

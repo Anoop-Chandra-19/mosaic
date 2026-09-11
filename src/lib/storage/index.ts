@@ -1,5 +1,5 @@
 import type { StateStorage } from 'zustand/middleware';
-import { dexieStorage } from '@/lib/dexieStorage';
+import { dexieStorage } from './dexieStorage';
 
 /**
  * Storage backend for all persisted zustand stores. Stores must import this

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildPdfFileName, buildVaultFileName } from '../filename';
+import { buildPdfFileName, buildVaultFileName } from './filename';
 
 const fixedDate = new Date(2026, 3, 23);
 

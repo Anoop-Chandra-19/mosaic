@@ -1,10 +1,7 @@
 import { Document, Page, StyleSheet, Text, View } from '@react-pdf/renderer';
 import type { PaperSize } from '@/types/ui';
-import {
-  getContactPrimaryLine,
-  getContactSecondaryLine,
-  type NormalizedResumeExport,
-} from '@/lib/export/normalizeResumeExport';
+import { getContactPrimaryLine, getContactSecondaryLine } from '@/lib/resume/contactFormatting';
+import type { NormalizedResumeExport } from '../normalizeResumeExport';
 import { HEADLESS_LAYOUT } from '@/lib/resume/headlessLayout';
 
 interface PDFResumeDocumentProps {

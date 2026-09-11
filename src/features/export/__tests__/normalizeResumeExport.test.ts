@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { getContactLines, normalizeResumeForExport } from '../normalizeResumeExport';
+import { normalizeResumeForExport } from '../normalizeResumeExport';
+import { getContactLines } from '@/lib/resume/contactFormatting';
 import type { ResumeData } from '@/types/resume';
 
 function createResumeFixture(): ResumeData {

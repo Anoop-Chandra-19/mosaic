@@ -1,4 +1,4 @@
-import type { TemplateStatus } from '@/lib/hooks/useTemplateStatus';
+import type { TemplateStatus } from './useTemplateStatus';
 
 const STATUS_STYLES: Record<TemplateStatus, string> = {
   clean: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400',

@@ -1,16 +1,13 @@
-import {
-  getContactPrimaryLine,
-  getContactSecondaryLine,
-  type NormalizedResumeExport,
-} from './normalizeResumeExport';
+import { getContactPrimaryLine, getContactSecondaryLine } from '@/lib/resume/contactFormatting';
+import type { NormalizedResumeExport } from './normalizeResumeExport';
 
-export function createMarkdownExport(data: NormalizedResumeExport) {
+export function createPlaintextExport(data: NormalizedResumeExport) {
   const lines: string[] = [];
   const name = data.contact.name || 'Mosaic Resume';
   const primaryLine = getContactPrimaryLine(data.contact);
   const secondaryLine = getContactSecondaryLine(data.contact);
 
-  lines.push(`# ${name}`);
+  lines.push(name);
 
   if (primaryLine) {
     lines.push(primaryLine);
@@ -20,34 +17,30 @@ export function createMarkdownExport(data: NormalizedResumeExport) {
     lines.push(secondaryLine);
   }
 
-  if (primaryLine || secondaryLine) {
-    lines.push('');
-  }
+  lines.push('');
 
   for (const section of data.sections) {
-    lines.push(`## ${section.label}`);
-    lines.push('');
+    lines.push(section.label.toUpperCase());
 
     const isTextOnly = section.type === 'summary' || section.type === 'skills';
 
     for (const entry of section.entries) {
       if (isTextOnly) {
         lines.push(entry.text);
-        lines.push('');
         continue;
       }
 
-      const heading = [entry.title, entry.subtitle].filter(Boolean).join(' - ');
+      const heading = [entry.title, entry.subtitle].filter(Boolean).join(' | ');
       if (heading) {
-        lines.push(`### ${heading}`);
+        lines.push(heading);
       }
 
       for (const bullet of entry.bullets) {
         lines.push(`- ${bullet}`);
       }
-
-      lines.push('');
     }
+
+    lines.push('');
   }
 
   return lines.join('\n').trimEnd();
