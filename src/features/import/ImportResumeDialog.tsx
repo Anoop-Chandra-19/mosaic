@@ -12,12 +12,8 @@ import {
 } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
-import { parseResumeText, type ParsedResume } from '@/lib/import/parseResumeText';
-import {
-  applyImportedResume,
-  describeImport,
-  type ImportMode,
-} from '@/lib/import/applyImportedResume';
+import { parseResumeText, type ParsedResume } from './parseResumeText';
+import { applyImportedResume, describeImport, type ImportMode } from './applyImportedResume';
 
 interface ImportResumeDialogProps {
   open: boolean;
