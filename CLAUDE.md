@@ -18,7 +18,10 @@
 - `bun run dev` — launch the Electron app with Vite HMR for the renderer
 - `bun run build` — type-check + build main, preload, and renderer into `out/`
 - `bun run package` — build + package an installer with electron-builder into `release/`
-- `bun run test` — Vitest
+- `bun run test` — Vitest unit tests
+- `bun run test:e2e` — build, then drive the real Electron app with Playwright under
+  `xvfb-run` (headless; Linux). Each launch gets a throwaway `--user-data-dir`, so e2e
+  runs never touch the real profile. On macOS/Windows: build, then `bunx playwright test`.
 - `bun run lint` — ESLint
 - `bunx shadcn@latest add <component>` — add a shadcn component
 
@@ -38,6 +41,7 @@
 ## Project Structure
 
 ```
+e2e/              # Playwright specs that launch the built app (launch.ts: withApp helper)
 electron/
   main/           # Electron main process (window, lifecycle; storage and secrets later)
   preload/        # Sandboxed preload — builds to CommonJS (.cjs); the only renderer bridge
