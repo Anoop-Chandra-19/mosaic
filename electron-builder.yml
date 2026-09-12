@@ -1,0 +1,28 @@
+appId: io.github.anoop-chandra-19.mosaic
+productName: Mosaic
+directories:
+  output: release
+# Only the build output ships. Renderer libraries are bundled by Vite, so they live in
+# devDependencies; `dependencies` is reserved for what the main process loads at runtime.
+files:
+  - out/**
+  - package.json
+  # better-sqlite3 needs only lib/ and this platform's prebuilt binary at runtime. Its
+  # C sources and the other platforms' binaries would otherwise add ~25 MB.
+  - '!node_modules/better-sqlite3/{deps,src}/**'
+  - '!node_modules/better-sqlite3/prebuilds/!(${platform}-${arch}).node'
+  # Electron builds are glibc; the musl keychain binary is never loaded.
+  - '!node_modules/@napi-rs/keyring-*-musl/**'
+# Native modules cannot be loaded from inside an asar archive.
+asarUnpack:
+  - '**/*.node'
+# better-sqlite3 13 is Node-API with prebuilt binaries: nothing to rebuild for Electron.
+npmRebuild: false
+linux:
+  target: AppImage
+  category: Office
+mac:
+  target: dmg
+  category: public.app-category.productivity
+win:
+  target: nsis

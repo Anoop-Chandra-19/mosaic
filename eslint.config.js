@@ -7,7 +7,7 @@ import eslintConfigPrettier from 'eslint-config-prettier';
 import { defineConfig, globalIgnores } from 'eslint/config';
 
 export default defineConfig([
-  globalIgnores(['dist']),
+  globalIgnores(['dist', 'out', 'release']),
   {
     files: ['**/*.{ts,tsx}'],
     extends: [
@@ -19,6 +19,13 @@ export default defineConfig([
     languageOptions: {
       ecmaVersion: 2020,
       globals: globals.browser,
+    },
+  },
+  {
+    // Main process, preload, and build configs run in Node, not the browser.
+    files: ['electron/**/*.ts', '*.config.ts'],
+    languageOptions: {
+      globals: globals.node,
     },
   },
   eslintConfigPrettier,
