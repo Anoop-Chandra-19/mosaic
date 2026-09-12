@@ -4,6 +4,9 @@
 
 - Ships as a local desktop app bundled with Electron, not a hosted website.
   Everything stays on the user's machine; there is no server to migrate data on.
+- Electron 44 via electron-vite: main process in `electron/main/`, sandboxed preload in
+  `electron/preload/` (the only bridge — `window.mosaic`), renderer is `index.html` + `src/`.
+  The renderer never gets Node or raw IPC; the preload exposes narrow, typed methods.
 - React 19 + TypeScript, Vite, Tailwind CSS v4 (CSS-first, no tailwind.config.js)
 - Zustand (with `persist` middleware) for state management
 - Radix UI / shadcn (new-york style, zinc base) for primitives — don't hand-roll UI components
@@ -12,10 +15,20 @@
 
 ## Commands
 
-- `bun run dev` — start dev server
-- `bun run build` — type-check + build
+- `bun run dev` — launch the Electron app with Vite HMR for the renderer
+- `bun run build` — type-check + build main, preload, and renderer into `out/`
+- `bun run package` — build + package an installer with electron-builder into `release/`
+- `bun run test` — Vitest
 - `bun run lint` — ESLint
 - `bunx shadcn@latest add <component>` — add a shadcn component
+
+### Dependencies
+
+- `dependencies` is only for modules the **main process** loads at runtime (today
+  `better-sqlite3`, `@napi-rs/keyring`) — electron-builder ships them as `node_modules`.
+- Everything the renderer uses (React, Radix, react-pdf, …) goes in `devDependencies`:
+  Vite bundles it into `out/renderer`, so shipping it again would only bloat the installer.
+  `bunx shadcn add` installs into `dependencies` — move what it adds.
 
 ## Git Hooks (enforced)
 
@@ -25,6 +38,9 @@
 ## Project Structure
 
 ```
+electron/
+  main/           # Electron main process (window, lifecycle; storage and secrets later)
+  preload/        # Sandboxed preload — builds to CommonJS (.cjs); the only renderer bridge
 src/
   components/
     ui/           # shadcn-managed primitives — do NOT edit manually
