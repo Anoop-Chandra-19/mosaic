@@ -1,9 +1,11 @@
-import { useResumeStore } from '@/stores/resumeStore';
-import { useTemplateStore } from '@/stores/templateStore';
 import type { ContactInfo, ResumeData, ResumeSection } from '@/types/resume';
 import type { ParsedResume } from './parseResumeText';
 
-export type ImportMode = 'replace' | 'merge';
+/**
+ * `new` opens the import as its own template; `replace` swaps the open template's content
+ * for it; `merge` appends it to what is there.
+ */
+export type ImportMode = 'new' | 'replace' | 'merge';
 
 export interface ImportSummary {
   sectionCount: number;
@@ -53,31 +55,24 @@ function mergeSections(current: ResumeSection[], incoming: ResumeSection[]): Res
 }
 
 /**
- * Apply a parsed resume to the stores. `replace` swaps the whole document (and clears
- * ephemeral template diffs/rollbacks that would reference stale ids, as applyVault does).
- * `merge` appends parsed content into the current resume and only fills empty contact fields.
+ * The document an import produces. `new` and `replace` take the parsed resume as it is;
+ * `merge` appends its sections into `current` and only fills empty contact fields.
  */
-export function applyImportedResume(parsed: ParsedResume, mode: ImportMode): void {
-  const resumeStore = useResumeStore.getState();
-  const current: ResumeData = {
-    schemaVersion: resumeStore.schemaVersion,
-    contact: resumeStore.contact,
-    sections: resumeStore.sections,
-  };
-
-  if (mode === 'replace') {
-    resumeStore.replaceResume({
+export function buildImportedResume(
+  current: ResumeData,
+  parsed: ParsedResume,
+  mode: ImportMode
+): ResumeData {
+  if (mode !== 'merge') {
+    return {
       schemaVersion: current.schemaVersion,
       contact: parsed.resume.contact,
       sections: parsed.resume.sections,
-    });
-    useTemplateStore.setState({ pendingAiChanges: [], rollbackSnapshots: {} });
-    return;
+    };
   }
-
-  resumeStore.replaceResume({
+  return {
     schemaVersion: current.schemaVersion,
     contact: mergeContact(current.contact, parsed.resume.contact),
     sections: mergeSections(current.sections, parsed.resume.sections),
-  });
+  };
 }

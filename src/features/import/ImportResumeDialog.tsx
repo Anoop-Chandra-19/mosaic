@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { AlertTriangle, ClipboardList, FileInput, Layers, Replace } from 'lucide-react';
+import { AlertTriangle, ClipboardList, FileInput, FilePlus, Layers, Replace } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
@@ -12,28 +12,42 @@ import {
 } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
+import { getResumeSnapshot } from '@/stores/resumeStore';
+import { attempt, showToast, useOverlayStore } from '@/stores/overlayStore';
+import { useTemplateStore } from '@/stores/templateStore';
+import { useUIStore } from '@/stores/uiStore';
 import { parseResumeText, type ParsedResume } from './parseResumeText';
-import { applyImportedResume, describeImport, type ImportMode } from './applyImportedResume';
+import { buildImportedResume, describeImport, type ImportMode } from './buildImportedResume';
 
-interface ImportResumeDialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-}
+/** Recorded in the template's history as where the content came from. */
+const SOURCE = 'pasted text';
 
 const MODE_OPTIONS: { id: ImportMode; label: string; icon: typeof Replace; hint: string }[] = [
+  {
+    id: 'new',
+    label: 'New template',
+    icon: FilePlus,
+    hint: 'Leave this template as it is and open the import as a new one.',
+  },
   {
     id: 'replace',
     label: 'Replace',
     icon: Replace,
-    hint: 'Swap your current resume for the imported content.',
+    hint: 'Swap this template’s content for the import. What it has now stays in its history.',
   },
   {
     id: 'merge',
     label: 'Add to current',
     icon: Layers,
-    hint: 'Keep what you have and append the imported sections.',
+    hint: 'Keep what you have and append the imported sections. The current state stays in history.',
   },
 ];
+
+const IMPORT_LABELS: Record<ImportMode, string> = {
+  new: 'Import as new template',
+  replace: 'Replace resume',
+  merge: 'Add to resume',
+};
 
 const PLACEHOLDER = `Jane Developer
 San Francisco, CA · jane@example.com · (555) 987-6543
@@ -49,24 +63,34 @@ B.S. Computer Science, State University
 Skills
 Languages: TypeScript, Python, Go`;
 
-export function ImportResumeDialog({ open, onOpenChange }: ImportResumeDialogProps) {
+export function ImportResumeDialog() {
+  const open = useOverlayStore((s) => s.importOpen);
+  const asNewOnly = useOverlayStore((s) => s.importAsNewOnly);
+  const closeImport = useOverlayStore((s) => s.closeImport);
+  const setStartOpen = useOverlayStore((s) => s.setStartOpen);
+  const createTemplate = useTemplateStore((s) => s.createTemplate);
+  const importIntoDraft = useTemplateStore((s) => s.importIntoDraft);
+  const setActiveSidebarTab = useUIStore((s) => s.setActiveSidebarTab);
   const [step, setStep] = useState<'paste' | 'review'>('paste');
   const [text, setText] = useState('');
   const [parsed, setParsed] = useState<ParsedResume | null>(null);
   const [excludedIds, setExcludedIds] = useState<Set<string>>(new Set());
-  const [mode, setMode] = useState<ImportMode>('replace');
+  const [chosenMode, setMode] = useState<ImportMode>('new');
+  const [importing, setImporting] = useState(false);
+  const mode = asNewOnly ? 'new' : chosenMode;
 
   const reset = () => {
     setStep('paste');
     setText('');
     setParsed(null);
     setExcludedIds(new Set());
-    setMode('replace');
+    setMode('new');
   };
 
   const handleOpenChange = (next: boolean) => {
-    if (!next) reset();
-    onOpenChange(next);
+    if (next) return;
+    reset();
+    closeImport();
   };
 
   const handleParse = () => {
@@ -96,10 +120,26 @@ export function ImportResumeDialog({ open, onOpenChange }: ImportResumeDialogPro
     });
   };
 
-  const handleImport = () => {
-    if (!filteredParsed || includedSections.length === 0) return;
-    applyImportedResume(filteredParsed, mode);
+  const handleImport = async () => {
+    if (!filteredParsed || includedSections.length === 0 || importing) return;
+    const doc = buildImportedResume(getResumeSnapshot(), filteredParsed, mode);
+    setImporting(true);
+    const imported = await attempt(
+      mode === 'new'
+        ? createTemplate(
+            filteredParsed.resume.contact.name.trim().slice(0, 80) || 'Imported resume',
+            doc,
+            SOURCE
+          )
+        : importIntoDraft(doc, SOURCE),
+      'Could not import the resume'
+    );
+    setImporting(false);
+    if (!imported) return;
     handleOpenChange(false);
+    setStartOpen(false);
+    setActiveSidebarTab('content');
+    showToast('Imported — check the sections in the sidebar');
   };
 
   return (
@@ -213,40 +253,44 @@ export function ImportResumeDialog({ open, onOpenChange }: ImportResumeDialogPro
                     })}
                   </ul>
 
-                  <p className="mt-5 mb-2 text-xs font-semibold tracking-widest text-zinc-500 uppercase">
-                    How to import
-                  </p>
-                  <div className="grid grid-cols-2 gap-2">
-                    {MODE_OPTIONS.map((option) => {
-                      const Icon = option.icon;
-                      const isSelected = option.id === mode;
-                      return (
-                        <button
-                          key={option.id}
-                          type="button"
-                          onClick={() => setMode(option.id)}
-                          className={cn(
-                            'flex items-center gap-2 rounded-lg border p-3 text-left text-sm font-semibold transition-colors',
-                            isSelected
-                              ? 'border-amber-600 bg-amber-950 text-zinc-100'
-                              : 'border-zinc-800 bg-zinc-950 text-zinc-300 hover:border-zinc-700 hover:bg-zinc-900'
-                          )}
-                          aria-pressed={isSelected}
-                        >
-                          <Icon
-                            className={cn(
-                              'size-4',
-                              isSelected ? 'text-amber-500' : 'text-zinc-500'
-                            )}
-                          />
-                          {option.label}
-                        </button>
-                      );
-                    })}
-                  </div>
-                  <p className="mt-2 text-xs text-zinc-500">
-                    {MODE_OPTIONS.find((option) => option.id === mode)?.hint}
-                  </p>
+                  {!asNewOnly && (
+                    <>
+                      <p className="mt-5 mb-2 text-xs font-semibold tracking-widest text-zinc-500 uppercase">
+                        How to import
+                      </p>
+                      <div className="grid grid-cols-3 gap-2">
+                        {MODE_OPTIONS.map((option) => {
+                          const Icon = option.icon;
+                          const isSelected = option.id === mode;
+                          return (
+                            <button
+                              key={option.id}
+                              type="button"
+                              onClick={() => setMode(option.id)}
+                              className={cn(
+                                'flex items-center gap-2 rounded-lg border p-3 text-left text-sm font-semibold transition-colors',
+                                isSelected
+                                  ? 'border-amber-600 bg-amber-950 text-zinc-100'
+                                  : 'border-zinc-800 bg-zinc-950 text-zinc-300 hover:border-zinc-700 hover:bg-zinc-900'
+                              )}
+                              aria-pressed={isSelected}
+                            >
+                              <Icon
+                                className={cn(
+                                  'size-4',
+                                  isSelected ? 'text-amber-500' : 'text-zinc-500'
+                                )}
+                              />
+                              {option.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                      <p className="mt-2 text-xs text-zinc-500">
+                        {MODE_OPTIONS.find((option) => option.id === mode)?.hint}
+                      </p>
+                    </>
+                  )}
                 </>
               )}
             </div>
@@ -255,8 +299,11 @@ export function ImportResumeDialog({ open, onOpenChange }: ImportResumeDialogPro
               <Button variant="outline" onClick={() => setStep('paste')}>
                 Back
               </Button>
-              <Button onClick={handleImport} disabled={includedSections.length === 0}>
-                {mode === 'replace' ? 'Replace resume' : 'Add to resume'}
+              <Button
+                onClick={() => void handleImport()}
+                disabled={includedSections.length === 0 || importing}
+              >
+                {IMPORT_LABELS[mode]}
               </Button>
             </DialogFooter>
           </>

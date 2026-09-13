@@ -1,5 +1,6 @@
 import { contextBridge, ipcRenderer } from 'electron';
 import type { MosaicDbBridge } from '@/types/db';
+import { FLUSH_DONE, FLUSH_REQUEST } from '../shared/appChannels';
 import { DB_METHODS, dbChannel } from '../shared/dbMethods';
 
 // The only door between the sandboxed renderer and the main process: narrow, typed
@@ -20,7 +21,21 @@ function dbBridge(): MosaicDbBridge {
   return bridge as unknown as MosaicDbBridge;
 }
 
+let flushRegistered = false;
+
 contextBridge.exposeInMainWorld('mosaic', {
   platform: process.platform,
   db: dbBridge(),
+  app: {
+    /** Main asks before the window closes; answer once pending saves have landed. */
+    onFlushRequest: (flush: () => Promise<void>) => {
+      if (flushRegistered) return;
+      flushRegistered = true;
+      ipcRenderer.on(FLUSH_REQUEST, () => {
+        void flush()
+          .catch(() => {})
+          .finally(() => ipcRenderer.send(FLUSH_DONE));
+      });
+    },
+  },
 });

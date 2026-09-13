@@ -2,6 +2,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { app, BrowserWindow, dialog, screen, shell, type IpcMainInvokeEvent } from 'electron';
 import { openDatabase, type Database } from './db/connection';
+import { flushBeforeClose } from './flushOnClose';
 import { registerDbHandlers } from './ipc/db';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -58,6 +59,7 @@ function createWindow(): BrowserWindow {
   });
 
   win.once('ready-to-show', () => win.show());
+  flushBeforeClose(win);
 
   win.webContents.setWindowOpenHandler(({ url }) => {
     // PDF preview opens a blob: URL the renderer just created; it stays in the app.
@@ -116,8 +118,15 @@ if (!app.requestSingleInstanceLock()) {
     });
   });
 
+  // A window holds its close until the renderer has saved (see flushBeforeClose), which
+  // cancels a quit in progress; remember the quit so it still happens once windows close.
+  let quitting = false;
+  app.on('before-quit', () => {
+    quitting = true;
+  });
+
   app.on('window-all-closed', () => {
-    if (process.platform !== 'darwin') app.quit();
+    if (process.platform !== 'darwin' || quitting) app.quit();
   });
 
   // Closing the last connection checkpoints the WAL into mosaic.db and removes -wal/-shm.

@@ -1,18 +1,19 @@
 import { useState } from 'react';
-import { Download, FileInput, Moon, Settings, Sun } from 'lucide-react';
+import { Download, FileInput, Moon, Save, Settings, Sun } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { MobileViewTabs } from '@/components/MobileViewTabs';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/lib/hooks/useIsMobile';
+import { shortcutLabel } from '@/lib/shortcuts';
+import { showToast, useOverlayStore } from '@/stores/overlayStore';
 import { useUIStore } from '@/stores/uiStore';
-import { useTemplateStore } from '@/stores/templateStore';
 import { useDarkMode } from '@/lib/hooks/useDarkMode';
 import { ExportDialog } from '@/features/export/ExportDialog';
 import { useResumeExport } from '@/features/export/useResumeExport';
+import { useActiveTemplate } from '@/features/templates/useActiveTemplate';
 import { useTemplateStatus } from '@/features/templates/useTemplateStatus';
 import { TemplateStatusBadge } from '@/features/templates/TemplateStatusBadge';
 import { SettingsDialog } from '@/features/settings/SettingsDialog';
-import { ImportResumeDialog } from '@/features/import/ImportResumeDialog';
 
 const MOBILE_PANE_OPTIONS = [
   { value: 'editor' as const, label: 'Edit' },
@@ -26,11 +27,10 @@ export function TopBar() {
   const { darkMode, toggleDarkMode } = useDarkMode();
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isExportOpen, setIsExportOpen] = useState(false);
-  const [isImportOpen, setIsImportOpen] = useState(false);
-  const activeTemplateId = useTemplateStore((s) => s.activeTemplateId);
-  const templates = useTemplateStore((s) => s.templates);
+  const activeTemplate = useActiveTemplate();
   const templateStatus = useTemplateStatus();
-  const activeTemplate = templates.find((template) => template.id === activeTemplateId);
+  const openImport = useOverlayStore((s) => s.openImport);
+  const setNameVersionOpen = useOverlayStore((s) => s.setNameVersionOpen);
   const {
     feedback,
     defaultPdfFileName,
@@ -56,9 +56,25 @@ export function TopBar() {
           <span className="hidden text-sm font-medium text-zinc-600 md:inline">/</span>
           <div className="hidden min-w-0 items-center gap-2 md:flex">
             <span className="max-w-[28vw] truncate text-sm font-medium text-zinc-600 dark:text-zinc-400">
-              {activeTemplate?.name ?? 'No template'}
+              {activeTemplate?.name ?? 'No resume open'}
             </span>
             <TemplateStatusBadge status={templateStatus} />
+            {activeTemplate && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 px-2 text-xs"
+                onClick={() => setNameVersionOpen(true)}
+                title={`${
+                  templateStatus === 'edited'
+                    ? 'Give this state a name so you can find it in history'
+                    : 'Name the newest version so you can find it in history'
+                }  ${shortcutLabel('S')}`}
+              >
+                <Save className="size-3" />
+                Name version…
+              </Button>
+            )}
           </div>
         </div>
 
@@ -91,7 +107,7 @@ export function TopBar() {
           <Button
             variant="ghost"
             size="icon-sm"
-            onClick={() => setIsImportOpen(true)}
+            onClick={() => openImport(!activeTemplate)}
             aria-label="Import resume"
           >
             <FileInput className="h-4 w-4" />
@@ -108,7 +124,9 @@ export function TopBar() {
 
           <Button
             size="sm"
-            onClick={() => setIsExportOpen(true)}
+            onClick={() =>
+              activeTemplate ? setIsExportOpen(true) : showToast('Nothing to export yet')
+            }
             disabled={isPdfBusy}
             aria-label="Open export dialog"
           >
@@ -119,7 +137,6 @@ export function TopBar() {
       </header>
 
       <SettingsDialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen} />
-      <ImportResumeDialog open={isImportOpen} onOpenChange={setIsImportOpen} />
       <ExportDialog
         // Remount when the suggested filename changes so the input resets cleanly.
         key={defaultPdfFileName}

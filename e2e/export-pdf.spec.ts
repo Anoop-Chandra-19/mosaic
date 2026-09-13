@@ -21,6 +21,10 @@ test('Save PDF writes the resume as a real PDF', async () => {
     userDataDir
   );
 
+  await page.getByRole('button', { name: /Start from a sample/ }).click();
+  await page.getByRole('button', { name: 'Example resume' }).click();
+  await expect(page.getByRole('banner').getByText('Example resume')).toBeVisible();
+
   await page.getByRole('button', { name: 'Export' }).click();
   await page.getByRole('dialog').getByRole('button', { name: 'Save PDF' }).click();
 
@@ -33,8 +37,9 @@ test('Save PDF writes the resume as a real PDF', async () => {
     ),
   ]);
   expect(state).toBe('completed');
-  expect(path.basename(file)).toMatch(/^your-name-resume-a4-\d{8}\.pdf$/);
-  await expect(page.getByText(/Saved PDF: your-name-resume/)).toBeVisible();
+  // Named after the template.
+  expect(path.basename(file)).toMatch(/^example-resume-resume-a4-\d{8}\.pdf$/);
+  await expect(page.getByText(/Saved PDF: example-resume/)).toBeVisible();
 
   const pdf = fs.readFileSync(file);
   expect(pdf.subarray(0, 5).toString()).toBe('%PDF-');

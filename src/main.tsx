@@ -5,6 +5,7 @@ import App from './App.tsx';
 import { BootFailure } from '@/features/shell/BootFailure';
 import { getDb } from '@/lib/storage/mosaicDb';
 import { hydrateStores } from '@/stores/hydrateStores';
+import { flushDraft } from '@/stores/resumeStore';
 
 const root = createRoot(document.getElementById('root')!);
 
@@ -13,6 +14,7 @@ getDb()
   .boot()
   .then((boot) => {
     hydrateStores(boot);
+    window.mosaic.app.onFlushRequest(flushDraft);
     root.render(
       <StrictMode>
         <App />

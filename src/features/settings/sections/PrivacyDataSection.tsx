@@ -1,16 +1,14 @@
 import { useMemo, useState } from 'react';
 import { ShieldCheck } from 'lucide-react';
 import { DangerActionRow } from '@/features/settings/DangerActionRow';
-import { BackupControls } from '@/features/settings/sections/BackupControls';
 import { getSecretsClient } from '@/lib/secrets';
-import { useResumeStore } from '@/stores/resumeStore';
+import { attempt } from '@/stores/overlayStore';
 import { useTemplateStore } from '@/stores/templateStore';
 import { useUIStore } from '@/stores/uiStore';
 import { useAIStore } from '@/stores/aiStore';
 
 export function PrivacyDataSection() {
-  const resetResume = useResumeStore((s) => s.resetResume);
-  const resetTemplates = useTemplateStore((s) => s.resetTemplates);
+  const deleteAllTemplates = useTemplateStore((s) => s.deleteAllTemplates);
   const resetUIState = useUIStore((s) => s.resetUIState);
   const resetAIConfig = useAIStore((s) => s.resetAIConfig);
   const secrets = useMemo(() => getSecretsClient(), []);
@@ -21,25 +19,20 @@ export function PrivacyDataSection() {
     setFeedback('All API keys were cleared.');
   };
 
-  const clearResumeData = async () => {
-    resetResume();
-    setFeedback('Resume content was reset to defaults.');
-  };
-
   const clearUIPreferences = async () => {
     resetUIState();
     setFeedback('UI preferences were restored to defaults.');
   };
 
-  const clearTemplates = () => {
-    resetTemplates();
-    setFeedback('All templates and version history were cleared.');
+  const clearTemplates = async () => {
+    if (await attempt(deleteAllTemplates(), 'Could not delete the templates')) {
+      setFeedback('All templates and version history were deleted.');
+    }
   };
 
   const clearEverything = async () => {
     await secrets.clearAllApiKeys();
-    resetResume();
-    resetTemplates();
+    if (!(await attempt(deleteAllTemplates(), 'Could not delete the templates'))) return;
     resetUIState();
     resetAIConfig();
     setFeedback('Local app state was reset.');
@@ -47,8 +40,6 @@ export function PrivacyDataSection() {
 
   return (
     <section className="space-y-4">
-      <BackupControls />
-
       <article className="rounded-xl border border-zinc-300 bg-zinc-100 p-4 dark:border-zinc-700 dark:bg-zinc-900">
         <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
           Local Data Controls
@@ -68,19 +59,10 @@ export function PrivacyDataSection() {
           />
 
           <DangerActionRow
-            title="Reset Resume Content"
-            description="Restore contact, sections, entries, and bullets to seed defaults."
-            actionLabel="Reset Resume"
-            confirmLabel="Reset Resume"
-            onConfirm={clearResumeData}
-            severity="caution"
-          />
-
-          <DangerActionRow
-            title="Reset Templates"
-            description="Delete all saved templates and their version history."
-            actionLabel="Reset Templates"
-            confirmLabel="Reset Templates"
+            title="Delete All Templates"
+            description="Delete every template, its draft, and its version history."
+            actionLabel="Delete Templates"
+            confirmLabel="Delete Templates"
             onConfirm={clearTemplates}
             severity="caution"
           />
@@ -96,7 +78,7 @@ export function PrivacyDataSection() {
 
           <DangerActionRow
             title="Clear All Local Data"
-            description="Clear API keys and reset AI config, resume content, and UI preferences."
+            description="Clear API keys, delete every template, and reset AI config and UI preferences."
             actionLabel="Clear Everything"
             confirmLabel="Confirm Full Reset"
             onConfirm={clearEverything}

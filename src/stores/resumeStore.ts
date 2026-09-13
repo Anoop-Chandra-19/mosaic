@@ -1,16 +1,33 @@
 import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
 import { immer } from 'zustand/middleware/immer';
-import { getStorage } from '@/lib/storage';
+import { DbError, getDb } from '@/lib/storage/mosaicDb';
+import { createEmptyResume } from '@/lib/resume/defaultResume';
+import type { Draft } from '@/types/db';
 import type { ResumeData, ResumeEntry, ContactInfo, SectionType } from '@/types/resume';
-import { createDefaultResume } from '@/lib/resume/defaultResume';
 
-/* Store Interface */
+/*
+ * The draft in the editor: one template's document. Every edit bumps `rev` and schedules a
+ * save; main stores the draft and the rev together. Documents from outside the editor
+ * (opening a template, an import, a restore) arrive through `loadDraft` and are not saved
+ * back — main just wrote them.
+ */
+
+/** A save goes out once typing pauses this long… */
+const SAVE_DELAY_MS = 1000;
+/** …or after this long of non-stop edits, so a crash loses seconds, not a session. */
+const SAVE_MAX_WAIT_MS = 5000;
 
 interface ResumeState extends ResumeData {
+  /** The template whose draft this is; null while no template is open. */
+  templateId: string | null;
+  /** Bumped by every edit — the counter the agent's anchors check. */
+  rev: number;
+  /** The last save failed for a reason other than being superseded. */
+  saveFailed: boolean;
+
+  loadDraft: (draft: Draft | null) => void;
+
   updateContact: (patch: Partial<ContactInfo>) => void;
-  replaceResume: (data: ResumeData) => void;
-  resetResume: () => void;
 
   addSection: (type: SectionType, label: string) => void;
   removeSection: (sectionId: string) => void;
@@ -36,36 +53,46 @@ interface ResumeState extends ResumeData {
 /* Store */
 
 export const useResumeStore = create<ResumeState>()(
-  persist(
-    immer((set) => ({
-      ...createDefaultResume(),
+  immer((set) => {
+    /** An edit: change the document, bump the rev, and queue a save. */
+    const edit = (recipe: (state: ResumeState) => void) => {
+      set((state) => {
+        recipe(state);
+        state.rev += 1;
+      });
+      scheduleSave();
+    };
+
+    return {
+      ...createEmptyResume(),
+      templateId: null,
+      rev: 0,
+      saveFailed: false,
+
+      loadDraft: (draft) => {
+        cancelPendingSave();
+        const doc = draft?.doc ?? createEmptyResume();
+        set((state) => {
+          state.schemaVersion = doc.schemaVersion;
+          state.contact = doc.contact;
+          state.sections = doc.sections;
+          state.templateId = draft?.templateId ?? null;
+          state.rev = draft?.rev ?? 0;
+          state.saveFailed = false;
+        });
+      },
 
       // Contact
 
       updateContact: (patch) =>
-        set((state) => {
+        edit((state) => {
           Object.assign(state.contact, patch);
-        }),
-
-      replaceResume: (data) =>
-        set((state) => {
-          state.schemaVersion = data.schemaVersion;
-          state.contact = data.contact;
-          state.sections = data.sections;
-        }),
-
-      resetResume: () =>
-        set((state) => {
-          const fresh = createDefaultResume();
-          state.schemaVersion = fresh.schemaVersion;
-          state.contact = fresh.contact;
-          state.sections = fresh.sections;
         }),
 
       // Section CRUD
 
       addSection: (type, label) =>
-        set((state) => {
+        edit((state) => {
           state.sections.push({
             id: crypto.randomUUID(),
             type,
@@ -76,12 +103,12 @@ export const useResumeStore = create<ResumeState>()(
         }),
 
       removeSection: (sectionId) =>
-        set((state) => {
+        edit((state) => {
           state.sections = state.sections.filter((s) => s.id !== sectionId);
         }),
 
       reorderSections: (orderedIds) =>
-        set((state) => {
+        edit((state) => {
           const byId = new Map(state.sections.map((s) => [s.id, s]));
           state.sections = orderedIds
             .map((id, i) => {
@@ -93,7 +120,7 @@ export const useResumeStore = create<ResumeState>()(
         }),
 
       updateSectionLabel: (sectionId, label) =>
-        set((state) => {
+        edit((state) => {
           const section = state.sections.find((s) => s.id === sectionId);
           if (section) section.label = label;
         }),
@@ -101,13 +128,13 @@ export const useResumeStore = create<ResumeState>()(
       // Entry CRUD
 
       addEntry: (sectionId, entry) =>
-        set((state) => {
+        edit((state) => {
           const section = state.sections.find((s) => s.id === sectionId);
           if (section) section.items.push({ ...entry, id: crypto.randomUUID() });
         }),
 
       updateEntry: (sectionId, entryId, patch) =>
-        set((state) => {
+        edit((state) => {
           const section = state.sections.find((s) => s.id === sectionId);
           if (!section) return;
           const entry = section.items.find((e) => e.id === entryId);
@@ -115,13 +142,13 @@ export const useResumeStore = create<ResumeState>()(
         }),
 
       removeEntry: (sectionId, entryId) =>
-        set((state) => {
+        edit((state) => {
           const section = state.sections.find((s) => s.id === sectionId);
           if (section) section.items = section.items.filter((e) => e.id !== entryId);
         }),
 
       toggleEntry: (sectionId, entryId) =>
-        set((state) => {
+        edit((state) => {
           const section = state.sections.find((s) => s.id === sectionId);
           if (!section) return;
           const entry = section.items.find((e) => e.id === entryId);
@@ -132,7 +159,7 @@ export const useResumeStore = create<ResumeState>()(
         }),
 
       reorderEntries: (sectionId, orderedIds) =>
-        set((state) => {
+        edit((state) => {
           const section = state.sections.find((s) => s.id === sectionId);
           if (!section) return;
           const byId = new Map(section.items.map((e) => [e.id, e]));
@@ -144,7 +171,7 @@ export const useResumeStore = create<ResumeState>()(
       // Bullet CRUD
 
       addBullet: (sectionId, entryId, text) =>
-        set((state) => {
+        edit((state) => {
           const section = state.sections.find((s) => s.id === sectionId);
           if (!section) return;
           const entry = section.items.find((e) => e.id === entryId);
@@ -152,7 +179,7 @@ export const useResumeStore = create<ResumeState>()(
         }),
 
       updateBullet: (sectionId, entryId, bulletId, text) =>
-        set((state) => {
+        edit((state) => {
           const section = state.sections.find((s) => s.id === sectionId);
           if (!section) return;
           const entry = section.items.find((e) => e.id === entryId);
@@ -162,7 +189,7 @@ export const useResumeStore = create<ResumeState>()(
         }),
 
       removeBullet: (sectionId, entryId, bulletId) =>
-        set((state) => {
+        edit((state) => {
           const section = state.sections.find((s) => s.id === sectionId);
           if (!section) return;
           const entry = section.items.find((e) => e.id === entryId);
@@ -170,7 +197,7 @@ export const useResumeStore = create<ResumeState>()(
         }),
 
       toggleBullet: (sectionId, entryId, bulletId) =>
-        set((state) => {
+        edit((state) => {
           const section = state.sections.find((s) => s.id === sectionId);
           if (!section) return;
           const entry = section.items.find((e) => e.id === entryId);
@@ -178,23 +205,65 @@ export const useResumeStore = create<ResumeState>()(
           const bullet = entry.bullets.find((b) => b.id === bulletId);
           if (bullet) bullet.selected = !bullet.selected;
         }),
-    })),
-    {
-      name: 'mosaic-resume',
-      version: 1,
-      storage: createJSONStorage(() => getStorage()),
-      migrate: (persisted: unknown, version: number) => {
-        const state = persisted as ResumeData;
-        if (version < 1) {
-          return { ...state, schemaVersion: 1 };
-        }
-        return state;
-      },
-    }
-  )
+    };
+  })
 );
 
 export function getResumeSnapshot(): ResumeData {
   const { schemaVersion, contact, sections } = useResumeStore.getState();
   return structuredClone({ schemaVersion, contact, sections });
+}
+
+/* Saving */
+
+let timer: ReturnType<typeof setTimeout> | undefined;
+/** When the oldest unsaved edit was made; null when nothing is waiting. */
+let pendingSince: number | null = null;
+/** Saves run one after another, so `flushDraft` can wait for all of them. */
+let saving: Promise<void> = Promise.resolve();
+
+function scheduleSave() {
+  const now = Date.now();
+  pendingSince ??= now;
+  clearTimeout(timer);
+  const wait = Math.min(SAVE_DELAY_MS, pendingSince + SAVE_MAX_WAIT_MS - now);
+  timer = setTimeout(() => void flushDraft(), Math.max(0, wait));
+}
+
+function cancelPendingSave() {
+  clearTimeout(timer);
+  timer = undefined;
+  pendingSince = null;
+}
+
+async function save(templateId: string, doc: ResumeData, rev: number) {
+  try {
+    await getDb().drafts.save(templateId, doc, rev);
+    useResumeStore.setState({ saveFailed: false });
+  } catch (error) {
+    // A newer draft already came from main (an import or restore landed after this edit
+    // was queued), or the template was deleted: either way this save has nothing to keep.
+    if (error instanceof DbError && (error.code === 'stale-rev' || error.code === 'not-found')) {
+      return;
+    }
+    console.error('Could not save the draft', error);
+    useResumeStore.setState({ saveFailed: true });
+  }
+}
+
+/**
+ * Save now whatever is waiting, and resolve once every save so far has landed. Called
+ * before anything that reads the draft from main (switching or duplicating a template,
+ * an import) and when the window closes.
+ */
+export function flushDraft(): Promise<void> {
+  if (pendingSince !== null) {
+    cancelPendingSave();
+    const { templateId, rev } = useResumeStore.getState();
+    if (templateId !== null) {
+      const doc = getResumeSnapshot();
+      saving = saving.then(() => save(templateId, doc, rev));
+    }
+  }
+  return saving;
 }

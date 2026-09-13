@@ -1,25 +1,6 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-
-// The stores persist through getStorage() → Dexie/IndexedDB, which is absent in the
-// node test environment. Swap it for an in-memory adapter so store mutations are testable.
-vi.mock('@/lib/storage', () => {
-  const mem = new Map<string, string>();
-  return {
-    getStorage: () => ({
-      getItem: async (key: string) => mem.get(key) ?? null,
-      setItem: async (key: string, value: string) => {
-        mem.set(key, value);
-      },
-      removeItem: async (key: string) => {
-        mem.delete(key);
-      },
-    }),
-  };
-});
-
-import { useResumeStore } from '@/stores/resumeStore';
+import { describe, expect, it } from 'vitest';
 import type { ContactInfo, ResumeData, ResumeSection } from '@/types/resume';
-import { applyImportedResume, describeImport } from '../applyImportedResume';
+import { buildImportedResume, describeImport } from '../buildImportedResume';
 import type { ParsedResume } from '../parseResumeText';
 
 function contact(overrides: Partial<ContactInfo> = {}): ContactInfo {
@@ -56,10 +37,6 @@ function parsed(
     resume: { schemaVersion: 1, contact: contact(contactOverrides), sections },
     warnings: [],
   };
-}
-
-function seed(data: ResumeData) {
-  useResumeStore.getState().replaceResume(data);
 }
 
 describe('describeImport', () => {
@@ -99,41 +76,43 @@ describe('describeImport', () => {
   });
 });
 
-describe('applyImportedResume', () => {
-  beforeEach(() => {
-    seed({
-      schemaVersion: 1,
-      contact: contact({ name: 'Existing Person', email: 'keep@me.com' }),
-      sections: [section('experience', 'Work Experience', ['Old Job'])],
-    });
-  });
+describe('buildImportedResume', () => {
+  const current: ResumeData = {
+    schemaVersion: 1,
+    contact: contact({ name: 'Existing Person', email: 'keep@me.com' }),
+    sections: [section('experience', 'Work Experience', ['Old Job'])],
+  };
 
-  it('replace swaps the whole document', () => {
-    applyImportedResume(
-      parsed([section('education', 'Education', ['B.S. CS'])], { name: 'New Name' }),
-      'replace'
-    );
-    const state = useResumeStore.getState();
-    expect(state.sections.map((s) => s.type)).toEqual(['education']);
-    expect(state.contact.name).toBe('New Name');
+  it('new and replace take the imported document as it is', () => {
+    const imported = parsed([section('education', 'Education', ['B.S. CS'])], {
+      name: 'New Name',
+    });
+    for (const mode of ['new', 'replace'] as const) {
+      const result = buildImportedResume(current, imported, mode);
+      expect(result.sections.map((s) => s.type)).toEqual(['education']);
+      expect(result.contact.name).toBe('New Name');
+    }
   });
 
   it('merge appends into same-type sections and adds new ones', () => {
-    applyImportedResume(
+    const result = buildImportedResume(
+      current,
       parsed([
         section('experience', 'Work Experience', ['New Job']),
         section('skills', 'Skills', ['TypeScript']),
       ]),
       'merge'
     );
-    const state = useResumeStore.getState();
-    const experience = state.sections.find((s) => s.type === 'experience');
+    const experience = result.sections.find((s) => s.type === 'experience');
     expect(experience?.items.map((i) => i.title)).toEqual(['Old Job', 'New Job']);
-    expect(state.sections.some((s) => s.type === 'skills')).toBe(true);
+    expect(result.sections.some((s) => s.type === 'skills')).toBe(true);
+    // The document it merged into is left alone.
+    expect(current.sections[0].items.map((i) => i.title)).toEqual(['Old Job']);
   });
 
   it('merge fills only empty contact fields', () => {
-    applyImportedResume(
+    const { contact: result } = buildImportedResume(
+      current,
       parsed([section('skills', 'Skills', ['Go'])], {
         name: 'Should Not Override',
         email: 'ignored@x.com',
@@ -141,7 +120,6 @@ describe('applyImportedResume', () => {
       }),
       'merge'
     );
-    const { contact: result } = useResumeStore.getState();
     expect(result.name).toBe('Existing Person');
     expect(result.email).toBe('keep@me.com');
     expect(result.phone).toBe('555-0000');

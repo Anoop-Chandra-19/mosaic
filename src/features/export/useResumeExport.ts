@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useResumeStore } from '@/stores/resumeStore';
 import { useUIStore } from '@/stores/uiStore';
-import { useTemplateStore } from '@/stores/templateStore';
+import { useActiveTemplate } from '@/features/templates/useActiveTemplate';
 import { normalizeResumeForExport } from './normalizeResumeExport';
 import { createMarkdownExport } from './markdown';
 import { createPlaintextExport } from './plaintext';
@@ -41,13 +41,12 @@ export function useResumeExport() {
   const contact = useResumeStore((s) => s.contact);
   const sections = useResumeStore((s) => s.sections);
   const paperSize = useUIStore((s) => s.paperSize);
-  const activeTemplateId = useTemplateStore((s) => s.activeTemplateId);
-  const templates = useTemplateStore((s) => s.templates);
+  const activeTemplate = useActiveTemplate();
   const [feedback, setFeedback] = useTemporaryState<ExportFeedback | null>(null, 2200);
   const [isSavingPdf, setIsSavingPdf] = useState(false);
   const [isPreviewingPdf, setIsPreviewingPdf] = useState(false);
   const isPdfBusy = isSavingPdf || isPreviewingPdf;
-  const activeTemplateName = templates.find((template) => template.id === activeTemplateId)?.name;
+  const activeTemplateName = activeTemplate?.name;
   const defaultPdfFileName = buildPdfFileName({
     contactName: contact.name,
     templateName: activeTemplateName,

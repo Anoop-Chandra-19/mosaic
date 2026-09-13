@@ -2,17 +2,19 @@ import { useState } from 'react';
 import { Copy, Pencil, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { ConfirmDeleteDialog } from '@/components/ConfirmDeleteDialog';
+import { attempt, showToast } from '@/stores/overlayStore';
 import { useTemplateStore } from '@/stores/templateStore';
-import type { TemplateRecord } from '@/types/resume';
+import type { TemplateSummary } from '@/types/db';
+import { DeleteTemplateDialog } from './DeleteTemplateDialog';
 
 interface TemplateCardProps {
-  template: TemplateRecord;
+  template: TemplateSummary;
   isActive: boolean;
-  onApply: (templateId: string) => void;
+  onOpen: (templateId: string) => void;
 }
 
-export function TemplateCard({ template, isActive, onApply }: TemplateCardProps) {
+export function TemplateCard({ template, isActive, onOpen }: TemplateCardProps) {
+  const isLast = useTemplateStore((s) => s.templates.length === 1);
   const renameTemplate = useTemplateStore((s) => s.renameTemplate);
   const duplicateTemplate = useTemplateStore((s) => s.duplicateTemplate);
   const deleteTemplate = useTemplateStore((s) => s.deleteTemplate);
@@ -23,14 +25,14 @@ export function TemplateCard({ template, isActive, onApply }: TemplateCardProps)
   const submitRename = () => {
     const trimmed = name.trim();
     if (trimmed && trimmed !== template.name) {
-      renameTemplate(template.id, trimmed);
+      void attempt(renameTemplate(template.id, trimmed), 'Could not rename the template');
     } else {
       setName(template.name);
     }
     setEditing(false);
   };
 
-  const versionCount = useTemplateStore((s) => s.versionsByTemplateId[template.id]?.length ?? 0);
+  const { versionCount } = template;
 
   return (
     <div
@@ -60,7 +62,7 @@ export function TemplateCard({ template, isActive, onApply }: TemplateCardProps)
             />
           ) : (
             <button
-              onClick={() => onApply(template.id)}
+              onClick={() => onOpen(template.id)}
               className="truncate text-sm font-medium text-zinc-900 hover:underline dark:text-zinc-100"
             >
               {template.name}
@@ -86,7 +88,9 @@ export function TemplateCard({ template, isActive, onApply }: TemplateCardProps)
             variant="ghost"
             size="icon"
             className="h-7 w-7"
-            onClick={() => duplicateTemplate(template.id)}
+            onClick={() =>
+              void attempt(duplicateTemplate(template.id), 'Could not duplicate the template')
+            }
             aria-label="Duplicate template"
           >
             <Copy className="h-3.5 w-3.5" />
@@ -108,18 +112,23 @@ export function TemplateCard({ template, isActive, onApply }: TemplateCardProps)
           variant="outline"
           size="sm"
           className="mt-2 w-full text-xs"
-          onClick={() => onApply(template.id)}
+          onClick={() => onOpen(template.id)}
         >
-          Apply
+          Open
         </Button>
       )}
 
-      <ConfirmDeleteDialog
+      <DeleteTemplateDialog
+        template={template}
         open={pendingDelete}
+        active={isActive}
+        last={isLast}
         onOpenChange={setPendingDelete}
-        title="Delete template"
-        description={`This will permanently delete "${template.name}" and all its version history.`}
-        onConfirm={() => deleteTemplate(template.id)}
+        onDelete={() =>
+          void attempt(deleteTemplate(template.id), 'Could not delete the template').then(
+            (deleted) => deleted && showToast(`Deleted “${template.name}”`)
+          )
+        }
       />
     </div>
   );

@@ -3,13 +3,26 @@ import { withApp } from './launch';
 
 const mosaic = withApp();
 
-test('opens the editor and renders the resume preview', async () => {
+test('a new install opens on the Start panel', async () => {
   const { page, errors } = mosaic();
 
   await expect(page).toHaveTitle('Mosaic');
-  await expect(page.getByRole('button', { name: 'Export' })).toBeVisible();
-  // The seed resume's name appears in both the contact editor and the paper preview.
-  await expect(page.getByText('Your Name').first()).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Start your first resume' })).toBeVisible();
+  await expect(page.getByRole('button', { name: /Blank resume/ })).toBeFocused();
+  expect(errors).toEqual([]);
+});
+
+test('Blank resume creates the first template and opens it', async () => {
+  const { page, errors } = mosaic();
+
+  await page.getByRole('button', { name: /Blank resume/ }).click();
+
+  await expect(page.getByText('Created “Untitled resume” — your first template')).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Start your first resume' })).toBeHidden();
+  await expect(page.getByRole('banner').getByText('Untitled resume')).toBeVisible();
+  // Three empty sections, and the rest offered while the resume is still empty.
+  await expect(page.getByText('Add a section')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Projects' })).toBeVisible();
   expect(errors).toEqual([]);
 });
 
