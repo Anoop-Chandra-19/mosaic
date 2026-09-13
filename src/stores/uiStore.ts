@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { immer } from 'zustand/middleware/immer';
-import { getStorage } from '@/lib/storage';
+import { settingsStorage } from '@/lib/storage/settingsStorage';
 import type { PaperSize } from '@/types/ui';
 
 export type SidebarTab = 'content' | 'templates' | 'ai';
@@ -111,8 +111,10 @@ export const useUIStore = create<UIState>()(
         }),
     })),
     {
-      name: 'mosaic-ui',
-      storage: createJSONStorage(() => getStorage()),
+      name: 'ui',
+      storage: createJSONStorage(() => settingsStorage),
+      // Hydrated by `hydrateStores` once boot has loaded the settings.
+      skipHydration: true,
     }
   )
 );

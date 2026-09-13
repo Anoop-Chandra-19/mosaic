@@ -14,9 +14,13 @@ export interface LaunchedApp {
   errors: string[];
 }
 
-/** Launches the built app (`out/`) — run `electron-vite build` first. */
-export async function launchApp(): Promise<LaunchedApp> {
-  const userDataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mosaic-e2e-'));
+/**
+ * Launches the built app (`out/`) — run `electron-vite build` first. Pass the
+ * `userDataDir` of an earlier launch to relaunch over the same data.
+ */
+export async function launchApp(
+  userDataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mosaic-e2e-'))
+): Promise<LaunchedApp> {
   const env: Record<string, string> = {};
   for (const [key, value] of Object.entries(process.env)) {
     if (value !== undefined) env[key] = value;
