@@ -27,6 +27,7 @@ export const DB_METHODS = [
   'versions.get',
   'versions.name',
   'versions.restore',
+  'versions.duplicate',
   'settings.set',
   'settings.remove',
 ] as const satisfies readonly DbMethod[];

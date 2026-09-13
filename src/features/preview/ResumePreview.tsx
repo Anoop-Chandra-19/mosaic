@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useResumeStore } from '@/stores/resumeStore';
+import type { ResumeData } from '@/types/resume';
 import type { PaperSize } from '@/types/ui';
 import { PreviewHeader } from './PreviewHeader';
 import { PreviewPage } from './PreviewPage';
@@ -16,6 +17,8 @@ interface ResumePreviewProps {
   paperSize: PaperSize;
   previewZoom?: number;
   onMetaChange: (meta: ResumePreviewMeta) => void;
+  /** A document to show instead of the draft — a version being read before a restore. */
+  doc?: ResumeData;
 }
 
 export interface ResumePreviewMeta {
@@ -27,9 +30,16 @@ export interface ResumePreviewMeta {
 const MEASUREMENT_THROTTLE_MS = 100;
 const PAGE_GAP_PX = 16;
 
-export function ResumePreview({ paperSize, previewZoom = 1, onMetaChange }: ResumePreviewProps) {
-  const contact = useResumeStore((s) => s.contact);
-  const sections = useResumeStore((s) => s.sections);
+export function ResumePreview({
+  paperSize,
+  previewZoom = 1,
+  onMetaChange,
+  doc,
+}: ResumePreviewProps) {
+  const draftContact = useResumeStore((s) => s.contact);
+  const draftSections = useResumeStore((s) => s.sections);
+  const contact = doc?.contact ?? draftContact;
+  const sections = doc?.sections ?? draftSections;
   const measureRootRef = useRef<HTMLDivElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [throttledSections, setThrottledSections] = useState<PreviewRenderableSection[]>([]);

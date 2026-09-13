@@ -82,6 +82,7 @@ export interface MosaicDb {
     /** `importedFrom` names an import's source for history ("pasted text"). */
     create(name: string, doc: ResumeData, importedFrom?: string): Promise<TemplateSummary>;
     rename(id: string, name: string): Promise<void>;
+    /** Copies the draft, unsaved edits included, into a new template. */
     duplicate(id: string): Promise<TemplateSummary>;
     remove(id: string): Promise<void>;
     /** Loads a template's draft and remembers it for the next launch. */
@@ -99,7 +100,13 @@ export interface MosaicDb {
     get(versionId: string): Promise<Version>;
     /** Renames the newest version if the draft matches it, otherwise adds a named one. */
     name(templateId: string, name: string): Promise<VersionMeta>;
+    /**
+     * Puts a version back as its template's draft. Template-scoped: the version must be
+     * one of that template's own, so each template's history stays self-contained.
+     */
     restore(templateId: string, versionId: string): Promise<Draft>;
+    /** A new template from this version; the version says which template it came from. */
+    duplicate(versionId: string): Promise<TemplateSummary>;
   };
   settings: {
     set(key: string, value: string): Promise<void>;

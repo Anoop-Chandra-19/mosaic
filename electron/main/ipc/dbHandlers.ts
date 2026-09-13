@@ -10,6 +10,7 @@ import { removeSetting, setSetting } from '../db/settings';
 import {
   createTemplate,
   duplicateTemplate,
+  duplicateVersion,
   listTemplates,
   openTemplate,
   removeTemplate,
@@ -97,6 +98,7 @@ export function createDbHandlers(db: Database): Handlers<MosaicDb> {
       name: (templateId, name) => nameDraft(db, text(templateId, 'templateId'), text(name, 'name')),
       restore: (templateId, versionId) =>
         restoreVersion(db, text(templateId, 'templateId'), text(versionId, 'versionId')),
+      duplicate: (versionId) => duplicateVersion(db, text(versionId, 'versionId')),
     },
     settings: {
       set: (key, value) => setSetting(db, text(key, 'key'), settingValue(value)),

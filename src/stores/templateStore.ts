@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
 import { getDb } from '@/lib/storage/mosaicDb';
+import { useOverlayStore } from '@/stores/overlayStore';
 import { flushDraft, useResumeStore } from '@/stores/resumeStore';
 import type { Draft, TemplateSummary, VersionMeta } from '@/types/db';
 import type { PendingTextAiChange, ResumeData } from '@/types/resume';
@@ -23,7 +24,10 @@ interface TemplateState {
   createTemplate: (name: string, doc: ResumeData, importedFrom?: string) => Promise<void>;
   openTemplate: (id: string) => Promise<void>;
   renameTemplate: (id: string, name: string) => Promise<void>;
-  duplicateTemplate: (id: string) => Promise<void>;
+  /** Copies the draft into a new template. Does not open the copy. */
+  duplicateTemplate: (id: string) => Promise<TemplateSummary>;
+  /** A new template from one version of any template's history. Does not open it. */
+  duplicateVersion: (versionId: string) => Promise<TemplateSummary>;
   /** The open one included: the most recently edited opens next, or nothing does. */
   deleteTemplate: (id: string) => Promise<void>;
   deleteAllTemplates: () => Promise<void>;
@@ -32,6 +36,11 @@ interface TemplateState {
   nameVersion: (name: string) => Promise<VersionMeta>;
   /** Replaces the open draft, keeping unsaved edits in history first. */
   importIntoDraft: (doc: ResumeData, from: string) => Promise<void>;
+  /**
+   * Puts an older version back as the template's draft, keeping unsaved edits in history
+   * first, and opens that template if another one is open.
+   */
+  restoreVersion: (templateId: string, versionId: string) => Promise<void>;
 
   // AI queue (T3, exposed now for interface stability)
   enqueueAiChange: (change: PendingTextAiChange) => void;
@@ -64,11 +73,15 @@ function revertAiChange(change: PendingTextAiChange) {
 
 export const useTemplateStore = create<TemplateState>()(
   immer((set, get) => {
-    /** Put a draft from main in the editor; staged AI changes pointed at the old one. */
+    /**
+     * Put a draft from main in the editor. Staged AI changes and a version preview were
+     * about the draft being replaced, so they go.
+     */
     const showDraft = (draft: Draft | null) => {
       set((state) => {
         state.pendingAiChanges = [];
       });
+      useOverlayStore.getState().setPreview(null);
       useResumeStore.getState().loadDraft(draft);
     };
 
@@ -112,8 +125,15 @@ export const useTemplateStore = create<TemplateState>()(
       duplicateTemplate: async (id) => {
         // The copy takes the draft as main has it, so send the latest edits first.
         await flushDraft();
-        await getDb().templates.duplicate(id);
+        const copy = await getDb().templates.duplicate(id);
         await get().refresh();
+        return copy;
+      },
+
+      duplicateVersion: async (versionId) => {
+        const copy = await getDb().versions.duplicate(versionId);
+        await get().refresh();
+        return copy;
       },
 
       deleteTemplate: async (id) => {
@@ -151,6 +171,14 @@ export const useTemplateStore = create<TemplateState>()(
         const templateId = requireOpenTemplate();
         await flushDraft();
         showDraft(await getDb().drafts.importInto(templateId, doc, from));
+        await get().refresh();
+      },
+
+      restoreVersion: async (templateId, versionId) => {
+        await flushDraft();
+        const db = getDb();
+        const restored = await db.versions.restore(templateId, versionId);
+        showDraft(templateId === openTemplateId() ? restored : await db.templates.open(templateId));
         await get().refresh();
       },
 

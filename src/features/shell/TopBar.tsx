@@ -26,7 +26,8 @@ export function TopBar() {
   const isMobile = useIsMobile();
   const { darkMode, toggleDarkMode } = useDarkMode();
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [isExportOpen, setIsExportOpen] = useState(false);
+  const isExportOpen = useOverlayStore((s) => s.exportOpen);
+  const setIsExportOpen = useOverlayStore((s) => s.setExportOpen);
   const activeTemplate = useActiveTemplate();
   const templateStatus = useTemplateStatus();
   const openImport = useOverlayStore((s) => s.openImport);

@@ -6,7 +6,7 @@ import { encodeDoc } from './doc';
 import { readDraft } from './drafts';
 import { StorageError } from './errors';
 import { ACTIVE_TEMPLATE_KEY, getSetting, removeSetting, setSetting } from './settings';
-import { countVersions, headVersion, insertVersion } from './versions';
+import { countVersions, getVersion, headVersion, insertVersion } from './versions';
 
 interface TemplateRow {
   id: string;
@@ -120,13 +120,31 @@ export function renameTemplate(db: Database, id: string, name: string): void {
 export function duplicateTemplate(db: Database, id: string): TemplateSummary {
   return db.transaction(() => {
     const source = getTemplate(db, id);
-    const draft = readDraft(db, id);
     return insertTemplate(
       db,
       `${source.name} (copy)`,
-      draft.doc,
+      readDraft(db, id).doc,
       'duplicate',
       `Duplicated from "${source.name}"`
+    );
+  })();
+}
+
+/**
+ * A new template from one version — branching from a snapshot, as in git. The version
+ * names its template, so nothing else is needed. The copy starts its own history; its
+ * first entry records where it came from.
+ */
+export function duplicateVersion(db: Database, versionId: string): TemplateSummary {
+  return db.transaction(() => {
+    const version = getVersion(db, versionId);
+    const source = getTemplate(db, version.templateId);
+    return insertTemplate(
+      db,
+      `${source.name} (copy)`,
+      version.doc,
+      'duplicate',
+      `Duplicated from "${source.name}", version "${version.summary}"`
     );
   })();
 }

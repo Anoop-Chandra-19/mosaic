@@ -43,7 +43,7 @@ test('naming a version makes the draft up to date', async () => {
   await startBlank(page);
   await page.keyboard.press('Control+s');
   await page.getByLabel('Version name').fill('First draft');
-  await page.getByRole('button', { name: 'Name version', exact: true }).click();
+  await page.getByRole('dialog').getByRole('button', { name: 'Name version' }).click();
   await expect(page.getByText('Named “First draft”')).toBeVisible();
 
   const banner = page.getByRole('banner');
@@ -57,7 +57,8 @@ test('the last template can be deleted, leaving nothing open', async () => {
   await startBlank(page);
 
   await page.getByRole('button', { name: 'Templates' }).click();
-  await page.getByRole('button', { name: 'Delete template' }).click();
+  await page.getByRole('button', { name: 'Options for Untitled resume' }).click();
+  await page.getByRole('menuitem', { name: 'Delete template…' }).click();
   const confirm = page.getByRole('dialog');
   await expect(
     confirm.getByText(/your last one, so Mosaic will be left with nothing open/)

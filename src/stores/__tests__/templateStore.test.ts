@@ -139,6 +139,47 @@ describe('templateStore', () => {
     expect(draft.doc.contact.name).toBe('Latest');
   });
 
+  it('restores an older version, keeping unsaved edits in history', async () => {
+    await templates().createTemplate('Backend', createDefaultResume());
+    const templateId = resume().templateId!;
+    resume().updateContact({ name: 'Named state' });
+    const named = await templates().nameVersion('First');
+    resume().updateContact({ name: 'Unsaved edit' });
+
+    await templates().restoreVersion(templateId, named.id);
+
+    expect(resume().contact.name).toBe('Named state');
+    const history = await db.current!.versions.list(templateId);
+    expect(history.slice(0, 2).map((v) => v.summary)).toEqual([
+      'Restored "First"',
+      'Before restoring "First"',
+    ]);
+  });
+
+  it('restoring a version of another template opens that template', async () => {
+    await templates().createTemplate('Backend', createDefaultResume());
+    const backend = resume().templateId!;
+    const [created] = await db.current!.versions.list(backend);
+    await templates().createTemplate('Frontend', createEmptyResume());
+
+    await templates().restoreVersion(backend, created.id);
+
+    expect(resume().templateId).toBe(backend);
+  });
+
+  it('duplicates one version as a new template, leaving the open one open', async () => {
+    await templates().createTemplate('Backend', createDefaultResume());
+    const templateId = resume().templateId!;
+    const [created] = await db.current!.versions.list(templateId);
+    resume().updateContact({ name: 'Later edit' });
+
+    const copy = await templates().duplicateVersion(created.id);
+
+    expect(resume().templateId).toBe(templateId);
+    const draft = await db.current!.templates.open(copy.id);
+    expect(draft.doc.contact.name).toBe('Your Name');
+  });
+
   it('rejects with the database error when main refuses', async () => {
     await expect(templates().openTemplate('missing')).rejects.toMatchObject({ code: 'not-found' });
   });

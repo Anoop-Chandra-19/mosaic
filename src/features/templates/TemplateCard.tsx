@@ -1,135 +1,326 @@
 import { useState } from 'react';
-import { Copy, Pencil, Trash2 } from 'lucide-react';
+import {
+  ChevronDown,
+  ChevronRight,
+  Clock,
+  Copy,
+  Download,
+  Eye,
+  Info,
+  LayoutTemplate,
+  MoreHorizontal,
+  Pencil,
+  Save,
+  Trash2,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
-import { attempt, showToast } from '@/stores/overlayStore';
+import { getDb } from '@/lib/storage/mosaicDb';
+import { cn } from '@/lib/utils';
+import { attempt, showToast, useOverlayStore } from '@/stores/overlayStore';
+import { useResumeStore } from '@/stores/resumeStore';
 import { useTemplateStore } from '@/stores/templateStore';
-import type { TemplateSummary } from '@/types/db';
+import type { TemplateSummary, VersionMeta } from '@/types/db';
 import { DeleteTemplateDialog } from './DeleteTemplateDialog';
+import { formatWhen } from './formatWhen';
+import { useTemplateVersions, versionLabel } from './useTemplateVersions';
+import { VersionList } from './VersionList';
 
 interface TemplateCardProps {
   template: TemplateSummary;
-  isActive: boolean;
-  onOpen: (templateId: string) => void;
+  active: boolean;
+  expanded: boolean;
+  onToggle: () => void;
 }
 
-export function TemplateCard({ template, isActive, onOpen }: TemplateCardProps) {
+export function TemplateCard({ template, active, expanded, onToggle }: TemplateCardProps) {
   const isLast = useTemplateStore((s) => s.templates.length === 1);
+  const openTemplate = useTemplateStore((s) => s.openTemplate);
   const renameTemplate = useTemplateStore((s) => s.renameTemplate);
   const duplicateTemplate = useTemplateStore((s) => s.duplicateTemplate);
+  const duplicateVersion = useTemplateStore((s) => s.duplicateVersion);
   const deleteTemplate = useTemplateStore((s) => s.deleteTemplate);
-  const [editing, setEditing] = useState(false);
-  const [name, setName] = useState(template.name);
+  const restoreVersion = useTemplateStore((s) => s.restoreVersion);
+  const setNameVersionOpen = useOverlayStore((s) => s.setNameVersionOpen);
+  const setExportOpen = useOverlayStore((s) => s.setExportOpen);
+  const preview = useOverlayStore((s) => s.preview);
+  const setPreview = useOverlayStore((s) => s.setPreview);
+  // The draft has moved on from the newest version.
+  const dirty = useResumeStore((s) => active && s.rev !== template.head.rev);
+  const versions = useTemplateVersions(template, expanded);
+  const [renaming, setRenaming] = useState(false);
   const [pendingDelete, setPendingDelete] = useState(false);
+  const previewId = active && preview ? preview.version.id : null;
 
-  const submitRename = () => {
+  const open = async () => {
+    if (await attempt(openTemplate(template.id), 'Could not open that template')) {
+      showToast(`Opened “${template.name}”`);
+    }
+  };
+
+  const rename = (name: string) => {
+    setRenaming(false);
     const trimmed = name.trim();
     if (trimmed && trimmed !== template.name) {
       void attempt(renameTemplate(template.id, trimmed), 'Could not rename the template');
-    } else {
-      setName(template.name);
     }
-    setEditing(false);
   };
 
-  const { versionCount } = template;
+  const duplicate = async (version?: VersionMeta) => {
+    try {
+      const copy = await (version ? duplicateVersion(version.id) : duplicateTemplate(template.id));
+      showToast(`Duplicated as “${copy.name}”`);
+    } catch (error) {
+      console.error(error);
+      showToast('Could not duplicate the template', 'error');
+    }
+  };
+
+  const exportTemplate = async () => {
+    if (!active && !(await attempt(openTemplate(template.id), 'Could not open that template'))) {
+      return;
+    }
+    setExportOpen(true);
+  };
+
+  const togglePreview = async (version: VersionMeta, label: string) => {
+    if (previewId === version.id) {
+      setPreview(null);
+      return;
+    }
+    try {
+      setPreview({ version: await getDb().versions.get(version.id), label });
+    } catch (error) {
+      console.error(error);
+      showToast('Could not read that version', 'error');
+    }
+  };
+
+  const restore = async (version: VersionMeta) => {
+    if (await attempt(restoreVersion(template.id, version.id), 'Could not restore that version')) {
+      showToast(`Restored “${version.summary}”`);
+    }
+  };
+
+  const remove = async () => {
+    if (await attempt(deleteTemplate(template.id), 'Could not delete the template')) {
+      const count = template.versionCount;
+      showToast(
+        `Deleted “${template.name}” and its ${count} ${count === 1 ? 'version' : 'versions'}`
+      );
+    }
+  };
+
+  const Chevron = expanded ? ChevronDown : ChevronRight;
 
   return (
     <div
-      className={`rounded-lg border p-3 transition-colors ${
-        isActive
-          ? 'border-amber-500 bg-amber-50 dark:bg-amber-950'
-          : 'border-zinc-300 bg-zinc-50 hover:border-zinc-400 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:border-zinc-600'
-      }`}
+      className={cn(
+        '@container overflow-hidden rounded-lg border bg-zinc-50 transition-colors dark:bg-zinc-900',
+        active
+          ? 'border-amber-300 dark:border-amber-800'
+          : 'border-zinc-200 hover:border-zinc-300 dark:border-zinc-800 dark:hover:border-zinc-700'
+      )}
     >
-      <div className="flex items-start justify-between gap-2">
+      <div className="flex items-start gap-2 px-3 py-2.5">
+        <button
+          type="button"
+          onClick={onToggle}
+          aria-expanded={expanded}
+          aria-label={`${expanded ? 'Hide' : 'Show'} history of ${template.name}`}
+          className="mt-0.5 shrink-0 rounded text-zinc-500 hover:text-zinc-800 focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:outline-none dark:hover:text-zinc-200"
+        >
+          <Chevron className="size-3.5" />
+        </button>
+
         <div className="min-w-0 flex-1">
-          {editing ? (
-            <Input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              onBlur={submitRename}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') submitRename();
-                if (e.key === 'Escape') {
-                  setName(template.name);
-                  setEditing(false);
-                }
-              }}
-              className="h-7 text-sm"
-              aria-label="Template name"
-              autoFocus
-            />
-          ) : (
-            <button
-              onClick={() => onOpen(template.id)}
-              className="truncate text-sm font-medium text-zinc-900 hover:underline dark:text-zinc-100"
-            >
-              {template.name}
-            </button>
-          )}
-          <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">
-            {versionCount} {versionCount === 1 ? 'version' : 'versions'} &middot;{' '}
-            {new Date(template.updatedAt).toLocaleDateString()}
+          <div className="flex min-w-0 items-center gap-1.5">
+            {renaming ? (
+              <Input
+                defaultValue={template.name}
+                aria-label="Template name"
+                maxLength={200}
+                autoFocus
+                onBlur={(event) => rename(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter') rename(event.currentTarget.value);
+                  if (event.key === 'Escape') setRenaming(false);
+                }}
+                className="h-7 text-sm font-semibold"
+              />
+            ) : (
+              <button
+                type="button"
+                onClick={onToggle}
+                className="truncate text-left text-sm font-semibold text-zinc-900 dark:text-zinc-100"
+              >
+                {template.name}
+              </button>
+            )}
+            {active && !renaming && (
+              <span className="shrink-0 rounded bg-zinc-900 px-1.5 py-px text-[0.7rem] font-semibold text-white dark:bg-zinc-100 dark:text-zinc-900">
+                open
+              </span>
+            )}
+          </div>
+          <p className="mt-0.5 text-xs text-zinc-500">
+            {template.versionCount} {template.versionCount === 1 ? 'version' : 'versions'} ·{' '}
+            {formatWhen(template.head.createdAt)}
           </p>
         </div>
 
-        <div className="flex shrink-0 gap-1">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-7 w-7"
-            onClick={() => setEditing(true)}
-            aria-label="Rename template"
-          >
-            <Pencil className="h-3.5 w-3.5" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-7 w-7"
-            onClick={() =>
-              void attempt(duplicateTemplate(template.id), 'Could not duplicate the template')
-            }
-            aria-label="Duplicate template"
-          >
-            <Copy className="h-3.5 w-3.5" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-7 w-7 text-red-500 hover:text-red-600"
-            onClick={() => setPendingDelete(true)}
-            aria-label="Delete template"
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-          </Button>
+        <div className="flex shrink-0 items-center gap-0.5">
+          {active ? (
+            <Button
+              size="sm"
+              variant={dirty ? 'default' : 'outline'}
+              className={cn(
+                'h-7 px-2 text-xs',
+                dirty && 'bg-amber-500 text-zinc-950 hover:bg-amber-600 dark:bg-amber-500'
+              )}
+              title="Give this state a name so you can find it in history"
+              aria-label="Name version"
+              onClick={() => setNameVersionOpen(true)}
+            >
+              <Save className="size-3" />
+              {/* In a narrow sidebar the template's name needs the room more. */}
+              <span className="hidden @[20rem]:inline">Name version</span>
+            </Button>
+          ) : (
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 px-2 text-xs"
+              onClick={() => void open()}
+            >
+              Open
+            </Button>
+          )}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon-xs" aria-label={`Options for ${template.name}`}>
+                <MoreHorizontal className="size-3.5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuItem disabled={active} onClick={() => void open()}>
+                <LayoutTemplate />
+                {active ? 'Already open' : 'Open template'}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setRenaming(true)}>
+                <Pencil />
+                Rename…
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => void duplicate()}>
+                <Copy />
+                Duplicate
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => void exportTemplate()}>
+                <Download />
+                Export…
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={onToggle}>
+                <Clock />
+                {expanded ? 'Hide history' : 'Show history'}
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem variant="destructive" onClick={() => setPendingDelete(true)}>
+                <Trash2 />
+                Delete template…
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
-      {!isActive && (
-        <Button
-          variant="outline"
-          size="sm"
-          className="mt-2 w-full text-xs"
-          onClick={() => onOpen(template.id)}
-        >
-          Open
-        </Button>
+      {expanded && (
+        <div className="border-t border-zinc-200 bg-white px-3 pt-2.5 pb-3 dark:border-zinc-800 dark:bg-zinc-950">
+          <div className="flex items-center justify-between">
+            <span className="inline-flex items-center gap-1.5 text-[0.7rem] font-semibold tracking-wider text-zinc-500 uppercase">
+              <Clock className="size-3" />
+              History
+            </span>
+            <span className="font-mono text-[0.7rem] text-zinc-500">newest first</span>
+          </div>
+
+          {active && versions && (
+            <Note icon={Info}>
+              {dirty
+                ? 'Working draft · saved as you type. Name it to make it easy to find.'
+                : `Working draft matches ${versionLabel(versions, 0)}.`}
+            </Note>
+          )}
+
+          {versions ? (
+            <VersionList
+              versions={versions}
+              canPreview={active}
+              previewId={previewId}
+              onPreview={(version, label) => void togglePreview(version, label)}
+              onRestore={(version) => void restore(version)}
+              onDuplicate={(version) => void duplicate(version)}
+            />
+          ) : (
+            <p className="mt-2 text-xs text-zinc-500">Loading history…</p>
+          )}
+
+          {previewId && preview && (
+            <Note icon={Eye} tone="amber">
+              <span className="flex-1">
+                Showing {preview.label} in the sheet. Your draft is untouched — restore from the
+                banner if you want it.
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-6 px-2 text-xs"
+                onClick={() => setPreview(null)}
+              >
+                Exit
+              </Button>
+            </Note>
+          )}
+        </div>
       )}
 
       <DeleteTemplateDialog
         template={template}
         open={pendingDelete}
-        active={isActive}
+        active={active}
         last={isLast}
         onOpenChange={setPendingDelete}
-        onDelete={() =>
-          void attempt(deleteTemplate(template.id), 'Could not delete the template').then(
-            (deleted) => deleted && showToast(`Deleted “${template.name}”`)
-          )
-        }
+        onDelete={() => void remove()}
       />
+    </div>
+  );
+}
+
+function Note({
+  icon: Icon,
+  tone,
+  children,
+}: {
+  icon: typeof Info;
+  tone?: 'amber';
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="mt-2 flex items-start gap-2 rounded-md border border-zinc-200 bg-zinc-50 px-2.5 py-2 text-xs leading-relaxed text-zinc-600 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400">
+      <Icon
+        className={cn(
+          'mt-0.5 size-3.5 shrink-0',
+          tone === 'amber' ? 'text-amber-600 dark:text-amber-400' : 'text-zinc-500'
+        )}
+      />
+      {children}
     </div>
   );
 }

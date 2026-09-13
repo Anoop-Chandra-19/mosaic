@@ -1,53 +1,73 @@
-import { Plus } from 'lucide-react';
+import { useState } from 'react';
+import { Plus, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { attempt, useOverlayStore } from '@/stores/overlayStore';
+import { Input } from '@/components/ui/input';
+import { useOverlayStore } from '@/stores/overlayStore';
 import { useResumeStore } from '@/stores/resumeStore';
 import { useTemplateStore } from '@/stores/templateStore';
-import { useUIStore } from '@/stores/uiStore';
 import { NoTemplates } from './NoTemplates';
 import { TemplateCard } from './TemplateCard';
 
 export function TemplatesTab() {
   const templates = useTemplateStore((s) => s.templates);
-  const openTemplate = useTemplateStore((s) => s.openTemplate);
-  const activeTemplateId = useResumeStore((s) => s.templateId);
+  const activeId = useResumeStore((s) => s.templateId);
   const setStartOpen = useOverlayStore((s) => s.setStartOpen);
-  const setActiveSidebarTab = useUIStore((s) => s.setActiveSidebarTab);
-
-  // Every template's draft is saved as it is edited, so switching never loses anything.
-  const handleOpen = async (templateId: string) => {
-    if (templateId === activeTemplateId) return;
-    if (await attempt(openTemplate(templateId), 'Could not open that template')) {
-      setActiveSidebarTab('content');
-    }
-  };
+  const [query, setQuery] = useState('');
+  // Cards the user opened or closed; the open template's history shows until closed.
+  const [toggled, setToggled] = useState<Record<string, boolean>>({});
 
   if (templates.length === 0) return <NoTemplates />;
 
+  const needle = query.trim().toLowerCase();
+  const shown = templates.filter((t) => t.name.toLowerCase().includes(needle));
+  const isExpanded = (id: string) => toggled[id] ?? id === activeId;
+
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Templates</h2>
+    <div>
+      <div className="mb-2 flex gap-1.5">
+        <div className="relative flex-1">
+          <Search className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-zinc-500" />
+          <Input
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Find a template…"
+            aria-label="Find a template"
+            className="h-8 pl-8 text-sm"
+          />
+        </div>
         <Button
-          variant="ghost"
-          size="icon"
-          className="h-7 w-7"
+          variant="outline"
+          size="sm"
+          className="h-8"
+          title="Start a new resume as its own template"
           onClick={() => setStartOpen(true)}
-          aria-label="New template"
         >
-          <Plus className="h-4 w-4" />
+          <Plus />
+          New
         </Button>
       </div>
+      <p className="mb-2.5 ml-0.5 text-xs leading-relaxed text-zinc-600 dark:text-zinc-400">
+        A template holds your content and its history. Your draft saves as you type — name a version
+        when you want to find it again.
+      </p>
 
       <div className="space-y-2">
-        {templates.map((tmpl) => (
+        {shown.map((template) => (
           <TemplateCard
-            key={tmpl.id}
-            template={tmpl}
-            isActive={tmpl.id === activeTemplateId}
-            onOpen={(id) => void handleOpen(id)}
+            key={template.id}
+            template={template}
+            active={template.id === activeId}
+            expanded={isExpanded(template.id)}
+            onToggle={() =>
+              setToggled((current) => ({ ...current, [template.id]: !isExpanded(template.id) }))
+            }
           />
         ))}
+        {shown.length === 0 && (
+          <p className="px-1 py-4 text-center text-xs text-zinc-500">
+            No template is named like “{query.trim()}”.
+          </p>
+        )}
       </div>
     </div>
   );

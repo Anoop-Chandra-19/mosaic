@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import type { Version } from '@/types/db';
 
 /** What is showing over the app right now. Never persisted. */
 
@@ -6,6 +7,13 @@ export interface Toast {
   id: number;
   message: string;
   tone: 'success' | 'error';
+}
+
+/** A version being read in the sheet instead of the draft. */
+export interface VersionPreview {
+  version: Version;
+  /** "v3" — its place in the template's history. */
+  label: string;
 }
 
 interface OverlayState {
@@ -19,11 +27,19 @@ interface OverlayState {
   /** The import can only become a new template (nothing is open, or it came from Start). */
   importAsNewOnly: boolean;
   nameVersionOpen: boolean;
+  exportOpen: boolean;
+  /**
+   * Reading a version before deciding to restore it. The draft is never touched; the
+   * preview ends on Back to draft, a restore, or when a different draft is loaded.
+   */
+  preview: VersionPreview | null;
   toast: Toast | null;
   setStartOpen: (open: boolean) => void;
   openImport: (asNewOnly: boolean) => void;
   closeImport: () => void;
   setNameVersionOpen: (open: boolean) => void;
+  setExportOpen: (open: boolean) => void;
+  setPreview: (preview: VersionPreview | null) => void;
   dismissToast: () => void;
 }
 
@@ -32,11 +48,15 @@ export const useOverlayStore = create<OverlayState>()((set) => ({
   importOpen: false,
   importAsNewOnly: false,
   nameVersionOpen: false,
+  exportOpen: false,
+  preview: null,
   toast: null,
   setStartOpen: (startOpen) => set({ startOpen }),
   openImport: (importAsNewOnly) => set({ importOpen: true, importAsNewOnly }),
   closeImport: () => set({ importOpen: false }),
   setNameVersionOpen: (nameVersionOpen) => set({ nameVersionOpen }),
+  setExportOpen: (exportOpen) => set({ exportOpen }),
+  setPreview: (preview) => set({ preview }),
   dismissToast: () => set({ toast: null }),
 }));
 
