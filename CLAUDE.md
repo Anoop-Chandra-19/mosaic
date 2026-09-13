@@ -69,8 +69,8 @@ src/
   stores/         # Zustand stores
   types/          # Shared TypeScript types
   lib/
-    hooks/        # Shared React hooks (useDarkMode, useTemporaryState, etc.)
-    files/        # File naming and download helpers shared by export and vault
+    hooks/        # Shared React hooks (useDarkMode, useIsMobile, etc.)
+    files/        # File naming shared by export and backups
     resume/       # Shared layout, contact formatting, and resume schema migration
     template/     # Shared template persistence schema migration
     storage/      # Storage backend, Dexie DB, adapters, and tests

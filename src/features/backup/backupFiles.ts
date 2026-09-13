@@ -4,7 +4,7 @@ import { getDb } from '@/lib/storage/mosaicDb';
 import { isRecord } from '@/lib/resume/validateResume';
 import { parseBundle, type BundleParseResult } from '@/lib/vault/parseBundle';
 import { flushDraft } from '@/stores/resumeStore';
-import type { MosaicBundle } from '@/types/bundle';
+import type { MosaicBundle, OpenedBackup } from '@/types/bundle';
 
 /** What a backup file holds, counted for the UI. */
 export interface BundleCounts {
@@ -50,7 +50,7 @@ export async function backUpNow(): Promise<{ record: BackupRecord; fileName: str
   const bundle = await getDb().bundle.export();
   // Indented, so the file reads as well as it restores.
   const text = JSON.stringify(bundle, null, 2);
-  const fileName = await window.mosaic.files.saveText('json', buildBackupFileName(), text);
+  const fileName = await window.mosaic.files.save('json', buildBackupFileName(), text);
   if (fileName === null) return null;
 
   const record: BackupRecord = {
@@ -60,13 +60,6 @@ export async function backUpNow(): Promise<{ record: BackupRecord; fileName: str
   };
   writeSetting(LAST_BACKUP_KEY, JSON.stringify(record));
   return { record, fileName };
-}
-
-/** A backup file that parsed, ready to confirm and restore. */
-export interface OpenedBackup {
-  fileName: string;
-  text: string;
-  bundle: MosaicBundle;
 }
 
 /** A chosen file Mosaic cannot restore; the message says why, for the user. */
@@ -84,14 +77,25 @@ function unreadable(fileName: string, result: Extract<BundleParseResult, { ok: f
   }
 }
 
+/** Check a backup file's text; throws an `UnreadableBackupError` if Mosaic cannot restore it. */
+export function readBackup(fileName: string, text: string): OpenedBackup {
+  const parsed = parseBundle(text);
+  if (!parsed.ok) throw new UnreadableBackupError(unreadable(fileName, parsed));
+  return { fileName, text, bundle: parsed.bundle };
+}
+
 /**
  * Ask for a backup file and check it. Resolves with null if the user cancelled; rejects
  * with an `UnreadableBackupError` if the file is not one Mosaic can restore.
  */
 export async function chooseBackup(): Promise<OpenedBackup | null> {
   const file = await window.mosaic.files.openText('json');
-  if (!file) return null;
-  const parsed = parseBundle(file.text);
-  if (!parsed.ok) throw new UnreadableBackupError(unreadable(file.name, parsed));
-  return { fileName: file.name, text: file.text, bundle: parsed.bundle };
+  return file && readBackup(file.name, file.text);
+}
+
+/** Say why a file could not be read: its own message if it has one the user should see. */
+export function fileFailure(error: unknown, fallback: string): string {
+  if (error instanceof UnreadableBackupError) return error.message;
+  console.error(fallback, error);
+  return fallback;
 }

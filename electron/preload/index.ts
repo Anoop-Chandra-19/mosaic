@@ -31,8 +31,8 @@ function dbBridge(): MosaicDbBridge {
 let flushRegistered = false;
 
 const files: MosaicFiles = {
-  saveText: (type, suggestedName, text) =>
-    ipcRenderer.invoke(FILES_SAVE, type, suggestedName, text),
+  save: (type, suggestedName, content) =>
+    ipcRenderer.invoke(FILES_SAVE, type, suggestedName, content),
   openText: (type) => ipcRenderer.invoke(FILES_OPEN, type),
 };
 

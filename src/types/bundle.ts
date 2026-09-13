@@ -41,6 +41,13 @@ export interface BundleVersion {
  */
 export type ImportMode = 'restore-all' | 'as-new-template';
 
+/** A backup file that parsed, ready to confirm and restore. */
+export interface OpenedBackup {
+  fileName: string;
+  text: string;
+  bundle: MosaicBundle;
+}
+
 export interface ImportResult {
   /** The imported templates' ids as stored, in bundle order. */
   templateIds: string[];

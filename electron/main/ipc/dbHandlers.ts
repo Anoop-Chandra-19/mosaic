@@ -3,7 +3,7 @@ import { isResumeData } from '@/lib/resume/validateResume';
 import { parseBundle } from '@/lib/vault/parseBundle';
 import type { ImportMode, MosaicBundle } from '@/types/bundle';
 import type { DbResult, MosaicDb } from '@/types/db';
-import { MAX_TEXT_FILE_BYTES } from '@/types/files';
+import { MAX_FILE_BYTES } from '@/types/files';
 import type { ResumeData } from '@/types/resume';
 import type { DbMethod } from '../../shared/dbMethods';
 import { boot } from '../db/boot';
@@ -88,7 +88,7 @@ function importMode(value: unknown): ImportMode {
 
 /** A backup file's text, checked the same way whoever sent it already should have. */
 function bundle(value: unknown): MosaicBundle {
-  if (typeof value !== 'string' || value.length > MAX_TEXT_FILE_BYTES) {
+  if (typeof value !== 'string' || value.length > MAX_FILE_BYTES) {
     throw new InvalidArgumentError('text must be a backup file under 128 MB');
   }
   const parsed = parseBundle(value);

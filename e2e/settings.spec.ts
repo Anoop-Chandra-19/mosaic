@@ -52,7 +52,7 @@ test('Import & export opens the import dialog', async () => {
   const settings = await openSettings(page, 'Import & export');
   await settings.getByRole('button', { name: 'Import…' }).click();
 
-  await expect(page.getByRole('dialog', { name: 'Import resume' })).toBeVisible();
+  await expect(page.getByRole('dialog', { name: 'Import' })).toBeVisible();
 });
 
 test('erasing local data starts Mosaic over, settings included', async () => {

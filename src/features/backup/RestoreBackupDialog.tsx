@@ -12,10 +12,10 @@ import {
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { formatWhen } from '@/features/templates/formatWhen';
 import { cn } from '@/lib/utils';
-import { attempt, showToast } from '@/stores/overlayStore';
+import { attempt, showToast, useOverlayStore } from '@/stores/overlayStore';
 import { useTemplateStore } from '@/stores/templateStore';
-import type { ImportMode } from '@/types/bundle';
-import { countBundle, type OpenedBackup } from './backupFiles';
+import type { ImportMode, OpenedBackup } from '@/types/bundle';
+import { countBundle } from './backupFiles';
 
 const count = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 
@@ -25,22 +25,21 @@ function listNames(names: string[], shown = 3): string {
   return `${names.slice(0, shown).join(', ')}, and ${names.length - shown} more`;
 }
 
-interface RestoreBackupDialogProps {
-  /** The file to restore; the dialog is open while there is one. */
-  backup: OpenedBackup | null;
-  onClose: () => void;
-}
-
 /**
  * Confirm what a backup holds before anything is written. With templates already here,
- * the user chooses: add the backup's beside them, or replace everything with it.
+ * the user chooses: add the backup's beside them, or replace everything with it. Open
+ * while `pendingRestore` holds a file — from Settings, the Import dialog, or Start.
  */
-export function RestoreBackupDialog({ backup, onClose }: RestoreBackupDialogProps) {
+export function RestoreBackupDialog() {
+  const backup = useOverlayStore((s) => s.pendingRestore);
+  const setPendingRestore = useOverlayStore((s) => s.setPendingRestore);
+  const close = () => setPendingRestore(null);
+
   return (
-    <Dialog open={backup !== null} onOpenChange={(open) => !open && onClose()}>
+    <Dialog open={backup !== null} onOpenChange={(open) => !open && close()}>
       <DialogContent className="sm:max-w-lg">
         {/* Mounted per file, so the choice starts on the safe option each time. */}
-        {backup && <RestoreForm backup={backup} onDone={onClose} />}
+        {backup && <RestoreForm backup={backup} onDone={close} />}
       </DialogContent>
     </Dialog>
   );
@@ -49,6 +48,7 @@ export function RestoreBackupDialog({ backup, onClose }: RestoreBackupDialogProp
 function RestoreForm({ backup, onDone }: { backup: OpenedBackup; onDone: () => void }) {
   const localCount = useTemplateStore((s) => s.templates.length);
   const importBundle = useTemplateStore((s) => s.importBundle);
+  const setStartOpen = useOverlayStore((s) => s.setStartOpen);
   const [mode, setMode] = useState<ImportMode>('as-new-template');
   const [restoring, setRestoring] = useState(false);
 
@@ -66,6 +66,8 @@ function RestoreForm({ backup, onDone }: { backup: OpenedBackup; onDone: () => v
     );
     setRestoring(false);
     if (!restored) return;
+    // Chosen from the Start panel: there is a template open now.
+    setStartOpen(false);
     showToast(
       effectiveMode === 'restore-all'
         ? `Restored ${count(templates, 'template')} from the backup`

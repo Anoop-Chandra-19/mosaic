@@ -8,18 +8,22 @@ import {
   type FileFilter,
   type IpcMainInvokeEvent,
 } from 'electron';
-import { MAX_TEXT_FILE_BYTES, type OpenedTextFile, type TextFileType } from '@/types/files';
+import { MAX_FILE_BYTES, type FileType, type OpenedTextFile } from '@/types/files';
 import { FILES_OPEN, FILES_SAVE } from '../../shared/appChannels';
 
-const FILTERS: Record<TextFileType, FileFilter[]> = {
+const FILTERS: Record<FileType, FileFilter[]> = {
   json: [{ name: 'JSON', extensions: ['json'] }],
+  markdown: [{ name: 'Markdown', extensions: ['md'] }],
+  text: [{ name: 'Plain text', extensions: ['txt'] }],
+  pdf: [{ name: 'PDF', extensions: ['pdf'] }],
+  import: [{ name: 'Resumes and Mosaic backups', extensions: ['md', 'markdown', 'txt', 'json'] }],
 };
 
 function filtersFor(type: unknown): FileFilter[] {
   if (typeof type !== 'string' || !Object.hasOwn(FILTERS, type)) {
     throw new Error(`Unknown file type ${String(type)}`);
   }
-  return FILTERS[type as TextFileType];
+  return FILTERS[type as FileType];
 }
 
 const tooLarge = (name: string) => new Error(`${name} is larger than 128 MB`);
@@ -37,13 +41,16 @@ export function registerFileHandlers(isAppFrame: (event: IpcMainInvokeEvent) => 
 
   ipcMain.handle(
     FILES_SAVE,
-    async (event, type: unknown, suggestedName: unknown, text: unknown): Promise<string | null> => {
+    async (event, type: unknown, suggestedName: unknown, content: unknown) => {
       const win = ownWindow(event, FILES_SAVE);
       const filters = filtersFor(type);
-      if (typeof suggestedName !== 'string' || typeof text !== 'string') {
-        throw new Error('A file needs a name and text');
+      if (
+        typeof suggestedName !== 'string' ||
+        (typeof content !== 'string' && !(content instanceof Uint8Array))
+      ) {
+        throw new Error('A file needs a name and content');
       }
-      if (text.length > MAX_TEXT_FILE_BYTES) throw tooLarge(suggestedName);
+      if (content.length > MAX_FILE_BYTES) throw tooLarge(suggestedName);
 
       const { canceled, filePath } = await dialog.showSaveDialog(win, {
         // A name only: the renderer never chooses a folder.
@@ -51,7 +58,7 @@ export function registerFileHandlers(isAppFrame: (event: IpcMainInvokeEvent) => 
         filters,
       });
       if (canceled || !filePath) return null;
-      await fs.writeFile(filePath, text, 'utf8');
+      await fs.writeFile(filePath, content);
       return path.basename(filePath);
     }
   );
@@ -66,7 +73,7 @@ export function registerFileHandlers(isAppFrame: (event: IpcMainInvokeEvent) => 
     if (canceled || !filePath) return null;
 
     const name = path.basename(filePath);
-    if ((await fs.stat(filePath)).size > MAX_TEXT_FILE_BYTES) throw tooLarge(name);
+    if ((await fs.stat(filePath)).size > MAX_FILE_BYTES) throw tooLarge(name);
     return { name, text: await fs.readFile(filePath, 'utf8') };
   });
 }

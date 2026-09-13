@@ -4,11 +4,9 @@ import { Button } from '@/components/ui/button';
 import {
   backUpNow,
   chooseBackup,
+  fileFailure,
   readLastBackup,
-  UnreadableBackupError,
-  type OpenedBackup,
 } from '@/features/backup/backupFiles';
-import { RestoreBackupDialog } from '@/features/backup/RestoreBackupDialog';
 import { formatWhen } from '@/features/templates/formatWhen';
 import { showToast, useOverlayStore } from '@/stores/overlayStore';
 import { useResumeStore } from '@/stores/resumeStore';
@@ -27,11 +25,11 @@ function formatSize(bytes: number): string {
 export function ImportExportSection({ onCloseSettings }: { onCloseSettings: () => void }) {
   const hasOpenTemplate = useResumeStore((s) => s.templateId !== null);
   const hasTemplates = useTemplateStore((s) => s.templates.length > 0);
-  const setExportOpen = useOverlayStore((s) => s.setExportOpen);
+  const openExport = useOverlayStore((s) => s.openExport);
   const openImport = useOverlayStore((s) => s.openImport);
+  const setPendingRestore = useOverlayStore((s) => s.setPendingRestore);
   const [lastBackup, setLastBackup] = useState(readLastBackup);
   const [backingUp, setBackingUp] = useState(false);
-  const [restoring, setRestoring] = useState<OpenedBackup | null>(null);
 
   const backUp = async () => {
     if (!hasTemplates) {
@@ -54,13 +52,12 @@ export function ImportExportSection({ onCloseSettings }: { onCloseSettings: () =
 
   const chooseRestore = async () => {
     try {
-      setRestoring(await chooseBackup());
+      const backup = await chooseBackup();
+      if (!backup) return;
+      onCloseSettings();
+      setPendingRestore(backup);
     } catch (error) {
-      if (!(error instanceof UnreadableBackupError)) console.error(error);
-      showToast(
-        error instanceof UnreadableBackupError ? error.message : 'Could not open the file',
-        'error'
-      );
+      showToast(fileFailure(error, 'Could not open the file'), 'error');
     }
   };
 
@@ -68,14 +65,14 @@ export function ImportExportSection({ onCloseSettings }: { onCloseSettings: () =
     <>
       <SettingRow
         label="Export this resume"
-        description="PDF for applications; Markdown, plain text, or JSON for anything else."
+        description="PDF for applications; Markdown or plain text for anything else; JSON for other tools."
       >
         <Button
           variant="outline"
           size="sm"
           onClick={() => {
             onCloseSettings();
-            if (hasOpenTemplate) setExportOpen(true);
+            if (hasOpenTemplate) openExport();
             else showToast('Nothing to export yet');
           }}
         >
@@ -86,7 +83,7 @@ export function ImportExportSection({ onCloseSettings }: { onCloseSettings: () =
 
       <SettingRow
         label="Import a resume"
-        description="Paste a resume’s text and review how Mosaic reads it before anything is written."
+        description="Read a Markdown or text resume into the content model, or restore a Mosaic backup."
       >
         <Button
           variant="outline"
@@ -120,8 +117,6 @@ export function ImportExportSection({ onCloseSettings }: { onCloseSettings: () =
           {formatSize(lastBackup.bytes)}
         </SettingsNote>
       )}
-
-      <RestoreBackupDialog backup={restoring} onClose={() => setRestoring(null)} />
     </>
   );
 }

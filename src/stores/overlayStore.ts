@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import type { OpenedBackup } from '@/types/bundle';
 import type { Version } from '@/types/db';
 
 /** What is showing over the app right now. Never persisted. */
@@ -23,6 +24,11 @@ export interface VersionPreview {
   label: string;
 }
 
+/** A version to export instead of the open draft. */
+export interface ExportVersion extends VersionPreview {
+  templateName: string;
+}
+
 interface OverlayState {
   /**
    * The Start panel: shown at a launch with no templates (see `hydrateStores`), and from
@@ -35,6 +41,10 @@ interface OverlayState {
   importAsNewOnly: boolean;
   nameVersionOpen: boolean;
   exportOpen: boolean;
+  /** What the Export dialog exports: this version, or the open draft when null. */
+  exportVersion: ExportVersion | null;
+  /** A backup file chosen for restoring, waiting for the user to confirm. */
+  pendingRestore: OpenedBackup | null;
   /**
    * Reading a version before deciding to restore it. The draft is never touched; the
    * preview ends on Back to draft, a restore, or when a different draft is loaded.
@@ -45,7 +55,10 @@ interface OverlayState {
   openImport: (asNewOnly: boolean) => void;
   closeImport: () => void;
   setNameVersionOpen: (open: boolean) => void;
-  setExportOpen: (open: boolean) => void;
+  /** Opens Export for the open draft, or for `version`. */
+  openExport: (version?: ExportVersion) => void;
+  closeExport: () => void;
+  setPendingRestore: (backup: OpenedBackup | null) => void;
   setPreview: (preview: VersionPreview | null) => void;
   dismissToast: () => void;
 }
@@ -56,13 +69,18 @@ export const useOverlayStore = create<OverlayState>()((set) => ({
   importAsNewOnly: false,
   nameVersionOpen: false,
   exportOpen: false,
+  exportVersion: null,
+  pendingRestore: null,
   preview: null,
   toast: null,
   setStartOpen: (startOpen) => set({ startOpen }),
   openImport: (importAsNewOnly) => set({ importOpen: true, importAsNewOnly }),
   closeImport: () => set({ importOpen: false }),
   setNameVersionOpen: (nameVersionOpen) => set({ nameVersionOpen }),
-  setExportOpen: (exportOpen) => set({ exportOpen }),
+  openExport: (version) => set({ exportOpen: true, exportVersion: version ?? null }),
+  // The target stays until the next opening, so the closing dialog does not change.
+  closeExport: () => set({ exportOpen: false }),
+  setPendingRestore: (pendingRestore) => set({ pendingRestore }),
   setPreview: (preview) => set({ preview }),
   dismissToast: () => set({ toast: null }),
 }));

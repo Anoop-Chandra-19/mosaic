@@ -2,14 +2,11 @@ import { useState } from 'react';
 import { Download, FileInput, Moon, Save, Settings, Sun } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { MobileViewTabs } from '@/components/MobileViewTabs';
-import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/lib/hooks/useIsMobile';
 import { shortcutLabel } from '@/lib/shortcuts';
 import { showToast, useOverlayStore } from '@/stores/overlayStore';
 import { useUIStore } from '@/stores/uiStore';
 import { useDarkMode } from '@/lib/hooks/useDarkMode';
-import { ExportDialog } from '@/features/export/ExportDialog';
-import { useResumeExport } from '@/features/export/useResumeExport';
 import { useActiveTemplate } from '@/features/templates/useActiveTemplate';
 import { useTemplateStatus } from '@/features/templates/useTemplateStatus';
 import { TemplateStatusBadge } from '@/features/templates/TemplateStatusBadge';
@@ -26,23 +23,11 @@ export function TopBar() {
   const isMobile = useIsMobile();
   const { darkMode, toggleDarkMode } = useDarkMode();
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const isExportOpen = useOverlayStore((s) => s.exportOpen);
-  const setIsExportOpen = useOverlayStore((s) => s.setExportOpen);
+  const openExport = useOverlayStore((s) => s.openExport);
   const activeTemplate = useActiveTemplate();
   const templateStatus = useTemplateStatus();
   const openImport = useOverlayStore((s) => s.openImport);
   const setNameVersionOpen = useOverlayStore((s) => s.setNameVersionOpen);
-  const {
-    feedback,
-    defaultPdfFileName,
-    exportSummary,
-    isPdfBusy,
-    isSavingPdf,
-    handleCopyMarkdown,
-    handleCopyPlaintext,
-    handleExportJsonResume,
-    handleExportPdf,
-  } = useResumeExport();
 
   return (
     <>
@@ -80,19 +65,6 @@ export function TopBar() {
         </div>
 
         <div className="flex items-center gap-1.5">
-          {feedback && (
-            <span
-              className={cn(
-                'hidden pr-1 text-xs font-medium md:inline',
-                feedback.tone === 'success'
-                  ? 'text-zinc-600 dark:text-zinc-300'
-                  : 'text-red-700 dark:text-red-400'
-              )}
-            >
-              {feedback.message}
-            </span>
-          )}
-
           {isMobile && (
             <MobileViewTabs
               value={mobilePane}
@@ -125,33 +97,16 @@ export function TopBar() {
 
           <Button
             size="sm"
-            onClick={() =>
-              activeTemplate ? setIsExportOpen(true) : showToast('Nothing to export yet')
-            }
-            disabled={isPdfBusy}
+            onClick={() => (activeTemplate ? openExport() : showToast('Nothing to export yet'))}
             aria-label="Open export dialog"
           >
             <Download className="h-4 w-4" />
-            <span className="hidden sm:inline">{isSavingPdf ? 'Saving...' : 'Export'}</span>
+            <span className="hidden sm:inline">Export</span>
           </Button>
         </div>
       </header>
 
       <SettingsDialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen} />
-      <ExportDialog
-        // Remount when the suggested filename changes so the input resets cleanly.
-        key={defaultPdfFileName}
-        open={isExportOpen}
-        onOpenChange={setIsExportOpen}
-        defaultPdfFileName={defaultPdfFileName}
-        exportSummary={exportSummary}
-        isPdfBusy={isPdfBusy}
-        isSavingPdf={isSavingPdf}
-        handleExportPdf={handleExportPdf}
-        handleCopyMarkdown={handleCopyMarkdown}
-        handleCopyPlaintext={handleCopyPlaintext}
-        handleExportJsonResume={handleExportJsonResume}
-      />
     </>
   );
 }

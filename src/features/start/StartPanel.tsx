@@ -80,7 +80,7 @@ export function StartPanel({ closable }: StartPanelProps) {
               <StartRoute
                 icon={Upload}
                 title="Import what you have"
-                description="Paste the text of the resume you already have."
+                description="Markdown, plain text, or a Mosaic backup from another machine."
                 onClick={() => openImport(true)}
               />
               <StartRoute

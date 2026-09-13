@@ -3,6 +3,8 @@ import { TopBar } from './TopBar';
 import { Sidebar } from './Sidebar';
 import { PreviewPanel } from './PreviewPanel';
 import { Toast } from './Toast';
+import { RestoreBackupDialog } from '@/features/backup/RestoreBackupDialog';
+import { ExportDialog } from '@/features/export/ExportDialog';
 import { ImportResumeDialog } from '@/features/import/ImportResumeDialog';
 import { StartPanel } from '@/features/start/StartPanel';
 import { NameVersionDialog } from '@/features/templates/NameVersionDialog';
@@ -46,6 +48,8 @@ export function AppShell() {
         <Toast />
       </div>
       <ImportResumeDialog />
+      <RestoreBackupDialog />
+      <ExportDialog />
       <NameVersionDialog />
     </div>
   );
