@@ -22,8 +22,8 @@ export default defineConfig([
     },
   },
   {
-    // Main process, preload, and build configs run in Node, not the browser.
-    files: ['electron/**/*.ts', '*.config.ts'],
+    // Main process, preload, scripts, and build configs run in Node, not the browser.
+    files: ['electron/**/*.ts', 'scripts/**/*.ts', '*.config.ts'],
     languageOptions: {
       globals: globals.node,
     },

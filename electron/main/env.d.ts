@@ -1,5 +1,2 @@
-/** Vite inlines `?raw` imports as strings — how migrations ship inside the main bundle. */
-declare module '*.sql?raw' {
-  const sql: string;
-  export default sql;
-}
+/// <reference types="vite/client" />
+// For `import.meta.glob`, which inlines the migration .sql files into the main bundle.

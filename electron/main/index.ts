@@ -85,9 +85,14 @@ if (!app.requestSingleInstanceLock()) {
 
   void app.whenReady().then(() => {
     try {
-      db = openDatabase(path.join(app.getPath('userData'), 'mosaic.db'));
+      db = openDatabase(path.join(app.getPath('userData'), 'mosaic.db'), {
+        // Dev stops on an edited migration (with a `dev:reset` hint); an installed build
+        // warns and keeps going rather than lock anyone out of their resumes.
+        tolerateEditedMigrations: app.isPackaged,
+      });
     } catch (error) {
-      // E.g. a database written by a newer Mosaic: say so rather than open an empty app.
+      // E.g. a database written by a newer Mosaic, or (dev) an edited migration: say so
+      // rather than open an empty app.
       dialog.showErrorBox('Mosaic could not open its data', (error as Error).message);
       app.exit(1);
       return;

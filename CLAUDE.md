@@ -19,7 +19,8 @@
   (`dev`, `preview`) keep their whole profile, `mosaic.db` included, in the repo's gitignored
   `.dev-data/`, never in an installed Mosaic's `~/.config/Mosaic`.
 - `bun run dev:reset` — quit the app, then run this to delete `.dev-data/` and start fresh.
-  Needed after editing `001_init.sql`: an existing database never re-runs a migration.
+  Needed after editing `001_init.sql` (the app tells you): a database never re-runs a migration.
+- `bun run db:freeze` — release step; see "Schema versioning".
 - `bun run build` — type-check + build main, preload, and renderer into `out/`
 - `bun run package` — build + package an installer with electron-builder into `release/`
 - `bun run test` — Vitest unit tests
@@ -122,8 +123,14 @@ never CSS `zoom`, for that scaling: `zoom` re-runs layout and can re-wrap text.
   it to reject vault files written by a newer build.
 - Start bumping the version with the first release that real users install.
 - The same rule covers the SQLite schema: pre-v1, edit `electron/main/db/migrations/001_init.sql`
-  in place (and `bun run dev:reset`). From the first release, add `002_*.sql` instead —
-  `migrate.ts` tracks applied migrations with `PRAGMA user_version`.
+  in place (and `bun run dev:reset`). From the first release, add `002_description.sql`
+  instead — any `NNN_*.sql` in that folder is picked up automatically; numbers must run
+  001, 002, … with no gaps. `migrate.ts` tracks progress with `PRAGMA user_version` and
+  fingerprints each applied file: a dev launch stops on an edited migration and says to
+  run `bun run dev:reset`.
+- Releasing: run `bun run db:freeze` to record the shipping migrations in
+  `migrations/released.json`. After that, `bun run test` fails if a released migration
+  is edited — users' databases already ran it, so put the change in a new file.
 
 ### Resume format and layout
 

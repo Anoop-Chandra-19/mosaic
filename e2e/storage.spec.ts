@@ -19,6 +19,10 @@ test('opens its database in the profile and closes it cleanly on quit', async ()
     const db = new Database(file, { readonly: true });
     try {
       expect(db.pragma('user_version', { simple: true })).toBe(1);
+      // Each applied migration is fingerprinted, so a later edit to it is caught.
+      expect(db.prepare('select name from schema_migrations').pluck().all()).toEqual([
+        '001_init.sql',
+      ]);
     } finally {
       db.close();
     }
