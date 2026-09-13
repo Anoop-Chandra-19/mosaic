@@ -22,6 +22,12 @@ export default defineConfig([
     },
   },
   {
+    // shadcn-managed primitives export their variant helpers next to the component
+    // (e.g. toggleVariants for toggle-group). They are not hand-edited, so accept that.
+    files: ['src/components/ui/**/*.tsx'],
+    rules: { 'react-refresh/only-export-components': 'off' },
+  },
+  {
     // Main process, preload, scripts, and build configs run in Node, not the browser.
     files: ['electron/**/*.ts', 'scripts/**/*.ts', '*.config.ts'],
     languageOptions: {
