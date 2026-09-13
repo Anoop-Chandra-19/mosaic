@@ -8,41 +8,27 @@ import { ExportDialog } from '@/features/export/ExportDialog';
 import { ImportResumeDialog } from '@/features/import/ImportResumeDialog';
 import { StartPanel } from '@/features/start/StartPanel';
 import { NameVersionDialog } from '@/features/templates/NameVersionDialog';
-import { useIsMobile } from '@/lib/hooks/useIsMobile';
 import { isModKey } from '@/lib/shortcuts';
 import { showToast, useOverlayStore } from '@/stores/overlayStore';
 import { useResumeStore } from '@/stores/resumeStore';
 import { useTemplateStore } from '@/stores/templateStore';
-import { useUIStore } from '@/stores/uiStore';
 import { useDarkMode } from '@/lib/hooks/useDarkMode';
 
 export function AppShell() {
   useDarkMode();
   useNameVersionShortcut();
-  const mobilePane = useUIStore((s) => s.mobilePane);
-  const isMobile = useIsMobile();
   const hasTemplates = useTemplateStore((s) => s.templates.length > 0);
   const showStart = useOverlayStore((s) => s.startOpen);
 
   return (
-    // Mobile shows one pane at a time; desktop keeps editor and preview side by side.
+    // Editor and preview side by side, at every window size.
     <div className="flex h-screen flex-col">
       <TopBar />
       <div className="relative flex flex-1 overflow-hidden">
         {/* Behind the Start panel the workspace is visible but out of reach. */}
         <div className="flex flex-1 overflow-hidden" inert={showStart}>
-          {isMobile ? (
-            mobilePane === 'editor' ? (
-              <Sidebar />
-            ) : (
-              <PreviewPanel />
-            )
-          ) : (
-            <>
-              <Sidebar />
-              <PreviewPanel />
-            </>
-          )}
+          <Sidebar />
+          <PreviewPanel />
         </div>
         {showStart && <StartPanel closable={hasTemplates} />}
         <Toast />

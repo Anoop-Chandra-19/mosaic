@@ -5,11 +5,11 @@ import { settingsStorage } from '@/lib/storage/settingsStorage';
 import type { PaperSize } from '@/types/ui';
 
 export type SidebarTab = 'content' | 'templates' | 'ai';
-export type MobilePane = 'editor' | 'preview';
 
 /** Sidebar width stored as a ratio (0–1) of the viewport width */
 export const SIDEBAR_DEFAULT_RATIO = 0.22;
-export const SIDEBAR_MIN_PX = 200;
+/** Enough for the editor's cards to keep a line of text; the preview scales to what is left. */
+export const SIDEBAR_MIN_PX = 280;
 export const SIDEBAR_MAX_RATIO = 0.4;
 export const PREVIEW_ZOOM_STEPS = [0.75, 0.9, 1, 1.1, 1.25, 1.5] as const;
 export const PREVIEW_DEFAULT_ZOOM = 1;
@@ -23,7 +23,6 @@ function normalizePreviewZoom(zoom: number) {
 export const DEFAULT_UI_STATE = {
   darkMode: true,
   activeSidebarTab: 'content' as SidebarTab,
-  mobilePane: 'editor' as MobilePane,
   currentPreviewPage: 1,
   paperSize: 'a4' as PaperSize,
   previewZoom: PREVIEW_DEFAULT_ZOOM,
@@ -34,7 +33,6 @@ export const DEFAULT_UI_STATE = {
 interface UIState {
   darkMode: boolean;
   activeSidebarTab: SidebarTab;
-  mobilePane: MobilePane;
   currentPreviewPage: number;
   paperSize: PaperSize;
   previewZoom: number;
@@ -43,7 +41,6 @@ interface UIState {
   toggleDarkMode: () => void;
   setDarkMode: (enabled: boolean) => void;
   setActiveSidebarTab: (tab: SidebarTab) => void;
-  setMobilePane: (pane: MobilePane) => void;
   setCurrentPreviewPage: (page: number) => void;
   setPaperSize: (size: PaperSize) => void;
   setPreviewZoom: (zoom: number) => void;
@@ -69,10 +66,6 @@ export const useUIStore = create<UIState>()(
       setActiveSidebarTab: (tab) =>
         set((state) => {
           state.activeSidebarTab = tab;
-        }),
-      setMobilePane: (pane) =>
-        set((state) => {
-          state.mobilePane = pane;
         }),
       setCurrentPreviewPage: (page) =>
         set((state) => {

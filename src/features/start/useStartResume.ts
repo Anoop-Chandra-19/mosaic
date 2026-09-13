@@ -12,7 +12,6 @@ export function useStartResume() {
   const createTemplate = useTemplateStore((s) => s.createTemplate);
   const setStartOpen = useOverlayStore((s) => s.setStartOpen);
   const setActiveSidebarTab = useUIStore((s) => s.setActiveSidebarTab);
-  const setMobilePane = useUIStore((s) => s.setMobilePane);
   const busy = useRef(false);
 
   return async (name: string, doc: ResumeData, toast: string) => {
@@ -23,7 +22,6 @@ export function useStartResume() {
     if (!created) return;
     setStartOpen(false);
     setActiveSidebarTab('content');
-    setMobilePane('editor');
     showToast(toast);
   };
 }

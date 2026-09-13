@@ -69,7 +69,7 @@ src/
   stores/         # Zustand stores
   types/          # Shared TypeScript types
   lib/
-    hooks/        # Shared React hooks (useDarkMode, useIsMobile, etc.)
+    hooks/        # Shared React hooks (useDarkMode, useInlineEdit, etc.)
     files/        # File naming shared by export and backups
     resume/       # Shared layout, contact formatting, and resume schema migration
     template/     # Shared template persistence schema migration
@@ -104,6 +104,8 @@ src/
 - All layouts MUST be responsive — use relative units (%, vw, rem, fr), clamp(), min(), max(), and container queries
 - Pixel values are acceptable only as min/max floors/ceilings inside responsive expressions (e.g., `max(200px, 22vw)`)
 - Before any commit, verify that layouts work across viewport sizes — nothing should overflow, collapse, or become unusable
+- Desktop only: there is no phone layout. The window is never narrower than 720px (main's
+  `minWidth`), so "narrow" means a small desktop window — editor and preview stay side by side
 - Use Tailwind container queries (`@container`) for component-level responsiveness
 
 **One documented exception: the resume page itself** (`features/preview/PreviewPage`

@@ -3,7 +3,6 @@ import { FileText, LayoutTemplate, PanelLeftClose, PanelLeftOpen, Sparkles } fro
 import { useUIStore, type SidebarTab, SIDEBAR_MIN_PX, SIDEBAR_MAX_RATIO } from '@/stores/uiStore';
 import { ContentTab } from '@/features/editor/ContentTab';
 import { TemplatesTab } from '@/features/templates/TemplatesTab';
-import { useIsMobile } from '@/lib/hooks/useIsMobile';
 
 const tabs: { id: SidebarTab; label: string; icon: React.ReactNode }[] = [
   { id: 'content', label: 'Content', icon: <FileText className="h-4 w-4" /> },
@@ -20,7 +19,6 @@ export function Sidebar() {
     setSidebarRatio,
     toggleSidebarCollapsed,
   } = useUIStore();
-  const isMobile = useIsMobile();
   const sidebarRef = useRef<HTMLElement>(null);
 
   const onPointerDown = useCallback(
@@ -56,7 +54,7 @@ export function Sidebar() {
     [setSidebarRatio]
   );
 
-  if (!isMobile && sidebarCollapsed) {
+  if (sidebarCollapsed) {
     return (
       <aside className="flex shrink-0 flex-col border-r border-border bg-card">
         <button
@@ -73,12 +71,8 @@ export function Sidebar() {
   return (
     <aside
       ref={sidebarRef}
-      className="relative flex flex-1 flex-col border-r border-border bg-card md:shrink-0 md:flex-none"
-      style={
-        isMobile
-          ? { width: '100%' }
-          : { width: `max(${SIDEBAR_MIN_PX}px, ${sidebarRatio * 100}vw)` }
-      }
+      className="relative flex shrink-0 flex-col border-r border-border bg-card"
+      style={{ width: `max(${SIDEBAR_MIN_PX}px, ${sidebarRatio * 100}vw)` }}
     >
       <div className="flex border-b border-border @container/tabs">
         {tabs.map((tab) => (
@@ -96,18 +90,16 @@ export function Sidebar() {
             <span className="hidden @[18rem]/tabs:inline">{tab.label}</span>
           </button>
         ))}
-        {!isMobile && (
-          <button
-            onClick={toggleSidebarCollapsed}
-            className="shrink-0 px-2 text-muted-foreground transition-colors hover:text-foreground"
-            aria-label="Collapse sidebar"
-          >
-            <PanelLeftClose className="h-4 w-4" />
-          </button>
-        )}
+        <button
+          onClick={toggleSidebarCollapsed}
+          className="shrink-0 px-2 text-muted-foreground transition-colors hover:text-foreground"
+          aria-label="Collapse sidebar"
+        >
+          <PanelLeftClose className="h-4 w-4" />
+        </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 md:p-5">
+      <div className="flex-1 overflow-y-auto p-5">
         {activeSidebarTab === 'content' && <ContentTab />}
         {activeSidebarTab === 'templates' && <TemplatesTab />}
         {activeSidebarTab === 'ai' && (
@@ -117,13 +109,11 @@ export function Sidebar() {
         )}
       </div>
 
-      {!isMobile && (
-        <div
-          // Thin resize handle keeps the sidebar adjustable without adding visual weight.
-          onPointerDown={onPointerDown}
-          className="absolute top-0 right-0 bottom-0 w-1 cursor-col-resize transition-colors hover:bg-amber-500 active:bg-amber-600"
-        />
-      )}
+      <div
+        // Thin resize handle keeps the sidebar adjustable without adding visual weight.
+        onPointerDown={onPointerDown}
+        className="absolute top-0 right-0 bottom-0 w-1 cursor-col-resize transition-colors hover:bg-amber-500 active:bg-amber-600"
+      />
     </aside>
   );
 }

@@ -1,26 +1,15 @@
 import { useState } from 'react';
 import { Download, FileInput, Moon, Save, Settings, Sun } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { MobileViewTabs } from '@/components/MobileViewTabs';
-import { useIsMobile } from '@/lib/hooks/useIsMobile';
 import { shortcutLabel } from '@/lib/shortcuts';
 import { showToast, useOverlayStore } from '@/stores/overlayStore';
-import { useUIStore } from '@/stores/uiStore';
 import { useDarkMode } from '@/lib/hooks/useDarkMode';
 import { useActiveTemplate } from '@/features/templates/useActiveTemplate';
 import { useTemplateStatus } from '@/features/templates/useTemplateStatus';
 import { TemplateStatusBadge } from '@/features/templates/TemplateStatusBadge';
 import { SettingsDialog } from '@/features/settings/SettingsDialog';
 
-const MOBILE_PANE_OPTIONS = [
-  { value: 'editor' as const, label: 'Edit' },
-  { value: 'preview' as const, label: 'Preview' },
-];
-
 export function TopBar() {
-  const mobilePane = useUIStore((s) => s.mobilePane);
-  const setMobilePane = useUIStore((s) => s.setMobilePane);
-  const isMobile = useIsMobile();
   const { darkMode, toggleDarkMode } = useDarkMode();
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const openExport = useOverlayStore((s) => s.openExport);
@@ -31,7 +20,7 @@ export function TopBar() {
 
   return (
     <>
-      <header className="flex h-12 shrink-0 items-center justify-between border-b border-border bg-card px-3 md:px-4">
+      <header className="flex h-12 shrink-0 items-center justify-between gap-3 border-b border-border bg-card px-4">
         <div className="flex min-w-0 items-center gap-2.5">
           <div className="flex size-7 shrink-0 items-center justify-center rounded-md bg-amber-500 text-sm font-bold text-white">
             M
@@ -39,8 +28,8 @@ export function TopBar() {
           <span className="text-base font-semibold tracking-wide text-zinc-900 dark:text-zinc-100">
             Mosaic
           </span>
-          <span className="hidden text-sm font-medium text-zinc-600 md:inline">/</span>
-          <div className="hidden min-w-0 items-center gap-2 md:flex">
+          <span className="text-sm font-medium text-zinc-600">/</span>
+          <div className="flex min-w-0 items-center gap-2">
             <span className="max-w-[28vw] truncate text-sm font-medium text-zinc-600 dark:text-zinc-400">
               {activeTemplate?.name ?? 'No resume open'}
             </span>
@@ -64,15 +53,7 @@ export function TopBar() {
           </div>
         </div>
 
-        <div className="flex items-center gap-1.5">
-          {isMobile && (
-            <MobileViewTabs
-              value={mobilePane}
-              onChange={setMobilePane}
-              options={MOBILE_PANE_OPTIONS}
-            />
-          )}
-
+        <div className="flex shrink-0 items-center gap-1.5">
           <Button variant="ghost" size="icon-sm" onClick={toggleDarkMode} aria-label="Toggle theme">
             {darkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
           </Button>
@@ -101,7 +82,7 @@ export function TopBar() {
             aria-label="Open export dialog"
           >
             <Download className="h-4 w-4" />
-            <span className="hidden sm:inline">Export</span>
+            Export
           </Button>
         </div>
       </header>
