@@ -8,6 +8,7 @@
   "main": "./out/main/index.js",
   "scripts": {
     "dev": "electron-vite dev",
+    "dev:reset": "rm -rf .dev-data",
     "build": "tsc -b && electron-vite build",
     "preview": "electron-vite preview",
     "package": "bun run build && electron-builder",
