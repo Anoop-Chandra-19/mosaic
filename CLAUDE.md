@@ -65,6 +65,7 @@ src/
     templates/    # Template UI, status, and comparison logic
     preview/      # Resume preview (ResumePreview, PreviewHeader, etc.)
     settings/     # Settings dialog + sections
+    backup/       # Full backup files: back up, choose and restore a bundle
   stores/         # Zustand stores
   types/          # Shared TypeScript types
   lib/

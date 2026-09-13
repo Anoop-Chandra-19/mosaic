@@ -10,18 +10,15 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { getSecretsClient } from '@/lib/secrets';
-import { useAIStore } from '@/stores/aiStore';
 import { attempt, showToast } from '@/stores/overlayStore';
-import { useTemplateStore } from '@/stores/templateStore';
 import { useUIStore } from '@/stores/uiStore';
 import { SettingRow, SettingsNote } from '../SettingRow';
 
 export function PrivacySection() {
   const secrets = useMemo(() => getSecretsClient(), []);
   const resetUIState = useUIStore((s) => s.resetUIState);
-  const resetAIConfig = useAIStore((s) => s.resetAIConfig);
-  const deleteAllTemplates = useTemplateStore((s) => s.deleteAllTemplates);
   const [confirmingErase, setConfirmingErase] = useState(false);
+  const [erasing, setErasing] = useState(false);
 
   const forgetKeys = async () => {
     if (await attempt(secrets.clearAllApiKeys(), 'Could not remove the keys')) {
@@ -30,15 +27,14 @@ export function PrivacySection() {
   };
 
   const erase = async () => {
-    setConfirmingErase(false);
+    setErasing(true);
     const erased = await attempt(
-      Promise.all([secrets.clearAllApiKeys(), deleteAllTemplates()]),
+      Promise.all([secrets.clearAllApiKeys(), window.mosaic.app.eraseAll()]),
       'Could not erase everything'
     );
-    if (!erased) return;
-    resetUIState();
-    resetAIConfig();
-    showToast('Erased local data');
+    // Start over from the empty database, as a fresh install does.
+    if (erased) window.location.reload();
+    else setErasing(false);
   };
 
   return (
@@ -96,14 +92,15 @@ export function PrivacySection() {
             </DialogTitle>
             <DialogDescription>
               Every template, its history, your settings, and your API keys are deleted from this
-              machine. There is no other copy unless you exported one.
+              machine, and Mosaic starts over as if just installed. There is no other copy unless
+              you made a backup.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="ghost" onClick={() => setConfirmingErase(false)}>
               Cancel
             </Button>
-            <Button variant="destructive" onClick={() => void erase()}>
+            <Button variant="destructive" disabled={erasing} onClick={() => void erase()}>
               <Trash2 />
               Erase everything
             </Button>

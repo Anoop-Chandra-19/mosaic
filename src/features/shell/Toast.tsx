@@ -24,6 +24,19 @@ export function Toast() {
             <AlertTriangle className="size-3.5 shrink-0 text-red-600 dark:text-red-400" />
           )}
           <span className="min-w-0">{toast.message}</span>
+          {toast.action && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-6 shrink-0 rounded-full px-2.5 font-semibold text-amber-700 hover:text-amber-800 dark:text-amber-400 dark:hover:text-amber-300"
+              onClick={() => {
+                dismiss();
+                toast.action?.run();
+              }}
+            >
+              {toast.action.label}
+            </Button>
+          )}
           <Button
             variant="ghost"
             size="icon-sm"

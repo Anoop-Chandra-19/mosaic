@@ -3,8 +3,16 @@ import { immer } from 'zustand/middleware/immer';
 import { getDb } from '@/lib/storage/mosaicDb';
 import { useOverlayStore } from '@/stores/overlayStore';
 import { flushDraft, useResumeStore } from '@/stores/resumeStore';
+import type { ImportMode, MosaicBundle } from '@/types/bundle';
 import type { Draft, TemplateSummary, VersionMeta } from '@/types/db';
 import type { PendingTextAiChange, ResumeData } from '@/types/resume';
+
+/** A deleted template, kept in memory as a backup of just itself so it can be put back. */
+export interface DeletedTemplate {
+  bundle: MosaicBundle;
+  /** It was in the editor. */
+  wasOpen: boolean;
+}
 
 /*
  * Templates as main stores them. The list is summaries only — documents stay in the
@@ -28,9 +36,18 @@ interface TemplateState {
   duplicateTemplate: (id: string) => Promise<TemplateSummary>;
   /** A new template from one version of any template's history. Does not open it. */
   duplicateVersion: (versionId: string) => Promise<TemplateSummary>;
-  /** The open one included: the most recently edited opens next, or nothing does. */
-  deleteTemplate: (id: string) => Promise<void>;
-  deleteAllTemplates: () => Promise<void>;
+  /**
+   * The open one included: the most recently edited opens next, or nothing does. Resolves
+   * with what was deleted, which `restoreDeleted` puts back.
+   */
+  deleteTemplate: (id: string) => Promise<DeletedTemplate>;
+  /** Undo for a delete: the template returns with its history, and reopens if it was open. */
+  restoreDeleted: (deleted: DeletedTemplate) => Promise<void>;
+  /**
+   * Writes a backup file's templates and returns their ids. Opens one if the open template
+   * went (restoring replaces everything) or nothing was open.
+   */
+  importBundle: (text: string, mode: ImportMode) => Promise<string[]>;
 
   /** Names what is in the editor — see `MosaicDb['versions']['name']`. */
   nameVersion: (name: string) => Promise<VersionMeta>;
@@ -137,26 +154,40 @@ export const useTemplateStore = create<TemplateState>()(
       },
 
       deleteTemplate: async (id) => {
-        await getDb().templates.remove(id);
+        const wasOpen = id === openTemplateId();
+        // The copy kept for Undo should have the latest edits.
+        if (wasOpen) await flushDraft();
+        const db = getDb();
+        const bundle = await db.bundle.export([id]);
+        await db.templates.remove(id);
         await get().refresh();
-        if (id !== openTemplateId()) return;
-
-        const next = get().templates.reduce<TemplateSummary | undefined>(
-          (latest, t) => (latest && latest.updatedAt >= t.updatedAt ? latest : t),
-          undefined
-        );
-        if (next) {
-          showDraft(await getDb().templates.open(next.id));
-        } else {
-          showDraft(null);
+        if (wasOpen) {
+          const next = get().templates.reduce<TemplateSummary | undefined>(
+            (latest, t) => (latest && latest.updatedAt >= t.updatedAt ? latest : t),
+            undefined
+          );
+          showDraft(next ? await db.templates.open(next.id) : null);
         }
+        return { bundle, wasOpen };
       },
 
-      deleteAllTemplates: async () => {
+      restoreDeleted: async ({ bundle, wasOpen }) => {
+        const [id] = await get().importBundle(JSON.stringify(bundle), 'as-new-template');
+        if (wasOpen) await get().openTemplate(id);
+      },
+
+      importBundle: async (text, mode) => {
+        await flushDraft();
         const db = getDb();
-        for (const template of get().templates) await db.templates.remove(template.id);
-        showDraft(null);
+        const { templateIds } = await db.bundle.import(text, mode);
+        const open = openTemplateId();
+        if (open === null || mode === 'restore-all') {
+          // A backup of this app brings the same ids back; keep the same template open.
+          const id = open !== null && templateIds.includes(open) ? open : templateIds[0];
+          showDraft(await db.templates.open(id));
+        }
         await get().refresh();
+        return templateIds;
       },
 
       nameVersion: async (name) => {

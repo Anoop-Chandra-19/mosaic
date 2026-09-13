@@ -1,9 +1,20 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { app, BrowserWindow, dialog, screen, shell, type IpcMainInvokeEvent } from 'electron';
+import {
+  app,
+  BrowserWindow,
+  dialog,
+  ipcMain,
+  screen,
+  shell,
+  type IpcMainInvokeEvent,
+} from 'electron';
+import { ERASE_ALL } from '../shared/appChannels';
 import { openDatabase, type Database } from './db/connection';
+import { eraseAll } from './eraseAll';
 import { flushBeforeClose } from './flushOnClose';
 import { registerDbHandlers } from './ipc/db';
+import { registerFileHandlers } from './ipc/files';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 
@@ -16,6 +27,16 @@ if (!app.isPackaged && !app.commandLine.hasSwitch('user-data-dir')) {
 }
 
 let db: Database | undefined;
+
+const databaseFile = () => path.join(app.getPath('userData'), 'mosaic.db');
+
+function openAppDatabase(): Database {
+  return openDatabase(databaseFile(), {
+    // Dev stops on an edited migration (with a `dev:reset` hint); an installed build
+    // warns and keeps going rather than lock anyone out of their resumes.
+    tolerateEditedMigrations: app.isPackaged,
+  });
+}
 
 /** Links the user clicks leave the app; nothing else is allowed to navigate it. */
 const EXTERNAL_PROTOCOLS = new Set(['http:', 'https:', 'mailto:']);
@@ -99,11 +120,7 @@ if (!app.requestSingleInstanceLock()) {
 
   void app.whenReady().then(() => {
     try {
-      db = openDatabase(path.join(app.getPath('userData'), 'mosaic.db'), {
-        // Dev stops on an edited migration (with a `dev:reset` hint); an installed build
-        // warns and keeps going rather than lock anyone out of their resumes.
-        tolerateEditedMigrations: app.isPackaged,
-      });
+      db = openAppDatabase();
     } catch (error) {
       // E.g. a database written by a newer Mosaic, or (dev) an edited migration: say so
       // rather than open an empty app.
@@ -111,7 +128,21 @@ if (!app.requestSingleInstanceLock()) {
       app.exit(1);
       return;
     }
-    registerDbHandlers(db, isAppFrame);
+    registerDbHandlers(() => db, isAppFrame);
+    registerFileHandlers(isAppFrame);
+    ipcMain.handle(ERASE_ALL, (event) => {
+      if (!isAppFrame(event)) throw new Error(`Refused erase from ${event.senderFrame?.url}`);
+      return eraseAll({
+        file: databaseFile(),
+        close: () => {
+          db?.close();
+          db = undefined;
+        },
+        reopen: () => {
+          db = openAppDatabase();
+        },
+      });
+    });
     createWindow();
     app.on('activate', () => {
       if (BrowserWindow.getAllWindows().length === 0) createWindow();

@@ -128,6 +128,55 @@ describe('templateStore', () => {
     expect(resume().sections).toEqual([]);
   });
 
+  it('undoing a delete brings the template back with its history and unsaved edits', async () => {
+    await templates().createTemplate('Backend', createDefaultResume());
+    await templates().nameVersion('Sent to Acme');
+    await templates().createTemplate('Frontend', createEmptyResume());
+    const frontend = resume().templateId!;
+    resume().updateContact({ name: 'Not saved yet' });
+
+    const deleted = await templates().deleteTemplate(frontend);
+    expect(names()).toEqual(['Backend']);
+    expect(resume().contact.name).toBe('Your Name');
+
+    await templates().restoreDeleted(deleted);
+    expect(names()).toEqual(['Backend', 'Frontend']);
+    // It was open, so it opens again, as it was.
+    expect(resume().templateId).toBe(templates().templates[1].id);
+    expect(resume().contact.name).toBe('Not saved yet');
+    expect(templates().templates[1].versionCount).toBe(1);
+  });
+
+  it('restoring a backup of this app replaces everything and keeps the open template open', async () => {
+    await templates().createTemplate('Backend', createDefaultResume());
+    const backend = resume().templateId!;
+    const backup = JSON.stringify(await db.current!.bundle.export());
+    resume().updateContact({ name: 'After the backup' });
+    await templates().createTemplate('Frontend', createEmptyResume());
+    await templates().openTemplate(backend);
+
+    await templates().importBundle(backup, 'restore-all');
+
+    expect(names()).toEqual(['Backend']);
+    expect(resume().templateId).toBe(backend);
+    expect(resume().contact.name).toBe('Your Name');
+  });
+
+  it('adding a backup’s templates opens one only when nothing is open', async () => {
+    await templates().createTemplate('Backend', createDefaultResume());
+    const backup = JSON.stringify(await db.current!.bundle.export());
+    const backend = resume().templateId!;
+
+    await templates().importBundle(backup, 'as-new-template');
+    expect(names()).toEqual(['Backend', 'Backend']);
+    expect(resume().templateId).toBe(backend);
+
+    await templates().deleteTemplate(templates().templates[0].id);
+    await templates().deleteTemplate(templates().templates[0].id);
+    const [added] = await templates().importBundle(backup, 'as-new-template');
+    expect(resume().templateId).toBe(added);
+  });
+
   it('duplicates with the latest edits', async () => {
     await templates().createTemplate('Backend', createDefaultResume());
     resume().updateContact({ name: 'Latest' });

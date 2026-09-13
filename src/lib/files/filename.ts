@@ -56,6 +56,7 @@ export function buildJsonResumeFileName(options: JsonResumeFileNameOptions = {})
   return `${base}-resume-${date}.json`;
 }
 
-export function buildVaultFileName(now: Date = new Date()) {
-  return `mosaic-vault-${formatDateDashed(now)}.json`;
+/** A full backup: every template with its history. */
+export function buildBackupFileName(now: Date = new Date()) {
+  return `mosaic-backup-${formatDateDashed(now)}.json`;
 }

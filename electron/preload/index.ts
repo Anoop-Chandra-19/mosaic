@@ -1,6 +1,13 @@
 import { contextBridge, ipcRenderer } from 'electron';
 import type { MosaicDbBridge } from '@/types/db';
-import { FLUSH_DONE, FLUSH_REQUEST } from '../shared/appChannels';
+import type { MosaicFiles } from '@/types/files';
+import {
+  ERASE_ALL,
+  FILES_OPEN,
+  FILES_SAVE,
+  FLUSH_DONE,
+  FLUSH_REQUEST,
+} from '../shared/appChannels';
 import { DB_METHODS, dbChannel } from '../shared/dbMethods';
 
 // The only door between the sandboxed renderer and the main process: narrow, typed
@@ -23,10 +30,18 @@ function dbBridge(): MosaicDbBridge {
 
 let flushRegistered = false;
 
+const files: MosaicFiles = {
+  saveText: (type, suggestedName, text) =>
+    ipcRenderer.invoke(FILES_SAVE, type, suggestedName, text),
+  openText: (type) => ipcRenderer.invoke(FILES_OPEN, type),
+};
+
 contextBridge.exposeInMainWorld('mosaic', {
   platform: process.platform,
   db: dbBridge(),
+  files,
   app: {
+    eraseAll: (): Promise<void> => ipcRenderer.invoke(ERASE_ALL),
     /** Main asks before the window closes; answer once pending saves have landed. */
     onFlushRequest: (flush: () => Promise<void>) => {
       if (flushRegistered) return;

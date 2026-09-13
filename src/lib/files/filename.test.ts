@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildPdfFileName, buildVaultFileName } from './filename';
+import { buildBackupFileName, buildPdfFileName } from './filename';
 
 const fixedDate = new Date(2026, 3, 23);
 
@@ -47,8 +47,8 @@ describe('buildPdfFileName', () => {
   });
 });
 
-describe('buildVaultFileName', () => {
-  it('uses a dashed date with the mosaic-vault prefix', () => {
-    expect(buildVaultFileName(fixedDate)).toBe('mosaic-vault-2026-04-23.json');
+describe('buildBackupFileName', () => {
+  it('uses a dashed date with the mosaic-backup prefix', () => {
+    expect(buildBackupFileName(fixedDate)).toBe('mosaic-backup-2026-04-23.json');
   });
 });

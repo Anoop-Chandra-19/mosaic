@@ -20,13 +20,20 @@ function reportFailure(key: string) {
   return (error: unknown) => console.error(`Could not save the "${key}" setting`, error);
 }
 
+/** A setting as boot loaded it, or as it was last written. */
+export function readSetting(key: string): string | null {
+  return settings.get(key) ?? null;
+}
+
+export function writeSetting(key: string, value: string): void {
+  if (settings.get(key) === value) return;
+  settings.set(key, value);
+  getDb().settings.set(key, value).catch(reportFailure(key));
+}
+
 export const settingsStorage: StateStorage = {
-  getItem: (key) => settings.get(key) ?? null,
-  setItem: (key, value) => {
-    if (settings.get(key) === value) return;
-    settings.set(key, value);
-    getDb().settings.set(key, value).catch(reportFailure(key));
-  },
+  getItem: readSetting,
+  setItem: writeSetting,
   removeItem: (key) => {
     if (!settings.delete(key)) return;
     getDb().settings.remove(key).catch(reportFailure(key));

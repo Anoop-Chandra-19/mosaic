@@ -55,9 +55,11 @@ test('Import & export opens the import dialog', async () => {
   await expect(page.getByRole('dialog', { name: 'Import resume' })).toBeVisible();
 });
 
-test('erasing local data deletes every template', async () => {
+test('erasing local data starts Mosaic over, settings included', async () => {
   const { page } = mosaic();
   await page.getByRole('button', { name: /Blank resume/ }).click();
+  await page.getByRole('button', { name: 'Toggle theme' }).click();
+  await expect(page.locator('html')).not.toHaveClass(/dark/);
 
   const settings = await openSettings(page, 'Privacy');
   await settings.getByRole('button', { name: 'Erase local data' }).click();
@@ -66,9 +68,16 @@ test('erasing local data deletes every template', async () => {
     .getByRole('button', { name: 'Erase everything' })
     .click();
 
-  await expect(page.getByText('Erased local data')).toBeVisible();
-  await settings.getByRole('button', { name: 'Close settings' }).click();
-  await expect(page.getByRole('banner').getByText('No resume open')).toBeVisible();
+  // The app reloads over a fresh database: the Start panel, and the default theme.
+  await expect(page.getByRole('button', { name: /Blank resume/ })).toBeVisible();
+  await expect(page.locator('html')).toHaveClass(/dark/);
+  const boot = await page.evaluate(async () => {
+    const result = await window.mosaic.db.boot();
+    if (!result.ok) throw new Error(result.message);
+    return result.value;
+  });
+  expect(boot.templates).toEqual([]);
+  expect(boot.settings.ui).toBeUndefined();
 });
 
 test('settings survive quitting and relaunching', async () => {

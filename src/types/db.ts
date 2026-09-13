@@ -1,3 +1,4 @@
+import type { ImportMode, ImportResult, MosaicBundle } from '@/types/bundle';
 import type { ResumeData } from '@/types/resume';
 
 /*
@@ -111,6 +112,16 @@ export interface MosaicDb {
   settings: {
     set(key: string, value: string): Promise<void>;
     remove(key: string): Promise<void>;
+  };
+  /** Backup files: templates with their drafts and full history, as readable JSON. */
+  bundle: {
+    /** The given templates, or every one of them. */
+    export(templateIds?: string[]): Promise<MosaicBundle>;
+    /**
+     * Writes a backup file's templates. Main checks the text again with `parseBundle`, so a
+     * bad file is refused with `invalid-argument` and changes nothing.
+     */
+    import(text: string, mode: ImportMode): Promise<ImportResult>;
   };
 }
 

@@ -1,9 +1,13 @@
 import type { Database } from 'better-sqlite3';
 import { isResumeData } from '@/lib/resume/validateResume';
+import { parseBundle } from '@/lib/vault/parseBundle';
+import type { ImportMode, MosaicBundle } from '@/types/bundle';
 import type { DbResult, MosaicDb } from '@/types/db';
+import { MAX_TEXT_FILE_BYTES } from '@/types/files';
 import type { ResumeData } from '@/types/resume';
 import type { DbMethod } from '../../shared/dbMethods';
 import { boot } from '../db/boot';
+import { exportBundle, importBundle } from '../db/bundle';
 import { saveDraft } from '../db/drafts';
 import { StorageError } from '../db/errors';
 import { removeSetting, setSetting } from '../db/settings';
@@ -69,6 +73,31 @@ function settingValue(value: unknown): string {
   return value;
 }
 
+function optionalIds(value: unknown, what: string): string[] | undefined {
+  if (value === undefined) return undefined;
+  if (!Array.isArray(value)) throw new InvalidArgumentError(`${what} must be a list of ids`);
+  return value.map((id: unknown) => text(id, what));
+}
+
+const IMPORT_MODES: ReadonlySet<unknown> = new Set<ImportMode>(['restore-all', 'as-new-template']);
+
+function importMode(value: unknown): ImportMode {
+  if (!IMPORT_MODES.has(value)) throw new InvalidArgumentError('mode is not an import mode');
+  return value as ImportMode;
+}
+
+/** A backup file's text, checked the same way whoever sent it already should have. */
+function bundle(value: unknown): MosaicBundle {
+  if (typeof value !== 'string' || value.length > MAX_TEXT_FILE_BYTES) {
+    throw new InvalidArgumentError('text must be a backup file under 128 MB');
+  }
+  const parsed = parseBundle(value);
+  if (!parsed.ok) {
+    throw new InvalidArgumentError(`not a Mosaic backup: ${parsed.detail ?? parsed.code}`);
+  }
+  return parsed.bundle;
+}
+
 export function createDbHandlers(db: Database): Handlers<MosaicDb> {
   return {
     boot: () => boot(db),
@@ -103,6 +132,10 @@ export function createDbHandlers(db: Database): Handlers<MosaicDb> {
     settings: {
       set: (key, value) => setSetting(db, text(key, 'key'), settingValue(value)),
       remove: (key) => removeSetting(db, text(key, 'key')),
+    },
+    bundle: {
+      export: (templateIds) => exportBundle(db, optionalIds(templateIds, 'templateIds')),
+      import: (fileText, mode) => importBundle(db, bundle(fileText), importMode(mode)),
     },
   };
 }

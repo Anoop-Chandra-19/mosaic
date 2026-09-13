@@ -30,6 +30,8 @@ export const DB_METHODS = [
   'versions.duplicate',
   'settings.set',
   'settings.remove',
+  'bundle.export',
+  'bundle.import',
 ] as const satisfies readonly DbMethod[];
 
 export const dbChannel = (method: DbMethod) => `db:${method}`;

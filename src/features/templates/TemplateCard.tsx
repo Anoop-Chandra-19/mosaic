@@ -47,6 +47,7 @@ export function TemplateCard({ template, active, expanded, onToggle }: TemplateC
   const duplicateTemplate = useTemplateStore((s) => s.duplicateTemplate);
   const duplicateVersion = useTemplateStore((s) => s.duplicateVersion);
   const deleteTemplate = useTemplateStore((s) => s.deleteTemplate);
+  const restoreDeleted = useTemplateStore((s) => s.restoreDeleted);
   const restoreVersion = useTemplateStore((s) => s.restoreVersion);
   const setNameVersionOpen = useOverlayStore((s) => s.setNameVersionOpen);
   const setExportOpen = useOverlayStore((s) => s.setExportOpen);
@@ -109,13 +110,22 @@ export function TemplateCard({ template, active, expanded, onToggle }: TemplateC
     }
   };
 
-  const remove = async () => {
-    if (await attempt(deleteTemplate(template.id), 'Could not delete the template')) {
-      const count = template.versionCount;
+  const remove = () => {
+    const count = template.versionCount;
+    const deleting = deleteTemplate(template.id).then((deleted) =>
       showToast(
-        `Deleted “${template.name}” and its ${count} ${count === 1 ? 'version' : 'versions'}`
-      );
-    }
+        `Deleted “${template.name}” and its ${count} ${count === 1 ? 'version' : 'versions'}`,
+        'success',
+        {
+          label: 'Undo',
+          run: () =>
+            void attempt(restoreDeleted(deleted), 'Could not bring the template back').then(
+              (restored) => restored && showToast(`Brought back “${template.name}”`)
+            ),
+        }
+      )
+    );
+    void attempt(deleting, 'Could not delete the template');
   };
 
   const Chevron = expanded ? ChevronDown : ChevronRight;
@@ -297,7 +307,7 @@ export function TemplateCard({ template, active, expanded, onToggle }: TemplateC
         active={active}
         last={isLast}
         onOpenChange={setPendingDelete}
-        onDelete={() => void remove()}
+        onDelete={remove}
       />
     </div>
   );

@@ -30,7 +30,6 @@ interface AIStoreState {
   setModelForProvider: (provider: AIProvider, model: string) => void;
   setModelForActiveProvider: (model: string) => void;
   resetModelForProvider: (provider: AIProvider) => void;
-  resetAIConfig: () => void;
 }
 
 type LegacyAIState = {
@@ -93,8 +92,6 @@ export const useAIStore = create<AIStoreState>()(
             [provider]: AI_PROVIDER_DEFAULT_MODEL[provider],
           },
         })),
-      resetAIConfig: () =>
-        set({ ...DEFAULT_AI_STATE, modelsByProvider: createDefaultModelsByProvider() }),
     }),
     {
       name: 'ai',

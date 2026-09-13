@@ -3,10 +3,17 @@ import type { Version } from '@/types/db';
 
 /** What is showing over the app right now. Never persisted. */
 
+export interface ToastAction {
+  label: string;
+  run: () => void;
+}
+
 export interface Toast {
   id: number;
   message: string;
   tone: 'success' | 'error';
+  /** One follow-up, such as Undo. Running it dismisses the toast. */
+  action?: ToastAction;
 }
 
 /** A version being read in the sheet instead of the draft. */
@@ -61,14 +68,23 @@ export const useOverlayStore = create<OverlayState>()((set) => ({
 }));
 
 const TOAST_MS = 5000;
+/** Long enough to read the message and reach the button. */
+const TOAST_WITH_ACTION_MS = 10000;
 let nextToastId = 1;
 
-export function showToast(message: string, tone: Toast['tone'] = 'success'): void {
+export function showToast(
+  message: string,
+  tone: Toast['tone'] = 'success',
+  action?: ToastAction
+): void {
   const id = nextToastId++;
-  useOverlayStore.setState({ toast: { id, message, tone } });
-  setTimeout(() => {
-    if (useOverlayStore.getState().toast?.id === id) useOverlayStore.setState({ toast: null });
-  }, TOAST_MS);
+  useOverlayStore.setState({ toast: { id, message, tone, action } });
+  setTimeout(
+    () => {
+      if (useOverlayStore.getState().toast?.id === id) useOverlayStore.setState({ toast: null });
+    },
+    action ? TOAST_WITH_ACTION_MS : TOAST_MS
+  );
 }
 
 /**

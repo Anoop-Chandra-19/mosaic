@@ -5,6 +5,7 @@ import { DB_METHODS } from '../../../shared/dbMethods';
 import { openDatabase, type Database } from '../../db/connection';
 import { createDbHandlers, handlerFor, settle, type Handlers } from '../dbHandlers';
 import type { MosaicDb } from '@/types/db';
+import type { MosaicBundle } from '@/types/bundle';
 
 let db: Database;
 let handlers: Handlers<MosaicDb>;
@@ -72,6 +73,11 @@ describe('db handlers', () => {
       ['drafts.save', 'id', doc, 1.5],
       ['drafts.save', 'id', doc, '2'],
       ['settings.set', 'ui', { darkMode: true }],
+      ['bundle.export', 'id'],
+      ['bundle.export', [7]],
+      ['bundle.import', { bundleVersion: 2, templates: [] }, 'as-new-template'],
+      ['bundle.import', '{"bundleVersion":2,"templates":[]}', 'as-new-template'],
+      ['bundle.import', 'not json', 'restore-all'],
     ];
     for (const [method, ...args] of refusals) {
       expect(call(method, ...args), `${method}(${JSON.stringify(args)})`).toMatchObject({
@@ -80,6 +86,29 @@ describe('db handlers', () => {
       });
     }
     expect(db.prepare('select count(*) from templates').pluck().get()).toBe(0);
+  });
+
+  it('carry a backup out as a bundle and back in from its text', () => {
+    const { value: backend } = call('templates.create', 'Backend', createDefaultResume()) as {
+      value: TemplateSummary;
+    };
+    const exported = call('bundle.export', [backend.id]) as { ok: true; value: MosaicBundle };
+    expect(exported.value.templates.map((t) => t.template.name)).toEqual(['Backend']);
+
+    const text = JSON.stringify(exported.value);
+    expect(call('bundle.import', text, 'as-new-template')).toMatchObject({ ok: true });
+    expect(call('bundle.import', text, 'merge')).toMatchObject({
+      ok: false,
+      code: 'invalid-argument',
+    });
+    expect(db.prepare('select count(*) from templates').pluck().get()).toBe(2);
+
+    // A restore puts the file's templates back under their own ids, and only those.
+    expect(call('bundle.import', text, 'restore-all')).toEqual({
+      ok: true,
+      value: { templateIds: [backend.id] },
+    });
+    expect(call('bundle.export', ['missing'])).toMatchObject({ ok: false, code: 'not-found' });
   });
 
   it('leave an optional argument out', () => {
