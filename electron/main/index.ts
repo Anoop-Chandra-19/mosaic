@@ -1,7 +1,8 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { app, BrowserWindow, dialog, screen, shell } from 'electron';
+import { app, BrowserWindow, dialog, screen, shell, type IpcMainInvokeEvent } from 'electron';
 import { openDatabase, type Database } from './db/connection';
+import { registerDbHandlers } from './ipc/db';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 
@@ -20,6 +21,18 @@ const EXTERNAL_PROTOCOLS = new Set(['http:', 'https:', 'mailto:']);
 
 function openExternally(url: string): void {
   if (EXTERNAL_PROTOCOLS.has(new URL(url).protocol)) void shell.openExternal(url);
+}
+
+const devServerUrl = app.isPackaged ? undefined : process.env.ELECTRON_RENDERER_URL;
+
+/** The app's own page: the built index.html, or Vite's dev server during `bun run dev`. */
+function isAppFrame(event: IpcMainInvokeEvent): boolean {
+  const frame = event.senderFrame;
+  if (!frame || frame !== event.sender.mainFrame) return false;
+  const { protocol, origin } = new URL(frame.url);
+  return (
+    protocol === 'file:' || (devServerUrl !== undefined && origin === new URL(devServerUrl).origin)
+  );
 }
 
 function createWindow(): BrowserWindow {
@@ -61,8 +74,7 @@ function createWindow(): BrowserWindow {
     openExternally(url);
   });
 
-  const devServerUrl = process.env.ELECTRON_RENDERER_URL;
-  if (!app.isPackaged && devServerUrl) {
+  if (devServerUrl) {
     void win.loadURL(devServerUrl);
   } else {
     void win.loadFile(path.join(here, '../renderer/index.html'));
@@ -97,6 +109,7 @@ if (!app.requestSingleInstanceLock()) {
       app.exit(1);
       return;
     }
+    registerDbHandlers(db, isAppFrame);
     createWindow();
     app.on('activate', () => {
       if (BrowserWindow.getAllWindows().length === 0) createWindow();

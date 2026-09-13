@@ -20,13 +20,18 @@
     "noUnusedParameters": true,
     "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true,
-    "noUncheckedSideEffectImports": true
+    "noUncheckedSideEffectImports": true,
+    "paths": {
+      "@/*": ["./src/*"]
+    }
   },
   "include": [
     "electron.vite.config.ts",
     "vitest.config.ts",
     "playwright.config.ts",
     "e2e",
-    "scripts"
+    "scripts",
+    // e2e specs call the preload bridge, typed by the same contract the renderer uses.
+    "src/types/bridge.d.ts"
   ]
 }
