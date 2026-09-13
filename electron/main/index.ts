@@ -1,8 +1,19 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { app, BrowserWindow, screen, shell } from 'electron';
+import { app, BrowserWindow, dialog, screen, shell } from 'electron';
+import { openDatabase, type Database } from './db/connection';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
+
+// Unpackaged runs (`bun run dev`, `preview`) keep their data in the repo's gitignored
+// .dev-data/, apart from an installed Mosaic's; `bun run dev:reset` wipes it. An explicit
+// --user-data-dir (the e2e tests) wins. Must run before the single-instance lock, which
+// lives in the profile.
+if (!app.isPackaged && !app.commandLine.hasSwitch('user-data-dir')) {
+  app.setPath('userData', path.join(app.getAppPath(), '.dev-data'));
+}
+
+let db: Database | undefined;
 
 /** Links the user clicks leave the app; nothing else is allowed to navigate it. */
 const EXTERNAL_PROTOCOLS = new Set(['http:', 'https:', 'mailto:']);
@@ -73,6 +84,19 @@ if (!app.requestSingleInstanceLock()) {
   });
 
   void app.whenReady().then(() => {
+    try {
+      db = openDatabase(path.join(app.getPath('userData'), 'mosaic.db'), {
+        // Dev stops on an edited migration (with a `dev:reset` hint); an installed build
+        // warns and keeps going rather than lock anyone out of their resumes.
+        tolerateEditedMigrations: app.isPackaged,
+      });
+    } catch (error) {
+      // E.g. a database written by a newer Mosaic, or (dev) an edited migration: say so
+      // rather than open an empty app.
+      dialog.showErrorBox('Mosaic could not open its data', (error as Error).message);
+      app.exit(1);
+      return;
+    }
     createWindow();
     app.on('activate', () => {
       if (BrowserWindow.getAllWindows().length === 0) createWindow();
@@ -81,5 +105,11 @@ if (!app.requestSingleInstanceLock()) {
 
   app.on('window-all-closed', () => {
     if (process.platform !== 'darwin') app.quit();
+  });
+
+  // Closing the last connection checkpoints the WAL into mosaic.db and removes -wal/-shm.
+  app.on('will-quit', () => {
+    db?.close();
+    db = undefined;
   });
 }

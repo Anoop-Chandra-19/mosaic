@@ -14,6 +14,8 @@ out
 release
 test-results
 playwright-report
+# Dev runs keep their profile and mosaic.db here; `bun run dev:reset` wipes it
+.dev-data
 *.local
 
 # Editor directories and files
