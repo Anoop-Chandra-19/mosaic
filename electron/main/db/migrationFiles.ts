@@ -2,7 +2,8 @@ import { createHash } from 'node:crypto';
 
 /*
  * Plain file handling shared by the migration runner (files inlined by Vite) and
- * `bun run db:freeze` (files read from disk). No Vite or Electron in here.
+ * `db:freeze` (files read from disk, run by plain Node). No Vite or Electron in here, and
+ * only syntax Node can strip types from.
  */
 
 export interface Migration {

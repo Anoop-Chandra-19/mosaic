@@ -7,13 +7,19 @@
 - Electron 44 via electron-vite: main process in `electron/main/`, sandboxed preload in
   `electron/preload/` (the only bridge — `window.mosaic`), renderer is `index.html` + `src/`.
   The renderer never gets Node or raw IPC; the preload exposes narrow, typed methods.
+- SQLite (better-sqlite3) in the main process holds everything the user makes — see
+  "Persistence". The renderer reaches it through `window.mosaic.db`, and files through
+  `window.mosaic.files` (system Save/Open dialogs run by main).
 - React 19 + TypeScript, Vite, Tailwind CSS v4 (CSS-first, no tailwind.config.js)
-- Zustand (with `persist` middleware) for state management
+- Zustand for renderer state
 - Radix UI / shadcn (new-york style, zinc base) for primitives — don't hand-roll UI components
 - Lucide for icons
 - `@/` path alias maps to `src/`
 
 ## Commands
+
+The project works with both bun and npm (Node ≥ 22.18, which runs `db:freeze`'s TypeScript
+directly). Every `bun run <script>` below is also `npm run <script>`; `bunx` is `npx`.
 
 - `bun run dev` — launch the Electron app with Vite HMR for the renderer. Unpackaged runs
   (`dev`, `preview`) keep their whole profile, `mosaic.db` included, in the repo's gitignored
@@ -39,6 +45,12 @@
 - Everything the renderer uses (React, Radix, react-pdf, …) goes in `devDependencies`:
   Vite bundles it into `out/renderer`, so shipping it again would only bloat the installer.
   `bunx shadcn add` installs into `dependencies` — move what it adds.
+- Two lockfiles, kept in step: `bun.lock` and `package-lock.json`. After any dependency
+  change, run `bun install` and then `npm install --package-lock-only`, and commit both.
+- No install script is needed where prebuilt binaries exist (better-sqlite3 ships them;
+  Electron downloads itself on first launch). npm 11 lists the scripts it skipped — that
+  is expected. `trustedDependencies` is bun's list, for building better-sqlite3 from
+  source on a platform without a prebuild.
 
 ## Git Hooks (enforced)
 
@@ -48,11 +60,15 @@
 ## Project Structure
 
 ```
-e2e/              # Playwright specs that launch the built app (launch.ts: withApp helper)
+e2e/              # Playwright specs that launch the built app (launch.ts: withApp helper;
+                  #   dialogs.ts: stand-ins for the system Save/Open dialogs)
 electron/
-  main/           # Electron main process (window, lifecycle; secrets later)
+  main/           # Electron main process (window, lifecycle, erase; secrets later)
     db/           # SQLite (better-sqlite3): connection, migrations/*.sql, repositories, tests
+    ipc/          # IPC handlers: `MosaicDb` (argument checks, Electron-free) and files
   preload/        # Sandboxed preload — builds to CommonJS (.cjs); the only renderer bridge
+  shared/         # Channel names and the `MosaicDb` method list, shared by main and preload
+scripts/          # Release helpers (freeze-migrations)
 src/
   components/
     ui/           # shadcn-managed primitives — do NOT edit manually
@@ -66,17 +82,17 @@ src/
     preview/      # Resume preview (ResumePreview, PreviewHeader, etc.)
     settings/     # Settings dialog + sections
     backup/       # Full backup files: back up, choose and restore a bundle
+    start/        # Start panel: blank, import, or sample
   stores/         # Zustand stores
-  types/          # Shared TypeScript types
+  types/          # Shared TypeScript types (db.ts is the `MosaicDb` contract)
   lib/
     hooks/        # Shared React hooks (useDarkMode, useInlineEdit, etc.)
     files/        # File naming shared by export and backups
-    resume/       # Shared layout, contact formatting, and resume schema migration
-    template/     # Shared template persistence schema migration
-    storage/      # Storage backend, Dexie DB, adapters, and tests
-    vault/        # Backup serialization, validation, and restore
+    resume/       # Shared layout, contact formatting, validation, and resume schema migration
+    storage/      # Renderer side of the database: `getDb()`, settings storage for `persist`
+    vault/        # `parseBundle`: backup-file checks, run by the renderer and again by main
     secrets/      # Secrets client
-    utils.ts      # cn helper
+    utils.ts      # Re-exports shadcn's `cn`
 ```
 
 ### Code placement
@@ -121,11 +137,11 @@ never CSS `zoom`, for that scaling: `zoom` re-runs layout and can re-wrap text.
 - Pre-v1: keep `CURRENT_SCHEMA_VERSION` at 1 and do not add migration steps.
   There are no users yet, so the stored shape can change freely — edit
   `DEFAULT_RESUME` and the types directly rather than writing a migration.
-- Keep the migration machinery itself (`lib/resume/migrateResume`,
-  `lib/template/migrateTemplateState`). It is a no-op today, but this ships as a
-  local app with no server to backfill, so once real resumes exist on disk the
-  version field is the only way to upgrade them. `lib/vault/parseVault` also uses
-  it to reject vault files written by a newer build.
+- Keep the migration machinery itself (`lib/resume/migrateResume`). It is a no-op
+  today, but this ships as a local app with no server to backfill, so once real
+  resumes exist on disk the version field is the only way to upgrade them — main runs
+  every document it reads through it. `lib/vault/parseBundle` also uses it to refuse
+  backup files written by a newer build (as it does a newer `bundleVersion`).
 - Start bumping the version with the first release that real users install.
 - The same rule covers the SQLite schema: pre-v1, edit `electron/main/db/migrations/001_init.sql`
   in place (and `bun run dev:reset`). From the first release, add `002_description.sql`
@@ -136,6 +152,39 @@ never CSS `zoom`, for that scaling: `zoom` re-runs layout and can re-wrap text.
 - Releasing: run `bun run db:freeze` to record the shipping migrations in
   `migrations/released.json`. After that, `bun run test` fails if a released migration
   is edited — users' databases already ran it, so put the change in a new file.
+
+### Persistence
+
+- One SQLite database, `userData/mosaic.db` (never a synced folder), owned by the main
+  process: better-sqlite3, synchronous, WAL. The renderer reaches it only through the
+  `MosaicDb` contract (`src/types/db.ts`) — domain methods, never SQL. Each call is one
+  transaction, and main checks every argument first (`electron/main/ipc/dbHandlers.ts`);
+  refusals come back as `DbResult` codes (`not-found`, `stale-rev`, `invalid-argument`).
+- The document is a JSON blob in one column. Do not normalize sections, entries, or
+  bullets into rows — the whole document is always loaded, nothing queries across
+  bullets, and the DDL would duplicate `types/resume.ts`. SQL indexes the _history_:
+  `templates`, `drafts` (one row per template), `versions` (`auto` | `named`), `settings`.
+- `templates.rev` bumps in the same transaction as every draft write. The draft is clean
+  when its rev matches the newest version's; naming a clean draft renames that version
+  rather than adding one. Every template has at least one version; zero templates is a
+  valid state.
+- Documents never use zustand `persist`. `resumeStore` holds the open draft and saves it
+  through `drafts.save` after a pause in typing (`flushDraft()` sends it at once). Anything
+  that reads the draft from the database — switching, duplicating, importing, restoring,
+  backing up — flushes first, and the window's close waits for it (up to 2 s).
+- Preferences do: `uiStore` and `aiStore` `persist` over `settingsStorage` (the `settings`
+  table, seeded at boot so stores hydrate before the first paint).
+- The data is never locked in. A backup is a bundle (`src/types/bundle.ts`): readable JSON
+  with every template, its draft, and its full history. Mosaic JSON export is the same for
+  one template. Settings, AI configuration, keys, and conversations never go in a bundle.
+- Erase deletes the database file and reopens it empty (`electron/main/eraseAll.ts`), so
+  tables added later are wiped without anyone listing them.
+- API keys live in the OS keychain, never in the database, and never reach the renderer.
+- Planned with the agent layer (`plans/mosaic_sqlite_storage_plan.md`): conversations →
+  runs → messages / tool_calls / ops, stored as provider-neutral content blocks, one write
+  per assistant message; staged suggestions persist and are revalidated against `rev`, and
+  never enter `drafts` or `versions`. Deleting a conversation is a real `DELETE` + `VACUUM`
+  - WAL checkpoint, not a flag.
 
 ### Resume format and layout
 
@@ -152,8 +201,6 @@ never CSS `zoom`, for that scaling: `zoom` re-runs layout and can re-wrap text.
 ### General
 
 - Keep components small and focused
-- Zustand stores use `persist` middleware when state should survive reloads
-- Persistence layer: Zustand → custom Dexie storage adapter → IndexedDB
 - Don't add dependencies without asking
 - Don't create new CSS files — use Tailwind utilities
 - Don't modify files in `components/ui/` — those are shadcn-managed

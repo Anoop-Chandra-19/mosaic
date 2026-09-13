@@ -9,7 +9,7 @@
   "scripts": {
     "dev": "electron-vite dev",
     "dev:reset": "rm -rf .dev-data",
-    "db:freeze": "bun scripts/freeze-migrations.ts",
+    "db:freeze": "node scripts/freeze-migrations.ts",
     "build": "tsc -b && electron-vite build",
     "preview": "electron-vite preview",
     "package": "bun run build && electron-builder",
@@ -37,7 +37,6 @@
     "@vitejs/plugin-react": "^5.1.1",
     "class-variance-authority": "^0.7.1",
     "cn": "^0.3.0",
-    "dexie": "^4.3.0",
     "electron": "^44.3.0",
     "electron-builder": "^26.15.3",
     "electron-vite": "^5.0.0",

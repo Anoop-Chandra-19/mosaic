@@ -2,117 +2,95 @@
 
 Mosaic is a local-first, modular resume builder with a live print-style preview.
 
-It is built for fast editing, precise content selection, and clean exports, while keeping user data on the user's machine.
+It is a desktop app (Electron) built for fast editing, precise content selection, and clean
+exports. Everything stays on your machine: there is no account, no sync, and no server.
 
 ## Features
 
 - Content editing for contact details, sections, entries, and bullets
 - Include/exclude toggles for entries and bullets
-- Live multi-page preview with measured pagination logic
-- A4 and US Letter paper support
-- PDF export, copy as Markdown and plaintext
-- Persisted local state via Zustand + IndexedDB (Dexie)
-- Responsive UI with desktop and mobile editing
-- Settings workspace with Discord-style navigation
-- Local privacy controls (clear keys, reset resume/UI, full local reset)
-- AI config foundation (provider and model settings)
+- Live multi-page preview with measured pagination, A4 and US Letter
+- Templates with version history: autosaved drafts, named versions, preview before restore,
+  duplicate any version as a new template
+- Export to PDF, Markdown, plain text, JSON Resume, and Mosaic JSON
+- Import from Markdown, plain text, or pasted text, with a review step before anything is
+  written
+- Full backups as readable JSON (every template and its history), restore by replacing
+  everything or adding alongside
+- Privacy controls: forget API keys, reset the interface, erase all local data
+- AI configuration foundation (optional; off by default)
 
 ## Tech Stack
 
-- React 19 + TypeScript
-- Vite
-- Tailwind CSS v4 (CSS-first)
-- Radix UI / shadcn primitives
-- Zustand state management (`persist` middleware)
-- Dexie-backed IndexedDB persistence
+- Electron 44 via electron-vite — main process, sandboxed preload, React renderer
+- SQLite (better-sqlite3) in the main process for all data
+- React 19 + TypeScript, Tailwind CSS v4 (CSS-first)
+- Radix UI / shadcn primitives, Lucide icons
+- Zustand for renderer state
 - `@react-pdf/renderer` for PDF generation
+- Vitest for unit tests, Playwright (driving the real Electron app) for end-to-end tests
 
 ## Architecture
 
 ```text
+electron/
+  main/           # Main process: window, database, IPC handlers, erase
+    db/           # SQLite: connection, migrations, repositories
+    ipc/          # Database and file-dialog handlers
+  preload/        # The only bridge to the renderer: window.mosaic
+  shared/         # Channel names shared by main and preload
 src/
-  components/
-    ui/           # shadcn-managed primitives
-    *.tsx         # Shared reusable components
-  features/
-    shell/        # App chrome (AppShell, TopBar, Sidebar, PreviewPanel)
-    editor/       # Resume editing UI
-    import/       # Import dialog, parsing, store application, and tests
-    export/       # Export dialog, workflow, formatters, PDF generation, and tests
-    templates/    # Template UI, status, and comparison logic
-    preview/      # Resume preview
-    settings/     # Settings dialog + sections
+  features/       # shell, editor, preview, templates, import, export, backup, settings, start
   stores/         # Zustand stores
-  types/          # Shared TypeScript types
-  lib/
-    hooks/        # Shared React hooks
-    files/        # File naming and download helpers shared by export and vault
-    resume/       # Shared layout, contact formatting, and resume schema migration
-    template/     # Shared template persistence schema migration
-    storage/      # Storage backend, Dexie DB, adapters, and tests
-    vault/        # Backup serialization, validation, and restore
-    secrets/      # Secrets client
-    utils.ts      # cn helper
+  lib/            # Shared domain logic (resume layout, storage bridge, bundle parsing, …)
+  types/          # Shared types; db.ts is the database contract
+e2e/              # Playwright specs against the built app
 ```
 
-## Data Flow
+## Data and Privacy
 
-1. User edits content in sidebar components.
-2. Sidebar components call actions in `resumeStore`.
-3. `ResumePreview` subscribes to store state and rerenders immediately.
-4. Export actions normalize selected content and route to PDF/Markdown/plaintext formatters.
-5. Store state persists asynchronously to IndexedDB through Dexie.
-
-## State and Persistence Model
-
-- `resumeStore` holds resume data (`contact`, `sections`, `entries`, `bullets`).
-- `uiStore` holds presentation state (theme, active tab, paper size, layout ratio, mobile pane).
-- Persisted stores use Zustand `persist` with `createJSONStorage(getStorage)`; `getStorage()` selects the storage adapter.
-- `dexieStorage` reads/writes stringified state to a key-value table in IndexedDB.
-
-Current persisted keys:
-
-- `mosaic-resume`
-- `mosaic-ui`
-
-## Privacy and Security Model
-
-- Local-first — resume data and UI preferences stay in local IndexedDB.
-- No backend is required for editing, preview, or export.
-- API keys for AI features are session-only by default and are not persisted alongside app state.
+- One SQLite database, `mosaic.db`, in the app's user-data folder. Only the main process
+  opens it; the sandboxed renderer calls a small set of typed methods through the preload
+  and never sees SQL, Node, or the file system.
+- Each resume document is stored as JSON; SQL tracks templates, drafts, and version history.
+- Your data is never locked in: backups and Mosaic JSON exports are plain, readable JSON.
+- API keys are never written to the database or to backups.
+- Erase local data deletes the database file itself.
 
 ## Development
 
-Preferred runtime:
+With [bun](https://bun.sh):
 
 ```bash
 bun install
 bun run dev
 ```
 
-Alternative (npm):
+Or with npm (Node 22.18 or newer):
 
 ```bash
-npm install
+npm ci
 npm run dev
 ```
 
-Open `http://localhost:5173`.
+Every script below works with either (`npm run <script>`). Development runs keep their data in the repo's gitignored `.dev-data/`; `bun run dev:reset`
+deletes it.
 
 ## Scripts
 
-| Command           | Description                         |
-| ----------------- | ----------------------------------- |
-| `bun run dev`     | Start dev server                    |
-| `bun run build`   | Type-check and build for production |
-| `bun run preview` | Preview production build            |
-| `bun run lint`    | Run ESLint                          |
+| Command             | Description                                         |
+| ------------------- | --------------------------------------------------- |
+| `bun run dev`       | Launch the app with hot reload                      |
+| `bun run dev:reset` | Delete development data and start fresh             |
+| `bun run build`     | Type-check and build main, preload, and renderer    |
+| `bun run package`   | Build an installer into `release/`                  |
+| `bun run test`      | Unit tests                                          |
+| `bun run test:e2e`  | Build, then run end-to-end tests headlessly (Linux) |
+| `bun run lint`      | Run ESLint                                          |
 
 ## Commit Conventions
 
 Conventional commits are enforced via Husky + commitlint.
-
-Examples:
 
 ```text
 feat: add AI provider router scaffold
