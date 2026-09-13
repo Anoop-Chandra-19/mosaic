@@ -1,7 +1,56 @@
-import { contextBridge } from 'electron';
+import { contextBridge, ipcRenderer } from 'electron';
+import type { MosaicDbBridge } from '@/types/db';
+import type { MosaicFiles } from '@/types/files';
+import {
+  ERASE_ALL,
+  FILES_OPEN,
+  FILES_SAVE,
+  FLUSH_DONE,
+  FLUSH_REQUEST,
+} from '../shared/appChannels';
+import { DB_METHODS, dbChannel } from '../shared/dbMethods';
 
-// The only door between the sandboxed renderer and the main process. Storage (`db`)
-// and secrets arrive in later PRs as narrow, typed methods — never raw IPC or Node.
+// The only door between the sandboxed renderer and the main process: narrow, typed
+// methods — never raw IPC or Node. Secrets arrive in a later PR.
+
+/** `db.templates.create(…)` → the `db:templates.create` channel, for each method. */
+function dbBridge(): MosaicDbBridge {
+  const bridge: Record<string, unknown> = {};
+  for (const method of DB_METHODS) {
+    const path = method.split('.');
+    let node = bridge;
+    for (const key of path.slice(0, -1)) {
+      node = (node[key] ??= {}) as Record<string, unknown>;
+    }
+    node[path[path.length - 1]] = (...args: unknown[]) =>
+      ipcRenderer.invoke(dbChannel(method), ...args);
+  }
+  return bridge as unknown as MosaicDbBridge;
+}
+
+let flushRegistered = false;
+
+const files: MosaicFiles = {
+  save: (type, suggestedName, content) =>
+    ipcRenderer.invoke(FILES_SAVE, type, suggestedName, content),
+  openText: (type) => ipcRenderer.invoke(FILES_OPEN, type),
+};
+
 contextBridge.exposeInMainWorld('mosaic', {
   platform: process.platform,
+  db: dbBridge(),
+  files,
+  app: {
+    eraseAll: (): Promise<void> => ipcRenderer.invoke(ERASE_ALL),
+    /** Main asks before the window closes; answer once pending saves have landed. */
+    onFlushRequest: (flush: () => Promise<void>) => {
+      if (flushRegistered) return;
+      flushRegistered = true;
+      ipcRenderer.on(FLUSH_REQUEST, () => {
+        void flush()
+          .catch(() => {})
+          .finally(() => ipcRenderer.send(FLUSH_DONE));
+      });
+    },
+  },
 });

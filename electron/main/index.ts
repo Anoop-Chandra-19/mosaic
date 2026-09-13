@@ -1,7 +1,20 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { app, BrowserWindow, dialog, screen, shell } from 'electron';
+import {
+  app,
+  BrowserWindow,
+  dialog,
+  ipcMain,
+  screen,
+  shell,
+  type IpcMainInvokeEvent,
+} from 'electron';
+import { ERASE_ALL } from '../shared/appChannels';
 import { openDatabase, type Database } from './db/connection';
+import { eraseAll } from './eraseAll';
+import { flushBeforeClose } from './flushOnClose';
+import { registerDbHandlers } from './ipc/db';
+import { registerFileHandlers } from './ipc/files';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 
@@ -15,11 +28,33 @@ if (!app.isPackaged && !app.commandLine.hasSwitch('user-data-dir')) {
 
 let db: Database | undefined;
 
+const databaseFile = () => path.join(app.getPath('userData'), 'mosaic.db');
+
+function openAppDatabase(): Database {
+  return openDatabase(databaseFile(), {
+    // Dev stops on an edited migration (with a `dev:reset` hint); an installed build
+    // warns and keeps going rather than lock anyone out of their resumes.
+    tolerateEditedMigrations: app.isPackaged,
+  });
+}
+
 /** Links the user clicks leave the app; nothing else is allowed to navigate it. */
 const EXTERNAL_PROTOCOLS = new Set(['http:', 'https:', 'mailto:']);
 
 function openExternally(url: string): void {
   if (EXTERNAL_PROTOCOLS.has(new URL(url).protocol)) void shell.openExternal(url);
+}
+
+const devServerUrl = app.isPackaged ? undefined : process.env.ELECTRON_RENDERER_URL;
+
+/** The app's own page: the built index.html, or Vite's dev server during `bun run dev`. */
+function isAppFrame(event: IpcMainInvokeEvent): boolean {
+  const frame = event.senderFrame;
+  if (!frame || frame !== event.sender.mainFrame) return false;
+  const { protocol, origin } = new URL(frame.url);
+  return (
+    protocol === 'file:' || (devServerUrl !== undefined && origin === new URL(devServerUrl).origin)
+  );
 }
 
 function createWindow(): BrowserWindow {
@@ -45,6 +80,7 @@ function createWindow(): BrowserWindow {
   });
 
   win.once('ready-to-show', () => win.show());
+  flushBeforeClose(win);
 
   win.webContents.setWindowOpenHandler(({ url }) => {
     // PDF preview opens a blob: URL the renderer just created; it stays in the app.
@@ -61,8 +97,7 @@ function createWindow(): BrowserWindow {
     openExternally(url);
   });
 
-  const devServerUrl = process.env.ELECTRON_RENDERER_URL;
-  if (!app.isPackaged && devServerUrl) {
+  if (devServerUrl) {
     void win.loadURL(devServerUrl);
   } else {
     void win.loadFile(path.join(here, '../renderer/index.html'));
@@ -85,11 +120,7 @@ if (!app.requestSingleInstanceLock()) {
 
   void app.whenReady().then(() => {
     try {
-      db = openDatabase(path.join(app.getPath('userData'), 'mosaic.db'), {
-        // Dev stops on an edited migration (with a `dev:reset` hint); an installed build
-        // warns and keeps going rather than lock anyone out of their resumes.
-        tolerateEditedMigrations: app.isPackaged,
-      });
+      db = openAppDatabase();
     } catch (error) {
       // E.g. a database written by a newer Mosaic, or (dev) an edited migration: say so
       // rather than open an empty app.
@@ -97,14 +128,36 @@ if (!app.requestSingleInstanceLock()) {
       app.exit(1);
       return;
     }
+    registerDbHandlers(() => db, isAppFrame);
+    registerFileHandlers(isAppFrame);
+    ipcMain.handle(ERASE_ALL, (event) => {
+      if (!isAppFrame(event)) throw new Error(`Refused erase from ${event.senderFrame?.url}`);
+      return eraseAll({
+        file: databaseFile(),
+        close: () => {
+          db?.close();
+          db = undefined;
+        },
+        reopen: () => {
+          db = openAppDatabase();
+        },
+      });
+    });
     createWindow();
     app.on('activate', () => {
       if (BrowserWindow.getAllWindows().length === 0) createWindow();
     });
   });
 
+  // A window holds its close until the renderer has saved (see flushBeforeClose), which
+  // cancels a quit in progress; remember the quit so it still happens once windows close.
+  let quitting = false;
+  app.on('before-quit', () => {
+    quitting = true;
+  });
+
   app.on('window-all-closed', () => {
-    if (process.platform !== 'darwin') app.quit();
+    if (process.platform !== 'darwin' || quitting) app.quit();
   });
 
   // Closing the last connection checkpoints the WAL into mosaic.db and removes -wal/-shm.

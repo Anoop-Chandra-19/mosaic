@@ -3,6 +3,8 @@ import { Minus, Plus, TriangleAlert } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ResumePreview, type ResumePreviewMeta } from '@/features/preview/ResumePreview';
 import type { PaperSize } from '@/types/ui';
+import { VersionPreviewBanner } from '@/features/templates/VersionPreviewBanner';
+import { useOverlayStore } from '@/stores/overlayStore';
 import { PREVIEW_ZOOM_STEPS, useUIStore } from '@/stores/uiStore';
 
 const DEFAULT_META: ResumePreviewMeta = {
@@ -18,6 +20,7 @@ export function PreviewPanel() {
   const zoomPreviewIn = useUIStore((s) => s.zoomPreviewIn);
   const zoomPreviewOut = useUIStore((s) => s.zoomPreviewOut);
   const [meta, setMeta] = useState<ResumePreviewMeta>(DEFAULT_META);
+  const preview = useOverlayStore((s) => s.preview);
 
   useEffect(() => {
     // Expose paper size to global CSS for page-specific print/preview styling.
@@ -30,10 +33,11 @@ export function PreviewPanel() {
 
   return (
     <main className="flex flex-1 flex-col overflow-hidden bg-background">
+      {preview && <VersionPreviewBanner preview={preview} />}
       <div className="flex items-center justify-between border-b border-border bg-card px-4 py-2.5 md:px-6">
         <div className="flex items-center gap-2">
           <span className="text-xs font-semibold tracking-widest text-zinc-900 uppercase dark:text-zinc-100">
-            Live Preview
+            {preview ? `Previewing ${preview.label}` : 'Live Preview'}
           </span>
           <span className="inline-flex items-center rounded-md border border-zinc-300 bg-zinc-100 px-2 py-0.5 text-xs font-semibold text-zinc-700 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300">
             {pageLabel}{' '}
@@ -95,7 +99,12 @@ export function PreviewPanel() {
       </div>
 
       <div className="flex-1 overflow-auto px-3 py-4 md:px-6 md:py-6">
-        <ResumePreview paperSize={paperSize} previewZoom={previewZoom} onMetaChange={setMeta} />
+        <ResumePreview
+          paperSize={paperSize}
+          previewZoom={previewZoom}
+          onMetaChange={setMeta}
+          doc={preview?.version.doc}
+        />
       </div>
     </main>
   );

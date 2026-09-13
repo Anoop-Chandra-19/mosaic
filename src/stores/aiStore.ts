@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
-import { getStorage } from '@/lib/storage';
+import { settingsStorage } from '@/lib/storage/settingsStorage';
 import type { AIProvider } from '@/types/resume';
 
 export const AI_PROVIDER_DEFAULT_MODEL: Record<AIProvider, string> = {
@@ -30,7 +30,6 @@ interface AIStoreState {
   setModelForProvider: (provider: AIProvider, model: string) => void;
   setModelForActiveProvider: (model: string) => void;
   resetModelForProvider: (provider: AIProvider) => void;
-  resetAIConfig: () => void;
 }
 
 type LegacyAIState = {
@@ -93,14 +92,14 @@ export const useAIStore = create<AIStoreState>()(
             [provider]: AI_PROVIDER_DEFAULT_MODEL[provider],
           },
         })),
-      resetAIConfig: () =>
-        set({ ...DEFAULT_AI_STATE, modelsByProvider: createDefaultModelsByProvider() }),
     }),
     {
-      name: 'mosaic-ai',
+      name: 'ai',
       version: 1,
       migrate: (persistedState) => normalizePersistedAIState(persistedState),
-      storage: createJSONStorage(() => getStorage()),
+      storage: createJSONStorage(() => settingsStorage),
+      // Hydrated by `hydrateStores` once boot has loaded the settings.
+      skipHydration: true,
     }
   )
 );

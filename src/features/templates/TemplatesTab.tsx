@@ -1,137 +1,74 @@
 import { useState } from 'react';
-import { Plus } from 'lucide-react';
+import { Plus, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { useOverlayStore } from '@/stores/overlayStore';
+import { useResumeStore } from '@/stores/resumeStore';
 import { useTemplateStore } from '@/stores/templateStore';
-import { getResumeSnapshot } from '@/stores/resumeStore';
-import { useUIStore } from '@/stores/uiStore';
-import { useTemplateStatus } from './useTemplateStatus';
+import { NoTemplates } from './NoTemplates';
 import { TemplateCard } from './TemplateCard';
-import { UnsavedChangesDialog } from './dialogs/UnsavedChangesDialog';
 
 export function TemplatesTab() {
   const templates = useTemplateStore((s) => s.templates);
-  const activeTemplateId = useTemplateStore((s) => s.activeTemplateId);
-  const saveNewTemplate = useTemplateStore((s) => s.saveNewTemplate);
-  const updateActiveTemplate = useTemplateStore((s) => s.updateActiveTemplate);
-  const applyTemplate = useTemplateStore((s) => s.applyTemplate);
-  const setActiveSidebarTab = useUIStore((s) => s.setActiveSidebarTab);
-  const status = useTemplateStatus();
+  const activeId = useResumeStore((s) => s.templateId);
+  const setStartOpen = useOverlayStore((s) => s.setStartOpen);
+  const [query, setQuery] = useState('');
+  // Cards the user opened or closed; the open template's history shows until closed.
+  const [toggled, setToggled] = useState<Record<string, boolean>>({});
 
-  const [showNewInput, setShowNewInput] = useState(false);
-  const [newName, setNewName] = useState('');
+  if (templates.length === 0) return <NoTemplates />;
 
-  // Unsaved changes dialog state
-  const [pendingApplyId, setPendingApplyId] = useState<string | null>(null);
-
-  const handleSaveNew = () => {
-    const trimmed = newName.trim();
-    if (!trimmed) return;
-    saveNewTemplate(trimmed, getResumeSnapshot());
-    setNewName('');
-    setShowNewInput(false);
-  };
-
-  const handleApply = (templateId: string) => {
-    if (templateId === activeTemplateId) return;
-
-    if (status === 'clean') {
-      applyTemplate(templateId);
-      setActiveSidebarTab('content');
-    } else {
-      setPendingApplyId(templateId);
-    }
-  };
-
-  const handleDiscardAndApply = () => {
-    if (!pendingApplyId) return;
-    applyTemplate(pendingApplyId);
-    setPendingApplyId(null);
-    setActiveSidebarTab('content');
-  };
-
-  const handleSaveAndApply = () => {
-    if (!pendingApplyId) return;
-    const snapshot = getResumeSnapshot();
-    if (status === 'modified' && activeTemplateId) {
-      updateActiveTemplate(snapshot);
-    } else {
-      saveNewTemplate('Untitled', snapshot);
-    }
-    applyTemplate(pendingApplyId);
-    setPendingApplyId(null);
-    setActiveSidebarTab('content');
-  };
+  const needle = query.trim().toLowerCase();
+  const shown = templates.filter((t) => t.name.toLowerCase().includes(needle));
+  const isExpanded = (id: string) => toggled[id] ?? id === activeId;
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Templates</h2>
+    <div>
+      <div className="mb-2 flex gap-1.5">
+        <div className="relative flex-1">
+          <Search className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-zinc-500" />
+          <Input
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Find a template…"
+            aria-label="Find a template"
+            className="h-8 pl-8 text-sm"
+          />
+        </div>
         <Button
-          variant="ghost"
-          size="icon"
-          className="h-7 w-7"
-          onClick={() => setShowNewInput((v) => !v)}
-          aria-label="New template"
+          variant="outline"
+          size="sm"
+          className="h-8"
+          title="Start a new resume as its own template"
+          onClick={() => setStartOpen(true)}
         >
-          <Plus className="h-4 w-4" />
+          <Plus />
+          New
         </Button>
       </div>
-
-      {showNewInput && (
-        <div className="flex gap-2">
-          <Input
-            value={newName}
-            onChange={(e) => setNewName(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') handleSaveNew();
-              if (e.key === 'Escape') {
-                setShowNewInput(false);
-                setNewName('');
-              }
-            }}
-            placeholder="Template name…"
-            className="h-8 text-sm"
-            aria-label="Template name"
-            autoFocus
-          />
-          <Button
-            size="sm"
-            className="h-8 shrink-0"
-            onClick={handleSaveNew}
-            disabled={!newName.trim()}
-          >
-            Save
-          </Button>
-        </div>
-      )}
-
-      {templates.length === 0 && !showNewInput && (
-        <p className="text-sm text-zinc-500 dark:text-zinc-400">
-          No templates yet. Save your current resume as a template to get started.
-        </p>
-      )}
+      <p className="mb-2.5 ml-0.5 text-xs leading-relaxed text-zinc-600 dark:text-zinc-400">
+        A template holds your content and its history. Your draft saves as you type — name a version
+        when you want to find it again.
+      </p>
 
       <div className="space-y-2">
-        {templates.map((tmpl) => (
+        {shown.map((template) => (
           <TemplateCard
-            key={tmpl.id}
-            template={tmpl}
-            isActive={tmpl.id === activeTemplateId}
-            onApply={handleApply}
+            key={template.id}
+            template={template}
+            active={template.id === activeId}
+            expanded={isExpanded(template.id)}
+            onToggle={() =>
+              setToggled((current) => ({ ...current, [template.id]: !isExpanded(template.id) }))
+            }
           />
         ))}
+        {shown.length === 0 && (
+          <p className="px-1 py-4 text-center text-xs text-zinc-500">
+            No template is named like “{query.trim()}”.
+          </p>
+        )}
       </div>
-
-      <UnsavedChangesDialog
-        open={pendingApplyId !== null}
-        onOpenChange={(open) => {
-          if (!open) setPendingApplyId(null);
-        }}
-        onDiscard={handleDiscardAndApply}
-        onSave={handleSaveAndApply}
-        saveLabel={status === 'modified' ? 'Update Template' : 'Save Template'}
-      />
     </div>
   );
 }

@@ -1,292 +1,217 @@
 import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
 import { immer } from 'zustand/middleware/immer';
-import { getStorage } from '@/lib/storage';
-import { migrateResume } from '@/lib/resume/migrateResume';
-import { migrateTemplateState } from '@/lib/template/migrateTemplateState';
-import type { PersistedTemplateState } from '@/types/vault';
-import { getResumeSnapshot, useResumeStore } from '@/stores/resumeStore';
-import type {
-  ResumeData,
-  TemplateRecord,
-  TemplateVersion,
-  TemplateVersionSource,
-  PendingTextAiChange,
-  RollbackReason,
-  LocalCheckpoint,
-} from '@/types/resume';
+import { getDb } from '@/lib/storage/mosaicDb';
+import { useOverlayStore } from '@/stores/overlayStore';
+import { flushDraft, useResumeStore } from '@/stores/resumeStore';
+import type { ImportMode, MosaicBundle } from '@/types/bundle';
+import type { Draft, TemplateSummary, VersionMeta } from '@/types/db';
+import type { PendingTextAiChange, ResumeData } from '@/types/resume';
 
-/* Helpers */
-
-function now() {
-  return new Date().toISOString();
+/** A deleted template, kept in memory as a backup of just itself so it can be put back. */
+export interface DeletedTemplate {
+  bundle: MosaicBundle;
+  /** It was in the editor. */
+  wasOpen: boolean;
 }
 
-function createVersion(
-  templateId: string,
-  parentVersionId: string | null,
-  snapshot: ResumeData,
-  source: TemplateVersionSource,
-  message: string
-): TemplateVersion {
-  return {
-    id: crypto.randomUUID(),
-    templateId,
-    parentVersionId,
-    createdAt: now(),
-    message,
-    source,
-    snapshot: migrateResume(structuredClone(snapshot)),
-  };
-}
-
-/* Store Interface */
+/*
+ * Templates as main stores them. The list is summaries only — documents stay in the
+ * database until a template is opened into the editor (`resumeStore`), which also knows
+ * which template is open. Actions write through main and then re-read the list, so it
+ * never drifts from what is on disk. They reject with a `DbError` if main refuses.
+ */
 
 interface TemplateState {
-  templates: TemplateRecord[];
-  versionsByTemplateId: Record<string, TemplateVersion[]>;
-  activeTemplateId: string | null;
-  activeVersionId: string | null;
+  templates: TemplateSummary[];
   pendingAiChanges: PendingTextAiChange[];
-  rollbackSnapshots: Partial<Record<RollbackReason, LocalCheckpoint>>;
 
-  // Template CRUD
-  saveNewTemplate: (name: string, snapshot: ResumeData, message?: string) => void;
-  updateActiveTemplate: (snapshot: ResumeData, message?: string) => void;
-  applyTemplate: (templateId: string, versionId?: string) => void;
-  renameTemplate: (templateId: string, name: string) => void;
-  duplicateTemplate: (templateId: string) => void;
-  deleteTemplate: (templateId: string) => void;
+  load: (templates: TemplateSummary[]) => void;
+  refresh: () => Promise<void>;
 
-  // Version actions (T2, exposed now for interface stability)
-  restoreTemplateVersion: (templateId: string, versionId: string) => void;
+  /** Adds a template and opens it. `importedFrom` names an import's source for history. */
+  createTemplate: (name: string, doc: ResumeData, importedFrom?: string) => Promise<void>;
+  openTemplate: (id: string) => Promise<void>;
+  renameTemplate: (id: string, name: string) => Promise<void>;
+  /** Copies the draft into a new template. Does not open the copy. */
+  duplicateTemplate: (id: string) => Promise<TemplateSummary>;
+  /** A new template from one version of any template's history. Does not open it. */
+  duplicateVersion: (versionId: string) => Promise<TemplateSummary>;
+  /**
+   * The open one included: the most recently edited opens next, or nothing does. Resolves
+   * with what was deleted, which `restoreDeleted` puts back.
+   */
+  deleteTemplate: (id: string) => Promise<DeletedTemplate>;
+  /** Undo for a delete: the template returns with its history, and reopens if it was open. */
+  restoreDeleted: (deleted: DeletedTemplate) => Promise<void>;
+  /**
+   * Writes a backup file's templates and returns their ids. Opens one if the open template
+   * went (restoring replaces everything) or nothing was open.
+   */
+  importBundle: (text: string, mode: ImportMode) => Promise<string[]>;
 
-  // Rollback snapshot actions
-  captureRollback: (reason: RollbackReason, snapshot: ResumeData) => void;
-  consumeRollback: (reason: RollbackReason) => void;
-  dismissRollback: (reason: RollbackReason) => void;
-  clearAllRollbacks: () => void;
+  /** Names what is in the editor — see `MosaicDb['versions']['name']`. */
+  nameVersion: (name: string) => Promise<VersionMeta>;
+  /** Replaces the open draft, keeping unsaved edits in history first. */
+  importIntoDraft: (doc: ResumeData, from: string) => Promise<void>;
+  /**
+   * Puts an older version back as the template's draft, keeping unsaved edits in history
+   * first, and opens that template if another one is open.
+   */
+  restoreVersion: (templateId: string, versionId: string) => Promise<void>;
 
-  // AI queue actions (T3, exposed now for interface stability)
+  // AI queue (T3, exposed now for interface stability)
   enqueueAiChange: (change: PendingTextAiChange) => void;
   keepAiChange: (changeId: string) => void;
   undoAiChange: (changeId: string) => void;
   keepAllAiChanges: () => void;
   undoAllAiChanges: () => void;
   clearAiChanges: () => void;
-
-  // Reset
-  resetTemplates: () => void;
-
-  // Derived helpers
-  getHeadSnapshot: (templateId: string) => ResumeData | null;
-  clearActiveTemplate: () => void;
 }
 
-/* Store */
+function openTemplateId(): string | null {
+  return useResumeStore.getState().templateId;
+}
+
+function requireOpenTemplate(): string {
+  const id = openTemplateId();
+  if (id === null) throw new Error('No template is open');
+  return id;
+}
+
+function revertAiChange(change: PendingTextAiChange) {
+  const { target, before } = change;
+  const resume = useResumeStore.getState();
+  if (target.kind === 'bullet-text') {
+    resume.updateBullet(target.sectionId, target.entryId, target.bulletId, before);
+  } else {
+    resume.updateEntry(target.sectionId, target.entryId, { text: before });
+  }
+}
 
 export const useTemplateStore = create<TemplateState>()(
-  persist(
-    immer((set, get) => ({
+  immer((set, get) => {
+    /**
+     * Put a draft from main in the editor. Staged AI changes and a version preview were
+     * about the draft being replaced, so they go.
+     */
+    const showDraft = (draft: Draft | null) => {
+      set((state) => {
+        state.pendingAiChanges = [];
+      });
+      useOverlayStore.getState().setPreview(null);
+      useResumeStore.getState().loadDraft(draft);
+    };
+
+    return {
       templates: [],
-      versionsByTemplateId: {},
-      activeTemplateId: null,
-      activeVersionId: null,
       pendingAiChanges: [],
-      rollbackSnapshots: {},
 
-      // Template CRUD
-
-      saveNewTemplate: (name, snapshot, message = 'Initial save') => {
-        const templateId = crypto.randomUUID();
-        const version = createVersion(templateId, null, snapshot, 'save-new', message);
-
+      load: (templates) =>
         set((state) => {
-          state.templates.push({
-            id: templateId,
-            name,
-            createdAt: version.createdAt,
-            updatedAt: version.createdAt,
-            headVersionId: version.id,
-          });
-          state.versionsByTemplateId[templateId] = [version];
-          state.activeTemplateId = templateId;
-          state.activeVersionId = version.id;
-        });
-      },
-
-      updateActiveTemplate: (snapshot, message = 'Update from editor') => {
-        const { activeTemplateId, activeVersionId } = get();
-        if (!activeTemplateId) return;
-
-        const version = createVersion(
-          activeTemplateId,
-          activeVersionId,
-          snapshot,
-          'update',
-          message
-        );
-
-        set((state) => {
-          const tmpl = state.templates.find((t) => t.id === activeTemplateId);
-          if (!tmpl) return;
-          tmpl.headVersionId = version.id;
-          tmpl.updatedAt = version.createdAt;
-
-          const versions = state.versionsByTemplateId[activeTemplateId];
-          if (versions) {
-            versions.push(version);
-          } else {
-            state.versionsByTemplateId[activeTemplateId] = [version];
-          }
-
-          state.activeVersionId = version.id;
-        });
-      },
-
-      applyTemplate: (templateId, versionId?) => {
-        const state = get();
-        const tmpl = state.templates.find((t) => t.id === templateId);
-        if (!tmpl) return;
-
-        const versions = state.versionsByTemplateId[templateId];
-        if (!versions?.length) return;
-
-        const targetVersionId = versionId ?? tmpl.headVersionId;
-        const version = versions.find((v) => v.id === targetVersionId);
-        if (!version) return;
-
-        const snapshot = migrateResume(structuredClone(version.snapshot));
-        useResumeStore.getState().replaceResume(snapshot);
-
-        set((s) => {
-          s.activeTemplateId = templateId;
-          s.activeVersionId = targetVersionId;
-        });
-      },
-
-      renameTemplate: (templateId, name) =>
-        set((state) => {
-          const tmpl = state.templates.find((t) => t.id === templateId);
-          if (tmpl) {
-            tmpl.name = name;
-            tmpl.updatedAt = now();
-          }
+          state.templates = templates;
         }),
 
-      duplicateTemplate: (templateId) => {
-        const state = get();
-        const tmpl = state.templates.find((t) => t.id === templateId);
-        if (!tmpl) return;
-
-        const versions = state.versionsByTemplateId[templateId];
-        const headVersion = versions?.find((v) => v.id === tmpl.headVersionId);
-        if (!headVersion) return;
-
-        const newId = crypto.randomUUID();
-        const version = createVersion(
-          newId,
-          null,
-          headVersion.snapshot,
-          'save-new',
-          `Duplicated from "${tmpl.name}"`
-        );
-
-        set((s) => {
-          s.templates.push({
-            id: newId,
-            name: `${tmpl.name} (copy)`,
-            createdAt: version.createdAt,
-            updatedAt: version.createdAt,
-            headVersionId: version.id,
-          });
-          s.versionsByTemplateId[newId] = [version];
+      refresh: async () => {
+        const templates = await getDb().templates.list();
+        set((state) => {
+          state.templates = templates;
         });
       },
 
-      deleteTemplate: (templateId) =>
-        set((state) => {
-          state.templates = state.templates.filter((t) => t.id !== templateId);
-          delete state.versionsByTemplateId[templateId];
-          if (state.activeTemplateId === templateId) {
-            state.activeTemplateId = null;
-            state.activeVersionId = null;
-          }
-        }),
-
-      // Version restore (T2 core, wired now)
-
-      restoreTemplateVersion: (templateId, versionId) => {
-        const state = get();
-        const versions = state.versionsByTemplateId[templateId];
-        const version = versions?.find((v) => v.id === versionId);
-        if (!version) return;
-
-        // Capture rollback before restoring
-        const currentSnapshot = getResumeSnapshot();
-        get().captureRollback('before-restore', currentSnapshot);
-
-        const restoredVersion = createVersion(
-          templateId,
-          versionId,
-          version.snapshot,
-          'restore',
-          `Restored from ${new Date(version.createdAt).toLocaleDateString()}`
-        );
-
-        const snapshot = migrateResume(structuredClone(version.snapshot));
-        useResumeStore.getState().replaceResume(snapshot);
-
-        set((s) => {
-          const tmpl = s.templates.find((t) => t.id === templateId);
-          if (!tmpl) return;
-          tmpl.headVersionId = restoredVersion.id;
-          tmpl.updatedAt = restoredVersion.createdAt;
-
-          const vers = s.versionsByTemplateId[templateId];
-          if (vers) {
-            vers.push(restoredVersion);
-          } else {
-            s.versionsByTemplateId[templateId] = [restoredVersion];
-          }
-
-          s.activeTemplateId = templateId;
-          s.activeVersionId = restoredVersion.id;
-        });
+      createTemplate: async (name, doc, importedFrom) => {
+        await flushDraft();
+        const db = getDb();
+        const created = await db.templates.create(name, doc, importedFrom);
+        showDraft(await db.templates.open(created.id));
+        await get().refresh();
       },
 
-      // Rollback snapshots
-
-      captureRollback: (reason, snapshot) =>
-        set((state) => {
-          state.rollbackSnapshots[reason] = {
-            createdAt: now(),
-            reason,
-            snapshot: structuredClone(snapshot),
-          };
-        }),
-
-      consumeRollback: (reason) => {
-        const checkpoint = get().rollbackSnapshots[reason];
-        if (!checkpoint) return;
-
-        const snapshot = migrateResume(structuredClone(checkpoint.snapshot));
-        useResumeStore.getState().replaceResume(snapshot);
-
-        set((state) => {
-          delete state.rollbackSnapshots[reason];
-        });
+      openTemplate: async (id) => {
+        if (id === openTemplateId()) return;
+        await flushDraft();
+        showDraft(await getDb().templates.open(id));
+        // The template left behind may have just saved; its summary is out of date.
+        await get().refresh();
       },
 
-      dismissRollback: (reason) =>
-        set((state) => {
-          delete state.rollbackSnapshots[reason];
-        }),
+      renameTemplate: async (id, name) => {
+        await getDb().templates.rename(id, name);
+        await get().refresh();
+      },
 
-      clearAllRollbacks: () =>
-        set((state) => {
-          state.rollbackSnapshots = {};
-        }),
+      duplicateTemplate: async (id) => {
+        // The copy takes the draft as main has it, so send the latest edits first.
+        await flushDraft();
+        const copy = await getDb().templates.duplicate(id);
+        await get().refresh();
+        return copy;
+      },
+
+      duplicateVersion: async (versionId) => {
+        const copy = await getDb().versions.duplicate(versionId);
+        await get().refresh();
+        return copy;
+      },
+
+      deleteTemplate: async (id) => {
+        const wasOpen = id === openTemplateId();
+        // The copy kept for Undo should have the latest edits.
+        if (wasOpen) await flushDraft();
+        const db = getDb();
+        const bundle = await db.bundle.export([id]);
+        await db.templates.remove(id);
+        await get().refresh();
+        if (wasOpen) {
+          const next = get().templates.reduce<TemplateSummary | undefined>(
+            (latest, t) => (latest && latest.updatedAt >= t.updatedAt ? latest : t),
+            undefined
+          );
+          showDraft(next ? await db.templates.open(next.id) : null);
+        }
+        return { bundle, wasOpen };
+      },
+
+      restoreDeleted: async ({ bundle, wasOpen }) => {
+        const [id] = await get().importBundle(JSON.stringify(bundle), 'as-new-template');
+        if (wasOpen) await get().openTemplate(id);
+      },
+
+      importBundle: async (text, mode) => {
+        await flushDraft();
+        const db = getDb();
+        const { templateIds } = await db.bundle.import(text, mode);
+        const open = openTemplateId();
+        if (open === null || mode === 'restore-all') {
+          // A backup of this app brings the same ids back; keep the same template open.
+          const id = open !== null && templateIds.includes(open) ? open : templateIds[0];
+          showDraft(await db.templates.open(id));
+        }
+        await get().refresh();
+        return templateIds;
+      },
+
+      nameVersion: async (name) => {
+        const templateId = requireOpenTemplate();
+        await flushDraft();
+        const version = await getDb().versions.name(templateId, name);
+        await get().refresh();
+        return version;
+      },
+
+      importIntoDraft: async (doc, from) => {
+        const templateId = requireOpenTemplate();
+        await flushDraft();
+        showDraft(await getDb().drafts.importInto(templateId, doc, from));
+        await get().refresh();
+      },
+
+      restoreVersion: async (templateId, versionId) => {
+        await flushDraft();
+        const db = getDb();
+        const restored = await db.versions.restore(templateId, versionId);
+        showDraft(templateId === openTemplateId() ? restored : await db.templates.open(templateId));
+        await get().refresh();
+      },
 
       // AI queue (T3, stubs wired for interface stability)
 
@@ -301,21 +226,11 @@ export const useTemplateStore = create<TemplateState>()(
         }),
 
       undoAiChange: (changeId) => {
-        const state = get();
-        const change = state.pendingAiChanges.find((c) => c.id === changeId);
+        const change = get().pendingAiChanges.find((c) => c.id === changeId);
         if (!change) return;
-
-        // Revert the text in resumeStore
-        const { target, before } = change;
-        const resume = useResumeStore.getState();
-        if (target.kind === 'bullet-text') {
-          resume.updateBullet(target.sectionId, target.entryId, target.bulletId, before);
-        } else {
-          resume.updateEntry(target.sectionId, target.entryId, { text: before });
-        }
-
-        set((s) => {
-          s.pendingAiChanges = s.pendingAiChanges.filter((c) => c.id !== changeId);
+        revertAiChange(change);
+        set((state) => {
+          state.pendingAiChanges = state.pendingAiChanges.filter((c) => c.id !== changeId);
         });
       },
 
@@ -325,18 +240,7 @@ export const useTemplateStore = create<TemplateState>()(
         }),
 
       undoAllAiChanges: () => {
-        const changes = [...get().pendingAiChanges].reverse();
-        const resume = useResumeStore.getState();
-
-        for (const change of changes) {
-          const { target, before } = change;
-          if (target.kind === 'bullet-text') {
-            resume.updateBullet(target.sectionId, target.entryId, target.bulletId, before);
-          } else {
-            resume.updateEntry(target.sectionId, target.entryId, { text: before });
-          }
-        }
-
+        for (const change of [...get().pendingAiChanges].reverse()) revertAiChange(change);
         set((state) => {
           state.pendingAiChanges = [];
         });
@@ -346,52 +250,6 @@ export const useTemplateStore = create<TemplateState>()(
         set((state) => {
           state.pendingAiChanges = [];
         }),
-
-      // Reset
-
-      resetTemplates: () =>
-        set((state) => {
-          state.templates = [];
-          state.versionsByTemplateId = {};
-          state.activeTemplateId = null;
-          state.activeVersionId = null;
-          state.pendingAiChanges = [];
-          state.rollbackSnapshots = {};
-        }),
-
-      // Derived helpers
-
-      getHeadSnapshot: (templateId) => {
-        const state = get();
-        const tmpl = state.templates.find((t) => t.id === templateId);
-        if (!tmpl) return null;
-        const versions = state.versionsByTemplateId[templateId];
-        const head = versions?.find((v) => v.id === tmpl.headVersionId);
-        return head ? migrateResume(structuredClone(head.snapshot)) : null;
-      },
-
-      clearActiveTemplate: () =>
-        set((state) => {
-          state.activeTemplateId = null;
-          state.activeVersionId = null;
-        }),
-    })),
-    {
-      name: 'mosaic-templates',
-      version: 1,
-      storage: createJSONStorage(() => getStorage()),
-      // Pre-versioning envelopes arrive as version 0; the migration is
-      // idempotent and repairs partial/corrupt data instead of rejecting it.
-      migrate: (persisted) => migrateTemplateState(persisted),
-      partialize: (state) =>
-        ({
-          templates: state.templates,
-          versionsByTemplateId: state.versionsByTemplateId,
-          activeTemplateId: state.activeTemplateId,
-          activeVersionId: state.activeVersionId,
-          // pendingAiChanges and rollbackSnapshots are intentionally excluded.
-          // They are ephemeral and should not survive page reloads.
-        }) satisfies PersistedTemplateState,
-    }
-  )
+    };
+  })
 );

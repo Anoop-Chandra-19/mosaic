@@ -1,30 +1,3 @@
-import type { PaperSize } from '@/types/ui';
-
-interface PdfFileNameOptions {
-  contactName?: string;
-  paperSize: PaperSize;
-  templateName?: string;
-  now?: Date;
-}
-
-function slugify(value: string) {
-  const slug = value
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .replace(/-{2,}/g, '-');
-
-  return slug || 'mosaic';
-}
-
-function formatDate(date: Date) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}${month}${day}`;
-}
-
 function formatDateDashed(date: Date) {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -32,30 +5,36 @@ function formatDateDashed(date: Date) {
   return `${year}-${month}-${day}`;
 }
 
-function buildBaseSlug(templateName?: string, contactName?: string) {
-  const baseCandidate = (templateName ?? '').trim() || (contactName ?? '').trim();
-  return slugify(baseCandidate || 'mosaic');
-}
-
-export function buildPdfFileName(options: PdfFileNameOptions) {
-  const base = buildBaseSlug(options.templateName, options.contactName);
-  const paper = options.paperSize;
-  const date = formatDate(options.now ?? new Date());
-  return `${base}-resume-${paper}-${date}.pdf`;
-}
-
-interface JsonResumeFileNameOptions {
+interface ExportNameOptions {
   contactName?: string;
   templateName?: string;
-  now?: Date;
+  /** "v3", when exporting a version rather than the draft. */
+  versionLabel?: string;
 }
 
-export function buildJsonResumeFileName(options: JsonResumeFileNameOptions = {}) {
-  const base = buildBaseSlug(options.templateName, options.contactName);
-  const date = formatDate(options.now ?? new Date());
-  return `${base}-resume-${date}.json`;
+/** "Ada Lovelace — Backend", as the Export dialog suggests it before the user edits it. */
+export function buildExportName({ contactName, templateName, versionLabel }: ExportNameOptions) {
+  const base = [contactName?.trim(), templateName?.trim()].filter(Boolean).join(' — ') || 'Resume';
+  return versionLabel ? `${base} (${versionLabel})` : base;
 }
 
-export function buildVaultFileName(now: Date = new Date()) {
-  return `mosaic-vault-${formatDateDashed(now)}.json`;
+/**
+ * `name` as a file name every system accepts — no folder separators, reserved or control
+ * characters — with `extension` added unless the name already ends in it.
+ */
+export function toFileName(name: string, extension: string) {
+  const suffix = `.${extension}`;
+  const withoutSuffix = name.toLowerCase().endsWith(suffix) ? name.slice(0, -suffix.length) : name;
+  const safe = withoutSuffix
+    .replace(/[<>:"/\\|?*\p{Cc}]/gu, '')
+    .replace(/\s+/g, ' ')
+    .replace(/^[\s.]+/, '')
+    .slice(0, 150)
+    .trim();
+  return `${safe || 'Resume'}${suffix}`;
+}
+
+/** A full backup: every template with its history. */
+export function buildBackupFileName(now: Date = new Date()) {
+  return `mosaic-backup-${formatDateDashed(now)}.json`;
 }

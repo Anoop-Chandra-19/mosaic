@@ -1,3 +1,4 @@
+import { CURRENT_SCHEMA_VERSION } from './migrateResume';
 import type { ResumeData } from '@/types/resume';
 
 /**
@@ -150,4 +151,25 @@ export const DEFAULT_RESUME: ResumeData = {
 
 export function createDefaultResume(): ResumeData {
   return structuredClone(DEFAULT_RESUME);
+}
+
+/** Nothing at all: what the editor holds while no template is open. */
+export function createEmptyResume(): ResumeData {
+  return {
+    schemaVersion: CURRENT_SCHEMA_VERSION,
+    contact: {
+      name: '',
+      email: '',
+      phone: '',
+      location: '',
+      citizenshipStatus: '',
+      linkedin: '',
+      github: '',
+      website: '',
+      showLinkedin: true,
+      showGithub: true,
+      showWebsite: true,
+    },
+    sections: [],
+  };
 }

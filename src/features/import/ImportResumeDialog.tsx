@@ -1,38 +1,60 @@
-import { useMemo, useState } from 'react';
-import { AlertTriangle, ClipboardList, FileInput, Layers, Replace } from 'lucide-react';
+import { useMemo, useState, type DragEvent } from 'react';
+import { AlertTriangle, FileText, Info, Upload } from 'lucide-react';
+import { DialogFrameFooter, DialogFrameHeader } from '@/components/DialogFrame';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { fileFailure, readBackup } from '@/features/backup/backupFiles';
 import { cn } from '@/lib/utils';
+import { getResumeSnapshot } from '@/stores/resumeStore';
+import { attempt, showToast, useOverlayStore } from '@/stores/overlayStore';
+import { useTemplateStore } from '@/stores/templateStore';
+import { useUIStore } from '@/stores/uiStore';
+import { MAX_FILE_BYTES } from '@/types/files';
+import type { ContactInfo } from '@/types/resume';
+import { buildImportedResume, type ImportMode } from './buildImportedResume';
+import { markdownToText } from './markdownToText';
 import { parseResumeText, type ParsedResume } from './parseResumeText';
-import { applyImportedResume, describeImport, type ImportMode } from './applyImportedResume';
 
-interface ImportResumeDialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-}
+/** Recorded in the template's history as where pasted content came from. */
+const PASTED = 'pasted text';
 
-const MODE_OPTIONS: { id: ImportMode; label: string; icon: typeof Replace; hint: string }[] = [
+const TEXT_EXTENSIONS = new Set(['md', 'markdown', 'txt', 'text']);
+
+const MODE_OPTIONS: { id: ImportMode; label: string; hint: string }[] = [
+  {
+    id: 'new',
+    label: 'New template',
+    hint: 'Opens as its own template. The one you have open stays as it is.',
+  },
   {
     id: 'replace',
     label: 'Replace',
-    icon: Replace,
-    hint: 'Swap your current resume for the imported content.',
+    hint: 'Replaces what’s in the editor. The current draft is kept in history first, so you can restore it.',
   },
   {
     id: 'merge',
     label: 'Add to current',
-    icon: Layers,
-    hint: 'Keep what you have and append the imported sections.',
+    hint: 'Adds these sections to the open resume. The current draft is kept in history first.',
   },
+];
+
+const IMPORT_LABELS: Record<ImportMode, string> = {
+  new: 'Import as new template',
+  replace: 'Replace resume',
+  merge: 'Add to resume',
+};
+
+const CONTACT_FIELDS: [keyof ContactInfo, string][] = [
+  ['name', 'name'],
+  ['email', 'email'],
+  ['phone', 'phone'],
+  ['location', 'location'],
+  ['linkedin', 'LinkedIn'],
+  ['github', 'GitHub'],
+  ['website', 'website'],
 ];
 
 const PLACEHOLDER = `Jane Developer
@@ -41,227 +63,358 @@ San Francisco, CA · jane@example.com · (555) 987-6543
 Experience
 Senior Engineer
 Acme Corp — 2021 to Present
-- Led the migration to a microservices architecture
+- Led the migration to a microservices architecture`;
 
-Education
-B.S. Computer Science, State University
+const count = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 
-Skills
-Languages: TypeScript, Python, Go`;
+interface ReadResume {
+  /** A file's name, or "pasted text". */
+  source: string;
+  parsed: ParsedResume;
+}
 
-export function ImportResumeDialog({ open, onOpenChange }: ImportResumeDialogProps) {
-  const [step, setStep] = useState<'paste' | 'review'>('paste');
-  const [text, setText] = useState('');
-  const [parsed, setParsed] = useState<ParsedResume | null>(null);
-  const [excludedIds, setExcludedIds] = useState<Set<string>>(new Set());
-  const [mode, setMode] = useState<ImportMode>('replace');
+/**
+ * Bring a resume in: a Markdown or text file, pasted text, or a Mosaic backup (handed on to
+ * Restore). What Mosaic found is shown for review before anything is written.
+ */
+export function ImportResumeDialog() {
+  const open = useOverlayStore((s) => s.importOpen);
+  const closeImport = useOverlayStore((s) => s.closeImport);
 
-  const reset = () => {
-    setStep('paste');
-    setText('');
-    setParsed(null);
-    setExcludedIds(new Set());
-    setMode('replace');
-  };
-
-  const handleOpenChange = (next: boolean) => {
-    if (!next) reset();
-    onOpenChange(next);
-  };
-
-  const handleParse = () => {
-    const result = parseResumeText(text);
-    setParsed(result);
-    setExcludedIds(new Set());
-    setStep('review');
-  };
-
-  const includedSections = useMemo(
-    () => parsed?.resume.sections.filter((section) => !excludedIds.has(section.id)) ?? [],
-    [parsed, excludedIds]
+  return (
+    <Dialog open={open} onOpenChange={(next) => !next && closeImport()}>
+      <DialogContent
+        showCloseButton={false}
+        className="flex max-h-[90vh] w-[min(38rem,96vw)] max-w-none flex-col gap-0 overflow-hidden rounded-xl border-zinc-200 bg-white p-0 sm:max-w-none dark:border-zinc-800 dark:bg-zinc-950"
+      >
+        {/* Mounted per opening, so each import starts from the file picker. */}
+        {open && <ImportFlow onDone={closeImport} />}
+      </DialogContent>
+    </Dialog>
   );
+}
 
-  const filteredParsed: ParsedResume | null = parsed
-    ? { resume: { ...parsed.resume, sections: includedSections }, warnings: parsed.warnings }
-    : null;
+function ImportFlow({ onDone }: { onDone: () => void }) {
+  const [read, setRead] = useState<ReadResume | null>(null);
+  const setPendingRestore = useOverlayStore((s) => s.setPendingRestore);
 
-  const summary = filteredParsed ? describeImport(filteredParsed) : null;
-
-  const toggleSection = (id: string) => {
-    setExcludedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
+  const readText = (source: string, text: string) => {
+    setRead({ source, parsed: parseResumeText(text) });
   };
 
-  const handleImport = () => {
-    if (!filteredParsed || includedSections.length === 0) return;
-    applyImportedResume(filteredParsed, mode);
-    handleOpenChange(false);
+  /** A file from the picker or a drop: a resume to review, or a backup to restore. */
+  const readFile = (name: string, text: string) => {
+    const extension = name.includes('.') ? name.split('.').pop()!.toLowerCase() : '';
+    if (extension === 'json') {
+      try {
+        const backup = readBackup(name, text);
+        onDone();
+        setPendingRestore(backup);
+      } catch (error) {
+        showToast(fileFailure(error, `Could not read ${name}`), 'error');
+      }
+      return;
+    }
+    if (extension === 'md' || extension === 'markdown') {
+      readText(name, markdownToText(text));
+      return;
+    }
+    readText(name, text);
+  };
+
+  return read ? (
+    <ReviewStep read={read} onBack={() => setRead(null)} onDone={onDone} />
+  ) : (
+    <PickStep onFile={readFile} onPaste={(text) => readText(PASTED, text)} onCancel={onDone} />
+  );
+}
+
+function PickStep({
+  onFile,
+  onPaste,
+  onCancel,
+}: {
+  onFile: (name: string, text: string) => void;
+  onPaste: (text: string) => void;
+  onCancel: () => void;
+}) {
+  const [text, setText] = useState('');
+  const [dragging, setDragging] = useState(false);
+
+  const choose = async () => {
+    try {
+      const file = await window.mosaic.files.openText('import');
+      if (file) onFile(file.name, file.text);
+    } catch (error) {
+      showToast(fileFailure(error, 'Could not open the file'), 'error');
+    }
+  };
+
+  const drop = async (event: DragEvent) => {
+    event.preventDefault();
+    setDragging(false);
+    const file = event.dataTransfer.files[0];
+    if (!file) return;
+    const extension = file.name.split('.').pop()?.toLowerCase() ?? '';
+    if (extension !== 'json' && !TEXT_EXTENSIONS.has(extension)) {
+      showToast(`Mosaic can’t read ${file.name} yet — paste its text instead`, 'error');
+      return;
+    }
+    if (file.size > MAX_FILE_BYTES) {
+      showToast(`${file.name} is larger than 128 MB`, 'error');
+      return;
+    }
+    onFile(file.name, await file.text());
   };
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="gap-0 overflow-hidden border-zinc-800 bg-zinc-950 p-0 text-zinc-100 shadow-2xl sm:max-w-lg">
-        {step === 'paste' ? (
-          <>
-            <div className="p-5">
-              <DialogHeader className="gap-1 pr-6">
-                <DialogTitle className="flex items-center gap-2 text-base text-zinc-100">
-                  <FileInput className="size-4 text-amber-500" />
-                  Import resume
-                </DialogTitle>
-                <DialogDescription className="text-xs text-zinc-500">
-                  Paste an existing resume as text. Mosaic maps it into sections you can review
-                  before anything changes.
-                </DialogDescription>
-              </DialogHeader>
+    <>
+      <DialogFrameHeader
+        icon={Upload}
+        title="Import"
+        description="Import a resume from a file or pasted text, or restore a Mosaic backup."
+        closeLabel="Close import"
+        onClose={onCancel}
+      />
 
-              <Textarea
-                value={text}
-                onChange={(event) => setText(event.target.value)}
-                placeholder={PLACEHOLDER}
-                spellCheck={false}
-                className="mt-4 h-64 resize-none border-zinc-800 bg-zinc-900 font-mono text-xs leading-5 text-zinc-200 placeholder:text-zinc-600"
-                aria-label="Resume text"
-              />
-              <p className="mt-2 text-xs text-zinc-500">
-                Tip: keep section headings like Experience, Education, and Skills on their own
-                lines.
+      <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3.5">
+        <div
+          onDragOver={(event) => {
+            event.preventDefault();
+            setDragging(true);
+          }}
+          onDragLeave={() => setDragging(false)}
+          onDrop={(event) => void drop(event)}
+          className={cn(
+            'flex flex-col items-center rounded-lg border border-dashed px-4 py-6 text-center transition-colors',
+            dragging
+              ? 'border-amber-500 bg-amber-50 dark:border-amber-600 dark:bg-amber-950'
+              : 'border-zinc-300 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900'
+          )}
+        >
+          <span className="mb-2.5 grid size-9 place-items-center rounded-full border border-zinc-200 bg-white text-zinc-500 dark:border-zinc-700 dark:bg-zinc-950">
+            <Upload className="size-4" />
+          </span>
+          <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+            Drop a resume here
+          </p>
+          <p className="mt-1 mb-3 text-xs text-zinc-600 dark:text-zinc-400">
+            Markdown, plain text, or a Mosaic JSON backup.
+          </p>
+          <Button variant="outline" size="sm" onClick={() => void choose()}>
+            Choose a file…
+          </Button>
+        </div>
+
+        <label
+          htmlFor="import-paste"
+          className="mt-4 mb-1.5 block text-xs font-medium text-zinc-700 dark:text-zinc-300"
+        >
+          Or paste the text
+        </label>
+        <Textarea
+          id="import-paste"
+          value={text}
+          onChange={(event) => setText(event.target.value)}
+          placeholder={PLACEHOLDER}
+          spellCheck={false}
+          className="h-36 resize-none font-mono text-xs leading-5"
+        />
+
+        <p className="mt-3 flex gap-2 rounded-lg border border-zinc-200 bg-zinc-50 p-2.5 text-xs leading-relaxed text-zinc-600 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400">
+          <Info className="mt-0.5 size-3.5 shrink-0 text-zinc-500" />
+          Everything is read on this machine. You’ll see what Mosaic found, and choose what to keep,
+          before anything is written.
+        </p>
+      </div>
+
+      <DialogFrameFooter>
+        <Button variant="ghost" size="sm" onClick={onCancel}>
+          Cancel
+        </Button>
+        <Button size="sm" disabled={text.trim() === ''} onClick={() => onPaste(text)}>
+          Read pasted text
+        </Button>
+      </DialogFrameFooter>
+    </>
+  );
+}
+
+function ReviewStep({
+  read,
+  onBack,
+  onDone,
+}: {
+  read: ReadResume;
+  onBack: () => void;
+  onDone: () => void;
+}) {
+  const asNewOnly = useOverlayStore((s) => s.importAsNewOnly);
+  const setStartOpen = useOverlayStore((s) => s.setStartOpen);
+  const createTemplate = useTemplateStore((s) => s.createTemplate);
+  const importIntoDraft = useTemplateStore((s) => s.importIntoDraft);
+  const setActiveSidebarTab = useUIStore((s) => s.setActiveSidebarTab);
+  const [excludedIds, setExcludedIds] = useState<Set<string>>(new Set());
+  const [chosenMode, setMode] = useState<ImportMode>('new');
+  const [importing, setImporting] = useState(false);
+  const mode = asNewOnly ? 'new' : chosenMode;
+  const { parsed, source } = read;
+  const { contact, sections } = parsed.resume;
+
+  const included = useMemo(
+    () => sections.filter((section) => !excludedIds.has(section.id)),
+    [sections, excludedIds]
+  );
+  const found = CONTACT_FIELDS.filter(([key]) => contact[key]).map(([, label]) => label);
+
+  const toggle = (id: string) =>
+    setExcludedIds((previous) => {
+      const next = new Set(previous);
+      if (!next.delete(id)) next.add(id);
+      return next;
+    });
+
+  const importResume = async () => {
+    if (included.length === 0 || importing) return;
+    const filtered: ParsedResume = { ...parsed, resume: { ...parsed.resume, sections: included } };
+    const doc = buildImportedResume(getResumeSnapshot(), filtered, mode);
+    setImporting(true);
+    const imported = await attempt(
+      mode === 'new'
+        ? createTemplate(contact.name.trim().slice(0, 80) || 'Imported resume', doc, source)
+        : importIntoDraft(doc, source),
+      'Could not import the resume'
+    );
+    setImporting(false);
+    if (!imported) return;
+    onDone();
+    setStartOpen(false);
+    setActiveSidebarTab('content');
+    showToast('Imported — check the sections in the sidebar');
+  };
+
+  return (
+    <>
+      <DialogFrameHeader
+        icon={Upload}
+        title="Import"
+        description="Review what Mosaic found before importing it."
+        closeLabel="Close import"
+        onClose={onDone}
+      />
+
+      <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3.5">
+        <div className="mb-2.5 flex items-center justify-between gap-2">
+          <p className="flex min-w-0 items-center gap-2 text-xs">
+            <FileText className="size-3.5 shrink-0 text-zinc-500" />
+            <span className="truncate font-mono text-zinc-900 dark:text-zinc-100">{source}</span>
+            <span className="shrink-0 rounded border border-emerald-300 bg-emerald-50 px-1.5 text-[0.65rem] leading-4 font-medium text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-300">
+              read
+            </span>
+          </p>
+          <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={onBack}>
+            Choose another
+          </Button>
+        </div>
+
+        <ul className="divide-y divide-zinc-200 rounded-lg border border-zinc-200 text-sm dark:divide-zinc-800 dark:border-zinc-800">
+          <li className="flex items-center gap-2.5 px-3 py-2">
+            <span className="size-4 shrink-0" />
+            <span className="font-medium text-zinc-900 dark:text-zinc-100">Contact</span>
+            <span
+              className={cn(
+                'text-xs',
+                found.length
+                  ? 'text-zinc-600 dark:text-zinc-400'
+                  : 'text-amber-700 dark:text-amber-400'
+              )}
+            >
+              — {found.length ? `${found.join(', ')} found` : 'nothing found'}
+            </span>
+          </li>
+          {sections.map((section) => {
+            const bullets = section.items.reduce((n, item) => n + item.bullets.length, 0);
+            const on = !excludedIds.has(section.id);
+            return (
+              <li key={section.id}>
+                <label className="flex cursor-pointer items-center gap-2.5 px-3 py-2">
+                  <Checkbox
+                    checked={on}
+                    onCheckedChange={() => toggle(section.id)}
+                    aria-label={`Import ${section.label}`}
+                  />
+                  <span
+                    className={cn(
+                      'font-medium',
+                      on ? 'text-zinc-900 dark:text-zinc-100' : 'text-zinc-500'
+                    )}
+                  >
+                    {section.label}
+                  </span>
+                  <span className="text-xs text-zinc-600 dark:text-zinc-400">
+                    — {count(section.items.length, 'entry', 'entries')}
+                    {bullets > 0 && `, ${count(bullets, 'bullet')}`}
+                  </span>
+                </label>
+              </li>
+            );
+          })}
+        </ul>
+
+        {parsed.warnings.length > 0 && (
+          <div className="mt-3 space-y-1 rounded-lg border border-amber-300 bg-amber-50 p-2.5 dark:border-amber-900 dark:bg-amber-950">
+            {parsed.warnings.map((warning) => (
+              <p
+                key={warning}
+                className="flex gap-2 text-xs leading-relaxed text-amber-900 dark:text-amber-200"
+              >
+                <AlertTriangle className="mt-0.5 size-3.5 shrink-0 text-amber-600 dark:text-amber-400" />
+                {warning}
               </p>
-            </div>
-
-            <DialogFooter className="border-t border-zinc-800 bg-zinc-900 px-5 py-3">
-              <Button variant="outline" onClick={() => handleOpenChange(false)}>
-                Cancel
-              </Button>
-              <Button onClick={handleParse} disabled={text.trim().length === 0}>
-                Parse resume
-              </Button>
-            </DialogFooter>
-          </>
-        ) : (
-          <>
-            <div className="p-5">
-              <DialogHeader className="gap-1 pr-6">
-                <DialogTitle className="flex items-center gap-2 text-base text-zinc-100">
-                  <ClipboardList className="size-4 text-amber-500" />
-                  Review import
-                </DialogTitle>
-                <DialogDescription className="text-xs text-zinc-500">
-                  {summary && summary.sectionCount > 0
-                    ? `${summary.contactName || 'No name found'} · ${summary.sectionCount} sections · ${summary.entryCount} entries · ${summary.bulletCount} bullets`
-                    : 'Nothing recognizable was found in that text.'}
-                </DialogDescription>
-              </DialogHeader>
-
-              {parsed && parsed.warnings.length > 0 && (
-                <div className="mt-4 space-y-1 rounded-lg border border-amber-900 bg-amber-950 p-3">
-                  {parsed.warnings.map((warning) => (
-                    <p key={warning} className="flex items-start gap-2 text-xs text-amber-300">
-                      <AlertTriangle className="mt-0.5 size-3 shrink-0" />
-                      {warning}
-                    </p>
-                  ))}
-                </div>
-              )}
-
-              {parsed && parsed.resume.sections.length > 0 && (
-                <>
-                  <p className="mt-4 mb-2 text-xs font-semibold tracking-widest text-zinc-500 uppercase">
-                    Sections to import
-                  </p>
-                  <ul className="space-y-1.5">
-                    {parsed.resume.sections.map((section) => {
-                      const included = !excludedIds.has(section.id);
-                      const bulletCount = section.items.reduce((n, i) => n + i.bullets.length, 0);
-                      return (
-                        <li key={section.id}>
-                          <label
-                            className={cn(
-                              'flex cursor-pointer items-center gap-3 rounded-lg border p-3 transition-colors',
-                              included
-                                ? 'border-zinc-700 bg-zinc-900'
-                                : 'border-zinc-800 bg-zinc-950'
-                            )}
-                          >
-                            <Checkbox
-                              checked={included}
-                              onCheckedChange={() => toggleSection(section.id)}
-                              aria-label={`Import ${section.label}`}
-                            />
-                            <span className="min-w-0 flex-1">
-                              <span
-                                className={cn(
-                                  'block text-sm font-semibold',
-                                  included ? 'text-zinc-100' : 'text-zinc-500'
-                                )}
-                              >
-                                {section.label}
-                              </span>
-                              <span className="mt-0.5 block text-xs text-zinc-500">
-                                {section.items.length}{' '}
-                                {section.items.length === 1 ? 'entry' : 'entries'}
-                                {bulletCount > 0 && ` · ${bulletCount} bullets`}
-                              </span>
-                            </span>
-                          </label>
-                        </li>
-                      );
-                    })}
-                  </ul>
-
-                  <p className="mt-5 mb-2 text-xs font-semibold tracking-widest text-zinc-500 uppercase">
-                    How to import
-                  </p>
-                  <div className="grid grid-cols-2 gap-2">
-                    {MODE_OPTIONS.map((option) => {
-                      const Icon = option.icon;
-                      const isSelected = option.id === mode;
-                      return (
-                        <button
-                          key={option.id}
-                          type="button"
-                          onClick={() => setMode(option.id)}
-                          className={cn(
-                            'flex items-center gap-2 rounded-lg border p-3 text-left text-sm font-semibold transition-colors',
-                            isSelected
-                              ? 'border-amber-600 bg-amber-950 text-zinc-100'
-                              : 'border-zinc-800 bg-zinc-950 text-zinc-300 hover:border-zinc-700 hover:bg-zinc-900'
-                          )}
-                          aria-pressed={isSelected}
-                        >
-                          <Icon
-                            className={cn(
-                              'size-4',
-                              isSelected ? 'text-amber-500' : 'text-zinc-500'
-                            )}
-                          />
-                          {option.label}
-                        </button>
-                      );
-                    })}
-                  </div>
-                  <p className="mt-2 text-xs text-zinc-500">
-                    {MODE_OPTIONS.find((option) => option.id === mode)?.hint}
-                  </p>
-                </>
-              )}
-            </div>
-
-            <DialogFooter className="border-t border-zinc-800 bg-zinc-900 px-5 py-3">
-              <Button variant="outline" onClick={() => setStep('paste')}>
-                Back
-              </Button>
-              <Button onClick={handleImport} disabled={includedSections.length === 0}>
-                {mode === 'replace' ? 'Replace resume' : 'Add to resume'}
-              </Button>
-            </DialogFooter>
-          </>
+            ))}
+          </div>
         )}
-      </DialogContent>
-    </Dialog>
+
+        {!asNewOnly && sections.length > 0 && (
+          <div className="mt-4">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <span className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
+                How to import
+              </span>
+              <ToggleGroup
+                type="single"
+                variant="outline"
+                size="sm"
+                value={mode}
+                onValueChange={(value) => value && setMode(value as ImportMode)}
+                aria-label="How to import"
+              >
+                {MODE_OPTIONS.map((option) => (
+                  <ToggleGroupItem key={option.id} value={option.id}>
+                    {option.label}
+                  </ToggleGroupItem>
+                ))}
+              </ToggleGroup>
+            </div>
+            <p className="mt-1.5 text-xs leading-relaxed text-zinc-600 dark:text-zinc-400">
+              {MODE_OPTIONS.find((option) => option.id === mode)?.hint}
+            </p>
+          </div>
+        )}
+      </div>
+
+      <DialogFrameFooter>
+        <Button variant="ghost" size="sm" onClick={onDone}>
+          Cancel
+        </Button>
+        <Button
+          size="sm"
+          disabled={included.length === 0 || importing}
+          onClick={() => void importResume()}
+        >
+          {IMPORT_LABELS[mode]}
+        </Button>
+      </DialogFrameFooter>
+    </>
   );
 }

@@ -1,26 +1,19 @@
-import { useMemo } from 'react';
 import { useResumeStore } from '@/stores/resumeStore';
-import { useTemplateStore } from '@/stores/templateStore';
-import { resumeEqual } from './compareResume';
+import { useActiveTemplate } from './useActiveTemplate';
 
-export type TemplateStatus = 'clean' | 'modified' | 'untracked';
+/**
+ * - `none`: no template is open.
+ * - `new`: the template has only the version it was created with — no history to be
+ *   "up to date" with yet, so the design shows no badge.
+ * - `clean` / `edited`: whether the draft still matches the newest version. Every edit
+ *   bumps the draft's rev, and each version records the rev it was taken at.
+ */
+export type TemplateStatus = 'none' | 'new' | 'clean' | 'edited';
 
 export function useTemplateStatus(): TemplateStatus {
-  const schemaVersion = useResumeStore((s) => s.schemaVersion);
-  const contact = useResumeStore((s) => s.contact);
-  const sections = useResumeStore((s) => s.sections);
-  const activeTemplateId = useTemplateStore((s) => s.activeTemplateId);
-  const activeVersionId = useTemplateStore((s) => s.activeVersionId);
-  const versionsByTemplateId = useTemplateStore((s) => s.versionsByTemplateId);
-
-  return useMemo(() => {
-    if (!activeTemplateId || !activeVersionId) return 'untracked';
-
-    const versions = versionsByTemplateId[activeTemplateId];
-    const activeVersion = versions?.find((v) => v.id === activeVersionId);
-    if (!activeVersion) return 'untracked';
-
-    const current = { schemaVersion, contact, sections };
-    return resumeEqual(current, activeVersion.snapshot) ? 'clean' : 'modified';
-  }, [schemaVersion, contact, sections, activeTemplateId, activeVersionId, versionsByTemplateId]);
+  const template = useActiveTemplate();
+  const rev = useResumeStore((s) => s.rev);
+  if (!template) return 'none';
+  if (template.versionCount === 1 && template.head.kind === 'auto') return 'new';
+  return rev === template.head.rev ? 'clean' : 'edited';
 }

@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
@@ -6,6 +7,9 @@ import type { Plugin } from 'vite';
 
 const root = import.meta.dirname;
 const alias = { '@': resolve(root, 'src') };
+const { version } = JSON.parse(readFileSync(resolve(root, 'package.json'), 'utf8')) as {
+  version: string;
+};
 
 /**
  * The renderer never needs the network: fonts are local, PDF export runs on-device, and
@@ -62,6 +66,7 @@ export default defineConfig({
     // The renderer keeps living at the repo root (index.html + src/), not src/renderer.
     root,
     resolve: { alias },
+    define: { __APP_VERSION__: JSON.stringify(version) },
     plugins: [tailwindcss(), react(), contentSecurityPolicy()],
     build: {
       rollupOptions: { input: resolve(root, 'index.html') },

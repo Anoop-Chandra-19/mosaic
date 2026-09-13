@@ -1,23 +1,35 @@
+import { cn } from '@/lib/utils';
 import type { TemplateStatus } from './useTemplateStatus';
 
-const STATUS_STYLES: Record<TemplateStatus, string> = {
-  clean: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400',
-  modified: 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-400',
-  untracked: 'bg-zinc-200 text-zinc-600 dark:bg-zinc-700 dark:text-zinc-400',
-};
-
-const STATUS_LABELS: Record<TemplateStatus, string> = {
-  clean: 'clean',
-  modified: 'modified',
-  untracked: 'untracked',
-};
+// Neutral on purpose: amber is kept for the assistant's pending suggestions, and the
+// document's own state never competes with it.
+const BADGES: Partial<Record<TemplateStatus, { label: string; title: string; className: string }>> =
+  {
+    edited: {
+      label: 'edited',
+      title: 'Saved as you type. Name a version when you want to find this state again.',
+      className:
+        'border-zinc-300 bg-zinc-200 text-zinc-700 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300',
+    },
+    clean: {
+      label: 'up to date',
+      title: "The draft matches the newest version in this template's history.",
+      className: 'border-zinc-300 text-zinc-500 dark:border-zinc-700 dark:text-zinc-500',
+    },
+  };
 
 export function TemplateStatusBadge({ status }: { status: TemplateStatus }) {
+  const badge = BADGES[status];
+  if (!badge) return null;
   return (
     <span
-      className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[status]}`}
+      title={badge.title}
+      className={cn(
+        'inline-flex shrink-0 items-center rounded-md border px-1.5 py-0.5 text-xs font-semibold',
+        badge.className
+      )}
     >
-      {STATUS_LABELS[status]}
+      {badge.label}
     </span>
   );
 }

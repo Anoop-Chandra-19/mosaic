@@ -57,6 +57,7 @@ export function ContactCard() {
         <InlineEditField
           value={contact.name}
           onSave={(v) => updateContact({ name: v })}
+          placeholder="Your name"
           className="text-lg leading-tight font-semibold"
           inputClassName="h-8 text-lg leading-tight font-semibold"
           as="h3"

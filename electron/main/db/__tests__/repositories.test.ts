@@ -8,6 +8,7 @@ import { ACTIVE_TEMPLATE_KEY, getSetting, removeSetting, setSetting } from '../s
 import {
   createTemplate,
   duplicateTemplate,
+  duplicateVersion,
   getTemplate,
   listTemplates,
   openTemplate,
@@ -301,6 +302,25 @@ describe('templates', () => {
     expect(copy.head).toMatchObject({ source: 'duplicate', summary: 'Duplicated from "CV"' });
     expect(readDraft(db, copy.id).doc).toEqual(resumeFor('A, unsaved'));
     expect(listTemplates(db).map((t) => t.id)).toEqual([source.id, copy.id]);
+  });
+
+  it('duplicates one version from the history instead of the draft', () => {
+    const source = createTemplate(db, 'CV', resumeFor('A'));
+    saveDraft(db, source.id, resumeFor('B'), 1);
+    const named = nameDraft(db, source.id, 'Sent to Striped');
+    saveDraft(db, source.id, resumeFor('C, unsaved'), 2);
+
+    const copy = duplicateVersion(db, named.id);
+
+    expect(copy).toMatchObject({ name: 'CV (copy)', versionCount: 1 });
+    expect(copy.head).toMatchObject({
+      source: 'duplicate',
+      summary: 'Duplicated from "CV", version "Sent to Striped"',
+    });
+    expect(readDraft(db, copy.id).doc).toEqual(resumeFor('B'));
+    expect(() => duplicateVersion(db, 'missing')).toThrow(
+      expect.objectContaining({ code: 'not-found' })
+    );
   });
 
   it('deleting a template cascades to its draft and versions', () => {

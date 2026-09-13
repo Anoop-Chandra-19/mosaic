@@ -1,57 +1,95 @@
 import type { LucideIcon } from 'lucide-react';
-import { Bot, Info, Shield, SlidersHorizontal } from 'lucide-react';
+import { Contrast, Database, FileText, Info, Settings, Shield, Sparkles } from 'lucide-react';
 
-export type SettingsSectionId = 'app' | 'ai' | 'privacy' | 'about';
-
-export type SettingsGroupId = 'workspace' | 'intelligence' | 'safety' | 'meta';
+export type SettingsSectionId =
+  | 'general'
+  | 'appearance'
+  | 'document'
+  | 'ai'
+  | 'portability'
+  | 'privacy'
+  | 'about';
 
 export interface SettingsSection {
   id: SettingsSectionId;
   label: string;
+  /** The line under the section's heading. */
   description: string;
-  group: SettingsGroupId;
   icon: LucideIcon;
 }
 
-export const SETTINGS_GROUP_LABELS: Record<SettingsGroupId, string> = {
-  workspace: 'Workspace',
-  intelligence: 'AI',
-  safety: 'Privacy',
-  meta: 'Meta',
-};
+export interface SettingsGroup {
+  /** No label for the group that holds About on its own. */
+  label: string | null;
+  sections: SettingsSection[];
+}
 
-export const SETTINGS_SECTIONS: SettingsSection[] = [
+export const SETTINGS_GROUPS: SettingsGroup[] = [
   {
-    id: 'app',
-    label: 'App Preferences',
-    description: 'Appearance and preview defaults',
-    group: 'workspace',
-    icon: SlidersHorizontal,
+    label: 'Workspace',
+    sections: [
+      {
+        id: 'general',
+        label: 'General',
+        description: 'How Mosaic behaves on this machine.',
+        icon: Settings,
+      },
+      {
+        id: 'appearance',
+        label: 'Appearance',
+        description: 'Chrome only — the resume page is always black on white.',
+        icon: Contrast,
+      },
+      {
+        id: 'document',
+        label: 'Document',
+        description: 'How the page is set up. Its metrics stay on the 18pt leading grid.',
+        icon: FileText,
+      },
+    ],
   },
   {
-    id: 'ai',
-    label: 'AI Providers',
-    description: 'Provider, model, and key handling',
-    group: 'intelligence',
-    icon: Bot,
+    label: 'Intelligence',
+    sections: [
+      {
+        id: 'ai',
+        label: 'AI assistant',
+        description: 'Optional, bring-your-own-key, and reviewable.',
+        icon: Sparkles,
+      },
+    ],
   },
   {
-    id: 'privacy',
-    label: 'Privacy and Data',
-    description: 'Clear and reset local data',
-    group: 'safety',
-    icon: Shield,
+    label: 'Your data',
+    sections: [
+      {
+        id: 'portability',
+        label: 'Import & export',
+        description:
+          'Your content is yours. Everything here works offline, and nothing is locked to Mosaic.',
+        icon: Database,
+      },
+      {
+        id: 'privacy',
+        label: 'Privacy',
+        description: 'Mosaic has no account, no telemetry, and no server.',
+        icon: Shield,
+      },
+    ],
   },
   {
-    id: 'about',
-    label: 'About Mosaic',
-    description: 'Version and project context',
-    group: 'meta',
-    icon: Info,
+    label: null,
+    sections: [
+      {
+        id: 'about',
+        label: 'About',
+        description: 'Local-first resume builder.',
+        icon: Info,
+      },
+    ],
   },
 ];
 
-export const SETTINGS_SECTION_BY_ID = SETTINGS_SECTIONS.reduce(
-  (acc, section) => ({ ...acc, [section.id]: section }),
-  {} as Record<SettingsSectionId, SettingsSection>
-);
+export const SETTINGS_SECTION_BY_ID = Object.fromEntries(
+  SETTINGS_GROUPS.flatMap((group) => group.sections).map((section) => [section.id, section])
+) as Record<SettingsSectionId, SettingsSection>;

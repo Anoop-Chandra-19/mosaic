@@ -1,54 +1,45 @@
 import { describe, expect, it } from 'vitest';
-import { buildPdfFileName, buildVaultFileName } from './filename';
+import { buildBackupFileName, buildExportName, toFileName } from './filename';
 
 const fixedDate = new Date(2026, 3, 23);
 
-describe('buildPdfFileName', () => {
-  it('prefers the template name over the contact name', () => {
-    expect(
-      buildPdfFileName({
-        contactName: 'Alex Johnson',
-        templateName: 'Backend Resume',
-        paperSize: 'letter',
-        now: fixedDate,
-      })
-    ).toBe('backend-resume-resume-letter-20260423.pdf');
+describe('buildExportName', () => {
+  it('names the person and the template', () => {
+    expect(buildExportName({ contactName: 'Alex Johnson', templateName: 'Backend' })).toBe(
+      'Alex Johnson — Backend'
+    );
   });
 
-  it('falls back to the contact name', () => {
-    expect(
-      buildPdfFileName({
-        contactName: 'Alex Johnson',
-        paperSize: 'a4',
-        now: fixedDate,
-      })
-    ).toBe('alex-johnson-resume-a4-20260423.pdf');
+  it('uses whichever name there is, or a plain fallback', () => {
+    expect(buildExportName({ contactName: '  ', templateName: 'Backend' })).toBe('Backend');
+    expect(buildExportName({ contactName: 'Alex Johnson' })).toBe('Alex Johnson');
+    expect(buildExportName({ contactName: '', templateName: '   ' })).toBe('Resume');
   });
 
-  it('falls back to mosaic when names are empty', () => {
+  it('says which version it is', () => {
     expect(
-      buildPdfFileName({
-        contactName: '',
-        templateName: '   ',
-        paperSize: 'a4',
-        now: fixedDate,
-      })
-    ).toBe('mosaic-resume-a4-20260423.pdf');
-  });
-
-  it('slugifies unsafe characters', () => {
-    expect(
-      buildPdfFileName({
-        templateName: 'Alex / Resume: Senior+Frontend!',
-        paperSize: 'letter',
-        now: fixedDate,
-      })
-    ).toBe('alex-resume-senior-frontend-resume-letter-20260423.pdf');
+      buildExportName({ contactName: 'Alex', templateName: 'Backend', versionLabel: 'v3' })
+    ).toBe('Alex — Backend (v3)');
   });
 });
 
-describe('buildVaultFileName', () => {
-  it('uses a dashed date with the mosaic-vault prefix', () => {
-    expect(buildVaultFileName(fixedDate)).toBe('mosaic-vault-2026-04-23.json');
+describe('toFileName', () => {
+  it('adds the extension once', () => {
+    expect(toFileName('Alex — Backend', 'pdf')).toBe('Alex — Backend.pdf');
+    expect(toFileName('Alex — Backend.PDF', 'pdf')).toBe('Alex — Backend.pdf');
+  });
+
+  it('drops characters a file system refuses, and folder separators', () => {
+    expect(toFileName('../Alex / Resume: "Senior"?', 'md')).toBe('Alex Resume Senior.md');
+  });
+
+  it('never leaves the name empty', () => {
+    expect(toFileName(' / ', 'txt')).toBe('Resume.txt');
+  });
+});
+
+describe('buildBackupFileName', () => {
+  it('uses a dashed date with the mosaic-backup prefix', () => {
+    expect(buildBackupFileName(fixedDate)).toBe('mosaic-backup-2026-04-23.json');
   });
 });

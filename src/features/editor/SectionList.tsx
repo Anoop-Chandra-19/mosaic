@@ -10,7 +10,7 @@ import { SECTION_ICONS, SECTION_TYPE_OPTIONS } from './section-icons';
 import { SectionItem } from './SectionItem';
 import { useResumeStore } from '@/stores/resumeStore';
 
-export function SectionList() {
+export function SectionList({ showAddSection = true }: { showAddSection?: boolean }) {
   const sections = useResumeStore((s) => s.sections);
   const addSection = useResumeStore((s) => s.addSection);
   const reorderSections = useResumeStore((s) => s.reorderSections);
@@ -40,7 +40,7 @@ export function SectionList() {
         />
       ))}
 
-      {availableTypes.length > 0 && (
+      {showAddSection && availableTypes.length > 0 && (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline" size="sm" className="w-full">

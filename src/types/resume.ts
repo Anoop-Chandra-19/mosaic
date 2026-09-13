@@ -57,26 +57,6 @@ export interface ResumeData {
   sections: ResumeSection[];
 }
 
-export interface TemplateRecord {
-  id: string;
-  name: string;
-  createdAt: string;
-  updatedAt: string;
-  headVersionId: string;
-}
-
-export type TemplateVersionSource = 'save-new' | 'update' | 'restore' | 'import-save' | 'ai-batch';
-
-export interface TemplateVersion {
-  id: string;
-  templateId: string;
-  parentVersionId: string | null;
-  createdAt: string;
-  message: string;
-  source: TemplateVersionSource;
-  snapshot: ResumeData;
-}
-
 export interface PendingTextAiChange {
   id: string;
   createdAt: string;
@@ -86,14 +66,6 @@ export interface PendingTextAiChange {
   before: string;
   after: string;
   reason?: string;
-}
-
-export type RollbackReason = 'before-import' | 'before-restore';
-
-export interface LocalCheckpoint {
-  createdAt: string;
-  reason: RollbackReason;
-  snapshot: ResumeData;
 }
 
 export type AIProvider = 'openai' | 'anthropic' | 'gemini' | 'ollama' | 'openrouter';

@@ -1,2 +1,1 @@
-export { downloadResumePdf } from './download';
-export { openResumePdfPreview } from './download';
+export { renderResumePdf } from './render';
