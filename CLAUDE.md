@@ -28,7 +28,9 @@
   `xvfb-run` (headless; Linux). Each launch gets a throwaway `--user-data-dir`, so e2e
   runs never touch the real profile. On macOS/Windows: build, then `bunx playwright test`.
 - `bun run lint` — ESLint
-- `bunx shadcn@latest add <component>` — add a shadcn component
+- `bunx shadcn@latest add <component>` — add a shadcn component. Components come as
+  upstream ships them, `import { cn } from "cn"` included (shadcn's `cn` package;
+  `@/lib/utils` re-exports the same function for app code) — no import fix-ups.
 
 ### Dependencies
 
