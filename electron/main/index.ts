@@ -5,16 +5,23 @@ import {
   BrowserWindow,
   dialog,
   ipcMain,
+  net,
   screen,
   shell,
   type IpcMainInvokeEvent,
 } from 'electron';
 import { ERASE_ALL } from '../shared/appChannels';
 import { openDatabase, type Database } from './db/connection';
+import { API_KEYS_KEY, getSetting, setSetting } from './db/settings';
 import { eraseAll } from './eraseAll';
 import { flushBeforeClose } from './flushOnClose';
 import { registerDbHandlers } from './ipc/db';
 import { registerFileHandlers } from './ipc/files';
+import { registerSecretsHandlers } from './ipc/secrets';
+import { createSecretsHandlers } from './ipc/secretsHandlers';
+import { createApiKeys } from './secrets/apiKeys';
+import { osKeyring } from './secrets/osKeyring';
+import { testKey } from './secrets/testKey';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 
@@ -130,9 +137,22 @@ if (!app.requestSingleInstanceLock()) {
     }
     registerDbHandlers(() => db, isAppFrame);
     registerFileHandlers(isAppFrame);
+    const apiKeys = createApiKeys(osKeyring(app.isPackaged ? 'Mosaic' : 'Mosaic (dev)'), {
+      read: () => (db ? getSetting(db, API_KEYS_KEY) : null),
+      write: (value) => {
+        if (db) setSetting(db, API_KEYS_KEY, value);
+      },
+    });
+    registerSecretsHandlers(
+      createSecretsHandlers(apiKeys, (provider, key, model) =>
+        testKey(provider, key, model, net.fetch)
+      ),
+      isAppFrame
+    );
     ipcMain.handle(ERASE_ALL, (event) => {
       if (!isAppFrame(event)) throw new Error(`Refused erase from ${event.senderFrame?.url}`);
       return eraseAll({
+        forgetKeys: () => apiKeys.forgetAll(),
         file: databaseFile(),
         close: () => {
           db?.close();

@@ -1,5 +1,6 @@
 import type { MosaicDbBridge } from './db';
 import type { MosaicFiles } from './files';
+import type { MosaicSecrets } from './secrets';
 
 declare global {
   interface Window {
@@ -8,10 +9,11 @@ declare global {
       platform: string;
       db: MosaicDbBridge;
       files: MosaicFiles;
+      secrets: MosaicSecrets;
       app: {
         /**
-         * Deletes the database file and everything the page stored. Reload afterwards: the
-         * app then boots empty.
+         * Deletes the API keys, the database file, and everything the page stored. Reload
+         * afterwards: the app then boots empty.
          */
         eraseAll(): Promise<void>;
         /** Called when the window is closing; the close waits (up to 2 s) for it to settle. */

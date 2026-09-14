@@ -10,7 +10,7 @@ import { boot } from '../db/boot';
 import { exportBundle, importBundle } from '../db/bundle';
 import { saveDraft } from '../db/drafts';
 import { StorageError } from '../db/errors';
-import { removeSetting, setSetting } from '../db/settings';
+import { MAIN_SETTINGS_PREFIX, removeSetting, setSetting } from '../db/settings';
 import {
   createTemplate,
   duplicateTemplate,
@@ -63,6 +63,15 @@ function revision(value: unknown): number {
     throw new InvalidArgumentError('rev must be a whole number of 0 or more');
   }
   return value as number;
+}
+
+/** A setting the renderer may write: not one of main's own. */
+function rendererSettingKey(value: unknown): string {
+  const key = text(value, 'key');
+  if (key.startsWith(MAIN_SETTINGS_PREFIX)) {
+    throw new InvalidArgumentError(`"${key}" is kept by the app itself`);
+  }
+  return key;
 }
 
 function settingValue(value: unknown): string {
@@ -130,8 +139,8 @@ export function createDbHandlers(db: Database): Handlers<MosaicDb> {
       duplicate: (versionId) => duplicateVersion(db, text(versionId, 'versionId')),
     },
     settings: {
-      set: (key, value) => setSetting(db, text(key, 'key'), settingValue(value)),
-      remove: (key) => removeSetting(db, text(key, 'key')),
+      set: (key, value) => setSetting(db, rendererSettingKey(key), settingValue(value)),
+      remove: (key) => removeSetting(db, rendererSettingKey(key)),
     },
     bundle: {
       export: (templateIds) => exportBundle(db, optionalIds(templateIds, 'templateIds')),

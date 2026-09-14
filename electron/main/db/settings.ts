@@ -1,7 +1,16 @@
 import type { Database } from 'better-sqlite3';
 
+/**
+ * Settings under `app.` belong to main; the renderer may not write them (see `dbHandlers`).
+ * Boot still sends them, so none may hold a secret.
+ */
+export const MAIN_SETTINGS_PREFIX = 'app.';
+
 /** The template the editor last had open. */
 export const ACTIVE_TEMPLATE_KEY = 'app.activeTemplateId';
+
+/** Where API keys are kept, and which ones the keychain holds — provider names, never keys. */
+export const API_KEYS_KEY = 'app.apiKeys';
 
 interface SettingRow {
   key: string;

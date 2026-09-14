@@ -1,19 +1,8 @@
 import type { SecretsClient } from './types';
 import { webSessionSecrets } from './webSessionSecrets';
 
-interface MosaicBridge {
-  secrets?: SecretsClient;
-}
-
-function getBridgeSecrets(): SecretsClient | null {
-  if (typeof window === 'undefined') {
-    return null;
-  }
-
-  const bridge = (window as Window & { mosaic?: MosaicBridge }).mosaic;
-  return bridge?.secrets ?? null;
-}
-
+// Keys stay in this page's memory until the AI settings move to `window.mosaic.secrets`,
+// whose keys never come back to the renderer.
 export function getSecretsClient(): SecretsClient {
-  return getBridgeSecrets() ?? webSessionSecrets;
+  return webSessionSecrets;
 }
