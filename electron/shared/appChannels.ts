@@ -10,6 +10,9 @@ export const ERASE_ALL = 'app:erase-all';
 export const FILES_SAVE = 'files:save';
 export const FILES_OPEN = 'files:open';
 
+/** Renderer → main: `MosaicAI` — the chat models pulled into the local Ollama. */
+export const AI_OLLAMA_MODELS = 'ai:ollama-models';
+
 /** Renderer → main: `MosaicSecrets`, one channel per method. */
 export const SECRETS_CHANNELS = {
   status: 'secrets:status',

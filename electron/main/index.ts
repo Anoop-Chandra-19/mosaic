@@ -10,7 +10,8 @@ import {
   shell,
   type IpcMainInvokeEvent,
 } from 'electron';
-import { ERASE_ALL } from '../shared/appChannels';
+import { AI_OLLAMA_MODELS, ERASE_ALL } from '../shared/appChannels';
+import { listOllamaModels } from './ai/ollamaModels';
 import { openDatabase, type Database } from './db/connection';
 import { API_KEYS_KEY, getSetting, setSetting } from './db/settings';
 import { eraseAll } from './eraseAll';
@@ -149,6 +150,10 @@ if (!app.requestSingleInstanceLock()) {
       ),
       isAppFrame
     );
+    ipcMain.handle(AI_OLLAMA_MODELS, (event) => {
+      if (!isAppFrame(event)) throw new Error(`Refused model list from ${event.senderFrame?.url}`);
+      return listOllamaModels(net.fetch);
+    });
     ipcMain.handle(ERASE_ALL, (event) => {
       if (!isAppFrame(event)) throw new Error(`Refused erase from ${event.senderFrame?.url}`);
       return eraseAll({

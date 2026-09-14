@@ -1,3 +1,4 @@
+import type { MosaicAI } from './ai';
 import type { MosaicDbBridge } from './db';
 import type { MosaicFiles } from './files';
 import type { MosaicSecrets } from './secrets';
@@ -10,6 +11,7 @@ declare global {
       db: MosaicDbBridge;
       files: MosaicFiles;
       secrets: MosaicSecrets;
+      ai: MosaicAI;
       app: {
         /**
          * Deletes the API keys, the database file, and everything the page stored. Reload

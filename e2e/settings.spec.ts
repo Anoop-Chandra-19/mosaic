@@ -45,6 +45,54 @@ test('settings are grouped as the design has them, and take effect', async () =>
   expect(errors).toEqual([]);
 });
 
+test('Ollama’s model is picked from the chat models pulled on this machine', async () => {
+  const { app, page, errors } = mosaic();
+  // Main asks Ollama through net.fetch: stand in for an Ollama with two chat models and an
+  // embedding model, so the test never depends on what this machine has pulled.
+  await app.evaluate(({ net }) => {
+    net.fetch = async (input, init) => {
+      if (String(input).endsWith('/api/tags')) {
+        return Response.json({
+          models: [
+            { name: 'qwen3.5:9b', size: 6_600_000_000 },
+            { name: 'nomic-embed-text:latest', size: 274_302_450 },
+            { name: 'gemma4:12b', size: 7_600_000_000 },
+          ],
+        });
+      }
+      const { model } = JSON.parse(String(init?.body)) as { model: string };
+      return Response.json({
+        capabilities: model.startsWith('nomic') ? ['embedding'] : ['completion'],
+      });
+    };
+  });
+  await page.getByRole('button', { name: /Blank resume/ }).click();
+
+  const settings = await openSettings(page, 'AI assistant');
+  await settings.getByRole('switch', { name: 'Enable AI assistant' }).click();
+  await settings.getByRole('combobox', { name: 'Provider' }).click();
+  await page.getByRole('option', { name: 'Ollama (local)' }).click();
+
+  await settings.getByRole('combobox', { name: 'Ollama model' }).click();
+  await expect(page.getByRole('option')).toHaveText(['gemma4:12b7.6 GB', 'qwen3.5:9b6.6 GB']);
+  await page.getByRole('option', { name: /gemma4:12b/ }).click();
+  const stored = await page.evaluate(async () => {
+    const boot = await window.mosaic.db.boot();
+    if (!boot.ok) throw new Error(boot.message);
+    return JSON.parse(boot.value.settings.ai);
+  });
+  expect(stored.state.modelsByProvider.ollama).toBe('gemma4:12b');
+
+  // Ollama stops: Refresh says so, and the chosen model stays.
+  await app.evaluate(({ net }) => {
+    net.fetch = () => Promise.reject(new TypeError('connect ECONNREFUSED'));
+  });
+  await settings.getByRole('button', { name: 'Refresh Ollama models' }).click();
+  await expect(settings.getByText('Ollama isn’t running on this machine.')).toBeVisible();
+  await expect(settings.getByRole('combobox', { name: 'Ollama model' })).toHaveText(/gemma4:12b/);
+  expect(errors).toEqual([]);
+});
+
 test('Import & export opens the import dialog', async () => {
   const { page } = mosaic();
   await page.getByRole('button', { name: /Blank resume/ }).click();

@@ -8,7 +8,8 @@ server, so whatever is on disk, the app itself must be able to read and upgrade.
 - Electron 44 via electron-vite: main process in `electron/main/`, sandboxed preload in
   `electron/preload/`, renderer is `index.html` + `src/`. The renderer never gets Node or
   raw IPC — only `window.mosaic`: `db` (the `MosaicDb` contract, `src/types/db.ts`),
-  `files` (system Save/Open dialogs run by main), `secrets` (API keys, write-only), `app`.
+  `files` (system Save/Open dialogs run by main), `secrets` (API keys, write-only), `ai`
+  (Ollama's pulled models — the renderer itself has no network), `app`.
 - SQLite (better-sqlite3) in main holds everything the user makes. The schema, migrations,
   erase, and API keys are covered in `electron/CLAUDE.md`.
 - React 19 + TypeScript, Vite, Tailwind CSS v4 (CSS-first, no `tailwind.config.js`),

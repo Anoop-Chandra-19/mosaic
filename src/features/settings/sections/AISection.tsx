@@ -23,6 +23,7 @@ import {
 import { SettingRow, SettingsNote } from '../SettingRow';
 import { useSecretsStatus } from '../useSecretsStatus';
 import { AI_PROVIDER_BY_ID, AI_PROVIDER_OPTIONS } from './ai-provider-meta';
+import { OllamaModelRow } from './OllamaModelRow';
 
 export function AISection() {
   const enabled = useAIStore((s) => s.enabled);
@@ -72,34 +73,31 @@ export function AISection() {
           </Select>
         </SettingRow>
 
-        <SettingRow
-          label="Model"
-          description={
-            provider === 'ollama'
-              ? 'A model you have pulled on this machine.'
-              : 'Any chat model your key can reach.'
-          }
-        >
-          <Input
-            value={model}
-            onChange={(event) => setModel(event.target.value)}
-            placeholder={suggested}
-            aria-label={`${active.label} model`}
-            spellCheck={false}
-            autoComplete="off"
-            className="h-8 w-54 text-sm"
-          />
-          {model !== suggested && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-8 text-xs"
-              onClick={() => resetModel(provider)}
-            >
-              Use {suggested}
-            </Button>
-          )}
-        </SettingRow>
+        {provider === 'ollama' ? (
+          <OllamaModelRow active={enabled} model={model.trim() || suggested} onChange={setModel} />
+        ) : (
+          <SettingRow label="Model" description="Any chat model your key can reach.">
+            <Input
+              value={model}
+              onChange={(event) => setModel(event.target.value)}
+              placeholder={suggested}
+              aria-label={`${active.label} model`}
+              spellCheck={false}
+              autoComplete="off"
+              className="h-8 w-54 text-sm"
+            />
+            {model !== suggested && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 text-xs"
+                onClick={() => resetModel(provider)}
+              >
+                Use {suggested}
+              </Button>
+            )}
+          </SettingRow>
+        )}
 
         {/* Keyed by provider: switching starts that provider's rows afresh. */}
         {isKeyedProvider(provider) && (
