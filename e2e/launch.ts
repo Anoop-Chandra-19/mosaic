@@ -31,6 +31,9 @@ export async function launchApp(
     // Wayland session and opens a real window on it.
     delete env.WAYLAND_DISPLAY;
     args.push('--ozone-platform=x11');
+    // No session bus, so no Secret Service: saving, testing, or erasing keys can never
+    // reach the desktop's real keychain, and every run sees the no-keychain fallback.
+    env.DBUS_SESSION_BUS_ADDRESS = `unix:path=${path.join(userDataDir, 'no-session-bus')}`;
   }
 
   const app = await electron.launch({ args, env });

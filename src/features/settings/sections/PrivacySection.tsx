@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { ShieldCheck, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -9,29 +9,28 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { getSecretsClient } from '@/lib/secrets';
 import { attempt, showToast } from '@/stores/overlayStore';
 import { useUIStore } from '@/stores/uiStore';
 import { SettingRow, SettingsNote } from '../SettingRow';
+import { useSecretsStatus } from '../useSecretsStatus';
 
 export function PrivacySection() {
-  const secrets = useMemo(() => getSecretsClient(), []);
+  const { status, apply } = useSecretsStatus();
   const resetUIState = useUIStore((s) => s.resetUIState);
   const [confirmingErase, setConfirmingErase] = useState(false);
   const [erasing, setErasing] = useState(false);
+  const hasKeys = Object.keys(status?.saved ?? {}).length > 0;
 
   const forgetKeys = async () => {
-    if (await attempt(secrets.clearAllApiKeys(), 'Could not remove the keys')) {
-      showToast('API keys removed');
+    if (await attempt(apply(window.mosaic.secrets.forgetAll()), 'Could not forget the keys')) {
+      showToast('API keys forgotten');
     }
   };
 
   const erase = async () => {
     setErasing(true);
-    const erased = await attempt(
-      Promise.all([secrets.clearAllApiKeys(), window.mosaic.app.eraseAll()]),
-      'Could not erase everything'
-    );
+    // Main forgets the keys first, then deletes the database.
+    const erased = await attempt(window.mosaic.app.eraseAll(), 'Could not erase everything');
     // Start over from the empty database, as a fresh install does.
     if (erased) window.location.reload();
     else setErasing(false);
@@ -46,9 +45,9 @@ export function PrivacySection() {
 
       <SettingRow
         label="Forget stored API keys"
-        description="Removes every saved key. AI stays enabled; you’ll be asked for a key next time."
+        description="Removes every saved key, from the keychain and from memory. AI stays enabled; you’ll be asked for a key next time."
       >
-        <Button variant="outline" size="sm" onClick={() => void forgetKeys()}>
+        <Button variant="outline" size="sm" disabled={!hasKeys} onClick={() => void forgetKeys()}>
           Forget keys
         </Button>
       </SettingRow>

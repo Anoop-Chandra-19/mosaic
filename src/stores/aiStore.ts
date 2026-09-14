@@ -3,12 +3,17 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 import { settingsStorage } from '@/lib/storage/settingsStorage';
 import type { AIProvider } from '@/types/resume';
 
+/**
+ * Each provider's current mid tier — capable enough for resume writing, without the top
+ * tier's price. Checked against the providers' model lists on 2026-09-14. Ollama's has to
+ * be pulled first (`ollama pull qwen3.5:9b`); Test checks the others can be reached.
+ */
 export const AI_PROVIDER_DEFAULT_MODEL: Record<AIProvider, string> = {
-  openai: 'gpt-4.1-mini',
-  anthropic: 'claude-3-5-sonnet-latest',
-  gemini: 'gemini-2.0-flash',
-  ollama: 'llama3.1:8b',
-  openrouter: 'openai/gpt-4o-mini',
+  openai: 'gpt-5.6-terra',
+  anthropic: 'claude-sonnet-5',
+  gemini: 'gemini-3.8-flash',
+  ollama: 'qwen3.5:9b',
+  openrouter: 'openai/gpt-5.6-terra',
 };
 
 function createDefaultModelsByProvider(): Record<AIProvider, string> {

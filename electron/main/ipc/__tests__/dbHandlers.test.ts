@@ -73,6 +73,9 @@ describe('db handlers', () => {
       ['drafts.save', 'id', doc, 1.5],
       ['drafts.save', 'id', doc, '2'],
       ['settings.set', 'ui', { darkMode: true }],
+      // `app.` settings are main's own: where keys live, the template to reopen.
+      ['settings.set', 'app.apiKeys', '{"location":"session","keychain":[]}'],
+      ['settings.remove', 'app.activeTemplateId'],
       ['bundle.export', 'id'],
       ['bundle.export', [7]],
       ['bundle.import', { bundleVersion: 2, templates: [] }, 'as-new-template'],

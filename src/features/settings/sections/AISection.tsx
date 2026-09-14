@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Eye, EyeOff, ShieldCheck } from 'lucide-react';
+import { useState, type ReactNode } from 'react';
+import { Check, Eye, EyeOff, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -10,11 +10,18 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { getSecretsClient } from '@/lib/secrets';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { cn } from '@/lib/utils';
 import { AI_PROVIDER_DEFAULT_MODEL, useAIStore } from '@/stores/aiStore';
 import type { AIProvider } from '@/types/resume';
+import {
+  isKeyedProvider,
+  type KeyedProvider,
+  type KeyLocation,
+  type KeyTest,
+} from '@/types/secrets';
 import { SettingRow, SettingsNote } from '../SettingRow';
+import { useSecretsStatus } from '../useSecretsStatus';
 import { AI_PROVIDER_BY_ID, AI_PROVIDER_OPTIONS } from './ai-provider-meta';
 
 export function AISection() {
@@ -94,56 +101,156 @@ export function AISection() {
           )}
         </SettingRow>
 
-        {active.requiresKey && <ApiKeyRows provider={provider} />}
+        {/* Keyed by provider: switching starts that provider's rows afresh. */}
+        {isKeyedProvider(provider) && (
+          <ApiKeyRows key={provider} provider={provider} model={model.trim() || suggested} />
+        )}
       </div>
     </>
   );
 }
 
-function ApiKeyRows({ provider }: { provider: AIProvider }) {
-  const secrets = useMemo(() => getSecretsClient(), []);
+function testMessage(result: KeyTest, label: string, model: string): ReactNode {
+  if (result.ok) {
+    return result.modelFound === false ? (
+      <span className="text-amber-700 dark:text-amber-400">
+        The key works, but it can’t reach “{model}”. Check the model name above.
+      </span>
+    ) : null;
+  }
+  const messages: Record<typeof result.reason, string> = {
+    refused: `${label} turned this key down. Check it was copied in full.`,
+    unreachable: `Couldn’t reach ${label}. Check your connection and try again.`,
+    'no-key': `No ${label} key is saved.`,
+    keychain: 'The keychain didn’t hand over the saved key. Unlock it and try again.',
+    failed: `${label} answered with an error${result.httpStatus ? ` (${result.httpStatus})` : ''}. Try again in a moment.`,
+  };
+  return <ErrorText>{messages[result.reason]}</ErrorText>;
+}
+
+function ErrorText({ children }: { children: ReactNode }) {
+  return <span className="text-red-700 dark:text-red-400">{children}</span>;
+}
+
+const LOCATION_DESCRIPTIONS: Record<KeyLocation | 'unavailable', string> = {
+  keychain:
+    'Stored in the operating system keychain. Mosaic asks the OS for it when needed and never keeps a copy.',
+  session: 'Held in memory for this session only. You will paste it again next launch.',
+  unavailable:
+    'No keychain was found on this computer, so keys are held in memory for this session only. You will paste them again next launch.',
+};
+
+/** A Test and the key and model it was for. Once either changes, its result no longer applies. */
+interface TestRun {
+  subject: string;
+  result: KeyTest | 'testing';
+}
+
+function ApiKeyRows({ provider, model }: { provider: KeyedProvider; model: string }) {
+  const { status, loadFailed, apply } = useSecretsStatus();
   const label = AI_PROVIDER_BY_ID[provider].label;
-  // Keyed by provider: switching providers starts from that provider's own state.
-  const [saved, setSaved] = useState<{ provider: AIProvider; has: boolean } | null>(null);
   const [draft, setDraft] = useState('');
   const [reveal, setReveal] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const hasKey = saved?.provider === provider ? saved.has : null;
+  const [keyError, setKeyError] = useState<string | null>(null);
+  const [moveError, setMoveError] = useState<string | null>(null);
+  const [moving, setMoving] = useState(false);
+  const [test, setTest] = useState<TestRun | null>(null);
 
-  useEffect(() => {
-    let current = true;
-    secrets.getApiKey(provider).then(
-      (key) => current && setSaved({ provider, has: key !== null }),
-      () => current && setError('Could not check for a saved key.')
-    );
-    return () => {
-      current = false;
-    };
-  }, [secrets, provider]);
+  const savedIn = status?.saved[provider];
+  const key = draft.trim();
+  // Main refuses these too; saying so here beats a failed Test.
+  const keyHasSpaces = /\s/.test(key);
+  const subject = JSON.stringify([savedIn ? 'saved' : key, model]);
+  const tested = test?.subject === subject ? test.result : null;
+
+  const runTest = async () => {
+    const run = subject;
+    setTest({ subject: run, result: 'testing' });
+    let result: KeyTest;
+    try {
+      result = await window.mosaic.secrets.test(provider, model, savedIn ? undefined : key);
+    } catch (error) {
+      console.error('Key test failed', error);
+      result = { ok: false, reason: 'failed' };
+    }
+    setTest((latest) => (latest?.subject === run ? { subject: run, result } : latest));
+  };
 
   const save = async () => {
-    const key = draft.trim();
-    if (!key) return;
+    if (!key || keyHasSpaces) return;
     try {
-      await secrets.setApiKey(provider, key);
-      setSaved({ provider, has: true });
-      setDraft('');
-      setReveal(false);
-      setError(null);
-    } catch {
-      setError('Could not save the key. Check it and try again.');
+      await apply(window.mosaic.secrets.save(provider, key));
+    } catch (error) {
+      console.error('Could not save the key', error);
+      setKeyError('Could not save the key. Try again.');
+      return;
     }
+    // A result for the key just saved still holds for it.
+    if (tested && tested !== 'testing') {
+      setTest({ subject: JSON.stringify(['saved', model]), result: tested });
+    }
+    setDraft('');
+    setReveal(false);
+    setKeyError(null);
   };
 
   const remove = async () => {
     try {
-      await secrets.deleteApiKey(provider);
-      setSaved({ provider, has: false });
-      setError(null);
-    } catch {
-      setError('Could not remove the key. Try again.');
+      await apply(window.mosaic.secrets.remove(provider));
+      setKeyError(null);
+    } catch (error) {
+      console.error('Could not remove the key', error);
+      setKeyError('Could not remove the key. If the keychain is locked, unlock it and try again.');
     }
   };
+
+  const move = async (location: KeyLocation) => {
+    setMoving(true);
+    try {
+      await apply(window.mosaic.secrets.setLocation(location));
+      setMoveError(null);
+    } catch (error) {
+      console.error('Could not move the keys', error);
+      setMoveError(
+        'The keychain didn’t release the saved keys, so nothing moved. Unlock it and try again.'
+      );
+    } finally {
+      setMoving(false);
+    }
+  };
+
+  const testButton = (
+    <Button
+      type="button"
+      variant="outline"
+      size="sm"
+      className="h-8"
+      disabled={tested === 'testing' || (!savedIn && (!key || keyHasSpaces))}
+      onClick={() => void runTest()}
+    >
+      {tested === 'testing' ? (
+        'Testing…'
+      ) : tested?.ok ? (
+        <>
+          <Check className="text-emerald-600 dark:text-emerald-400" />
+          Reachable
+        </>
+      ) : (
+        'Test'
+      )}
+    </Button>
+  );
+
+  const note =
+    keyError !== null ? (
+      <ErrorText>{keyError}</ErrorText>
+    ) : !savedIn && keyHasSpaces ? (
+      <ErrorText>Keys have no spaces. Check what was pasted.</ErrorText>
+    ) : loadFailed ? (
+      <ErrorText>Could not check for a saved key.</ErrorText>
+    ) : tested && tested !== 'testing' ? (
+      testMessage(tested, label, model)
+    ) : null;
 
   return (
     <>
@@ -152,15 +259,16 @@ function ApiKeyRows({ provider }: { provider: AIProvider }) {
         description={
           <>
             Pasted keys are never written into your resume file or any backup.
-            {error && <span className="mt-1 block text-red-700 dark:text-red-400">{error}</span>}
+            {note && <span className="mt-1 block">{note}</span>}
           </>
         }
       >
-        {hasKey ? (
+        {status === null && !loadFailed ? null : savedIn ? (
           <>
             <span className="text-xs font-medium text-zinc-700 dark:text-zinc-300">
-              {label} key saved
+              {savedIn === 'keychain' ? 'Saved in the keychain' : 'Saved for this session'}
             </span>
+            {testButton}
             <Button variant="outline" size="sm" className="h-8" onClick={() => void remove()}>
               Remove
             </Button>
@@ -178,7 +286,7 @@ function ApiKeyRows({ provider }: { provider: AIProvider }) {
                 type={reveal ? 'text' : 'password'}
                 value={draft}
                 onChange={(event) => setDraft(event.target.value)}
-                placeholder={`Paste your ${label} key`}
+                placeholder="Paste your key"
                 aria-label={`${label} API key`}
                 autoComplete="off"
                 spellCheck={false}
@@ -195,12 +303,13 @@ function ApiKeyRows({ provider }: { provider: AIProvider }) {
                 {reveal ? <EyeOff /> : <Eye />}
               </Button>
             </div>
+            {testButton}
             <Button
               type="submit"
               variant="outline"
               size="sm"
               className="h-8"
-              disabled={!draft.trim()}
+              disabled={!key || keyHasSpaces}
             >
               Save
             </Button>
@@ -211,14 +320,39 @@ function ApiKeyRows({ provider }: { provider: AIProvider }) {
       <SettingRow
         label="Where to keep the key"
         description={
-          secrets.getStorageMode() === 'keychain'
-            ? 'Stored in the operating system keychain. Mosaic asks the OS for it when needed.'
-            : 'Held in memory for this session only. You will paste it again next launch.'
+          <>
+            {
+              LOCATION_DESCRIPTIONS[
+                status?.keychain === 'unavailable'
+                  ? 'unavailable'
+                  : (status?.location ?? 'keychain')
+              ]
+            }
+            {moveError && (
+              <span className="mt-1 block">
+                <ErrorText>{moveError}</ErrorText>
+              </span>
+            )}
+          </>
         }
       >
-        <span className="text-xs font-medium text-zinc-500">
-          {secrets.getStorageMode() === 'keychain' ? 'OS keychain' : 'This session'}
-        </span>
+        <ToggleGroup
+          type="single"
+          variant="outline"
+          size="sm"
+          value={status?.location ?? ''}
+          // A single-choice group reports '' when the pressed item is pressed again.
+          onValueChange={(value) => {
+            if (value && value !== status?.location) void move(value as KeyLocation);
+          }}
+          disabled={status === null || moving}
+          aria-label="Where to keep the key"
+        >
+          <ToggleGroupItem value="keychain" disabled={status?.keychain === 'unavailable'}>
+            OS keychain
+          </ToggleGroupItem>
+          <ToggleGroupItem value="session">This session</ToggleGroupItem>
+        </ToggleGroup>
       </SettingRow>
     </>
   );

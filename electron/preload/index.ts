@@ -1,17 +1,19 @@
 import { contextBridge, ipcRenderer } from 'electron';
 import type { MosaicDbBridge } from '@/types/db';
 import type { MosaicFiles } from '@/types/files';
+import type { MosaicSecrets } from '@/types/secrets';
 import {
   ERASE_ALL,
   FILES_OPEN,
   FILES_SAVE,
   FLUSH_DONE,
   FLUSH_REQUEST,
+  SECRETS_CHANNELS,
 } from '../shared/appChannels';
 import { DB_METHODS, dbChannel } from '../shared/dbMethods';
 
 // The only door between the sandboxed renderer and the main process: narrow, typed
-// methods — never raw IPC or Node. Secrets arrive in a later PR.
+// methods — never raw IPC or Node.
 
 /** `db.templates.create(…)` → the `db:templates.create` channel, for each method. */
 function dbBridge(): MosaicDbBridge {
@@ -36,10 +38,21 @@ const files: MosaicFiles = {
   openText: (type) => ipcRenderer.invoke(FILES_OPEN, type),
 };
 
+/** Keys go in; nothing here can bring one back out. */
+const secrets: MosaicSecrets = {
+  status: () => ipcRenderer.invoke(SECRETS_CHANNELS.status),
+  save: (provider, key) => ipcRenderer.invoke(SECRETS_CHANNELS.save, provider, key),
+  remove: (provider) => ipcRenderer.invoke(SECRETS_CHANNELS.remove, provider),
+  setLocation: (location) => ipcRenderer.invoke(SECRETS_CHANNELS.setLocation, location),
+  forgetAll: () => ipcRenderer.invoke(SECRETS_CHANNELS.forgetAll),
+  test: (provider, model, key) => ipcRenderer.invoke(SECRETS_CHANNELS.test, provider, model, key),
+};
+
 contextBridge.exposeInMainWorld('mosaic', {
   platform: process.platform,
   db: dbBridge(),
   files,
+  secrets,
   app: {
     eraseAll: (): Promise<void> => ipcRenderer.invoke(ERASE_ALL),
     /** Main asks before the window closes; answer once pending saves have landed. */
