@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
+import { DEFAULT_OLLAMA_ADDRESS } from '@/lib/ai/ollamaAddress';
 import { settingsStorage } from '@/lib/storage/settingsStorage';
 import type { AIProvider } from '@/types/resume';
 
@@ -24,13 +25,18 @@ export const DEFAULT_AI_STATE = {
   enabled: false,
   provider: 'openai' as AIProvider,
   modelsByProvider: createDefaultModelsByProvider(),
+  /** Where Ollama is: this machine unless it runs somewhere on the network. */
+  ollamaAddress: DEFAULT_OLLAMA_ADDRESS,
 };
 
 interface AIStoreState {
   enabled: boolean;
   provider: AIProvider;
   modelsByProvider: Record<AIProvider, string>;
+  ollamaAddress: string;
   setEnabled: (enabled: boolean) => void;
+  /** Takes an address already checked with `normalizeOllamaAddress`. */
+  setOllamaAddress: (address: string) => void;
   setProvider: (provider: AIProvider) => void;
   setModelForProvider: (provider: AIProvider, model: string) => void;
   setModelForActiveProvider: (model: string) => void;
@@ -42,6 +48,7 @@ type LegacyAIState = {
   provider?: AIProvider;
   model?: string;
   modelsByProvider?: Partial<Record<AIProvider, string>>;
+  ollamaAddress?: string;
 };
 
 function normalizePersistedAIState(persisted: unknown): typeof DEFAULT_AI_STATE {
@@ -65,6 +72,7 @@ function normalizePersistedAIState(persisted: unknown): typeof DEFAULT_AI_STATE 
     enabled: parsed.enabled ?? DEFAULT_AI_STATE.enabled,
     provider,
     modelsByProvider,
+    ollamaAddress: parsed.ollamaAddress ?? DEFAULT_OLLAMA_ADDRESS,
   };
 }
 
@@ -73,6 +81,7 @@ export const useAIStore = create<AIStoreState>()(
     (set, get) => ({
       ...DEFAULT_AI_STATE,
       setEnabled: (enabled) => set({ enabled }),
+      setOllamaAddress: (ollamaAddress) => set({ ollamaAddress }),
       setProvider: (provider) => set({ provider }),
       setModelForProvider: (provider, model) =>
         set((state) => ({

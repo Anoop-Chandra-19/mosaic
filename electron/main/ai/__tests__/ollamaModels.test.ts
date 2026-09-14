@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { listOllamaModels, OLLAMA_URL, type OllamaFetch } from '../ollamaModels';
+import { listOllamaModels, type OllamaFetch } from '../ollamaModels';
+
+// An Ollama on the network, as someone with a GPU box would set it.
+const OLLAMA_URL = 'http://192.168.1.50:11434';
 
 // Shaped like a real Ollama 0.21 answer.
 const TAGS = {
@@ -44,7 +47,7 @@ function ollama(
 
 describe('listOllamaModels', () => {
   it('lists the chat models by name, leaving embedding models out', async () => {
-    expect(await listOllamaModels(ollama())).toEqual({
+    expect(await listOllamaModels(ollama(), OLLAMA_URL)).toEqual({
       ok: true,
       models: [
         { name: 'gemma4:12b', sizeBytes: 7_600_000_000, parameterSize: null },
@@ -55,7 +58,7 @@ describe('listOllamaModels', () => {
 
   it('keeps a model whose capabilities it cannot learn', async () => {
     const olderOllama = ollama({ show: () => undefined });
-    const result = await listOllamaModels(olderOllama);
+    const result = await listOllamaModels(olderOllama, OLLAMA_URL);
     expect(result.ok && result.models.map((m) => m.name)).toEqual([
       'gemma4:12b',
       'nomic-embed-text:latest',
@@ -65,17 +68,46 @@ describe('listOllamaModels', () => {
 
   it('says when nothing is listening, and when the answer makes no sense', async () => {
     const refused: OllamaFetch = () => Promise.reject(new TypeError('connect ECONNREFUSED'));
-    expect(await listOllamaModels(refused)).toEqual({ ok: false, reason: 'not-running' });
+    expect(await listOllamaModels(refused, OLLAMA_URL)).toEqual({
+      ok: false,
+      reason: 'unreachable',
+    });
 
     const broken = ollama({ tags: async () => new Response('<html>', { status: 200 }) });
-    expect(await listOllamaModels(broken)).toEqual({ ok: false, reason: 'failed' });
+    expect(await listOllamaModels(broken, OLLAMA_URL)).toEqual({ ok: false, reason: 'failed' });
 
     const erroring = ollama({ tags: async () => new Response(null, { status: 500 }) });
-    expect(await listOllamaModels(erroring)).toEqual({ ok: false, reason: 'failed' });
+    expect(await listOllamaModels(erroring, OLLAMA_URL)).toEqual({ ok: false, reason: 'failed' });
   });
 
   it('answers with an empty list when nothing is pulled', async () => {
     const empty = ollama({ tags: async () => Response.json({ models: [] }) });
-    expect(await listOllamaModels(empty)).toEqual({ ok: true, models: [] });
+    expect(await listOllamaModels(empty, OLLAMA_URL)).toEqual({ ok: true, models: [] });
+  });
+
+  it('asks the address given, filled in the way the settings row fills it', async () => {
+    const asked: string[] = [];
+    const recording: OllamaFetch = async (url, init) => {
+      asked.push(url);
+      return ollama()(url, init);
+    };
+    await listOllamaModels(recording, '192.168.1.50');
+    expect(asked[0]).toBe(`${OLLAMA_URL}/api/tags`);
+    expect(asked.slice(1).every((url) => url === `${OLLAMA_URL}/api/show`)).toBe(true);
+  });
+
+  it('sends nothing to an address that is not one', async () => {
+    const asked: string[] = [];
+    const recording: OllamaFetch = async (url) => {
+      asked.push(url);
+      return new Response(null, { status: 500 });
+    };
+    for (const address of ['file:///etc/passwd', 'http://user:pw@host', '', 42, undefined]) {
+      expect(await listOllamaModels(recording, address)).toEqual({
+        ok: false,
+        reason: 'invalid-address',
+      });
+    }
+    expect(asked).toEqual([]);
   });
 });

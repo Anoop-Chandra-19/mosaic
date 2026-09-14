@@ -11,6 +11,7 @@ import {
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { isLocalOllamaAddress } from '@/lib/ai/ollamaAddress';
 import { cn } from '@/lib/utils';
 import { AI_PROVIDER_DEFAULT_MODEL, useAIStore } from '@/stores/aiStore';
 import type { AIProvider } from '@/types/resume';
@@ -23,7 +24,7 @@ import {
 import { SettingRow, SettingsNote } from '../SettingRow';
 import { useSecretsStatus } from '../useSecretsStatus';
 import { AI_PROVIDER_BY_ID, AI_PROVIDER_OPTIONS } from './ai-provider-meta';
-import { OllamaModelRow } from './OllamaModelRow';
+import { OllamaAddressRow, OllamaModelRow } from './OllamaRows';
 
 export function AISection() {
   const enabled = useAIStore((s) => s.enabled);
@@ -33,6 +34,8 @@ export function AISection() {
   const setProvider = useAIStore((s) => s.setProvider);
   const setModel = useAIStore((s) => s.setModelForActiveProvider);
   const resetModel = useAIStore((s) => s.resetModelForProvider);
+  const ollamaAddress = useAIStore((s) => s.ollamaAddress);
+  const setOllamaAddress = useAIStore((s) => s.setOllamaAddress);
 
   const active = AI_PROVIDER_BY_ID[provider];
   const model = modelsByProvider[provider] ?? AI_PROVIDER_DEFAULT_MODEL[provider];
@@ -57,7 +60,11 @@ export function AISection() {
       <div inert={!enabled} className={cn(!enabled && 'opacity-50')}>
         <SettingRow
           label="Provider"
-          description="Bring your own key. Ollama runs entirely on this machine — nothing leaves it."
+          description={
+            provider === 'ollama' && !isLocalOllamaAddress(ollamaAddress)
+              ? 'Bring your own key. Ollama runs on your own hardware — here, on your network.'
+              : 'Bring your own key. Ollama runs entirely on this machine — nothing leaves it.'
+          }
         >
           <Select value={provider} onValueChange={(value) => setProvider(value as AIProvider)}>
             <SelectTrigger size="sm" className="w-44" aria-label="Provider">
@@ -74,7 +81,15 @@ export function AISection() {
         </SettingRow>
 
         {provider === 'ollama' ? (
-          <OllamaModelRow active={enabled} model={model.trim() || suggested} onChange={setModel} />
+          <>
+            <OllamaAddressRow address={ollamaAddress} onChange={setOllamaAddress} />
+            <OllamaModelRow
+              active={enabled}
+              address={ollamaAddress}
+              model={model.trim() || suggested}
+              onChange={setModel}
+            />
+          </>
         ) : (
           <SettingRow label="Model" description="Any chat model your key can reach.">
             <Input

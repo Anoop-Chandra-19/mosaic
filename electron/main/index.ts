@@ -150,9 +150,9 @@ if (!app.requestSingleInstanceLock()) {
       ),
       isAppFrame
     );
-    ipcMain.handle(AI_OLLAMA_MODELS, (event) => {
+    ipcMain.handle(AI_OLLAMA_MODELS, (event, address: unknown) => {
       if (!isAppFrame(event)) throw new Error(`Refused model list from ${event.senderFrame?.url}`);
-      return listOllamaModels(net.fetch);
+      return listOllamaModels(net.fetch, address);
     });
     ipcMain.handle(ERASE_ALL, (event) => {
       if (!isAppFrame(event)) throw new Error(`Refused erase from ${event.senderFrame?.url}`);

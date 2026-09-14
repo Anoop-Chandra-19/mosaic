@@ -1,7 +1,5 @@
+import { normalizeOllamaAddress } from '@/lib/ai/ollamaAddress';
 import type { OllamaModel, OllamaModels } from '@/types/ai';
-
-/** Where Ollama listens unless told otherwise. */
-export const OLLAMA_URL = 'http://127.0.0.1:11434';
 
 const TIMEOUT_MS = 3000;
 
@@ -37,9 +35,9 @@ function parseTags(body: unknown): OllamaModel[] {
  * `/api/show` says which is which. An older Ollama without capabilities, or a lookup that
  * fails, keeps the model — better offered than hidden.
  */
-async function canChat(fetch: OllamaFetch, name: string): Promise<boolean> {
+async function canChat(fetch: OllamaFetch, address: string, name: string): Promise<boolean> {
   try {
-    const response = await fetch(`${OLLAMA_URL}/api/show`, {
+    const response = await fetch(`${address}/api/show`, {
       method: 'POST',
       body: JSON.stringify({ model: name }),
       signal: AbortSignal.timeout(TIMEOUT_MS),
@@ -51,13 +49,23 @@ async function canChat(fetch: OllamaFetch, name: string): Promise<boolean> {
   }
 }
 
-/** The chat models pulled into the local Ollama, by name. Never throws. */
-export async function listOllamaModels(fetch: OllamaFetch): Promise<OllamaModels> {
+/**
+ * The chat models pulled into the Ollama at `address`, by name. The address arrives from the
+ * renderer, so it is checked again here: only an http(s) origin is ever fetched. Never throws.
+ */
+export async function listOllamaModels(
+  fetch: OllamaFetch,
+  requestedAddress: unknown
+): Promise<OllamaModels> {
+  const address =
+    typeof requestedAddress === 'string' ? normalizeOllamaAddress(requestedAddress) : null;
+  if (address === null) return { ok: false, reason: 'invalid-address' };
+
   let response: Response;
   try {
-    response = await fetch(`${OLLAMA_URL}/api/tags`, { signal: AbortSignal.timeout(TIMEOUT_MS) });
+    response = await fetch(`${address}/api/tags`, { signal: AbortSignal.timeout(TIMEOUT_MS) });
   } catch {
-    return { ok: false, reason: 'not-running' };
+    return { ok: false, reason: 'unreachable' };
   }
 
   let pulled: OllamaModel[];
@@ -68,7 +76,7 @@ export async function listOllamaModels(fetch: OllamaFetch): Promise<OllamaModels
     return { ok: false, reason: 'failed' };
   }
 
-  const chat = await Promise.all(pulled.map((model) => canChat(fetch, model.name)));
+  const chat = await Promise.all(pulled.map((model) => canChat(fetch, address, model.name)));
   const models = pulled
     .filter((_, index) => chat[index])
     .sort((a, b) => a.name.localeCompare(b.name));

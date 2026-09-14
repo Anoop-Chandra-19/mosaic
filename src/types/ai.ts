@@ -9,11 +9,17 @@ export interface OllamaModel {
 
 export type OllamaModels =
   | { ok: true; models: OllamaModel[] }
-  /** `not-running`: nothing answered on Ollama's port. `failed`: it answered with something else. */
-  | { ok: false; reason: 'not-running' | 'failed' };
+  /**
+   * `unreachable`: nothing answered at the address. `failed`: something answered, but not
+   * like Ollama. `invalid-address`: the address isn't one (see `normalizeOllamaAddress`).
+   */
+  | { ok: false; reason: 'unreachable' | 'failed' | 'invalid-address' };
 
 /** `window.mosaic.ai`: what main can find out about AI providers for the renderer. */
 export interface MosaicAI {
-  /** The chat models pulled into Ollama on this machine. Embedding-only models are left out. */
-  ollamaModels(): Promise<OllamaModels>;
+  /**
+   * The chat models pulled into the Ollama at `address` — this machine's by default, or one
+   * on the network. Embedding-only models are left out.
+   */
+  ollamaModels(address: string): Promise<OllamaModels>;
 }

@@ -51,7 +51,7 @@ const secrets: MosaicSecrets = {
 };
 
 const ai: MosaicAI = {
-  ollamaModels: () => ipcRenderer.invoke(AI_OLLAMA_MODELS),
+  ollamaModels: (address) => ipcRenderer.invoke(AI_OLLAMA_MODELS, address),
 };
 
 contextBridge.exposeInMainWorld('mosaic', {

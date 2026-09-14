@@ -88,9 +88,61 @@ test('Ollama’s model is picked from the chat models pulled on this machine', a
     net.fetch = () => Promise.reject(new TypeError('connect ECONNREFUSED'));
   });
   await settings.getByRole('button', { name: 'Refresh Ollama models' }).click();
-  await expect(settings.getByText('Ollama isn’t running on this machine.')).toBeVisible();
+  await expect(settings.getByText('Nothing answered at 127.0.0.1:11434.')).toBeVisible();
   await expect(settings.getByRole('combobox', { name: 'Ollama model' })).toHaveText(/gemma4:12b/);
   expect(errors).toEqual([]);
+});
+
+test('Ollama can live elsewhere on the network, and Settings says where text goes', async () => {
+  const { app, page } = mosaic();
+  // Remember every address main asks, and answer as an Ollama with nothing pulled.
+  await app.evaluate(({ net }) => {
+    const asked: string[] = [];
+    (globalThis as { ollamaAsked?: string[] }).ollamaAsked = asked;
+    net.fetch = async (input) => {
+      asked.push(String(input));
+      return Response.json({ models: [] });
+    };
+  });
+  const asked = () =>
+    app.evaluate(() => (globalThis as { ollamaAsked?: string[] }).ollamaAsked ?? []);
+  await page.getByRole('button', { name: /Blank resume/ }).click();
+
+  const settings = await openSettings(page, 'AI assistant');
+  await settings.getByRole('switch', { name: 'Enable AI assistant' }).click();
+  await settings.getByRole('combobox', { name: 'Provider' }).click();
+  await page.getByRole('option', { name: 'Ollama (local)' }).click();
+  await expect(settings.getByText('your resume text never leaves it')).toBeVisible();
+  await expect.poll(asked).toContain('http://127.0.0.1:11434/api/tags');
+
+  // A box on the network, typed the short way: the scheme is filled in, the port kept.
+  const field = settings.getByRole('textbox', { name: 'Ollama address' });
+  await field.fill('gpu-box:8080');
+  await field.press('Enter');
+  await expect(field).toHaveValue('http://gpu-box:8080');
+  await expect.poll(asked).toContain('http://gpu-box:8080/api/tags');
+  await expect(
+    settings.getByText(/Ollama at gpu-box:8080 — your resume text goes there/)
+  ).toBeVisible();
+  await expect(
+    settings.getByText(/Ollama runs on your own hardware — here, on your network/)
+  ).toBeVisible();
+
+  // Not an address: said so, and nothing is sent there.
+  const before = (await asked()).length;
+  await field.fill('ftp://gpu-box');
+  await field.press('Enter');
+  await expect(settings.getByText('That isn’t an address.')).toBeVisible();
+  expect(await asked()).toHaveLength(before);
+
+  await settings.getByRole('button', { name: 'Use this machine' }).click();
+  await expect(field).toHaveValue('http://127.0.0.1:11434');
+  const stored = await page.evaluate(async () => {
+    const boot = await window.mosaic.db.boot();
+    if (!boot.ok) throw new Error(boot.message);
+    return JSON.parse(boot.value.settings.ai);
+  });
+  expect(stored.state.ollamaAddress).toBe('http://127.0.0.1:11434');
 });
 
 test('Import & export opens the import dialog', async () => {
