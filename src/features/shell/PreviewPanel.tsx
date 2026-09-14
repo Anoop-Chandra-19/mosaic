@@ -1,17 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { Minus, Plus, TriangleAlert } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { ResumePreview, type ResumePreviewMeta } from '@/features/preview/ResumePreview';
+import { ResumePreview } from '@/features/preview/ResumePreview';
 import type { PaperSize } from '@/types/ui';
 import { VersionPreviewBanner } from '@/features/templates/VersionPreviewBanner';
 import { useOverlayStore } from '@/stores/overlayStore';
 import { PREVIEW_ZOOM_STEPS, useUIStore } from '@/stores/uiStore';
-
-const DEFAULT_META: ResumePreviewMeta = {
-  visiblePages: 1,
-  totalPages: 1,
-  hasOverflowBeyondTwo: false,
-};
 
 export function PreviewPanel() {
   const paperSize = useUIStore((s) => s.paperSize);
@@ -19,7 +13,8 @@ export function PreviewPanel() {
   const previewZoom = useUIStore((s) => s.previewZoom);
   const zoomPreviewIn = useUIStore((s) => s.zoomPreviewIn);
   const zoomPreviewOut = useUIStore((s) => s.zoomPreviewOut);
-  const [meta, setMeta] = useState<ResumePreviewMeta>(DEFAULT_META);
+  const meta = useOverlayStore((s) => s.previewMeta);
+  const setMeta = useOverlayStore((s) => s.setPreviewMeta);
   const preview = useOverlayStore((s) => s.preview);
 
   useEffect(() => {

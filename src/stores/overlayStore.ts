@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import type { ResumePreviewMeta } from '@/features/preview/ResumePreview';
 import type { SettingsSectionId } from '@/features/settings/settings-nav';
 import type { OpenedBackup } from '@/types/bundle';
 import type { Version } from '@/types/db';
@@ -53,6 +54,8 @@ interface OverlayState {
    * preview ends on Back to draft, a restore, or when a different draft is loaded.
    */
   preview: VersionPreview | null;
+  /** How the sheet paginated, as the preview measured it; the status bar repeats it. */
+  previewMeta: ResumePreviewMeta;
   toast: Toast | null;
   setStartOpen: (open: boolean) => void;
   /** Opens Settings at `section`, General unless told otherwise. */
@@ -66,6 +69,7 @@ interface OverlayState {
   closeExport: () => void;
   setPendingRestore: (backup: OpenedBackup | null) => void;
   setPreview: (preview: VersionPreview | null) => void;
+  setPreviewMeta: (meta: ResumePreviewMeta) => void;
   dismissToast: () => void;
 }
 
@@ -79,6 +83,7 @@ export const useOverlayStore = create<OverlayState>()((set) => ({
   exportVersion: null,
   pendingRestore: null,
   preview: null,
+  previewMeta: { visiblePages: 1, totalPages: 1, hasOverflowBeyondTwo: false },
   toast: null,
   setStartOpen: (startOpen) => set({ startOpen }),
   openSettings: (section = 'general') => set({ settingsSection: section }),
@@ -91,6 +96,16 @@ export const useOverlayStore = create<OverlayState>()((set) => ({
   closeExport: () => set({ exportOpen: false }),
   setPendingRestore: (pendingRestore) => set({ pendingRestore }),
   setPreview: (preview) => set({ preview }),
+  // The preview reports after every render; only a different count is news. Storing an
+  // equal copy would re-render the preview, which reports again — a loop.
+  setPreviewMeta: (meta) =>
+    set((state) =>
+      state.previewMeta.visiblePages === meta.visiblePages &&
+      state.previewMeta.totalPages === meta.totalPages &&
+      state.previewMeta.hasOverflowBeyondTwo === meta.hasOverflowBeyondTwo
+        ? state
+        : { previewMeta: meta }
+    ),
   dismissToast: () => set({ toast: null }),
 }));
 

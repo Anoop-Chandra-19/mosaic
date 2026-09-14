@@ -1,10 +1,7 @@
-import { Download, FileInput, Moon, PanelRight, Save, Settings, Sparkles, Sun } from 'lucide-react';
+import { Download, FileInput, Moon, Save, Settings, Sun } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { shortcutLabel } from '@/lib/shortcuts';
-import { cn } from '@/lib/utils';
-import { useAIStore } from '@/stores/aiStore';
 import { showToast, useOverlayStore } from '@/stores/overlayStore';
-import { useUIStore } from '@/stores/uiStore';
 import { useDarkMode } from '@/lib/hooks/useDarkMode';
 import { useActiveTemplate } from '@/features/templates/useActiveTemplate';
 import { useTemplateStatus } from '@/features/templates/useTemplateStatus';
@@ -13,9 +10,6 @@ import { TemplateStatusBadge } from '@/features/templates/TemplateStatusBadge';
 export function TopBar() {
   const { darkMode, toggleDarkMode } = useDarkMode();
   const openSettings = useOverlayStore((s) => s.openSettings);
-  const aiEnabled = useAIStore((s) => s.enabled);
-  const agentPaneOpen = useUIStore((s) => s.agentPaneOpen);
-  const toggleAgentPane = useUIStore((s) => s.toggleAgentPane);
   const openExport = useOverlayStore((s) => s.openExport);
   const activeTemplate = useActiveTemplate();
   const templateStatus = useTemplateStatus();
@@ -57,32 +51,6 @@ export function TopBar() {
       </div>
 
       <div className="flex shrink-0 items-center gap-1.5">
-        {aiEnabled ? (
-          // Until the status bar exists, the assistant pane's toggle lives here.
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            onClick={toggleAgentPane}
-            aria-label="Toggle assistant"
-            aria-pressed={agentPaneOpen}
-            title={`Toggle assistant  ${shortcutLabel('\\')}`}
-            className={cn(agentPaneOpen && 'bg-zinc-100 dark:bg-zinc-800')}
-          >
-            <PanelRight className="h-4 w-4" />
-          </Button>
-        ) : (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => openSettings('ai')}
-            title="AI features are off — turn them on in Settings"
-            className="text-zinc-600 dark:text-zinc-400"
-          >
-            <Sparkles className="text-zinc-500" />
-            AI off
-          </Button>
-        )}
-
         <Button variant="ghost" size="icon-sm" onClick={toggleDarkMode} aria-label="Toggle theme">
           {darkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
         </Button>

@@ -24,6 +24,11 @@ interface ResumeState extends ResumeData {
   rev: number;
   /** The last save failed for a reason other than being superseded. */
   saveFailed: boolean;
+  /**
+   * When this session last saved the draft; null until it has. Before that, the template's
+   * `updatedAt` says when main last wrote it.
+   */
+  savedAt: number | null;
 
   loadDraft: (draft: Draft | null) => void;
 
@@ -68,6 +73,7 @@ export const useResumeStore = create<ResumeState>()(
       templateId: null,
       rev: 0,
       saveFailed: false,
+      savedAt: null,
 
       loadDraft: (draft) => {
         cancelPendingSave();
@@ -79,6 +85,7 @@ export const useResumeStore = create<ResumeState>()(
           state.templateId = draft?.templateId ?? null;
           state.rev = draft?.rev ?? 0;
           state.saveFailed = false;
+          state.savedAt = null;
         });
       },
 
@@ -239,7 +246,7 @@ function cancelPendingSave() {
 async function save(templateId: string, doc: ResumeData, rev: number) {
   try {
     await getDb().drafts.save(templateId, doc, rev);
-    useResumeStore.setState({ saveFailed: false });
+    useResumeStore.setState({ saveFailed: false, savedAt: Date.now() });
   } catch (error) {
     // A newer draft already came from main (an import or restore landed after this edit
     // was queued), or the template was deleted: either way this save has nothing to keep.

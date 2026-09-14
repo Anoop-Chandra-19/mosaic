@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { TopBar } from './TopBar';
 import { Sidebar } from './Sidebar';
+import { StatusBar } from './StatusBar';
 import { PreviewPanel } from './PreviewPanel';
 import { Toast } from './Toast';
 import { AgentPane } from '@/features/agent/AgentPane';
@@ -45,6 +46,7 @@ export function AppShell() {
         {showStart && <StartPanel closable={hasTemplates} />}
         <Toast />
       </div>
+      <StatusBar />
       <SettingsDialog />
       <ImportResumeDialog />
       <RestoreBackupDialog />
@@ -55,13 +57,18 @@ export function AppShell() {
 }
 
 /**
- * Ctrl/⌘+S names a version — the draft itself is always saved already. Ctrl/⌘+\ shows or
- * hides the assistant while AI is on.
+ * Ctrl/⌘+S names a version — the draft itself is always saved already. Ctrl/⌘+B shows or
+ * hides the sidebar, and Ctrl/⌘+\ the assistant while AI is on.
  */
 function useShortcuts() {
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if (!isModKey(event)) return;
+      if (event.key.toLowerCase() === 'b') {
+        event.preventDefault();
+        useUIStore.getState().toggleSidebarCollapsed();
+        return;
+      }
       if (event.key === '\\' && useAIStore.getState().enabled) {
         event.preventDefault();
         useUIStore.getState().toggleAgentPane();
