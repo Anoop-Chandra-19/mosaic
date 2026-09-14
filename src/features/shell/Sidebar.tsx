@@ -1,13 +1,15 @@
-import { useCallback, useRef } from 'react';
+import { useRef } from 'react';
 import { FileText, LayoutTemplate, PanelLeftClose, PanelLeftOpen, Sparkles } from 'lucide-react';
+import { useAIStore } from '@/stores/aiStore';
+import { useOverlayStore } from '@/stores/overlayStore';
 import { useUIStore, type SidebarTab, SIDEBAR_MIN_PX, SIDEBAR_MAX_RATIO } from '@/stores/uiStore';
 import { ContentTab } from '@/features/editor/ContentTab';
 import { TemplatesTab } from '@/features/templates/TemplatesTab';
+import { startPaneResize } from './paneResize';
 
 const tabs: { id: SidebarTab; label: string; icon: React.ReactNode }[] = [
   { id: 'content', label: 'Content', icon: <FileText className="h-4 w-4" /> },
   { id: 'templates', label: 'Templates', icon: <LayoutTemplate className="h-4 w-4" /> },
-  { id: 'ai', label: 'AI Tools', icon: <Sparkles className="h-4 w-4" /> },
 ];
 
 export function Sidebar() {
@@ -19,40 +21,8 @@ export function Sidebar() {
     setSidebarRatio,
     toggleSidebarCollapsed,
   } = useUIStore();
+  const aiEnabled = useAIStore((s) => s.enabled);
   const sidebarRef = useRef<HTMLElement>(null);
-
-  const onPointerDown = useCallback(
-    (e: React.PointerEvent) => {
-      e.preventDefault();
-      const sidebar = sidebarRef.current;
-      const vw = window.innerWidth;
-
-      const onPointerMove = (ev: PointerEvent) => {
-        // Update the inline width during drag for immediate feedback; persist on release.
-        const ratio = ev.clientX / vw;
-        const clampedPx = Math.max(SIDEBAR_MIN_PX, ratio * vw);
-        const clampedRatio = Math.min(SIDEBAR_MAX_RATIO, clampedPx / vw);
-        if (sidebar) {
-          sidebar.style.width = `${clampedRatio * 100}vw`;
-        }
-      };
-
-      const onPointerUp = (ev: PointerEvent) => {
-        const ratio = ev.clientX / vw;
-        setSidebarRatio(ratio);
-        document.removeEventListener('pointermove', onPointerMove);
-        document.removeEventListener('pointerup', onPointerUp);
-        document.body.style.cursor = '';
-        document.body.style.userSelect = '';
-      };
-
-      document.body.style.cursor = 'col-resize';
-      document.body.style.userSelect = 'none';
-      document.addEventListener('pointermove', onPointerMove);
-      document.addEventListener('pointerup', onPointerUp);
-    },
-    [setSidebarRatio]
-  );
 
   if (sidebarCollapsed) {
     return (
@@ -102,18 +72,45 @@ export function Sidebar() {
       <div className="flex-1 overflow-y-auto p-5">
         {activeSidebarTab === 'content' && <ContentTab />}
         {activeSidebarTab === 'templates' && <TemplatesTab />}
-        {activeSidebarTab === 'ai' && (
-          <div className="text-sm text-muted-foreground">
-            AI tools and settings will appear here.
-          </div>
-        )}
       </div>
+
+      {!aiEnabled && <AiOffHint />}
 
       <div
         // Thin resize handle keeps the sidebar adjustable without adding visual weight.
-        onPointerDown={onPointerDown}
+        onPointerDown={(event) =>
+          startPaneResize(event, {
+            pane: sidebarRef.current,
+            anchor: 'left',
+            minPx: SIDEBAR_MIN_PX,
+            maxRatio: SIDEBAR_MAX_RATIO,
+            onDone: setSidebarRatio,
+          })
+        }
         className="absolute top-0 right-0 bottom-0 w-1 cursor-col-resize transition-colors hover:bg-amber-500 active:bg-amber-600"
       />
     </aside>
+  );
+}
+
+/** While AI is off: everything works without it, and here is where it is turned on. */
+function AiOffHint() {
+  const openSettings = useOverlayStore((s) => s.openSettings);
+  return (
+    <div className="m-2.5 mt-0 flex gap-2.5 rounded-lg border border-zinc-200 bg-zinc-50 p-3 text-xs leading-relaxed text-zinc-600 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400">
+      <Sparkles className="mt-px size-3.5 shrink-0 text-zinc-500" />
+      <div>
+        <p className="mb-0.5 font-medium text-zinc-900 dark:text-zinc-100">AI features are off</p>
+        Everything here works without them. Turn them on in{' '}
+        <button
+          type="button"
+          onClick={() => openSettings('ai')}
+          className="font-medium text-amber-700 hover:underline dark:text-amber-400"
+        >
+          Settings → AI
+        </button>
+        .
+      </div>
+    </div>
   );
 }

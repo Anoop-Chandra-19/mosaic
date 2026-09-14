@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Settings, X } from 'lucide-react';
+import { useOverlayStore } from '@/stores/overlayStore';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
@@ -13,19 +14,20 @@ import { GeneralSection } from './sections/GeneralSection';
 import { ImportExportSection } from './sections/ImportExportSection';
 import { PrivacySection } from './sections/PrivacySection';
 
-interface SettingsDialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-}
-
-export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
-  const [section, setSection] = useState<SettingsSectionId>('general');
+/** Open from anywhere with `openSettings(section)`; mounted once, in the app shell. */
+export function SettingsDialog() {
+  const showing = useOverlayStore((s) => s.settingsSection);
+  const setSection = useOverlayStore((s) => s.openSettings);
+  const close = useOverlayStore((s) => s.closeSettings);
+  // While the dialog animates closed, keep drawing the section it had.
+  const [lastSection, setLastSection] = useState<SettingsSectionId>('general');
+  if (showing !== null && showing !== lastSection) setLastSection(showing);
+  const section = showing ?? lastSection;
   const aiEnabled = useAIStore((s) => s.enabled);
   const active = SETTINGS_SECTION_BY_ID[section];
-  const close = () => onOpenChange(false);
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={showing !== null} onOpenChange={(open) => !open && close()}>
       <DialogContent
         showCloseButton={false}
         className="flex h-[min(37.5rem,90vh)] w-[min(54rem,96vw)] max-w-none flex-col gap-0 overflow-hidden rounded-xl border-zinc-200 bg-white p-0 sm:max-w-none dark:border-zinc-800 dark:bg-zinc-950"

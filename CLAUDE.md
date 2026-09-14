@@ -66,7 +66,8 @@ src/
   components/ui/  # shadcn-managed primitives — do NOT edit
   components/     # Shared app components (ConfirmDeleteDialog, DialogFrame, …)
   features/       # One folder per area: shell, editor, preview, templates, import, export,
-                  #   backup, settings, start
+                  #   backup, settings, start, agent (the assistant pane; the loop goes in
+                  #   electron/main/agent/)
   stores/         # Zustand stores
   types/          # App-wide types; db.ts, files.ts, secrets.ts are the bridge contracts
   lib/

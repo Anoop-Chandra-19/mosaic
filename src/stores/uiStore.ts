@@ -4,13 +4,17 @@ import { immer } from 'zustand/middleware/immer';
 import { settingsStorage } from '@/lib/storage/settingsStorage';
 import type { PaperSize } from '@/types/ui';
 
-export type SidebarTab = 'content' | 'templates' | 'ai';
+export type SidebarTab = 'content' | 'templates';
 
 /** Sidebar width stored as a ratio (0–1) of the viewport width */
 export const SIDEBAR_DEFAULT_RATIO = 0.22;
 /** Enough for the editor's cards to keep a line of text; the preview scales to what is left. */
 export const SIDEBAR_MIN_PX = 280;
 export const SIDEBAR_MAX_RATIO = 0.4;
+/** The assistant pane on the right, sized the same way: a share of the window, with a floor. */
+export const AGENT_PANE_DEFAULT_RATIO = 0.24;
+export const AGENT_PANE_MIN_PX = 300;
+export const AGENT_PANE_MAX_RATIO = 0.4;
 export const PREVIEW_ZOOM_STEPS = [0.75, 0.9, 1, 1.1, 1.25, 1.5] as const;
 export const PREVIEW_DEFAULT_ZOOM = 1;
 
@@ -28,6 +32,9 @@ export const DEFAULT_UI_STATE = {
   previewZoom: PREVIEW_DEFAULT_ZOOM,
   sidebarRatio: SIDEBAR_DEFAULT_RATIO,
   sidebarCollapsed: false,
+  /** Only drawn while AI is on; this remembers whether it was closed. */
+  agentPaneOpen: true,
+  agentPaneRatio: AGENT_PANE_DEFAULT_RATIO,
 };
 
 interface UIState {
@@ -38,6 +45,8 @@ interface UIState {
   previewZoom: number;
   sidebarRatio: number;
   sidebarCollapsed: boolean;
+  agentPaneOpen: boolean;
+  agentPaneRatio: number;
   toggleDarkMode: () => void;
   setDarkMode: (enabled: boolean) => void;
   setActiveSidebarTab: (tab: SidebarTab) => void;
@@ -48,6 +57,8 @@ interface UIState {
   zoomPreviewOut: () => void;
   setSidebarRatio: (ratio: number) => void;
   toggleSidebarCollapsed: () => void;
+  toggleAgentPane: () => void;
+  setAgentPaneRatio: (ratio: number) => void;
   resetUIState: () => void;
 }
 
@@ -98,6 +109,14 @@ export const useUIStore = create<UIState>()(
         set((state) => {
           state.sidebarCollapsed = !state.sidebarCollapsed;
         }),
+      toggleAgentPane: () =>
+        set((state) => {
+          state.agentPaneOpen = !state.agentPaneOpen;
+        }),
+      setAgentPaneRatio: (ratio) =>
+        set((state) => {
+          state.agentPaneRatio = Math.min(AGENT_PANE_MAX_RATIO, Math.max(0.1, ratio));
+        }),
       resetUIState: () =>
         set((state) => {
           Object.assign(state, DEFAULT_UI_STATE);
@@ -106,6 +125,12 @@ export const useUIStore = create<UIState>()(
     {
       name: 'ui',
       storage: createJSONStorage(() => settingsStorage),
+      // AI Tools was a sidebar tab before the assistant moved to its own pane.
+      merge: (persisted, current) => {
+        const stored = (persisted ?? {}) as Partial<UIState>;
+        const tab = stored.activeSidebarTab === 'templates' ? 'templates' : 'content';
+        return { ...current, ...stored, activeSidebarTab: tab };
+      },
       // Hydrated by `hydrateStores` once boot has loaded the settings.
       skipHydration: true,
     }

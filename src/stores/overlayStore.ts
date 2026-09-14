@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import type { SettingsSectionId } from '@/features/settings/settings-nav';
 import type { OpenedBackup } from '@/types/bundle';
 import type { Version } from '@/types/db';
 
@@ -36,6 +37,8 @@ interface OverlayState {
    * the app then simply has nothing open.
    */
   startOpen: boolean;
+  /** The Settings section showing, or null while Settings is closed. */
+  settingsSection: SettingsSectionId | null;
   importOpen: boolean;
   /** The import can only become a new template (nothing is open, or it came from Start). */
   importAsNewOnly: boolean;
@@ -52,6 +55,9 @@ interface OverlayState {
   preview: VersionPreview | null;
   toast: Toast | null;
   setStartOpen: (open: boolean) => void;
+  /** Opens Settings at `section`, General unless told otherwise. */
+  openSettings: (section?: SettingsSectionId) => void;
+  closeSettings: () => void;
   openImport: (asNewOnly: boolean) => void;
   closeImport: () => void;
   setNameVersionOpen: (open: boolean) => void;
@@ -65,6 +71,7 @@ interface OverlayState {
 
 export const useOverlayStore = create<OverlayState>()((set) => ({
   startOpen: false,
+  settingsSection: null,
   importOpen: false,
   importAsNewOnly: false,
   nameVersionOpen: false,
@@ -74,6 +81,8 @@ export const useOverlayStore = create<OverlayState>()((set) => ({
   preview: null,
   toast: null,
   setStartOpen: (startOpen) => set({ startOpen }),
+  openSettings: (section = 'general') => set({ settingsSection: section }),
+  closeSettings: () => set({ settingsSection: null }),
   openImport: (importAsNewOnly) => set({ importOpen: true, importAsNewOnly }),
   closeImport: () => set({ importOpen: false }),
   setNameVersionOpen: (nameVersionOpen) => set({ nameVersionOpen }),

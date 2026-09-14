@@ -3,36 +3,49 @@ import { TopBar } from './TopBar';
 import { Sidebar } from './Sidebar';
 import { PreviewPanel } from './PreviewPanel';
 import { Toast } from './Toast';
+import { AgentPane } from '@/features/agent/AgentPane';
 import { RestoreBackupDialog } from '@/features/backup/RestoreBackupDialog';
 import { ExportDialog } from '@/features/export/ExportDialog';
 import { ImportResumeDialog } from '@/features/import/ImportResumeDialog';
+import { SettingsDialog } from '@/features/settings/SettingsDialog';
 import { StartPanel } from '@/features/start/StartPanel';
 import { NameVersionDialog } from '@/features/templates/NameVersionDialog';
 import { isModKey } from '@/lib/shortcuts';
+import { useAIStore } from '@/stores/aiStore';
 import { showToast, useOverlayStore } from '@/stores/overlayStore';
 import { useResumeStore } from '@/stores/resumeStore';
 import { useTemplateStore } from '@/stores/templateStore';
+import { useUIStore } from '@/stores/uiStore';
 import { useDarkMode } from '@/lib/hooks/useDarkMode';
 
 export function AppShell() {
   useDarkMode();
-  useNameVersionShortcut();
+  useShortcuts();
   const hasTemplates = useTemplateStore((s) => s.templates.length > 0);
   const showStart = useOverlayStore((s) => s.startOpen);
+  const aiEnabled = useAIStore((s) => s.enabled);
+  const agentPaneOpen = useUIStore((s) => s.agentPaneOpen);
+  const showAgentPane = aiEnabled && agentPaneOpen;
 
   return (
-    // Editor and preview side by side, at every window size.
+    // Editor and preview side by side, at every window size; the assistant joins them on
+    // the right when AI is on.
     <div className="flex h-screen flex-col">
       <TopBar />
       <div className="relative flex flex-1 overflow-hidden">
         {/* Behind the Start panel the workspace is visible but out of reach. */}
-        <div className="flex flex-1 overflow-hidden" inert={showStart}>
+        <div
+          className="relative flex flex-1 overflow-hidden @container/workspace"
+          inert={showStart}
+        >
           <Sidebar />
           <PreviewPanel />
+          {showAgentPane && <AgentPane />}
         </div>
         {showStart && <StartPanel closable={hasTemplates} />}
         <Toast />
       </div>
+      <SettingsDialog />
       <ImportResumeDialog />
       <RestoreBackupDialog />
       <ExportDialog />
@@ -41,11 +54,20 @@ export function AppShell() {
   );
 }
 
-/** Ctrl/⌘+S names a version — the draft itself is always saved already. */
-function useNameVersionShortcut() {
+/**
+ * Ctrl/⌘+S names a version — the draft itself is always saved already. Ctrl/⌘+\ shows or
+ * hides the assistant while AI is on.
+ */
+function useShortcuts() {
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
-      if (!isModKey(event) || event.key.toLowerCase() !== 's') return;
+      if (!isModKey(event)) return;
+      if (event.key === '\\' && useAIStore.getState().enabled) {
+        event.preventDefault();
+        useUIStore.getState().toggleAgentPane();
+        return;
+      }
+      if (event.key.toLowerCase() !== 's') return;
       event.preventDefault();
       if (useResumeStore.getState().templateId !== null) {
         useOverlayStore.getState().setNameVersionOpen(true);
