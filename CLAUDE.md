@@ -8,8 +8,9 @@
   `electron/preload/` (the only bridge — `window.mosaic`), renderer is `index.html` + `src/`.
   The renderer never gets Node or raw IPC; the preload exposes narrow, typed methods.
 - SQLite (better-sqlite3) in the main process holds everything the user makes — see
-  "Persistence". The renderer reaches it through `window.mosaic.db`, and files through
-  `window.mosaic.files` (system Save/Open dialogs run by main).
+  "Persistence". The renderer reaches it through `window.mosaic.db`, files through
+  `window.mosaic.files` (system Save/Open dialogs run by main), and API keys through
+  `window.mosaic.secrets` (write-only; see "Persistence").
 - React 19 + TypeScript, Vite, Tailwind CSS v4 (CSS-first, no tailwind.config.js)
 - Zustand for renderer state
 - Radix UI / shadcn (new-york style, zinc base) for primitives — don't hand-roll UI components
@@ -31,8 +32,9 @@ directly). Every `bun run <script>` below is also `npm run <script>`; `bunx` is 
 - `bun run package` — build + package an installer with electron-builder into `release/`
 - `bun run test` — Vitest unit tests
 - `bun run test:e2e` — build, then drive the real Electron app with Playwright under
-  `xvfb-run` (headless; Linux). Each launch gets a throwaway `--user-data-dir`, so e2e
-  runs never touch the real profile. On macOS/Windows: build, then `bunx playwright test`.
+  `xvfb-run` (headless; Linux). Each launch gets a throwaway `--user-data-dir` and no
+  D-Bus session, so e2e runs never touch the real profile or the desktop's keychain (they
+  see the no-keychain fallback). On macOS/Windows: build, then `bunx playwright test`.
 - `bun run lint` — ESLint
 - `bunx shadcn@latest add <component>` — add a shadcn component. Components come as
   upstream ships them, `import { cn } from "cn"` included (shadcn's `cn` package;
@@ -63,9 +65,11 @@ directly). Every `bun run <script>` below is also `npm run <script>`; `bunx` is 
 e2e/              # Playwright specs that launch the built app (launch.ts: withApp helper;
                   #   dialogs.ts: stand-ins for the system Save/Open dialogs)
 electron/
-  main/           # Electron main process (window, lifecycle, erase; secrets later)
+  main/           # Electron main process (window, lifecycle, erase)
     db/           # SQLite (better-sqlite3): connection, migrations/*.sql, repositories, tests
-    ipc/          # IPC handlers: `MosaicDb` (argument checks, Electron-free) and files
+    ipc/          # IPC handlers: `MosaicDb` and `MosaicSecrets` (argument checks,
+                  #   Electron-free), files
+    secrets/      # API keys: OS keychain (@napi-rs/keyring) or session memory; key Test
   preload/        # Sandboxed preload — builds to CommonJS (.cjs); the only renderer bridge
   shared/         # Channel names and the `MosaicDb` method list, shared by main and preload
 scripts/          # Release helpers (freeze-migrations)
@@ -91,7 +95,6 @@ src/
     resume/       # Shared layout, contact formatting, validation, and resume schema migration
     storage/      # Renderer side of the database: `getDb()`, settings storage for `persist`
     vault/        # `parseBundle`: backup-file checks, run by the renderer and again by main
-    secrets/      # Secrets client
     utils.ts      # Re-exports shadcn's `cn`
 ```
 
@@ -179,7 +182,17 @@ never CSS `zoom`, for that scaling: `zoom` re-runs layout and can re-wrap text.
   one template. Settings, AI configuration, keys, and conversations never go in a bundle.
 - Erase deletes the database file and reopens it empty (`electron/main/eraseAll.ts`), so
   tables added later are wiped without anyone listing them.
-- API keys live in the OS keychain, never in the database, and never reach the renderer.
+- API keys live in the OS keychain, or in main's memory for the session — never in the
+  database, a bundle, or the renderer. `window.mosaic.secrets` can save, test, and remove a
+  key but has no way to read one; main makes every call that needs it. Main notes only
+  which providers the keychain holds (the `app.apiKeys` setting), so status never touches
+  the keychain and opening Settings never raises a prompt. `app.*` settings are main's own:
+  `db.settings` refuses them from the renderer.
+- On Linux without a Secret Service, @napi-rs/keyring silently writes to the kernel keyring,
+  which forgets keys at logout. `secrets/osKeyring.ts` spots that in `/proc/keys`, undoes
+  the write, and Mosaic keeps the key for the session with a notice. macOS ties keychain
+  access to the app's code signature: release builds need a stable signing identity, or
+  users are asked again after each update.
 - Planned with the agent layer (`plans/mosaic_sqlite_storage_plan.md`): conversations →
   runs → messages / tool_calls / ops, stored as provider-neutral content blocks, one write
   per assistant message; staged suggestions persist and are revalidated against `rev`, and
