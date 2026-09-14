@@ -10,6 +10,10 @@ export const KEYED_PROVIDERS = [
 
 export type KeyedProvider = (typeof KEYED_PROVIDERS)[number];
 
+export function isKeyedProvider(provider: AIProvider): provider is KeyedProvider {
+  return (KEYED_PROVIDERS as readonly AIProvider[]).includes(provider);
+}
+
 /** Longer than any provider's keys; this only stops a runaway paste. */
 export const MAX_KEY_LENGTH = 4096;
 
