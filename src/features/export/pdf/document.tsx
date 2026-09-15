@@ -1,4 +1,4 @@
-import { Document, Page, StyleSheet, Text, View } from '@react-pdf/renderer';
+import { Document, Font, Page, StyleSheet, Text, View } from '@react-pdf/renderer';
 import type { PaperSize } from '@/types/ui';
 import { getContactPrimaryLine, getContactSecondaryLine } from '@/lib/resume/contactFormatting';
 import type { NormalizedResumeExport } from '../normalizeResumeExport';
@@ -16,6 +16,11 @@ const L = HEADLESS_LAYOUT;
 const FONT = 'Helvetica';
 const FONT_BOLD = 'Helvetica-Bold';
 const FONT_ITALIC = 'Helvetica-Oblique';
+
+// Words are never split across lines. Left to itself react-pdf hyphenates ("cus-" /
+// "tomers"): an ATS then reads a word that isn't there, and the preview, which doesn't
+// hyphenate, breaks lines at different words than the PDF.
+Font.registerHyphenationCallback((word) => [word]);
 
 const styles = StyleSheet.create({
   page: {
