@@ -119,6 +119,18 @@ describe('parseResumeText', () => {
     }
   });
 
+  it('leaves nothing out of a resume it can place in full', () => {
+    expect(parseResumeText(SAMPLE).leftOut).toEqual([]);
+  });
+
+  it('lists a contact-block line that is no contact field as left out', () => {
+    const { resume, leftOut } = parseResumeText(
+      'Jane Developer\nStaff engineer who ships\njane@example.com\n\nSkills\nGo'
+    );
+    expect(resume.contact.name).toBe('Jane Developer');
+    expect(leftOut).toEqual(['Staff engineer who ships']);
+  });
+
   it('warns and returns empty sections for unrecognized input without throwing', () => {
     const { resume, warnings } = parseResumeText('just some random text with no structure');
     expect(resume.sections).toHaveLength(0);
@@ -187,6 +199,16 @@ describe('parseResumeLines', () => {
       ['Leadership', 'entries', 1],
       ['Toolbox', 'lines', 1],
     ]);
+  });
+
+  it('lists a heading with nothing under it as left out', () => {
+    const { resume, leftOut } = parseResumeLines([
+      { text: 'Awards', role: 'heading' },
+      { text: 'Skills', role: 'heading' },
+      { text: 'Go' },
+    ]);
+    expect(resume.sections.map((s) => s.label)).toEqual(['Skills']);
+    expect(leftOut).toEqual(['Awards']);
   });
 });
 

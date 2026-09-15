@@ -13,8 +13,9 @@ import { attempt, showToast, useOverlayStore } from '@/stores/overlayStore';
 import { useTemplateStore } from '@/stores/templateStore';
 import { useUIStore } from '@/stores/uiStore';
 import { MAX_FILE_BYTES } from '@/types/files';
-import type { ContactInfo } from '@/types/resume';
+import type { ContactInfo, ResumeSection, SectionLayout } from '@/types/resume';
 import { buildImportedResume, type ImportMode } from './buildImportedResume';
+import { LeftOutLines } from './LeftOutLines';
 import { parseResumeText, type ParsedResume } from './parseResume';
 import { readImportFile, UnreadableFileError, type ImportRead } from './readImportFile';
 
@@ -64,6 +65,20 @@ Acme Corp — 2021 to Present
 - Led the migration to a microservices architecture`;
 
 const count = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
+
+/** What a section holds: "3 entries, 11 bullets", or "2 lines" for a list. */
+function describeSection({ layout, items }: ResumeSection): string {
+  if (layout === 'lines') return count(items.length, 'line');
+  const bullets = items.reduce((n, item) => n + item.bullets.length, 0);
+  const entries = count(items.length, 'entry', 'entries');
+  return bullets > 0 ? `${entries}, ${count(bullets, 'bullet')}` : entries;
+}
+
+/** What Add Section calls a section the user names, in each shape. */
+const CUSTOM_NAMES: Record<SectionLayout, string> = {
+  entries: 'custom section',
+  lines: 'custom list',
+};
 
 interface ReadResume {
   /** A file's name, or "pasted text". */
@@ -237,8 +252,9 @@ function PickStep({
 
         <p className="mt-3 flex gap-2 rounded-lg border border-zinc-200 bg-zinc-50 p-2.5 text-xs leading-relaxed text-zinc-600 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400">
           <Info className="mt-0.5 size-3.5 shrink-0 text-zinc-500" />
-          Everything is read on this machine. You’ll see what Mosaic found, and choose what to keep,
-          before anything is written.
+          Everything is read on this machine. Import is a quick start, not an exact copy: you’ll see
+          what Mosaic found and what it left out, and choose what to keep, before anything is
+          written.
         </p>
       </div>
 
@@ -347,8 +363,9 @@ function ReviewStep({
             </span>
           </li>
           {sections.map((section) => {
-            const bullets = section.items.reduce((n, item) => n + item.bullets.length, 0);
             const on = !excludedIds.has(section.id);
+            // A heading Mosaic has no preset for: it comes in under its own name.
+            const custom = section.kind === 'custom';
             return (
               <li key={section.id}>
                 <label className="flex cursor-pointer items-center gap-2.5 px-3 py-2">
@@ -357,23 +374,34 @@ function ReviewStep({
                     onCheckedChange={() => toggle(section.id)}
                     aria-label={`Import ${section.label}`}
                   />
-                  <span
-                    className={cn(
-                      'font-medium',
-                      on ? 'text-zinc-900 dark:text-zinc-100' : 'text-zinc-500'
-                    )}
-                  >
-                    {section.label}
-                  </span>
-                  <span className="text-xs text-zinc-600 dark:text-zinc-400">
-                    — {count(section.items.length, 'entry', 'entries')}
-                    {bullets > 0 && `, ${count(bullets, 'bullet')}`}
+                  <span className="min-w-0">
+                    <span
+                      className={cn(
+                        'font-medium',
+                        on ? 'text-zinc-900 dark:text-zinc-100' : 'text-zinc-500'
+                      )}
+                    >
+                      {section.label}
+                    </span>{' '}
+                    <span
+                      className={cn(
+                        'text-xs',
+                        custom
+                          ? 'text-amber-700 dark:text-amber-400'
+                          : 'text-zinc-600 dark:text-zinc-400'
+                      )}
+                    >
+                      — {describeSection(section)}
+                      {custom && `, imported as a ${CUSTOM_NAMES[section.layout]}`}
+                    </span>
                   </span>
                 </label>
               </li>
             );
           })}
         </ul>
+
+        {parsed.leftOut.length > 0 && <LeftOutLines lines={parsed.leftOut} />}
 
         {parsed.warnings.length > 0 && (
           <div className="mt-3 space-y-1 rounded-lg border border-amber-300 bg-amber-50 p-2.5 dark:border-amber-900 dark:bg-amber-950">

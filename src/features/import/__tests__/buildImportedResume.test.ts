@@ -42,6 +42,7 @@ function parsed(
   return {
     resume: { schemaVersion: 1, contact: contact(contactOverrides), sections },
     warnings: [],
+    leftOut: [],
   };
 }
 
@@ -73,6 +74,7 @@ describe('describeImport', () => {
         ],
       },
       warnings: [],
+      leftOut: [],
     };
     expect(describeImport(result)).toEqual({
       sectionCount: 1,

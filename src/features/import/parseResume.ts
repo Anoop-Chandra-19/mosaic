@@ -14,6 +14,12 @@ import { matchSectionHeader } from './sectionHeaders';
 export interface ParsedResume {
   resume: ResumeData;
   warnings: string[];
+  /**
+   * Lines Mosaic read but found no place for — a headline under the name, a heading with
+   * nothing under it — as they were in the file. The review step lists them, so nothing
+   * is dropped without saying so.
+   */
+  leftOut: string[];
 }
 
 const EMPTY_CONTACT: ContactInfo = {
@@ -102,6 +108,14 @@ function parseContact(preamble: string[], fullText: string): ContactInfo {
   return contact;
 }
 
+/** Contact-block lines that none of the contact's fields came from. */
+function unusedContactLines(preamble: string[], contact: ContactInfo): string[] {
+  const values = Object.values(contact).filter(
+    (value): value is string => typeof value === 'string' && value !== ''
+  );
+  return preamble.filter((line) => line.trim() && !values.some((value) => line.includes(value)));
+}
+
 function textEntry(text: string): ResumeEntry {
   return { id: crypto.randomUUID(), selected: true, text, bullets: [] };
 }
@@ -176,6 +190,7 @@ export function parseResumeLines(
 
   const preamble = lines.slice(0, headings[0] ?? lines.length).map((line) => line.text);
   const contact = parseContact(preamble, lines.map((line) => line.text).join('\n'));
+  const leftOut = unusedContactLines(preamble, contact);
 
   const sections: ResumeSection[] = [];
   headings.forEach((index, i) => {
@@ -187,7 +202,10 @@ export function parseResumeLines(
       layout === 'lines'
         ? parseLineSection(body, !marked && kind === 'summary')
         : parseEntrySection(body);
-    if (items.length === 0) return;
+    if (items.length === 0) {
+      leftOut.push(lines[index].text);
+      return;
+    }
     sections.push({
       id: crypto.randomUUID(),
       kind,
@@ -211,6 +229,7 @@ export function parseResumeLines(
   return {
     resume: { schemaVersion: 1, contact, sections },
     warnings,
+    leftOut,
   };
 }
 

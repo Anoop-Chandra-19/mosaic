@@ -6,6 +6,44 @@ import { withApp } from './launch';
 
 const mosaic = withApp();
 
+test('the review lists what Mosaic found no place for, ready to copy', async () => {
+  const { app, page } = mosaic();
+  await page.getByRole('button', { name: /Blank resume/ }).click();
+  await page.getByRole('button', { name: 'Import resume' }).click();
+  const importing = page.getByRole('dialog', { name: 'Import' });
+  await importing
+    .getByLabel('Or paste the text')
+    .fill(
+      [
+        'Ada Lovelace',
+        'Writes programs for engines that do not exist yet',
+        'ada@example.com',
+        '',
+        'Certifications',
+        '',
+        'Skills',
+        'Mathematics',
+        'Punched cards',
+      ].join('\n')
+    );
+  await importing.getByRole('button', { name: 'Read pasted text' }).click();
+
+  await expect(importing.getByRole('listitem').filter({ hasText: 'Skills' })).toHaveText(
+    'Skills — 2 lines'
+  );
+  const leftOut = importing.getByRole('button', { name: /^Left out/ });
+  await expect(leftOut).toHaveText('Left out — 2 lines');
+  await leftOut.click();
+  await expect(
+    importing.getByText('Writes programs for engines that do not exist yet')
+  ).toBeVisible();
+
+  await importing.getByRole('button', { name: 'Copy' }).click();
+  await expect(importing.getByRole('button', { name: 'Copied' })).toBeVisible();
+  const copied = await app.evaluate(({ clipboard }) => clipboard.readText());
+  expect(copied).toBe('Writes programs for engines that do not exist yet\nCertifications');
+});
+
 test('a file Import can’t read is explained in the dialog, and nothing is written', async () => {
   const { app, page, userDataDir } = mosaic();
   const file = path.join(userDataDir, 'resume.pages');
