@@ -9,6 +9,10 @@ interface InlineEditFieldProps {
   className?: string;
   inputClassName?: string;
   as?: 'span' | 'div' | 'h3';
+  /** Open for editing when first shown, with the text selected so typing replaces it. */
+  openAtStart?: boolean;
+  /** The input's accessible name. */
+  label?: string;
 }
 
 export function InlineEditField({
@@ -18,10 +22,13 @@ export function InlineEditField({
   className,
   inputClassName,
   as: Tag = 'span',
+  openAtStart = false,
+  label,
 }: InlineEditFieldProps) {
   const { editing, draft, setDraft, startEditing, handleBlur, handleKeyDown } = useInlineEdit(
     value,
-    onSave
+    onSave,
+    openAtStart
   );
 
   if (editing) {
@@ -31,8 +38,10 @@ export function InlineEditField({
         onChange={(e) => setDraft(e.target.value)}
         onBlur={handleBlur}
         onKeyDown={handleKeyDown}
+        onFocus={openAtStart ? (e) => e.target.select() : undefined}
         autoFocus
         placeholder={placeholder}
+        aria-label={label}
         className={cn('h-7 min-w-0 flex-1 px-2 py-0.5 text-sm leading-6', inputClassName)}
       />
     );

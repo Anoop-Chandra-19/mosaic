@@ -1,4 +1,11 @@
-import type { Bullet, ContactInfo, ResumeData, ResumeEntry, ResumeSection } from '@/types/resume';
+import type {
+  BuiltInSectionType,
+  Bullet,
+  ContactInfo,
+  ResumeData,
+  ResumeEntry,
+  ResumeSection,
+} from '@/types/resume';
 import { SECTION_LABELS, matchSectionHeader } from './sectionHeaders';
 
 export interface ParsedResume {
@@ -162,7 +169,7 @@ export function parseResumeText(input: string): ParsedResume {
   const lines = input.replace(/\r\n?/g, '\n').split('\n');
 
   // Locate section headers.
-  const headers: { index: number; type: ResumeSection['type'] }[] = [];
+  const headers: { index: number; type: BuiltInSectionType }[] = [];
   lines.forEach((line, index) => {
     const type = matchSectionHeader(line);
     if (type) headers.push({ index, type });

@@ -12,13 +12,22 @@ import { useResumeStore } from '@/stores/resumeStore';
 
 interface SectionItemProps {
   section: ResumeSection;
+  /** Just added and still unnamed: show the name open for editing. */
+  nameAtStart?: boolean;
   isFirst: boolean;
   isLast: boolean;
   onMoveUp: () => void;
   onMoveDown: () => void;
 }
 
-export function SectionItem({ section, isFirst, isLast, onMoveUp, onMoveDown }: SectionItemProps) {
+export function SectionItem({
+  section,
+  nameAtStart = false,
+  isFirst,
+  isLast,
+  onMoveUp,
+  onMoveDown,
+}: SectionItemProps) {
   const updateSectionLabel = useResumeStore((s) => s.updateSectionLabel);
   const removeSection = useResumeStore((s) => s.removeSection);
   const addEntry = useResumeStore((s) => s.addEntry);
@@ -63,6 +72,9 @@ export function SectionItem({ section, isFirst, isLast, onMoveUp, onMoveDown }: 
         <InlineEditField
           value={section.label}
           onSave={(v) => updateSectionLabel(section.id, v)}
+          openAtStart={nameAtStart}
+          label="Section name"
+          placeholder="Section name"
           className="truncate text-base leading-6 font-medium"
           inputClassName="h-8 text-base leading-6 font-medium"
         />

@@ -40,11 +40,22 @@ function mergeContact(current: ContactInfo, incoming: ContactInfo): ContactInfo 
   return merged;
 }
 
-/** Append incoming sections into existing ones of the same type, or add them. */
+const sameName = (a: string, b: string) => a.trim().toLowerCase() === b.trim().toLowerCase();
+
+/**
+ * Whether `incoming` goes into `existing`: a built-in section into the one of its type, a
+ * custom section into the custom section of the same name.
+ */
+function belongsIn(existing: ResumeSection, incoming: ResumeSection): boolean {
+  if (existing.type !== incoming.type) return false;
+  return incoming.type !== 'custom' || sameName(existing.label, incoming.label);
+}
+
+/** Append incoming sections into the existing ones they belong in, or add them. */
 function mergeSections(current: ResumeSection[], incoming: ResumeSection[]): ResumeSection[] {
   const sections = current.map((section) => ({ ...section, items: [...section.items] }));
   for (const section of incoming) {
-    const target = sections.find((existing) => existing.type === section.type);
+    const target = sections.find((existing) => belongsIn(existing, section));
     if (target) {
       target.items.push(...section.items);
     } else {

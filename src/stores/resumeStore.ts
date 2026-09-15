@@ -34,7 +34,8 @@ interface ResumeState extends ResumeData {
 
   updateContact: (patch: Partial<ContactInfo>) => void;
 
-  addSection: (type: SectionType, label: string) => void;
+  /** Adds an empty section at the end; returns its id. */
+  addSection: (type: SectionType, label: string) => string;
   removeSection: (sectionId: string) => void;
   reorderSections: (orderedIds: string[]) => void;
   updateSectionLabel: (sectionId: string, label: string) => void;
@@ -98,16 +99,13 @@ export const useResumeStore = create<ResumeState>()(
 
       // Section CRUD
 
-      addSection: (type, label) =>
+      addSection: (type, label) => {
+        const id = crypto.randomUUID();
         edit((state) => {
-          state.sections.push({
-            id: crypto.randomUUID(),
-            type,
-            label,
-            items: [],
-            order: state.sections.length,
-          });
-        }),
+          state.sections.push({ id, type, label, items: [], order: state.sections.length });
+        });
+        return id;
+      },
 
       removeSection: (sectionId) =>
         edit((state) => {

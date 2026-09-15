@@ -166,6 +166,25 @@ describe('createJsonResumeExport', () => {
     ]);
   });
 
+  it('puts custom sections under projects, keeping the section’s name', () => {
+    const data = createExportData();
+    data.sections.push({
+      id: 'volunteering',
+      type: 'custom',
+      label: 'Volunteering',
+      entries: [
+        { id: 'v1', title: 'Food bank', subtitle: '2022', text: '', bullets: ['Ran logistics'] },
+      ],
+    });
+
+    expect(parseExport(data).projects).toContainEqual({
+      name: 'Food bank',
+      description: '2022',
+      type: 'Volunteering',
+      highlights: ['Ran logistics'],
+    });
+  });
+
   it('falls back to startDate for certificates without an endDate', () => {
     const data = createExportData();
     const cert = data.sections.find((s) => s.type === 'certifications')!.entries[0];

@@ -41,6 +41,8 @@ interface JsonResumeEducation {
 interface JsonResumeProject {
   name?: string;
   description?: string;
+  /** What kind of project — JSON Resume's examples are "volunteering", "talk". */
+  type?: string;
   startDate?: string;
   endDate?: string;
   highlights?: string[];
@@ -139,10 +141,13 @@ export function createJsonResumeExport(data: NormalizedResumeExport): string {
           );
           break;
         case 'projects':
+        case 'custom':
           projects.push(
             compact({
               name: entry.title,
               description: entry.subtitle,
+              // JSON Resume has no sections of your own; a project keeps the section's name.
+              type: section.type === 'custom' ? section.label : undefined,
               startDate: entry.startDate,
               endDate: entry.endDate,
               highlights: entry.bullets,

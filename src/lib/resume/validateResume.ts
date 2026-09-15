@@ -8,6 +8,7 @@ const SECTION_TYPES: ReadonlySet<string> = new Set<SectionType>([
   'projects',
   'skills',
   'certifications',
+  'custom',
 ]);
 
 export function isRecord(value: unknown): value is Record<string, unknown> {

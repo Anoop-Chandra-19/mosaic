@@ -110,6 +110,26 @@ describe('buildImportedResume', () => {
     expect(current.sections[0].items.map((i) => i.title)).toEqual(['Old Job']);
   });
 
+  it('merge puts a custom section into the one of the same name, not any custom section', () => {
+    const withCustom: ResumeData = {
+      ...current,
+      sections: [...current.sections, section('custom', 'Volunteering', ['Food bank'])],
+    };
+    const result = buildImportedResume(
+      withCustom,
+      parsed([
+        section('custom', 'volunteering ', ['Shelter']),
+        section('custom', 'Publications', ['A paper']),
+      ]),
+      'merge'
+    );
+    const custom = result.sections.filter((s) => s.type === 'custom');
+    expect(custom.map((s) => [s.label, s.items.map((i) => i.title)])).toEqual([
+      ['Volunteering', ['Food bank', 'Shelter']],
+      ['Publications', ['A paper']],
+    ]);
+  });
+
   it('merge fills only empty contact fields', () => {
     const { contact: result } = buildImportedResume(
       current,

@@ -1,10 +1,10 @@
-import type { SectionType } from '@/types/resume';
+import type { BuiltInSectionType } from '@/types/resume';
 
 /**
  * Canonical label used for each section type when a resume is imported. Mirrors the
  * labels seeded in DEFAULT_RESUME so imported sections read consistently with new ones.
  */
-export const SECTION_LABELS: Record<SectionType, string> = {
+export const SECTION_LABELS: Record<BuiltInSectionType, string> = {
   summary: 'Professional Summary',
   education: 'Education',
   experience: 'Work Experience',
@@ -19,7 +19,7 @@ export const SECTION_LABELS: Record<SectionType, string> = {
  * section heading to a Mosaic SectionType. Longer/more specific phrases are matched
  * before shorter ones so "work experience" wins over "experience".
  */
-const HEADER_ALIASES: Record<SectionType, string[]> = {
+const HEADER_ALIASES: Record<BuiltInSectionType, string[]> = {
   summary: [
     'professional summary',
     'career summary',
@@ -73,8 +73,10 @@ const HEADER_ALIASES: Record<SectionType, string[]> = {
 };
 
 // Flattened alias → type list, longest phrase first for greedy matching.
-const ALIAS_ENTRIES: { phrase: string; type: SectionType }[] = Object.entries(HEADER_ALIASES)
-  .flatMap(([type, phrases]) => phrases.map((phrase) => ({ phrase, type: type as SectionType })))
+const ALIAS_ENTRIES: { phrase: string; type: BuiltInSectionType }[] = Object.entries(HEADER_ALIASES)
+  .flatMap(([type, phrases]) =>
+    phrases.map((phrase) => ({ phrase, type: type as BuiltInSectionType }))
+  )
   .sort((a, b) => b.phrase.length - a.phrase.length);
 
 function normalizeHeading(line: string): string {
@@ -90,7 +92,7 @@ function normalizeHeading(line: string): string {
  * standalone line whose normalized text exactly matches a known alias — this avoids
  * treating ordinary sentences that happen to contain "experience" as headings.
  */
-export function matchSectionHeader(line: string): SectionType | null {
+export function matchSectionHeader(line: string): BuiltInSectionType | null {
   const trimmed = line.trim();
   if (!trimmed || trimmed.length > 40 || trimmed.split(/\s+/).length > 5) return null;
 

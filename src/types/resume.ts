@@ -5,7 +5,12 @@ export type SectionType =
   | 'internships'
   | 'projects'
   | 'skills'
-  | 'certifications';
+  | 'certifications'
+  /** Named by the user, as many as they like; entries like Projects (title, subtitle, bullets). */
+  | 'custom';
+
+/** The sections Mosaic knows by name; a resume has at most one of each. */
+export type BuiltInSectionType = Exclude<SectionType, 'custom'>;
 
 export interface Bullet {
   id: string;

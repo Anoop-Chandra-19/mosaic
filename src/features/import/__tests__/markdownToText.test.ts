@@ -32,7 +32,9 @@ describe('markdownToText', () => {
   it('reads Mosaic’s own Markdown export back into the same sections', () => {
     const resume = createDefaultResume();
     // Headings the parser knows; "Education & Certificates" is a label it does not.
-    for (const section of resume.sections) section.label = SECTION_LABELS[section.type];
+    for (const section of resume.sections) {
+      if (section.type !== 'custom') section.label = SECTION_LABELS[section.type];
+    }
     const exported = normalizeResumeForExport(resume);
     const markdown = createMarkdownExport(exported);
 
