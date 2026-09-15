@@ -2,9 +2,9 @@ import { readBackup } from '@/features/backup/backupFiles';
 import { isRecord } from '@/lib/resume/validateResume';
 import type { OpenedBackup } from '@/types/bundle';
 import { decodeText } from '@/types/files';
-import { markdownToText } from './markdownToText';
 import { parseResumeText, type ParsedResume } from './parseResume';
 import { isJsonResume, readJsonResume } from './readJsonResume';
+import { readMarkdown } from './readMarkdown';
 
 /** A file the Import dialog read: a resume to review, or a backup to hand to Restore. */
 export type ImportRead =
@@ -43,11 +43,7 @@ export function readImportFile(name: string, bytes: Uint8Array): ImportRead {
   const extension = extensionOf(name);
   if (extension === 'json') return readJson(name, bytes);
   if (extension === 'md' || extension === 'markdown') {
-    return {
-      type: 'resume',
-      source: name,
-      parsed: parseResumeText(markdownToText(decodeText(bytes))),
-    };
+    return { type: 'resume', source: name, parsed: readMarkdown(decodeText(bytes)) };
   }
   if (extension === 'txt' || extension === 'text') {
     return { type: 'resume', source: name, parsed: parseResumeText(decodeText(bytes)) };

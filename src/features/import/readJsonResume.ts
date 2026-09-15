@@ -89,15 +89,13 @@ function sectionOf(
   return { id: crypto.randomUUID(), kind, layout, label, order: 0, items: entries };
 }
 
-function contactOf(basics: Json, own: boolean, workStatus: string): ContactInfo {
-  // Mosaic's own file holds the links as they were typed; another tool's gets the scheme
-  // taken off, as a pasted resume does.
-  const link = (value: string) => (own ? value : value.replace(/^https?:\/\//i, ''));
+/** The contact, links as the file writes them — Mosaic prints them as they are. */
+function contactOf(basics: Json, workStatus: string): ContactInfo {
   const profile = (network: RegExp, site: string) => {
     const found = items(basics.profiles).find((p) => network.test(text(p.network)));
     if (!found) return '';
     const username = text(found.username);
-    return link(text(found.url)) || (username ? `${site}/${username}` : '');
+    return text(found.url) || (username ? `${site}/${username}` : '');
   };
   const location = isRecord(basics.location) ? basics.location : {};
   return {
@@ -110,7 +108,7 @@ function contactOf(basics: Json, own: boolean, workStatus: string): ContactInfo 
     ...(workStatus && { citizenshipStatus: workStatus }),
     linkedin: profile(/linkedin/i, 'linkedin.com/in'),
     github: profile(/github/i, 'github.com'),
-    website: link(text(basics.url)),
+    website: text(basics.url),
     showLinkedin: true,
     showGithub: true,
     showWebsite: true,
@@ -406,7 +404,7 @@ export function readJsonResume(resume: Json): ParsedResume {
     .map((section) => ({ ...section, items: section.items.filter((item) => !isEmpty(item)) }))
     .filter((section) => section.items.length > 0)
     .map((section, order) => ({ ...section, order }));
-  const contact = contactOf(basics, own !== null, meta?.workStatus ?? '');
+  const contact = contactOf(basics, meta?.workStatus ?? '');
 
   if (meta && !own) {
     warnings.push(

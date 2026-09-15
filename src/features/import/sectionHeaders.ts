@@ -18,7 +18,16 @@ const HEADER_ALIASES: Record<BuiltInSectionKind, string[]> = {
     'about me',
     'about',
   ],
-  education: ['education', 'academic background', 'academics', 'education & training'],
+  education: [
+    'education',
+    'academic background',
+    'academics',
+    'education & training',
+    // The Headless format's own heading, as the example resume has it.
+    'education & certificates',
+    'education & certifications',
+    'education and certifications',
+  ],
   experience: [
     'professional experience',
     'work experience',
@@ -73,6 +82,12 @@ function normalizeHeading(line: string): string {
     .replace(/\s+/g, ' ');
 }
 
+/** Short enough to be a heading: a few words on a line of their own. */
+export function isHeadingLength(line: string): boolean {
+  const trimmed = line.trim();
+  return trimmed !== '' && trimmed.length <= 40 && trimmed.split(/\s+/).length <= 5;
+}
+
 /**
  * If `line` looks like a section heading, return its kind. A heading is a short,
  * standalone line whose normalized text exactly matches a known alias — this avoids
@@ -80,7 +95,7 @@ function normalizeHeading(line: string): string {
  */
 export function matchSectionHeader(line: string): BuiltInSectionKind | null {
   const trimmed = line.trim();
-  if (!trimmed || trimmed.length > 40 || trimmed.split(/\s+/).length > 5) return null;
+  if (!isHeadingLength(trimmed)) return null;
 
   const normalized = normalizeHeading(trimmed);
   if (!normalized) return null;

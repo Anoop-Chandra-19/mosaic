@@ -1,7 +1,11 @@
 import { describe, expect, it } from 'vitest';
+import { normalizeResumeForExport } from '@/features/export/normalizeResumeExport';
+import { createPlaintextExport } from '@/features/export/plaintext';
+import { createDefaultResume } from '@/lib/resume/defaultResume';
+import type { ResumeData, ResumeSection } from '@/types/resume';
 import { textToLines, type ImportLine } from '../importLines';
 import { parseResumeLines, parseResumeText } from '../parseResume';
-import type { ResumeSection } from '@/types/resume';
+import { everything, shown } from './roundTrip';
 
 const SAMPLE = `Jane Developer
 San Francisco, CA
@@ -212,6 +216,77 @@ describe('parseResumeLines', () => {
   });
 });
 
+describe('contact block', () => {
+  const contactOf = (block: string) => parseResumeText(`${block}\n\nSkills\nGo`).resume.contact;
+
+  it('takes a work status and a location by their words', () => {
+    expect(
+      contactOf('Ada\nF-1 STEM OPT, work authorized through July 2028 | Detroit, MI')
+    ).toMatchObject({
+      citizenshipStatus: 'F-1 STEM OPT, work authorized through July 2028',
+      location: 'Detroit, MI',
+    });
+  });
+
+  it('knows the other of two fields once one of them is known', () => {
+    expect(contactOf('Ada\nUS Citizen | Remote')).toMatchObject({
+      citizenshipStatus: 'US Citizen',
+      location: 'Remote',
+    });
+    expect(contactOf('Ada\nCanadian PR | Toronto, ON')).toMatchObject({
+      citizenshipStatus: 'Canadian PR',
+      location: 'Toronto, ON',
+    });
+  });
+
+  it('keeps links as written, and a profile written as its name', () => {
+    expect(
+      contactOf('Ada\n555-0100 | https://linkedin.com/in/ada | GitHub | https://ada.dev')
+    ).toMatchObject({
+      phone: '555-0100',
+      linkedin: 'https://linkedin.com/in/ada',
+      github: 'GitHub',
+      website: 'https://ada.dev',
+    });
+  });
+
+  it('takes “U.S.” for a word, not a web address', () => {
+    expect(contactOf('Ada\nU.S. Citizen | Boston, MA')).toMatchObject({
+      citizenshipStatus: 'U.S. Citizen',
+      website: '',
+    });
+  });
+});
+
+describe('plain text round trip', () => {
+  const textOf = (data: ResumeData) => createPlaintextExport(normalizeResumeForExport(data));
+
+  it('reads the example resume’s plain text back exactly', () => {
+    const data = createDefaultResume();
+    expect(shown(parseResumeText(textOf(data)).resume)).toEqual(shown(data));
+  });
+
+  it('reads Mosaic’s own plain text back, but for what plain text can’t say', () => {
+    const data = everything();
+    const expected = shown(data);
+    const sectionNamed = (label: string) => expected.sections.find((s) => s.label === label)!;
+    // A subtitle with no title reads as a title…
+    sectionNamed('Work History').entries[1] = {
+      title: '1840',
+      subtitle: '',
+      text: '',
+      bullets: [],
+    };
+    // …and a section of titles alone, under a name Mosaic doesn't know, reads as a list.
+    Object.assign(sectionNamed('Highlights'), {
+      layout: 'lines',
+      entries: [{ title: '', subtitle: '', text: 'First programmer', bullets: [] }],
+    });
+
+    expect(shown(parseResumeText(textOf(data)).resume)).toEqual(expected);
+  });
+});
+
 describe('textToLines', () => {
   it('turns blank lines into gaps, markers into bullets, and known names into headings', () => {
     expect(textToLines('Jane\n\nSkills\n- Go\n\n  Rust  ')).toEqual([
@@ -220,5 +295,20 @@ describe('textToLines', () => {
       { text: 'Go', role: 'bullet' },
       { text: 'Rust', gapBefore: true },
     ]);
+  });
+
+  it('takes a short line in capitals after a gap as a heading, in title case', () => {
+    const headings = (text: string) =>
+      textToLines(text).flatMap((line) => (line.role === 'heading' ? [line.text] : []));
+    expect(
+      headings(
+        'ADA\n\nWORK HISTORY\nAnalyst\n\nVOLUNTEERING AND OUTREACH\nTutor\n\nAI RESEARCH\nNotes'
+      )
+    ).toEqual(['Work History', 'Volunteering and Outreach', 'Ai Research']);
+    // Only where the headings Mosaic knows are in capitals too, and only after a gap.
+    expect(headings('ADA\n\nWork History\nAnalyst\n\nVOLUNTEERING\nTutor')).toEqual([
+      'Work History',
+    ]);
+    expect(headings('ADA\n\nWORK HISTORY\nACME CORP\nAnalyst')).toEqual(['Work History']);
   });
 });

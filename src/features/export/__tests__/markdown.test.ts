@@ -53,7 +53,8 @@ Focused builder.
 
 ## Experience
 
-### Engineer - Mosaic
+### Engineer
+_Mosaic_
 - Built export flow
 - Improved preview accuracy`);
   });
