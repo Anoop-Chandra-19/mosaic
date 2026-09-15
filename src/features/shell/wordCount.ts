@@ -18,8 +18,6 @@ export function countWords(doc: ResumeData): number {
         entry.title,
         entry.subtitle,
         entry.text,
-        entry.startDate,
-        entry.endDate,
         ...entry.bullets,
       ]),
     ]),

@@ -36,8 +36,6 @@ export interface ResumeEntry {
   title?: string;
   subtitle?: string;
   text?: string;
-  startDate?: string;
-  endDate?: string;
   meta?: Record<string, string>;
 }
 

@@ -7,8 +7,6 @@ export interface ExportEntry {
   subtitle: string;
   text: string;
   bullets: string[];
-  startDate?: string;
-  endDate?: string;
 }
 
 export interface ExportSection {
@@ -73,8 +71,6 @@ export function normalizeResumeForExport(resume: ResumeData): NormalizedResumeEx
             subtitle,
             text: '',
             bullets,
-            startDate: trim(entry.startDate) || undefined,
-            endDate: trim(entry.endDate) || undefined,
           } satisfies ExportEntry;
         })
         .filter((entry): entry is ExportEntry => entry !== null);

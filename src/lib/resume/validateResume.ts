@@ -30,9 +30,7 @@ function isResumeEntry(value: unknown): boolean {
     value.bullets.every(isBullet) &&
     isOptionalString(value.title) &&
     isOptionalString(value.subtitle) &&
-    isOptionalString(value.text) &&
-    isOptionalString(value.startDate) &&
-    isOptionalString(value.endDate)
+    isOptionalString(value.text)
   );
 }
 

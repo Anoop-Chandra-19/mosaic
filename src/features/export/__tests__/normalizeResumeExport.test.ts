@@ -138,28 +138,6 @@ describe('normalizeResumeForExport', () => {
       },
     ]);
   });
-
-  it('keeps trimmed entry dates and drops absent or blank ones', () => {
-    const resume = createResumeFixture();
-    resume.sections[0].items[0].startDate = ' 2023-06 ';
-    resume.sections[0].items[0].endDate = '   ';
-
-    const normalized = normalizeResumeForExport(resume);
-    const entry = normalized.sections.find((s) => s.kind === 'experience')!.entries[0];
-
-    expect(entry.startDate).toBe('2023-06');
-    expect(entry.endDate).toBeUndefined();
-  });
-
-  it('never carries dates on text-only sections', () => {
-    const resume = createResumeFixture();
-    resume.sections[1].items[0].startDate = '2023-06';
-
-    const normalized = normalizeResumeForExport(resume);
-    const entry = normalized.sections.find((s) => s.kind === 'summary')!.entries[0];
-
-    expect(entry.startDate).toBeUndefined();
-  });
 });
 
 describe('getContactLines', () => {
