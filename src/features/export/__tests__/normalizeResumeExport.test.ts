@@ -22,7 +22,8 @@ function createResumeFixture(): ResumeData {
     sections: [
       {
         id: 'experience',
-        type: 'experience',
+        kind: 'experience',
+        layout: 'entries',
         label: ' Experience ',
         order: 2,
         items: [
@@ -55,7 +56,8 @@ function createResumeFixture(): ResumeData {
       },
       {
         id: 'summary',
-        type: 'summary',
+        kind: 'summary',
+        layout: 'lines',
         label: ' Summary ',
         order: 1,
         items: [
@@ -66,7 +68,8 @@ function createResumeFixture(): ResumeData {
       },
       {
         id: 'empty-projects',
-        type: 'projects',
+        kind: 'projects',
+        layout: 'entries',
         label: 'Projects',
         order: 3,
         items: [
@@ -105,7 +108,8 @@ describe('normalizeResumeForExport', () => {
     expect(normalized.sections).toEqual([
       {
         id: 'summary',
-        type: 'summary',
+        kind: 'summary',
+        layout: 'lines',
         label: 'Summary',
         entries: [
           {
@@ -119,7 +123,8 @@ describe('normalizeResumeForExport', () => {
       },
       {
         id: 'experience',
-        type: 'experience',
+        kind: 'experience',
+        layout: 'entries',
         label: 'Experience',
         entries: [
           {
@@ -140,7 +145,7 @@ describe('normalizeResumeForExport', () => {
     resume.sections[0].items[0].endDate = '   ';
 
     const normalized = normalizeResumeForExport(resume);
-    const entry = normalized.sections.find((s) => s.type === 'experience')!.entries[0];
+    const entry = normalized.sections.find((s) => s.kind === 'experience')!.entries[0];
 
     expect(entry.startDate).toBe('2023-06');
     expect(entry.endDate).toBeUndefined();
@@ -151,7 +156,7 @@ describe('normalizeResumeForExport', () => {
     resume.sections[1].items[0].startDate = '2023-06';
 
     const normalized = normalizeResumeForExport(resume);
-    const entry = normalized.sections.find((s) => s.type === 'summary')!.entries[0];
+    const entry = normalized.sections.find((s) => s.kind === 'summary')!.entries[0];
 
     expect(entry.startDate).toBeUndefined();
   });

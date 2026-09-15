@@ -49,7 +49,8 @@ test('Markdown can be copied or saved, and reads back in through Import', async 
   const importing = page.getByRole('dialog', { name: 'Import' });
   await importing.getByRole('button', { name: 'Choose a file…' }).click();
   await expect(importing.getByText('Your Name — Example resume.md')).toBeVisible();
-  await expect(importing.getByRole('checkbox', { name: 'Import Work Experience' })).toBeChecked();
+  // Headings come back as written, not renamed to a stock name.
+  await expect(importing.getByRole('checkbox', { name: 'Import Work History' })).toBeChecked();
   await importing.getByRole('button', { name: 'Import as new template' }).click();
 
   await expect(page.getByText('Imported — check the sections in the sidebar')).toBeVisible();

@@ -17,7 +17,8 @@ function createExportData(): NormalizedResumeExport {
     sections: [
       {
         id: 'summary',
-        type: 'summary',
+        kind: 'summary',
+        layout: 'lines',
         label: 'Summary',
         entries: [
           { id: 's1', title: '', subtitle: '', text: 'Focused builder.', bullets: [] },
@@ -26,7 +27,8 @@ function createExportData(): NormalizedResumeExport {
       },
       {
         id: 'education',
-        type: 'education',
+        kind: 'education',
+        layout: 'entries',
         label: 'Education',
         entries: [
           {
@@ -42,7 +44,8 @@ function createExportData(): NormalizedResumeExport {
       },
       {
         id: 'experience',
-        type: 'experience',
+        kind: 'experience',
+        layout: 'entries',
         label: 'Experience',
         entries: [
           {
@@ -57,7 +60,8 @@ function createExportData(): NormalizedResumeExport {
       },
       {
         id: 'internships',
-        type: 'internships',
+        kind: 'internships',
+        layout: 'entries',
         label: 'Internships',
         entries: [
           {
@@ -71,7 +75,8 @@ function createExportData(): NormalizedResumeExport {
       },
       {
         id: 'projects',
-        type: 'projects',
+        kind: 'projects',
+        layout: 'entries',
         label: 'Projects',
         entries: [
           {
@@ -85,13 +90,15 @@ function createExportData(): NormalizedResumeExport {
       },
       {
         id: 'skills',
-        type: 'skills',
+        kind: 'skills',
+        layout: 'lines',
         label: 'Skills',
         entries: [{ id: 'sk1', title: '', subtitle: '', text: 'TypeScript, React', bullets: [] }],
       },
       {
         id: 'certifications',
-        type: 'certifications',
+        kind: 'certifications',
+        layout: 'entries',
         label: 'Certifications',
         entries: [
           {
@@ -114,7 +121,7 @@ function parseExport(data: NormalizedResumeExport) {
 }
 
 describe('createJsonResumeExport', () => {
-  it('maps every section type to the JSON Resume schema', () => {
+  it('maps every section kind to the JSON Resume schema', () => {
     const resume = parseExport(createExportData());
 
     expect(resume.$schema).toBe(
@@ -170,24 +177,35 @@ describe('createJsonResumeExport', () => {
     const data = createExportData();
     data.sections.push({
       id: 'volunteering',
-      type: 'custom',
+      kind: 'custom',
+      layout: 'entries',
       label: 'Volunteering',
       entries: [
         { id: 'v1', title: 'Food bank', subtitle: '2022', text: '', bullets: ['Ran logistics'] },
       ],
     });
 
-    expect(parseExport(data).projects).toContainEqual({
+    data.sections.push({
+      id: 'languages',
+      kind: 'custom',
+      layout: 'lines',
+      label: 'Languages',
+      entries: [{ id: 'l1', title: '', subtitle: '', text: 'English, Spanish', bullets: [] }],
+    });
+
+    const { projects } = parseExport(data);
+    expect(projects).toContainEqual({
       name: 'Food bank',
       description: '2022',
       type: 'Volunteering',
       highlights: ['Ran logistics'],
     });
+    expect(projects).toContainEqual({ name: 'English, Spanish', type: 'Languages' });
   });
 
   it('falls back to startDate for certificates without an endDate', () => {
     const data = createExportData();
-    const cert = data.sections.find((s) => s.type === 'certifications')!.entries[0];
+    const cert = data.sections.find((s) => s.kind === 'certifications')!.entries[0];
     delete cert.endDate;
 
     const resume = parseExport(data);
@@ -209,7 +227,8 @@ describe('createJsonResumeExport', () => {
       sections: [
         {
           id: 'summary',
-          type: 'summary',
+          kind: 'summary',
+          layout: 'lines',
           label: 'Summary',
           entries: [{ id: 's1', title: '', subtitle: '', text: 'Hi.', bullets: [] }],
         },

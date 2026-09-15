@@ -1,4 +1,10 @@
-export type SectionType =
+/**
+ * What a section is about: its icon, the headings the importer matches to it, where JSON
+ * Resume files it, and later what the assistant takes it to be. Never how it prints — that
+ * is `SectionLayout`. The built-in kinds are presets (`lib/resume/sectionPresets.ts`);
+ * `custom` is a section the user named.
+ */
+export type SectionKind =
   | 'summary'
   | 'education'
   | 'experience'
@@ -6,11 +12,16 @@ export type SectionType =
   | 'projects'
   | 'skills'
   | 'certifications'
-  /** Named by the user, as many as they like; entries like Projects (title, subtitle, bullets). */
   | 'custom';
 
-/** The sections Mosaic knows by name; a resume has at most one of each. */
-export type BuiltInSectionType = Exclude<SectionType, 'custom'>;
+export type BuiltInSectionKind = Exclude<SectionKind, 'custom'>;
+
+/**
+ * How a section's items print. `lines`: each item is a line of plain text (`text`), as in a
+ * summary or a skills list. `entries`: each item is an italic title line — `title` on the
+ * left, `subtitle` on the right — followed by bullets.
+ */
+export type SectionLayout = 'lines' | 'entries';
 
 export interface Bullet {
   id: string;
@@ -32,7 +43,8 @@ export interface ResumeEntry {
 
 export interface ResumeSection {
   id: string;
-  type: SectionType;
+  kind: SectionKind;
+  layout: SectionLayout;
   label: string;
   items: ResumeEntry[];
   order: number;

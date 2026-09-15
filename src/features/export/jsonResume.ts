@@ -79,6 +79,11 @@ function compact<T extends object>(value: T): T {
   return result;
 }
 
+/** An entry's one line of text: a lines-section item, or an entry's title. */
+function lineText(entry: ExportEntry): string {
+  return entry.text || entry.title;
+}
+
 function toWork(entry: ExportEntry): JsonResumeWork {
   return compact({
     name: entry.subtitle,
@@ -97,8 +102,8 @@ function buildBasics(data: NormalizedResumeExport): JsonResumeBasics {
   if (contact.github) profiles.push({ network: 'GitHub', url: contact.github });
 
   const summary = data.sections
-    .filter((section) => section.type === 'summary')
-    .flatMap((section) => section.entries.map((entry) => entry.text))
+    .filter((section) => section.kind === 'summary')
+    .flatMap((section) => section.entries.map(lineText))
     .filter(Boolean)
     .join('\n\n');
 
@@ -124,7 +129,7 @@ export function createJsonResumeExport(data: NormalizedResumeExport): string {
 
   for (const section of data.sections) {
     for (const entry of section.entries) {
-      switch (section.type) {
+      switch (section.kind) {
         case 'experience':
         case 'internships':
           work.push(toWork(entry));
@@ -144,10 +149,10 @@ export function createJsonResumeExport(data: NormalizedResumeExport): string {
         case 'custom':
           projects.push(
             compact({
-              name: entry.title,
+              name: lineText(entry),
               description: entry.subtitle,
               // JSON Resume has no sections of your own; a project keeps the section's name.
-              type: section.type === 'custom' ? section.label : undefined,
+              type: section.kind === 'custom' ? section.label : undefined,
               startDate: entry.startDate,
               endDate: entry.endDate,
               highlights: entry.bullets,
@@ -155,7 +160,7 @@ export function createJsonResumeExport(data: NormalizedResumeExport): string {
           );
           break;
         case 'skills':
-          if (entry.text) skills.push({ name: entry.text });
+          if (lineText(entry)) skills.push({ name: lineText(entry) });
           break;
         case 'certifications':
           certificates.push(

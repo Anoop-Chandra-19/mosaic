@@ -19,10 +19,16 @@ function contact(overrides: Partial<ContactInfo> = {}): ContactInfo {
   };
 }
 
-function section(type: ResumeSection['type'], label: string, titles: string[]): ResumeSection {
+function section(
+  kind: ResumeSection['kind'],
+  label: string,
+  titles: string[],
+  layout: ResumeSection['layout'] = 'entries'
+): ResumeSection {
   return {
     id: crypto.randomUUID(),
-    type,
+    kind,
+    layout,
     label,
     order: 0,
     items: titles.map((title) => ({ id: crypto.randomUUID(), selected: true, title, bullets: [] })),
@@ -48,7 +54,8 @@ describe('describeImport', () => {
         sections: [
           {
             id: 'x',
-            type: 'experience',
+            kind: 'experience',
+            layout: 'entries',
             label: 'Work Experience',
             order: 0,
             items: [
@@ -89,7 +96,7 @@ describe('buildImportedResume', () => {
     });
     for (const mode of ['new', 'replace'] as const) {
       const result = buildImportedResume(current, imported, mode);
-      expect(result.sections.map((s) => s.type)).toEqual(['education']);
+      expect(result.sections.map((s) => s.kind)).toEqual(['education']);
       expect(result.contact.name).toBe('New Name');
     }
   });
@@ -103,9 +110,9 @@ describe('buildImportedResume', () => {
       ]),
       'merge'
     );
-    const experience = result.sections.find((s) => s.type === 'experience');
+    const experience = result.sections.find((s) => s.kind === 'experience');
     expect(experience?.items.map((i) => i.title)).toEqual(['Old Job', 'New Job']);
-    expect(result.sections.some((s) => s.type === 'skills')).toBe(true);
+    expect(result.sections.some((s) => s.kind === 'skills')).toBe(true);
     // The document it merged into is left alone.
     expect(current.sections[0].items.map((i) => i.title)).toEqual(['Old Job']);
   });
@@ -123,10 +130,28 @@ describe('buildImportedResume', () => {
       ]),
       'merge'
     );
-    const custom = result.sections.filter((s) => s.type === 'custom');
+    const custom = result.sections.filter((s) => s.kind === 'custom');
     expect(custom.map((s) => [s.label, s.items.map((i) => i.title)])).toEqual([
       ['Volunteering', ['Food bank', 'Shelter']],
       ['Publications', ['A paper']],
+    ]);
+  });
+
+  it('merge never mixes shapes: a custom list stays apart from a custom section of its name', () => {
+    const withCustom: ResumeData = {
+      ...current,
+      sections: [...current.sections, section('custom', 'Languages', ['Spanish'])],
+    };
+    const result = buildImportedResume(
+      withCustom,
+      parsed([section('custom', 'Languages', ['English'], 'lines')]),
+      'merge'
+    );
+    expect(
+      result.sections.filter((s) => s.kind === 'custom').map((s) => [s.layout, s.items.length])
+    ).toEqual([
+      ['entries', 1],
+      ['lines', 1],
     ]);
   });
 

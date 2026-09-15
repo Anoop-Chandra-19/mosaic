@@ -1,15 +1,8 @@
-import type { ResumeData, SectionType } from '@/types/resume';
+import type { ResumeData, SectionKind, SectionLayout } from '@/types/resume';
+import { BUILT_IN_KINDS } from './sectionPresets';
 
-const SECTION_TYPES: ReadonlySet<string> = new Set<SectionType>([
-  'summary',
-  'education',
-  'experience',
-  'internships',
-  'projects',
-  'skills',
-  'certifications',
-  'custom',
-]);
+const SECTION_KINDS: ReadonlySet<string> = new Set<SectionKind>([...BUILT_IN_KINDS, 'custom']);
+const SECTION_LAYOUTS: ReadonlySet<string> = new Set<SectionLayout>(['lines', 'entries']);
 
 export function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -48,9 +41,12 @@ function isResumeSection(value: unknown): boolean {
   return (
     typeof value.id === 'string' &&
     typeof value.label === 'string' &&
-    // Unknown section types are rejected: the preview/editor switch on them.
-    typeof value.type === 'string' &&
-    SECTION_TYPES.has(value.type) &&
+    // Unknown kinds and layouts are refused: the icon and exports read the kind, and
+    // everything that prints a section switches on its layout.
+    typeof value.kind === 'string' &&
+    SECTION_KINDS.has(value.kind) &&
+    typeof value.layout === 'string' &&
+    SECTION_LAYOUTS.has(value.layout) &&
     typeof value.order === 'number' &&
     Array.isArray(value.items) &&
     value.items.every(isResumeEntry)

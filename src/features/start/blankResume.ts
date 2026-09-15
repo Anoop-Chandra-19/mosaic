@@ -1,23 +1,24 @@
 import { createEmptyResume } from '@/lib/resume/defaultResume';
-import type { ResumeData, SectionType } from '@/types/resume';
+import { SECTION_PRESETS } from '@/lib/resume/sectionPresets';
+import type { BuiltInSectionKind, ResumeData } from '@/types/resume';
 
 /**
  * The sections nearly everyone ends up adding. A blank resume starts with the first three;
  * the editor offers the rest while the document is still empty.
  */
-export const STARTER_SECTIONS: { type: SectionType; label: string }[] = [
-  { type: 'experience', label: 'Experience' },
-  { type: 'education', label: 'Education' },
-  { type: 'skills', label: 'Skills' },
-  { type: 'projects', label: 'Projects' },
+export const STARTER_KINDS: BuiltInSectionKind[] = [
+  'experience',
+  'education',
+  'skills',
+  'projects',
 ];
 
 export function createBlankResume(): ResumeData {
   const doc = createEmptyResume();
-  doc.sections = STARTER_SECTIONS.slice(0, 3).map(({ type, label }, order) => ({
+  doc.sections = STARTER_KINDS.slice(0, 3).map((kind, order) => ({
     id: crypto.randomUUID(),
-    type,
-    label,
+    kind,
+    ...SECTION_PRESETS[kind],
     order,
     items: [],
   }));

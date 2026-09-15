@@ -1,4 +1,4 @@
-import type { SectionType } from '@/types/resume';
+import type { SectionLayout } from '@/types/resume';
 import { HEADLESS_LAYOUT as L } from '@/lib/resume/headlessLayout';
 
 export interface PreviewEntry {
@@ -11,7 +11,7 @@ export interface PreviewEntry {
 
 export interface PreviewRenderableSection {
   id: string;
-  type: SectionType;
+  layout: SectionLayout;
   label: string;
   entries: PreviewEntry[];
 }
@@ -20,15 +20,13 @@ interface PreviewSectionProps {
   section: PreviewRenderableSection;
 }
 
-const TEXT_ONLY_TYPES = new Set<SectionType>(['summary', 'skills']);
-
 const bodyText = {
   fontSize: `${L.bodyFontSize}px`,
   lineHeight: `${L.bodyLeading}px`,
 };
 
 export function PreviewSection({ section }: PreviewSectionProps) {
-  const isTextOnly = TEXT_ONLY_TYPES.has(section.type);
+  const isTextOnly = section.layout === 'lines';
 
   return (
     <section

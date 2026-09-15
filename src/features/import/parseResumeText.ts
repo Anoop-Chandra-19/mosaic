@@ -1,12 +1,13 @@
+import { SECTION_PRESETS } from '@/lib/resume/sectionPresets';
 import type {
-  BuiltInSectionType,
+  BuiltInSectionKind,
   Bullet,
   ContactInfo,
   ResumeData,
   ResumeEntry,
   ResumeSection,
 } from '@/types/resume';
-import { SECTION_LABELS, matchSectionHeader } from './sectionHeaders';
+import { matchSectionHeader } from './sectionHeaders';
 
 export interface ParsedResume {
   resume: ResumeData;
@@ -153,9 +154,9 @@ function parseEntrySection(body: string[]): ResumeEntry[] {
   return entries;
 }
 
-function buildSectionEntries(type: ResumeSection['type'], body: string[]): ResumeEntry[] {
-  if (type === 'summary') return parseSummarySection(body);
-  if (type === 'skills') return parseSkillsSection(body);
+function buildSectionEntries(kind: BuiltInSectionKind, body: string[]): ResumeEntry[] {
+  if (kind === 'summary') return parseSummarySection(body);
+  if (SECTION_PRESETS[kind].layout === 'lines') return parseSkillsSection(body);
   return parseEntrySection(body);
 }
 
@@ -169,10 +170,10 @@ export function parseResumeText(input: string): ParsedResume {
   const lines = input.replace(/\r\n?/g, '\n').split('\n');
 
   // Locate section headers.
-  const headers: { index: number; type: BuiltInSectionType }[] = [];
+  const headers: { index: number; kind: BuiltInSectionKind }[] = [];
   lines.forEach((line, index) => {
-    const type = matchSectionHeader(line);
-    if (type) headers.push({ index, type });
+    const kind = matchSectionHeader(line);
+    if (kind) headers.push({ index, kind });
   });
 
   const firstHeaderIndex = headers.length ? headers[0].index : lines.length;
@@ -184,12 +185,14 @@ export function parseResumeText(input: string): ParsedResume {
     const bodyStart = header.index + 1;
     const bodyEnd = i + 1 < headers.length ? headers[i + 1].index : lines.length;
     const body = lines.slice(bodyStart, bodyEnd);
-    const items = buildSectionEntries(header.type, body);
+    const items = buildSectionEntries(header.kind, body);
     if (items.length === 0) return;
     sections.push({
       id: crypto.randomUUID(),
-      type: header.type,
-      label: SECTION_LABELS[header.type],
+      kind: header.kind,
+      layout: SECTION_PRESETS[header.kind].layout,
+      // The heading as written, so a resume keeps its own names ("Work History").
+      label: lines[header.index].trim(),
       order: sections.length,
       items,
     });

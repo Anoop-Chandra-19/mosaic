@@ -136,6 +136,10 @@ never use CSS `zoom` for the scaling — it re-runs layout and can re-wrap text.
 - The "Headless Headhunter" format: section headers are the only bold text below the name;
   job and project lines are italic; text is black only. Never put `letter-spacing` or
   `text-transform: uppercase` on section headers — both break ATS text extraction.
+- A section prints by its `layout` (`lines` or `entries`), never by its `kind`. The kind is
+  meaning only — icon, importer headings, JSON Resume — and the built-in kinds are presets
+  in `lib/resume/sectionPresets.ts`, any number of each; `custom` is a section the user
+  named.
 - Spacing comes from the 18pt leading grid. Margins between bullets or entries push the
   page off the grid, and the error compounds down the page.
 

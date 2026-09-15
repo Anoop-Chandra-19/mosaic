@@ -145,7 +145,7 @@ export function PDFResumeDocument({ data, paperSize }: PDFResumeDocumentProps) {
         </View>
 
         {data.sections.map((section, sectionIndex) => {
-          const isTextOnly = section.type === 'summary' || section.type === 'skills';
+          const isTextOnly = section.layout === 'lines';
 
           return (
             <View

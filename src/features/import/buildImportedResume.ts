@@ -43,12 +43,13 @@ function mergeContact(current: ContactInfo, incoming: ContactInfo): ContactInfo 
 const sameName = (a: string, b: string) => a.trim().toLowerCase() === b.trim().toLowerCase();
 
 /**
- * Whether `incoming` goes into `existing`: a built-in section into the one of its type, a
- * custom section into the custom section of the same name.
+ * Whether `incoming` goes into `existing`: a built-in section into the first of its kind,
+ * a custom section into the custom section of the same name. Only ever into a section of
+ * the same shape, so no item loses the fields it prints with.
  */
 function belongsIn(existing: ResumeSection, incoming: ResumeSection): boolean {
-  if (existing.type !== incoming.type) return false;
-  return incoming.type !== 'custom' || sameName(existing.label, incoming.label);
+  if (existing.kind !== incoming.kind || existing.layout !== incoming.layout) return false;
+  return incoming.kind !== 'custom' || sameName(existing.label, incoming.label);
 }
 
 /** Append incoming sections into the existing ones they belong in, or add them. */

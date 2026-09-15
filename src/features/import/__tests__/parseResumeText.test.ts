@@ -29,9 +29,9 @@ AWS Certified Solutions Architect
 Google Cloud Professional
 `;
 
-function sectionOf(sections: ResumeSection[], type: string) {
-  const section = sections.find((s) => s.type === type);
-  if (!section) throw new Error(`missing section: ${type}`);
+function sectionOf(sections: ResumeSection[], kind: string) {
+  const section = sections.find((s) => s.kind === kind);
+  if (!section) throw new Error(`missing section: ${kind}`);
   return section;
 }
 
@@ -55,11 +55,14 @@ describe('parseResumeText', () => {
     expect(resume.contact.website).toBe('sam-builds.dev');
   });
 
-  it('maps headings to the correct section types and canonical labels', () => {
+  it('maps headings to kinds and shapes, keeping each heading as written', () => {
     const { resume } = parseResumeText(SAMPLE);
-    const types = resume.sections.map((s) => s.type);
-    expect(types).toEqual(['summary', 'experience', 'skills', 'certifications']);
-    expect(sectionOf(resume.sections, 'experience').label).toBe('Work Experience');
+    expect(resume.sections.map((s) => [s.kind, s.layout, s.label])).toEqual([
+      ['summary', 'lines', 'Professional Summary'],
+      ['experience', 'entries', 'Work Experience'],
+      ['skills', 'lines', 'Skills'],
+      ['certifications', 'entries', 'Certifications'],
+    ]);
     expect(resume.sections.map((s) => s.order)).toEqual([0, 1, 2, 3]);
   });
 

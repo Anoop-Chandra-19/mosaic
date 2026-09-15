@@ -25,7 +25,7 @@ export function createMarkdownExport(data: NormalizedResumeExport) {
     lines.push(`## ${section.label}`);
     lines.push('');
 
-    const isTextOnly = section.type === 'summary' || section.type === 'skills';
+    const isTextOnly = section.layout === 'lines';
 
     for (const entry of section.entries) {
       if (isTextOnly) {

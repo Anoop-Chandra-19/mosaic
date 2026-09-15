@@ -3,7 +3,7 @@ import { immer } from 'zustand/middleware/immer';
 import { DbError, getDb } from '@/lib/storage/mosaicDb';
 import { createEmptyResume } from '@/lib/resume/defaultResume';
 import type { Draft } from '@/types/db';
-import type { ResumeData, ResumeEntry, ContactInfo, SectionType } from '@/types/resume';
+import type { ResumeData, ResumeEntry, ResumeSection, ContactInfo } from '@/types/resume';
 
 /*
  * The draft in the editor: one template's document. Every edit bumps `rev` and schedules a
@@ -35,7 +35,7 @@ interface ResumeState extends ResumeData {
   updateContact: (patch: Partial<ContactInfo>) => void;
 
   /** Adds an empty section at the end; returns its id. */
-  addSection: (type: SectionType, label: string) => string;
+  addSection: (section: Pick<ResumeSection, 'kind' | 'layout' | 'label'>) => string;
   removeSection: (sectionId: string) => void;
   reorderSections: (orderedIds: string[]) => void;
   updateSectionLabel: (sectionId: string, label: string) => void;
@@ -99,10 +99,10 @@ export const useResumeStore = create<ResumeState>()(
 
       // Section CRUD
 
-      addSection: (type, label) => {
+      addSection: ({ kind, layout, label }) => {
         const id = crypto.randomUUID();
         edit((state) => {
-          state.sections.push({ id, type, label, items: [], order: state.sections.length });
+          state.sections.push({ id, kind, layout, label, items: [], order: state.sections.length });
         });
         return id;
       },

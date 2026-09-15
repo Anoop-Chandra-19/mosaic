@@ -5,7 +5,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { ConfirmDeleteDialog } from '@/components/ConfirmDeleteDialog';
 import { ItemActionsMenu } from '@/components/ItemActionsMenu';
 import { InlineEditField } from './InlineEditField';
-import { SECTION_ICONS } from './section-icons';
+import { CUSTOM_ICONS, PRESET_ICONS } from './section-icons';
 import { EntryCard } from './EntryCard';
 import type { ResumeSection } from '@/types/resume';
 import { useResumeStore } from '@/stores/resumeStore';
@@ -36,14 +36,15 @@ export function SectionItem({
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [actionsOpen, setActionsOpen] = useState(false);
 
-  const Icon = SECTION_ICONS[section.type];
+  // A custom section has no kind to go by, so its icon shows its shape.
+  const Icon =
+    section.kind === 'custom' ? CUSTOM_ICONS[section.layout] : PRESET_ICONS[section.kind];
 
   const handleAddEntry = () => {
-    const isTextOnly = section.type === 'summary' || section.type === 'skills';
     addEntry(section.id, {
       selected: true,
       bullets: [],
-      ...(isTextOnly ? { text: '' } : { title: '', subtitle: '' }),
+      ...(section.layout === 'lines' ? { text: '' } : { title: '', subtitle: '' }),
     });
   };
 
@@ -123,7 +124,7 @@ export function SectionItem({
                 key={entry.id}
                 entry={entry}
                 sectionId={section.id}
-                sectionType={section.type}
+                layout={section.layout}
                 isFirst={i === 0}
                 isLast={i === section.items.length - 1}
                 onMoveUp={() => moveEntry(i, -1)}

@@ -3,14 +3,14 @@ import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { SECTION_ICONS, SECTION_TYPE_OPTIONS } from './section-icons';
-import { SectionItem } from './SectionItem';
-import { useAddCustomSection } from './useAddCustomSection';
+import { BUILT_IN_KINDS, SECTION_PRESETS } from '@/lib/resume/sectionPresets';
 import { useResumeStore } from '@/stores/resumeStore';
+import { SectionItem } from './SectionItem';
+import { CustomMenuItems, PresetMenuItems } from './SectionMenuItems';
+import { useAddCustomSection } from './useAddCustomSection';
 
 export function SectionList({
   showAddSection = true,
@@ -25,12 +25,9 @@ export function SectionList({
   const sections = useResumeStore((s) => s.sections);
   const addSection = useResumeStore((s) => s.addSection);
   const reorderSections = useResumeStore((s) => s.reorderSections);
+  const custom = useAddCustomSection(onCustomAdded);
 
   const sorted = [...sections].sort((a, b) => a.order - b.order);
-  const usedTypes = new Set(sections.map((s) => s.type));
-  const availableTypes = SECTION_TYPE_OPTIONS.filter((o) => !usedTypes.has(o.type));
-  const CustomIcon = SECTION_ICONS.custom;
-  const custom = useAddCustomSection(onCustomAdded);
 
   const moveSection = (index: number, direction: -1 | 1) => {
     const ids = sorted.map((s) => s.id);
@@ -63,20 +60,12 @@ export function SectionList({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" onCloseAutoFocus={custom.onCloseAutoFocus}>
-            {availableTypes.map(({ type, label }) => {
-              const Icon = SECTION_ICONS[type];
-              return (
-                <DropdownMenuItem key={type} onClick={() => addSection(type, label)}>
-                  <Icon className="mr-2 size-4" />
-                  {label}
-                </DropdownMenuItem>
-              );
-            })}
-            {availableTypes.length > 0 && <DropdownMenuSeparator />}
-            <DropdownMenuItem onSelect={custom.choose}>
-              <CustomIcon className="mr-2 size-4" />
-              Custom section
-            </DropdownMenuItem>
+            <PresetMenuItems
+              kinds={BUILT_IN_KINDS}
+              onAdd={(kind) => addSection({ kind, ...SECTION_PRESETS[kind] })}
+            />
+            <DropdownMenuSeparator />
+            <CustomMenuItems onChoose={custom.choose} />
           </DropdownMenuContent>
         </DropdownMenu>
       )}

@@ -1,4 +1,4 @@
-import type { ResumeEntry, ResumeSection, SectionType } from '@/types/resume';
+import type { ResumeEntry, ResumeSection, SectionLayout } from '@/types/resume';
 import { HEADLESS_LAYOUT } from '@/lib/resume/headlessLayout';
 import type { PreviewEntry, PreviewRenderableSection } from './PreviewSection';
 
@@ -20,8 +20,6 @@ type PaginatedEntry = PreviewEntry & {
   _height?: number;
   _sourceKey?: string;
 };
-
-const TEXT_ONLY_TYPES = new Set<SectionType>(['summary', 'skills']);
 
 // The Headless format puts everything on a single 18pt leading grid: one blank
 // line above each section header, and no gaps anywhere else. Spacing between
@@ -52,10 +50,10 @@ function estimateTextHeight(
   return lines * lineHeight;
 }
 
-function normalizeEntry(entry: ResumeEntry, sectionType: SectionType): PaginatedEntry | null {
+function normalizeEntry(entry: ResumeEntry, layout: SectionLayout): PaginatedEntry | null {
   if (!entry.selected) return null;
 
-  if (TEXT_ONLY_TYPES.has(sectionType)) {
+  if (layout === 'lines') {
     const text = (entry.text ?? '').trim();
     if (!text) return null;
     return { id: entry.id, text, bullets: [], _sourceKey: entry.id };
@@ -85,10 +83,10 @@ export function normalizeSections(sections: ResumeSection[]): PreviewRenderableS
     .sort((a, b) => a.order - b.order)
     .map((section) => ({
       id: section.id,
-      type: section.type,
+      layout: section.layout,
       label: section.label,
       entries: section.items
-        .map((entry) => normalizeEntry(entry, section.type))
+        .map((entry) => normalizeEntry(entry, section.layout))
         .filter((entry): entry is PaginatedEntry => entry !== null),
     }))
     .filter((section) => section.entries.length > 0);
@@ -115,7 +113,7 @@ function getEntryHeight(
   const measuredHeight = measurements.entryHeights[entryKey];
   if (measuredHeight) return measuredHeight;
 
-  if (TEXT_ONLY_TYPES.has(section.type)) {
+  if (section.layout === 'lines') {
     return estimateTextHeight(entry.text ?? '', BODY_LINE_HEIGHT_PX, TEXT_CHARS_PER_LINE);
   }
 
@@ -138,7 +136,7 @@ function splitEntryByAvailableHeight(
 ): { first: PaginatedEntry; rest: PaginatedEntry | null } | null {
   if (availableHeight <= 18) return null;
 
-  if (TEXT_ONLY_TYPES.has(section.type)) {
+  if (section.layout === 'lines') {
     const text = entry.text ?? '';
     const fullHeight = getEntryHeight(section, entry, measurements);
     const ratio = Math.max(0.25, Math.min(0.9, availableHeight / Math.max(fullHeight, 1)));
@@ -264,7 +262,7 @@ export function paginateSections(
 
     const next: PreviewRenderableSection = {
       id: section.id,
-      type: section.type,
+      layout: section.layout,
       label: section.label,
       entries: [],
     };
@@ -283,13 +281,14 @@ export function paginateSections(
       const pageSection = page.sections.find((item) => item.id === section.id);
       const sectionTitleHeight =
         measurements.sectionTitleHeights[section.id] ?? HEADLESS_LAYOUT.bodyLeading;
-      const sectionBodyTopPadding = TEXT_ONLY_TYPES.has(section.type)
-        ? TEXT_ONLY_SECTION_CONTENT_TOP_PADDING_PX
-        : SECTION_CONTENT_TOP_PADDING_PX;
+      const sectionBodyTopPadding =
+        section.layout === 'lines'
+          ? TEXT_ONLY_SECTION_CONTENT_TOP_PADDING_PX
+          : SECTION_CONTENT_TOP_PADDING_PX;
       const sectionOpenCost = pageSection
         ? 0
         : SECTION_TOP_PADDING_PX + sectionTitleHeight + sectionBodyTopPadding;
-      const entryGapPx = TEXT_ONLY_TYPES.has(section.type) ? TEXT_ONLY_ENTRY_GAP_PX : ENTRY_GAP_PX;
+      const entryGapPx = section.layout === 'lines' ? TEXT_ONLY_ENTRY_GAP_PX : ENTRY_GAP_PX;
       const entryGap = pageSection && pageSection.entries.length > 0 ? entryGapPx : 0;
       const candidateHeight = getEntryHeight(section, candidate, measurements);
       const candidateCost = sectionOpenCost + entryGap + candidateHeight;
@@ -382,14 +381,15 @@ export function createFallbackMeasurements(
 
     for (const entry of section.entries as PaginatedEntry[]) {
       const key = `${section.id}::${entry._sourceKey ?? entry.id}`;
-      entryHeights[key] = TEXT_ONLY_TYPES.has(section.type)
-        ? estimateTextHeight(entry.text ?? '', BODY_LINE_HEIGHT_PX)
-        : HEADING_LINE_HEIGHT_PX +
-          entry.bullets.reduce(
-            (sum, bullet) =>
-              sum + estimateTextHeight(bullet, BODY_LINE_HEIGHT_PX, BULLET_CHARS_PER_LINE),
-            0
-          );
+      entryHeights[key] =
+        section.layout === 'lines'
+          ? estimateTextHeight(entry.text ?? '', BODY_LINE_HEIGHT_PX)
+          : HEADING_LINE_HEIGHT_PX +
+            entry.bullets.reduce(
+              (sum, bullet) =>
+                sum + estimateTextHeight(bullet, BODY_LINE_HEIGHT_PX, BULLET_CHARS_PER_LINE),
+              0
+            );
     }
   }
 

@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { createDefaultResume } from '@/lib/resume/defaultResume';
+import { SECTION_PRESETS } from '@/lib/resume/sectionPresets';
 import { createMarkdownExport } from '@/features/export/markdown';
 import { normalizeResumeForExport } from '@/features/export/normalizeResumeExport';
 import { markdownToText } from '../markdownToText';
 import { parseResumeText } from '../parseResumeText';
-import { SECTION_LABELS } from '../sectionHeaders';
 
 describe('markdownToText', () => {
   it('drops heading marks, emphasis, rules, and escapes', () => {
@@ -33,7 +33,7 @@ describe('markdownToText', () => {
     const resume = createDefaultResume();
     // Headings the parser knows; "Education & Certificates" is a label it does not.
     for (const section of resume.sections) {
-      if (section.type !== 'custom') section.label = SECTION_LABELS[section.type];
+      if (section.kind !== 'custom') section.label = SECTION_PRESETS[section.kind].label;
     }
     const exported = normalizeResumeForExport(resume);
     const markdown = createMarkdownExport(exported);
@@ -41,7 +41,12 @@ describe('markdownToText', () => {
     const { resume: imported } = parseResumeText(markdownToText(markdown));
 
     expect(imported.contact.name).toBe(exported.contact.name);
-    expect(imported.sections.map((s) => s.type)).toEqual(exported.sections.map((s) => s.type));
+    const shape = (s: { kind: string; layout: string; label: string }) => [
+      s.kind,
+      s.layout,
+      s.label,
+    ];
+    expect(imported.sections.map(shape)).toEqual(exported.sections.map(shape));
     const bullets = (sections: { items: { bullets: unknown[] }[] }[]) =>
       sections.flatMap((s) => s.items.flatMap((i) => i.bullets)).length;
     expect(bullets(imported.sections)).toBe(
