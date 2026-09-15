@@ -203,6 +203,59 @@ describe('createJsonResumeExport', () => {
     expect(projects).toContainEqual({ name: 'English, Spanish', type: 'Languages' });
   });
 
+  it('records each section in meta.mosaic, so Mosaic can read the file back exactly', () => {
+    const data = createExportData();
+    data.contact.citizenshipStatus = 'US Citizen';
+
+    const { meta } = parseExport(data);
+    expect(meta.mosaic.workStatus).toBe('US Citizen');
+    expect(
+      meta.mosaic.sections.map((s: { label: string; from: string; count: number }) => [
+        s.label,
+        s.from,
+        s.count,
+      ])
+    ).toEqual([
+      ['Summary', 'summary', 2],
+      ['Education', 'education', 1],
+      ['Experience', 'work', 1],
+      ['Internships', 'work', 1],
+      ['Projects', 'projects', 1],
+      ['Skills', 'skills', 1],
+      ['Certifications', 'certificates', 1],
+    ]);
+  });
+
+  it('puts a section its kind’s array can’t hold under projects, by its name', () => {
+    const data = createExportData();
+    const cert = data.sections.find((s) => s.kind === 'certifications')!;
+    cert.entries[0].bullets = ['Renewed yearly'];
+    data.sections.push({
+      id: 'toolbox',
+      kind: 'skills',
+      layout: 'entries',
+      label: 'Toolbox',
+      entries: [{ id: 't1', title: 'Go', subtitle: 'expert', text: '', bullets: ['Concurrency'] }],
+    });
+
+    const resume = parseExport(data);
+    expect(resume).not.toHaveProperty('certificates');
+    expect(resume.projects).toContainEqual({
+      name: 'AWS Solutions Architect',
+      description: 'Amazon',
+      type: 'Certifications',
+      startDate: '2024-01',
+      endDate: '2025-01',
+      highlights: ['Renewed yearly'],
+    });
+    // Skills in entries keep their subtitle and bullets as level and keywords.
+    expect(resume.skills).toContainEqual({
+      name: 'Go',
+      level: 'expert',
+      keywords: ['Concurrency'],
+    });
+  });
+
   it('falls back to startDate for certificates without an endDate', () => {
     const data = createExportData();
     const cert = data.sections.find((s) => s.kind === 'certifications')!.entries[0];

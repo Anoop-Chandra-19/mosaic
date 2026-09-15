@@ -87,8 +87,8 @@ interface ReadResume {
 }
 
 /**
- * Bring a resume in: a Markdown or text file, pasted text, or a Mosaic backup (handed on to
- * Restore). What Mosaic found is shown for review before anything is written.
+ * Bring a resume in: a Markdown, text, or JSON Resume file, pasted text, or a Mosaic backup
+ * (handed on to Restore). What Mosaic found is shown for review before anything is written.
  */
 export function ImportResumeDialog() {
   const open = useOverlayStore((s) => s.importOpen);
@@ -218,7 +218,7 @@ function PickStep({
             Drop a resume here
           </p>
           <p className="mt-1 mb-3 text-xs text-zinc-600 dark:text-zinc-400">
-            Markdown, plain text, or a Mosaic JSON backup.
+            Markdown, plain text, JSON Resume, or a Mosaic JSON backup.
           </p>
           <Button variant="outline" size="sm" onClick={() => void choose()}>
             Choose a file…

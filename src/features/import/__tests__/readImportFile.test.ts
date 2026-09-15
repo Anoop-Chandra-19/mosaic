@@ -23,10 +23,23 @@ describe('readImportFile', () => {
     expect(read.type === 'resume' && read.parsed.resume.contact.name).toBe('Ada Lovelace');
   });
 
-  it('hands JSON to Restore, which refuses a file that is not a backup', () => {
-    expect(() => readImportFile('notes.json', bytes('{"hello": 1}'))).toThrow(
+  it('reads a JSON Resume as a resume to review', () => {
+    const read = readImportFile('ada.json', bytes('{"basics": {"name": "Ada Lovelace"}}'));
+    expect(read.type === 'resume' && read.parsed.resume.contact.name).toBe('Ada Lovelace');
+  });
+
+  it('hands a Mosaic backup to Restore, which checks it', () => {
+    expect(() => readImportFile('backup.json', bytes('{"bundleVersion": 2}'))).toThrow(
       UnreadableBackupError
     );
+  });
+
+  it('says so for JSON that is neither', () => {
+    for (const content of ['{"hello": 1}', 'not json']) {
+      expect(() => readImportFile('notes.json', bytes(content))).toThrow(
+        new UnreadableFileError('notes.json isn’t a resume or a Mosaic backup.')
+      );
+    }
   });
 
   it('says so for a kind of file it cannot read', () => {
