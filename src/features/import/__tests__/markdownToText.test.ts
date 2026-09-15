@@ -4,7 +4,7 @@ import { SECTION_PRESETS } from '@/lib/resume/sectionPresets';
 import { createMarkdownExport } from '@/features/export/markdown';
 import { normalizeResumeForExport } from '@/features/export/normalizeResumeExport';
 import { markdownToText } from '../markdownToText';
-import { parseResumeText } from '../parseResumeText';
+import { parseResumeText } from '../parseResume';
 
 describe('markdownToText', () => {
   it('drops heading marks, emphasis, rules, and escapes', () => {

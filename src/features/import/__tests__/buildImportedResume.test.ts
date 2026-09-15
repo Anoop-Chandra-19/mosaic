@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { ContactInfo, ResumeData, ResumeSection } from '@/types/resume';
 import { buildImportedResume, describeImport } from '../buildImportedResume';
-import type { ParsedResume } from '../parseResumeText';
+import type { ParsedResume } from '../parseResume';
 
 function contact(overrides: Partial<ContactInfo> = {}): ContactInfo {
   return {

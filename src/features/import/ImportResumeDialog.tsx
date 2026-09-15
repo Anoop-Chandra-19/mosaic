@@ -6,7 +6,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
-import { fileFailure, readBackup } from '@/features/backup/backupFiles';
+import { fileFailure } from '@/features/backup/backupFiles';
 import { cn } from '@/lib/utils';
 import { getResumeSnapshot } from '@/stores/resumeStore';
 import { attempt, showToast, useOverlayStore } from '@/stores/overlayStore';
@@ -15,13 +15,11 @@ import { useUIStore } from '@/stores/uiStore';
 import { MAX_FILE_BYTES } from '@/types/files';
 import type { ContactInfo } from '@/types/resume';
 import { buildImportedResume, type ImportMode } from './buildImportedResume';
-import { markdownToText } from './markdownToText';
-import { parseResumeText, type ParsedResume } from './parseResumeText';
+import { parseResumeText, type ParsedResume } from './parseResume';
+import { readImportFile, UnreadableFileError, type ImportRead } from './readImportFile';
 
 /** Recorded in the template's history as where pasted content came from. */
 const PASTED = 'pasted text';
-
-const TEXT_EXTENSIONS = new Set(['md', 'markdown', 'txt', 'text']);
 
 const MODE_OPTIONS: { id: ImportMode; label: string; hint: string }[] = [
   {
@@ -94,47 +92,58 @@ export function ImportResumeDialog() {
   );
 }
 
+/** Why a file couldn't be read, in words for the user. */
+function unreadable(error: unknown, fallback: string): string {
+  return error instanceof UnreadableFileError ? error.message : fileFailure(error, fallback);
+}
+
 function ImportFlow({ onDone }: { onDone: () => void }) {
   const [read, setRead] = useState<ReadResume | null>(null);
+  // A file that couldn't be read: said under the drop zone until the next try.
+  const [fileError, setFileError] = useState<string | null>(null);
   const setPendingRestore = useOverlayStore((s) => s.setPendingRestore);
 
-  const readText = (source: string, text: string) => {
-    setRead({ source, parsed: parseResumeText(text) });
-  };
-
   /** A file from the picker or a drop: a resume to review, or a backup to restore. */
-  const readFile = (name: string, text: string) => {
-    const extension = name.includes('.') ? name.split('.').pop()!.toLowerCase() : '';
-    if (extension === 'json') {
-      try {
-        const backup = readBackup(name, text);
-        onDone();
-        setPendingRestore(backup);
-      } catch (error) {
-        showToast(fileFailure(error, `Could not read ${name}`), 'error');
-      }
+  const readFile = (name: string, bytes: Uint8Array) => {
+    let result: ImportRead;
+    try {
+      result = readImportFile(name, bytes);
+    } catch (error) {
+      setFileError(unreadable(error, `Mosaic couldn’t read ${name}.`));
       return;
     }
-    if (extension === 'md' || extension === 'markdown') {
-      readText(name, markdownToText(text));
+    setFileError(null);
+    if (result.type === 'backup') {
+      onDone();
+      setPendingRestore(result.backup);
       return;
     }
-    readText(name, text);
+    setRead({ source: result.source, parsed: result.parsed });
   };
 
   return read ? (
     <ReviewStep read={read} onBack={() => setRead(null)} onDone={onDone} />
   ) : (
-    <PickStep onFile={readFile} onPaste={(text) => readText(PASTED, text)} onCancel={onDone} />
+    <PickStep
+      fileError={fileError}
+      onFileError={setFileError}
+      onFile={readFile}
+      onPaste={(text) => setRead({ source: PASTED, parsed: parseResumeText(text) })}
+      onCancel={onDone}
+    />
   );
 }
 
 function PickStep({
+  fileError,
+  onFileError,
   onFile,
   onPaste,
   onCancel,
 }: {
-  onFile: (name: string, text: string) => void;
+  fileError: string | null;
+  onFileError: (message: string) => void;
+  onFile: (name: string, bytes: Uint8Array) => void;
   onPaste: (text: string) => void;
   onCancel: () => void;
 }) {
@@ -143,10 +152,10 @@ function PickStep({
 
   const choose = async () => {
     try {
-      const file = await window.mosaic.files.openText('import');
-      if (file) onFile(file.name, file.text);
+      const file = await window.mosaic.files.open('import');
+      if (file) onFile(file.name, file.bytes);
     } catch (error) {
-      showToast(fileFailure(error, 'Could not open the file'), 'error');
+      onFileError(unreadable(error, 'Mosaic couldn’t open that file.'));
     }
   };
 
@@ -155,16 +164,11 @@ function PickStep({
     setDragging(false);
     const file = event.dataTransfer.files[0];
     if (!file) return;
-    const extension = file.name.split('.').pop()?.toLowerCase() ?? '';
-    if (extension !== 'json' && !TEXT_EXTENSIONS.has(extension)) {
-      showToast(`Mosaic can’t read ${file.name} yet — paste its text instead`, 'error');
-      return;
-    }
     if (file.size > MAX_FILE_BYTES) {
-      showToast(`${file.name} is larger than 128 MB`, 'error');
+      onFileError(`${file.name} is larger than 128 MB.`);
       return;
     }
-    onFile(file.name, await file.text());
+    onFile(file.name, new Uint8Array(await file.arrayBuffer()));
   };
 
   return (
@@ -205,6 +209,16 @@ function PickStep({
             Choose a file…
           </Button>
         </div>
+
+        {fileError && (
+          <p
+            role="alert"
+            className="mt-2.5 flex gap-2 rounded-lg border border-red-300 bg-red-50 p-2.5 text-xs leading-relaxed text-red-900 dark:border-red-900 dark:bg-red-950 dark:text-red-200"
+          >
+            <AlertTriangle className="mt-0.5 size-3.5 shrink-0 text-red-600 dark:text-red-400" />
+            {fileError}
+          </p>
+        )}
 
         <label
           htmlFor="import-paste"

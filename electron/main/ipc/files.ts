@@ -8,7 +8,7 @@ import {
   type FileFilter,
   type IpcMainInvokeEvent,
 } from 'electron';
-import { MAX_FILE_BYTES, type FileType, type OpenedTextFile } from '@/types/files';
+import { MAX_FILE_BYTES, type FileType, type OpenedFile } from '@/types/files';
 import { FILES_OPEN, FILES_SAVE } from '../../shared/appChannels';
 
 const FILTERS: Record<FileType, FileFilter[]> = {
@@ -63,7 +63,7 @@ export function registerFileHandlers(isAppFrame: (event: IpcMainInvokeEvent) => 
     }
   );
 
-  ipcMain.handle(FILES_OPEN, async (event, type: unknown): Promise<OpenedTextFile | null> => {
+  ipcMain.handle(FILES_OPEN, async (event, type: unknown): Promise<OpenedFile | null> => {
     const win = ownWindow(event, FILES_OPEN);
     const { canceled, filePaths } = await dialog.showOpenDialog(win, {
       properties: ['openFile'],
@@ -74,6 +74,7 @@ export function registerFileHandlers(isAppFrame: (event: IpcMainInvokeEvent) => 
 
     const name = path.basename(filePath);
     if ((await fs.stat(filePath)).size > MAX_FILE_BYTES) throw tooLarge(name);
-    return { name, text: await fs.readFile(filePath, 'utf8') };
+    // Bytes, not text: main never interprets what it reads (a PDF isn't text at all).
+    return { name, bytes: new Uint8Array(await fs.readFile(filePath)) };
   });
 }

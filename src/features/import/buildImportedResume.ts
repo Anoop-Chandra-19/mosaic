@@ -1,5 +1,5 @@
 import type { ContactInfo, ResumeData, ResumeSection } from '@/types/resume';
-import type { ParsedResume } from './parseResumeText';
+import type { ParsedResume } from './parseResume';
 
 /**
  * `new` opens the import as its own template; `replace` swaps the open template's content

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { parseResumeText } from '../parseResumeText';
+import { textToLines, type ImportLine } from '../importLines';
+import { parseResumeLines, parseResumeText } from '../parseResume';
 import type { ResumeSection } from '@/types/resume';
 
 const SAMPLE = `Jane Developer
@@ -129,5 +130,73 @@ describe('parseResumeText', () => {
     expect(resume.sections).toHaveLength(0);
     expect(resume.contact.name).toBe('');
     expect(warnings.length).toBeGreaterThan(0);
+  });
+});
+
+describe('parseResumeLines', () => {
+  // Lines as a styled source (a DOCX, a PDF) marks them: one logical line each.
+  const lines: ImportLine[] = [
+    { text: 'Ada Lovelace' },
+    { text: 'ada@example.com | (555) 010-0100' },
+    { text: 'Work History', role: 'heading' },
+    { text: 'Analyst at Babbage & Co', role: 'entry', aside: '1842 to 1843' },
+    { text: 'Wrote the first program', role: 'bullet' },
+    { text: '', role: 'entry', aside: '1840' },
+    { text: 'Summary', role: 'heading' },
+    { text: 'First line of the summary.' },
+    { text: 'A second summary item.' },
+    { text: 'Leadership', role: 'heading' },
+    { text: 'Chair, Analytical Society', role: 'entry' },
+    { text: 'Toolbox', role: 'heading' },
+    { text: 'Punched cards, Difference engines' },
+  ];
+
+  it('starts an entry at each marked line, taking the aside as its subtitle', () => {
+    const { resume } = parseResumeLines(lines);
+    const work = sectionOf(resume.sections, 'experience');
+    expect(work.label).toBe('Work History');
+    expect(
+      work.items.map(({ title, subtitle, bullets }) => [title, subtitle, bullets.length])
+    ).toEqual([
+      ['Analyst at Babbage & Co', '1842 to 1843', 1],
+      [undefined, '1840', 0],
+    ]);
+  });
+
+  it('keeps logical lines apart, even in a summary', () => {
+    const { resume } = parseResumeLines(lines);
+    expect(sectionOf(resume.sections, 'summary').items.map((item) => item.text)).toEqual([
+      'First line of the summary.',
+      'A second summary item.',
+    ]);
+  });
+
+  it('takes a marked section’s shape from its marks, not from its heading', () => {
+    const { resume } = parseResumeLines([
+      { text: 'Skills', role: 'heading' },
+      { text: 'Languages', role: 'entry' },
+      { text: 'TypeScript and Go', role: 'bullet' },
+    ]);
+    expect(resume.sections.map((s) => [s.kind, s.layout])).toEqual([['skills', 'entries']]);
+  });
+
+  it('makes a heading it does not know a custom section, shaped like its body', () => {
+    const { resume } = parseResumeLines(lines);
+    const custom = resume.sections.filter((s) => s.kind === 'custom');
+    expect(custom.map((s) => [s.label, s.layout, s.items.length])).toEqual([
+      ['Leadership', 'entries', 1],
+      ['Toolbox', 'lines', 1],
+    ]);
+  });
+});
+
+describe('textToLines', () => {
+  it('turns blank lines into gaps, markers into bullets, and known names into headings', () => {
+    expect(textToLines('Jane\n\nSkills\n- Go\n\n  Rust  ')).toEqual([
+      { text: 'Jane' },
+      { text: 'Skills', role: 'heading', gapBefore: true },
+      { text: 'Go', role: 'bullet' },
+      { text: 'Rust', gapBefore: true },
+    ]);
   });
 });
