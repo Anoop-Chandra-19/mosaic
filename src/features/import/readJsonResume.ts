@@ -1,8 +1,17 @@
 import {
-  ENTRY_FIELDS,
+  projectType,
   type JsonResumeSource,
   type MosaicJsonResumeMeta,
 } from '@/features/export/jsonResume';
+import {
+  atPlace,
+  degree,
+  formatDate,
+  fromItem,
+  sameItem,
+  toItem,
+  when,
+} from '@/features/export/jsonResumeEntry';
 import { SECTION_PRESETS } from '@/lib/resume/sectionPresets';
 import { isRecord } from '@/lib/resume/validateResume';
 import type {
@@ -35,10 +44,12 @@ const SECTION_ARRAYS = [
 
 const SOURCES: ReadonlySet<string> = new Set<JsonResumeSource>([
   'summary',
-  ...(Object.keys(ENTRY_FIELDS) as JsonResumeSource[]),
+  'work',
+  'education',
+  'projects',
+  'skills',
+  'certificates',
 ]);
-
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 /** An object with `basics` or any of the standard section arrays is taken as a JSON Resume. */
 export function isJsonResume(value: unknown): value is Json {
@@ -117,14 +128,29 @@ function contactOf(basics: Json, workStatus: string): ContactInfo {
 
 // ── Mosaic's own export: `meta.mosaic` puts the sections back exactly ──
 
+/** `exact`: by item place, a title or subtitle as text. */
+function isExact(value: unknown): boolean {
+  return (
+    isRecord(value) &&
+    Object.values(value).every(
+      (parts) =>
+        isRecord(parts) &&
+        Object.entries(parts).every(
+          ([key, part]) => (key === 'title' || key === 'subtitle') && typeof part === 'string'
+        )
+    )
+  );
+}
+
 function metaSection(value: unknown): MetaSection | null {
   if (!isRecord(value)) return null;
-  const { kind, layout, label, from, count } = value;
+  const { kind, layout, label, from, count, exact } = value;
   const known =
     kind === 'custom' || (typeof kind === 'string' && Object.hasOwn(SECTION_PRESETS, kind));
   if (!known || (layout !== 'lines' && layout !== 'entries')) return null;
   if (typeof label !== 'string' || typeof from !== 'string' || !SOURCES.has(from)) return null;
   if (!Number.isInteger(count) || (count as number) < 0) return null;
+  if (exact !== undefined && !isExact(exact)) return null;
   return value as unknown as MetaSection;
 }
 
@@ -160,65 +186,46 @@ function ownSections(resume: Json, meta: MosaicJsonResumeMeta): ResumeSection[] 
 
   const taken: Partial<Record<JsonResumeSource, number>> = {};
   const sections: ResumeSection[] = [];
-  for (const { kind, layout, label, from, count } of meta.sections) {
+  for (const { kind, layout, label, from, count, exact } of meta.sections) {
     const start = taken[from] ?? 0;
     taken[from] = start + count;
     const slice = queues[from].slice(start, start + count);
-    const read = (title: string, subtitle = '', bullets: string[] = []) =>
-      layout === 'lines' ? entryOf({ line: title }) : entryOf({ title, subtitle, bullets });
+    const read = ({
+      title,
+      subtitle,
+      bullets,
+    }: {
+      title: string;
+      subtitle: string;
+      bullets: string[];
+    }) => (layout === 'lines' ? entryOf({ line: title }) : entryOf({ title, subtitle, bullets }));
 
     if (from === 'summary') {
-      sections.push(
-        sectionOf(
-          kind,
-          layout,
-          label,
-          (slice as string[]).map((s) => read(s))
-        )
+      const entries = (slice as string[]).map((line) =>
+        read({ title: line, subtitle: '', bullets: [] })
       );
+      sections.push(sectionOf(kind, layout, label, entries));
       continue;
     }
     // A project item names the section it came from, unless it came from Projects itself.
-    const type = kind === 'projects' ? '' : label.trim();
-    if (from === 'projects' && slice.some((item) => text((item as Json).type) !== type)) {
+    const type = projectType(kind, label);
+    if (from === 'projects' && slice.some((item) => text((item as Json).type) !== (type ?? ''))) {
       return null;
     }
-    const fields = ENTRY_FIELDS[from];
-    const entries = (slice as Json[]).map((item) =>
-      read(
-        text(item[fields.title]),
-        text(item[fields.subtitle]),
-        fields.bullets ? texts(item[fields.bullets]) : []
-      )
-    );
+    const entries = (slice as Json[]).map((item, index) => {
+      const back = fromItem(from, item);
+      const kept = exact?.[index];
+      if (!kept) return read(back);
+      // The text as it was, while the item's fields are still what the export wrote for it.
+      const asWritten = { ...back, ...kept };
+      return read(sameItem(toItem(from, asWritten, type), item) ? asWritten : back);
+    });
     sections.push(sectionOf(kind, layout, label, entries));
   }
   return sections;
 }
 
 // ── Any other JSON Resume: entries in the Headless line — what and where, then when ──
-
-/** An ISO date as the Headless format writes it — "Jan 2021", or "2021" — else as it is. */
-function formatDate(value: string): string {
-  const match = /^(\d{4})(?:-(\d{2}))?/.exec(value);
-  if (!match) return value;
-  const month = match[2] ? MONTHS[Number(match[2]) - 1] : undefined;
-  return month ? `${month} ${match[1]}` : match[1];
-}
-
-/** "Jan 2021 to Mar 2023"; a start with no end is still going. */
-function when(start: unknown, end: unknown): string {
-  const from = formatDate(text(start));
-  const to = formatDate(text(end));
-  if (from && to) return `${from} to ${to}`;
-  return from ? `${from} to Current` : to;
-}
-
-/** "Engineer at Acme, Detroit" — whichever parts there are. */
-function atPlace(what: string, ...where: string[]): string {
-  const place = where.filter(Boolean).join(', ');
-  return what && place ? `${what} at ${place}` : what || place;
-}
 
 const joined = (...parts: string[]) => parts.filter(Boolean).join(', ');
 const capitalized = (value: string) => value.charAt(0).toUpperCase() + value.slice(1);
@@ -230,27 +237,27 @@ function withKeywords(item: Json): string {
   return name && keywords ? `${name}: ${keywords}` : name || keywords;
 }
 
+const dates = (item: Json) => when(text(item.startDate), text(item.endDate));
+
 const roleEntry = (item: Json, role: string, where: string) =>
   entryOf({
     title: atPlace(text(item[role]), text(item[where]), text(item.location)),
-    subtitle: when(item.startDate, item.endDate),
+    subtitle: dates(item),
     bullets: [text(item.summary), ...texts(item.highlights)],
   });
 
 const projectEntry = (item: Json) =>
   entryOf({
     title: text(item.name),
-    subtitle: when(item.startDate, item.endDate),
+    subtitle: dates(item),
     bullets: [text(item.description), ...texts(item.highlights)],
   });
 
 function educationEntry(item: Json): ResumeEntry {
-  const degree = [text(item.studyType), text(item.area)].filter(Boolean).join(' in ');
-  const institution = text(item.institution);
   const score = text(item.score);
   return entryOf({
-    title: degree && institution ? `${degree} from ${institution}` : degree || institution,
-    subtitle: text(item.endDate) ? formatDate(text(item.endDate)) : when(item.startDate, ''),
+    title: degree(text(item.studyType), text(item.area), text(item.institution)),
+    subtitle: dates(item),
     bullets: [...texts(item.courses), score && !/gpa/i.test(score) ? `GPA: ${score}` : score],
   });
 }

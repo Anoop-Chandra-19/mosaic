@@ -1,6 +1,22 @@
 import { describe, expect, it } from 'vitest';
 import { createJsonResumeExport } from '../jsonResume';
-import type { NormalizedResumeExport } from '../normalizeResumeExport';
+import type { ExportEntry, NormalizedResumeExport } from '../normalizeResumeExport';
+
+let nextId = 0;
+const entry = (title: string, subtitle = '', bullets: string[] = []): ExportEntry => ({
+  id: `e${nextId++}`,
+  title,
+  subtitle,
+  text: '',
+  bullets,
+});
+const line = (text: string): ExportEntry => ({
+  id: `l${nextId++}`,
+  title: '',
+  subtitle: '',
+  text,
+  bullets: [],
+});
 
 function createExportData(): NormalizedResumeExport {
   return {
@@ -20,10 +36,7 @@ function createExportData(): NormalizedResumeExport {
         kind: 'summary',
         layout: 'lines',
         label: 'Summary',
-        entries: [
-          { id: 's1', title: '', subtitle: '', text: 'Focused builder.', bullets: [] },
-          { id: 's2', title: '', subtitle: '', text: 'Open-source fan.', bullets: [] },
-        ],
+        entries: [line('Focused builder.'), line('Open-source fan.')],
       },
       {
         id: 'education',
@@ -31,15 +44,9 @@ function createExportData(): NormalizedResumeExport {
         layout: 'entries',
         label: 'Education',
         entries: [
-          {
-            id: 'e1',
-            title: 'B.S. Computer Science',
-            subtitle: 'University of Michigan',
-            text: '',
-            bullets: ['GPA: 3.8/4.0'],
-            startDate: '2019-09',
-            endDate: '2023-05',
-          },
+          entry('B.S. in Computer Science from University of Michigan', '2019 to 2023', [
+            'GPA: 3.8/4.0',
+          ]),
         ],
       },
       {
@@ -48,14 +55,7 @@ function createExportData(): NormalizedResumeExport {
         layout: 'entries',
         label: 'Experience',
         entries: [
-          {
-            id: 'j1',
-            title: 'Engineer',
-            subtitle: 'Mosaic',
-            text: '',
-            bullets: ['Built export flow'],
-            startDate: '2023-06',
-          },
+          entry('Engineer at Mosaic, Detroit, MI', 'Jun 2023 to Current', ['Built export flow']),
         ],
       },
       {
@@ -63,54 +63,28 @@ function createExportData(): NormalizedResumeExport {
         kind: 'internships',
         layout: 'entries',
         label: 'Internships',
-        entries: [
-          {
-            id: 'i1',
-            title: 'Intern',
-            subtitle: 'Startup Co',
-            text: '',
-            bullets: [],
-          },
-        ],
+        entries: [entry('Intern at Startup Co', '2022')],
       },
       {
         id: 'projects',
         kind: 'projects',
         layout: 'entries',
         label: 'Projects',
-        entries: [
-          {
-            id: 'p1',
-            title: 'Mosaic',
-            subtitle: 'Modular resume builder',
-            text: '',
-            bullets: ['React 19', 'Local-first'],
-          },
-        ],
+        entries: [entry('Mosaic', 'Modular resume builder', ['React 19', 'Local-first'])],
       },
       {
         id: 'skills',
         kind: 'skills',
         layout: 'lines',
         label: 'Skills',
-        entries: [{ id: 'sk1', title: '', subtitle: '', text: 'TypeScript, React', bullets: [] }],
+        entries: [line('TypeScript, React')],
       },
       {
         id: 'certifications',
         kind: 'certifications',
         layout: 'entries',
         label: 'Certifications',
-        entries: [
-          {
-            id: 'c1',
-            title: 'AWS Solutions Architect',
-            subtitle: 'Amazon',
-            text: '',
-            bullets: [],
-            startDate: '2024-01',
-            endDate: '2025-01',
-          },
-        ],
+        entries: [entry('AWS Solutions Architect', 'Jan 2025'), entry('CKA', 'CNCF')],
       },
     ],
   };
@@ -121,7 +95,7 @@ function parseExport(data: NormalizedResumeExport) {
 }
 
 describe('createJsonResumeExport', () => {
-  it('maps every section kind to the JSON Resume schema', () => {
+  it('puts each part of an entry in the field that means it', () => {
     const resume = parseExport(createExportData());
 
     expect(resume.$schema).toBe(
@@ -143,23 +117,25 @@ describe('createJsonResumeExport', () => {
     // Experience and internships merge into work, preserving section order.
     expect(resume.work).toEqual([
       {
-        name: 'Mosaic',
         position: 'Engineer',
+        name: 'Mosaic',
+        location: 'Detroit, MI',
         startDate: '2023-06',
         highlights: ['Built export flow'],
       },
-      { name: 'Startup Co', position: 'Intern' },
+      { position: 'Intern', name: 'Startup Co', endDate: '2022' },
     ]);
-
     expect(resume.education).toEqual([
       {
+        studyType: 'B.S.',
+        area: 'Computer Science',
         institution: 'University of Michigan',
-        area: 'B.S. Computer Science',
-        startDate: '2019-09',
-        endDate: '2023-05',
+        startDate: '2019',
+        endDate: '2023',
         courses: ['GPA: 3.8/4.0'],
       },
     ]);
+    // A project's subtitle that isn't dates describes it.
     expect(resume.projects).toEqual([
       {
         name: 'Mosaic',
@@ -168,9 +144,49 @@ describe('createJsonResumeExport', () => {
       },
     ]);
     expect(resume.skills).toEqual([{ name: 'TypeScript, React' }]);
+    // A certificate's date is when it was earned; anything else is who gave it.
     expect(resume.certificates).toEqual([
-      { name: 'AWS Solutions Architect', issuer: 'Amazon', date: '2025-01' },
+      { name: 'AWS Solutions Architect', date: '2025-01' },
+      { name: 'CKA', issuer: 'CNCF' },
     ]);
+    // Everything above reads back from its fields as it was written.
+    expect(resume.meta.mosaic.sections.some((section: { exact?: unknown }) => section.exact)).toBe(
+      false
+    );
+  });
+
+  it('reads the dates people write, and keeps the words where the fields can’t', () => {
+    const data = createExportData();
+    data.sections[2].entries = [
+      entry('Engineer at Acme', 'January 2021 to Present'),
+      entry('Analyst at Globex', '03/2019 – 12/2020'),
+      entry('Consultant', 'Month Year to Current'),
+    ];
+
+    const { work, meta } = parseExport(data);
+    expect(work.slice(0, 3)).toEqual([
+      { position: 'Engineer', name: 'Acme', startDate: '2021-01' },
+      { position: 'Analyst', name: 'Globex', startDate: '2019-03', endDate: '2020-12' },
+      // Not dates, and a job has no field for anything else.
+      { position: 'Consultant' },
+    ]);
+    expect(meta.mosaic.sections[2].exact).toEqual({
+      0: { subtitle: 'January 2021 to Present' },
+      1: { subtitle: '03/2019 – 12/2020' },
+      2: { subtitle: 'Month Year to Current' },
+    });
+  });
+
+  it('splits a title only where the parts join back to it', () => {
+    const data = createExportData();
+    data.sections[2].entries = [entry('Engineer at , Detroit')];
+    data.sections[1].entries = [entry('Tutored in mathematics')];
+
+    const { work, education } = parseExport(data);
+    // "at" with no company before the comma: the parts would read back as "Engineer at Detroit".
+    expect(work[0]).toEqual({ position: 'Engineer at , Detroit' });
+    // No school, so no telling the degree from the field.
+    expect(education[0]).toEqual({ area: 'Tutored in mathematics' });
   });
 
   it('puts custom sections under projects, keeping the section’s name', () => {
@@ -180,9 +196,7 @@ describe('createJsonResumeExport', () => {
       kind: 'custom',
       layout: 'entries',
       label: 'Volunteering',
-      entries: [
-        { id: 'v1', title: 'Food bank', subtitle: '2022', text: '', bullets: ['Ran logistics'] },
-      ],
+      entries: [entry('Food bank', '2022', ['Ran logistics'])],
     });
 
     data.sections.push({
@@ -190,13 +204,13 @@ describe('createJsonResumeExport', () => {
       kind: 'custom',
       layout: 'lines',
       label: 'Languages',
-      entries: [{ id: 'l1', title: '', subtitle: '', text: 'English, Spanish', bullets: [] }],
+      entries: [line('English, Spanish')],
     });
 
     const { projects } = parseExport(data);
     expect(projects).toContainEqual({
       name: 'Food bank',
-      description: '2022',
+      endDate: '2022',
       type: 'Volunteering',
       highlights: ['Ran logistics'],
     });
@@ -222,30 +236,27 @@ describe('createJsonResumeExport', () => {
       ['Internships', 'work', 1],
       ['Projects', 'projects', 1],
       ['Skills', 'skills', 1],
-      ['Certifications', 'certificates', 1],
+      ['Certifications', 'certificates', 2],
     ]);
   });
 
   it('puts a section its kind’s array can’t hold under projects, by its name', () => {
     const data = createExportData();
-    const cert = data.sections.find((s) => s.kind === 'certifications')!;
-    cert.entries[0].bullets = ['Renewed yearly'];
+    data.sections[6].entries[0].bullets = ['Renewed yearly'];
     data.sections.push({
       id: 'toolbox',
       kind: 'skills',
       layout: 'entries',
       label: 'Toolbox',
-      entries: [{ id: 't1', title: 'Go', subtitle: 'expert', text: '', bullets: ['Concurrency'] }],
+      entries: [entry('Go', 'expert', ['Concurrency'])],
     });
 
     const resume = parseExport(data);
     expect(resume).not.toHaveProperty('certificates');
     expect(resume.projects).toContainEqual({
       name: 'AWS Solutions Architect',
-      description: 'Amazon',
-      type: 'Certifications',
-      startDate: '2024-01',
       endDate: '2025-01',
+      type: 'Certifications',
       highlights: ['Renewed yearly'],
     });
     // Skills in entries keep their subtitle and bullets as level and keywords.
@@ -254,15 +265,6 @@ describe('createJsonResumeExport', () => {
       level: 'expert',
       keywords: ['Concurrency'],
     });
-  });
-
-  it('falls back to startDate for certificates without an endDate', () => {
-    const data = createExportData();
-    const cert = data.sections.find((s) => s.kind === 'certifications')!.entries[0];
-    delete cert.endDate;
-
-    const resume = parseExport(data);
-    expect(resume.certificates[0].date).toBe('2024-01');
   });
 
   it('omits empty arrays and empty contact fields', () => {
@@ -283,7 +285,7 @@ describe('createJsonResumeExport', () => {
           kind: 'summary',
           layout: 'lines',
           label: 'Summary',
-          entries: [{ id: 's1', title: '', subtitle: '', text: 'Hi.', bullets: [] }],
+          entries: [line('Hi.')],
         },
       ],
     });

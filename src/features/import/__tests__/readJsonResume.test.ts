@@ -4,7 +4,7 @@ import { normalizeResumeForExport } from '@/features/export/normalizeResumeExpor
 import { createDefaultResume } from '@/lib/resume/defaultResume';
 import type { ResumeData } from '@/types/resume';
 import { isJsonResume, readJsonResume } from '../readJsonResume';
-import { everything, kinds, shown } from './roundTrip';
+import { entry, everything, kinds, resume, section, shown } from './roundTrip';
 
 const exported = (resume: ResumeData) =>
   JSON.parse(createJsonResumeExport(normalizeResumeForExport(resume)));
@@ -19,6 +19,28 @@ describe('readJsonResume', () => {
       expect(parsed.warnings).toEqual([]);
       expect(parsed.leftOut).toEqual([]);
     }
+  });
+
+  it('gives back dates as they were written, until another tool changes them', () => {
+    const data = resume([
+      section('experience', 'entries', 'Work History', [
+        entry({ title: 'Engineer at Acme, Detroit', subtitle: 'January 2021 to Present' }),
+        entry({ title: 'Analyst at Globex', subtitle: 'Month Year to Current' }),
+      ]),
+    ]);
+    const file = exported(data);
+    expect(shown(readJsonResume(file).resume)).toEqual(shown(data));
+
+    // Moved in another tool: the file's dates win over the words Mosaic kept.
+    file.work[0].startDate = '2020-03';
+    const titles = readJsonResume(file).resume.sections[0].items.map((item) => [
+      item.title,
+      item.subtitle,
+    ]);
+    expect(titles).toEqual([
+      ['Engineer at Acme, Detroit', 'Mar 2020 to Current'],
+      ['Analyst at Globex', 'Month Year to Current'],
+    ]);
   });
 
   it('reads a file another tool changed by its standard fields, and says so', () => {

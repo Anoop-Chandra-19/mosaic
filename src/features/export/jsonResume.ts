@@ -1,12 +1,19 @@
 import type { SectionKind, SectionLayout } from '@/types/resume';
+import {
+  compact,
+  fromItem,
+  toItem,
+  type EntryParts,
+  type ItemSource,
+  type JsonResumeItem,
+} from './jsonResumeEntry';
 import type { ExportEntry, ExportSection, NormalizedResumeExport } from './normalizeResumeExport';
 
 /**
- * Minimal subset of the JSON Resume schema (jsonresume.org, v1.0.0). Every
- * field is optional in the upstream schema, so a conservative mapping is
- * always valid. Mosaic-specific structure (selection flags, freeform
- * subtitles) maps losslessly where possible and is never parsed
- * heuristically — a subtitle lands whole in the closest matching field.
+ * Minimal subset of the JSON Resume schema (jsonresume.org, v1.0.0). Every field is
+ * optional upstream, so a conservative mapping is always valid. Entries go into the fields
+ * that mean their parts — `jsonResumeEntry.ts` — and `meta.mosaic` keeps what those
+ * fields can't say, so Mosaic reads its own file back exactly.
  */
 interface JsonResumeProfile {
   network: string;
@@ -23,41 +30,14 @@ interface JsonResumeBasics {
   profiles?: JsonResumeProfile[];
 }
 
-/** One item of a section array: `work`, `projects`, … Its fields depend on the array. */
-type JsonResumeItem = Record<string, string | string[]>;
-
 /** Where a section's content goes: one of JSON Resume's arrays, or `basics.summary`. */
-export type JsonResumeSource =
-  | 'summary'
-  | 'work'
-  | 'education'
-  | 'projects'
-  | 'skills'
-  | 'certificates';
-
-type ItemSource = Exclude<JsonResumeSource, 'summary'>;
+export type JsonResumeSource = 'summary' | ItemSource;
 
 /**
- * The field each array keeps an entry's parts in: its title (or a list item's text), its
- * subtitle, its bullets. The importer reads Mosaic's own files back through the same table.
- */
-export const ENTRY_FIELDS: Record<
-  ItemSource,
-  { title: string; subtitle: string; bullets?: string }
-> = {
-  work: { title: 'position', subtitle: 'name', bullets: 'highlights' },
-  education: { title: 'area', subtitle: 'institution', bullets: 'courses' },
-  projects: { title: 'name', subtitle: 'description', bullets: 'highlights' },
-  skills: { title: 'name', subtitle: 'level', bullets: 'keywords' },
-  certificates: { title: 'name', subtitle: 'issuer' },
-};
-
-/**
- * `meta.mosaic` — JSON Resume's `meta` is the standard's place for a tool's own data. The
- * standard fields hold all of the content; this says how it goes back together: each
- * section's kind, shape, and heading, in order, and how many items it put in which array
- * (a section's items sit together there). Mosaic reads its own files back exactly with it;
- * other tools ignore it.
+ * `meta.mosaic` — JSON Resume's `meta` is the standard's place for a tool's own data. It
+ * says how the standard fields go back together: each section's kind, shape, and heading,
+ * in order, and how many items it put in which array (a section's items sit together
+ * there). Other tools ignore it.
  */
 export interface MosaicJsonResumeMeta {
   version: 1;
@@ -69,6 +49,12 @@ export interface MosaicJsonResumeMeta {
     label: string;
     from: JsonResumeSource;
     count: number;
+    /**
+     * By the item's place in the section: its title or subtitle where the item's fields
+     * don't give it back as it was — "January 2021 to Present" reads back from ISO dates as
+     * "Jan 2021 to Current", and a work subtitle that isn't dates has no field at all.
+     */
+    exact?: Record<string, Partial<Pick<EntryParts, 'title' | 'subtitle'>>>;
   }[];
 }
 
@@ -81,17 +67,6 @@ interface JsonResume {
   skills?: JsonResumeItem[];
   certificates?: JsonResumeItem[];
   meta: { mosaic: MosaicJsonResumeMeta };
-}
-
-/** Strip empty strings, undefined values, and empty arrays from an object. */
-function compact<T extends object>(value: T): T {
-  const result = {} as T;
-  for (const [key, entry] of Object.entries(value)) {
-    if (entry === undefined || entry === '') continue;
-    if (Array.isArray(entry) && entry.length === 0) continue;
-    result[key as keyof T] = entry as T[keyof T];
-  }
-  return result;
 }
 
 /** An entry's one line of text: a lines-section item, or an entry's title. */
@@ -124,22 +99,9 @@ function sourceOf({ kind, layout, entries }: ExportSection): JsonResumeSource {
   }
 }
 
-function toItem(source: ItemSource, section: ExportSection, entry: ExportEntry): JsonResumeItem {
-  const fields = ENTRY_FIELDS[source];
-  const item: Record<string, string | string[] | undefined> = {
-    [fields.title]: lineText(entry),
-    [fields.subtitle]: entry.subtitle,
-  };
-  if (fields.bullets) item[fields.bullets] = entry.bullets;
-  if (source === 'certificates') {
-    item.date = entry.endDate ?? entry.startDate;
-  } else if (source !== 'skills') {
-    item.startDate = entry.startDate;
-    item.endDate = entry.endDate;
-  }
-  // JSON Resume has no sections of your own; a project keeps the section's name.
-  if (source === 'projects' && section.kind !== 'projects') item.type = section.label;
-  return compact(item) as JsonResumeItem;
+/** The name a project item gives its section: JSON Resume has no sections of your own. */
+export function projectType(kind: SectionKind, label: string): string | undefined {
+  return kind === 'projects' ? undefined : label;
 }
 
 function buildBasics(data: NormalizedResumeExport, summary: string[]): JsonResumeBasics {
@@ -175,13 +137,30 @@ export function createJsonResumeExport(data: NormalizedResumeExport): string {
 
   for (const section of data.sections) {
     const from = sourceOf(section);
+    const { kind, layout, label } = section;
+    const exact: NonNullable<MosaicJsonResumeMeta['sections'][number]['exact']> = {};
     if (from === 'summary') {
       summary.push(...section.entries.map(lineText));
     } else {
-      arrays[from].push(...section.entries.map((entry) => toItem(from, section, entry)));
+      section.entries.forEach((entry, index) => {
+        const parts = { title: lineText(entry), subtitle: entry.subtitle, bullets: entry.bullets };
+        const item = toItem(from, parts, projectType(kind, label));
+        arrays[from].push(item);
+        const back = fromItem(from, item);
+        const differs: (typeof exact)[string] = {};
+        if (back.title !== parts.title) differs.title = parts.title;
+        if (back.subtitle !== parts.subtitle) differs.subtitle = parts.subtitle;
+        if (Object.keys(differs).length > 0) exact[index] = differs;
+      });
     }
-    const { kind, layout, label } = section;
-    sections.push({ kind, layout, label, from, count: section.entries.length });
+    sections.push({
+      kind,
+      layout,
+      label,
+      from,
+      count: section.entries.length,
+      ...(Object.keys(exact).length > 0 && { exact }),
+    });
   }
 
   const resume: JsonResume = compact({
