@@ -111,6 +111,30 @@ src/
   main runs every stored document through it, and `parseBundle` uses it to refuse files
   from a newer build. Start bumping with the first release real users install.
 
+## Import
+
+- `files.open('import')` hands the renderer a file's bytes; `readImportFile` picks the reader
+  by extension: PDF, Word (.docx), Markdown, plain text, JSON Resume, or a Mosaic JSON
+  backup (sent on to Restore). A file it can't read gets a message saying what to do
+  (a scan, a password, an older .doc), shown in the dialog.
+- Readers turn a file into `ImportLine`s (`importLines.ts`); `parseResumeLines` builds the
+  resume from them. JSON Resume has fields that say what they are, so it skips the lines.
+- Nothing is written before the review step, and nothing is dropped silently: text with no
+  place goes in `leftOut`, doubts in `warnings`, and the dialog shows both.
+- PDF and DOCX each have a folder (`import/pdf/`, `import/docx/`) split in two:
+  `readPdf`/`readDocx` say only what the file holds; `pdfLines`/`docxLines` decide what it
+  means. Keep guesses about meaning out of the readers.
+- Files are untrusted. The zip and XML readers are ours, check their input strictly, and
+  stop at written-down limits (`XML_LIMITS`, `PDF_LIMITS`, …). Readers run the same in the
+  renderer and in Node tests: no DOM, no browser-only API. pdf.js is its legacy build in
+  both, and in the app reads in a worker bundled with `?worker` (a URL worker under
+  file:// becomes a blob: script the CSP refuses).
+- Every export format has a round-trip test: export, import, and compare what the page
+  shows. Mosaic's own PDF, Markdown, and JSON files come back exactly; plain text states
+  its losses in its test. A DOCX export, when built, gets one too.
+- Tests build their files (`buildDocx`, `buildPdf`, react-pdf). Never test against a real
+  person's resume; `docx/__tests__/documents/` holds only fictional ones.
+
 ## Core Principles
 
 ### Responsive-first, no hardcoded pixel values
