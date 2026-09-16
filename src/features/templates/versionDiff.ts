@@ -1,26 +1,24 @@
+import { headerLineText, printedHeaderLines } from '@/lib/resume/resumeHeader';
 import type { ResumeData } from '@/types/resume';
 
 /**
  * Every line that reaches the page, keyed so the same line in two documents lines up:
- * the contact header, each section heading, each shown entry's heading, each shown bullet.
+ * the name, each printed header line, each section heading, each shown entry's heading, each shown bullet.
  * Hidden entries and bullets are left out — they are not on the page.
  */
 function pageLines(doc: ResumeData): Map<string, string> {
   const lines = new Map<string, string>();
-  const { contact } = doc;
-  lines.set(
-    'contact',
-    [
-      contact.name,
-      contact.email,
-      contact.phone,
-      contact.location,
-      contact.citizenshipStatus,
-      contact.showLinkedin === false ? '' : contact.linkedin,
-      contact.showGithub === false ? '' : contact.github,
-      contact.showWebsite === false ? '' : contact.website,
-    ].join('|')
-  );
+  const { name, header } = doc.contact;
+  lines.set('name', name);
+  // A header line differs when its words, its links, where it sits, or how links look do.
+  for (const line of printedHeaderLines(header)) {
+    lines.set(
+      `header:${line.id}`,
+      [headerLineText(line), line.align, header.linkStyle, ...line.items.map((i) => i.href)].join(
+        '|'
+      )
+    );
+  }
   for (const section of [...doc.sections].sort((a, b) => a.order - b.order)) {
     lines.set(`section:${section.id}`, section.label);
     for (const entry of section.items) {

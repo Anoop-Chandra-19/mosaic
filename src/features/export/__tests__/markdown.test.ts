@@ -1,17 +1,26 @@
 import { describe, expect, it } from 'vitest';
 import { createMarkdownExport } from '../markdown';
 import type { NormalizedResumeExport } from '../normalizeResumeExport';
+import type { PrintedHeaderLine } from '@/lib/resume/resumeHeader';
+
+const line = (
+  texts: string[],
+  separator: PrintedHeaderLine['separator'] = ' | '
+): PrintedHeaderLine => ({
+  id: texts.join(),
+  separator,
+  align: 'center',
+  items: texts.map((text) => ({ id: text, kind: 'custom', text, href: '' })),
+});
 
 const exportData: NormalizedResumeExport = {
   contact: {
     name: 'Alex Johnson',
-    email: 'alex@example.com',
-    phone: '555-0100',
-    location: 'Detroit, MI',
-    citizenshipStatus: '',
-    linkedin: 'linkedin.com/in/alex',
-    github: 'github.com/alex',
-    website: '',
+    linkStyle: 'plain',
+    lines: [
+      line(['555-0100', 'alex@example.com', 'linkedin.com/in/alex', 'github.com/alex']),
+      line(['Detroit, MI']),
+    ],
   },
   sections: [
     {
@@ -59,19 +68,23 @@ _Mosaic_
 - Improved preview accuracy`);
   });
 
-  it('uses the Mosaic Resume fallback name', () => {
+  it('writes each header line with its own separator', () => {
     expect(
       createMarkdownExport({
         contact: {
-          name: '',
-          email: '',
-          phone: '',
-          location: '',
-          citizenshipStatus: '',
-          linkedin: '',
-          github: '',
-          website: '',
+          name: 'Alex',
+          linkStyle: 'plain',
+          lines: [line(['US Citizen', 'Detroit, MI'], ' · '), line(['a', 'b'], '    ')],
         },
+        sections: [],
+      })
+    ).toBe('# Alex\nUS Citizen · Detroit, MI\na    b');
+  });
+
+  it('uses the Mosaic Resume fallback name', () => {
+    expect(
+      createMarkdownExport({
+        contact: { name: '', linkStyle: 'plain', lines: [] },
         sections: [],
       })
     ).toBe('# Mosaic Resume');

@@ -25,11 +25,23 @@ describe('countChangedLines', () => {
     expect(countChangedLines(createDefaultResume(), draft)).toBe(1);
   });
 
-  it('counts a contact change once', () => {
+  it('counts the name and each changed header line once', () => {
     const draft = createDefaultResume();
     draft.contact.name = 'Ada';
-    draft.contact.email = 'ada@example.com';
+    const [reach, status] = draft.contact.header.lines;
+    reach.items[1].text = 'ada@example.com';
+    reach.items[2].url = 'linkedin.com/in/ada';
+    status.align = 'left';
 
-    expect(countChangedLines(createDefaultResume(), draft)).toBe(1);
+    expect(countChangedLines(createDefaultResume(), draft)).toBe(3);
+  });
+
+  it('does not count a hidden header item that stays hidden', () => {
+    const version = createDefaultResume();
+    version.contact.header.lines[0].items[2].shown = false;
+    const draft = structuredClone(version);
+    draft.contact.header.lines[0].items[2].url = 'linkedin.com/in/ada';
+
+    expect(countChangedLines(version, draft)).toBe(0);
   });
 });

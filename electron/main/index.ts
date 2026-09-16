@@ -47,7 +47,7 @@ function openAppDatabase(): Database {
 }
 
 /** Links the user clicks leave the app; nothing else is allowed to navigate it. */
-const EXTERNAL_PROTOCOLS = new Set(['http:', 'https:', 'mailto:']);
+const EXTERNAL_PROTOCOLS = new Set(['http:', 'https:', 'mailto:', 'tel:']);
 
 function openExternally(url: string): void {
   if (EXTERNAL_PROTOCOLS.has(new URL(url).protocol)) void shell.openExternal(url);

@@ -1,4 +1,4 @@
-import { getContactPrimaryLine, getContactSecondaryLine } from '@/lib/resume/contactFormatting';
+import { headerLineText } from '@/lib/resume/resumeHeader';
 import type { ExportEntry, NormalizedResumeExport } from './normalizeResumeExport';
 
 const WORD_CHARACTER = /[\p{L}\p{N}]/u;
@@ -48,20 +48,12 @@ function entryLines({ title, subtitle, bullets }: ExportEntry): string[] {
 export function createMarkdownExport(data: NormalizedResumeExport) {
   const lines: string[] = [];
   const name = data.contact.name || 'Mosaic Resume';
-  const primaryLine = getContactPrimaryLine(data.contact);
-  const secondaryLine = getContactSecondaryLine(data.contact);
 
   lines.push(`# ${escapeHeading(name)}`);
-
-  if (primaryLine) {
-    lines.push(escapeLine(primaryLine));
+  for (const line of data.contact.lines) {
+    lines.push(escapeLine(headerLineText(line)));
   }
-
-  if (secondaryLine) {
-    lines.push(escapeLine(secondaryLine));
-  }
-
-  if (primaryLine || secondaryLine) {
+  if (data.contact.lines.length > 0) {
     lines.push('');
   }
 

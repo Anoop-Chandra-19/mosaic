@@ -32,17 +32,19 @@ test('the review lists what Mosaic found no place for, ready to copy', async () 
   await expect(importing.getByRole('listitem').filter({ hasText: 'Skills' })).toHaveText(
     'Skills — 2 lines'
   );
+  // A line under the name goes in the header, which holds anything.
+  await expect(importing.getByRole('listitem').filter({ hasText: 'Contact' })).toContainText(
+    'name, other details, email found'
+  );
   const leftOut = importing.getByRole('button', { name: /^Left out/ });
-  await expect(leftOut).toHaveText('Left out — 2 lines');
+  await expect(leftOut).toHaveText('Left out — 1 line');
   await leftOut.click();
-  await expect(
-    importing.getByText('Writes programs for engines that do not exist yet')
-  ).toBeVisible();
+  await expect(importing.getByText('Certifications', { exact: true })).toBeVisible();
 
   await importing.getByRole('button', { name: 'Copy' }).click();
   await expect(importing.getByRole('button', { name: 'Copied' })).toBeVisible();
   const copied = await app.evaluate(({ clipboard }) => clipboard.readText());
-  expect(copied).toBe('Writes programs for engines that do not exist yet\nCertifications');
+  expect(copied).toBe('Certifications');
 });
 
 test('a PDF with no text in it is explained as probably a scan', async () => {

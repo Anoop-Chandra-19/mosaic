@@ -1,6 +1,6 @@
 import { Document, Font, Page, StyleSheet, Text, View } from '@react-pdf/renderer';
 import type { PaperSize } from '@/types/ui';
-import { getContactPrimaryLine, getContactSecondaryLine } from '@/lib/resume/contactFormatting';
+import { headerLineText } from '@/lib/resume/resumeHeader';
 import type { NormalizedResumeExport } from '../normalizeResumeExport';
 import { HEADLESS_LAYOUT } from '@/lib/resume/headlessLayout';
 
@@ -131,17 +131,18 @@ const styles = StyleSheet.create({
 export function PDFResumeDocument({ data, paperSize }: PDFResumeDocumentProps) {
   const size = paperSize === 'a4' ? 'A4' : 'LETTER';
   const name = data.contact.name || 'Mosaic Resume';
-  const primaryLine = getContactPrimaryLine(data.contact);
-  const secondaryLine = getContactSecondaryLine(data.contact);
 
   return (
     <Document title={name}>
       <Page size={size} style={styles.page} wrap>
-        {/* Three centered lines: name, contact, then citizenship status and location. */}
+        {/* The name, then the header's lines. */}
         <View style={styles.header}>
           <Text style={styles.name}>{name}</Text>
-          {primaryLine ? <Text style={styles.contactLine}>{primaryLine}</Text> : null}
-          {secondaryLine ? <Text style={styles.contactLine}>{secondaryLine}</Text> : null}
+          {data.contact.lines.map((line) => (
+            <Text key={line.id} style={[styles.contactLine, { textAlign: line.align }]}>
+              {headerLineText(line)}
+            </Text>
+          ))}
         </View>
 
         {data.sections.map((section, sectionIndex) => {

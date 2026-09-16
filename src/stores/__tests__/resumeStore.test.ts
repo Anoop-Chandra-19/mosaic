@@ -27,8 +27,8 @@ afterEach(() => {
 
 describe('resumeStore saving', () => {
   it('bumps the rev on every edit and saves once typing pauses', async () => {
-    store().updateContact({ name: 'A' });
-    store().updateContact({ name: 'Ada' });
+    store().setName('A');
+    store().setName('Ada');
     expect(store().rev).toBe(6);
 
     await vi.advanceTimersByTimeAsync(999);
@@ -42,14 +42,14 @@ describe('resumeStore saving', () => {
 
   it('saves during non-stop edits at least every five seconds', async () => {
     for (let second = 0; second < 6; second++) {
-      store().updateContact({ phone: String(second) });
+      store().setName(String(second));
       await vi.advanceTimersByTimeAsync(900);
     }
     expect(save).toHaveBeenCalledTimes(1);
   });
 
   it('flushes on demand and resolves once the save has landed', async () => {
-    store().updateContact({ name: 'Grace' });
+    store().setName('Grace');
     await flushDraft();
 
     expect(save).toHaveBeenCalledTimes(1);
@@ -58,7 +58,7 @@ describe('resumeStore saving', () => {
   });
 
   it('never saves a draft that came from main', async () => {
-    store().updateContact({ name: 'Unsaved' });
+    store().setName('Unsaved');
     store().loadDraft({ templateId: 't2', doc: createDefaultResume(), rev: 9 });
 
     await vi.advanceTimersByTimeAsync(5000);
@@ -69,7 +69,7 @@ describe('resumeStore saving', () => {
 
   it('does not save without an open template', async () => {
     store().loadDraft(null);
-    store().updateContact({ name: 'Nobody' });
+    store().setName('Nobody');
 
     await flushDraft();
     expect(save).not.toHaveBeenCalled();
@@ -79,18 +79,73 @@ describe('resumeStore saving', () => {
     const error = vi.spyOn(console, 'error').mockImplementation(() => {});
 
     save.mockRejectedValueOnce(new DbError('stale-rev', 'older than stored'));
-    store().updateContact({ name: 'x' });
+    store().setName('x');
     await flushDraft();
     expect(store().saveFailed).toBe(false);
 
     save.mockRejectedValueOnce(new DbError('internal', 'disk full'));
-    store().updateContact({ name: 'y' });
+    store().setName('y');
     await flushDraft();
     expect(store().saveFailed).toBe(true);
 
-    store().updateContact({ name: 'z' });
+    store().setName('z');
     await flushDraft();
     expect(store().saveFailed).toBe(false);
     error.mockRestore();
+  });
+});
+
+describe('resumeStore header', () => {
+  const lines = () => store().contact.header.lines;
+  const itemIds = () => lines().map((line) => line.items.map((item) => item.id));
+
+  it('adds, edits, and removes lines and items', () => {
+    const lineId = store().addHeaderLine();
+    const itemId = store().addHeaderItem(lineId, 'github');
+    store().updateHeaderItem(itemId, { text: 'github.com/ada', url: 'github.com/ada' });
+    store().updateHeaderLine(lineId, { separator: ' · ', align: 'left' });
+
+    expect(lines()[2]).toMatchObject({
+      separator: ' · ',
+      align: 'left',
+      items: [{ kind: 'github', text: 'github.com/ada', url: 'github.com/ada', shown: true }],
+    });
+
+    store().removeHeaderItem(itemId);
+    expect(lines()[2].items).toEqual([]);
+    store().removeHeaderLine(lineId);
+    expect(lines()).toHaveLength(2);
+  });
+
+  it('keeps a hidden item and its link', () => {
+    store().updateHeaderItem('head-linkedin', { shown: false });
+    expect(lines()[0].items[2]).toMatchObject({ url: 'linkedin.com/in/you', shown: false });
+  });
+
+  it('moves items within a line, between lines, and moves lines', () => {
+    store().moveHeaderItem('head-email', -1);
+    store().moveHeaderItem('head-email', -1);
+    expect(itemIds()[0]).toEqual(['head-email', 'head-phone', 'head-linkedin']);
+
+    store().moveHeaderItemToLine('head-linkedin', 'head-status');
+    expect(itemIds()).toEqual([
+      ['head-email', 'head-phone'],
+      ['head-auth', 'head-location', 'head-linkedin'],
+    ]);
+
+    store().moveHeaderLine('head-status', -1);
+    expect(lines().map((line) => line.id)).toEqual(['head-status', 'head-reach']);
+  });
+
+  it('duplicates an item beside itself with its own id', () => {
+    store().duplicateHeaderItem('head-phone');
+    const [phone, copy] = lines()[0].items;
+    expect(copy).toEqual({ ...phone, id: copy.id });
+    expect(copy.id).not.toBe(phone.id);
+  });
+
+  it('sets the link style for the whole header', () => {
+    store().setLinkStyle('underline');
+    expect(store().contact.header.linkStyle).toBe('underline');
   });
 });

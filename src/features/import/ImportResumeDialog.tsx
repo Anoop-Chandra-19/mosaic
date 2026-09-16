@@ -7,14 +7,15 @@ import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { fileFailure } from '@/features/backup/backupFiles';
+import { HEADER_PRESETS, printedHeaderLines } from '@/lib/resume/resumeHeader';
 import { cn } from '@/lib/utils';
-import { getResumeSnapshot } from '@/stores/resumeStore';
+import { getResumeSnapshot, useResumeStore } from '@/stores/resumeStore';
 import { attempt, showToast, useOverlayStore } from '@/stores/overlayStore';
 import { useTemplateStore } from '@/stores/templateStore';
 import { useUIStore } from '@/stores/uiStore';
 import { MAX_FILE_BYTES } from '@/types/files';
 import type { ContactInfo, ResumeSection, SectionLayout } from '@/types/resume';
-import { buildImportedResume, type ImportMode } from './buildImportedResume';
+import { buildImportedResume, keepsHeader, type ImportMode } from './buildImportedResume';
 import { LeftOutLines } from './LeftOutLines';
 import { parseResumeText, type ParsedResume } from './parseResume';
 import { readImportFile, UnreadableFileError, type ImportRead } from './readImportFile';
@@ -46,15 +47,19 @@ const IMPORT_LABELS: Record<ImportMode, string> = {
   merge: 'Add to resume',
 };
 
-const CONTACT_FIELDS: [keyof ContactInfo, string][] = [
-  ['name', 'name'],
-  ['email', 'email'],
-  ['phone', 'phone'],
-  ['location', 'location'],
-  ['linkedin', 'LinkedIn'],
-  ['github', 'GitHub'],
-  ['website', 'website'],
-];
+/** What the contact block held: the name, then each kind of header item once, in order. */
+function contactFound({ name, header }: ContactInfo): string[] {
+  const kinds = new Set(
+    printedHeaderLines(header).flatMap((line) => line.items.map((i) => i.kind))
+  );
+  // In a sentence: "email", "work authorization" — but a name keeps its capitals ("LinkedIn").
+  const labels = [...kinds].map((kind) => {
+    if (kind === 'custom') return 'other details';
+    const { label } = HEADER_PRESETS[kind];
+    return /\p{Lu}/u.test(label.slice(1)) ? label : label.toLowerCase();
+  });
+  return [...(name ? ['name'] : []), ...labels];
+}
 
 const PLACEHOLDER = `Jane Developer
 San Francisco, CA · jane@example.com · (555) 987-6543
@@ -284,6 +289,7 @@ function ReviewStep({
   const createTemplate = useTemplateStore((s) => s.createTemplate);
   const importIntoDraft = useTemplateStore((s) => s.importIntoDraft);
   const setActiveSidebarTab = useUIStore((s) => s.setActiveSidebarTab);
+  const openContact = useResumeStore((s) => s.contact);
   const [excludedIds, setExcludedIds] = useState<Set<string>>(new Set());
   const [chosenMode, setMode] = useState<ImportMode>('new');
   const [importing, setImporting] = useState(false);
@@ -295,7 +301,8 @@ function ReviewStep({
     () => sections.filter((section) => !excludedIds.has(section.id)),
     [sections, excludedIds]
   );
-  const found = CONTACT_FIELDS.filter(([key]) => contact[key]).map(([, label]) => label);
+  const found = contactFound(contact);
+  const headerKept = mode === 'merge' && keepsHeader(openContact);
 
   const toggle = (id: string) =>
     setExcludedIds((previous) => {
@@ -360,6 +367,7 @@ function ReviewStep({
               )}
             >
               — {found.length ? `${found.join(', ')} found` : 'nothing found'}
+              {headerKept && ', but your header stays as it is'}
             </span>
           </li>
           {sections.map((section) => {

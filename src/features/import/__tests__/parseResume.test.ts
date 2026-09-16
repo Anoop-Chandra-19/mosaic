@@ -34,6 +34,10 @@ AWS Certified Solutions Architect
 Google Cloud Professional
 `;
 
+/** Each header line's items as kind and text. */
+const headerOf = (resume: ResumeData) =>
+  resume.contact.header.lines.map((line) => line.items.map((item) => [item.kind, item.text]));
+
 function sectionOf(sections: ResumeSection[], kind: string) {
   const section = sections.find((s) => s.kind === kind);
   if (!section) throw new Error(`missing section: ${kind}`);
@@ -41,23 +45,39 @@ function sectionOf(sections: ResumeSection[], kind: string) {
 }
 
 describe('parseResumeText', () => {
-  it('extracts contact details from the preamble', () => {
+  it('reads the name, then each contact line as a header line of items', () => {
     const { resume } = parseResumeText(SAMPLE);
     expect(resume.contact.name).toBe('Jane Developer');
-    expect(resume.contact.email).toBe('jane.dev@example.com');
-    expect(resume.contact.phone).toBe('(555) 987-6543');
-    expect(resume.contact.location).toBe('San Francisco, CA');
-    expect(resume.contact.linkedin).toBe('linkedin.com/in/janedev');
-    expect(resume.contact.github).toBe('github.com/janedev');
-    // The email must not leak into website (jane.dev@... should NOT yield "jane.dev").
-    expect(resume.contact.website).toBe('');
+    // The address is an email, not a website ("jane.dev@…" holds "jane.dev").
+    expect(headerOf(resume)).toEqual([
+      [['location', 'San Francisco, CA']],
+      [
+        ['email', 'jane.dev@example.com'],
+        ['phone', '(555) 987-6543'],
+      ],
+      [
+        ['linkedin', 'linkedin.com/in/janedev'],
+        ['github', 'github.com/janedev'],
+      ],
+    ]);
+    expect(resume.contact.header.lines.map((line) => line.separator)).toEqual([
+      ' | ',
+      ' | ',
+      '    ',
+    ]);
   });
 
-  it('captures a genuine personal website without the email fragment', () => {
+  it('takes a genuine personal website, and the separator the line uses', () => {
     const { resume } = parseResumeText(
       'Sam Lee\nsam@mail.com · sam-builds.dev\n\nSkills\nLanguages: Rust'
     );
-    expect(resume.contact.website).toBe('sam-builds.dev');
+    expect(headerOf(resume)).toEqual([
+      [
+        ['email', 'sam@mail.com'],
+        ['site', 'sam-builds.dev'],
+      ],
+    ]);
+    expect(resume.contact.header.lines[0].separator).toBe(' · ');
   });
 
   it('maps headings to kinds and shapes, keeping each heading as written', () => {
@@ -127,45 +147,35 @@ describe('parseResumeText', () => {
     expect(parseResumeText(SAMPLE).leftOut).toEqual([]);
   });
 
-  it('lists a contact-block line that is no contact field as left out', () => {
+  it('keeps every contact-block line and field, as written, leaving none out', () => {
     const { resume, leftOut } = parseResumeText(
-      'Jane Developer\nStaff engineer who ships\njane@example.com\n\nSkills\nGo'
+      [
+        'Ada Lovelace',
+        'Staff engineer who ships',
+        'ada@example.com | Open to relocation',
+        'Speaks French — LinkedIn https://linkedin.com/in/ada — Phone: 555-0100',
+        '',
+        'Skills',
+        'Go',
+      ].join('\n')
     );
-    expect(resume.contact.name).toBe('Jane Developer');
-    expect(leftOut).toEqual(['Staff engineer who ships']);
-  });
-
-  describe('a contact line it only partly reads', () => {
-    it('leaves out the fields it took nothing from, not the whole line', () => {
-      const { resume, leftOut } = parseResumeText(
-        'Ada Lovelace\nada@example.com | Open to relocation\n\nSkills\nGo'
-      );
-      expect(resume.contact.email).toBe('ada@example.com');
-      expect(leftOut).toEqual(['Open to relocation']);
-    });
-
-    it('leaves out what is beside a value inside one field', () => {
-      const { leftOut } = parseResumeText(
-        'Ada Lovelace\nSpeaks French — ada@example.com\n\nSkills\nGo'
-      );
-      expect(leftOut).toEqual(['Speaks French']);
-    });
-
-    it('says nothing about a word that only names the value beside it', () => {
-      const { resume, leftOut } = parseResumeText(
-        'Ada Lovelace\nLinkedIn https://linkedin.com/in/ada | Phone: 555-0100\n\nSkills\nGo'
-      );
-      expect(resume.contact.linkedin).toBe('https://linkedin.com/in/ada');
-      expect(resume.contact.phone).toBe('555-0100');
-      expect(leftOut).toEqual([]);
-    });
-
-    it('says nothing about a line every field of which it read', () => {
-      const { leftOut } = parseResumeText(
-        'Ada Lovelace\n555-0100 | ada@example.com\nLondon, UK\n\nSkills\nGo'
-      );
-      expect(leftOut).toEqual([]);
-    });
+    expect(resume.contact.name).toBe('Ada Lovelace');
+    expect(headerOf(resume)).toEqual([
+      [['custom', 'Staff engineer who ships']],
+      [
+        ['email', 'ada@example.com'],
+        ['custom', 'Open to relocation'],
+      ],
+      [
+        ['custom', 'Speaks French'],
+        // Words, then the address they stand for: the words print, the address is the link.
+        ['linkedin', 'LinkedIn'],
+        ['phone', 'Phone: 555-0100'],
+      ],
+    ]);
+    expect(resume.contact.header.lines[2].items[1].url).toBe('https://linkedin.com/in/ada');
+    expect(resume.contact.header.lines[2].separator).toBe(' — ');
+    expect(leftOut).toEqual([]);
   });
 
   it('warns and returns empty sections for unrecognized input without throwing', () => {
@@ -250,44 +260,47 @@ describe('parseResumeLines', () => {
 });
 
 describe('contact block', () => {
-  const contactOf = (block: string) => parseResumeText(`${block}\n\nSkills\nGo`).resume.contact;
+  const lineOf = (line: string) =>
+    headerOf(parseResumeText(`Ada\n${line}\n\nSkills\nGo`).resume)[0];
 
   it('takes a work status and a location by their words', () => {
-    expect(
-      contactOf('Ada\nF-1 STEM OPT, work authorized through July 2028 | Detroit, MI')
-    ).toMatchObject({
-      citizenshipStatus: 'F-1 STEM OPT, work authorized through July 2028',
-      location: 'Detroit, MI',
-    });
+    expect(lineOf('F-1 STEM OPT, work authorized through July 2028 | Detroit, MI')).toEqual([
+      ['auth', 'F-1 STEM OPT, work authorized through July 2028'],
+      ['location', 'Detroit, MI'],
+    ]);
   });
 
   it('knows the other of two fields once one of them is known', () => {
-    expect(contactOf('Ada\nUS Citizen | Remote')).toMatchObject({
-      citizenshipStatus: 'US Citizen',
-      location: 'Remote',
-    });
-    expect(contactOf('Ada\nCanadian PR | Toronto, ON')).toMatchObject({
-      citizenshipStatus: 'Canadian PR',
-      location: 'Toronto, ON',
-    });
+    expect(lineOf('US Citizen | Remote')).toEqual([
+      ['auth', 'US Citizen'],
+      ['location', 'Remote'],
+    ]);
+    expect(lineOf('Canadian PR | Toronto, ON')).toEqual([
+      ['auth', 'Canadian PR'],
+      ['location', 'Toronto, ON'],
+    ]);
   });
 
   it('keeps links as written, and a profile written as its name', () => {
-    expect(
-      contactOf('Ada\n555-0100 | https://linkedin.com/in/ada | GitHub | https://ada.dev')
-    ).toMatchObject({
-      phone: '555-0100',
-      linkedin: 'https://linkedin.com/in/ada',
-      github: 'GitHub',
-      website: 'https://ada.dev',
-    });
+    expect(lineOf('555-0100 | https://linkedin.com/in/ada | GitHub | https://ada.dev')).toEqual([
+      ['phone', '555-0100'],
+      ['linkedin', 'https://linkedin.com/in/ada'],
+      ['github', 'GitHub'],
+      ['site', 'https://ada.dev'],
+    ]);
   });
 
   it('takes “U.S.” for a word, not a web address', () => {
-    expect(contactOf('Ada\nU.S. Citizen | Boston, MA')).toMatchObject({
-      citizenshipStatus: 'U.S. Citizen',
-      website: '',
-    });
+    expect(lineOf('U.S. Citizen | Boston, MA')).toEqual([
+      ['auth', 'U.S. Citizen'],
+      ['location', 'Boston, MA'],
+    ]);
+  });
+
+  it('finds an address and a number anywhere when there is no contact block', () => {
+    expect(headerOf(parseResumeText('Skills\nGo, ada@example.com').resume)).toEqual([
+      [['email', 'ada@example.com']],
+    ]);
   });
 });
 

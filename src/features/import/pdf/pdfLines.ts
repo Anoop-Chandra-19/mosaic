@@ -265,6 +265,18 @@ function sideOf(row: Row, gutter: number, side: 1 | 2): Row | undefined {
 }
 
 /**
+ * How far into a run each UTF-16 unit of its text starts, in points, with one more for its
+ * end: by the font's glyph widths, or spread evenly when the font doesn't give them.
+ */
+function offsetsOf({ text, width, shares }: PdfRun): number[] {
+  const offsets = [0];
+  for (let i = 0; i < text.length; i++) {
+    offsets.push(offsets[i] + (shares ? shares[i] * width : width / text.length));
+  }
+  return offsets;
+}
+
+/**
  * A segment's text. Words inside a link take its address with them, as the words and then
  * the address, so "LinkedIn" linked to a profile keeps the profile.
  */
@@ -275,19 +287,18 @@ function textOf(segment: Segment, row: Row, links: PdfLink[]): string {
   const height = row.y - SAME_BASELINE * row.size;
   let end: number | undefined;
   for (const run of segment.runs) {
-    const text = clean(run.text);
     const apart = end !== undefined && run.x - end > WORD_GAP * row.size;
     end = run.x + run.width;
-    // Where each character sits, spread evenly over the run: pdf.js says no more closely.
-    const step = text.length ? run.width / text.length : 0;
-    for (const match of text.matchAll(/(\s*)(\S+)/g)) {
+    const at = offsetsOf(run);
+    // Matched on the text as drawn, so offsets line up; cleaned word by word.
+    for (const match of run.text.matchAll(/(\s*)(\S+)/g)) {
       const start = match.index + match[1].length;
-      const middle = run.x + step * (start + match[2].length / 2);
+      const middle = run.x + (at[start] + at[start + match[2].length]) / 2;
       const link = links.find(
         (l) => middle >= l.left && middle <= l.right && height >= l.top && height <= l.bottom
       );
-      const space = match[1] || (match.index === 0 && apart ? ' ' : '');
-      words.push({ text: match[2], space: words.length > 0 ? space : '', url: link?.url });
+      const space = clean(match[1]) || (match.index === 0 && apart ? ' ' : '');
+      words.push({ text: clean(match[2]), space: words.length > 0 ? space : '', url: link?.url });
     }
   }
 
@@ -309,7 +320,8 @@ function textOf(segment: Segment, row: Row, links: PdfLink[]): string {
 /** How wide the first word after `from` characters is, from its share of the run. */
 function firstWordOf(run: PdfRun, from = 0): number {
   const [space, word] = /^(\s*)(\S*)/.exec(run.text.slice(from))!.slice(1);
-  return run.text.length ? (run.width * (space.length + word.length)) / run.text.length : 0;
+  const at = offsetsOf(run);
+  return at[from + space.length + word.length] - at[from];
 }
 
 /**

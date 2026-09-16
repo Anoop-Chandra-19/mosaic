@@ -13,6 +13,12 @@ export interface PdfRun {
   x: number;
   y: number;
   width: number;
+  /**
+   * How much of `width` each UTF-16 unit of `text` takes, by the font's own glyph widths;
+   * absent when the font doesn't give them. Only share, not points: spacing the PDF adds
+   * between letters is spread with it.
+   */
+  shares?: number[];
   /** The font size, in points. */
   size: number;
   bold: boolean;

@@ -1,6 +1,7 @@
 import { createEmptyResume } from '@/lib/resume/defaultResume';
+import { newHeaderItem, newHeaderLine } from '@/lib/resume/resumeHeader';
 import { SECTION_PRESETS } from '@/lib/resume/sectionPresets';
-import type { BuiltInSectionKind, ResumeData } from '@/types/resume';
+import type { BuiltInSectionKind, HeaderItemKind, ResumeData } from '@/types/resume';
 
 /**
  * The sections nearly everyone ends up adding. A blank resume starts with the first three;
@@ -13,8 +14,17 @@ export const STARTER_KINDS: BuiltInSectionKind[] = [
   'projects',
 ];
 
+/** The header items nearly everyone fills in, empty, in the Headless format's two lines. */
+const STARTER_HEADER: HeaderItemKind[][] = [
+  ['phone', 'email', 'linkedin'],
+  ['auth', 'location'],
+];
+
 export function createBlankResume(): ResumeData {
   const doc = createEmptyResume();
+  doc.contact.header.lines = STARTER_HEADER.map((kinds) =>
+    newHeaderLine(kinds.map((kind) => newHeaderItem(kind)))
+  );
   doc.sections = STARTER_KINDS.slice(0, 3).map((kind, order) => ({
     id: crypto.randomUUID(),
     kind,

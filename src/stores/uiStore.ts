@@ -35,6 +35,8 @@ export const DEFAULT_UI_STATE = {
   /** Only drawn while AI is on; this remembers whether it was closed. */
   agentPaneOpen: true,
   agentPaneRatio: AGENT_PANE_DEFAULT_RATIO,
+  /** Icons beside the header's items in the editor; the page never has them. */
+  headerIcons: true,
 };
 
 interface UIState {
@@ -47,6 +49,7 @@ interface UIState {
   sidebarCollapsed: boolean;
   agentPaneOpen: boolean;
   agentPaneRatio: number;
+  headerIcons: boolean;
   toggleDarkMode: () => void;
   setDarkMode: (enabled: boolean) => void;
   setActiveSidebarTab: (tab: SidebarTab) => void;
@@ -59,6 +62,7 @@ interface UIState {
   toggleSidebarCollapsed: () => void;
   toggleAgentPane: () => void;
   setAgentPaneRatio: (ratio: number) => void;
+  toggleHeaderIcons: () => void;
   resetUIState: () => void;
 }
 
@@ -116,6 +120,10 @@ export const useUIStore = create<UIState>()(
       setAgentPaneRatio: (ratio) =>
         set((state) => {
           state.agentPaneRatio = Math.min(AGENT_PANE_MAX_RATIO, Math.max(0.1, ratio));
+        }),
+      toggleHeaderIcons: () =>
+        set((state) => {
+          state.headerIcons = !state.headerIcons;
         }),
       resetUIState: () =>
         set((state) => {

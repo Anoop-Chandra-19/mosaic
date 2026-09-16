@@ -1,23 +1,18 @@
 import { describe, expect, it } from 'vitest';
-import type { ContactInfo, ResumeData, ResumeSection } from '@/types/resume';
-import { buildImportedResume, describeImport } from '../buildImportedResume';
+import { newHeaderItem, newHeaderLine } from '@/lib/resume/resumeHeader';
+import type { ContactInfo, HeaderItem, ResumeData, ResumeSection } from '@/types/resume';
+import { buildImportedResume, describeImport, keepsHeader } from '../buildImportedResume';
 import type { ParsedResume } from '../parseResume';
 
-function contact(overrides: Partial<ContactInfo> = {}): ContactInfo {
+/** A contact with a name, and a header of one line holding these items. */
+function contact(name = '', ...items: HeaderItem[]): ContactInfo {
   return {
-    name: '',
-    email: '',
-    phone: '',
-    location: '',
-    linkedin: '',
-    github: '',
-    website: '',
-    showLinkedin: true,
-    showGithub: true,
-    showWebsite: true,
-    ...overrides,
+    name,
+    header: { linkStyle: 'plain', lines: items.length ? [newHeaderLine(items)] : [] },
   };
 }
+
+const email = (text: string) => newHeaderItem('email', { text, url: text });
 
 function section(
   kind: ResumeSection['kind'],
@@ -35,12 +30,9 @@ function section(
   };
 }
 
-function parsed(
-  sections: ResumeSection[],
-  contactOverrides: Partial<ContactInfo> = {}
-): ParsedResume {
+function parsed(sections: ResumeSection[], incoming: ContactInfo = contact()): ParsedResume {
   return {
-    resume: { schemaVersion: 1, contact: contact(contactOverrides), sections },
+    resume: { schemaVersion: 1, contact: incoming, sections },
     warnings: [],
     leftOut: [],
   };
@@ -51,7 +43,7 @@ describe('describeImport', () => {
     const result: ParsedResume = {
       resume: {
         schemaVersion: 1,
-        contact: contact({ name: 'Ada' }),
+        contact: contact('Ada'),
         sections: [
           {
             id: 'x',
@@ -88,14 +80,12 @@ describe('describeImport', () => {
 describe('buildImportedResume', () => {
   const current: ResumeData = {
     schemaVersion: 1,
-    contact: contact({ name: 'Existing Person', email: 'keep@me.com' }),
+    contact: contact('Existing Person', email('keep@me.com')),
     sections: [section('experience', 'Work Experience', ['Old Job'])],
   };
 
   it('new and replace take the imported document as it is', () => {
-    const imported = parsed([section('education', 'Education', ['B.S. CS'])], {
-      name: 'New Name',
-    });
+    const imported = parsed([section('education', 'Education', ['B.S. CS'])], contact('New Name'));
     for (const mode of ['new', 'replace'] as const) {
       const result = buildImportedResume(current, imported, mode);
       expect(result.sections.map((s) => s.kind)).toEqual(['education']);
@@ -157,18 +147,25 @@ describe('buildImportedResume', () => {
     ]);
   });
 
-  it('merge fills only empty contact fields', () => {
+  it('merge keeps the name and a header that prints anything', () => {
     const { contact: result } = buildImportedResume(
       current,
-      parsed([section('skills', 'Skills', ['Go'])], {
-        name: 'Should Not Override',
-        email: 'ignored@x.com',
-        phone: '555-0000',
-      }),
+      parsed([section('skills', 'Skills', ['Go'])], contact('Not This', email('not@this.com'))),
       'merge'
     );
-    expect(result.name).toBe('Existing Person');
-    expect(result.email).toBe('keep@me.com');
-    expect(result.phone).toBe('555-0000');
+    expect(result).toEqual(current.contact);
+    expect(keepsHeader(current.contact)).toBe(true);
+  });
+
+  it('merge takes the name and header only where the open resume has none', () => {
+    const incoming = contact('Ada', email('ada@example.com'));
+    // A header of items with no text prints nothing, so it is taken as having none.
+    const blank = contact('', newHeaderItem('phone'), newHeaderItem('email'));
+    const { contact: result } = buildImportedResume(
+      { ...current, contact: blank },
+      parsed([section('skills', 'Skills', ['Go'])], incoming),
+      'merge'
+    );
+    expect(result).toEqual(incoming);
   });
 });

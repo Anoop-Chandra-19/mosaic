@@ -71,16 +71,31 @@ const shape = ({ resume }: ParsedResume) =>
     ),
   }));
 
-/**
- * A word that only names the contact value written beside it, which import takes as read
- * once it has the value — the rule `parseResume` follows in what it counts as unused.
- */
-const FIELD_LABEL = /^(linked-?in|github|website|e-?mail|phone|mobile|portfolio|profile)[:.]?$/i;
+/** Each header line's items as kind, text, and link. */
+const headerOf = ({ resume }: ParsedResume) =>
+  resume.contact.header.lines.map((line) =>
+    line.items.map(({ kind, text, url }) => [kind, text, url])
+  );
+
+/** Both documents' header: how to reach Ada, then a status and where she is. */
+const headerWith = (status: string) => [
+  [
+    ['phone', '555-0100', ''],
+    ['email', 'ada@example.com', ''],
+    ['linkedin', 'LinkedIn', 'https://linkedin.com/in/ada'],
+  ],
+  [
+    ['auth', status, ''],
+    ['location', 'London, UK', ''],
+  ],
+];
 
 /** Every word a document holds, as often as it holds it, to check none goes missing unsaid. */
 function unaccounted(parsed: ParsedResume, inFile: Map<string, number>): string[] {
+  const { name, header } = parsed.resume.contact;
   const placed = [
-    ...Object.values(parsed.resume.contact).filter((v): v is string => typeof v === 'string'),
+    name,
+    ...header.lines.flatMap((line) => line.items.flatMap((item) => [item.text, item.url])),
     ...parsed.resume.sections.flatMap((section) => [
       section.label,
       ...section.items.flatMap((item) => [
@@ -93,7 +108,7 @@ function unaccounted(parsed: ParsedResume, inFile: Map<string, number>): string[
     ...parsed.leftOut,
     ...parsed.warnings,
   ].join('\n');
-  return missingFrom(placed, inFile, FIELD_LABEL);
+  return missingFrom(placed, inFile);
 }
 
 /** Every word the reader took out of the file, as often as the file holds it. */
@@ -107,14 +122,8 @@ async function unread(bytes: Uint8Array): Promise<string[]> {
 describe('a Word file that LibreOffice wrote', () => {
   it('comes in as the resume it is', async () => {
     const parsed = await readDocx(fixture('libreoffice-resume.docx'));
-    expect(parsed.resume.contact).toMatchObject({
-      name: 'Ada Lovelace',
-      email: 'ada@example.com',
-      phone: '555-0100',
-      location: 'London, UK',
-      citizenshipStatus: 'British subject',
-      linkedin: 'https://linkedin.com/in/ada',
-    });
+    expect(parsed.resume.contact.name).toBe('Ada Lovelace');
+    expect(headerOf(parsed)).toEqual(headerWith('British subject'));
     expect(shape(parsed)).toEqual([
       {
         label: 'Summary',
@@ -160,14 +169,10 @@ describe('a Word file that LibreOffice wrote', () => {
 describe('a Word file that Word wrote', () => {
   it('comes in as the resume it is, headings, dates and all', async () => {
     const parsed = await readDocx(fixture('word-resume.docx'));
-    expect(parsed.resume.contact).toMatchObject({
-      name: 'Ada Lovelace',
-      email: 'ada@example.com',
-      phone: '555-0100',
-      location: 'London, UK',
-      citizenshipStatus: 'British subject, work authorized through July 1845',
-      linkedin: 'https://linkedin.com/in/ada',
-    });
+    expect(parsed.resume.contact.name).toBe('Ada Lovelace');
+    expect(headerOf(parsed)).toEqual(
+      headerWith('British subject, work authorized through July 1845')
+    );
     const sections = shape(parsed);
     expect(sections.map((s) => [s.label, s.kind, s.layout, s.items.length])).toEqual([
       ['Education & Certificates', 'education', 'entries', 2],

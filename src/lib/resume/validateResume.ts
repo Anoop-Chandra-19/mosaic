@@ -1,4 +1,10 @@
 import type { ResumeData, SectionKind, SectionLayout } from '@/types/resume';
+import {
+  BUILT_IN_HEADER_KINDS,
+  HEADER_ALIGNS,
+  HEADER_SEPARATORS,
+  LINK_STYLES,
+} from './resumeHeader';
 import { BUILT_IN_KINDS } from './sectionPresets';
 
 const SECTION_KINDS: ReadonlySet<string> = new Set<SectionKind>([...BUILT_IN_KINDS, 'custom']);
@@ -51,24 +57,51 @@ function isResumeSection(value: unknown): boolean {
   );
 }
 
-const CONTACT_STRING_FIELDS = [
-  'name',
-  'email',
-  'phone',
-  'location',
-  'linkedin',
-  'github',
-  'website',
-] as const;
+const HEADER_KIND_IDS: ReadonlySet<string> = new Set([...BUILT_IN_HEADER_KINDS, 'custom']);
+const SEPARATORS: ReadonlySet<string> = new Set(HEADER_SEPARATORS.map((s) => s.value));
+const ALIGNS: ReadonlySet<string> = new Set(HEADER_ALIGNS.map((a) => a.value));
+const STYLES: ReadonlySet<string> = new Set(LINK_STYLES.map((s) => s.value));
+
+const isOneOf = (value: unknown, allowed: ReadonlySet<string>) =>
+  typeof value === 'string' && allowed.has(value);
+
+function isHeaderItem(value: unknown): boolean {
+  return (
+    isRecord(value) &&
+    typeof value.id === 'string' &&
+    isOneOf(value.kind, HEADER_KIND_IDS) &&
+    typeof value.text === 'string' &&
+    typeof value.url === 'string' &&
+    typeof value.shown === 'boolean'
+  );
+}
+
+function isHeaderLine(value: unknown): boolean {
+  return (
+    isRecord(value) &&
+    typeof value.id === 'string' &&
+    isOneOf(value.separator, SEPARATORS) &&
+    isOneOf(value.align, ALIGNS) &&
+    Array.isArray(value.items) &&
+    value.items.every(isHeaderItem)
+  );
+}
+
+function isContact(value: unknown): boolean {
+  if (!isRecord(value) || typeof value.name !== 'string') return false;
+  const header = value.header;
+  return (
+    isRecord(header) &&
+    isOneOf(header.linkStyle, STYLES) &&
+    Array.isArray(header.lines) &&
+    header.lines.every(isHeaderLine)
+  );
+}
 
 /** Structural check for a ResumeData document read from outside the app (a file, IPC). */
 export function isResumeData(value: unknown): value is ResumeData {
   if (!isRecord(value)) return false;
   if (typeof value.schemaVersion !== 'number') return false;
-  const contact = value.contact;
-  if (!isRecord(contact)) return false;
-  if (!CONTACT_STRING_FIELDS.every((field) => isOptionalString(contact[field]))) {
-    return false;
-  }
+  if (!isContact(value.contact)) return false;
   return Array.isArray(value.sections) && value.sections.every(isResumeSection);
 }

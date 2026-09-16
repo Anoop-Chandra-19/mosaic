@@ -49,7 +49,7 @@ describe('readMarkdown', () => {
       ),
     ]);
     data.contact.name = 'Ada *the* Countess #';
-    data.contact.email = 'first_last@example.com';
+    data.contact.header.lines[0].items[1].text = 'first_last@example.com';
 
     expect(shown(readMarkdown(markdownOf(data)).resume)).toEqual(shown(data));
   });
@@ -80,11 +80,17 @@ describe('readMarkdown', () => {
       ].join('\n')
     );
 
-    expect(read.contact).toMatchObject({
-      name: 'Grace Hopper',
-      email: 'grace@example.com',
-      website: 'https://grace.dev',
-    });
+    expect(read.contact.name).toBe('Grace Hopper');
+    expect(
+      read.contact.header.lines.map((line) =>
+        line.items.map((item) => [item.kind, item.text, item.url])
+      )
+    ).toEqual([
+      [
+        ['email', 'grace@example.com', ''],
+        ['site', 'Portfolio', 'https://grace.dev'],
+      ],
+    ]);
     expect(
       read.sections.map(({ kind, layout, label, items }) => [
         kind,

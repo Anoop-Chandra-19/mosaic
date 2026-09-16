@@ -2,12 +2,19 @@ import { describe, expect, it } from 'vitest';
 import { createJsonResumeExport } from '@/features/export/jsonResume';
 import { normalizeResumeForExport } from '@/features/export/normalizeResumeExport';
 import { createDefaultResume } from '@/lib/resume/defaultResume';
+import { newHeaderItem } from '@/lib/resume/resumeHeader';
 import type { ResumeData } from '@/types/resume';
 import { isJsonResume, readJsonResume } from '../readJsonResume';
 import { entry, everything, kinds, resume, section, shown } from './roundTrip';
 
 const exported = (resume: ResumeData) =>
   JSON.parse(createJsonResumeExport(normalizeResumeForExport(resume)));
+
+/** Each header line's items as kind, text, and link. */
+const headerItems = (resume: ResumeData) =>
+  resume.contact.header.lines.map((line) =>
+    line.items.map(({ kind, text, url }) => [kind, text, url])
+  );
 
 describe('readJsonResume', () => {
   it('reads Mosaic’s own export back exactly', () => {
@@ -19,6 +26,50 @@ describe('readJsonResume', () => {
       expect(parsed.warnings).toEqual([]);
       expect(parsed.leftOut).toEqual([]);
     }
+  });
+
+  it('gives back the header whole: kinds, links, separators, alignment, link style', () => {
+    const data = everything();
+    const { header } = data.contact;
+    header.linkStyle = 'underline';
+    Object.assign(header.lines[1], { separator: ' · ', align: 'left' });
+    header.lines[0].items.push(newHeaderItem('custom', { text: 'Portfolio', url: 'ada.dev/work' }));
+
+    const read = readJsonResume(exported(data)).resume.contact.header;
+    expect(read.linkStyle).toBe('underline');
+    expect(read.lines.map(({ separator, align }) => [separator, align])).toEqual([
+      [' | ', 'center'],
+      [' · ', 'left'],
+    ]);
+    expect(headerItems(readJsonResume(exported(data)).resume)).toEqual([
+      [
+        ['phone', '555-0100', 'tel:5550100'],
+        ['email', 'ada@example.com', 'mailto:ada@example.com'],
+        ['linkedin', 'https://linkedin.com/in/ada', 'https://linkedin.com/in/ada'],
+        ['github', 'github.com/ada', 'https://github.com/ada'],
+        ['site', 'ada.dev', 'https://ada.dev'],
+        ['custom', 'Portfolio', 'https://ada.dev/work'],
+      ],
+      [
+        ['auth', 'British subject', ''],
+        ['location', 'London, UK', ''],
+      ],
+    ]);
+  });
+
+  it('builds the header from basics when another tool changed them, and says so', () => {
+    const file = exported(everything());
+    file.basics.email = 'ada@elsewhere.org';
+
+    const parsed = readJsonResume(file);
+    expect(parsed.warnings).toEqual([
+      'The contact details in this file were changed after Mosaic exported it, so the header is built from them.',
+    ]);
+    expect(headerItems(parsed.resume)[0][1]).toEqual([
+      'email',
+      'ada@elsewhere.org',
+      'ada@elsewhere.org',
+    ]);
   });
 
   it('gives back dates as they were written, until another tool changes them', () => {
@@ -112,15 +163,17 @@ describe('readJsonResume', () => {
       ],
     });
 
-    expect(parsed.resume.contact).toMatchObject({
-      name: 'Grace Hopper',
-      email: 'grace@example.com',
-      phone: '555-0199',
-      website: 'https://grace.dev',
-      location: 'Arlington, VA',
-      linkedin: 'https://www.linkedin.com/in/grace',
-      github: 'github.com/grace',
-    });
+    expect(parsed.resume.contact.name).toBe('Grace Hopper');
+    expect(headerItems(parsed.resume)).toEqual([
+      [
+        ['phone', '555-0199', '555-0199'],
+        ['email', 'grace@example.com', 'grace@example.com'],
+        ['linkedin', 'https://www.linkedin.com/in/grace', 'https://www.linkedin.com/in/grace'],
+        ['github', 'github.com/grace', 'github.com/grace'],
+        ['site', 'https://grace.dev', 'https://grace.dev'],
+      ],
+      [['location', 'Arlington, VA', '']],
+    ]);
     const read = parsed.resume.sections.map(({ kind, layout, label, items }) => [
       kind,
       layout,

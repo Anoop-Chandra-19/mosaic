@@ -1,7 +1,11 @@
+import { HEADER_SEPARATORS, newHeaderItem, newHeaderLine } from '@/lib/resume/resumeHeader';
 import { SECTION_PRESETS } from '@/lib/resume/sectionPresets';
 import type {
   Bullet,
   ContactInfo,
+  HeaderItemKind,
+  HeaderLine,
+  HeaderSeparator,
   ResumeData,
   ResumeEntry,
   ResumeSection,
@@ -15,25 +19,11 @@ export interface ParsedResume {
   resume: ResumeData;
   warnings: string[];
   /**
-   * Lines Mosaic read but found no place for — a headline under the name, a heading with
-   * nothing under it — as they were in the file. The review step lists them, so nothing
-   * is dropped without saying so.
+   * Lines Mosaic read but found no place for — a heading with nothing under it — as they
+   * were in the file. The review step lists them, so nothing is dropped without saying so.
    */
   leftOut: string[];
 }
-
-const EMPTY_CONTACT: ContactInfo = {
-  name: '',
-  email: '',
-  phone: '',
-  location: '',
-  linkedin: '',
-  github: '',
-  website: '',
-  showLinkedin: true,
-  showGithub: true,
-  showWebsite: true,
-};
 
 const EMAIL_RE = /[\w.+-]+@[\w-]+\.[\w.-]+/;
 const PHONE_RE = /(\(?\+?\d[\d\s().-]{6,}\d)/;
@@ -45,8 +35,8 @@ const LOCATION_RE = /^[A-Za-z][\w.\s'-]+,\s*[A-Za-z][\w.\s'-]+$/;
 /** Words a work-authorization status uses: "US Citizen", "F-1 STEM OPT, work authorized…". */
 const STATUS_RE =
   /\b(?:citizen(?:ship)?|resident|green card|visa|h-?1b|opt|cpt|ead|authori[sz](?:ed|ation)|sponsorship|clearance|permit)\b/i;
-/** Between a contact line's fields: "a | b", "a · b", or a run of spaces. */
-const FIELD_SEPARATOR = /\s+[|·•]\s+|\s{2,}/;
+/** Between a contact line's fields: "a | b", "a · b", "a • b", "a — b", or a run of spaces. */
+const FIELD_SEPARATOR = /\s+[|·•—]\s+|\s{2,}/;
 
 interface ParseOptions {
   /**
@@ -110,98 +100,77 @@ const fieldsOf = (line: string) =>
 const isReach = (text: string) =>
   [EMAIL_RE, PHONE_RE, LINKEDIN_RE, GITHUB_RE, WEB_RE].some((re) => re.test(text));
 
+/** What a contact field is about, by its words. Only meaning: it prints as written. */
+function kindOf(field: string): HeaderItemKind {
+  if (EMAIL_RE.test(field)) return 'email';
+  // A profile written as its address, or as its name, the way the example resume has it.
+  if (LINKEDIN_RE.test(field) || /^linkedin\b/i.test(field)) return 'linkedin';
+  if (GITHUB_RE.test(field) || /^github\b/i.test(field)) return 'github';
+  if (STATUS_RE.test(field)) return 'auth';
+  if (WEB_RE.test(field)) return 'site';
+  if (PHONE_RE.test(field)) return 'phone';
+  if (LOCATION_RE.test(field)) return 'location';
+  return 'custom';
+}
+
+/** The separator a line's fields are written apart with; Mosaic's own when it has none. */
+function separatorOf(line: string): HeaderSeparator {
+  const mark = FIELD_SEPARATOR.exec(line)?.[0].trim();
+  const known = HEADER_SEPARATORS.find(({ value }) => value.trim() === mark);
+  return known?.value ?? HEADER_SEPARATORS[0].value;
+}
+
+/** "LinkedIn https://linkedin.com/in/ada": words, then the full address they stand for. */
+const WORDS_THEN_ADDRESS = /^(.*\S)\s+((?:https?:\/\/|mailto:)\S+)$/i;
+
+/** A contact field as an item: its words, and the address written after them as its link. */
+function headerItemOf(field: string) {
+  const [, words, address] = WORDS_THEN_ADDRESS.exec(field) ?? [];
+  return newHeaderItem(kindOf(field), words ? { text: words, url: address } : { text: field });
+}
+
+/** A contact-block line as a header line: each field an item, kept as written. */
+function headerLineOf(line: string): HeaderLine {
+  const items = fieldsOf(line).map(headerItemOf);
+  // Two fields and one of them a status or a place: the other is the other one.
+  if (items.length === 2) {
+    const kinds = items.map((item) => item.kind);
+    const other = items.find((item) => item.kind === 'custom');
+    if (other && kinds.includes('auth')) other.kind = 'location';
+    else if (other && kinds.includes('location')) other.kind = 'auth';
+  }
+  return newHeaderLine(items, { separator: separatorOf(line) });
+}
+
 /**
- * The contact block's fields, one by one: Mosaic's own files write them as
- * "phone | email | links" and "status | location", and many resumes use the same shape.
- * Links are kept as written — Mosaic prints them as the person typed them.
+ * The name and the header: the name is the block's first line that is one field and nothing
+ * else a header holds, and every other line of the block is a header line — Mosaic's own
+ * files write "phone | email | links" and "status | location", and many resumes the same.
  */
 function parseContact(preamble: string[], fullText: string): ContactInfo {
-  const contact: ContactInfo = { ...EMPTY_CONTACT };
+  const nameAt = preamble.findIndex(
+    (line) =>
+      fieldsOf(line).length === 1 &&
+      !isReach(line) &&
+      !STATUS_RE.test(line) &&
+      !LOCATION_RE.test(line)
+  );
+  const lines = preamble.filter((line, index) => index !== nameAt && line.trim()).map(headerLineOf);
+
   // With no contact block, the address and number can be anywhere.
-  const source = preamble.join('\n').trim() ? preamble.join('\n') : fullText;
-  contact.email = source.match(EMAIL_RE)?.[0] ?? '';
-  contact.phone = (source.match(PHONE_RE)?.[0] ?? '').trim();
-  contact.linkedin = source.match(LINKEDIN_RE)?.[0] ?? '';
-  contact.github = source.match(GITHUB_RE)?.[0] ?? '';
-
-  // Name: the first line that is one field and nothing else the block holds.
-  contact.name =
-    preamble.find(
-      (line) =>
-        fieldsOf(line).length === 1 &&
-        !isReach(line) &&
-        !STATUS_RE.test(line) &&
-        !LOCATION_RE.test(line)
-    ) ?? '';
-
-  for (const line of preamble) {
-    if (line === contact.name) continue;
-    const rest: string[] = [];
-    for (const field of fieldsOf(line)) {
-      if (EMAIL_RE.test(field) || LINKEDIN_RE.test(field) || GITHUB_RE.test(field)) continue;
-      const web = field.match(WEB_RE)?.[0];
-      if (web) contact.website ||= web;
-      else if (PHONE_RE.test(field)) continue;
-      // A profile written as its name, the way the example resume has it.
-      else if (/^linkedin\b/i.test(field)) contact.linkedin ||= field;
-      else if (/^github\b/i.test(field)) contact.github ||= field;
-      else rest.push(field);
-    }
-    const status = rest.find((field) => STATUS_RE.test(field));
-    const location = rest.find((field) => field !== status && LOCATION_RE.test(field));
-    // Two fields and one of them known: the other is the other one.
-    const other = rest.length === 2 ? rest.find((field) => field !== (status ?? location)) : '';
-    const foundStatus = status ?? (location ? other : '');
-    const foundLocation = location ?? (status ? other : '');
-    if (foundStatus && !contact.citizenshipStatus) contact.citizenshipStatus = foundStatus;
-    if (foundLocation && !contact.location) contact.location = foundLocation;
-  }
-
-  return contact;
-}
-
-/** A word that only names a contact field whose value is beside it: "LinkedIn", "Phone:". */
-const FIELD_LABEL =
-  /^(?:linked-?in|github|gitlab|web(?:site|page)?|site|portfolio|e-?mail|mail|phone|mobile|tel(?:ephone)?|cell|address|location|profile)$/i;
-
-/** What is left of a field once the contact values taken from it are removed. */
-function remainderOf(field: string, values: string[]): string {
-  let rest = field;
-  for (const value of values) rest = rest.split(value).join(' ');
-  const words = rest
-    .split(/[\s|·•,;:/—–]+/)
-    .filter((word) => word && !FIELD_LABEL.test(word.replace(/[.:]+$/, '')));
-  const text = words.join(' ').replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu, '');
-  return /\p{L}{2}/u.test(text) ? text : '';
-}
-
-/**
- * Contact-block text that none of the contact's fields came from, field by field: a line
- * the contact took nothing from is left out whole, and in a line it took something from,
- * only the fields it didn't use — "ada@example.com | Open to relocation" imports the
- * address and leaves out the rest, rather than counting the whole line as read.
- */
-function unusedContactText(preamble: string[], contact: ContactInfo): string[] {
-  const values = Object.values(contact)
-    .filter((value): value is string => typeof value === 'string' && value !== '')
-    .sort((a, b) => b.length - a.length);
-  const unused: string[] = [];
-  for (const line of preamble) {
-    if (!line.trim()) continue;
-    const fields = fieldsOf(line);
-    if (!fields.some((field) => values.some((value) => field.includes(value)))) {
-      unused.push(line.trim());
-      continue;
-    }
-    for (const field of fields) {
-      if (!values.some((value) => field.includes(value))) unused.push(field);
-      else {
-        const rest = remainderOf(field, values);
-        if (rest) unused.push(rest);
-      }
+  if (!preamble.some((line) => line.trim())) {
+    const found = [EMAIL_RE, PHONE_RE, LINKEDIN_RE, GITHUB_RE]
+      .map((re) => fullText.match(re)?.[0].trim() ?? '')
+      .filter(Boolean);
+    if (found.length > 0) {
+      lines.push(newHeaderLine(found.map((text) => newHeaderItem(kindOf(text), { text }))));
     }
   }
-  return unused;
+
+  return {
+    name: nameAt < 0 ? '' : preamble[nameAt].trim(),
+    header: { linkStyle: 'plain', lines },
+  };
 }
 
 function textEntry(text: string): ResumeEntry {
@@ -293,7 +262,7 @@ export function parseResumeLines(
 
   const preamble = lines.slice(0, headings[0] ?? lines.length).flatMap(textsOf);
   const contact = parseContact(preamble, lines.flatMap(textsOf).join('\n'));
-  const leftOut = unusedContactText(preamble, contact);
+  const leftOut: string[] = [];
 
   const sections: ResumeSection[] = [];
   headings.forEach((index, i) => {

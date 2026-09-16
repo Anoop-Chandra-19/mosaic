@@ -84,12 +84,18 @@ describe('readPdf', () => {
       'https://linkedin.com/in/ada',
     ]);
     const { resume: read, leftOut } = await readPdf(bytes);
-    expect(read.contact).toMatchObject({
-      name: 'Ada Lovelace',
-      phone: '555-0100',
-      email: 'ada@example.com',
-      linkedin: 'https://linkedin.com/in/ada',
-    });
+    expect(read.contact.name).toBe('Ada Lovelace');
+    expect(
+      read.contact.header.lines.map((line) =>
+        line.items.map(({ kind, text, url }) => [kind, text, url])
+      )
+    ).toEqual([
+      [
+        ['phone', '555-0100', ''],
+        ['email', 'ada@example.com', ''],
+        ['linkedin', 'LinkedIn', 'https://linkedin.com/in/ada'],
+      ],
+    ]);
     expect(leftOut).toEqual([]);
   });
 

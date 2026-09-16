@@ -1,5 +1,6 @@
 import { normalizeResumeForExport } from '@/features/export/normalizeResumeExport';
-import type { ResumeData, ResumeEntry, ResumeSection } from '@/types/resume';
+import { headerLineText, newHeaderItem, newHeaderLine } from '@/lib/resume/resumeHeader';
+import type { HeaderItemKind, ResumeData, ResumeEntry, ResumeSection } from '@/types/resume';
 
 /** Resumes for round-trip tests: export one, import the file, compare what the page shows. */
 
@@ -28,21 +29,31 @@ export function section(
 
 export const lines = (...texts: string[]) => texts.map((text) => entry({ text }));
 
+/** A header item that links to what it shows. */
+export const linked = (kind: HeaderItemKind, text: string) =>
+  newHeaderItem(kind, { text, url: text });
+
 export function resume(sections: ResumeSection[]): ResumeData {
   return {
     schemaVersion: 1,
     contact: {
       name: 'Ada Lovelace',
-      email: 'ada@example.com',
-      phone: '555-0100',
-      location: 'London, UK',
-      citizenshipStatus: 'British subject',
-      linkedin: 'https://linkedin.com/in/ada',
-      github: 'github.com/ada',
-      website: 'ada.dev',
-      showLinkedin: true,
-      showGithub: true,
-      showWebsite: true,
+      header: {
+        linkStyle: 'plain',
+        lines: [
+          newHeaderLine([
+            linked('phone', '555-0100'),
+            linked('email', 'ada@example.com'),
+            linked('linkedin', 'https://linkedin.com/in/ada'),
+            linked('github', 'github.com/ada'),
+            linked('site', 'ada.dev'),
+          ]),
+          newHeaderLine([
+            newHeaderItem('auth', { text: 'British subject' }),
+            newHeaderItem('location', { text: 'London, UK' }),
+          ]),
+        ],
+      },
     },
     sections: sections.map((s, order) => ({ ...s, order })),
   };
@@ -83,11 +94,15 @@ export function everything(): ResumeData {
   ]);
 }
 
-/** What the page shows — what a round trip has to keep. The kind shows only as an icon. */
+/**
+ * What the page shows — what a round trip has to keep. A kind shows only as an icon, and
+ * where one item ends and the next begins doesn't show at all: the line reads the same.
+ */
 export function shown(data: ResumeData) {
   const { contact, sections } = normalizeResumeForExport(data);
   return {
-    contact,
+    name: contact.name,
+    header: contact.lines.map((line) => ({ align: line.align, text: headerLineText(line) })),
     sections: sections.map(({ layout, label, entries }) => ({
       layout,
       label,

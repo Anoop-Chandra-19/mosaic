@@ -1,4 +1,11 @@
-import type { SectionKind, SectionLayout } from '@/types/resume';
+import type {
+  HeaderAlign,
+  HeaderItemKind,
+  HeaderSeparator,
+  LinkStyle,
+  SectionKind,
+  SectionLayout,
+} from '@/types/resume';
 import {
   compact,
   fromItem,
@@ -20,14 +27,30 @@ interface JsonResumeProfile {
   url: string;
 }
 
-interface JsonResumeBasics {
-  name?: string;
+/** The fields of `basics` that say how to reach the person. */
+interface JsonResumeContact {
   email?: string;
   phone?: string;
   url?: string;
-  summary?: string;
   location?: { address?: string };
   profiles?: JsonResumeProfile[];
+}
+
+interface JsonResumeBasics extends JsonResumeContact {
+  name?: string;
+  summary?: string;
+}
+
+export interface MosaicHeaderLine {
+  separator: HeaderSeparator;
+  align: HeaderAlign;
+  items: { kind: HeaderItemKind; text: string; url: string }[];
+}
+
+/** The header as it prints, which `basics` can only say part of. */
+export interface MosaicHeader {
+  linkStyle: LinkStyle;
+  lines: MosaicHeaderLine[];
 }
 
 /** Where a section's content goes: one of JSON Resume's arrays, or `basics.summary`. */
@@ -41,8 +64,7 @@ export type JsonResumeSource = 'summary' | ItemSource;
  */
 export interface MosaicJsonResumeMeta {
   version: 1;
-  /** The contact's work authorization, which JSON Resume has no field for. */
-  workStatus?: string;
+  header?: MosaicHeader;
   sections: {
     kind: SectionKind;
     layout: SectionLayout;
@@ -104,24 +126,54 @@ export function projectType(kind: SectionKind, label: string): string | undefine
   return kind === 'projects' ? undefined : label;
 }
 
-function buildBasics(data: NormalizedResumeExport, summary: string[]): JsonResumeBasics {
-  const { contact } = data;
+const PROFILE_NETWORKS: Partial<Record<HeaderItemKind, string>> = {
+  linkedin: 'LinkedIn',
+  github: 'GitHub',
+};
 
-  const profiles: JsonResumeProfile[] = [];
-  if (contact.linkedin) profiles.push({ network: 'LinkedIn', url: contact.linkedin });
-  if (contact.github) profiles.push({ network: 'GitHub', url: contact.github });
-
+/**
+ * The contact fields of `basics` a header fills: the first item of each kind that has a
+ * field, and every profile. Items of other kinds — a work authorization, a custom item — have
+ * no field, and are only in `meta.mosaic.header`.
+ */
+export function headerBasics(lines: MosaicHeaderLine[]): JsonResumeContact {
+  const items = lines.flatMap((line) => line.items);
+  const first = (kind: HeaderItemKind) => items.find((item) => item.kind === kind);
+  const email = first('email');
+  const site = first('site');
+  const location = first('location');
   return compact({
-    name: contact.name,
-    email: contact.email,
-    phone: contact.phone,
-    url: contact.website,
-    summary: summary.join('\n\n'),
+    email: email && (email.url.replace(/^mailto:/i, '') || email.text),
+    phone: first('phone')?.text,
+    url: site && (site.url || site.text),
     // Mosaic's location is freeform; JSON Resume's is structured. The whole
     // string goes to `address` rather than guessing at city/region splits.
-    location: contact.location ? { address: contact.location } : undefined,
-    profiles,
+    location: location && { address: location.text },
+    profiles: items.flatMap((item) => {
+      const network = PROFILE_NETWORKS[item.kind];
+      return network ? [{ network, url: item.url || item.text }] : [];
+    }),
   });
+}
+
+function buildBasics(data: NormalizedResumeExport, header: MosaicHeader, summary: string[]) {
+  return compact({
+    name: data.contact.name,
+    ...headerBasics(header.lines),
+    summary: summary.join('\n\n'),
+  });
+}
+
+/** The printed header as `meta.mosaic` keeps it: each item's text and its written link. */
+function mosaicHeader({ linkStyle, lines }: NormalizedResumeExport['contact']): MosaicHeader {
+  return {
+    linkStyle,
+    lines: lines.map(({ separator, align, items }) => ({
+      separator,
+      align,
+      items: items.map(({ kind, text, href }) => ({ kind, text, url: href })),
+    })),
+  };
 }
 
 export function createJsonResumeExport(data: NormalizedResumeExport): string {
@@ -163,14 +215,15 @@ export function createJsonResumeExport(data: NormalizedResumeExport): string {
     });
   }
 
+  const header = mosaicHeader(data.contact);
   const resume: JsonResume = compact({
     $schema: 'https://raw.githubusercontent.com/jsonresume/resume-schema/v1.0.0/schema.json',
-    basics: buildBasics(data, summary),
+    basics: buildBasics(data, header, summary),
     ...arrays,
     meta: {
       mosaic: {
         version: 1,
-        ...(data.contact.citizenshipStatus && { workStatus: data.contact.citizenshipStatus }),
+        ...(header.lines.length > 0 && { header }),
         sections,
       },
     },

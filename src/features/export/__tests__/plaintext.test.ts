@@ -1,17 +1,23 @@
 import { describe, expect, it } from 'vitest';
 import { createPlaintextExport } from '../plaintext';
 import type { NormalizedResumeExport } from '../normalizeResumeExport';
+import type { PrintedHeaderLine } from '@/lib/resume/resumeHeader';
+
+const line = (texts: string[]): PrintedHeaderLine => ({
+  id: texts.join(),
+  separator: ' | ',
+  align: 'center',
+  items: texts.map((text) => ({ id: text, kind: 'custom', text, href: '' })),
+});
 
 const exportData: NormalizedResumeExport = {
   contact: {
     name: 'Alex Johnson',
-    email: 'alex@example.com',
-    phone: '555-0100',
-    location: 'Detroit, MI',
-    citizenshipStatus: '',
-    linkedin: 'linkedin.com/in/alex',
-    github: 'github.com/alex',
-    website: '',
+    linkStyle: 'plain',
+    lines: [
+      line(['555-0100', 'alex@example.com', 'linkedin.com/in/alex', 'github.com/alex']),
+      line(['Detroit, MI']),
+    ],
   },
   sections: [
     {
@@ -59,16 +65,7 @@ Engineer | Mosaic
   it('uses the Mosaic Resume fallback name', () => {
     expect(
       createPlaintextExport({
-        contact: {
-          name: '',
-          email: '',
-          phone: '',
-          location: '',
-          citizenshipStatus: '',
-          linkedin: '',
-          github: '',
-          website: '',
-        },
+        contact: { name: '', linkStyle: 'plain', lines: [] },
         sections: [],
       })
     ).toBe('Mosaic Resume');

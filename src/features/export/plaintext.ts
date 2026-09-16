@@ -1,23 +1,11 @@
-import { getContactPrimaryLine, getContactSecondaryLine } from '@/lib/resume/contactFormatting';
+import { headerLineText } from '@/lib/resume/resumeHeader';
 import type { NormalizedResumeExport } from './normalizeResumeExport';
 
 export function createPlaintextExport(data: NormalizedResumeExport) {
   const lines: string[] = [];
   const name = data.contact.name || 'Mosaic Resume';
-  const primaryLine = getContactPrimaryLine(data.contact);
-  const secondaryLine = getContactSecondaryLine(data.contact);
 
-  lines.push(name);
-
-  if (primaryLine) {
-    lines.push(primaryLine);
-  }
-
-  if (secondaryLine) {
-    lines.push(secondaryLine);
-  }
-
-  lines.push('');
+  lines.push(name, ...data.contact.lines.map(headerLineText), '');
 
   for (const section of data.sections) {
     lines.push(section.label.toUpperCase());
