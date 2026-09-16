@@ -252,7 +252,9 @@ function PickStep({
           onChange={(event) => setText(event.target.value)}
           placeholder={PLACEHOLDER}
           spellCheck={false}
-          className="h-36 resize-none font-mono text-xs leading-5"
+          // An example, not content: quieter than the theme's placeholder, which at seven
+          // lines reads as something already pasted.
+          className="h-36 resize-none font-mono text-xs leading-5 placeholder:text-zinc-400 dark:placeholder:text-zinc-600"
         />
 
         <p className="mt-3 flex gap-2 rounded-lg border border-zinc-200 bg-zinc-50 p-2.5 text-xs leading-relaxed text-zinc-600 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400">
