@@ -4,50 +4,16 @@ import { getContactLines } from '@/lib/resume/contactFormatting';
 
 interface PreviewHeaderProps {
   contact: ContactInfo;
-  variant?: 'full' | 'compact';
-  pageNumber?: number;
 }
 
 /**
- * Three centered lines: name, contact, then citizenship status and location.
- * Sizes are the PDF's point values rendered as pixels, so this block occupies
- * exactly the height it will occupy in the export.
+ * Three centered lines: name, contact, then citizenship status and location. First page
+ * only, as in the PDF. Sizes are the PDF's point values rendered as pixels, so this block
+ * occupies exactly the height it will occupy in the export.
  */
-export function PreviewHeader({ contact, variant = 'full', pageNumber = 1 }: PreviewHeaderProps) {
+export function PreviewHeader({ contact }: PreviewHeaderProps) {
   const displayName = contact.name?.trim() || 'Your Name';
   const { primary: primaryLine, secondary: secondaryLine } = getContactLines(contact);
-
-  if (variant === 'compact') {
-    const compactLine = primaryLine;
-
-    return (
-      <header
-        style={{
-          fontFamily: L.fontStack,
-          color: L.color,
-          marginBottom: `${L.bodyLeading}px`,
-        }}
-        data-preview-header
-        data-preview-header-variant="compact"
-      >
-        <div
-          className="flex items-baseline justify-between gap-3"
-          style={{
-            fontSize: `${L.bodyFontSize}px`,
-            lineHeight: `${L.bodyLeading}px`,
-          }}
-        >
-          <span className="truncate font-bold">{displayName}</span>
-          <span>Page {pageNumber}</span>
-        </div>
-        {compactLine && (
-          <p style={{ fontSize: `${L.bodyFontSize}px`, lineHeight: `${L.bodyLeading}px` }}>
-            {compactLine}
-          </p>
-        )}
-      </header>
-    );
-  }
 
   return (
     <header
@@ -58,7 +24,6 @@ export function PreviewHeader({ contact, variant = 'full', pageNumber = 1 }: Pre
         marginBottom: `${L.headerMarginBottom}px`,
       }}
       data-preview-header
-      data-preview-header-variant="full"
     >
       <h1
         className="font-bold"

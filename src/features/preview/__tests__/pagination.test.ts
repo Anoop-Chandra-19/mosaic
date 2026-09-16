@@ -8,7 +8,6 @@ function createMeasurements(
 ): PaginationMeasurements {
   return {
     headerHeight: 0,
-    continuationHeaderHeight: 0,
     sectionTitleHeights: {},
     entryHeights: {},
     entryHeadingHeights: {},
@@ -145,6 +144,29 @@ describe('paginateSections', () => {
     expect(pages).toHaveLength(2);
     expect(pages[0][0].entries.map((entry) => entry.id)).toEqual(['job-1']);
     expect(pages[1][0].entries.map((entry) => entry.id)).toEqual(['job-2-cont-0']);
+  });
+
+  it('reserves room for the header on the first page only', () => {
+    const jobs = ['job-1', 'job-2', 'job-3', 'job-4'];
+    const pages = paginateSections(
+      [
+        createExperienceSection(
+          jobs.map((id) => ({ id, title: id, subtitle: '', bullets: ['A'] }))
+        ),
+      ],
+      createMeasurements({
+        headerHeight: 70,
+        sectionTitleHeights: { experience: 10 },
+        entryHeights: Object.fromEntries(jobs.map((id) => [`experience::${id}`, 40])),
+      }),
+      150
+    );
+
+    // Page 1: header 70 + blank line 18 + title 10 + one job = 138. Page 2 has no header, so
+    // the title and three jobs fit: 18 + 10 + 120 = 148.
+    expect(pages).toHaveLength(2);
+    expect(pages[0][0].entries).toHaveLength(1);
+    expect(pages[1][0].entries).toHaveLength(3);
   });
 
   it('splits long text-only entries into continuation entries', () => {
