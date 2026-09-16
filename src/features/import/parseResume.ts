@@ -59,6 +59,9 @@ interface ParseOptions {
   marked?: boolean;
 }
 
+/** A line's text, and its aside as a line of its own. */
+const textsOf = (line: ImportLine) => (line.aside ? [line.text, line.aside] : [line.text]);
+
 function newBullet(text: string): Bullet {
   return { id: crypto.randomUUID(), text: text.trim(), selected: true };
 }
@@ -157,12 +160,48 @@ function parseContact(preamble: string[], fullText: string): ContactInfo {
   return contact;
 }
 
-/** Contact-block lines that none of the contact's fields came from. */
-function unusedContactLines(preamble: string[], contact: ContactInfo): string[] {
-  const values = Object.values(contact).filter(
-    (value): value is string => typeof value === 'string' && value !== ''
-  );
-  return preamble.filter((line) => line.trim() && !values.some((value) => line.includes(value)));
+/** A word that only names a contact field whose value is beside it: "LinkedIn", "Phone:". */
+const FIELD_LABEL =
+  /^(?:linked-?in|github|gitlab|web(?:site|page)?|site|portfolio|e-?mail|mail|phone|mobile|tel(?:ephone)?|cell|address|location|profile)$/i;
+
+/** What is left of a field once the contact values taken from it are removed. */
+function remainderOf(field: string, values: string[]): string {
+  let rest = field;
+  for (const value of values) rest = rest.split(value).join(' ');
+  const words = rest
+    .split(/[\s|·•,;:/—–]+/)
+    .filter((word) => word && !FIELD_LABEL.test(word.replace(/[.:]+$/, '')));
+  const text = words.join(' ').replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu, '');
+  return /\p{L}{2}/u.test(text) ? text : '';
+}
+
+/**
+ * Contact-block text that none of the contact's fields came from, field by field: a line
+ * the contact took nothing from is left out whole, and in a line it took something from,
+ * only the fields it didn't use — "ada@example.com | Open to relocation" imports the
+ * address and leaves out the rest, rather than counting the whole line as read.
+ */
+function unusedContactText(preamble: string[], contact: ContactInfo): string[] {
+  const values = Object.values(contact)
+    .filter((value): value is string => typeof value === 'string' && value !== '')
+    .sort((a, b) => b.length - a.length);
+  const unused: string[] = [];
+  for (const line of preamble) {
+    if (!line.trim()) continue;
+    const fields = fieldsOf(line);
+    if (!fields.some((field) => values.some((value) => field.includes(value)))) {
+      unused.push(line.trim());
+      continue;
+    }
+    for (const field of fields) {
+      if (!values.some((value) => field.includes(value))) unused.push(field);
+      else {
+        const rest = remainderOf(field, values);
+        if (rest) unused.push(rest);
+      }
+    }
+  }
+  return unused;
 }
 
 function textEntry(text: string): ResumeEntry {
@@ -219,7 +258,7 @@ function parseEntrySection(body: ImportLine[], marked: boolean): ResumeEntry[] {
 
     const [first, ...rest] = headerLines;
     const [title, aside] = first ? titleOf(first, marked) : ['', ''];
-    const subtitle = [aside, ...rest.map((line) => line.text)].filter(Boolean).join(' — ');
+    const subtitle = [aside, ...rest.flatMap(textsOf)].filter(Boolean).join(' — ');
     if (!title && !subtitle && bullets.length === 0) continue;
     entries.push(titledEntry(title, subtitle, bullets));
   }
@@ -252,9 +291,9 @@ export function parseResumeLines(
   const warnings: string[] = [];
   const headings = lines.flatMap((line, index) => (line.role === 'heading' ? [index] : []));
 
-  const preamble = lines.slice(0, headings[0] ?? lines.length).map((line) => line.text);
-  const contact = parseContact(preamble, lines.map((line) => line.text).join('\n'));
-  const leftOut = unusedContactLines(preamble, contact);
+  const preamble = lines.slice(0, headings[0] ?? lines.length).flatMap(textsOf);
+  const contact = parseContact(preamble, lines.flatMap(textsOf).join('\n'));
+  const leftOut = unusedContactText(preamble, contact);
 
   const sections: ResumeSection[] = [];
   headings.forEach((index, i) => {

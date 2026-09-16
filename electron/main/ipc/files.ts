@@ -16,7 +16,12 @@ const FILTERS: Record<FileType, FileFilter[]> = {
   markdown: [{ name: 'Markdown', extensions: ['md'] }],
   text: [{ name: 'Plain text', extensions: ['txt'] }],
   pdf: [{ name: 'PDF', extensions: ['pdf'] }],
-  import: [{ name: 'Resumes and Mosaic backups', extensions: ['md', 'markdown', 'txt', 'json'] }],
+  import: [
+    {
+      name: 'Resumes and Mosaic backups',
+      extensions: ['docx', 'doc', 'md', 'markdown', 'txt', 'json'],
+    },
+  ],
 };
 
 function filtersFor(type: unknown): FileFilter[] {

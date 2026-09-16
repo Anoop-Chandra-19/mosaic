@@ -135,6 +135,39 @@ describe('parseResumeText', () => {
     expect(leftOut).toEqual(['Staff engineer who ships']);
   });
 
+  describe('a contact line it only partly reads', () => {
+    it('leaves out the fields it took nothing from, not the whole line', () => {
+      const { resume, leftOut } = parseResumeText(
+        'Ada Lovelace\nada@example.com | Open to relocation\n\nSkills\nGo'
+      );
+      expect(resume.contact.email).toBe('ada@example.com');
+      expect(leftOut).toEqual(['Open to relocation']);
+    });
+
+    it('leaves out what is beside a value inside one field', () => {
+      const { leftOut } = parseResumeText(
+        'Ada Lovelace\nSpeaks French — ada@example.com\n\nSkills\nGo'
+      );
+      expect(leftOut).toEqual(['Speaks French']);
+    });
+
+    it('says nothing about a word that only names the value beside it', () => {
+      const { resume, leftOut } = parseResumeText(
+        'Ada Lovelace\nLinkedIn https://linkedin.com/in/ada | Phone: 555-0100\n\nSkills\nGo'
+      );
+      expect(resume.contact.linkedin).toBe('https://linkedin.com/in/ada');
+      expect(resume.contact.phone).toBe('555-0100');
+      expect(leftOut).toEqual([]);
+    });
+
+    it('says nothing about a line every field of which it read', () => {
+      const { leftOut } = parseResumeText(
+        'Ada Lovelace\n555-0100 | ada@example.com\nLondon, UK\n\nSkills\nGo'
+      );
+      expect(leftOut).toEqual([]);
+    });
+  });
+
   it('warns and returns empty sections for unrecognized input without throwing', () => {
     const { resume, warnings } = parseResumeText('just some random text with no structure');
     expect(resume.sections).toHaveLength(0);

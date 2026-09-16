@@ -82,10 +82,13 @@ function normalizeHeading(line: string): string {
     .replace(/\s+/g, ' ');
 }
 
+/** The most characters a heading, or a date set on the right of a line, runs to. */
+export const SHORT_LINE_LENGTH = 40;
+
 /** Short enough to be a heading: a few words on a line of their own. */
 export function isHeadingLength(line: string): boolean {
   const trimmed = line.trim();
-  return trimmed !== '' && trimmed.length <= 40 && trimmed.split(/\s+/).length <= 5;
+  return trimmed !== '' && trimmed.length <= SHORT_LINE_LENGTH && trimmed.split(/\s+/).length <= 5;
 }
 
 /**

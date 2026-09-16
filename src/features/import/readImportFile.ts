@@ -3,8 +3,11 @@ import { isRecord } from '@/lib/resume/validateResume';
 import type { OpenedBackup } from '@/types/bundle';
 import { decodeText } from '@/types/files';
 import { parseResumeText, type ParsedResume } from './parseResume';
+import { NotADocxError, readDocx } from './docx/readDocx';
 import { isJsonResume, readJsonResume } from './readJsonResume';
 import { readMarkdown } from './readMarkdown';
+import { XmlError, XmlLimitError } from './docx/parseXml';
+import { ZipError, ZipLimitError } from './docx/openZip';
 
 /** A file the Import dialog read: a resume to review, or a backup to hand to Restore. */
 export type ImportRead =
@@ -35,13 +38,60 @@ function readJson(name: string, bytes: Uint8Array): ImportRead {
 }
 
 /**
+ * The first bytes of a Microsoft compound file: a Word 97–2003 document, or a .docx locked
+ * with a password, which Word wraps in one.
+ */
+const COMPOUND_FILE = [0xd0, 0xcf, 0x11, 0xe0];
+
+const isCompoundFile = (bytes: Uint8Array) => COMPOUND_FILE.every((byte, i) => bytes[i] === byte);
+
+/** Where a locked .docx keeps the document: a stream with this name, in UTF-16. */
+const ENCRYPTED_PACKAGE = new Uint8Array(
+  [...'EncryptedPackage'].flatMap((char) => [char.charCodeAt(0), 0])
+);
+
+function contains(bytes: Uint8Array, part: Uint8Array): boolean {
+  outer: for (let at = bytes.indexOf(part[0]); at >= 0; at = bytes.indexOf(part[0], at + 1)) {
+    for (let i = 1; i < part.length; i++) if (bytes[at + i] !== part[i]) continue outer;
+    return true;
+  }
+  return false;
+}
+
+const olderWord = (name: string) =>
+  new UnreadableFileError(`${name} is an older Word document. Save it as .docx and try again.`);
+
+async function readWord(name: string, bytes: Uint8Array): Promise<ImportRead> {
+  if (isCompoundFile(bytes)) {
+    if (!contains(bytes, ENCRYPTED_PACKAGE)) throw olderWord(name);
+    throw new UnreadableFileError(
+      `${name} is locked with a password. Save an unlocked copy and try again.`
+    );
+  }
+  try {
+    return { type: 'resume', source: name, parsed: await readDocx(bytes) };
+  } catch (error) {
+    // Too much to read is a different answer from not being a Word file at all.
+    if (error instanceof ZipLimitError || error instanceof XmlLimitError) {
+      throw new UnreadableFileError(`${name} is larger or more complex than Mosaic can read.`);
+    }
+    if (error instanceof ZipError || error instanceof XmlError || error instanceof NotADocxError) {
+      throw new UnreadableFileError(`${name} isn’t a Word document Mosaic can read.`);
+    }
+    throw error;
+  }
+}
+
+/**
  * Read a file for the Import dialog, whether picked or dropped. Throws an
  * `UnreadableFileError` (or, for a damaged backup, an `UnreadableBackupError`) when it
  * can't.
  */
-export function readImportFile(name: string, bytes: Uint8Array): ImportRead {
+export async function readImportFile(name: string, bytes: Uint8Array): Promise<ImportRead> {
   const extension = extensionOf(name);
   if (extension === 'json') return readJson(name, bytes);
+  if (extension === 'docx') return readWord(name, bytes);
+  if (extension === 'doc') throw olderWord(name);
   if (extension === 'md' || extension === 'markdown') {
     return { type: 'resume', source: name, parsed: readMarkdown(decodeText(bytes)) };
   }

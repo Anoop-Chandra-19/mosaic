@@ -19,18 +19,24 @@ export interface ImportLine {
   aside?: string;
   /** Visible space before the line: a blank line, paragraph spacing, a gap on the page. */
   gapBefore?: boolean;
+  /**
+   * Where the line came from, for a reader that can say — "word/document.xml
+   * body/tbl[1]/tr[2]/tc[1]/p[1]". Nothing on the page depends on it; it is for tracing a
+   * line back to the file it was read from.
+   */
+  origin?: string;
 }
 
 /** A leading list marker: a bullet glyph, a dash, or a number. */
 export const BULLET_MARKER = /^\s*(?:[•·▪◦‣∙*+–—-]|\d+[.)])\s+/;
 
-const isCapitals = (text: string) => /\p{Lu}/u.test(text) && !/\p{Ll}/u.test(text);
+export const isCapitals = (text: string) => /\p{Lu}/u.test(text) && !/\p{Ll}/u.test(text);
 
 /** Words a title keeps in lower case, unless one starts it. */
 const MINOR_WORDS = new Set('a an and as at by for from in of on or the to with'.split(' '));
 
 /** "WORK HISTORY" → "Work History". An acronym comes back as a word ("Ai Research"). */
-function titleCase(text: string): string {
+export function titleCase(text: string): string {
   return text
     .toLowerCase()
     .split(' ')

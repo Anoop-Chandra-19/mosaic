@@ -119,10 +119,10 @@ function ImportFlow({ onDone }: { onDone: () => void }) {
   const setPendingRestore = useOverlayStore((s) => s.setPendingRestore);
 
   /** A file from the picker or a drop: a resume to review, or a backup to restore. */
-  const readFile = (name: string, bytes: Uint8Array) => {
+  const readFile = async (name: string, bytes: Uint8Array) => {
     let result: ImportRead;
     try {
-      result = readImportFile(name, bytes);
+      result = await readImportFile(name, bytes);
     } catch (error) {
       setFileError(unreadable(error, `Mosaic couldn’t read ${name}.`));
       return;
@@ -158,7 +158,7 @@ function PickStep({
 }: {
   fileError: string | null;
   onFileError: (message: string) => void;
-  onFile: (name: string, bytes: Uint8Array) => void;
+  onFile: (name: string, bytes: Uint8Array) => Promise<void>;
   onPaste: (text: string) => void;
   onCancel: () => void;
 }) {
@@ -168,7 +168,7 @@ function PickStep({
   const choose = async () => {
     try {
       const file = await window.mosaic.files.open('import');
-      if (file) onFile(file.name, file.bytes);
+      if (file) await onFile(file.name, file.bytes);
     } catch (error) {
       onFileError(unreadable(error, 'Mosaic couldn’t open that file.'));
     }
@@ -183,7 +183,7 @@ function PickStep({
       onFileError(`${file.name} is larger than 128 MB.`);
       return;
     }
-    onFile(file.name, new Uint8Array(await file.arrayBuffer()));
+    await onFile(file.name, new Uint8Array(await file.arrayBuffer()));
   };
 
   return (
@@ -218,7 +218,7 @@ function PickStep({
             Drop a resume here
           </p>
           <p className="mt-1 mb-3 text-xs text-zinc-600 dark:text-zinc-400">
-            Markdown, plain text, JSON Resume, or a Mosaic JSON backup.
+            Word (.docx), Markdown, plain text, JSON Resume, or a Mosaic JSON backup.
           </p>
           <Button variant="outline" size="sm" onClick={() => void choose()}>
             Choose a file…
