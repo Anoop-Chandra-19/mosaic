@@ -5,20 +5,29 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { ConfirmDeleteDialog } from '@/components/ConfirmDeleteDialog';
 import { ItemActionsMenu } from '@/components/ItemActionsMenu';
 import { InlineEditField } from './InlineEditField';
-import { SECTION_ICONS } from './section-icons';
+import { CUSTOM_ICONS, PRESET_ICONS } from './section-icons';
 import { EntryCard } from './EntryCard';
 import type { ResumeSection } from '@/types/resume';
 import { useResumeStore } from '@/stores/resumeStore';
 
 interface SectionItemProps {
   section: ResumeSection;
+  /** Just added and still unnamed: show the name open for editing. */
+  nameAtStart?: boolean;
   isFirst: boolean;
   isLast: boolean;
   onMoveUp: () => void;
   onMoveDown: () => void;
 }
 
-export function SectionItem({ section, isFirst, isLast, onMoveUp, onMoveDown }: SectionItemProps) {
+export function SectionItem({
+  section,
+  nameAtStart = false,
+  isFirst,
+  isLast,
+  onMoveUp,
+  onMoveDown,
+}: SectionItemProps) {
   const updateSectionLabel = useResumeStore((s) => s.updateSectionLabel);
   const removeSection = useResumeStore((s) => s.removeSection);
   const addEntry = useResumeStore((s) => s.addEntry);
@@ -27,14 +36,15 @@ export function SectionItem({ section, isFirst, isLast, onMoveUp, onMoveDown }: 
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [actionsOpen, setActionsOpen] = useState(false);
 
-  const Icon = SECTION_ICONS[section.type];
+  // A custom section has no kind to go by, so its icon shows its shape.
+  const Icon =
+    section.kind === 'custom' ? CUSTOM_ICONS[section.layout] : PRESET_ICONS[section.kind];
 
   const handleAddEntry = () => {
-    const isTextOnly = section.type === 'summary' || section.type === 'skills';
     addEntry(section.id, {
       selected: true,
       bullets: [],
-      ...(isTextOnly ? { text: '' } : { title: '', subtitle: '' }),
+      ...(section.layout === 'lines' ? { text: '' } : { title: '', subtitle: '' }),
     });
   };
 
@@ -63,6 +73,9 @@ export function SectionItem({ section, isFirst, isLast, onMoveUp, onMoveDown }: 
         <InlineEditField
           value={section.label}
           onSave={(v) => updateSectionLabel(section.id, v)}
+          openAtStart={nameAtStart}
+          label="Section name"
+          placeholder="Section name"
           className="truncate text-base leading-6 font-medium"
           inputClassName="h-8 text-base leading-6 font-medium"
         />
@@ -111,7 +124,7 @@ export function SectionItem({ section, isFirst, isLast, onMoveUp, onMoveDown }: 
                 key={entry.id}
                 entry={entry}
                 sectionId={section.id}
-                sectionType={section.type}
+                layout={section.layout}
                 isFirst={i === 0}
                 isLast={i === section.items.length - 1}
                 onMoveUp={() => moveEntry(i, -1)}

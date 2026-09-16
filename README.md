@@ -13,8 +13,9 @@ exports. Everything stays on your machine: there is no account, no sync, and no 
 - Templates with version history: autosaved drafts, named versions, preview before restore,
   duplicate any version as a new template
 - Export to PDF, Markdown, plain text, JSON Resume, and Mosaic JSON
-- Import from Markdown, plain text, or pasted text, with a review step before anything is
-  written
+- Import from PDF, Word (.docx), Markdown, plain text, JSON Resume, or pasted text, read on
+  your machine, with a review step that shows what was found and what was left out before
+  anything is written
 - Full backups as readable JSON (every template and its history), restore by replacing
   everything or adding alongside
 - Privacy controls: forget API keys, reset the interface, erase all local data
@@ -27,7 +28,7 @@ exports. Everything stays on your machine: there is no account, no sync, and no 
 - React 19 + TypeScript, Tailwind CSS v4 (CSS-first)
 - Radix UI / shadcn primitives, Lucide icons
 - Zustand for renderer state
-- `@react-pdf/renderer` for PDF generation
+- `@react-pdf/renderer` for PDF generation, pdf.js for reading PDFs back in
 - Vitest for unit tests, Playwright (driving the real Electron app) for end-to-end tests
 
 ## Architecture

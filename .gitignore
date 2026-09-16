@@ -33,3 +33,7 @@ playwright-report
 # Planning docs
 plans/
 wireframe.jsx
+
+# Real resumes tried by hand against the importers; tests keep their own, which are checked in
+*.docx
+!src/features/import/docx/__tests__/documents/*.docx

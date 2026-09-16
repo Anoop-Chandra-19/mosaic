@@ -1,5 +1,5 @@
 import type { ContactInfo, ResumeData, ResumeSection } from '@/types/resume';
-import type { ParsedResume } from './parseResumeText';
+import type { ParsedResume } from './parseResume';
 
 /**
  * `new` opens the import as its own template; `replace` swaps the open template's content
@@ -40,11 +40,23 @@ function mergeContact(current: ContactInfo, incoming: ContactInfo): ContactInfo 
   return merged;
 }
 
-/** Append incoming sections into existing ones of the same type, or add them. */
+const sameName = (a: string, b: string) => a.trim().toLowerCase() === b.trim().toLowerCase();
+
+/**
+ * Whether `incoming` goes into `existing`: a built-in section into the first of its kind,
+ * a custom section into the custom section of the same name. Only ever into a section of
+ * the same shape, so no item loses the fields it prints with.
+ */
+function belongsIn(existing: ResumeSection, incoming: ResumeSection): boolean {
+  if (existing.kind !== incoming.kind || existing.layout !== incoming.layout) return false;
+  return incoming.kind !== 'custom' || sameName(existing.label, incoming.label);
+}
+
+/** Append incoming sections into the existing ones they belong in, or add them. */
 function mergeSections(current: ResumeSection[], incoming: ResumeSection[]): ResumeSection[] {
   const sections = current.map((section) => ({ ...section, items: [...section.items] }));
   for (const section of incoming) {
-    const target = sections.find((existing) => existing.type === section.type);
+    const target = sections.find((existing) => belongsIn(existing, section));
     if (target) {
       target.items.push(...section.items);
     } else {

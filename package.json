@@ -49,6 +49,7 @@
     "immer": "^11.1.4",
     "lint-staged": "^16.3.1",
     "lucide-react": "^0.575.0",
+    "pdfjs-dist": "^6.3.289",
     "prettier": "^3.8.1",
     "radix-ui": "^1.4.3",
     "react": "^19.2.0",

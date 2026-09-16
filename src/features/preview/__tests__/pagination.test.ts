@@ -22,7 +22,7 @@ function createExperienceSection(
 ): PreviewRenderableSection {
   return {
     id: 'experience',
-    type: 'experience',
+    layout: 'entries',
     label: 'Experience',
     entries,
   };
@@ -33,7 +33,8 @@ describe('normalizeSections', () => {
     const sections: ResumeSection[] = [
       {
         id: 'experience',
-        type: 'experience',
+        kind: 'experience',
+        layout: 'entries',
         label: 'Experience',
         order: 2,
         items: [
@@ -58,7 +59,8 @@ describe('normalizeSections', () => {
       },
       {
         id: 'summary',
-        type: 'summary',
+        kind: 'summary',
+        layout: 'lines',
         label: 'Summary',
         order: 1,
         items: [
@@ -71,7 +73,7 @@ describe('normalizeSections', () => {
     expect(normalizeSections(sections)).toEqual([
       {
         id: 'summary',
-        type: 'summary',
+        layout: 'lines',
         label: 'Summary',
         entries: [
           { id: 'summary-1', text: 'Focused builder.', bullets: [], _sourceKey: 'summary-1' },
@@ -79,7 +81,7 @@ describe('normalizeSections', () => {
       },
       {
         id: 'experience',
-        type: 'experience',
+        layout: 'entries',
         label: 'Experience',
         entries: [
           {
@@ -151,7 +153,7 @@ describe('paginateSections', () => {
       [
         {
           id: 'summary',
-          type: 'summary',
+          layout: 'lines',
           label: 'Summary',
           entries: [{ id: 'summary-1', text, bullets: [] }],
         },

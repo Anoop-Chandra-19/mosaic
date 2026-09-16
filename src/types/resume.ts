@@ -1,11 +1,27 @@
-export type SectionType =
+/**
+ * What a section is about: its icon, the headings the importer matches to it, where JSON
+ * Resume files it, and later what the assistant takes it to be. Never how it prints — that
+ * is `SectionLayout`. The built-in kinds are presets (`lib/resume/sectionPresets.ts`);
+ * `custom` is a section the user named.
+ */
+export type SectionKind =
   | 'summary'
   | 'education'
   | 'experience'
   | 'internships'
   | 'projects'
   | 'skills'
-  | 'certifications';
+  | 'certifications'
+  | 'custom';
+
+export type BuiltInSectionKind = Exclude<SectionKind, 'custom'>;
+
+/**
+ * How a section's items print. `lines`: each item is a line of plain text (`text`), as in a
+ * summary or a skills list. `entries`: each item is an italic title line — `title` on the
+ * left, `subtitle` on the right — followed by bullets.
+ */
+export type SectionLayout = 'lines' | 'entries';
 
 export interface Bullet {
   id: string;
@@ -20,14 +36,13 @@ export interface ResumeEntry {
   title?: string;
   subtitle?: string;
   text?: string;
-  startDate?: string;
-  endDate?: string;
   meta?: Record<string, string>;
 }
 
 export interface ResumeSection {
   id: string;
-  type: SectionType;
+  kind: SectionKind;
+  layout: SectionLayout;
   label: string;
   items: ResumeEntry[];
   order: number;

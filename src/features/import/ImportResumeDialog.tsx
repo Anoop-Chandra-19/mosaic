@@ -6,22 +6,21 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
-import { fileFailure, readBackup } from '@/features/backup/backupFiles';
+import { fileFailure } from '@/features/backup/backupFiles';
 import { cn } from '@/lib/utils';
 import { getResumeSnapshot } from '@/stores/resumeStore';
 import { attempt, showToast, useOverlayStore } from '@/stores/overlayStore';
 import { useTemplateStore } from '@/stores/templateStore';
 import { useUIStore } from '@/stores/uiStore';
 import { MAX_FILE_BYTES } from '@/types/files';
-import type { ContactInfo } from '@/types/resume';
+import type { ContactInfo, ResumeSection, SectionLayout } from '@/types/resume';
 import { buildImportedResume, type ImportMode } from './buildImportedResume';
-import { markdownToText } from './markdownToText';
-import { parseResumeText, type ParsedResume } from './parseResumeText';
+import { LeftOutLines } from './LeftOutLines';
+import { parseResumeText, type ParsedResume } from './parseResume';
+import { readImportFile, UnreadableFileError, type ImportRead } from './readImportFile';
 
 /** Recorded in the template's history as where pasted content came from. */
 const PASTED = 'pasted text';
-
-const TEXT_EXTENSIONS = new Set(['md', 'markdown', 'txt', 'text']);
 
 const MODE_OPTIONS: { id: ImportMode; label: string; hint: string }[] = [
   {
@@ -67,6 +66,20 @@ Acme Corp — 2021 to Present
 
 const count = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 
+/** What a section holds: "3 entries, 11 bullets", or "2 lines" for a list. */
+function describeSection({ layout, items }: ResumeSection): string {
+  if (layout === 'lines') return count(items.length, 'line');
+  const bullets = items.reduce((n, item) => n + item.bullets.length, 0);
+  const entries = count(items.length, 'entry', 'entries');
+  return bullets > 0 ? `${entries}, ${count(bullets, 'bullet')}` : entries;
+}
+
+/** What Add Section calls a section the user names, in each shape. */
+const CUSTOM_NAMES: Record<SectionLayout, string> = {
+  entries: 'custom section',
+  lines: 'custom list',
+};
+
 interface ReadResume {
   /** A file's name, or "pasted text". */
   source: string;
@@ -74,8 +87,8 @@ interface ReadResume {
 }
 
 /**
- * Bring a resume in: a Markdown or text file, pasted text, or a Mosaic backup (handed on to
- * Restore). What Mosaic found is shown for review before anything is written.
+ * Bring a resume in: a Markdown, text, or JSON Resume file, pasted text, or a Mosaic backup
+ * (handed on to Restore). What Mosaic found is shown for review before anything is written.
  */
 export function ImportResumeDialog() {
   const open = useOverlayStore((s) => s.importOpen);
@@ -94,47 +107,58 @@ export function ImportResumeDialog() {
   );
 }
 
+/** Why a file couldn't be read, in words for the user. */
+function unreadable(error: unknown, fallback: string): string {
+  return error instanceof UnreadableFileError ? error.message : fileFailure(error, fallback);
+}
+
 function ImportFlow({ onDone }: { onDone: () => void }) {
   const [read, setRead] = useState<ReadResume | null>(null);
+  // A file that couldn't be read: said under the drop zone until the next try.
+  const [fileError, setFileError] = useState<string | null>(null);
   const setPendingRestore = useOverlayStore((s) => s.setPendingRestore);
 
-  const readText = (source: string, text: string) => {
-    setRead({ source, parsed: parseResumeText(text) });
-  };
-
   /** A file from the picker or a drop: a resume to review, or a backup to restore. */
-  const readFile = (name: string, text: string) => {
-    const extension = name.includes('.') ? name.split('.').pop()!.toLowerCase() : '';
-    if (extension === 'json') {
-      try {
-        const backup = readBackup(name, text);
-        onDone();
-        setPendingRestore(backup);
-      } catch (error) {
-        showToast(fileFailure(error, `Could not read ${name}`), 'error');
-      }
+  const readFile = async (name: string, bytes: Uint8Array) => {
+    let result: ImportRead;
+    try {
+      result = await readImportFile(name, bytes);
+    } catch (error) {
+      setFileError(unreadable(error, `Mosaic couldn’t read ${name}.`));
       return;
     }
-    if (extension === 'md' || extension === 'markdown') {
-      readText(name, markdownToText(text));
+    setFileError(null);
+    if (result.type === 'backup') {
+      onDone();
+      setPendingRestore(result.backup);
       return;
     }
-    readText(name, text);
+    setRead({ source: result.source, parsed: result.parsed });
   };
 
   return read ? (
     <ReviewStep read={read} onBack={() => setRead(null)} onDone={onDone} />
   ) : (
-    <PickStep onFile={readFile} onPaste={(text) => readText(PASTED, text)} onCancel={onDone} />
+    <PickStep
+      fileError={fileError}
+      onFileError={setFileError}
+      onFile={readFile}
+      onPaste={(text) => setRead({ source: PASTED, parsed: parseResumeText(text) })}
+      onCancel={onDone}
+    />
   );
 }
 
 function PickStep({
+  fileError,
+  onFileError,
   onFile,
   onPaste,
   onCancel,
 }: {
-  onFile: (name: string, text: string) => void;
+  fileError: string | null;
+  onFileError: (message: string) => void;
+  onFile: (name: string, bytes: Uint8Array) => Promise<void>;
   onPaste: (text: string) => void;
   onCancel: () => void;
 }) {
@@ -143,10 +167,10 @@ function PickStep({
 
   const choose = async () => {
     try {
-      const file = await window.mosaic.files.openText('import');
-      if (file) onFile(file.name, file.text);
+      const file = await window.mosaic.files.open('import');
+      if (file) await onFile(file.name, file.bytes);
     } catch (error) {
-      showToast(fileFailure(error, 'Could not open the file'), 'error');
+      onFileError(unreadable(error, 'Mosaic couldn’t open that file.'));
     }
   };
 
@@ -155,16 +179,11 @@ function PickStep({
     setDragging(false);
     const file = event.dataTransfer.files[0];
     if (!file) return;
-    const extension = file.name.split('.').pop()?.toLowerCase() ?? '';
-    if (extension !== 'json' && !TEXT_EXTENSIONS.has(extension)) {
-      showToast(`Mosaic can’t read ${file.name} yet — paste its text instead`, 'error');
-      return;
-    }
     if (file.size > MAX_FILE_BYTES) {
-      showToast(`${file.name} is larger than 128 MB`, 'error');
+      onFileError(`${file.name} is larger than 128 MB.`);
       return;
     }
-    onFile(file.name, await file.text());
+    await onFile(file.name, new Uint8Array(await file.arrayBuffer()));
   };
 
   return (
@@ -199,12 +218,22 @@ function PickStep({
             Drop a resume here
           </p>
           <p className="mt-1 mb-3 text-xs text-zinc-600 dark:text-zinc-400">
-            Markdown, plain text, or a Mosaic JSON backup.
+            PDF, Word (.docx), Markdown, plain text, JSON Resume, or a Mosaic JSON backup.
           </p>
           <Button variant="outline" size="sm" onClick={() => void choose()}>
             Choose a file…
           </Button>
         </div>
+
+        {fileError && (
+          <p
+            role="alert"
+            className="mt-2.5 flex gap-2 rounded-lg border border-red-300 bg-red-50 p-2.5 text-xs leading-relaxed text-red-900 dark:border-red-900 dark:bg-red-950 dark:text-red-200"
+          >
+            <AlertTriangle className="mt-0.5 size-3.5 shrink-0 text-red-600 dark:text-red-400" />
+            {fileError}
+          </p>
+        )}
 
         <label
           htmlFor="import-paste"
@@ -223,8 +252,9 @@ function PickStep({
 
         <p className="mt-3 flex gap-2 rounded-lg border border-zinc-200 bg-zinc-50 p-2.5 text-xs leading-relaxed text-zinc-600 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400">
           <Info className="mt-0.5 size-3.5 shrink-0 text-zinc-500" />
-          Everything is read on this machine. You’ll see what Mosaic found, and choose what to keep,
-          before anything is written.
+          Everything is read on this machine. Import is a quick start, not an exact copy, and a
+          PDF’s layout is the hardest to read back: you’ll see what Mosaic found and what it left
+          out, and choose what to keep, before anything is written.
         </p>
       </div>
 
@@ -333,8 +363,9 @@ function ReviewStep({
             </span>
           </li>
           {sections.map((section) => {
-            const bullets = section.items.reduce((n, item) => n + item.bullets.length, 0);
             const on = !excludedIds.has(section.id);
+            // A heading Mosaic has no preset for: it comes in under its own name.
+            const custom = section.kind === 'custom';
             return (
               <li key={section.id}>
                 <label className="flex cursor-pointer items-center gap-2.5 px-3 py-2">
@@ -343,23 +374,34 @@ function ReviewStep({
                     onCheckedChange={() => toggle(section.id)}
                     aria-label={`Import ${section.label}`}
                   />
-                  <span
-                    className={cn(
-                      'font-medium',
-                      on ? 'text-zinc-900 dark:text-zinc-100' : 'text-zinc-500'
-                    )}
-                  >
-                    {section.label}
-                  </span>
-                  <span className="text-xs text-zinc-600 dark:text-zinc-400">
-                    — {count(section.items.length, 'entry', 'entries')}
-                    {bullets > 0 && `, ${count(bullets, 'bullet')}`}
+                  <span className="min-w-0">
+                    <span
+                      className={cn(
+                        'font-medium',
+                        on ? 'text-zinc-900 dark:text-zinc-100' : 'text-zinc-500'
+                      )}
+                    >
+                      {section.label}
+                    </span>{' '}
+                    <span
+                      className={cn(
+                        'text-xs',
+                        custom
+                          ? 'text-amber-700 dark:text-amber-400'
+                          : 'text-zinc-600 dark:text-zinc-400'
+                      )}
+                    >
+                      — {describeSection(section)}
+                      {custom && `, imported as a ${CUSTOM_NAMES[section.layout]}`}
+                    </span>
                   </span>
                 </label>
               </li>
             );
           })}
         </ul>
+
+        {parsed.leftOut.length > 0 && <LeftOutLines lines={parsed.leftOut} />}
 
         {parsed.warnings.length > 0 && (
           <div className="mt-3 space-y-1 rounded-lg border border-amber-300 bg-amber-50 p-2.5 dark:border-amber-900 dark:bg-amber-950">

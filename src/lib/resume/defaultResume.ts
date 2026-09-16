@@ -26,7 +26,8 @@ export const DEFAULT_RESUME: ResumeData = {
   sections: [
     {
       id: 'sec-education',
-      type: 'education',
+      kind: 'education',
+      layout: 'entries',
       label: 'Education & Certificates',
       order: 0,
       items: [
@@ -48,7 +49,8 @@ export const DEFAULT_RESUME: ResumeData = {
     },
     {
       id: 'sec-experience',
-      type: 'experience',
+      kind: 'experience',
+      layout: 'entries',
       label: 'Work History',
       order: 1,
       items: [
@@ -94,7 +96,8 @@ export const DEFAULT_RESUME: ResumeData = {
     },
     {
       id: 'sec-projects',
-      type: 'projects',
+      kind: 'projects',
+      layout: 'entries',
       label: 'Projects',
       order: 2,
       items: [

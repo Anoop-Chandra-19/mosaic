@@ -49,11 +49,36 @@ test('Markdown can be copied or saved, and reads back in through Import', async 
   const importing = page.getByRole('dialog', { name: 'Import' });
   await importing.getByRole('button', { name: 'Choose a file…' }).click();
   await expect(importing.getByText('Your Name — Example resume.md')).toBeVisible();
-  await expect(importing.getByRole('checkbox', { name: 'Import Work Experience' })).toBeChecked();
+  // Headings come back as written, not renamed to a stock name.
+  await expect(importing.getByRole('checkbox', { name: 'Import Work History' })).toBeChecked();
   await importing.getByRole('button', { name: 'Import as new template' }).click();
 
   await expect(page.getByText('Imported — check the sections in the sidebar')).toBeVisible();
   await expect(page.getByRole('banner').getByText('Your Name', { exact: true })).toBeVisible();
+});
+
+test('JSON Resume reads back in through Import with its own headings', async () => {
+  const { app, page, userDataDir } = mosaic();
+  await saveInto(app, userDataDir);
+  await startFromSample(page);
+
+  await (await openExport(page, /^JSON Resume/)).getByRole('button', { name: 'Save JSON' }).click();
+  await expect(page.getByText('Saved Your Name — Example resume.json')).toBeVisible();
+  const file = path.join(userDataDir, 'Your Name — Example resume.json');
+  expect(JSON.parse(fs.readFileSync(file, 'utf8')).meta.mosaic.version).toBe(1);
+
+  await openWith(app, file);
+  await page.getByRole('button', { name: 'Import resume' }).click();
+  const importing = page.getByRole('dialog', { name: 'Import' });
+  await importing.getByRole('button', { name: 'Choose a file…' }).click();
+  await expect(importing.getByText('Your Name — Example resume.json')).toBeVisible();
+  // meta.mosaic brings back the headings as written, not JSON Resume's stock names.
+  for (const heading of ['Education & Certificates', 'Work History', 'Projects']) {
+    await expect(importing.getByRole('checkbox', { name: `Import ${heading}` })).toBeChecked();
+  }
+  await importing.getByRole('button', { name: 'Import as new template' }).click();
+
+  await expect(page.getByText('Imported — check the sections in the sidebar')).toBeVisible();
 });
 
 test('Mosaic JSON holds the template’s history and restores like a backup', async () => {
@@ -115,8 +140,8 @@ test('a version exports as it was, not as the draft', async () => {
   expect(copied).not.toContain('Ada Lovelace');
 });
 
-test('Save PDF writes the resume as a real PDF', async () => {
-  const { app, page, userDataDir } = mosaic();
+test('Save PDF writes the resume as a real PDF, which reads back in through Import', async () => {
+  const { app, page, userDataDir, errors } = mosaic();
   await saveInto(app, userDataDir);
   await startFromSample(page);
 
@@ -138,4 +163,25 @@ test('Save PDF writes the resume as a real PDF', async () => {
   const text = extractPdfText(pdf);
   expect(text).toContain('Your Name');
   expect(text).toContain('Work History');
+
+  // pdf.js reads in a worker, which the content security policy has to let load.
+  await openWith(app, file);
+  await page.getByRole('button', { name: 'Import resume' }).click();
+  const importing = page.getByRole('dialog', { name: 'Import' });
+  await importing.getByRole('button', { name: 'Choose a file…' }).click();
+  await expect(importing.getByText('Your Name — Example resume.pdf')).toBeVisible();
+  for (const [heading, holds] of [
+    ['Education & Certificates', '2 entries'],
+    ['Work History', '1 entry, 6 bullets'],
+    ['Projects', '2 entries, 6 bullets'],
+  ]) {
+    await expect(importing.getByRole('checkbox', { name: `Import ${heading}` })).toBeChecked();
+    await expect(importing.getByRole('listitem').filter({ hasText: heading })).toHaveText(
+      `${heading} — ${holds}`
+    );
+  }
+  await expect(importing.getByRole('button', { name: /^Left out/ })).toHaveCount(0);
+  await importing.getByRole('button', { name: 'Import as new template' }).click();
+  await expect(page.getByText('Imported — check the sections in the sidebar')).toBeVisible();
+  expect(errors).toEqual([]);
 });

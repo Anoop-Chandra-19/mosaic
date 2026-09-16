@@ -3,21 +3,31 @@ import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { SECTION_ICONS, SECTION_TYPE_OPTIONS } from './section-icons';
-import { SectionItem } from './SectionItem';
+import { BUILT_IN_KINDS, SECTION_PRESETS } from '@/lib/resume/sectionPresets';
 import { useResumeStore } from '@/stores/resumeStore';
+import { SectionItem } from './SectionItem';
+import { CustomMenuItems, PresetMenuItems } from './SectionMenuItems';
+import { useAddCustomSection } from './useAddCustomSection';
 
-export function SectionList({ showAddSection = true }: { showAddSection?: boolean }) {
+export function SectionList({
+  showAddSection = true,
+  namingId,
+  onCustomAdded,
+}: {
+  showAddSection?: boolean;
+  /** A custom section just added: it shows with its name open for editing. */
+  namingId: string | null;
+  onCustomAdded: (sectionId: string) => void;
+}) {
   const sections = useResumeStore((s) => s.sections);
   const addSection = useResumeStore((s) => s.addSection);
   const reorderSections = useResumeStore((s) => s.reorderSections);
+  const custom = useAddCustomSection(onCustomAdded);
 
   const sorted = [...sections].sort((a, b) => a.order - b.order);
-  const usedTypes = new Set(sections.map((s) => s.type));
-  const availableTypes = SECTION_TYPE_OPTIONS.filter((o) => !usedTypes.has(o.type));
 
   const moveSection = (index: number, direction: -1 | 1) => {
     const ids = sorted.map((s) => s.id);
@@ -33,6 +43,7 @@ export function SectionList({ showAddSection = true }: { showAddSection?: boolea
         <SectionItem
           key={section.id}
           section={section}
+          nameAtStart={section.id === namingId}
           isFirst={i === 0}
           isLast={i === sorted.length - 1}
           onMoveUp={() => moveSection(i, -1)}
@@ -40,7 +51,7 @@ export function SectionList({ showAddSection = true }: { showAddSection?: boolea
         />
       ))}
 
-      {showAddSection && availableTypes.length > 0 && (
+      {showAddSection && (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline" size="sm" className="w-full">
@@ -48,16 +59,13 @@ export function SectionList({ showAddSection = true }: { showAddSection?: boolea
               Add Section
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="start">
-            {availableTypes.map(({ type, label }) => {
-              const Icon = SECTION_ICONS[type];
-              return (
-                <DropdownMenuItem key={type} onClick={() => addSection(type, label)}>
-                  <Icon className="mr-2 size-4" />
-                  {label}
-                </DropdownMenuItem>
-              );
-            })}
+          <DropdownMenuContent align="start" onCloseAutoFocus={custom.onCloseAutoFocus}>
+            <PresetMenuItems
+              kinds={BUILT_IN_KINDS}
+              onAdd={(kind) => addSection({ kind, ...SECTION_PRESETS[kind] })}
+            />
+            <DropdownMenuSeparator />
+            <CustomMenuItems onChoose={custom.choose} />
           </DropdownMenuContent>
         </DropdownMenu>
       )}

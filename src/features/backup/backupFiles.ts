@@ -5,6 +5,7 @@ import { isRecord } from '@/lib/resume/validateResume';
 import { parseBundle, type BundleParseResult } from '@/lib/vault/parseBundle';
 import { flushDraft } from '@/stores/resumeStore';
 import type { MosaicBundle, OpenedBackup } from '@/types/bundle';
+import { decodeText } from '@/types/files';
 
 /** What a backup file holds, counted for the UI. */
 export interface BundleCounts {
@@ -89,8 +90,8 @@ export function readBackup(fileName: string, text: string): OpenedBackup {
  * with an `UnreadableBackupError` if the file is not one Mosaic can restore.
  */
 export async function chooseBackup(): Promise<OpenedBackup | null> {
-  const file = await window.mosaic.files.openText('json');
-  return file && readBackup(file.name, file.text);
+  const file = await window.mosaic.files.open('json');
+  return file && readBackup(file.name, decodeText(file.bytes));
 }
 
 /** Say why a file could not be read: its own message if it has one the user should see. */

@@ -22,7 +22,7 @@ export function createPlaintextExport(data: NormalizedResumeExport) {
   for (const section of data.sections) {
     lines.push(section.label.toUpperCase());
 
-    const isTextOnly = section.type === 'summary' || section.type === 'skills';
+    const isTextOnly = section.layout === 'lines';
 
     for (const entry of section.entries) {
       if (isTextOnly) {

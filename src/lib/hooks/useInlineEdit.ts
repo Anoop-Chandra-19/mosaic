@@ -1,7 +1,8 @@
 import { useState, useCallback, type KeyboardEvent } from 'react';
 
-export function useInlineEdit(value: string, onSave: (next: string) => void) {
-  const [editing, setEditing] = useState(false);
+/** `openAtStart`: start in editing, for a field whose value was only a placeholder. */
+export function useInlineEdit(value: string, onSave: (next: string) => void, openAtStart = false) {
+  const [editing, setEditing] = useState(openAtStart);
   const [draft, setDraft] = useState(value);
 
   const startEditing = useCallback(() => {

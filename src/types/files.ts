@@ -7,7 +7,7 @@ export type FileType =
   | 'markdown'
   | 'text'
   | 'pdf'
-  /** Anything the Import dialog can read: a resume as text, or a Mosaic backup. */
+  /** Anything the Import dialog can read: a resume in any format it knows, or a backup. */
   | 'import';
 
 /**
@@ -16,10 +16,11 @@ export type FileType =
  */
 export const MAX_FILE_BYTES = 128 * 1024 * 1024;
 
-export interface OpenedTextFile {
+export interface OpenedFile {
   /** The file's name, without its folder. */
   name: string;
-  text: string;
+  /** Its contents as they are on disk; text files are decoded by whoever reads them. */
+  bytes: Uint8Array;
 }
 
 /**
@@ -29,6 +30,11 @@ export interface OpenedTextFile {
 export interface MosaicFiles {
   /** Writes `content` where the user chooses. Resolves with the file's name, or null if cancelled. */
   save(type: FileType, suggestedName: string, content: string | Uint8Array): Promise<string | null>;
-  /** One text file the user chooses, or null if cancelled. */
-  openText(type: FileType): Promise<OpenedTextFile | null>;
+  /** One file the user chooses, or null if cancelled. */
+  open(type: FileType): Promise<OpenedFile | null>;
+}
+
+/** A text file's contents: UTF-8, without a byte-order mark if it has one. */
+export function decodeText(bytes: Uint8Array): string {
+  return new TextDecoder().decode(bytes);
 }

@@ -37,7 +37,7 @@ let flushRegistered = false;
 const files: MosaicFiles = {
   save: (type, suggestedName, content) =>
     ipcRenderer.invoke(FILES_SAVE, type, suggestedName, content),
-  openText: (type) => ipcRenderer.invoke(FILES_OPEN, type),
+  open: (type) => ipcRenderer.invoke(FILES_OPEN, type),
 };
 
 /** Keys go in; nothing here can bring one back out. */

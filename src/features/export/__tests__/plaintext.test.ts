@@ -16,7 +16,8 @@ const exportData: NormalizedResumeExport = {
   sections: [
     {
       id: 'summary',
-      type: 'summary',
+      kind: 'summary',
+      layout: 'lines',
       label: 'Summary',
       entries: [
         { id: 'summary-1', title: '', subtitle: '', text: 'Focused builder.', bullets: [] },
@@ -24,7 +25,8 @@ const exportData: NormalizedResumeExport = {
     },
     {
       id: 'experience',
-      type: 'experience',
+      kind: 'experience',
+      layout: 'entries',
       label: 'Experience',
       entries: [
         {

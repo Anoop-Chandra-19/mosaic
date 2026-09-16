@@ -6,25 +6,23 @@ import { cn } from '@/lib/utils';
 import { InlineEditField } from './InlineEditField';
 import { BulletItem } from './BulletItem';
 import { AddBulletInput } from './AddBulletInput';
-import type { ResumeEntry, SectionType } from '@/types/resume';
+import type { ResumeEntry, SectionLayout } from '@/types/resume';
 import { useResumeStore } from '@/stores/resumeStore';
 
 interface EntryCardProps {
   entry: ResumeEntry;
   sectionId: string;
-  sectionType: SectionType;
+  layout: SectionLayout;
   isFirst: boolean;
   isLast: boolean;
   onMoveUp: () => void;
   onMoveDown: () => void;
 }
 
-const TEXT_ONLY_TYPES: SectionType[] = ['summary', 'skills'];
-
 export function EntryCard({
   entry,
   sectionId,
-  sectionType,
+  layout,
   isFirst,
   isLast,
   onMoveUp,
@@ -39,7 +37,7 @@ export function EntryCard({
   const toggleBullet = useResumeStore((s) => s.toggleBullet);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [actionsOpen, setActionsOpen] = useState(false);
-  const isTextOnly = TEXT_ONLY_TYPES.includes(sectionType);
+  const isTextOnly = layout === 'lines';
 
   return (
     <div

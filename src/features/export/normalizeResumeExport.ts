@@ -1,7 +1,5 @@
-import type { ResumeData, SectionType } from '@/types/resume';
+import type { ResumeData, SectionKind, SectionLayout } from '@/types/resume';
 import { normalizeContact, type NormalizedContact } from '@/lib/resume/contactFormatting';
-
-const TEXT_ONLY_TYPES = new Set<SectionType>(['summary', 'skills']);
 
 export interface ExportEntry {
   id: string;
@@ -9,13 +7,12 @@ export interface ExportEntry {
   subtitle: string;
   text: string;
   bullets: string[];
-  startDate?: string;
-  endDate?: string;
 }
 
 export interface ExportSection {
   id: string;
-  type: SectionType;
+  kind: SectionKind;
+  layout: SectionLayout;
   label: string;
   entries: ExportEntry[];
 }
@@ -53,7 +50,7 @@ export function normalizeResumeForExport(resume: ResumeData): NormalizedResumeEx
       const entries = section.items
         .filter((entry) => entry.selected)
         .map((entry) => {
-          if (TEXT_ONLY_TYPES.has(section.type)) {
+          if (section.layout === 'lines') {
             return normalizeTextOnlyEntry(entry.id, entry.text ?? '');
           }
 
@@ -74,15 +71,14 @@ export function normalizeResumeForExport(resume: ResumeData): NormalizedResumeEx
             subtitle,
             text: '',
             bullets,
-            startDate: trim(entry.startDate) || undefined,
-            endDate: trim(entry.endDate) || undefined,
           } satisfies ExportEntry;
         })
         .filter((entry): entry is ExportEntry => entry !== null);
 
       return {
         id: section.id,
-        type: section.type,
+        kind: section.kind,
+        layout: section.layout,
         label: trim(section.label),
         entries,
       } satisfies ExportSection;
