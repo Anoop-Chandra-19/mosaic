@@ -218,7 +218,7 @@ function PickStep({
             Drop a resume here
           </p>
           <p className="mt-1 mb-3 text-xs text-zinc-600 dark:text-zinc-400">
-            Word (.docx), Markdown, plain text, JSON Resume, or a Mosaic JSON backup.
+            PDF, Word (.docx), Markdown, plain text, JSON Resume, or a Mosaic JSON backup.
           </p>
           <Button variant="outline" size="sm" onClick={() => void choose()}>
             Choose a file…
@@ -252,9 +252,9 @@ function PickStep({
 
         <p className="mt-3 flex gap-2 rounded-lg border border-zinc-200 bg-zinc-50 p-2.5 text-xs leading-relaxed text-zinc-600 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400">
           <Info className="mt-0.5 size-3.5 shrink-0 text-zinc-500" />
-          Everything is read on this machine. Import is a quick start, not an exact copy: you’ll see
-          what Mosaic found and what it left out, and choose what to keep, before anything is
-          written.
+          Everything is read on this machine. Import is a quick start, not an exact copy, and a
+          PDF’s layout is the hardest to read back: you’ll see what Mosaic found and what it left
+          out, and choose what to keep, before anything is written.
         </p>
       </div>
 

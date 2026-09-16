@@ -8,7 +8,14 @@ import {
   type DocxParagraph,
   type DocxTable,
 } from './docxModel';
-import { BULLET_MARKER, isCapitals, titleCase, type ImportLine } from '../importLines';
+import {
+  BULLET_MARKER,
+  DATE_LIKE,
+  isCapitals,
+  PAGE_NUMBER,
+  titleCase,
+  type ImportLine,
+} from '../importLines';
 import { isHeadingLength, matchSectionHeader, SHORT_LINE_LENGTH } from '../sectionHeaders';
 
 /** A bullet typed by hand in a symbol font, whose glyphs Word keeps in the Private Use Area. */
@@ -19,18 +26,6 @@ const BREAK = /\t+| {3,}/g;
 
 /** Space above a paragraph that reads as a blank line: 12 points, in twips. */
 const GAP_SPACING = 240;
-
-/**
- * Words that date a piece of a resume. Only ever evidence towards a date beside a title —
- * short text on the right is often a place instead, and text with a year in it is often
- * neither.
- */
-const DATE_LIKE =
-  /\b(?:1[5-9]|2[01])\d{2}\b|\b(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\b|\b(?:present|current|ongoing|to date|now)\b/i;
-
-/** A page number, alone or with its total: what a header or footer repeats on every page. */
-const PAGE_NUMBER = /^(page\s*)?\d+(\s*(of|\/)\s*\d+)?$/i;
-
 /** One line of the document, before anything is decided about what it means. */
 interface Piece {
   line: ImportLine;

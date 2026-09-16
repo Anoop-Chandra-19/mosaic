@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { UnreadableBackupError } from '@/features/backup/backupFiles';
 import { readImportFile, UnreadableFileError } from '../readImportFile';
 import { docx, para } from '../docx/__tests__/buildDocx';
+import { buildPdf } from '../pdf/__tests__/buildPdf';
+import { PDF_LIMITS } from '../pdf/readPdf';
 
 const bytes = (text: string) => new TextEncoder().encode(text);
 const BYTE_ORDER_MARK = String.fromCharCode(0xfeff);
@@ -82,6 +84,26 @@ describe('readImportFile', () => {
     await expect(readImportFile('deep.docx', await docx(body))).rejects.toThrow(
       new UnreadableFileError('deep.docx is larger or more complex than Mosaic can read.')
     );
+  });
+
+  it('says what to do with a PDF it cannot read', async () => {
+    const cases: [Uint8Array, string][] = [
+      [buildPdf(), 'cv.pdf has no text in it — it’s probably a scan. Paste the text instead.'],
+      [
+        buildPdf({ locked: true }),
+        'cv.pdf is locked with a password. Save an unlocked copy and try again.',
+      ],
+      [bytes('not a PDF'), 'cv.pdf isn’t a PDF Mosaic can read.'],
+      [
+        buildPdf({ pages: Array.from({ length: PDF_LIMITS.pages + 1 }, () => '0 0 m 9 9 l S') }),
+        'cv.pdf is larger or more complex than Mosaic can read.',
+      ],
+    ];
+    for (const [file, message] of cases) {
+      await expect(readImportFile('cv.pdf', file)).rejects.toThrow(
+        new UnreadableFileError(message)
+      );
+    }
   });
 
   it('says so for a kind of file it cannot read', async () => {

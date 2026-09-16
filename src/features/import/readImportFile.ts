@@ -8,6 +8,13 @@ import { isJsonResume, readJsonResume } from './readJsonResume';
 import { readMarkdown } from './readMarkdown';
 import { XmlError, XmlLimitError } from './docx/parseXml';
 import { ZipError, ZipLimitError } from './docx/openZip';
+import {
+  NotAPdfError,
+  PdfHasNoTextError,
+  PdfLimitError,
+  PdfPasswordError,
+  readPdf,
+} from './pdf/readPdf';
 
 /** A file the Import dialog read: a resume to review, or a backup to hand to Restore. */
 export type ImportRead =
@@ -82,6 +89,30 @@ async function readWord(name: string, bytes: Uint8Array): Promise<ImportRead> {
   }
 }
 
+async function readPdfFile(name: string, bytes: Uint8Array): Promise<ImportRead> {
+  try {
+    return { type: 'resume', source: name, parsed: await readPdf(bytes) };
+  } catch (error) {
+    if (error instanceof PdfPasswordError) {
+      throw new UnreadableFileError(
+        `${name} is locked with a password. Save an unlocked copy and try again.`
+      );
+    }
+    if (error instanceof PdfHasNoTextError) {
+      throw new UnreadableFileError(
+        `${name} has no text in it — it’s probably a scan. Paste the text instead.`
+      );
+    }
+    if (error instanceof PdfLimitError) {
+      throw new UnreadableFileError(`${name} is larger or more complex than Mosaic can read.`);
+    }
+    if (error instanceof NotAPdfError) {
+      throw new UnreadableFileError(`${name} isn’t a PDF Mosaic can read.`);
+    }
+    throw error;
+  }
+}
+
 /**
  * Read a file for the Import dialog, whether picked or dropped. Throws an
  * `UnreadableFileError` (or, for a damaged backup, an `UnreadableBackupError`) when it
@@ -90,6 +121,7 @@ async function readWord(name: string, bytes: Uint8Array): Promise<ImportRead> {
 export async function readImportFile(name: string, bytes: Uint8Array): Promise<ImportRead> {
   const extension = extensionOf(name);
   if (extension === 'json') return readJson(name, bytes);
+  if (extension === 'pdf') return readPdfFile(name, bytes);
   if (extension === 'docx') return readWord(name, bytes);
   if (extension === 'doc') throw olderWord(name);
   if (extension === 'md' || extension === 'markdown') {

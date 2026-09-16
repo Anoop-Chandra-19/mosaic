@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { expect, test } from '@playwright/test';
+import { buildPdf } from '../src/features/import/pdf/__tests__/buildPdf';
 import { openWith } from './dialogs';
 import { withApp } from './launch';
 
@@ -42,6 +43,22 @@ test('the review lists what Mosaic found no place for, ready to copy', async () 
   await expect(importing.getByRole('button', { name: 'Copied' })).toBeVisible();
   const copied = await app.evaluate(({ clipboard }) => clipboard.readText());
   expect(copied).toBe('Writes programs for engines that do not exist yet\nCertifications');
+});
+
+test('a PDF with no text in it is explained as probably a scan', async () => {
+  const { app, page, userDataDir } = mosaic();
+  const file = path.join(userDataDir, 'scanned.pdf');
+  fs.writeFileSync(file, buildPdf());
+  await openWith(app, file);
+
+  await page.getByRole('button', { name: /Blank resume/ }).click();
+  await page.getByRole('button', { name: 'Import resume' }).click();
+  const importing = page.getByRole('dialog', { name: 'Import' });
+  await importing.getByRole('button', { name: 'Choose a file…' }).click();
+
+  await expect(importing.getByRole('alert')).toHaveText(
+    'scanned.pdf has no text in it — it’s probably a scan. Paste the text instead.'
+  );
 });
 
 test('a file Import can’t read is explained in the dialog, and nothing is written', async () => {

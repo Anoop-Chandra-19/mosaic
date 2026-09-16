@@ -30,6 +30,17 @@ export interface ImportLine {
 /** A leading list marker: a bullet glyph, a dash, or a number. */
 export const BULLET_MARKER = /^\s*(?:[•·▪◦‣∙*+–—-]|\d+[.)])\s+/;
 
+/**
+ * Words that date a piece of a resume. Only ever evidence towards a date beside a title —
+ * short text on the right is often a place instead, and text with a year in it is often
+ * neither.
+ */
+export const DATE_LIKE =
+  /\b(?:1[5-9]|2[01])\d{2}\b|\b(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\b|\b(?:present|current|ongoing|to date|now)\b/i;
+
+/** A page number, alone or with its total: what a header or footer repeats on every page. */
+export const PAGE_NUMBER = /^(page\s*)?\d+(\s*(of|\/)\s*\d+)?$/i;
+
 export const isCapitals = (text: string) => /\p{Lu}/u.test(text) && !/\p{Ll}/u.test(text);
 
 /** Words a title keeps in lower case, unless one starts it. */
@@ -44,6 +55,26 @@ export function titleCase(text: string): string {
       index > 0 && MINOR_WORDS.has(word) ? word : word.charAt(0).toUpperCase() + word.slice(1)
     )
     .join(' ');
+}
+
+/** An address as people write it: no scheme, no "www.", no closing slash, in any case. */
+const plainAddress = (text: string) =>
+  text
+    .replace(/^(?:mailto:|tel:|[a-z][a-z\d+.-]*:\/\/)/i, '')
+    .replace(/^www\./i, '')
+    .replace(/\/+$/, '')
+    .toLowerCase();
+
+/**
+ * A link's words and where it goes, as one line would show both: the address alone when
+ * the words are that same address ("github.com/ada"); otherwise the words and then the
+ * address, so neither a "LinkedIn" link nor a "linkedin.com" one loses the profile.
+ */
+export function linkText(words: string, url: string): string {
+  const address = url.replace(/^(?:mailto|tel):/i, '');
+  const [, lead, shown, trail] = /^(\s*)([\s\S]*?)(\s*)$/.exec(words)!;
+  if (!shown || plainAddress(shown) === plainAddress(url)) return `${lead}${address}${trail}`;
+  return `${lead}${shown} ${address}${trail}`;
 }
 
 /**

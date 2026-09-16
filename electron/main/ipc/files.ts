@@ -19,7 +19,7 @@ const FILTERS: Record<FileType, FileFilter[]> = {
   import: [
     {
       name: 'Resumes and Mosaic backups',
-      extensions: ['docx', 'doc', 'md', 'markdown', 'txt', 'json'],
+      extensions: ['pdf', 'docx', 'doc', 'md', 'markdown', 'txt', 'json'],
     },
   ],
 };

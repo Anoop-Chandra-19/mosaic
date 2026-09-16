@@ -10,6 +10,7 @@ import {
   type DocxTable,
 } from './docxModel';
 import { docxLines } from './docxLines';
+import { linkText } from '../importLines';
 import { parseResumeLines, type ParsedResume } from '../parseResume';
 import {
   attribute,
@@ -329,26 +330,6 @@ function listOf(
   const level = own?.level ?? inherited.findLast((n) => n?.level !== undefined)?.level ?? 0;
   const levels = context.numbering.get(id);
   return { id, level, marker: levels?.get(level) ?? true };
-}
-
-/** An address as people write it: no scheme, no "www.", no closing slash, in any case. */
-const plainAddress = (text: string) =>
-  text
-    .replace(/^(?:mailto:|tel:|[a-z][a-z\d+.-]*:\/\/)/i, '')
-    .replace(/^www\./i, '')
-    .replace(/\/+$/, '')
-    .toLowerCase();
-
-/**
- * A link's words and where it goes, as one line would show both: the address alone when
- * the words are that same address ("github.com/ada"); otherwise the words and then the
- * address, so neither a "LinkedIn" link nor a "linkedin.com" one loses the profile.
- */
-export function linkText(words: string, url: string): string {
-  const address = url.replace(/^(?:mailto|tel):/i, '');
-  const [, lead, shown, trail] = /^(\s*)([\s\S]*?)(\s*)$/.exec(words)!;
-  if (!shown || plainAddress(shown) === plainAddress(url)) return `${lead}${address}${trail}`;
-  return `${lead}${shown} ${address}${trail}`;
 }
 
 /** Where a HYPERLINK field points, quoted or not; nothing for a link to a place in the file. */
