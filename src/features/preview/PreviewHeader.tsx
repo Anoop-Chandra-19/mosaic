@@ -1,7 +1,7 @@
 import { Fragment } from 'react';
 import type { ContactInfo } from '@/types/resume';
 import { HEADLESS_LAYOUT as L } from '@/lib/resume/headlessLayout';
-import { printedHeaderLines } from '@/lib/resume/resumeHeader';
+import { getPrintableHeaderLines } from '@/lib/resume/resumeHeader';
 import { cn } from '@/lib/utils';
 
 interface PreviewHeaderProps {
@@ -38,7 +38,7 @@ export function PreviewHeader({ contact }: PreviewHeaderProps) {
       >
         {displayName}
       </h1>
-      {printedHeaderLines(contact.header).map((line) => (
+      {getPrintableHeaderLines(contact.header).map((line) => (
         <p
           key={line.id}
           style={{

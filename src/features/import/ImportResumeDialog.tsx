@@ -7,7 +7,7 @@ import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { fileFailure } from '@/features/backup/backupFiles';
-import { HEADER_PRESETS, printedHeaderLines } from '@/lib/resume/resumeHeader';
+import { HEADER_PRESETS, getPrintableHeaderLines } from '@/lib/resume/resumeHeader';
 import { cn } from '@/lib/utils';
 import { getResumeSnapshot, useResumeStore } from '@/stores/resumeStore';
 import { attempt, showToast, useOverlayStore } from '@/stores/overlayStore';
@@ -48,9 +48,9 @@ const IMPORT_LABELS: Record<ImportMode, string> = {
 };
 
 /** What the contact block held: the name, then each kind of header item once, in order. */
-function contactFound({ name, header }: ContactInfo): string[] {
+function getContactFieldLabels({ name, header }: ContactInfo): string[] {
   const kinds = new Set(
-    printedHeaderLines(header).flatMap((line) => line.items.map((i) => i.kind))
+    getPrintableHeaderLines(header).flatMap((line) => line.items.map((i) => i.kind))
   );
   // In a sentence: "email", "work authorization" — but a name keeps its capitals ("LinkedIn").
   const labels = [...kinds].map((kind) => {
@@ -303,7 +303,7 @@ function ReviewStep({
     () => sections.filter((section) => !excludedIds.has(section.id)),
     [sections, excludedIds]
   );
-  const found = contactFound(contact);
+  const found = getContactFieldLabels(contact);
   const headerKept = mode === 'merge' && keepsHeader(openContact);
 
   const toggle = (id: string) =>

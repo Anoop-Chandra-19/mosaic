@@ -1,6 +1,6 @@
 import { Document, Font, Page, StyleSheet, Text, View } from '@react-pdf/renderer';
 import type { PaperSize } from '@/types/ui';
-import { headerLineText } from '@/lib/resume/resumeHeader';
+import { formatHeaderLineText } from '@/lib/resume/resumeHeader';
 import type { NormalizedResumeExport } from '../normalizeResumeExport';
 import { HEADLESS_LAYOUT } from '@/lib/resume/headlessLayout';
 
@@ -140,7 +140,7 @@ export function PDFResumeDocument({ data, paperSize }: PDFResumeDocumentProps) {
           <Text style={styles.name}>{name}</Text>
           {data.contact.lines.map((line) => (
             <Text key={line.id} style={[styles.contactLine, { textAlign: line.align }]}>
-              {headerLineText(line)}
+              {formatHeaderLineText(line)}
             </Text>
           ))}
         </View>

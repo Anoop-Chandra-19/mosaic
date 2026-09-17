@@ -1,5 +1,9 @@
 import { normalizeResumeForExport } from '@/features/export/normalizeResumeExport';
-import { headerLineText, newHeaderItem, newHeaderLine } from '@/lib/resume/resumeHeader';
+import {
+  formatHeaderLineText,
+  createHeaderItem,
+  createHeaderLine,
+} from '@/lib/resume/resumeHeader';
 import type { HeaderItemKind, ResumeData, ResumeEntry, ResumeSection } from '@/types/resume';
 
 /** Resumes for round-trip tests: export one, import the file, compare what the page shows. */
@@ -31,7 +35,7 @@ export const lines = (...texts: string[]) => texts.map((text) => entry({ text })
 
 /** A header item that links to what it shows. */
 export const linked = (kind: HeaderItemKind, text: string) =>
-  newHeaderItem(kind, { text, url: text });
+  createHeaderItem(kind, { text, url: text });
 
 export function resume(sections: ResumeSection[]): ResumeData {
   return {
@@ -41,16 +45,16 @@ export function resume(sections: ResumeSection[]): ResumeData {
       header: {
         linkStyle: 'plain',
         lines: [
-          newHeaderLine([
+          createHeaderLine([
             linked('phone', '555-0100'),
             linked('email', 'ada@example.com'),
             linked('linkedin', 'https://linkedin.com/in/ada'),
             linked('github', 'github.com/ada'),
             linked('site', 'ada.dev'),
           ]),
-          newHeaderLine([
-            newHeaderItem('auth', { text: 'British subject' }),
-            newHeaderItem('location', { text: 'London, UK' }),
+          createHeaderLine([
+            createHeaderItem('auth', { text: 'British subject' }),
+            createHeaderItem('location', { text: 'London, UK' }),
           ]),
         ],
       },
@@ -102,7 +106,7 @@ export function shown(data: ResumeData) {
   const { contact, sections } = normalizeResumeForExport(data);
   return {
     name: contact.name,
-    header: contact.lines.map((line) => ({ align: line.align, text: headerLineText(line) })),
+    header: contact.lines.map((line) => ({ align: line.align, text: formatHeaderLineText(line) })),
     sections: sections.map(({ layout, label, entries }) => ({
       layout,
       label,

@@ -136,7 +136,7 @@ const PROFILE_NETWORKS: Partial<Record<HeaderItemKind, string>> = {
  * field, and every profile. Items of other kinds — a work authorization, a custom item — have
  * no field, and are only in `meta.mosaic.header`.
  */
-export function headerBasics(lines: MosaicHeaderLine[]): JsonResumeContact {
+export function buildJsonResumeContact(lines: MosaicHeaderLine[]): JsonResumeContact {
   const items = lines.flatMap((line) => line.items);
   const first = (kind: HeaderItemKind) => items.find((item) => item.kind === kind);
   const email = first('email');
@@ -159,7 +159,7 @@ export function headerBasics(lines: MosaicHeaderLine[]): JsonResumeContact {
 function buildBasics(data: NormalizedResumeExport, header: MosaicHeader, summary: string[]) {
   return compact({
     name: data.contact.name,
-    ...headerBasics(header.lines),
+    ...buildJsonResumeContact(header.lines),
     summary: summary.join('\n\n'),
   });
 }

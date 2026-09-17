@@ -31,7 +31,7 @@ export const BUILT_IN_HEADER_KINDS = Object.keys(HEADER_PRESETS) as BuiltInHeade
 export const CUSTOM_HEADER_ITEM = { label: 'Custom item', placeholder: 'Any text' };
 
 /** An item's kind as the editor names it. */
-export const headerKindInfo = (kind: HeaderItemKind) =>
+export const getHeaderKindInfo = (kind: HeaderItemKind) =>
   kind === 'custom' ? CUSTOM_HEADER_ITEM : HEADER_PRESETS[kind];
 
 export const HEADER_SEPARATORS: { value: HeaderSeparator; label: string }[] = [
@@ -66,7 +66,7 @@ const WEB_ADDRESS = /^[^\s]*[./][^\s]*$/;
  * opened on the web. Derived when printing, never stored: the field keeps exactly what was
  * typed, and nothing is rewritten under the user.
  */
-export function headerHref({ url }: Pick<HeaderItem, 'url'>): string {
+export function resolveHeaderItemHref({ url }: Pick<HeaderItem, 'url'>): string {
   const typed = url.trim();
   if (!typed) return '';
   if (EXPLICIT_SCHEME.test(typed)) return typed;
@@ -98,7 +98,7 @@ export interface PrintedHeaderLine {
  * page, meaning different things — a hidden item keeps its data, an item with no text has
  * nothing to print.
  */
-export function printedHeaderLines(header: ResumeHeader): PrintedHeaderLine[] {
+export function getPrintableHeaderLines(header: ResumeHeader): PrintedHeaderLine[] {
   return header.lines
     .map(({ id, separator, align, items }) => ({
       id,
@@ -110,25 +110,25 @@ export function printedHeaderLines(header: ResumeHeader): PrintedHeaderLine[] {
           id: item.id,
           kind: item.kind,
           text: item.text.trim(),
-          href: headerHref(item),
+          href: resolveHeaderItemHref(item),
         })),
     }))
     .filter((line) => line.items.length > 0);
 }
 
 /** A printed line as the page reads it. */
-export function headerLineText(line: Pick<PrintedHeaderLine, 'separator' | 'items'>): string {
+export function formatHeaderLineText(line: Pick<PrintedHeaderLine, 'separator' | 'items'>): string {
   return line.items.map((item) => item.text).join(line.separator);
 }
 
-export function newHeaderItem(
+export function createHeaderItem(
   kind: HeaderItemKind,
   { text = '', url = '' }: Partial<Pick<HeaderItem, 'text' | 'url'>> = {}
 ): HeaderItem {
   return { id: crypto.randomUUID(), kind, text, url, shown: true };
 }
 
-export function newHeaderLine(
+export function createHeaderLine(
   items: HeaderItem[] = [],
   { separator = ' | ', align = 'center' }: Partial<Pick<HeaderLine, 'separator' | 'align'>> = {}
 ): HeaderLine {

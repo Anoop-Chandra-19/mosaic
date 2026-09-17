@@ -91,6 +91,29 @@ src/
 - Apply these to new code, and improve placement in the area you are working on — but
   don't reorganize unrelated code just for consistency.
 
+## Naming conventions
+
+- Name the responsibility, not the implementation. Use domain terms (`resume`, `entry`,
+  `draft`) rather than vague `doc`, `data`, or `item` when meaning would be lost.
+- Functions: **verb + subject + useful qualifier** (`parseResumeLines`,
+  `copyTextToClipboard`). Expose important effects (`parseAndMigrateStoredResume`);
+  distinguish parsing, validation, formatting, and persistence. Include units when useful.
+- Be explicit, not repetitive: `drafts.save()` and `saveDraft()` are both clear.
+  Exported names need context; local names can be short. Don't lengthen clear names.
+- Component files: PascalCase, matching the component (`ResumeHeaderCard.tsx`). Hooks and
+  other TS modules: camelCase, matching the main operation (`useAddCustomSection.ts`,
+  `renderResumePdf.tsx`) or subject + responsibility (`jsonResumeEntryMapping.ts`).
+  Avoid catch-all `utils`, `helpers`, or `manager` modules; keep related functions together.
+- Stores: `<subject>Store.ts`; type modules: domain names; unit tests: `<module>.test.ts`;
+  folders: kebab-case. Use `.tsx` only for JSX. Keep tool-required and shadcn names unchanged.
+- Types/components: PascalCase; functions/variables: camelCase; fixed module constants:
+  SCREAMING_SNAKE_CASE. Treat acronyms as words (`Pdf`, `Ai`, `Db`, `Id`).
+- Booleans: `is`/`has`/`can`/`should`; hooks: `use`; callback props: `onDeleteEntry`;
+  event handlers: `handleDeleteEntry`; domain operations: `deleteEntry`.
+- Apply to new code; migrate existing names separately, one area at a time. Update all
+  references and run affected tests, build, and lint. Never rename persisted keys, database
+  fields, IPC strings, or external-format fields as part of an internal naming cleanup.
+
 ## Data
 
 - The renderer reaches data only through `window.mosaic` — domain methods, never SQL. Main

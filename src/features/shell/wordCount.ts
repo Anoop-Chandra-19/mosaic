@@ -1,5 +1,5 @@
 import { normalizeResumeForExport } from '@/features/export/normalizeResumeExport';
-import { headerLineText } from '@/lib/resume/resumeHeader';
+import { formatHeaderLineText } from '@/lib/resume/resumeHeader';
 import type { ResumeData } from '@/types/resume';
 
 /**
@@ -10,7 +10,7 @@ export function countWords(doc: ResumeData): number {
   const { contact, sections } = normalizeResumeForExport(doc);
   const text = [
     contact.name,
-    ...contact.lines.map(headerLineText),
+    ...contact.lines.map(formatHeaderLineText),
     ...sections.flatMap((section) => [
       section.label,
       ...section.entries.flatMap((entry) => [

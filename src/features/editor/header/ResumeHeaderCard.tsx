@@ -13,7 +13,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { headerLineText, LINK_STYLES, printedHeaderLines } from '@/lib/resume/resumeHeader';
+import {
+  formatHeaderLineText,
+  LINK_STYLES,
+  getPrintableHeaderLines,
+} from '@/lib/resume/resumeHeader';
 import { cn } from '@/lib/utils';
 import { useResumeStore } from '@/stores/resumeStore';
 import { useUIStore } from '@/stores/uiStore';
@@ -22,7 +26,7 @@ import { InlineEditField } from '../InlineEditField';
 import { HeaderLineBlock } from './HeaderLineBlock';
 
 /** The top of the resume: the name, and the header's lines of items below it. */
-export function HeaderCard() {
+export function ResumeHeaderCard() {
   const contact = useResumeStore((s) => s.contact);
   const setName = useResumeStore((s) => s.setName);
   const setLinkStyle = useResumeStore((s) => s.setLinkStyle);
@@ -31,7 +35,7 @@ export function HeaderCard() {
   const toggleIcons = useUIStore((s) => s.toggleHeaderIcons);
   const [open, setOpen] = useState(true);
   const { header } = contact;
-  const printed = printedHeaderLines(header);
+  const printed = getPrintableHeaderLines(header);
 
   return (
     <Collapsible open={open} onOpenChange={setOpen} className="rounded-md border p-4">
@@ -112,7 +116,7 @@ export function HeaderCard() {
                 line.align === 'center' ? 'text-center' : 'text-left'
               )}
             >
-              {headerLineText(line)}
+              {formatHeaderLineText(line)}
             </p>
           ))
         )}

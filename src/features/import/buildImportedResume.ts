@@ -1,4 +1,4 @@
-import { printedHeaderLines } from '@/lib/resume/resumeHeader';
+import { getPrintableHeaderLines } from '@/lib/resume/resumeHeader';
 import type { ContactInfo, ResumeData, ResumeSection } from '@/types/resume';
 import type { ParsedResume } from './parseResume';
 
@@ -31,7 +31,8 @@ export function describeImport(parsed: ParsedResume): ImportSummary {
 }
 
 /** Whether a merge keeps the open resume's header: it does when that header prints anything. */
-export const keepsHeader = (current: ContactInfo) => printedHeaderLines(current.header).length > 0;
+export const keepsHeader = (current: ContactInfo) =>
+  getPrintableHeaderLines(current.header).length > 0;
 
 /** The name only if there is none; the header whole, only if the current one prints nothing. */
 function mergeContact(current: ContactInfo, incoming: ContactInfo): ContactInfo {

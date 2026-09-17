@@ -1,5 +1,5 @@
 import type { LinkStyle, ResumeData, SectionKind, SectionLayout } from '@/types/resume';
-import { printedHeaderLines, type PrintedHeaderLine } from '@/lib/resume/resumeHeader';
+import { getPrintableHeaderLines, type PrintedHeaderLine } from '@/lib/resume/resumeHeader';
 
 export interface ExportEntry {
   id: string;
@@ -97,7 +97,7 @@ export function normalizeResumeForExport(resume: ResumeData): NormalizedResumeEx
     contact: {
       name: trim(name),
       linkStyle: header.linkStyle,
-      lines: printedHeaderLines(header),
+      lines: getPrintableHeaderLines(header),
     },
     sections,
   };

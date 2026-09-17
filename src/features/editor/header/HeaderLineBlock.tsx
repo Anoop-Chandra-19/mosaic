@@ -14,11 +14,11 @@ import {
   BUILT_IN_HEADER_KINDS,
   HEADER_ALIGNS,
   HEADER_SEPARATORS,
-  headerKindInfo,
+  getHeaderKindInfo,
 } from '@/lib/resume/resumeHeader';
 import { useResumeStore } from '@/stores/resumeStore';
 import type { HeaderAlign, HeaderItemKind, HeaderLine, HeaderSeparator } from '@/types/resume';
-import { HEADER_ICONS } from './header-icons';
+import { HEADER_ICONS } from './headerIcons';
 import { HeaderItemRow } from './HeaderItemRow';
 
 interface HeaderLineBlockProps {
@@ -137,7 +137,7 @@ export function HeaderLineBlock({ line, lines }: HeaderLineBlockProps) {
           item={item}
           line={line}
           lines={lines}
-          openAtStart={item.id === addedId}
+          shouldStartEditing={item.id === addedId}
         />
       ))}
 
@@ -172,7 +172,7 @@ export function HeaderLineBlock({ line, lines }: HeaderLineBlockProps) {
                 }}
               >
                 <Icon />
-                {headerKindInfo(kind).label}
+                {getHeaderKindInfo(kind).label}
               </DropdownMenuItem>
             );
           })}

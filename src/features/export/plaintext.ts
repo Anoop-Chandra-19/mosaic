@@ -1,11 +1,11 @@
-import { headerLineText } from '@/lib/resume/resumeHeader';
+import { formatHeaderLineText } from '@/lib/resume/resumeHeader';
 import type { NormalizedResumeExport } from './normalizeResumeExport';
 
 export function createPlaintextExport(data: NormalizedResumeExport) {
   const lines: string[] = [];
   const name = data.contact.name || 'Mosaic Resume';
 
-  lines.push(name, ...data.contact.lines.map(headerLineText), '');
+  lines.push(name, ...data.contact.lines.map(formatHeaderLineText), '');
 
   for (const section of data.sections) {
     lines.push(section.label.toUpperCase());

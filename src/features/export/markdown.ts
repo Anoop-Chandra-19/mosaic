@@ -1,4 +1,4 @@
-import { headerLineText } from '@/lib/resume/resumeHeader';
+import { formatHeaderLineText } from '@/lib/resume/resumeHeader';
 import type { ExportEntry, NormalizedResumeExport } from './normalizeResumeExport';
 
 const WORD_CHARACTER = /[\p{L}\p{N}]/u;
@@ -51,7 +51,7 @@ export function createMarkdownExport(data: NormalizedResumeExport) {
 
   lines.push(`# ${escapeHeading(name)}`);
   for (const line of data.contact.lines) {
-    lines.push(escapeLine(headerLineText(line)));
+    lines.push(escapeLine(formatHeaderLineText(line)));
   }
   if (data.contact.lines.length > 0) {
     lines.push('');

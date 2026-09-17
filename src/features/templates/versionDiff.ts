@@ -1,4 +1,4 @@
-import { headerLineText, printedHeaderLines } from '@/lib/resume/resumeHeader';
+import { formatHeaderLineText, getPrintableHeaderLines } from '@/lib/resume/resumeHeader';
 import type { ResumeData } from '@/types/resume';
 
 /**
@@ -11,12 +11,15 @@ function pageLines(doc: ResumeData): Map<string, string> {
   const { name, header } = doc.contact;
   lines.set('name', name);
   // A header line differs when its words, its links, where it sits, or how links look do.
-  for (const line of printedHeaderLines(header)) {
+  for (const line of getPrintableHeaderLines(header)) {
     lines.set(
       `header:${line.id}`,
-      [headerLineText(line), line.align, header.linkStyle, ...line.items.map((i) => i.href)].join(
-        '|'
-      )
+      [
+        formatHeaderLineText(line),
+        line.align,
+        header.linkStyle,
+        ...line.items.map((i) => i.href),
+      ].join('|')
     );
   }
   for (const section of [...doc.sections].sort((a, b) => a.order - b.order)) {

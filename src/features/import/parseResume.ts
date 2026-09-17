@@ -1,4 +1,4 @@
-import { HEADER_SEPARATORS, newHeaderItem, newHeaderLine } from '@/lib/resume/resumeHeader';
+import { HEADER_SEPARATORS, createHeaderItem, createHeaderLine } from '@/lib/resume/resumeHeader';
 import { SECTION_PRESETS } from '@/lib/resume/sectionPresets';
 import type {
   Bullet,
@@ -126,7 +126,7 @@ const WORDS_THEN_ADDRESS = /^(.*\S)\s+((?:https?:\/\/|mailto:)\S+)$/i;
 /** A contact field as an item: its words, and the address written after them as its link. */
 function headerItemOf(field: string) {
   const [, words, address] = WORDS_THEN_ADDRESS.exec(field) ?? [];
-  return newHeaderItem(kindOf(field), words ? { text: words, url: address } : { text: field });
+  return createHeaderItem(kindOf(field), words ? { text: words, url: address } : { text: field });
 }
 
 /** A contact-block line as a header line: each field an item, kept as written. */
@@ -139,7 +139,7 @@ function headerLineOf(line: string): HeaderLine {
     if (other && kinds.includes('auth')) other.kind = 'location';
     else if (other && kinds.includes('location')) other.kind = 'auth';
   }
-  return newHeaderLine(items, { separator: separatorOf(line) });
+  return createHeaderLine(items, { separator: separatorOf(line) });
 }
 
 /**
@@ -163,7 +163,7 @@ function parseContact(preamble: string[], fullText: string): ContactInfo {
       .map((re) => fullText.match(re)?.[0].trim() ?? '')
       .filter(Boolean);
     if (found.length > 0) {
-      lines.push(newHeaderLine(found.map((text) => newHeaderItem(kindOf(text), { text }))));
+      lines.push(createHeaderLine(found.map((text) => createHeaderItem(kindOf(text), { text }))));
     }
   }
 

@@ -1,5 +1,5 @@
 import { createEmptyResume } from '@/lib/resume/defaultResume';
-import { newHeaderItem, newHeaderLine } from '@/lib/resume/resumeHeader';
+import { createHeaderItem, createHeaderLine } from '@/lib/resume/resumeHeader';
 import { SECTION_PRESETS } from '@/lib/resume/sectionPresets';
 import type { BuiltInSectionKind, HeaderItemKind, ResumeData } from '@/types/resume';
 
@@ -23,7 +23,7 @@ const STARTER_HEADER: HeaderItemKind[][] = [
 export function createBlankResume(): ResumeData {
   const doc = createEmptyResume();
   doc.contact.header.lines = STARTER_HEADER.map((kinds) =>
-    newHeaderLine(kinds.map((kind) => newHeaderItem(kind)))
+    createHeaderLine(kinds.map((kind) => createHeaderItem(kind)))
   );
   doc.sections = STARTER_KINDS.slice(0, 3).map((kind, order) => ({
     id: crypto.randomUUID(),

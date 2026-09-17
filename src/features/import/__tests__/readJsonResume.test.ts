@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { createJsonResumeExport } from '@/features/export/jsonResume';
 import { normalizeResumeForExport } from '@/features/export/normalizeResumeExport';
 import { createDefaultResume } from '@/lib/resume/defaultResume';
-import { newHeaderItem } from '@/lib/resume/resumeHeader';
+import { createHeaderItem } from '@/lib/resume/resumeHeader';
 import type { ResumeData } from '@/types/resume';
 import { isJsonResume, readJsonResume } from '../readJsonResume';
 import { entry, everything, kinds, resume, section, shown } from './roundTrip';
@@ -33,7 +33,9 @@ describe('readJsonResume', () => {
     const { header } = data.contact;
     header.linkStyle = 'underline';
     Object.assign(header.lines[1], { separator: ' · ', align: 'left' });
-    header.lines[0].items.push(newHeaderItem('custom', { text: 'Portfolio', url: 'ada.dev/work' }));
+    header.lines[0].items.push(
+      createHeaderItem('custom', { text: 'Portfolio', url: 'ada.dev/work' })
+    );
 
     const read = readJsonResume(exported(data)).resume.contact.header;
     expect(read.linkStyle).toBe('underline');

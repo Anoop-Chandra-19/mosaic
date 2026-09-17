@@ -1,9 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import type { ResumeHeader } from '@/types/resume';
-import { headerHref, headerLineText, newHeaderItem, printedHeaderLines } from '../resumeHeader';
+import {
+  resolveHeaderItemHref,
+  formatHeaderLineText,
+  createHeaderItem,
+  getPrintableHeaderLines,
+} from '../resumeHeader';
 
-describe('headerHref', () => {
-  const href = (url: string) => headerHref({ url });
+describe('resolveHeaderItemHref', () => {
+  const href = (url: string) => resolveHeaderItemHref({ url });
 
   it('mails an address and calls a number', () => {
     expect(href('ada@example.com')).toBe('mailto:ada@example.com');
@@ -30,13 +35,16 @@ describe('headerHref', () => {
   });
 
   it('goes by what was typed, never by the item’s kind', () => {
-    const phone = newHeaderItem('custom', { url: '555-010-0100' });
-    const site = newHeaderItem('phone', { url: 'ada.dev' });
-    expect([headerHref(phone), headerHref(site)]).toEqual(['tel:5550100100', 'https://ada.dev']);
+    const phone = createHeaderItem('custom', { url: '555-010-0100' });
+    const site = createHeaderItem('phone', { url: 'ada.dev' });
+    expect([resolveHeaderItemHref(phone), resolveHeaderItemHref(site)]).toEqual([
+      'tel:5550100100',
+      'https://ada.dev',
+    ]);
   });
 });
 
-describe('printedHeaderLines', () => {
+describe('getPrintableHeaderLines', () => {
   it('leaves off hidden items and items with no text, and lines left with nothing', () => {
     const header: ResumeHeader = {
       linkStyle: 'plain',
@@ -46,27 +54,27 @@ describe('printedHeaderLines', () => {
           separator: ' | ',
           align: 'center',
           items: [
-            { ...newHeaderItem('email', { text: ' ada@example.com ', url: 'ada@example.com' }) },
-            { ...newHeaderItem('linkedin', { text: 'LinkedIn', url: 'x.com' }), shown: false },
-            newHeaderItem('github', { url: 'github.com/ada' }),
-            newHeaderItem('custom', { text: 'Open to relocation' }),
+            { ...createHeaderItem('email', { text: ' ada@example.com ', url: 'ada@example.com' }) },
+            { ...createHeaderItem('linkedin', { text: 'LinkedIn', url: 'x.com' }), shown: false },
+            createHeaderItem('github', { url: 'github.com/ada' }),
+            createHeaderItem('custom', { text: 'Open to relocation' }),
           ],
         },
         {
           id: 'two',
           separator: ' · ',
           align: 'left',
-          items: [newHeaderItem('location', { url: 'maps.example/london' })],
+          items: [createHeaderItem('location', { url: 'maps.example/london' })],
         },
       ],
     };
 
-    const lines = printedHeaderLines(header);
+    const lines = getPrintableHeaderLines(header);
     expect(lines.map((line) => line.id)).toEqual(['one']);
     expect(lines[0].items.map(({ text, href }) => [text, href])).toEqual([
       ['ada@example.com', 'mailto:ada@example.com'],
       ['Open to relocation', ''],
     ]);
-    expect(headerLineText(lines[0])).toBe('ada@example.com | Open to relocation');
+    expect(formatHeaderLineText(lines[0])).toBe('ada@example.com | Open to relocation');
   });
 });

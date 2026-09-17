@@ -1,5 +1,5 @@
 import {
-  headerBasics,
+  buildJsonResumeContact,
   projectType,
   type JsonResumeSource,
   type MosaicHeader,
@@ -20,8 +20,8 @@ import {
   HEADER_ALIGNS,
   HEADER_SEPARATORS,
   LINK_STYLES,
-  newHeaderItem,
-  newHeaderLine,
+  createHeaderItem,
+  createHeaderLine,
 } from '@/lib/resume/resumeHeader';
 import { SECTION_PRESETS } from '@/lib/resume/sectionPresets';
 import { isRecord } from '@/lib/resume/validateResume';
@@ -126,7 +126,7 @@ const PROFILE_SITES: { network: RegExp; kind: HeaderItemKind; site: string }[] =
  */
 function headerOfBasics(basics: Json): HeaderLine[] {
   const linked = (kind: HeaderItemKind, value: string) =>
-    value ? [newHeaderItem(kind, { text: value, url: value })] : [];
+    value ? [createHeaderItem(kind, { text: value, url: value })] : [];
   const profiles = items(basics.profiles).flatMap((profile) => {
     const known = PROFILE_SITES.find(({ network }) => network.test(text(profile.network)));
     const username = text(profile.username);
@@ -144,18 +144,18 @@ function headerOfBasics(basics: Json): HeaderLine[] {
       ...profiles,
       ...linked('site', text(basics.url)),
     ],
-    place ? [newHeaderItem('location', { text: place })] : [],
+    place ? [createHeaderItem('location', { text: place })] : [],
   ]
     .filter((line) => line.length > 0)
-    .map((line) => newHeaderLine(line));
+    .map((line) => createHeaderLine(line));
 }
 
 /**
  * The header as Mosaic wrote it, or null when `basics` no longer says what the export wrote
  * there for it — another tool changed the person's details.
  */
-function ownHeader(basics: Json, header: MosaicHeader): ResumeHeader | null {
-  const written = headerBasics(header.lines);
+function restoreHeaderIfUnchanged(basics: Json, header: MosaicHeader): ResumeHeader | null {
+  const written = buildJsonResumeContact(header.lines);
   const location = isRecord(basics.location) ? basics.location : undefined;
   const now = compact({
     email: text(basics.email),
@@ -168,8 +168,8 @@ function ownHeader(basics: Json, header: MosaicHeader): ResumeHeader | null {
   return {
     linkStyle: header.linkStyle,
     lines: header.lines.map(({ separator, align, items: lineItems }) =>
-      newHeaderLine(
-        lineItems.map(({ kind, text: shown, url }) => newHeaderItem(kind, { text: shown, url })),
+      createHeaderLine(
+        lineItems.map(({ kind, text: shown, url }) => createHeaderItem(kind, { text: shown, url })),
         { separator, align }
       )
     ),
@@ -494,7 +494,7 @@ export function readJsonResume(resume: Json): ParsedResume {
     .map((section) => ({ ...section, items: section.items.filter((item) => !isEmpty(item)) }))
     .filter((section) => section.items.length > 0)
     .map((section, order) => ({ ...section, order }));
-  const headerAsWritten = meta?.header ? ownHeader(basics, meta.header) : null;
+  const headerAsWritten = meta?.header ? restoreHeaderIfUnchanged(basics, meta.header) : null;
   const contact: ContactInfo = {
     name: text(basics.name),
     header: headerAsWritten ?? { linkStyle: 'plain', lines: headerOfBasics(basics) },

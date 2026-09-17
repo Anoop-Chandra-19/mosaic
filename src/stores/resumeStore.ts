@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
 import { DbError, getDb } from '@/lib/storage/mosaicDb';
 import { createEmptyResume } from '@/lib/resume/defaultResume';
-import { newHeaderItem, newHeaderLine } from '@/lib/resume/resumeHeader';
+import { createHeaderItem, createHeaderLine } from '@/lib/resume/resumeHeader';
 import type { Draft } from '@/types/db';
 import type {
   HeaderItem,
@@ -94,7 +94,7 @@ function moveBy<T>(list: T[], index: number, offset: -1 | 1) {
   [list[index], list[to]] = [list[to], list[index]];
 }
 
-function findHeaderItem(header: ResumeHeader, itemId: string) {
+function findHeaderItemPosition(header: ResumeHeader, itemId: string) {
   for (const line of header.lines) {
     const index = line.items.findIndex((item) => item.id === itemId);
     if (index >= 0) return { line, index };
@@ -149,7 +149,7 @@ export const useResumeStore = create<ResumeState>()(
         }),
 
       addHeaderLine: () => {
-        const line = newHeaderLine();
+        const line = createHeaderLine();
         edit((state) => {
           state.contact.header.lines.push(line);
         });
@@ -179,7 +179,7 @@ export const useResumeStore = create<ResumeState>()(
         }),
 
       addHeaderItem: (lineId, kind) => {
-        const item = newHeaderItem(kind);
+        const item = createHeaderItem(kind);
         edit((state) => {
           state.contact.header.lines.find((l) => l.id === lineId)?.items.push(item);
         });
@@ -188,20 +188,20 @@ export const useResumeStore = create<ResumeState>()(
 
       updateHeaderItem: (itemId, patch) =>
         edit((state) => {
-          const found = findHeaderItem(state.contact.header, itemId);
+          const found = findHeaderItemPosition(state.contact.header, itemId);
           if (found) Object.assign(found.line.items[found.index], patch);
         }),
 
       moveHeaderItem: (itemId, offset) =>
         edit((state) => {
-          const found = findHeaderItem(state.contact.header, itemId);
+          const found = findHeaderItemPosition(state.contact.header, itemId);
           if (found) moveBy(found.line.items, found.index, offset);
         }),
 
       moveHeaderItemToLine: (itemId, lineId) =>
         edit((state) => {
           const { header } = state.contact;
-          const found = findHeaderItem(header, itemId);
+          const found = findHeaderItemPosition(header, itemId);
           const target = header.lines.find((l) => l.id === lineId);
           if (!found || !target || target === found.line) return;
           const [item] = found.line.items.splice(found.index, 1);
@@ -210,7 +210,7 @@ export const useResumeStore = create<ResumeState>()(
 
       duplicateHeaderItem: (itemId) =>
         edit((state) => {
-          const found = findHeaderItem(state.contact.header, itemId);
+          const found = findHeaderItemPosition(state.contact.header, itemId);
           if (!found) return;
           const copy = { ...found.line.items[found.index], id: crypto.randomUUID() };
           found.line.items.splice(found.index + 1, 0, copy);
@@ -218,7 +218,7 @@ export const useResumeStore = create<ResumeState>()(
 
       removeHeaderItem: (itemId) =>
         edit((state) => {
-          const found = findHeaderItem(state.contact.header, itemId);
+          const found = findHeaderItemPosition(state.contact.header, itemId);
           if (found) found.line.items.splice(found.index, 1);
         }),
 

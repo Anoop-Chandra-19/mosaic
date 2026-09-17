@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createDefaultResume, createEmptyResume } from '@/lib/resume/defaultResume';
-import { newHeaderItem, newHeaderLine } from '@/lib/resume/resumeHeader';
+import { createHeaderItem, createHeaderLine } from '@/lib/resume/resumeHeader';
 import { countWords } from '../wordCount';
 
 describe('countWords', () => {
@@ -25,9 +25,9 @@ describe('countWords', () => {
     const doc = createEmptyResume();
     doc.contact.name = 'Ada Lovelace';
     doc.contact.header.lines = [
-      newHeaderLine([
-        newHeaderItem('phone', { text: '555 0100' }),
-        newHeaderItem('email', { text: 'ada@example.com' }),
+      createHeaderLine([
+        createHeaderItem('phone', { text: '555 0100' }),
+        createHeaderItem('email', { text: 'ada@example.com' }),
       ]),
     ];
     // The contact line comes out as "555 0100 | ada@example.com": the bar is not a word.

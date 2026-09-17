@@ -3,9 +3,9 @@ import { Eye, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { headerHref, headerKindInfo } from '@/lib/resume/resumeHeader';
+import { resolveHeaderItemHref, getHeaderKindInfo } from '@/lib/resume/resumeHeader';
 import type { HeaderItem } from '@/types/resume';
-import { HEADER_ICONS } from './header-icons';
+import { HEADER_ICONS } from './headerIcons';
 
 export type HeaderItemField = 'text' | 'url';
 
@@ -32,11 +32,11 @@ export function HeaderItemEditor({
   const [text, setText] = useState(item.text);
   const [url, setUrl] = useState(item.url);
   const fieldId = useId();
-  const { label, placeholder } = headerKindInfo(item.kind);
+  const { label, placeholder } = getHeaderKindInfo(item.kind);
   const Icon = HEADER_ICONS[item.kind];
-  const href = headerHref({ url });
+  const href = resolveHeaderItemHref({ url });
 
-  const onKeyDown = (event: KeyboardEvent) => {
+  const handleKeyDown = (event: KeyboardEvent) => {
     if (event.key === 'Enter') {
       event.preventDefault();
       onSave({ text: text.trim(), url: url.trim() });
@@ -87,7 +87,7 @@ export function HeaderItemEditor({
           autoFocus={focus === 'text'}
           placeholder={placeholder}
           onChange={(event) => setText(event.target.value.replace(/\n/g, ' '))}
-          onKeyDown={onKeyDown}
+          onKeyDown={handleKeyDown}
           className="min-h-8 resize-none px-2 py-1.5 text-sm"
         />
       </div>
@@ -101,7 +101,7 @@ export function HeaderItemEditor({
           autoFocus={focus === 'url'}
           placeholder="Optional"
           onChange={(event) => setUrl(event.target.value)}
-          onKeyDown={onKeyDown}
+          onKeyDown={handleKeyDown}
           className="h-8 px-2 font-mono text-xs"
         />
       </div>

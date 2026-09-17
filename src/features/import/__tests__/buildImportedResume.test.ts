@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { newHeaderItem, newHeaderLine } from '@/lib/resume/resumeHeader';
+import { createHeaderItem, createHeaderLine } from '@/lib/resume/resumeHeader';
 import type { ContactInfo, HeaderItem, ResumeData, ResumeSection } from '@/types/resume';
 import { buildImportedResume, describeImport, keepsHeader } from '../buildImportedResume';
 import type { ParsedResume } from '../parseResume';
@@ -8,11 +8,11 @@ import type { ParsedResume } from '../parseResume';
 function contact(name = '', ...items: HeaderItem[]): ContactInfo {
   return {
     name,
-    header: { linkStyle: 'plain', lines: items.length ? [newHeaderLine(items)] : [] },
+    header: { linkStyle: 'plain', lines: items.length ? [createHeaderLine(items)] : [] },
   };
 }
 
-const email = (text: string) => newHeaderItem('email', { text, url: text });
+const email = (text: string) => createHeaderItem('email', { text, url: text });
 
 function section(
   kind: ResumeSection['kind'],
@@ -160,7 +160,7 @@ describe('buildImportedResume', () => {
   it('merge takes the name and header only where the open resume has none', () => {
     const incoming = contact('Ada', email('ada@example.com'));
     // A header of items with no text prints nothing, so it is taken as having none.
-    const blank = contact('', newHeaderItem('phone'), newHeaderItem('email'));
+    const blank = contact('', createHeaderItem('phone'), createHeaderItem('email'));
     const { contact: result } = buildImportedResume(
       { ...current, contact: blank },
       parsed([section('skills', 'Skills', ['Go'])], incoming),

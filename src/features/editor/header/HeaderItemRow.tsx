@@ -20,12 +20,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { headerHref, headerKindInfo } from '@/lib/resume/resumeHeader';
+import { resolveHeaderItemHref, getHeaderKindInfo } from '@/lib/resume/resumeHeader';
 import { cn } from '@/lib/utils';
 import { useResumeStore } from '@/stores/resumeStore';
 import { useUIStore } from '@/stores/uiStore';
 import type { HeaderItem, HeaderLine } from '@/types/resume';
-import { HEADER_ICONS } from './header-icons';
+import { HEADER_ICONS } from './headerIcons';
 import { HeaderItemEditor, type HeaderItemField } from './HeaderItemEditor';
 
 /** A link as a short label: no scheme, no "www.", no trailing slash. */
@@ -40,21 +40,28 @@ interface HeaderItemRowProps {
   line: HeaderLine;
   lines: HeaderLine[];
   /** Open for editing when first shown: an item just added. */
-  openAtStart?: boolean;
+  shouldStartEditing?: boolean;
 }
 
 /**
  * One item at rest: its text, its link, whether it is on the page. Hidden text is struck
  * through; an item with a link but no text prints nothing, and says so.
  */
-export function HeaderItemRow({ item, line, lines, openAtStart = false }: HeaderItemRowProps) {
+export function HeaderItemRow({
+  item,
+  line,
+  lines,
+  shouldStartEditing = false,
+}: HeaderItemRowProps) {
   const icons = useUIStore((s) => s.headerIcons);
   const update = useResumeStore((s) => s.updateHeaderItem);
   const move = useResumeStore((s) => s.moveHeaderItem);
   const moveToLine = useResumeStore((s) => s.moveHeaderItemToLine);
   const duplicate = useResumeStore((s) => s.duplicateHeaderItem);
   const remove = useResumeStore((s) => s.removeHeaderItem);
-  const [editing, setEditing] = useState<HeaderItemField | null>(openAtStart ? 'text' : null);
+  const [editing, setEditing] = useState<HeaderItemField | null>(
+    shouldStartEditing ? 'text' : null
+  );
   const [menuOpen, setMenuOpen] = useState(false);
   const editAfterMenu = useRef(false);
 
@@ -75,10 +82,10 @@ export function HeaderItemRow({ item, line, lines, openAtStart = false }: Header
     );
   }
 
-  const { label } = headerKindInfo(item.kind);
+  const { label } = getHeaderKindInfo(item.kind);
   const Icon = HEADER_ICONS[item.kind];
   const index = line.items.indexOf(item);
-  const href = headerHref(item);
+  const href = resolveHeaderItemHref(item);
   const sameAsText = shortLink(item.url) === shortLink(item.text);
 
   return (
