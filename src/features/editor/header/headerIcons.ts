@@ -1,8 +1,8 @@
 import {
   BadgeCheck,
-  Github,
+  BriefcaseBusiness,
+  CodeXml,
   Globe,
-  Linkedin,
   Mail,
   MapPin,
   Phone,
@@ -14,8 +14,8 @@ import type { HeaderItemKind } from '@/types/resume';
 export const HEADER_ICONS: Record<HeaderItemKind, LucideIcon> = {
   phone: Phone,
   email: Mail,
-  linkedin: Linkedin,
-  github: Github,
+  linkedin: BriefcaseBusiness,
+  github: CodeXml,
   site: Globe,
   location: MapPin,
   auth: BadgeCheck,
