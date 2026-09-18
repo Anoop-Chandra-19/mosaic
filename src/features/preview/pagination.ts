@@ -4,7 +4,6 @@ import type { PreviewEntry, PreviewRenderableSection } from './PreviewSection';
 
 export interface PaginationMeasurements {
   headerHeight: number;
-  continuationHeaderHeight: number;
   sectionTitleHeights: Record<string, number>;
   entryHeights: Record<string, number>;
   entryHeadingHeights: Record<string, number>;
@@ -240,12 +239,9 @@ function splitEntryByAvailableHeight(
   };
 }
 
-function getHeaderHeightForPage(pageIndex: number, measurements: PaginationMeasurements) {
-  return pageIndex === 0 ? measurements.headerHeight : measurements.continuationHeaderHeight;
-}
-
+// The header prints on the first page only, as in the PDF; later pages start at the margin.
 function createEmptyPage(pageIndex: number, measurements: PaginationMeasurements): PageLayout {
-  return { sections: [], usedHeight: getHeaderHeightForPage(pageIndex, measurements) };
+  return { sections: [], usedHeight: pageIndex === 0 ? measurements.headerHeight : 0 };
 }
 
 export function paginateSections(
@@ -337,7 +333,10 @@ export function paginateSections(
         continuationIndex
       );
 
+      // Nothing to split it at — an entry with no bullets — so it goes on the new page whole.
       if (!forcedSplit?.first) {
+        ensureSection(page, section).entries.push(candidate);
+        page.usedHeight += freshSectionCost + candidateHeight;
         continue;
       }
 
@@ -396,8 +395,6 @@ export function createFallbackMeasurements(
   return {
     // nameMarginTop + name line + nameMarginBottom + two contact lines + gap.
     headerHeight: 89,
-    // Name/page row + contact line + one blank line.
-    continuationHeaderHeight: 54,
     sectionTitleHeights,
     entryHeights,
     entryHeadingHeights: {},

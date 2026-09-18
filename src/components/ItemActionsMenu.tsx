@@ -1,5 +1,5 @@
 import { Ellipsis, Trash2 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { AppButton } from '@/components/AppButton';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -34,14 +34,9 @@ export function ItemActionsMenu({
   return (
     <DropdownMenu open={open} onOpenChange={onOpenChange}>
       <DropdownMenuTrigger asChild>
-        <Button
-          variant="ghost"
-          size="icon-xs"
-          aria-label={label}
-          className="text-muted-foreground data-[state=open]:bg-accent data-[state=open]:text-foreground [&_svg]:size-3.5"
-        >
+        <AppButton variant="muted" size="icon-xs" aria-label={label} className="[&_svg]:size-3.5">
           <Ellipsis />
-        </Button>
+        </AppButton>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
         <DropdownMenuItem onClick={onMoveUp} disabled={isFirst}>

@@ -1,20 +1,21 @@
 import { useMemo, useState, type DragEvent } from 'react';
 import { AlertTriangle, FileText, Info, Upload } from 'lucide-react';
 import { DialogFrameFooter, DialogFrameHeader } from '@/components/DialogFrame';
-import { Button } from '@/components/ui/button';
+import { AppButton } from '@/components/AppButton';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { fileFailure } from '@/features/backup/backupFiles';
+import { HEADER_PRESETS, getPrintableHeaderLines } from '@/lib/resume/resumeHeader';
 import { cn } from '@/lib/utils';
-import { getResumeSnapshot } from '@/stores/resumeStore';
+import { getResumeSnapshot, useResumeStore } from '@/stores/resumeStore';
 import { attempt, showToast, useOverlayStore } from '@/stores/overlayStore';
 import { useTemplateStore } from '@/stores/templateStore';
 import { useUIStore } from '@/stores/uiStore';
 import { MAX_FILE_BYTES } from '@/types/files';
 import type { ContactInfo, ResumeSection, SectionLayout } from '@/types/resume';
-import { buildImportedResume, type ImportMode } from './buildImportedResume';
+import { buildImportedResume, keepsHeader, type ImportMode } from './buildImportedResume';
 import { LeftOutLines } from './LeftOutLines';
 import { parseResumeText, type ParsedResume } from './parseResume';
 import { readImportFile, UnreadableFileError, type ImportRead } from './readImportFile';
@@ -46,15 +47,19 @@ const IMPORT_LABELS: Record<ImportMode, string> = {
   merge: 'Add to resume',
 };
 
-const CONTACT_FIELDS: [keyof ContactInfo, string][] = [
-  ['name', 'name'],
-  ['email', 'email'],
-  ['phone', 'phone'],
-  ['location', 'location'],
-  ['linkedin', 'LinkedIn'],
-  ['github', 'GitHub'],
-  ['website', 'website'],
-];
+/** What the contact block held: the name, then each kind of header item once, in order. */
+function getContactFieldLabels({ name, header }: ContactInfo): string[] {
+  const kinds = new Set(
+    getPrintableHeaderLines(header).flatMap((line) => line.items.map((i) => i.kind))
+  );
+  // In a sentence: "email", "work authorization" — but a name keeps its capitals ("LinkedIn").
+  const labels = [...kinds].map((kind) => {
+    if (kind === 'custom') return 'other details';
+    const { label } = HEADER_PRESETS[kind];
+    return /\p{Lu}/u.test(label.slice(1)) ? label : label.toLowerCase();
+  });
+  return [...(name ? ['name'] : []), ...labels];
+}
 
 const PLACEHOLDER = `Jane Developer
 San Francisco, CA · jane@example.com · (555) 987-6543
@@ -220,9 +225,9 @@ function PickStep({
           <p className="mt-1 mb-3 text-xs text-zinc-600 dark:text-zinc-400">
             PDF, Word (.docx), Markdown, plain text, JSON Resume, or a Mosaic JSON backup.
           </p>
-          <Button variant="outline" size="sm" onClick={() => void choose()}>
+          <AppButton variant="outline" size="sm" onClick={() => void choose()}>
             Choose a file…
-          </Button>
+          </AppButton>
         </div>
 
         {fileError && (
@@ -247,7 +252,9 @@ function PickStep({
           onChange={(event) => setText(event.target.value)}
           placeholder={PLACEHOLDER}
           spellCheck={false}
-          className="h-36 resize-none font-mono text-xs leading-5"
+          // An example, not content: quieter than the theme's placeholder, which at seven
+          // lines reads as something already pasted.
+          className="h-36 resize-none font-mono text-xs leading-5 placeholder:text-zinc-400 dark:placeholder:text-zinc-600"
         />
 
         <p className="mt-3 flex gap-2 rounded-lg border border-zinc-200 bg-zinc-50 p-2.5 text-xs leading-relaxed text-zinc-600 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400">
@@ -259,12 +266,12 @@ function PickStep({
       </div>
 
       <DialogFrameFooter>
-        <Button variant="ghost" size="sm" onClick={onCancel}>
+        <AppButton variant="ghost" size="sm" onClick={onCancel}>
           Cancel
-        </Button>
-        <Button size="sm" disabled={text.trim() === ''} onClick={() => onPaste(text)}>
+        </AppButton>
+        <AppButton size="sm" disabled={text.trim() === ''} onClick={() => onPaste(text)}>
           Read pasted text
-        </Button>
+        </AppButton>
       </DialogFrameFooter>
     </>
   );
@@ -284,6 +291,7 @@ function ReviewStep({
   const createTemplate = useTemplateStore((s) => s.createTemplate);
   const importIntoDraft = useTemplateStore((s) => s.importIntoDraft);
   const setActiveSidebarTab = useUIStore((s) => s.setActiveSidebarTab);
+  const openContact = useResumeStore((s) => s.contact);
   const [excludedIds, setExcludedIds] = useState<Set<string>>(new Set());
   const [chosenMode, setMode] = useState<ImportMode>('new');
   const [importing, setImporting] = useState(false);
@@ -295,7 +303,8 @@ function ReviewStep({
     () => sections.filter((section) => !excludedIds.has(section.id)),
     [sections, excludedIds]
   );
-  const found = CONTACT_FIELDS.filter(([key]) => contact[key]).map(([, label]) => label);
+  const found = getContactFieldLabels(contact);
+  const headerKept = mode === 'merge' && keepsHeader(openContact);
 
   const toggle = (id: string) =>
     setExcludedIds((previous) => {
@@ -342,9 +351,9 @@ function ReviewStep({
               read
             </span>
           </p>
-          <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={onBack}>
+          <AppButton variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={onBack}>
             Choose another
-          </Button>
+          </AppButton>
         </div>
 
         <ul className="divide-y divide-zinc-200 rounded-lg border border-zinc-200 text-sm dark:divide-zinc-800 dark:border-zinc-800">
@@ -360,6 +369,7 @@ function ReviewStep({
               )}
             >
               — {found.length ? `${found.join(', ')} found` : 'nothing found'}
+              {headerKept && ', but your header stays as it is'}
             </span>
           </li>
           {sections.map((section) => {
@@ -446,16 +456,16 @@ function ReviewStep({
       </div>
 
       <DialogFrameFooter>
-        <Button variant="ghost" size="sm" onClick={onDone}>
+        <AppButton variant="ghost" size="sm" onClick={onDone}>
           Cancel
-        </Button>
-        <Button
+        </AppButton>
+        <AppButton
           size="sm"
           disabled={included.length === 0 || importing}
           onClick={() => void importResume()}
         >
           {IMPORT_LABELS[mode]}
-        </Button>
+        </AppButton>
       </DialogFrameFooter>
     </>
   );

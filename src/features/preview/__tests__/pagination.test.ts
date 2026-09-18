@@ -8,7 +8,6 @@ function createMeasurements(
 ): PaginationMeasurements {
   return {
     headerHeight: 0,
-    continuationHeaderHeight: 0,
     sectionTitleHeights: {},
     entryHeights: {},
     entryHeadingHeights: {},
@@ -145,6 +144,54 @@ describe('paginateSections', () => {
     expect(pages).toHaveLength(2);
     expect(pages[0][0].entries.map((entry) => entry.id)).toEqual(['job-1']);
     expect(pages[1][0].entries.map((entry) => entry.id)).toEqual(['job-2-cont-0']);
+  });
+
+  it('moves an entry with no bullets to the next page whole, rather than losing it', () => {
+    const degrees = ['edu-1', 'edu-2', 'edu-3'];
+    const pages = paginateSections(
+      [
+        {
+          id: 'education',
+          layout: 'entries',
+          label: 'Education',
+          entries: degrees.map((id) => ({ id, title: id, subtitle: '2025', bullets: [] })),
+        },
+      ],
+      createMeasurements({
+        sectionTitleHeights: { education: 18 },
+        entryHeights: Object.fromEntries(degrees.map((id) => [`education::${id}`, 18])),
+      }),
+      // A blank line, the title, and two degrees fill the page.
+      72
+    );
+
+    expect(pages.map((page) => page[0].entries.map((entry) => entry.title))).toEqual([
+      ['edu-1', 'edu-2'],
+      ['edu-3'],
+    ]);
+  });
+
+  it('reserves room for the header on the first page only', () => {
+    const jobs = ['job-1', 'job-2', 'job-3', 'job-4'];
+    const pages = paginateSections(
+      [
+        createExperienceSection(
+          jobs.map((id) => ({ id, title: id, subtitle: '', bullets: ['A'] }))
+        ),
+      ],
+      createMeasurements({
+        headerHeight: 70,
+        sectionTitleHeights: { experience: 10 },
+        entryHeights: Object.fromEntries(jobs.map((id) => [`experience::${id}`, 40])),
+      }),
+      150
+    );
+
+    // Page 1: header 70 + blank line 18 + title 10 + one job = 138. Page 2 has no header, so
+    // the title and three jobs fit: 18 + 10 + 120 = 148.
+    expect(pages).toHaveLength(2);
+    expect(pages[0][0].entries).toHaveLength(1);
+    expect(pages[1][0].entries).toHaveLength(3);
   });
 
   it('splits long text-only entries into continuation entries', () => {

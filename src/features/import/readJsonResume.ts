@@ -1,10 +1,13 @@
 import {
+  buildJsonResumeContact,
   projectType,
   type JsonResumeSource,
+  type MosaicHeader,
   type MosaicJsonResumeMeta,
 } from '@/features/export/jsonResume';
 import {
   atPlace,
+  compact,
   degree,
   formatDate,
   fromItem,
@@ -12,11 +15,22 @@ import {
   toItem,
   when,
 } from '@/features/export/jsonResumeEntry';
+import {
+  BUILT_IN_HEADER_KINDS,
+  HEADER_ALIGNS,
+  HEADER_SEPARATORS,
+  LINK_STYLES,
+  createHeaderItem,
+  createHeaderLine,
+} from '@/lib/resume/resumeHeader';
 import { SECTION_PRESETS } from '@/lib/resume/sectionPresets';
 import { isRecord } from '@/lib/resume/validateResume';
 import type {
   BuiltInSectionKind,
   ContactInfo,
+  HeaderItemKind,
+  HeaderLine,
+  ResumeHeader,
   ResumeEntry,
   ResumeSection,
   SectionKind,
@@ -100,29 +114,65 @@ function sectionOf(
   return { id: crypto.randomUUID(), kind, layout, label, order: 0, items: entries };
 }
 
-/** The contact, links as the file writes them — Mosaic prints them as they are. */
-function contactOf(basics: Json, workStatus: string): ContactInfo {
-  const profile = (network: RegExp, site: string) => {
-    const found = items(basics.profiles).find((p) => network.test(text(p.network)));
-    if (!found) return '';
-    const username = text(found.username);
-    return text(found.url) || (username ? `${site}/${username}` : '');
-  };
+/** A profile's kind, and where its address is when the file gives only a username. */
+const PROFILE_SITES: { network: RegExp; kind: HeaderItemKind; site: string }[] = [
+  { network: /linkedin/i, kind: 'linkedin', site: 'linkedin.com/in' },
+  { network: /github/i, kind: 'github', site: 'github.com' },
+];
+
+/**
+ * The header from `basics`, links as the file writes them — Mosaic prints them as they are:
+ * how to reach the person on one line, where they are on the next.
+ */
+function headerOfBasics(basics: Json): HeaderLine[] {
+  const createLinkedItems = (kind: HeaderItemKind, value: string) =>
+    value ? [createHeaderItem(kind, { text: value, url: value })] : [];
+  const profiles = items(basics.profiles).flatMap((profile) => {
+    const known = PROFILE_SITES.find(({ network }) => network.test(text(profile.network)));
+    const username = text(profile.username);
+    const address = text(profile.url) || (known && username ? `${known.site}/${username}` : '');
+    return createLinkedItems(known?.kind ?? 'custom', address);
+  });
   const location = isRecord(basics.location) ? basics.location : {};
-  return {
-    name: text(basics.name),
+  const place =
+    text(location.address) ||
+    [text(location.city), text(location.region)].filter(Boolean).join(', ');
+  return [
+    [
+      ...createLinkedItems('phone', text(basics.phone)),
+      ...createLinkedItems('email', text(basics.email)),
+      ...profiles,
+      ...createLinkedItems('site', text(basics.url)),
+    ],
+    place ? [createHeaderItem('location', { text: place })] : [],
+  ]
+    .filter((line) => line.length > 0)
+    .map((line) => createHeaderLine(line));
+}
+
+/**
+ * The header as Mosaic wrote it, or null when `basics` no longer says what the export wrote
+ * there for it — another tool changed the person's details.
+ */
+function restoreHeaderIfUnchanged(basics: Json, header: MosaicHeader): ResumeHeader | null {
+  const written = buildJsonResumeContact(header.lines);
+  const location = isRecord(basics.location) ? basics.location : undefined;
+  const now = compact({
     email: text(basics.email),
     phone: text(basics.phone),
-    location:
-      text(location.address) ||
-      [text(location.city), text(location.region)].filter(Boolean).join(', '),
-    ...(workStatus && { citizenshipStatus: workStatus }),
-    linkedin: profile(/linkedin/i, 'linkedin.com/in'),
-    github: profile(/github/i, 'github.com'),
-    website: text(basics.url),
-    showLinkedin: true,
-    showGithub: true,
-    showWebsite: true,
+    url: text(basics.url),
+    location: location && { ...location },
+    profiles: items(basics.profiles),
+  });
+  if (JSON.stringify(now) !== JSON.stringify(written)) return null;
+  return {
+    linkStyle: header.linkStyle,
+    lines: header.lines.map(({ separator, align, items: lineItems }) =>
+      createHeaderLine(
+        lineItems.map(({ kind, text: shown, url }) => createHeaderItem(kind, { text: shown, url })),
+        { separator, align }
+      )
+    ),
   };
 }
 
@@ -154,12 +204,45 @@ function metaSection(value: unknown): MetaSection | null {
   return value as unknown as MetaSection;
 }
 
+const HEADER_KIND_IDS: ReadonlySet<string> = new Set([...BUILT_IN_HEADER_KINDS, 'custom']);
+const isIn = (value: unknown, allowed: { value: string }[]) =>
+  allowed.some((option) => option.value === value);
+
+/** `header`: lines of items, each part one Mosaic knows. */
+function isMetaHeader(value: unknown): value is MosaicHeader {
+  return (
+    isRecord(value) &&
+    isIn(value.linkStyle, LINK_STYLES) &&
+    Array.isArray(value.lines) &&
+    value.lines.every(
+      (line) =>
+        isRecord(line) &&
+        isIn(line.separator, HEADER_SEPARATORS) &&
+        isIn(line.align, HEADER_ALIGNS) &&
+        Array.isArray(line.items) &&
+        line.items.every(
+          (item) =>
+            isRecord(item) &&
+            typeof item.kind === 'string' &&
+            HEADER_KIND_IDS.has(item.kind) &&
+            typeof item.text === 'string' &&
+            typeof item.url === 'string'
+        )
+    )
+  );
+}
+
 function readMeta(resume: Json): MosaicJsonResumeMeta | null {
   const meta = isRecord(resume.meta) ? resume.meta.mosaic : undefined;
   if (!isRecord(meta) || meta.version !== 1 || !Array.isArray(meta.sections)) return null;
   const sections = meta.sections.map(metaSection);
   if (sections.some((section) => section === null)) return null;
-  return { version: 1, workStatus: text(meta.workStatus), sections: sections as MetaSection[] };
+  if (meta.header !== undefined && !isMetaHeader(meta.header)) return null;
+  return {
+    version: 1,
+    ...(meta.header !== undefined && { header: meta.header as MosaicHeader }),
+    sections: sections as MetaSection[],
+  };
 }
 
 /**
@@ -411,11 +494,20 @@ export function readJsonResume(resume: Json): ParsedResume {
     .map((section) => ({ ...section, items: section.items.filter((item) => !isEmpty(item)) }))
     .filter((section) => section.items.length > 0)
     .map((section, order) => ({ ...section, order }));
-  const contact = contactOf(basics, meta?.workStatus ?? '');
+  const headerAsWritten = meta?.header ? restoreHeaderIfUnchanged(basics, meta.header) : null;
+  const contact: ContactInfo = {
+    name: text(basics.name),
+    header: headerAsWritten ?? { linkStyle: 'plain', lines: headerOfBasics(basics) },
+  };
 
   if (meta && !own) {
     warnings.push(
       'This file was changed after Mosaic exported it, so its sections are read by their JSON Resume names.'
+    );
+  }
+  if (meta?.header && !headerAsWritten) {
+    warnings.push(
+      'The contact details in this file were changed after Mosaic exported it, so the header is built from them.'
     );
   }
   if (sections.length === 0) warnings.push('This file has no sections Mosaic can read.');

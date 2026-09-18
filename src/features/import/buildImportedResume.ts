@@ -1,3 +1,4 @@
+import { getPrintableHeaderLines } from '@/lib/resume/resumeHeader';
 import type { ContactInfo, ResumeData, ResumeSection } from '@/types/resume';
 import type { ParsedResume } from './parseResume';
 
@@ -29,15 +30,16 @@ export function describeImport(parsed: ParsedResume): ImportSummary {
   };
 }
 
-/** Fill only the contact fields that are currently empty. */
+/** Whether a merge keeps the open resume's header: it does when that header prints anything. */
+export const keepsHeader = (current: ContactInfo) =>
+  getPrintableHeaderLines(current.header).length > 0;
+
+/** The name only if there is none; the header whole, only if the current one prints nothing. */
 function mergeContact(current: ContactInfo, incoming: ContactInfo): ContactInfo {
-  const merged: ContactInfo = { ...current };
-  (Object.keys(incoming) as (keyof ContactInfo)[]).forEach((key) => {
-    if (typeof incoming[key] === 'string' && current[key] === '' && incoming[key] !== '') {
-      (merged[key] as string) = incoming[key] as string;
-    }
-  });
-  return merged;
+  return {
+    name: current.name.trim() ? current.name : incoming.name,
+    header: keepsHeader(current) ? current.header : incoming.header,
+  };
 }
 
 const sameName = (a: string, b: string) => a.trim().toLowerCase() === b.trim().toLowerCase();
@@ -68,7 +70,8 @@ function mergeSections(current: ResumeSection[], incoming: ResumeSection[]): Res
 
 /**
  * The document an import produces. `new` and `replace` take the parsed resume as it is;
- * `merge` appends its sections into `current` and only fills empty contact fields.
+ * `merge` appends its sections into `current`, and takes its name and header only where
+ * `current` has none.
  */
 export function buildImportedResume(
   current: ResumeData,

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { AlertTriangle, ArchiveRestore, FileJson2 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { AppButton } from '@/components/AppButton';
 import {
   Dialog,
   DialogContent,
@@ -134,10 +134,10 @@ function RestoreForm({ backup, onDone }: { backup: OpenedBackup; onDone: () => v
       )}
 
       <DialogFooter>
-        <Button variant="ghost" onClick={onDone}>
+        <AppButton variant="ghost" onClick={onDone}>
           Cancel
-        </Button>
-        <Button
+        </AppButton>
+        <AppButton
           variant={replacing ? 'destructive' : 'default'}
           disabled={restoring}
           onClick={() => void restore()}
@@ -147,7 +147,7 @@ function RestoreForm({ backup, onDone }: { backup: OpenedBackup; onDone: () => v
             : effectiveMode === 'restore-all'
               ? 'Restore'
               : `Add ${count(templates, 'template')}`}
-        </Button>
+        </AppButton>
       </DialogFooter>
     </>
   );

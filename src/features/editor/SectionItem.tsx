@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { ChevronDown, ChevronRight, Plus } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { AppButton } from '@/components/AppButton';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { ConfirmDeleteDialog } from '@/components/ConfirmDeleteDialog';
 import { ItemActionsMenu } from '@/components/ItemActionsMenu';
@@ -60,14 +60,14 @@ export function SectionItem({
     <Collapsible open={open} onOpenChange={setOpen}>
       <div className="group/section flex items-center gap-1.5 py-1.5">
         <CollapsibleTrigger asChild>
-          <Button
+          <AppButton
             variant="ghost"
             size="icon-xs"
             aria-label={open ? `Collapse ${section.label}` : `Expand ${section.label}`}
             className="shrink-0 text-muted-foreground [&_svg]:size-3.5"
           >
             {open ? <ChevronDown /> : <ChevronRight />}
-          </Button>
+          </AppButton>
         </CollapsibleTrigger>
         <Icon className="size-[1.05rem] shrink-0 text-muted-foreground" />
         <InlineEditField
@@ -89,7 +89,7 @@ export function SectionItem({
               : 'invisible group-hover/section:visible group-focus-within/section:visible'
           }`}
         >
-          <Button
+          <AppButton
             variant="ghost"
             size="icon-xs"
             onClick={handleAddEntry}
@@ -97,7 +97,7 @@ export function SectionItem({
             className="text-muted-foreground [&_svg]:size-3.5"
           >
             <Plus />
-          </Button>
+          </AppButton>
           <ItemActionsMenu
             label={`${section.label} actions`}
             deleteLabel="Delete Section"

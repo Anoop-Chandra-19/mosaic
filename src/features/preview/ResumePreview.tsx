@@ -75,14 +75,8 @@ export function ResumePreview({
       const entryHeadingHeights: Record<string, number> = {};
       const bulletHeights: Record<string, number[]> = {};
 
-      const fullHeaderNode = root.querySelector(
-        '[data-preview-header-variant="full"]'
-      ) as HTMLElement | null;
-      const compactHeaderNode = root.querySelector(
-        '[data-preview-header-variant="compact"]'
-      ) as HTMLElement | null;
-      const headerHeight = fullHeaderNode?.getBoundingClientRect().height ?? 110;
-      const continuationHeaderHeight = compactHeaderNode?.getBoundingClientRect().height ?? 40;
+      const headerNode = root.querySelector<HTMLElement>('[data-preview-header]');
+      const headerHeight = headerNode?.getBoundingClientRect().height ?? 110;
 
       root.querySelectorAll<HTMLElement>('[data-preview-section-title-id]').forEach((node) => {
         const sectionId = node.dataset.previewSectionTitleId;
@@ -115,7 +109,6 @@ export function ResumePreview({
 
       setMeasurements({
         headerHeight,
-        continuationHeaderHeight,
         sectionTitleHeights,
         entryHeights,
         entryHeadingHeights,
@@ -196,11 +189,7 @@ export function ResumePreview({
           >
             {visiblePages.map((pageSections, pageIndex) => (
               <PreviewPage key={`preview-page-${pageIndex}`} paperSize={paperSize}>
-                <PreviewHeader
-                  contact={contact}
-                  variant={pageIndex === 0 ? 'full' : 'compact'}
-                  pageNumber={pageIndex + 1}
-                />
+                {pageIndex === 0 && <PreviewHeader contact={contact} />}
                 {pageSections.map((section) => (
                   <PreviewSection key={`${section.id}-${pageIndex}`} section={section} />
                 ))}
@@ -213,8 +202,7 @@ export function ResumePreview({
       {/* Offscreen, unpaginated, unscaled render that page splitting measures. */}
       <div className="pointer-events-none fixed top-0 -left-24999.75" aria-hidden>
         <div ref={measureRootRef} style={{ width: `${pageContentSize.width}px` }}>
-          <PreviewHeader contact={contact} variant="full" pageNumber={1} />
-          <PreviewHeader contact={contact} variant="compact" pageNumber={2} />
+          <PreviewHeader contact={contact} />
           {activeSections.map((section) => (
             <PreviewSection key={`measure-${section.id}`} section={section} />
           ))}

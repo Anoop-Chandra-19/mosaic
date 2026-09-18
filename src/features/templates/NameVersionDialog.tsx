@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Info } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { AppButton } from '@/components/AppButton';
 import {
   Dialog,
   DialogContent,
@@ -81,12 +81,12 @@ function NameVersionForm({ onDone }: { onDone: () => void }) {
       </p>
 
       <DialogFooter>
-        <Button type="button" variant="ghost" onClick={onDone}>
+        <AppButton type="button" variant="ghost" onClick={onDone}>
           Cancel
-        </Button>
-        <Button type="submit" disabled={!trimmed || saving}>
+        </AppButton>
+        <AppButton type="submit" disabled={!trimmed || saving}>
           Name version
-        </Button>
+        </AppButton>
       </DialogFooter>
     </form>
   );

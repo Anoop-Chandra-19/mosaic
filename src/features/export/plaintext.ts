@@ -1,23 +1,27 @@
-import { getContactPrimaryLine, getContactSecondaryLine } from '@/lib/resume/contactFormatting';
+import {
+  stripMailtoOrTelScheme,
+  isSameAddress,
+  type PrintedHeaderLine,
+} from '@/lib/resume/resumeHeader';
 import type { NormalizedResumeExport } from './normalizeResumeExport';
+
+/**
+ * A header line with each link after its text, "LinkedIn (https://linkedin.com/in/ada)",
+ * since plain text can't link. Left off where the text already is the address.
+ */
+function formatHeaderLineWithLinks({ separator, items }: PrintedHeaderLine): string {
+  return items
+    .map(({ text, href }) =>
+      href && !isSameAddress(text, href) ? `${text} (${stripMailtoOrTelScheme(href)})` : text
+    )
+    .join(separator);
+}
 
 export function createPlaintextExport(data: NormalizedResumeExport) {
   const lines: string[] = [];
   const name = data.contact.name || 'Mosaic Resume';
-  const primaryLine = getContactPrimaryLine(data.contact);
-  const secondaryLine = getContactSecondaryLine(data.contact);
 
-  lines.push(name);
-
-  if (primaryLine) {
-    lines.push(primaryLine);
-  }
-
-  if (secondaryLine) {
-    lines.push(secondaryLine);
-  }
-
-  lines.push('');
+  lines.push(name, ...data.contact.lines.map(formatHeaderLineWithLinks), '');
 
   for (const section of data.sections) {
     lines.push(section.label.toUpperCase());

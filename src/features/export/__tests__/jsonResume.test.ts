@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { createJsonResumeExport } from '../jsonResume';
 import type { ExportEntry, NormalizedResumeExport } from '../normalizeResumeExport';
+import type { HeaderItemKind } from '@/types/resume';
 
 let nextId = 0;
 const entry = (title: string, subtitle = '', bullets: string[] = []): ExportEntry => ({
@@ -9,6 +10,12 @@ const entry = (title: string, subtitle = '', bullets: string[] = []): ExportEntr
   subtitle,
   text: '',
   bullets,
+});
+const item = (kind: HeaderItemKind, text: string, href = '') => ({
+  id: `h${nextId++}`,
+  kind,
+  text,
+  href,
 });
 const line = (text: string): ExportEntry => ({
   id: `l${nextId++}`,
@@ -22,13 +29,27 @@ function createExportData(): NormalizedResumeExport {
   return {
     contact: {
       name: 'Alex Johnson',
-      email: 'alex@example.com',
-      phone: '555-0100',
-      location: 'Detroit, MI',
-      citizenshipStatus: '',
-      linkedin: 'linkedin.com/in/alex',
-      github: 'github.com/alex',
-      website: 'alex.dev',
+      linkStyle: 'plain',
+      lines: [
+        {
+          id: 'reach',
+          separator: ' | ',
+          align: 'center',
+          items: [
+            item('phone', '555-0100', 'tel:5550100'),
+            item('email', 'alex@example.com', 'mailto:alex@example.com'),
+            item('linkedin', 'LinkedIn', 'https://linkedin.com/in/alex'),
+            item('github', 'github.com/alex', 'https://github.com/alex'),
+            item('site', 'alex.dev', 'https://alex.dev'),
+          ],
+        },
+        {
+          id: 'where',
+          separator: ' · ',
+          align: 'left',
+          items: [item('auth', 'US Citizen'), item('location', 'Detroit, MI')],
+        },
+      ],
     },
     sections: [
       {
@@ -105,13 +126,13 @@ describe('createJsonResumeExport', () => {
       name: 'Alex Johnson',
       email: 'alex@example.com',
       phone: '555-0100',
-      url: 'alex.dev',
+      url: 'https://alex.dev',
       summary: 'Focused builder.\n\nOpen-source fan.',
       location: { address: 'Detroit, MI' },
     });
     expect(resume.basics.profiles).toEqual([
-      { network: 'LinkedIn', url: 'linkedin.com/in/alex' },
-      { network: 'GitHub', url: 'github.com/alex' },
+      { network: 'LinkedIn', url: 'https://linkedin.com/in/alex' },
+      { network: 'GitHub', url: 'https://github.com/alex' },
     ]);
 
     // Experience and internships merge into work, preserving section order.
@@ -217,12 +238,36 @@ describe('createJsonResumeExport', () => {
     expect(projects).toContainEqual({ name: 'English, Spanish', type: 'Languages' });
   });
 
-  it('records each section in meta.mosaic, so Mosaic can read the file back exactly', () => {
-    const data = createExportData();
-    data.contact.citizenshipStatus = 'US Citizen';
+  it('records the header whole in meta.mosaic, since basics can say only part of it', () => {
+    const { meta } = parseExport(createExportData());
+    expect(meta.mosaic.header).toEqual({
+      linkStyle: 'plain',
+      lines: [
+        {
+          separator: ' | ',
+          align: 'center',
+          items: [
+            { kind: 'phone', text: '555-0100', url: 'tel:5550100' },
+            { kind: 'email', text: 'alex@example.com', url: 'mailto:alex@example.com' },
+            { kind: 'linkedin', text: 'LinkedIn', url: 'https://linkedin.com/in/alex' },
+            { kind: 'github', text: 'github.com/alex', url: 'https://github.com/alex' },
+            { kind: 'site', text: 'alex.dev', url: 'https://alex.dev' },
+          ],
+        },
+        {
+          separator: ' · ',
+          align: 'left',
+          items: [
+            { kind: 'auth', text: 'US Citizen', url: '' },
+            { kind: 'location', text: 'Detroit, MI', url: '' },
+          ],
+        },
+      ],
+    });
+  });
 
-    const { meta } = parseExport(data);
-    expect(meta.mosaic.workStatus).toBe('US Citizen');
+  it('records each section in meta.mosaic, so Mosaic can read the file back exactly', () => {
+    const { meta } = parseExport(createExportData());
     expect(
       meta.mosaic.sections.map((s: { label: string; from: string; count: number }) => [
         s.label,
@@ -269,16 +314,7 @@ describe('createJsonResumeExport', () => {
 
   it('omits empty arrays and empty contact fields', () => {
     const resume = parseExport({
-      contact: {
-        name: 'Alex',
-        email: '',
-        phone: '',
-        location: '',
-        citizenshipStatus: '',
-        linkedin: '',
-        github: '',
-        website: '',
-      },
+      contact: { name: 'Alex', linkStyle: 'plain', lines: [] },
       sections: [
         {
           id: 'summary',

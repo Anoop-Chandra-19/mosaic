@@ -1,5 +1,5 @@
 import { Trash2 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { AppButton } from '@/components/AppButton';
 import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
 import { InlineEditField } from './InlineEditField';
@@ -30,7 +30,7 @@ export function BulletItem({ bullet, onToggle, onUpdate, onRemove }: BulletItemP
         )}
         inputClassName="h-8 text-sm leading-6"
       />
-      <Button
+      <AppButton
         variant="ghost"
         size="icon-xs"
         onClick={onRemove}
@@ -38,7 +38,7 @@ export function BulletItem({ bullet, onToggle, onUpdate, onRemove }: BulletItemP
         className="invisible shrink-0 text-muted-foreground group-hover:visible group-focus-within:visible hover:text-destructive [&_svg]:size-3.5"
       >
         <Trash2 />
-      </Button>
+      </AppButton>
     </div>
   );
 }

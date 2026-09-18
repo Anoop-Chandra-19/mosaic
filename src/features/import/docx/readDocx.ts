@@ -1,4 +1,5 @@
 import {
+  type DocxAlignment,
   type DocxBlock,
   type DocxCell,
   type DocxDocument,
@@ -10,7 +11,7 @@ import {
   type DocxTable,
 } from './docxModel';
 import { docxLines } from './docxLines';
-import { linkText } from '../importLines';
+import { markLink } from '../importLines';
 import { parseResumeLines, type ParsedResume } from '../parseResume';
 import {
   attribute,
@@ -64,6 +65,7 @@ interface Style {
   numbering?: { id?: string; level?: number };
   rightTab: boolean;
   spaceBefore?: number;
+  align?: DocxAlignment;
   run: RunProps;
 }
 
@@ -231,6 +233,20 @@ const spaceBeforeOf = (pPr: XmlElement | undefined) => {
   return Number.isFinite(before) && before >= 0 ? before : undefined;
 };
 
+/** Word's `w:jc` values, and the Strict schema's start/end, as the four alignments. */
+const ALIGNMENTS: Record<string, DocxAlignment> = {
+  left: 'left',
+  start: 'left',
+  center: 'center',
+  right: 'right',
+  end: 'right',
+  both: 'justify',
+  distribute: 'justify',
+};
+
+const alignmentOf = (pPr: XmlElement | undefined): DocxAlignment | undefined =>
+  ALIGNMENTS[attribute(childNamed(pPr, W, 'jc'), W, 'val') ?? ''];
+
 function readStyles(root: XmlElement | null): Styles {
   const styles: Styles = {
     paragraph: new Map(),
@@ -258,6 +274,7 @@ function readStyles(root: XmlElement | null): Styles {
       numbering: numberingOf(pPr),
       rightTab: hasRightTab(pPr),
       spaceBefore: spaceBeforeOf(pPr),
+      align: alignmentOf(pPr),
       run: runPropsOf(childNamed(element, W, 'rPr')),
     });
     const isDefault = ['1', 'true', 'on'].includes(attribute(element, W, 'default') ?? '');
@@ -352,7 +369,7 @@ interface Gathering {
 function endLink(gathering: Gathering, start: number, url: string | undefined) {
   if (!url) return;
   const words = gathering.text.slice(start);
-  gathering.text = gathering.text.slice(0, start) + linkText(words, url);
+  gathering.text = gathering.text.slice(0, start) + markLink(words, url);
 }
 
 /** Pictures and text boxes: a text box's paragraphs are read; a picture is only counted. */
@@ -512,6 +529,7 @@ function readParagraph(context: Context, p: XmlElement, at: string): DocxBlock[]
     size: runs.reduce((largest, run) => Math.max(largest, run.size ?? 0), 0),
     spaceBefore:
       spaceBeforeOf(pPr) ?? chain.findLast((s) => s.spaceBefore !== undefined)?.spaceBefore ?? 0,
+    align: alignmentOf(pPr) ?? chain.findLast((s) => s.align !== undefined)?.align ?? 'left',
     source: sourceOf(context, at),
   };
 

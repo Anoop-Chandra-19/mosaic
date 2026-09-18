@@ -59,7 +59,7 @@ describe('templateStore', () => {
   it('saves pending edits before switching, and switching back finds them', async () => {
     await templates().createTemplate('Backend', createDefaultResume());
     const backend = resume().templateId!;
-    resume().updateContact({ name: 'Ada Lovelace' });
+    resume().setName('Ada Lovelace');
 
     await templates().createTemplate('Frontend', createEmptyResume());
     expect(resume().contact.name).toBe('');
@@ -70,7 +70,7 @@ describe('templateStore', () => {
 
   it('names a version, after which the draft matches it', async () => {
     await templates().createTemplate('Backend', createDefaultResume());
-    resume().updateContact({ name: 'Ada' });
+    resume().setName('Ada');
     await flushDraft();
 
     const version = await templates().nameVersion('Sent to Striped');
@@ -86,7 +86,7 @@ describe('templateStore', () => {
 
   it('imports over the draft and keeps unsaved edits in history', async () => {
     await templates().createTemplate('Backend', createDefaultResume());
-    resume().updateContact({ name: 'Unsaved edit' });
+    resume().setName('Unsaved edit');
     const imported = createEmptyResume();
     imported.contact.name = 'Imported';
 
@@ -107,7 +107,7 @@ describe('templateStore', () => {
     const frontend = resume().templateId!;
     const backend = templates().templates.find((t) => t.name === 'Backend')!.id;
     await templates().openTemplate(backend);
-    resume().updateContact({ name: 'Recently edited' });
+    resume().setName('Recently edited');
     await flushDraft();
     await templates().openTemplate(frontend);
 
@@ -133,7 +133,7 @@ describe('templateStore', () => {
     await templates().nameVersion('Sent to Acme');
     await templates().createTemplate('Frontend', createEmptyResume());
     const frontend = resume().templateId!;
-    resume().updateContact({ name: 'Not saved yet' });
+    resume().setName('Not saved yet');
 
     const deleted = await templates().deleteTemplate(frontend);
     expect(names()).toEqual(['Backend']);
@@ -151,7 +151,7 @@ describe('templateStore', () => {
     await templates().createTemplate('Backend', createDefaultResume());
     const backend = resume().templateId!;
     const backup = JSON.stringify(await db.current!.bundle.export());
-    resume().updateContact({ name: 'After the backup' });
+    resume().setName('After the backup');
     await templates().createTemplate('Frontend', createEmptyResume());
     await templates().openTemplate(backend);
 
@@ -179,7 +179,7 @@ describe('templateStore', () => {
 
   it('duplicates with the latest edits', async () => {
     await templates().createTemplate('Backend', createDefaultResume());
-    resume().updateContact({ name: 'Latest' });
+    resume().setName('Latest');
 
     await templates().duplicateTemplate(resume().templateId!);
 
@@ -191,9 +191,9 @@ describe('templateStore', () => {
   it('restores an older version, keeping unsaved edits in history', async () => {
     await templates().createTemplate('Backend', createDefaultResume());
     const templateId = resume().templateId!;
-    resume().updateContact({ name: 'Named state' });
+    resume().setName('Named state');
     const named = await templates().nameVersion('First');
-    resume().updateContact({ name: 'Unsaved edit' });
+    resume().setName('Unsaved edit');
 
     await templates().restoreVersion(templateId, named.id);
 
@@ -220,7 +220,7 @@ describe('templateStore', () => {
     await templates().createTemplate('Backend', createDefaultResume());
     const templateId = resume().templateId!;
     const [created] = await db.current!.versions.list(templateId);
-    resume().updateContact({ name: 'Later edit' });
+    resume().setName('Later edit');
 
     const copy = await templates().duplicateVersion(created.id);
 

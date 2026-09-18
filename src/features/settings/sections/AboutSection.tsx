@@ -1,5 +1,5 @@
 import { ExternalLink } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { AppButton } from '@/components/AppButton';
 import { SettingRow } from '../SettingRow';
 
 const SOURCE_URL = 'https://github.com/Anoop-Chandra-19/mosaic';
@@ -24,13 +24,13 @@ export function AboutSection() {
         label="Source"
         description="Open source. Fork it, audit it, or run it from source."
       >
-        <Button variant="outline" size="sm" asChild>
+        <AppButton variant="outline" size="sm" asChild>
           {/* Opens in the system browser: the app never navigates away from itself. */}
           <a href={SOURCE_URL} target="_blank" rel="noreferrer">
             <ExternalLink />
             GitHub
           </a>
-        </Button>
+        </AppButton>
       </SettingRow>
     </>
   );

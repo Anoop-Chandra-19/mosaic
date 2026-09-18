@@ -258,6 +258,9 @@ function toPieces(flats: Flat[]): Piece[] {
     lines.forEach((line, index) => {
       if (gap) line.gapBefore = true;
       gap = false;
+      // Mosaic sets a header line centred or from the left; right-aligned has no match here.
+      if (paragraph.align === 'center') line.align = 'center';
+      else if (paragraph.align !== 'right') line.align = 'left';
       line.origin = `${paragraph.source.path} ${paragraph.source.at}`;
       const { style, outline, bold, italic, caps, size } = paragraph;
       const capitals = caps || isCapitals(line.text);

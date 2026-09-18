@@ -2,8 +2,18 @@ import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
 import { DbError, getDb } from '@/lib/storage/mosaicDb';
 import { createEmptyResume } from '@/lib/resume/defaultResume';
+import { createHeaderItem, createHeaderLine } from '@/lib/resume/resumeHeader';
 import type { Draft } from '@/types/db';
-import type { ResumeData, ResumeEntry, ResumeSection, ContactInfo } from '@/types/resume';
+import type {
+  HeaderItem,
+  HeaderItemKind,
+  HeaderLine,
+  LinkStyle,
+  ResumeData,
+  ResumeEntry,
+  ResumeHeader,
+  ResumeSection,
+} from '@/types/resume';
 
 /*
  * The draft in the editor: one template's document. Every edit bumps `rev` and schedules a
@@ -32,7 +42,28 @@ interface ResumeState extends ResumeData {
 
   loadDraft: (draft: Draft | null) => void;
 
-  updateContact: (patch: Partial<ContactInfo>) => void;
+  setName: (name: string) => void;
+  setLinkStyle: (linkStyle: LinkStyle) => void;
+  /** Adds an empty line at the end of the header; returns its id. */
+  addHeaderLine: () => string;
+  updateHeaderLine: (
+    lineId: string,
+    patch: Partial<Pick<HeaderLine, 'separator' | 'align'>>
+  ) => void;
+  moveHeaderLine: (lineId: string, offset: -1 | 1) => void;
+  removeHeaderLine: (lineId: string) => void;
+  /** Adds an empty item at the end of a line; returns its id. */
+  addHeaderItem: (lineId: string, kind: HeaderItemKind) => string;
+  updateHeaderItem: (
+    itemId: string,
+    patch: Partial<Pick<HeaderItem, 'text' | 'url' | 'shown'>>
+  ) => void;
+  /** Within its line. */
+  moveHeaderItem: (itemId: string, offset: -1 | 1) => void;
+  /** To the end of another line. */
+  moveHeaderItemToLine: (itemId: string, lineId: string) => void;
+  duplicateHeaderItem: (itemId: string) => void;
+  removeHeaderItem: (itemId: string) => void;
 
   /** Adds an empty section at the end; returns its id. */
   addSection: (section: Pick<ResumeSection, 'kind' | 'layout' | 'label'>) => string;
@@ -54,6 +85,21 @@ interface ResumeState extends ResumeData {
   updateBullet: (sectionId: string, entryId: string, bulletId: string, text: string) => void;
   removeBullet: (sectionId: string, entryId: string, bulletId: string) => void;
   toggleBullet: (sectionId: string, entryId: string, bulletId: string) => void;
+}
+
+/** Moves `list[index]` one place up or down; nothing past either end. */
+function moveBy<T>(list: T[], index: number, offset: -1 | 1) {
+  const to = index + offset;
+  if (index < 0 || to < 0 || to >= list.length) return;
+  [list[index], list[to]] = [list[to], list[index]];
+}
+
+function findHeaderItemPosition(header: ResumeHeader, itemId: string) {
+  for (const line of header.lines) {
+    const index = line.items.findIndex((item) => item.id === itemId);
+    if (index >= 0) return { line, index };
+  }
+  return null;
 }
 
 /* Store */
@@ -90,11 +136,90 @@ export const useResumeStore = create<ResumeState>()(
         });
       },
 
-      // Contact
+      // Name and header
 
-      updateContact: (patch) =>
+      setName: (name) =>
         edit((state) => {
-          Object.assign(state.contact, patch);
+          state.contact.name = name;
+        }),
+
+      setLinkStyle: (linkStyle) =>
+        edit((state) => {
+          state.contact.header.linkStyle = linkStyle;
+        }),
+
+      addHeaderLine: () => {
+        const line = createHeaderLine();
+        edit((state) => {
+          state.contact.header.lines.push(line);
+        });
+        return line.id;
+      },
+
+      updateHeaderLine: (lineId, patch) =>
+        edit((state) => {
+          const line = state.contact.header.lines.find((l) => l.id === lineId);
+          if (line) Object.assign(line, patch);
+        }),
+
+      moveHeaderLine: (lineId, offset) =>
+        edit((state) => {
+          const { lines } = state.contact.header;
+          moveBy(
+            lines,
+            lines.findIndex((l) => l.id === lineId),
+            offset
+          );
+        }),
+
+      removeHeaderLine: (lineId) =>
+        edit((state) => {
+          const { header } = state.contact;
+          header.lines = header.lines.filter((l) => l.id !== lineId);
+        }),
+
+      addHeaderItem: (lineId, kind) => {
+        const item = createHeaderItem(kind);
+        edit((state) => {
+          state.contact.header.lines.find((l) => l.id === lineId)?.items.push(item);
+        });
+        return item.id;
+      },
+
+      updateHeaderItem: (itemId, patch) =>
+        edit((state) => {
+          const found = findHeaderItemPosition(state.contact.header, itemId);
+          if (found) Object.assign(found.line.items[found.index], patch);
+        }),
+
+      moveHeaderItem: (itemId, offset) =>
+        edit((state) => {
+          const found = findHeaderItemPosition(state.contact.header, itemId);
+          if (found) moveBy(found.line.items, found.index, offset);
+        }),
+
+      moveHeaderItemToLine: (itemId, lineId) =>
+        edit((state) => {
+          const { header } = state.contact;
+          const found = findHeaderItemPosition(header, itemId);
+          const target = header.lines.find((l) => l.id === lineId);
+          if (!found || !target || target === found.line) return;
+          const [item] = found.line.items.splice(found.index, 1);
+          target.items.push(item);
+        }),
+
+      duplicateHeaderItem: (itemId) =>
+        edit((state) => {
+          const found = findHeaderItemPosition(state.contact.header, itemId);
+          if (!found) return;
+          const copy = { ...found.line.items[found.index], id: crypto.randomUUID() };
+          found.line.items.splice(found.index + 1, 0, copy);
+        }),
+
+      removeHeaderItem: (itemId) =>
+        edit((state) => {
+          const found = findHeaderItemPosition(state.contact.header, itemId);
+          if (found) found.line.items.splice(found.index, 1);
         }),
 
       // Section CRUD

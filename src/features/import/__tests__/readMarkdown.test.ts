@@ -4,7 +4,16 @@ import { normalizeResumeForExport } from '@/features/export/normalizeResumeExpor
 import { createDefaultResume } from '@/lib/resume/defaultResume';
 import type { ResumeData } from '@/types/resume';
 import { readMarkdown } from '../readMarkdown';
-import { entry, everything, lines, resume, section, shown } from './roundTrip';
+import {
+  entry,
+  everything,
+  lines,
+  resume,
+  section,
+  shown,
+  buildExpectedShown,
+  createStyledHeaderResume,
+} from './roundTrip';
 
 const markdownOf = (data: ResumeData) => createMarkdownExport(normalizeResumeForExport(data));
 
@@ -38,6 +47,17 @@ describe('readMarkdown', () => {
     }
   });
 
+  it('gives back a header’s links and separators, but not alignment or underlining', () => {
+    const data = createStyledHeaderResume();
+    // Markdown has no way to set a line left or centred, or to say how a link looks.
+    expect(shown(readMarkdown(markdownOf(data)).resume)).toEqual(
+      buildExpectedShown(data, (expected) => {
+        expected.linkStyle = 'plain';
+        expected.header[0].align = 'center';
+      })
+    );
+  });
+
   it('gives back text that looks like Markdown as it was typed', () => {
     const data = resume([
       section('custom', 'lines', 'C# & *Co* #', lines(...LOOKS_LIKE_MARKUP)),
@@ -49,7 +69,7 @@ describe('readMarkdown', () => {
       ),
     ]);
     data.contact.name = 'Ada *the* Countess #';
-    data.contact.email = 'first_last@example.com';
+    data.contact.header.lines[0].items[1].text = 'first_last@example.com';
 
     expect(shown(readMarkdown(markdownOf(data)).resume)).toEqual(shown(data));
   });
@@ -80,11 +100,17 @@ describe('readMarkdown', () => {
       ].join('\n')
     );
 
-    expect(read.contact).toMatchObject({
-      name: 'Grace Hopper',
-      email: 'grace@example.com',
-      website: 'https://grace.dev',
-    });
+    expect(read.contact.name).toBe('Grace Hopper');
+    expect(
+      read.contact.header.lines.map((line) =>
+        line.items.map((item) => [item.kind, item.text, item.url])
+      )
+    ).toEqual([
+      [
+        ['email', 'grace@example.com', ''],
+        ['site', 'Portfolio', 'https://grace.dev'],
+      ],
+    ]);
     expect(
       read.sections.map(({ kind, layout, label, items }) => [
         kind,

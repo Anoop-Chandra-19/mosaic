@@ -1,5 +1,9 @@
 import { CURRENT_SCHEMA_VERSION } from './migrateResume';
-import type { ResumeData } from '@/types/resume';
+import type { HeaderItem, HeaderItemKind, ResumeData } from '@/types/resume';
+
+function item(id: string, kind: HeaderItemKind, text: string, url = ''): HeaderItem {
+  return { id, kind, text, url, shown: true };
+}
 
 /**
  * The example resume: offered by the empty state as "Start from the example", and what
@@ -7,18 +11,33 @@ import type { ResumeData } from '@/types/resume';
  */
 export const DEFAULT_RESUME: ResumeData = {
   schemaVersion: 1,
+  // The Headless header: how to reach you on one line, where you can work on the next.
   contact: {
     name: 'Your Name',
-    email: 'you@example.com',
-    phone: '(555) 010-0100',
-    location: 'City, State',
-    citizenshipStatus: 'US Citizen',
-    linkedin: 'LinkedIn',
-    github: '',
-    website: '',
-    showLinkedin: true,
-    showGithub: false,
-    showWebsite: false,
+    header: {
+      linkStyle: 'plain',
+      lines: [
+        {
+          id: 'head-reach',
+          separator: ' | ',
+          align: 'center',
+          items: [
+            item('head-phone', 'phone', '(555) 010-0100', '(555) 010-0100'),
+            item('head-email', 'email', 'you@example.com', 'you@example.com'),
+            item('head-linkedin', 'linkedin', 'LinkedIn', 'linkedin.com/in/you'),
+          ],
+        },
+        {
+          id: 'head-status',
+          separator: ' | ',
+          align: 'center',
+          items: [
+            item('head-auth', 'auth', 'US Citizen'),
+            item('head-location', 'location', 'City, State'),
+          ],
+        },
+      ],
+    },
   },
   // Sections follow the Headless format: Education above Work History, no
   // Summary or Skills block. Bullets show the shape the format asks for --
@@ -160,19 +179,7 @@ export function createDefaultResume(): ResumeData {
 export function createEmptyResume(): ResumeData {
   return {
     schemaVersion: CURRENT_SCHEMA_VERSION,
-    contact: {
-      name: '',
-      email: '',
-      phone: '',
-      location: '',
-      citizenshipStatus: '',
-      linkedin: '',
-      github: '',
-      website: '',
-      showLinkedin: true,
-      showGithub: true,
-      showWebsite: true,
-    },
+    contact: { name: '', header: { linkStyle: 'plain', lines: [] } },
     sections: [],
   };
 }

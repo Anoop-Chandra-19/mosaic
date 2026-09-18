@@ -1,5 +1,5 @@
 import { Plus } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { AppButton } from '@/components/AppButton';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -54,10 +54,10 @@ export function SectionList({
       {showAddSection && (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm" className="w-full">
+            <AppButton variant="outline" size="sm" className="w-full">
               <Plus />
               Add Section
-            </Button>
+            </AppButton>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" onCloseAutoFocus={custom.onCloseAutoFocus}>
             <PresetMenuItems

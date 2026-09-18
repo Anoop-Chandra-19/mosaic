@@ -67,7 +67,16 @@ export default defineConfig({
     root,
     resolve: { alias },
     define: { __APP_VERSION__: JSON.stringify(version) },
-    plugins: [tailwindcss(), react(), contentSecurityPolicy()],
+    plugins: [
+      tailwindcss(),
+      react({
+        babel: {
+          // Keep the compiler first: it must analyze components before other Babel transforms.
+          plugins: ['babel-plugin-react-compiler'],
+        },
+      }),
+      contentSecurityPolicy(),
+    ],
     build: {
       rollupOptions: { input: resolve(root, 'index.html') },
     },

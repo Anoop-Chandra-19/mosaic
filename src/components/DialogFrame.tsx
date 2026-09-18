@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { X, type LucideIcon } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { AppButton } from '@/components/AppButton';
 import { DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 
@@ -31,9 +31,9 @@ export function DialogFrameHeader({
         {title}
       </DialogTitle>
       <DialogDescription className="sr-only">{description}</DialogDescription>
-      <Button variant="ghost" size="icon-sm" onClick={onClose} aria-label={closeLabel}>
+      <AppButton variant="ghost" size="icon-sm" onClick={onClose} aria-label={closeLabel}>
         <X className="size-4" />
-      </Button>
+      </AppButton>
     </header>
   );
 }

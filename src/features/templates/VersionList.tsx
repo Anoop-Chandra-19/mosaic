@@ -1,5 +1,5 @@
 import { Copy, Eye, History, Save } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { AppButton } from '@/components/AppButton';
 import { cn } from '@/lib/utils';
 import type { VersionMeta } from '@/types/db';
 import { formatWhen } from './formatWhen';
@@ -94,7 +94,7 @@ export function VersionList({
                 !previewing && 'invisible group-focus-within:visible group-hover:visible'
               )}
             >
-              <Button
+              <AppButton
                 variant="ghost"
                 size="icon-xs"
                 disabled={!canPreview}
@@ -111,9 +111,9 @@ export function VersionList({
                 className={cn(previewing && 'bg-amber-100 dark:bg-amber-900')}
               >
                 <Eye className="size-3" />
-              </Button>
+              </AppButton>
               {!head && (
-                <Button
+                <AppButton
                   variant="ghost"
                   size="icon-xs"
                   aria-label={`Restore ${label}`}
@@ -121,9 +121,9 @@ export function VersionList({
                   onClick={() => onRestore(version)}
                 >
                   <History className="size-3" />
-                </Button>
+                </AppButton>
               )}
-              <Button
+              <AppButton
                 variant="ghost"
                 size="icon-xs"
                 aria-label={`Duplicate ${label} as a new template`}
@@ -131,7 +131,7 @@ export function VersionList({
                 onClick={() => onDuplicate(version)}
               >
                 <Copy className="size-3" />
-              </Button>
+              </AppButton>
             </span>
           </li>
         );

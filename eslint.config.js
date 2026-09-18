@@ -22,6 +22,27 @@ export default defineConfig([
     },
   },
   {
+    files: ['src/**/*.{ts,tsx}'],
+    ignores: [
+      'src/components/ui/**',
+      'src/components/AppButton.tsx',
+      'src/components/AppButton.test.ts',
+    ],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              regex: '(^|/)ui/button(\\.[cm]?[jt]sx?)?$',
+              message: 'Use AppButton from @/components/AppButton in app-owned UI.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
     // shadcn-managed primitives export their variant helpers next to the component
     // (e.g. toggleVariants for toggle-group). They are not hand-edited, so accept that.
     files: ['src/components/ui/**/*.tsx'],

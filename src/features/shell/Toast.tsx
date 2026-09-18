@@ -1,5 +1,5 @@
 import { AlertTriangle, Check, X } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { AppButton } from '@/components/AppButton';
 import { useOverlayStore } from '@/stores/overlayStore';
 
 /** A short confirmation, or a failure, at the foot of the workspace. It clears itself. */
@@ -25,7 +25,7 @@ export function Toast() {
           )}
           <span className="min-w-0">{toast.message}</span>
           {toast.action && (
-            <Button
+            <AppButton
               variant="ghost"
               size="sm"
               className="h-6 shrink-0 rounded-full px-2.5 font-semibold text-amber-700 hover:text-amber-800 dark:text-amber-400 dark:hover:text-amber-300"
@@ -35,9 +35,9 @@ export function Toast() {
               }}
             >
               {toast.action.label}
-            </Button>
+            </AppButton>
           )}
-          <Button
+          <AppButton
             variant="ghost"
             size="icon-sm"
             className="size-6 shrink-0 rounded-full"
@@ -45,7 +45,7 @@ export function Toast() {
             aria-label="Dismiss"
           >
             <X className="size-3" />
-          </Button>
+          </AppButton>
         </div>
       )}
     </div>

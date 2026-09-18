@@ -1,3 +1,4 @@
+import { stripMailtoOrTelScheme, isSameAddress } from '@/lib/resume/resumeHeader';
 import { isHeadingLength, matchSectionHeader } from './sectionHeaders';
 
 /**
@@ -7,6 +8,7 @@ import { isHeadingLength, matchSectionHeader } from './sectionHeaders';
  * wrapped lines itself: each ImportLine is one logical line.
  */
 export interface ImportLine {
+  /** The line's words; a link in them is marked with `markLink`. */
   text: string;
   /**
    * How the source marks the line; a plain line when absent.
@@ -19,6 +21,8 @@ export interface ImportLine {
   aside?: string;
   /** Visible space before the line: a blank line, paragraph spacing, a gap on the page. */
   gapBefore?: boolean;
+  /** Where the line sits across the page, for a reader that can tell. */
+  align?: 'center' | 'left';
   /**
    * Where the line came from, for a reader that can say — "word/document.xml
    * body/tbl[1]/tr[2]/tc[1]/p[1]". Nothing on the page depends on it; it is for tracing a
@@ -57,25 +61,53 @@ export function titleCase(text: string): string {
     .join(' ');
 }
 
-/** An address as people write it: no scheme, no "www.", no closing slash, in any case. */
-const plainAddress = (text: string) =>
-  text
-    .replace(/^(?:mailto:|tel:|[a-z][a-z\d+.-]*:\/\/)/i, '')
-    .replace(/^www\./i, '')
-    .replace(/\/+$/, '')
-    .toLowerCase();
-
 /**
  * A link's words and where it goes, as one line would show both: the address alone when
  * the words are that same address ("github.com/ada"); otherwise the words and then the
  * address, so neither a "LinkedIn" link nor a "linkedin.com" one loses the profile.
  */
 export function linkText(words: string, url: string): string {
-  const address = url.replace(/^(?:mailto|tel):/i, '');
+  const address = stripMailtoOrTelScheme(url);
   const [, lead, shown, trail] = /^(\s*)([\s\S]*?)(\s*)$/.exec(words)!;
-  if (!shown || plainAddress(shown) === plainAddress(url)) return `${lead}${address}${trail}`;
+  if (!shown || isSameAddress(shown, url)) return `${lead}${address}${trail}`;
   return `${lead}${shown} ${address}${trail}`;
 }
+
+/*
+ * A link inside a line's text, as a reader marks it: the words and the address between
+ * Unicode noncharacters, which text never holds — unlike the private use area, where
+ * symbol fonts keep their bullets. The words stay in the line — joined, trimmed, and
+ * measured with it — until `parseResumeLines` decides what the link is for: an item in the
+ * header, or "words address" anywhere else.
+ */
+const LINK_START = String.fromCharCode(0xfdd0);
+const LINK_ADDRESS = String.fromCharCode(0xfdd1);
+const LINK_END = String.fromCharCode(0xfdd2);
+const LINK_MARK_RANGE = `${LINK_START}-${LINK_END}`;
+const LINK_MARKS = new RegExp(`[${LINK_MARK_RANGE}]`, 'g');
+const MARKED_LINK = new RegExp(
+  `${LINK_START}([^${LINK_MARK_RANGE}]*)${LINK_ADDRESS}([^${LINK_MARK_RANGE}]*)${LINK_END}`,
+  'g'
+);
+
+/** Words that link to `url`, marked in a line's text. Space around the words stays outside. */
+export function markLink(words: string, url: string): string {
+  const [, lead, shown, trail] = /^(\s*)([\s\S]*?)(\s*)$/.exec(words.replace(LINK_MARKS, ''))!;
+  if (!shown) return words;
+  const address = url.replace(LINK_MARKS, '');
+  return `${lead}${LINK_START}${shown}${LINK_ADDRESS}${address}${LINK_END}${trail}`;
+}
+
+/** A line's text with each marked link written out as `linkText` writes it. */
+export const replaceMarkedLinksWithText = (text: string) =>
+  text.replace(MARKED_LINK, (_, words: string, url: string) => linkText(words, url));
+
+/** A line's text without link marks: the words as they show, addresses dropped. */
+export const removeLinkMarks = (text: string) => text.replace(MARKED_LINK, '$1');
+
+/** The first marked link's address in a piece of text, or ''. */
+export const findMarkedLinkUrl = (text: string) =>
+  new RegExp(MARKED_LINK.source).exec(text)?.[2] ?? '';
 
 /**
  * Plain text as lines: blank lines become gaps, list markers make bullets, and a line

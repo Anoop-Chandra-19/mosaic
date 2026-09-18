@@ -2,7 +2,7 @@ import {
   BULLET_MARKER,
   DATE_LIKE,
   isCapitals,
-  linkText,
+  markLink,
   PAGE_NUMBER,
   titleCase,
   type ImportLine,
@@ -129,6 +129,7 @@ function rowsOf(page: PdfPage): Row[] {
   const runs = page.runs
     .filter((run) => run.upright && run.text.trim())
     .sort((a, b) => a.y - b.y || a.x - b.x);
+  const blanks = page.runs.filter((run) => run.upright && run.text !== '' && !run.text.trim());
   const grouped: { runs: PdfRun[]; size: number }[] = [];
   for (const run of runs) {
     const row = grouped.at(-1);
@@ -177,6 +178,22 @@ function rowsOf(page: PdfPage): Row[] {
       } else {
         segments.push({ runs: [run], left: run.x, right: run.x + run.width });
       }
+    }
+    // Spaces drawn as a run of their own, between words of a segment: how wide a gap
+    // was meant to be ("github.com/ada    Portfolio"), which the gap alone can't say.
+    // Only after words — never after a bullet's marker, where it would move the line's start.
+    for (const segment of segments) {
+      const isAfterWords = (blank: PdfRun) =>
+        segment.runs.some(
+          (run) => !LONE_MARKER.test(run.text) && run.x + run.width <= blank.x + WORD_GAP * size
+        );
+      const inside = blanks.filter(
+        (blank) =>
+          Math.abs(blank.y - onRow[0].y) <= SAME_BASELINE * size &&
+          blank.x + blank.width < segment.right &&
+          isAfterWords(blank)
+      );
+      if (inside.length) segment.runs = [...segment.runs, ...inside].sort((a, b) => a.x - b.x);
     }
     return { y: onRow[0].y, size, segments };
   });
@@ -265,6 +282,18 @@ function sideOf(row: Row, gutter: number, side: 1 | 2): Row | undefined {
 }
 
 /**
+ * How far into a run each UTF-16 unit of its text starts, in points, with one more for its
+ * end: by the font's glyph widths, or spread evenly when the font doesn't give them.
+ */
+function computeCharacterOffsets({ text, width, shares }: PdfRun): number[] {
+  const offsets = [0];
+  for (let i = 0; i < text.length; i++) {
+    offsets.push(offsets[i] + (shares ? shares[i] * width : width / text.length));
+  }
+  return offsets;
+}
+
+/**
  * A segment's text. Words inside a link take its address with them, as the words and then
  * the address, so "LinkedIn" linked to a profile keeps the profile.
  */
@@ -274,20 +303,27 @@ function textOf(segment: Segment, row: Row, links: PdfLink[]): string {
   // Inside the letters, clear of the line below: where a link's area must reach.
   const height = row.y - SAME_BASELINE * row.size;
   let end: number | undefined;
+  // A run of only spaces, drawn on its own: as many spaces as its width holds.
+  let spaces = '';
   for (const run of segment.runs) {
-    const text = clean(run.text);
     const apart = end !== undefined && run.x - end > WORD_GAP * row.size;
     end = run.x + run.width;
-    // Where each character sits, spread evenly over the run: pdf.js says no more closely.
-    const step = text.length ? run.width / text.length : 0;
-    for (const match of text.matchAll(/(\s*)(\S+)/g)) {
+    if (!run.text.trim()) {
+      spaces += ' '.repeat(Math.max(1, Math.round(run.width / (SPACE_WIDTH * row.size))));
+      continue;
+    }
+    const before = spaces || (apart ? ' ' : '');
+    spaces = '';
+    const at = computeCharacterOffsets(run);
+    // Matched on the text as drawn, so offsets line up; cleaned word by word.
+    for (const match of run.text.matchAll(/(\s*)(\S+)/g)) {
       const start = match.index + match[1].length;
-      const middle = run.x + step * (start + match[2].length / 2);
+      const middle = run.x + (at[start] + at[start + match[2].length]) / 2;
       const link = links.find(
         (l) => middle >= l.left && middle <= l.right && height >= l.top && height <= l.bottom
       );
-      const space = match[1] || (match.index === 0 && apart ? ' ' : '');
-      words.push({ text: match[2], space: words.length > 0 ? space : '', url: link?.url });
+      const space = clean(match[1]) || (match.index === 0 ? before : '');
+      words.push({ text: clean(match[2]), space: words.length > 0 ? space : '', url: link?.url });
     }
   }
 
@@ -300,7 +336,7 @@ function textOf(segment: Segment, row: Row, links: PdfLink[]): string {
       .slice(i, j)
       .map((word, k) => (k > 0 ? word.space : '') + word.text)
       .join('');
-    text += words[i].space + (url ? linkText(group, url) : group);
+    text += words[i].space + (url ? markLink(group, url) : group);
     i = j;
   }
   return text;
@@ -309,7 +345,8 @@ function textOf(segment: Segment, row: Row, links: PdfLink[]): string {
 /** How wide the first word after `from` characters is, from its share of the run. */
 function firstWordOf(run: PdfRun, from = 0): number {
   const [space, word] = /^(\s*)(\S*)/.exec(run.text.slice(from))!.slice(1);
-  return run.text.length ? (run.width * (space.length + word.length)) / run.text.length : 0;
+  const at = computeCharacterOffsets(run);
+  return at[from + space.length + word.length] - at[from];
 }
 
 /**
@@ -360,7 +397,19 @@ function piecesOfRow(
     const size = Math.round(largest(runs.map((run) => run.size)) * 2) / 2;
     const style = [face, bold, italic, size].join('|');
     const starts = parts[0] === segments[0];
+    const left = parts[0].left + (starts ? shift : 0);
+    const right = parts.at(-1)!.right;
+    // Centred: its middle at the middle between the margins, and not starting at the left
+    // one. Left: from the left margin, stopping short of the right. A line that fills the
+    // width says neither.
+    const isAtLeftMargin = left - frame.left <= INDENT * size;
+    const isAtRightMargin = frame.right - right <= INDENT * size;
+    const isCentered =
+      !isAtLeftMargin &&
+      Math.abs((left + right) / 2 - (frame.left + frame.right) / 2) <= ALIGNED * size;
     const line: ImportLine = { text };
+    if (isCentered) line.align = 'center';
+    else if (isAtLeftMargin && !isAtRightMargin) line.align = 'left';
     if (aside !== undefined) line.aside = aside;
     else if (marked && starts) line.role = 'bullet';
     return {
@@ -368,8 +417,8 @@ function piecesOfRow(
       page,
       column,
       y: row.y,
-      left: parts[0].left + (starts ? shift : 0),
-      right: parts.at(-1)!.right,
+      left,
+      right,
       margin: frame.right,
       size,
       bold,

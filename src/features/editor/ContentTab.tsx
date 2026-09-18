@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { NoTemplates } from '@/features/templates/NoTemplates';
 import { useResumeStore } from '@/stores/resumeStore';
-import { ContactCard } from './ContactCard';
+import { ResumeHeaderCard } from './header/ResumeHeaderCard';
 import { EmptyContentHint } from './EmptyContentHint';
 import { SectionList } from './SectionList';
 
@@ -17,7 +17,7 @@ export function ContentTab() {
 
   return (
     <div className="space-y-5">
-      <ContactCard />
+      <ResumeHeaderCard />
       <SectionList showAddSection={!empty} namingId={namingId} onCustomAdded={setNamingId} />
       {empty && <EmptyContentHint onCustomAdded={setNamingId} />}
     </div>

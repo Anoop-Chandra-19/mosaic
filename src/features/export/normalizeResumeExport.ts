@@ -1,5 +1,5 @@
-import type { ResumeData, SectionKind, SectionLayout } from '@/types/resume';
-import { normalizeContact, type NormalizedContact } from '@/lib/resume/contactFormatting';
+import type { LinkStyle, ResumeData, SectionKind, SectionLayout } from '@/types/resume';
+import { getPrintableHeaderLines, type PrintedHeaderLine } from '@/lib/resume/resumeHeader';
 
 export interface ExportEntry {
   id: string;
@@ -17,8 +17,15 @@ export interface ExportSection {
   entries: ExportEntry[];
 }
 
+/** The top of the page as it prints: the name, and the header's printed lines. */
+export interface ExportContact {
+  name: string;
+  linkStyle: LinkStyle;
+  lines: PrintedHeaderLine[];
+}
+
 export interface NormalizedResumeExport {
-  contact: NormalizedContact;
+  contact: ExportContact;
   sections: ExportSection[];
 }
 
@@ -85,8 +92,13 @@ export function normalizeResumeForExport(resume: ResumeData): NormalizedResumeEx
     })
     .filter((section) => section.entries.length > 0);
 
+  const { name, header } = resume.contact;
   return {
-    contact: normalizeContact(resume.contact),
+    contact: {
+      name: trim(name),
+      linkStyle: header.linkStyle,
+      lines: getPrintableHeaderLines(header),
+    },
     sections,
   };
 }

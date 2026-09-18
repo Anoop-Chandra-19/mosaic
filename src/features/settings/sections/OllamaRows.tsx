@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { RotateCw } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { AppButton } from '@/components/AppButton';
 import { Input } from '@/components/ui/input';
 import {
   Select,
@@ -99,7 +99,7 @@ export function OllamaAddressRow({
         className="h-8 w-54 font-mono text-xs"
       />
       {address !== DEFAULT_OLLAMA_ADDRESS && (
-        <Button
+        <AppButton
           variant="ghost"
           size="sm"
           className="h-8 text-xs"
@@ -109,7 +109,7 @@ export function OllamaAddressRow({
           }}
         >
           Use this machine
-        </Button>
+        </AppButton>
       )}
     </SettingRow>
   );
@@ -220,7 +220,7 @@ export function OllamaModelRow({
           ))}
         </SelectContent>
       </Select>
-      <Button
+      <AppButton
         variant="ghost"
         size="icon-sm"
         aria-label="Refresh Ollama models"
@@ -229,7 +229,7 @@ export function OllamaModelRow({
         onClick={refresh}
       >
         <RotateCw />
-      </Button>
+      </AppButton>
     </SettingRow>
   );
 }

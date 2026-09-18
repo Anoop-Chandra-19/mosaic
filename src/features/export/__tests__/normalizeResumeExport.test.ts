@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 import { normalizeResumeForExport } from '../normalizeResumeExport';
-import { getContactLines } from '@/lib/resume/contactFormatting';
 import type { ResumeData } from '@/types/resume';
 
 function createResumeFixture(): ResumeData {
@@ -8,16 +7,33 @@ function createResumeFixture(): ResumeData {
     schemaVersion: 1,
     contact: {
       name: '  Alex Johnson  ',
-      email: ' alex@example.com ',
-      phone: ' 555-0100 ',
-      location: ' Detroit, MI ',
-      citizenshipStatus: '',
-      linkedin: ' linkedin.com/in/alex ',
-      github: ' github.com/alex ',
-      website: ' alex.dev ',
-      showLinkedin: false,
-      showGithub: true,
-      showWebsite: false,
+      header: {
+        linkStyle: 'underline',
+        lines: [
+          {
+            id: 'reach',
+            separator: ' · ',
+            align: 'left',
+            items: [
+              { id: 'phone', kind: 'phone', text: ' 555-0100 ', url: '555-0100', shown: true },
+              {
+                id: 'li',
+                kind: 'linkedin',
+                text: 'LinkedIn',
+                url: 'linkedin.com/in/a',
+                shown: false,
+              },
+              { id: 'gh', kind: 'github', text: '', url: 'github.com/alex', shown: true },
+            ],
+          },
+          {
+            id: 'hidden',
+            separator: ' | ',
+            align: 'center',
+            items: [{ id: 'auth', kind: 'auth', text: 'US Citizen', url: '', shown: false }],
+          },
+        ],
+      },
     },
     sections: [
       {
@@ -87,18 +103,20 @@ function createResumeFixture(): ResumeData {
 }
 
 describe('normalizeResumeForExport', () => {
-  it('trims contact fields and respects hidden contact links', () => {
+  it('keeps only the header that prints: shown items with text, lines with items', () => {
     const normalized = normalizeResumeForExport(createResumeFixture());
 
     expect(normalized.contact).toEqual({
       name: 'Alex Johnson',
-      email: 'alex@example.com',
-      phone: '555-0100',
-      location: 'Detroit, MI',
-      citizenshipStatus: '',
-      linkedin: '',
-      github: 'github.com/alex',
-      website: '',
+      linkStyle: 'underline',
+      lines: [
+        {
+          id: 'reach',
+          separator: ' · ',
+          align: 'left',
+          items: [{ id: 'phone', kind: 'phone', text: '555-0100', href: 'tel:5550100' }],
+        },
+      ],
     });
   });
 
@@ -137,39 +155,5 @@ describe('normalizeResumeForExport', () => {
         ],
       },
     ]);
-  });
-});
-
-describe('getContactLines', () => {
-  const base = createResumeFixture().contact;
-
-  it('puts phone first and keeps visible links on the contact line', () => {
-    const { primary } = getContactLines(base);
-
-    expect(primary).toBe('555-0100 | alex@example.com | github.com/alex');
-  });
-
-  it('leaves location off the contact line', () => {
-    expect(getContactLines(base).primary).not.toContain('Detroit');
-  });
-
-  it('joins work authorization and location with a pipe', () => {
-    const { secondary } = getContactLines({
-      ...base,
-      citizenshipStatus: 'F-1 STEM OPT, work authorized through July 2028',
-      location: 'Cleveland, OH',
-    });
-
-    expect(secondary).toBe('F-1 STEM OPT, work authorized through July 2028 | Cleveland, OH');
-  });
-
-  it('falls back to whichever half is present', () => {
-    expect(
-      getContactLines({ ...base, citizenshipStatus: '', location: 'Cleveland, OH' }).secondary
-    ).toBe('Cleveland, OH');
-    expect(
-      getContactLines({ ...base, citizenshipStatus: 'US Citizen', location: '' }).secondary
-    ).toBe('US Citizen');
-    expect(getContactLines({ ...base, citizenshipStatus: '', location: '' }).secondary).toBe('');
   });
 });

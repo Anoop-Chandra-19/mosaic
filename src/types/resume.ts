@@ -48,22 +48,58 @@ export interface ResumeSection {
   order: number;
 }
 
+/**
+ * What a header item is about: its icon and placeholder in the editor, where JSON Resume
+ * files it, and what the importer took it for. Never how it prints or links — that is its
+ * own text and link. The built-in kinds are presets (`lib/resume/resumeHeader.ts`);
+ * `custom` is an item the user writes.
+ */
+export type HeaderItemKind =
+  | 'phone'
+  | 'email'
+  | 'linkedin'
+  | 'github'
+  | 'site'
+  | 'location'
+  | 'auth'
+  | 'custom';
+
+export type BuiltInHeaderKind = Exclude<HeaderItemKind, 'custom'>;
+
+export type HeaderSeparator = ' | ' | ' · ' | ' — ' | ' • ' | '    ';
+
+export type HeaderAlign = 'center' | 'left';
+
+/** How linked header text looks on the page: like the rest of the text, or underlined. */
+export type LinkStyle = 'plain' | 'underline';
+
+export interface HeaderItem {
+  id: string;
+  kind: HeaderItemKind;
+  /** What prints. Empty prints nothing, and its link goes with it — but the link is kept. */
+  text: string;
+  /** Where it links, as typed. The link written into a file is derived from it. */
+  url: string;
+  /** false: kept, but left off the page. */
+  shown: boolean;
+}
+
+export interface HeaderLine {
+  id: string;
+  separator: HeaderSeparator;
+  align: HeaderAlign;
+  items: HeaderItem[];
+}
+
+export interface ResumeHeader {
+  linkStyle: LinkStyle;
+  lines: HeaderLine[];
+}
+
+/** The top of the page: the name, then the header's lines. */
 export interface ContactInfo {
   name: string;
-  email: string;
-  phone: string;
-  location: string;
-  /** Work authorization, e.g. "US Citizen" or "F-1 STEM OPT, work authorized
-   *  through July 2028". Renders on the header's third line as
-   *  "<status> | <location>". Optional: leave it empty and the line falls back
-   *  to the location alone. */
-  citizenshipStatus?: string;
-  linkedin: string;
-  github: string;
-  website: string;
-  showLinkedin?: boolean;
-  showGithub?: boolean;
-  showWebsite?: boolean;
+  header: ResumeHeader;
 }
 
 export interface ResumeData {

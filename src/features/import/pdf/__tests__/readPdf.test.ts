@@ -5,7 +5,15 @@ import { normalizeResumeForExport } from '@/features/export/normalizeResumeExpor
 import { PDFResumeDocument } from '@/features/export/pdf/document';
 import { createDefaultResume } from '@/lib/resume/defaultResume';
 import type { ResumeData } from '@/types/resume';
-import { entry, everything, resume, section, shown } from '../../__tests__/roundTrip';
+import {
+  entry,
+  everything,
+  resume,
+  section,
+  shown,
+  buildExpectedShown,
+  createStyledHeaderResume,
+} from '../../__tests__/roundTrip';
 import {
   NotAPdfError,
   PDF_LIMITS,
@@ -56,6 +64,17 @@ describe('readPdf', () => {
     }
   }, 60_000);
 
+  it('gives back a header’s links, separators and alignment, but not underlining', async () => {
+    const data = createStyledHeaderResume();
+    const parsed = await readPdf(await exportedPdf(data));
+    // An underline is a line drawn under the words, which pdf.js's text doesn't carry.
+    expect(shown(parsed.resume)).toEqual(
+      buildExpectedShown(data, (expected) => {
+        expected.linkStyle = 'plain';
+      })
+    );
+  });
+
   it('keeps a link’s address with the words it is set on', async () => {
     const linked = (src: string, words: string) =>
       h(Link, { src, style: { color: 'black', textDecoration: 'none' } }, words);
@@ -84,12 +103,18 @@ describe('readPdf', () => {
       'https://linkedin.com/in/ada',
     ]);
     const { resume: read, leftOut } = await readPdf(bytes);
-    expect(read.contact).toMatchObject({
-      name: 'Ada Lovelace',
-      phone: '555-0100',
-      email: 'ada@example.com',
-      linkedin: 'https://linkedin.com/in/ada',
-    });
+    expect(read.contact.name).toBe('Ada Lovelace');
+    expect(
+      read.contact.header.lines.map((line) =>
+        line.items.map(({ kind, text, url }) => [kind, text, url])
+      )
+    ).toEqual([
+      [
+        ['phone', '555-0100', ''],
+        ['email', 'ada@example.com', 'mailto:ada@example.com'],
+        ['linkedin', 'LinkedIn', 'https://linkedin.com/in/ada'],
+      ],
+    ]);
     expect(leftOut).toEqual([]);
   });
 

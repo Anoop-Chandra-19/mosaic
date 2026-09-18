@@ -172,18 +172,21 @@ export interface ParaOptions extends RunOptions {
   rightTab?: boolean;
   /** Space above the paragraph, in twips. */
   spaceBefore?: number;
+  /** Word's alignment value (`w:jc`): left, center, right, both. */
+  align?: string;
   /** The section this paragraph ends, as Word keeps it: its settings, as XML. */
   section?: string;
 }
 
 /** A paragraph of one run — or of the given runs' XML, when `text` is an array. */
 export function para(text: string | string[], options: ParaOptions = {}): string {
-  const { paragraphStyle, list, rightTab, spaceBefore, section, ...runOptions } = options;
+  const { paragraphStyle, list, rightTab, spaceBefore, align, section, ...runOptions } = options;
   const pPr = [
     paragraphStyle && `<w:pStyle w:val="${paragraphStyle}"/>`,
     list && `<w:numPr><w:ilvl w:val="0"/><w:numId w:val="${list}"/></w:numPr>`,
     rightTab && '<w:tabs><w:tab w:val="right" w:pos="9360"/></w:tabs>',
     spaceBefore !== undefined && `<w:spacing w:before="${spaceBefore}"/>`,
+    align && `<w:jc w:val="${align}"/>`,
     section && `<w:sectPr>${section}</w:sectPr>`,
   ]
     .filter(Boolean)

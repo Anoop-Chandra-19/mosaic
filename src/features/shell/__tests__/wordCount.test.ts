@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createDefaultResume, createEmptyResume } from '@/lib/resume/defaultResume';
+import { createHeaderItem, createHeaderLine } from '@/lib/resume/resumeHeader';
 import { countWords } from '../wordCount';
 
 describe('countWords', () => {
@@ -23,8 +24,12 @@ describe('countWords', () => {
   it('does not count separators as words', () => {
     const doc = createEmptyResume();
     doc.contact.name = 'Ada Lovelace';
-    doc.contact.email = 'ada@example.com';
-    doc.contact.phone = '555 0100';
+    doc.contact.header.lines = [
+      createHeaderLine([
+        createHeaderItem('phone', { text: '555 0100' }),
+        createHeaderItem('email', { text: 'ada@example.com' }),
+      ]),
+    ];
     // The contact line comes out as "555 0100 | ada@example.com": the bar is not a word.
     expect(countWords(doc)).toBe(5);
   });

@@ -38,8 +38,12 @@ export interface DocxParagraph {
   size: number;
   /** In twips, a twentieth of a point. */
   spaceBefore: number;
+  /** Across the page, as the paragraph or its style sets it; Word's own default is left. */
+  align: DocxAlignment;
   source: DocxSource;
 }
+
+export type DocxAlignment = 'left' | 'center' | 'right' | 'justify';
 
 /** A cell, and where it sits in the row's grid — merged cells span or continue. */
 export interface DocxCell {

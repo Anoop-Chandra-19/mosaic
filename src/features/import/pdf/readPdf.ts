@@ -54,6 +54,56 @@ interface FontStyle {
   bold: boolean;
   italic: boolean;
   name: string;
+  /** Each character's glyph width, when the font says. */
+  widths?: Map<string, number>;
+}
+
+/** What pdf.js hands over about a font, with `fontExtraProperties` on. */
+interface PdfJsFont {
+  name?: string;
+  bold?: boolean;
+  black?: boolean;
+  italic?: boolean;
+  /** Glyph widths by character code. */
+  widths?: Record<string, number>;
+  /** The text each character code stands for. */
+  toUnicode?: { _map?: Record<string, unknown> };
+}
+
+/** Glyph widths by the text they draw: the font's widths, through its codes' meanings. */
+function readGlyphWidths(font: PdfJsFont | undefined): Map<string, number> | undefined {
+  const byCode = font?.widths;
+  const meanings = font?.toUnicode?._map;
+  if (!byCode || !meanings) return undefined;
+  const widths = new Map<string, number>();
+  for (const [code, text] of Object.entries(meanings)) {
+    const width = byCode[code];
+    if (typeof text === 'string' && typeof width === 'number' && width > 0) {
+      widths.set(text, width);
+    }
+  }
+  return widths.size > 0 ? widths : undefined;
+}
+
+/**
+ * Each UTF-16 unit's share of a run's width, or undefined when the font can't say. A
+ * character the font has no width for takes the average of those it has.
+ */
+function computeCharacterWidthShares(
+  text: string,
+  widths: Map<string, number> | undefined
+): number[] | undefined {
+  if (!widths) return undefined;
+  const known = [...text].map((char) => widths.get(char));
+  const found = known.filter((width): width is number => width !== undefined);
+  if (found.length === 0) return undefined;
+  const average = found.reduce((sum, width) => sum + width, 0) / found.length;
+  const total = known.reduce<number>((sum, width) => sum + (width ?? average), 0);
+  return [...text].flatMap((char, index) => {
+    const share = (known[index] ?? average) / total;
+    // A character outside the Basic Multilingual Plane is two units; the first takes it all.
+    return char.length === 2 ? [share, 0] : [share];
+  });
 }
 
 /**
@@ -64,14 +114,7 @@ async function fontsOf(page: PDFPageProxy, ids: Set<string>): Promise<Map<string
   await page.getOperatorList();
   const fonts = new Map<string, FontStyle>();
   for (const id of ids) {
-    const font = page.commonObjs.has(id)
-      ? (page.commonObjs.get(id) as {
-          name?: string;
-          bold?: boolean;
-          black?: boolean;
-          italic?: boolean;
-        })
-      : undefined;
+    const font = page.commonObjs.has(id) ? (page.commonObjs.get(id) as PdfJsFont) : undefined;
     const name = font?.name ?? id;
     // pdf.js reads weight and slant from a font's flags, which embedded fonts often leave
     // unset; the name ("LiberationSerif-Bold") still says.
@@ -79,6 +122,7 @@ async function fontsOf(page: PDFPageProxy, ids: Set<string>): Promise<Map<string
       bold: Boolean(font?.bold || font?.black) || /bold|black|heavy/i.test(name),
       italic: Boolean(font?.italic) || /italic|oblique/i.test(name),
       name,
+      widths: readGlyphWidths(font),
     });
   }
   return fonts;
@@ -100,11 +144,13 @@ async function readPage(page: PDFPageProxy, budget: Budget): Promise<PdfPage> {
   const runs: PdfRun[] = items.map((item) => {
     const [a, b, c, d, e, f] = item.transform as number[];
     const font = fonts.get(item.fontName)!;
+    const shares = computeCharacterWidthShares(item.str, font.widths);
     return {
       text: item.str,
       x: e - left,
       y: top - f,
       width: item.width,
+      ...(shares && { shares }),
       size: Math.hypot(c, d),
       bold: font.bold,
       italic: font.italic,
@@ -115,12 +161,14 @@ async function readPage(page: PDFPageProxy, budget: Budget): Promise<PdfPage> {
 
   const links: PdfLink[] = [];
   for (const annotation of await page.getAnnotations()) {
-    // pdf.js sets `url` only for an address it accepts as absolute; `unsafeUrl` is raw.
+    // pdf.js sets `url` only for an address it accepts as absolute, tidied ("ada.dev/");
+    // `unsafeUrl` is the address as the file writes it, taken only once pdf.js accepts it.
     if (annotation.subtype !== 'Link' || typeof annotation.url !== 'string') continue;
+    const url = typeof annotation.unsafeUrl === 'string' ? annotation.unsafeUrl : annotation.url;
     if (--budget.links < 0) throw new PdfLimitError('This PDF holds more links than Mosaic reads.');
     const [x1, y1, x2, y2] = annotation.rect as number[];
     links.push({
-      url: annotation.url,
+      url,
       left: Math.min(x1, x2) - left,
       right: Math.max(x1, x2) - left,
       top: top - Math.max(y1, y2),
@@ -156,7 +204,9 @@ export async function readPdfContent(bytes: Uint8Array): Promise<PdfDocument> {
     data: bytes.slice(),
     worker: worker?.worker,
     verbosity: pdfjs.VerbosityLevel.ERRORS,
-    // Text is all that is read: no fonts installed into the page, nothing fetched.
+    // Text is all that is read: no fonts installed into the page, nothing fetched — but each
+    // font's glyph widths, which say where in a run each word sits.
+    fontExtraProperties: true,
     disableFontFace: true,
     useSystemFonts: false,
     useWorkerFetch: false,

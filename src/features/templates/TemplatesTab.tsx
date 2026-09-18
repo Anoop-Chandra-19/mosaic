@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Plus, Search } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { AppButton } from '@/components/AppButton';
 import { Input } from '@/components/ui/input';
 import { useOverlayStore } from '@/stores/overlayStore';
 import { useResumeStore } from '@/stores/resumeStore';
@@ -35,7 +35,7 @@ export function TemplatesTab() {
             className="h-8 pl-8 text-sm"
           />
         </div>
-        <Button
+        <AppButton
           variant="outline"
           size="sm"
           className="h-8"
@@ -44,7 +44,7 @@ export function TemplatesTab() {
         >
           <Plus />
           New
-        </Button>
+        </AppButton>
       </div>
       <p className="mb-2.5 ml-0.5 text-xs leading-relaxed text-zinc-600 dark:text-zinc-400">
         A template holds your content and its history. Your draft saves as you type — name a version

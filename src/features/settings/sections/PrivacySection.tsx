@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { ShieldCheck, Trash2 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { AppButton } from '@/components/AppButton';
 import {
   Dialog,
   DialogContent,
@@ -47,16 +47,21 @@ export function PrivacySection() {
         label="Forget stored API keys"
         description="Removes every saved key, from the keychain and from memory. AI stays enabled; you’ll be asked for a key next time."
       >
-        <Button variant="outline" size="sm" disabled={!hasKeys} onClick={() => void forgetKeys()}>
+        <AppButton
+          variant="outline"
+          size="sm"
+          disabled={!hasKeys}
+          onClick={() => void forgetKeys()}
+        >
           Forget keys
-        </Button>
+        </AppButton>
       </SettingRow>
 
       <SettingRow
         label="Reset interface"
         description="Panel sizes, theme, and zoom go back to defaults. Content untouched."
       >
-        <Button
+        <AppButton
           variant="outline"
           size="sm"
           onClick={() => {
@@ -65,21 +70,21 @@ export function PrivacySection() {
           }}
         >
           Reset
-        </Button>
+        </AppButton>
       </SettingRow>
 
       <SettingRow
         label="Delete everything"
         description="Templates, versions, settings, keys. Back up first — this cannot be undone."
       >
-        <Button
+        <AppButton
           variant="outline"
           size="sm"
           className="border-red-300 text-red-700 hover:bg-red-50 hover:text-red-800 dark:border-red-900 dark:text-red-400 dark:hover:bg-red-950 dark:hover:text-red-300"
           onClick={() => setConfirmingErase(true)}
         >
           Erase local data
-        </Button>
+        </AppButton>
       </SettingRow>
 
       <Dialog open={confirmingErase} onOpenChange={setConfirmingErase}>
@@ -96,13 +101,13 @@ export function PrivacySection() {
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="ghost" onClick={() => setConfirmingErase(false)}>
+            <AppButton variant="ghost" onClick={() => setConfirmingErase(false)}>
               Cancel
-            </Button>
-            <Button variant="destructive" disabled={erasing} onClick={() => void erase()}>
+            </AppButton>
+            <AppButton variant="destructive" disabled={erasing} onClick={() => void erase()}>
               <Trash2 />
               Erase everything
-            </Button>
+            </AppButton>
           </DialogFooter>
         </DialogContent>
       </Dialog>

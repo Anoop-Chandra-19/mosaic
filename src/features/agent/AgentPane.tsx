@@ -1,6 +1,6 @@
 import { useRef } from 'react';
 import { Sparkles, X } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { AppButton } from '@/components/AppButton';
 import { AI_PROVIDER_BY_ID } from '@/features/settings/sections/ai-provider-meta';
 import { startPaneResize } from '@/features/shell/paneResize';
 import { shortcutLabel } from '@/lib/shortcuts';
@@ -56,7 +56,7 @@ export function AgentPane() {
           <Spark />
           <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Assistant</h2>
         </div>
-        <Button
+        <AppButton
           variant="ghost"
           size="icon-xs"
           onClick={close}
@@ -64,7 +64,7 @@ export function AgentPane() {
           title={`Close  ${shortcutLabel('\\')}`}
         >
           <X className="size-3.5" />
-        </Button>
+        </AppButton>
       </header>
 
       <div className="flex-1 overflow-y-auto p-4">
