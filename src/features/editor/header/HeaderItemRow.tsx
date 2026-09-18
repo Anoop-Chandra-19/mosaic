@@ -12,7 +12,7 @@ import {
   Trash2,
   X,
 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { AppButton } from '@/components/AppButton';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -92,29 +92,27 @@ export function HeaderItemRow({
     <div className="group/item relative flex items-start gap-2 rounded-md px-1.5 py-1 hover:bg-zinc-100 dark:hover:bg-zinc-900">
       {icons && <Icon className="mt-1.5 size-3.5 shrink-0 text-zinc-500" aria-hidden />}
       <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2">
-        <button
+        <AppButton
           type="button"
+          variant="inline-edit"
           onClick={() => setEditing('text')}
           title="Edit text and link"
-          className={cn(
-            'min-w-0 text-left text-sm leading-6 wrap-break-word',
-            !item.shown && 'text-zinc-500 line-through'
-          )}
+          className={cn(!item.shown && 'text-zinc-500 line-through')}
         >
           {item.text || <span className="text-muted-foreground">{label}</span>}
-        </button>
+        </AppButton>
 
         {item.url && (
-          <button
+          <AppButton
             type="button"
+            variant="link-chip"
             onClick={() => setEditing('url')}
             title={`Links to ${href || item.url}`}
             aria-label="Edit link"
-            className="flex max-w-full min-w-0 items-center gap-1 rounded border border-zinc-300 px-1 font-mono text-xs leading-5 text-zinc-600 hover:text-zinc-900 dark:border-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-100"
           >
             <Link2 className="size-3 shrink-0" />
             {!sameAsText && <span className="truncate">{shortLink(item.url)}</span>}
-          </button>
+          </AppButton>
         )}
 
         {item.shown && !item.text && item.url && (
@@ -135,18 +133,13 @@ export function HeaderItemRow({
         )}
       >
         {!item.url && (
-          <Button
-            variant="ghost"
-            size="xs"
-            onClick={() => setEditing('url')}
-            className="text-muted-foreground"
-          >
+          <AppButton variant="muted" size="xs" onClick={() => setEditing('url')}>
             <Plus />
             link
-          </Button>
+          </AppButton>
         )}
-        <Button
-          variant="ghost"
+        <AppButton
+          variant="muted"
           size="icon-xs"
           onClick={toggleShown}
           aria-label={item.shown ? 'Leave off the page' : 'Put back on the page'}
@@ -155,20 +148,14 @@ export function HeaderItemRow({
               ? 'On the page — keep it, but leave it off'
               : 'Left off the page — put it back'
           }
-          className="text-muted-foreground"
         >
           {item.shown ? <Eye /> : <EyeOff />}
-        </Button>
+        </AppButton>
         <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
           <DropdownMenuTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon-xs"
-              aria-label={`${label} actions`}
-              className="text-muted-foreground data-[state=open]:bg-accent data-[state=open]:text-foreground"
-            >
+            <AppButton variant="muted" size="icon-xs" aria-label={`${label} actions`}>
               <Ellipsis />
-            </Button>
+            </AppButton>
           </DropdownMenuTrigger>
           <DropdownMenuContent
             align="end"

@@ -25,7 +25,7 @@ exports. Everything stays on your machine: there is no account, no sync, and no 
 
 - Electron 44 via electron-vite — main process, sandboxed preload, React renderer
 - SQLite (better-sqlite3) in the main process for all data
-- React 19 + TypeScript, Tailwind CSS v4 (CSS-first)
+- React 19 + React Compiler, TypeScript, Tailwind CSS v4 (CSS-first)
 - Radix UI / shadcn primitives, Lucide icons
 - Zustand for renderer state
 - `@react-pdf/renderer` for PDF generation, pdf.js for reading PDFs back in
@@ -76,6 +76,21 @@ npm run dev
 
 Every script below works with either (`npm run <script>`). Development runs keep their data in the repo's gitignored `.dev-data/`; `bun run dev:reset`
 deletes it.
+
+### React Compiler
+
+The renderer uses stable React Compiler through `@vitejs/plugin-react` in
+`electron.vite.config.ts`, in both development and production. React 19 supplies its
+runtime; main and preload are not compiled with it.
+
+Write ordinary components and hooks: the compiler automatically memoizes eligible
+calculations, callbacks, and JSX. Keep rendering pure and follow the Rules of React;
+`bun run lint` includes compiler diagnostics. Keep existing `useMemo` / `useCallback`
+calls when adopting the compiler; new code generally does not need them just for performance.
+The compiler does not replace effect dependencies or Zustand subscriptions.
+
+Vitest runs source code without this transform. The Electron end-to-end tests exercise
+the compiled production renderer, including preview and PDF export.
 
 ## Scripts
 

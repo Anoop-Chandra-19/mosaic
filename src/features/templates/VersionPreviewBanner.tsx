@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { Eye, History } from 'lucide-react';
+import { AppButton } from '@/components/AppButton';
 import { Button } from '@/components/ui/button';
 import { attempt, showToast, useOverlayStore, type VersionPreview } from '@/stores/overlayStore';
 import { useResumeStore } from '@/stores/resumeStore';
@@ -55,14 +56,10 @@ export function VersionPreviewBanner({ preview }: { preview: VersionPreview }) {
       >
         Back to draft
       </Button>
-      <Button
-        size="sm"
-        className="h-6 bg-amber-500 px-2 text-xs text-zinc-950 hover:bg-amber-600 dark:bg-amber-500"
-        onClick={() => void restore()}
-      >
+      <AppButton variant="emphasis" size="xs" onClick={() => void restore()}>
         <History className="size-3" />
         Restore this version
-      </Button>
+      </AppButton>
     </div>
   );
 }

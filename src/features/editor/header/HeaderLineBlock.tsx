@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import { ArrowDown, ArrowUp, ChevronDown, Ellipsis, Plus, Trash2 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { AppButton } from '@/components/AppButton';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -54,10 +54,10 @@ export function HeaderLineBlock({ line, lines }: HeaderLineBlockProps) {
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="xs" className={chip} title="Between items">
+            <AppButton variant="ghost" size="xs" className={chip} title="Between items">
               <span className="min-w-3 font-mono">{separator.label}</span>
               <ChevronDown className="size-3" />
-            </Button>
+            </AppButton>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuRadioGroup
@@ -77,10 +77,10 @@ export function HeaderLineBlock({ line, lines }: HeaderLineBlockProps) {
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="xs" className={chip} title="Alignment">
+            <AppButton variant="ghost" size="xs" className={chip} title="Alignment">
               {align.label}
               <ChevronDown className="size-3" />
-            </Button>
+            </AppButton>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuRadioGroup
@@ -98,14 +98,9 @@ export function HeaderLineBlock({ line, lines }: HeaderLineBlockProps) {
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon-xs"
-              aria-label={`Line ${number} actions`}
-              className="text-muted-foreground data-[state=open]:bg-accent"
-            >
+            <AppButton variant="muted" size="icon-xs" aria-label={`Line ${number} actions`}>
               <Ellipsis />
-            </Button>
+            </AppButton>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuItem disabled={index === 0} onSelect={() => moveLine(line.id, -1)}>
@@ -143,14 +138,10 @@ export function HeaderLineBlock({ line, lines }: HeaderLineBlockProps) {
 
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button
-            variant="ghost"
-            size="xs"
-            className="text-muted-foreground data-[state=open]:bg-accent"
-          >
+          <AppButton variant="muted" size="xs">
             <Plus />
             Add to line {number}
-          </Button>
+          </AppButton>
         </DropdownMenuTrigger>
         <DropdownMenuContent
           align="start"

@@ -1,6 +1,6 @@
 import { useId, useState, type KeyboardEvent } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { AppButton } from '@/components/AppButton';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { resolveHeaderItemHref, getHeaderKindInfo } from '@/lib/resume/resumeHeader';
@@ -51,15 +51,14 @@ export function HeaderItemEditor({
       <div className="flex items-center gap-2 text-xs text-zinc-500">
         <Icon className="size-3.5 shrink-0" />
         <span className="flex-1">{label}</span>
-        <Button
-          variant="ghost"
+        <AppButton
+          variant="muted"
           size="icon-xs"
           onClick={onToggleShown}
           aria-label={item.shown ? 'Leave off the page' : 'Put back on the page'}
-          className="text-muted-foreground"
         >
           {item.shown ? <Eye /> : <EyeOff />}
-        </Button>
+        </AppButton>
       </div>
       <div className="grid gap-1">
         <div className="flex h-5 items-center justify-between">
@@ -67,15 +66,15 @@ export function HeaderItemEditor({
             Shows as
           </label>
           {text && (
-            <Button
-              variant="ghost"
+            <AppButton
+              variant="muted"
               size="xs"
               onClick={() => setText('')}
               title="Prints nothing, but keeps the link"
-              className="h-5 text-muted-foreground"
+              className="h-5"
             >
               Clear
-            </Button>
+            </AppButton>
           )}
         </div>
         {/* A header item is often a whole clause, so the field grows instead of scrolling;
@@ -116,16 +115,16 @@ export function HeaderItemEditor({
         </p>
       )}
       <div className="flex items-center justify-end gap-1">
-        <Button variant="ghost" size="xs" onClick={onCancel}>
+        <AppButton variant="ghost" size="xs" onClick={onCancel}>
           Cancel
-        </Button>
-        <Button
+        </AppButton>
+        <AppButton
           variant="outline"
           size="xs"
           onClick={() => onSave({ text: text.trim(), url: url.trim() })}
         >
           Done
-        </Button>
+        </AppButton>
       </div>
     </div>
   );

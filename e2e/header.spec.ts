@@ -85,3 +85,58 @@ test('header items take text and a link, hide, and move between lines', async ()
   await expect(pageHeader(page).getByText('github.com/ada')).toBeVisible();
   expect(errors).toEqual([]);
 });
+
+test('header buttons wrap, truncate and support keyboard editing at desktop widths', async () => {
+  const { app, page, errors } = mosaic();
+  await page.getByRole('button', { name: /Blank resume/ }).click();
+  await page.getByRole('button', { name: 'Email', exact: true }).click();
+  const text = `ada-${'portfolio'.repeat(12)}`;
+  const url = `https://example.com/${'projects/'.repeat(16)}`;
+  await page.getByPlaceholder('you@example.com').fill(text);
+  await page.getByPlaceholder('Optional').fill(url);
+  await page.getByPlaceholder('Optional').press('Enter');
+
+  const editText = page.getByRole('button', { name: text, exact: true });
+  const editLink = page.getByRole('button', { name: 'Edit link', exact: true });
+  for (const width of [720, 1280]) {
+    await app.evaluate(({ BrowserWindow }, width) => {
+      BrowserWindow.getAllWindows()[0].setSize(width, 800);
+    }, width);
+    for (const theme of ['light', 'dark']) {
+      const isDark = await page
+        .locator('html')
+        .evaluate((element) => element.classList.contains('dark'));
+      if (isDark !== (theme === 'dark')) {
+        await page.getByRole('button', { name: 'Toggle theme' }).click();
+      }
+      await expect(editText).toBeVisible();
+      await expect(editLink).toBeVisible();
+      for (const control of [editText, editLink]) {
+        await expect
+          .poll(() =>
+            control.evaluate((element) => {
+              const bounds = element.getBoundingClientRect();
+              const parent = element.parentElement!.getBoundingClientRect();
+              return (
+                bounds.left >= parent.left - 1 &&
+                bounds.right <= parent.right + 1 &&
+                element.scrollWidth <= element.clientWidth + 1
+              );
+            })
+          )
+          .toBe(true);
+      }
+      await expect(editText).toHaveCSS('white-space', 'normal');
+      await expect(editLink.locator('span')).toHaveCSS('text-overflow', 'ellipsis');
+      await editText.focus();
+      await page.keyboard.press('Tab');
+      await expect(editLink).toBeFocused();
+      await expect(editLink).not.toHaveCSS('box-shadow', 'none');
+      await page.keyboard.press('Enter');
+      await expect(page.getByPlaceholder('Optional')).toBeFocused();
+      await page.keyboard.press('Escape');
+      await expect(editText).toBeVisible();
+    }
+  }
+  expect(errors).toEqual([]);
+});

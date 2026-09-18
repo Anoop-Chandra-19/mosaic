@@ -13,6 +13,7 @@ import {
   Save,
   Trash2,
 } from 'lucide-react';
+import { AppButton } from '@/components/AppButton';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -206,13 +207,9 @@ export function TemplateCard({ template, active, expanded, onToggle }: TemplateC
 
         <div className="flex shrink-0 items-center gap-0.5">
           {active ? (
-            <Button
-              size="sm"
-              variant={dirty ? 'default' : 'outline'}
-              className={cn(
-                'h-7 px-2 text-xs',
-                dirty && 'bg-amber-500 text-zinc-950 hover:bg-amber-600 dark:bg-amber-500'
-              )}
+            <AppButton
+              size="compact"
+              variant={dirty ? 'emphasis' : 'outline'}
               title="Give this state a name so you can find it in history"
               aria-label="Name version"
               onClick={() => setNameVersionOpen(true)}
@@ -220,16 +217,11 @@ export function TemplateCard({ template, active, expanded, onToggle }: TemplateC
               <Save className="size-3" />
               {/* In a narrow sidebar the template's name needs the room more. */}
               <span className="hidden @[20rem]:inline">Name version</span>
-            </Button>
+            </AppButton>
           ) : (
-            <Button
-              size="sm"
-              variant="outline"
-              className="h-7 px-2 text-xs"
-              onClick={() => void open()}
-            >
+            <AppButton size="compact" variant="outline" onClick={() => void open()}>
               Open
-            </Button>
+            </AppButton>
           )}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -318,10 +310,10 @@ export function TemplateCard({ template, active, expanded, onToggle }: TemplateC
           )}
 
           {versions && (
-            <Button
+            <AppButton
               variant="ghost"
-              size="sm"
-              className="mt-1.5 h-7 px-2 text-xs text-zinc-600 dark:text-zinc-400"
+              size="compact"
+              className="mt-1.5 text-zinc-600 dark:text-zinc-400"
               title={
                 previewId && preview
                   ? `Export ${preview.label}, the version in the sheet`
@@ -331,7 +323,7 @@ export function TemplateCard({ template, active, expanded, onToggle }: TemplateC
             >
               <Download className="size-3" />
               Export this version
-            </Button>
+            </AppButton>
           )}
         </div>
       )}

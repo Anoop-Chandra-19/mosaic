@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { ChevronsDownUp, ChevronsUpDown, Ellipsis, Plus, Shapes } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { AppButton } from '@/components/AppButton';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import {
   DropdownMenu,
@@ -50,14 +50,14 @@ export function ResumeHeaderCard() {
         />
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button
-              variant="ghost"
+            <AppButton
+              variant="muted"
               size="icon-sm"
               aria-label="Header options"
-              className="shrink-0 text-muted-foreground data-[state=open]:bg-accent"
+              className="shrink-0"
             >
               <Ellipsis className="size-4" />
-            </Button>
+            </AppButton>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuLabel className="text-xs font-normal text-zinc-500">
@@ -85,18 +85,18 @@ export function ResumeHeaderCard() {
           </DropdownMenuContent>
         </DropdownMenu>
         <CollapsibleTrigger asChild>
-          <Button
-            variant="ghost"
+          <AppButton
+            variant="muted"
             size="icon-sm"
             aria-label={open ? 'Collapse header' : 'Expand header'}
-            className="shrink-0 text-muted-foreground"
+            className="shrink-0"
           >
             {open ? (
               <ChevronsDownUp className="size-4 stroke-[1.75]" />
             ) : (
               <ChevronsUpDown className="size-4 stroke-[1.75]" />
             )}
-          </Button>
+          </AppButton>
         </CollapsibleTrigger>
       </div>
 
@@ -127,7 +127,7 @@ export function ResumeHeaderCard() {
           {header.lines.map((line) => (
             <HeaderLineBlock key={line.id} line={line} lines={header.lines} />
           ))}
-          <Button
+          <AppButton
             variant="outline"
             size="xs"
             onClick={() => addLine()}
@@ -135,7 +135,7 @@ export function ResumeHeaderCard() {
           >
             <Plus />
             New line
-          </Button>
+          </AppButton>
         </div>
       </CollapsibleContent>
     </Collapsible>

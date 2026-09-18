@@ -1,4 +1,5 @@
 import { Download, FileInput, Moon, Save, Settings, Sun } from 'lucide-react';
+import { AppButton } from '@/components/AppButton';
 import { Button } from '@/components/ui/button';
 import { shortcutLabel } from '@/lib/shortcuts';
 import { showToast, useOverlayStore } from '@/stores/overlayStore';
@@ -32,10 +33,9 @@ export function TopBar() {
           </span>
           <TemplateStatusBadge status={templateStatus} />
           {activeTemplate && (
-            <Button
+            <AppButton
               variant="outline"
-              size="sm"
-              className="h-7 px-2 text-xs"
+              size="compact"
               onClick={() => setNameVersionOpen(true)}
               title={`${
                 templateStatus === 'edited'
@@ -45,7 +45,7 @@ export function TopBar() {
             >
               <Save className="size-3" />
               Name version…
-            </Button>
+            </AppButton>
           )}
         </div>
       </div>
