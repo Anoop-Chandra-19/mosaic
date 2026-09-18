@@ -71,7 +71,7 @@ src/
   stores/         # Zustand stores
   types/          # App-wide types; db.ts, files.ts, secrets.ts are the bridge contracts
   lib/
-    resume/       # Page metrics, contact formatting, validation, resume schema migration
+    resume/       # Page metrics, the header, validation, resume schema migration
     storage/      # Renderer side of the database: `getDb()`, `settingsStorage`
     vault/        # `parseBundle`: backup-file checks, run by the renderer and again by main
     files/        # File naming shared by export and backups
@@ -134,6 +134,26 @@ src/
   main runs every stored document through it, and `parseBundle` uses it to refuse files
   from a newer build. Start bumping with the first release real users install.
 
+## Header
+
+- Under the name, the header is lines of items (`contact.header`, `lib/resume/resumeHeader.ts`):
+  each line has a separator and an alignment, each item a kind, the text that prints, a
+  link, and `shown`. Lines and items are added, moved, and removed freely.
+- An item prints by its own text and link, never by its kind — the kind is meaning only
+  (icon, placeholder, JSON Resume field, importer's guess). The built-in kinds are presets
+  in `HEADER_PRESETS`; `custom` is an item the user writes.
+- The link written into a file comes from what was typed, at print time
+  (`resolveHeaderItemHref`): an address mails, a number calls, a dot or slash opens
+  `https://`. The typed value is never rewritten.
+- Two ways off the page, kept apart: `shown: false` keeps the item and its data; empty text
+  prints nothing, but the link is kept. `getPrintableHeaderLines` is what every renderer and
+  export reads. The header prints on the first page only, as in the PDF.
+- Links in exports: PDF embeds them on the printed text (underlined only when the header
+  says so); Markdown writes `[text](link)`; plain text writes `text (link)`, unless the text
+  already is the address; JSON Resume fills its standard fields and keeps the whole header
+  in `meta.mosaic.header`. What each format can't bring back — alignment and underlining in
+  Markdown and plain text, underlining in PDF — is stated in its round-trip test.
+
 ## Import
 
 - `files.open('import')` hands the renderer a file's bytes; `readImportFile` picks the reader
@@ -142,6 +162,9 @@ src/
   (a scan, a password, an older .doc), shown in the dialog.
 - Readers turn a file into `ImportLine`s (`importLines.ts`); `parseResumeLines` builds the
   resume from them. JSON Resume has fields that say what they are, so it skips the lines.
+- A reader marks a link inside a line's text with `markLink` (Unicode noncharacters, which
+  no document holds). `parseResumeLines` decides what it is: in the contact block, a header
+  item with its own text and link; anywhere else, "words address".
 - Nothing is written before the review step, and nothing is dropped silently: text with no
   place goes in `leftOut`, doubts in `warnings`, and the dialog shows both.
 - PDF and DOCX each have a folder (`import/pdf/`, `import/docx/`) split in two:

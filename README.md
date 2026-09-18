@@ -7,7 +7,9 @@ exports. Everything stays on your machine: there is no account, no sync, and no 
 
 ## Features
 
-- Content editing for contact details, sections, entries, and bullets
+- Content editing for sections, entries, and bullets, and a header under your name built
+  from lines of items — each with its own text and link, carried as real links into every
+  export
 - Include/exclude toggles for entries and bullets
 - Live multi-page preview with measured pagination, A4 and US Letter
 - Templates with version history: autosaved drafts, named versions, preview before restore,
