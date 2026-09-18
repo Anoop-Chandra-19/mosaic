@@ -6,9 +6,9 @@
 import fs from 'node:fs';
 import path from 'node:path';
 // With its extension, so Node runs this file directly (`npm run db:freeze` or `bun run …`).
-import { hashMigration, parseMigrations } from '../electron/main/db/migrationFiles.ts';
+import { hashMigration, parseMigrations } from '../src/main/db/migrationFiles.ts';
 
-const dir = path.resolve(import.meta.dirname, '../electron/main/db/migrations');
+const dir = path.resolve(import.meta.dirname, '../src/main/db/migrations');
 const lockFile = path.join(dir, 'released.json');
 
 const files = Object.fromEntries(

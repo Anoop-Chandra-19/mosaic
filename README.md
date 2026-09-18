@@ -36,19 +36,36 @@ exports. Everything stays on your machine: there is no account, no sync, and no 
 ## Architecture
 
 ```text
-electron/
-  main/           # Main process: window, database, IPC handlers, erase
+src/
+  main/           # Main process: window, database, IPC handlers, erase; see src/main/CLAUDE.md
     db/           # SQLite: connection, migrations, repositories
     ipc/          # Database and file-dialog handlers
   preload/        # The only bridge to the renderer: window.mosaic
-  shared/         # Channel names shared by main and preload
-src/
-  features/       # shell, editor, preview, templates, import, export, backup, settings, start
-  stores/         # Zustand stores
-  lib/            # Shared domain logic (resume layout, storage bridge, bundle parsing, …)
-  types/          # Shared types; db.ts is the database contract
+  shared/
+    ipc/          # Channel names shared by main and preload
+    types/        # Cross-process contracts and data types; db.ts is the database contract
+    resume/       # Defaults, migration, validation, header logic, section presets
+    vault/        # Bundle parsing, used by renderer and main
+    ai/           # Ollama address handling
+  renderer/
+    index.html    # Renderer entry HTML
+    public/       # Static assets
+    src/
+      assets/     # Bundled assets
+      components/ # Shared app components and shadcn primitives
+      features/   # shell, editor, preview, templates, import, export, backup, settings, start, agent
+      stores/     # Zustand stores
+      lib/        # Renderer domain logic and infrastructure (layout, storage bridge, …)
+      types/      # Renderer-only types
+      App.tsx
+      index.css
+      main.tsx
 e2e/              # Playwright specs against the built app
 ```
+
+`@/` maps to `src/renderer/src/`; `@shared/` maps to `src/shared/`. Shared modules are
+environment-neutral contracts and logic, not React, DOM, or Electron implementations.
+Unit tests live next to the modules they cover; build output remains in `out/`.
 
 ## Data and Privacy
 

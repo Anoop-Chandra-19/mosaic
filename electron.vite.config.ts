@@ -6,7 +6,9 @@ import { defineConfig } from 'electron-vite';
 import type { Plugin } from 'vite';
 
 const root = import.meta.dirname;
-const alias = { '@': resolve(root, 'src') };
+const rendererRoot = resolve(root, 'src/renderer');
+const sharedAlias = { '@shared': resolve(root, 'src/shared') };
+const rendererAlias = { ...sharedAlias, '@': resolve(rendererRoot, 'src') };
 const { version } = JSON.parse(readFileSync(resolve(root, 'package.json'), 'utf8')) as {
   version: string;
 };
@@ -47,15 +49,18 @@ function contentSecurityPolicy(): Plugin {
 
 export default defineConfig({
   main: {
-    resolve: { alias },
+    resolve: { alias: sharedAlias },
     build: {
-      rollupOptions: { input: resolve(root, 'electron/main/index.ts') },
+      outDir: resolve(root, 'out/main'),
+      rollupOptions: { input: resolve(root, 'src/main/index.ts') },
     },
   },
   preload: {
+    resolve: { alias: sharedAlias },
     build: {
+      outDir: resolve(root, 'out/preload'),
       rollupOptions: {
-        input: resolve(root, 'electron/preload/index.ts'),
+        input: resolve(root, 'src/preload/index.ts'),
         // A sandboxed preload cannot load ES modules, and the package is "type": "module",
         // so the output must be CommonJS with an explicit .cjs extension.
         output: { format: 'cjs', entryFileNames: '[name].cjs' },
@@ -63,9 +68,9 @@ export default defineConfig({
     },
   },
   renderer: {
-    // The renderer keeps living at the repo root (index.html + src/), not src/renderer.
-    root,
-    resolve: { alias },
+    root: rendererRoot,
+    envDir: root,
+    resolve: { alias: rendererAlias },
     define: { __APP_VERSION__: JSON.stringify(version) },
     plugins: [
       tailwindcss(),
@@ -78,7 +83,8 @@ export default defineConfig({
       contentSecurityPolicy(),
     ],
     build: {
-      rollupOptions: { input: resolve(root, 'index.html') },
+      outDir: resolve(root, 'out/renderer'),
+      rollupOptions: { input: resolve(rendererRoot, 'index.html') },
     },
   },
 });

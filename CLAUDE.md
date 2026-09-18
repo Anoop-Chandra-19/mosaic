@@ -5,17 +5,18 @@ server, so whatever is on disk, the app itself must be able to read and upgrade.
 
 ## Tech Stack
 
-- Electron 44 via electron-vite: main process in `electron/main/`, sandboxed preload in
-  `electron/preload/`, renderer is `index.html` + `src/`. The renderer never gets Node or
-  raw IPC — only `window.mosaic`: `db` (the `MosaicDb` contract, `src/types/db.ts`),
+- Electron 44 via electron-vite: main process in `src/main/`, sandboxed preload in
+  `src/preload/`, renderer is `src/renderer/index.html` + `src/renderer/src/`. The renderer
+  never gets Node or raw IPC — only `window.mosaic`: `db` (the `MosaicDb` contract,
+  `src/shared/types/db.ts`),
   `files` (system Save/Open dialogs run by main), `secrets` (API keys, write-only), `ai`
   (Ollama's pulled models — the renderer itself has no network), `app`.
 - SQLite (better-sqlite3) in main holds everything the user makes. The schema, migrations,
-  erase, and API keys are covered in `electron/CLAUDE.md`.
+  erase, and API keys are covered in `src/main/CLAUDE.md`.
 - React 19 + TypeScript, Vite, Tailwind CSS v4 (CSS-first, no `tailwind.config.js`),
   Zustand for renderer state.
 - Radix UI / shadcn (new-york style, zinc base) for primitives — don't hand-roll UI
-  components. Lucide for icons. `@/` maps to `src/`.
+  components. Lucide for icons. `@/` maps to `src/renderer/src/`; `@shared/` to `src/shared/`.
 
 ## Commands
 
@@ -33,7 +34,7 @@ The project works with both bun and npm (Node ≥ 22.18). Every `bun run <script
   (headless; Linux). Each launch gets a throwaway `--user-data-dir` and no D-Bus session,
   so runs never touch the real profile or the desktop's keychain. On macOS/Windows: build,
   then `bunx playwright test`.
-- `bun run db:freeze` — release step; see `electron/CLAUDE.md`.
+- `bun run db:freeze` — release step; see `src/main/CLAUDE.md`.
 - `bunx shadcn@latest add <component>` — components arrive as upstream ships them,
   `import { cn } from "cn"` included (`@/lib/utils` re-exports it) — no import fix-ups.
 
@@ -60,32 +61,49 @@ The project works with both bun and npm (Node ≥ 22.18). Every `bun run <script
 ```
 e2e/              # Playwright specs over the built app (launch.ts; dialogs.ts stands in
                   #   for the system Save/Open dialogs)
-electron/         # Main process, preload, shared channel names — see electron/CLAUDE.md
 scripts/          # Release helpers (freeze-migrations)
 src/
-  components/ui/  # shadcn-managed primitives — do NOT edit
-  components/     # Shared app components (ConfirmDeleteDialog, DialogFrame, …)
-  features/       # One folder per area: shell, editor, preview, templates, import, export,
-                  #   backup, settings, start, agent (the assistant pane; the loop goes in
-                  #   electron/main/agent/)
-  stores/         # Zustand stores
-  types/          # App-wide types; db.ts, files.ts, secrets.ts are the bridge contracts
-  lib/
-    resume/       # Page metrics, the header, validation, resume schema migration
-    storage/      # Renderer side of the database: `getDb()`, `settingsStorage`
-    vault/        # `parseBundle`: backup-file checks, run by the renderer and again by main
-    files/        # File naming shared by export and backups
-    hooks/        # Shared React hooks
+  main/           # Main process — see src/main/CLAUDE.md (AGENTS.md symlinks to it)
+    agent/        # Planned assistant loop
+  preload/        # Sandboxed window.mosaic bridge
+  shared/
+    ipc/          # Channel names shared by main and preload
+    types/        # ai, bundle, db, files, resume, secrets; cross-process contracts
+    resume/       # defaultResume, migrateResume, validateResume, resumeHeader, sectionPresets
+    vault/        # parseBundle: backup-file checks, run by renderer and main
+    ai/           # ollamaAddress
+  renderer/
+    index.html    # Renderer entry HTML
+    public/       # Static assets
+    src/
+      assets/     # Bundled assets
+      components/ # Shared app components (ConfirmDeleteDialog, DialogFrame, …)
+        ui/       # shadcn-managed primitives — do NOT edit
+      features/   # One folder per area: shell, editor, preview, templates, import, export,
+                  #   backup, settings, start, agent (the assistant pane)
+      stores/     # Zustand stores
+      types/      # Renderer-only types
+      lib/
+        resume/   # Page metrics and renderer resume logic
+        storage/  # Renderer side of the database: getDb(), settingsStorage
+        files/    # File naming shared by export and backups
+        hooks/    # Shared React hooks
+      App.tsx
+      index.css
+      main.tsx
 ```
 
 ### Code placement
 
 - Keep a feature's components, hooks, helpers, types, and tests together in
-  `src/features/<feature>/`. Code used by several screens can still belong to one feature.
-- `src/lib/` is for shared domain logic and feature-independent infrastructure. Being pure,
-  or being a hook, is not by itself a reason to move code there.
-- `src/components/` for feature-independent UI, `src/stores/` for shared state,
-  `src/types/` for app-wide types.
+  `src/renderer/src/features/<feature>/`. Code used by several screens can still belong to
+  one feature.
+- `src/renderer/src/lib/` is for renderer domain logic and feature-independent infrastructure.
+  Being pure, or being a hook, is not by itself a reason to move code there.
+- `src/renderer/src/components/` for feature-independent UI, `src/renderer/src/stores/` for
+  shared renderer state, `src/renderer/src/types/` for renderer-only types.
+- `src/shared/` is for environment-neutral contracts and logic used across processes: no
+  React, DOM, or Electron implementations. Other renderer library code stays in the renderer.
 - Keep folders flat until subfolders help navigation, and tests next to what they cover.
   No layers or abstractions for hypothetical reuse.
 - Apply these to new code, and improve placement in the area you are working on — but
@@ -125,18 +143,18 @@ src/
   backing up — flushes first, and closing the window waits for it (up to 2 s).
 - Preferences do persist: `uiStore` and `aiStore` over `settingsStorage` (the `settings`
   table, seeded at boot so stores hydrate before the first paint).
-- The data is never locked in. A backup is a bundle (`src/types/bundle.ts`): readable JSON
+- The data is never locked in. A backup is a bundle (`src/shared/types/bundle.ts`): readable JSON
   with every template, its draft, and its full history; Mosaic JSON export is the same for
   one template. Settings, AI configuration, keys, and conversations never go in a bundle.
 - API keys never reach the renderer, the database, or a bundle.
 - Resume schema, pre-v1: keep `CURRENT_SCHEMA_VERSION` at 1 and change `DEFAULT_RESUME` and
-  the types directly — no migration steps. Keep the machinery (`lib/resume/migrateResume`):
+  the types directly — no migration steps. Keep the machinery (`src/shared/resume/migrateResume.ts`):
   main runs every stored document through it, and `parseBundle` uses it to refuse files
   from a newer build. Start bumping with the first release real users install.
 
 ## Header
 
-- Under the name, the header is lines of items (`contact.header`, `lib/resume/resumeHeader.ts`):
+- Under the name, the header is lines of items (`contact.header`, `src/shared/resume/resumeHeader.ts`):
   each line has a separator and an alignment, each item a kind, the text that prints, a
   link, and `shown`. Lines and items are added, moved, and removed freely.
 - An item prints by its own text and link, never by its kind — the kind is meaning only
@@ -167,7 +185,7 @@ src/
   item with its own text and link; anywhere else, "words address".
 - Nothing is written before the review step, and nothing is dropped silently: text with no
   place goes in `leftOut`, doubts in `warnings`, and the dialog shows both.
-- PDF and DOCX each have a folder (`import/pdf/`, `import/docx/`) split in two:
+- PDF and DOCX each have a folder (`@/features/import/pdf/`, `@/features/import/docx/`) split in two:
   `readPdf`/`readDocx` say only what the file holds; `pdfLines`/`docxLines` decide what it
   means. Keep guesses about meaning out of the readers.
 - Files are untrusted. The zip and XML readers are ours, check their input strictly, and
@@ -179,7 +197,7 @@ src/
   shows. Mosaic's own PDF, Markdown, and JSON files come back exactly; plain text states
   its losses in its test. A DOCX export, when built, gets one too.
 - Tests build their files (`buildDocx`, `buildPdf`, react-pdf). Never test against a real
-  person's resume; `docx/__tests__/documents/` holds only fictional ones.
+  person's resume; `@/features/import/docx/__tests__/documents/` holds only fictional ones.
 
 ## Core Principles
 
@@ -192,7 +210,7 @@ src/
   `minWidth`), so "narrow" means a small desktop window — editor and preview stay side by
   side. Before a commit, check nothing overflows or collapses across window sizes.
 
-**The one exception is the resume page** (`features/preview/PreviewPage` and everything it
+**The one exception is the resume page** (`@/features/preview/PreviewPage` and everything it
 renders). A sheet of paper is a fixed artifact: the page is pinned to its exact point
 dimensions as pixels, and the _container_ scales it with `transform: scale()` so the
 preview's line wraps match the exported PDF's. Don't "fix" these to relative units, and
@@ -200,7 +218,7 @@ never use CSS `zoom` for the scaling — it re-runs layout and can re-wrap text.
 
 ### Resume format and layout
 
-- `lib/resume/headlessLayout.ts` is the single source of truth for page metrics (margins,
+- `@/lib/resume/headlessLayout.ts` is the single source of truth for page metrics (margins,
   font sizes, leading, indents). The PDF export and the preview both read it; change a
   number there, not in a component.
 - The "Headless Headhunter" format: section headers are the only bold text below the name;
@@ -208,7 +226,7 @@ never use CSS `zoom` for the scaling — it re-runs layout and can re-wrap text.
   `text-transform: uppercase` on section headers — both break ATS text extraction.
 - A section prints by its `layout` (`lines` or `entries`), never by its `kind`. The kind is
   meaning only — icon, importer headings, JSON Resume — and the built-in kinds are presets
-  in `lib/resume/sectionPresets.ts`, any number of each; `custom` is a section the user
+  in `src/shared/resume/sectionPresets.ts`, any number of each; `custom` is a section the user
   named.
 - Spacing comes from the 18pt leading grid. Margins between bullets or entries push the
   page off the grid, and the error compounds down the page.
@@ -218,7 +236,7 @@ never use CSS `zoom` for the scaling — it re-runs layout and can re-wrap text.
 - Keep components small and focused.
 - No new CSS files — Tailwind utilities, v4 CSS-first config, native container queries,
   no legacy plugins.
-- Don't edit `components/ui/` (shadcn-managed); adjust the app's usage or theme tokens.
+- Don't edit `@/components/ui/` (shadcn-managed); adjust the app's usage or theme tokens.
 - In app-owned components, no opacity utilities for hierarchy (`text-*/..`, `bg-*/..`,
   `border-*/..`, `ring-*/..`, `opacity-*`). Use explicit tone steps (`zinc-100/300/500/900`
   or semantic tokens): stronger titles and actions get higher contrast, metadata and

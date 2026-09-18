@@ -22,11 +22,11 @@ export default defineConfig([
     },
   },
   {
-    files: ['src/**/*.{ts,tsx}'],
+    files: ['src/renderer/src/**/*.{ts,tsx}'],
     ignores: [
-      'src/components/ui/**',
-      'src/components/AppButton.tsx',
-      'src/components/AppButton.test.ts',
+      'src/renderer/src/components/ui/**',
+      'src/renderer/src/components/AppButton.tsx',
+      'src/renderer/src/components/AppButton.test.ts',
     ],
     rules: {
       'no-restricted-imports': [
@@ -45,12 +45,12 @@ export default defineConfig([
   {
     // shadcn-managed primitives export their variant helpers next to the component
     // (e.g. toggleVariants for toggle-group). They are not hand-edited, so accept that.
-    files: ['src/components/ui/**/*.tsx'],
+    files: ['src/renderer/src/components/ui/**/*.tsx'],
     rules: { 'react-refresh/only-export-components': 'off' },
   },
   {
     // Main process, preload, scripts, and build configs run in Node, not the browser.
-    files: ['electron/**/*.ts', 'scripts/**/*.ts', '*.config.ts'],
+    files: ['src/main/**/*.ts', 'src/preload/**/*.ts', 'scripts/**/*.ts', '*.config.ts'],
     languageOptions: {
       globals: globals.node,
     },

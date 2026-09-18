@@ -22,7 +22,8 @@
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true,
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/renderer/src/*"],
+      "@shared/*": ["./src/shared/*"]
     }
   },
   "include": [
@@ -32,6 +33,6 @@
     "e2e",
     "scripts",
     // e2e specs call the preload bridge, typed by the same contract the renderer uses.
-    "src/types/bridge.d.ts"
+    "src/renderer/src/types/bridge.d.ts"
   ]
 }
