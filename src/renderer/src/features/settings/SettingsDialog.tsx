@@ -5,9 +5,9 @@ import { AppButton } from '@/components/AppButton';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 import { useAIStore } from '@/stores/aiStore';
-import { SETTINGS_GROUPS, SETTINGS_SECTION_BY_ID, type SettingsSectionId } from './settings-nav';
+import { SETTINGS_GROUPS, SETTINGS_SECTION_BY_ID, type SettingsSectionId } from './settingsNav';
 import { AboutSection } from './sections/AboutSection';
-import { AISection } from './sections/AISection';
+import { AiSection } from './sections/AiSection';
 import { AppearanceSection } from './sections/AppearanceSection';
 import { DocumentSection } from './sections/DocumentSection';
 import { GeneralSection } from './sections/GeneralSection';
@@ -108,7 +108,7 @@ export function SettingsDialog() {
             {section === 'general' && <GeneralSection />}
             {section === 'appearance' && <AppearanceSection />}
             {section === 'document' && <DocumentSection />}
-            {section === 'ai' && <AISection />}
+            {section === 'ai' && <AiSection />}
             {section === 'portability' && <ImportExportSection onCloseSettings={close} />}
             {section === 'privacy' && <PrivacySection />}
             {section === 'about' && <AboutSection />}

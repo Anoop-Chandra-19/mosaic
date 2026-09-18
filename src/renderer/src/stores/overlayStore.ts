@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import type { ResumePreviewMeta } from '@/features/preview/ResumePreview';
-import type { SettingsSectionId } from '@/features/settings/settings-nav';
+import type { SettingsSectionId } from '@/features/settings/settingsNav';
 import type { OpenedBackup } from '@shared/types/bundle';
 import type { Version } from '@shared/types/db';
 

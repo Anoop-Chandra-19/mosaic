@@ -1,7 +1,7 @@
 import { useRef } from 'react';
 import { Sparkles, X } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
-import { AI_PROVIDER_BY_ID } from '@/features/settings/sections/ai-provider-meta';
+import { AI_PROVIDER_BY_ID } from '@/features/settings/sections/aiProviderOptions';
 import { startPaneResize } from '@/features/shell/paneResize';
 import { shortcutLabel } from '@/lib/shortcuts';
 import { AI_PROVIDER_DEFAULT_MODEL, useAIStore } from '@/stores/aiStore';

@@ -23,10 +23,10 @@ import {
 } from '@shared/types/secrets';
 import { SettingRow, SettingsNote } from '../SettingRow';
 import { useSecretsStatus } from '../useSecretsStatus';
-import { AI_PROVIDER_BY_ID, AI_PROVIDER_OPTIONS } from './ai-provider-meta';
+import { AI_PROVIDER_BY_ID, AI_PROVIDER_OPTIONS } from './aiProviderOptions';
 import { OllamaAddressRow, OllamaModelRow } from './OllamaRows';
 
-export function AISection() {
+export function AiSection() {
   const enabled = useAIStore((s) => s.enabled);
   const provider = useAIStore((s) => s.provider);
   const modelsByProvider = useAIStore((s) => s.modelsByProvider);
