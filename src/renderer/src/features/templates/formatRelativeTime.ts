@@ -11,7 +11,7 @@ function startOfDay(ms: number): number {
  * When something happened, as a history row says it: "just now", "12 min ago", "3h ago"
  * today; "Yesterday, 9:12 PM"; "Mar 4" this year; "Mar 4, 2025" before that.
  */
-export function formatWhen(ms: number, now: number = Date.now()): string {
+export function formatRelativeTime(ms: number, now: number = Date.now()): string {
   const ago = now - ms;
   if (ago < MINUTE) return 'just now';
   const today = startOfDay(now);

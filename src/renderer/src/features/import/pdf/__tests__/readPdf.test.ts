@@ -13,7 +13,7 @@ import {
   shown,
   buildExpectedShown,
   createStyledHeaderResume,
-} from '../../__tests__/roundTrip';
+} from '../../__tests__/resumeFixtures';
 import {
   NotAPdfError,
   PDF_LIMITS,

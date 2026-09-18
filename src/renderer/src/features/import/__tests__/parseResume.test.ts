@@ -5,7 +5,7 @@ import { createDefaultResume } from '@shared/resume/defaultResume';
 import type { ResumeData, ResumeSection } from '@shared/types/resume';
 import { textToLines, type ImportLine } from '../importLines';
 import { parseResumeLines, parseResumeText } from '../parseResume';
-import { everything, shown, buildExpectedShown, createStyledHeaderResume } from './roundTrip';
+import { everything, shown, buildExpectedShown, createStyledHeaderResume } from './resumeFixtures';
 
 const SAMPLE = `Jane Developer
 San Francisco, CA

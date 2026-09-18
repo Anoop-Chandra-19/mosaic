@@ -10,7 +10,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { formatWhen } from '@/features/templates/formatWhen';
+import { formatRelativeTime } from '@/features/templates/formatRelativeTime';
 import { cn } from '@/lib/utils';
 import { attempt, showToast, useOverlayStore } from '@/stores/overlayStore';
 import { useTemplateStore } from '@/stores/templateStore';
@@ -95,7 +95,7 @@ function RestoreForm({ backup, onDone }: { backup: OpenedBackup; onDone: () => v
         <div className="min-w-0 text-xs leading-relaxed">
           <p className="truncate font-mono text-zinc-900 dark:text-zinc-100">{backup.fileName}</p>
           <p className="text-zinc-600 dark:text-zinc-400">
-            {Number.isNaN(exportedAt) ? '' : `Backed up ${formatWhen(exportedAt)} · `}
+            {Number.isNaN(exportedAt) ? '' : `Backed up ${formatRelativeTime(exportedAt)} · `}
             {count(templates, 'template')}, {count(versions, 'version')}
           </p>
           <p className="mt-1 text-zinc-600 dark:text-zinc-400">

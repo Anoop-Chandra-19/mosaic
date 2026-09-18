@@ -2,7 +2,7 @@ import { Copy, Eye, History, Save } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
 import { cn } from '@/lib/utils';
 import type { VersionMeta } from '@shared/types/db';
-import { formatWhen } from './formatWhen';
+import { formatRelativeTime } from './formatRelativeTime';
 import { versionLabel } from './useTemplateVersions';
 
 interface VersionListProps {
@@ -84,7 +84,7 @@ export function VersionList({
                   {auto ? 'auto' : 'named'}
                 </span>
                 <span>{label}</span>
-                <span>{formatWhen(version.createdAt)}</span>
+                <span>{formatRelativeTime(version.createdAt)}</span>
                 {head && <span className="text-amber-600 dark:text-amber-400">current</span>}
               </p>
             </div>

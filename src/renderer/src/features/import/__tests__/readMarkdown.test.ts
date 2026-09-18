@@ -13,7 +13,7 @@ import {
   shown,
   buildExpectedShown,
   createStyledHeaderResume,
-} from './roundTrip';
+} from './resumeFixtures';
 
 const markdownOf = (data: ResumeData) => createMarkdownExport(normalizeResumeForExport(data));
 

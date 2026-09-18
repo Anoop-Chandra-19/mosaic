@@ -29,7 +29,7 @@ import { useResumeStore } from '@/stores/resumeStore';
 import { useTemplateStore } from '@/stores/templateStore';
 import type { TemplateSummary, VersionMeta } from '@shared/types/db';
 import { DeleteTemplateDialog } from './DeleteTemplateDialog';
-import { formatWhen } from './formatWhen';
+import { formatRelativeTime } from './formatRelativeTime';
 import { useTemplateVersions, versionLabel } from './useTemplateVersions';
 import { VersionList } from './VersionList';
 
@@ -200,7 +200,7 @@ export function TemplateCard({ template, active, expanded, onToggle }: TemplateC
           </div>
           <p className="mt-0.5 text-xs text-zinc-500">
             {template.versionCount} {template.versionCount === 1 ? 'version' : 'versions'} ·{' '}
-            {formatWhen(template.head.createdAt)}
+            {formatRelativeTime(template.head.createdAt)}
           </p>
         </div>
 

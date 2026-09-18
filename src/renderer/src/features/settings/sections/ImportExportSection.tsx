@@ -7,7 +7,7 @@ import {
   fileFailure,
   readLastBackup,
 } from '@/features/backup/backupFiles';
-import { formatWhen } from '@/features/templates/formatWhen';
+import { formatRelativeTime } from '@/features/templates/formatRelativeTime';
 import { showToast, useOverlayStore } from '@/stores/overlayStore';
 import { useResumeStore } from '@/stores/resumeStore';
 import { useTemplateStore } from '@/stores/templateStore';
@@ -112,7 +112,7 @@ export function ImportExportSection({ onCloseSettings }: { onCloseSettings: () =
 
       {lastBackup && (
         <SettingsNote icon={Info} className="mt-4">
-          Last backup: <b className="font-semibold">{formatWhen(lastBackup.at)}</b> ·{' '}
+          Last backup: <b className="font-semibold">{formatRelativeTime(lastBackup.at)}</b> ·{' '}
           {count(lastBackup.templates, 'template')}, {count(lastBackup.versions, 'version')} ·{' '}
           {formatSize(lastBackup.bytes)}
         </SettingsNote>

@@ -13,7 +13,7 @@ import {
   section,
   shown,
   createStyledHeaderResume,
-} from './roundTrip';
+} from './resumeFixtures';
 
 const exported = (resume: ResumeData) =>
   JSON.parse(createJsonResumeExport(normalizeResumeForExport(resume)));

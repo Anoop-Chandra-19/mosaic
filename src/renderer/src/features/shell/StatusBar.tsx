@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { PanelLeft, PanelRight, type LucideIcon } from 'lucide-react';
-import { formatWhen } from '@/features/templates/formatWhen';
+import { formatRelativeTime } from '@/features/templates/formatRelativeTime';
 import { useActiveTemplate } from '@/features/templates/useActiveTemplate';
 import { shortcutLabel } from '@/lib/keyboardShortcuts';
 import { cn } from '@/lib/utils';
@@ -107,7 +107,7 @@ export function StatusBar() {
         title="Every change is written to this machine as you type."
       >
         <span className="size-1.5 rounded-full bg-emerald-500" />
-        Autosaved · {formatWhen(savedAt ?? template.updatedAt, now)}
+        Autosaved · {formatRelativeTime(savedAt ?? template.updatedAt, now)}
       </span>
     );
   }
