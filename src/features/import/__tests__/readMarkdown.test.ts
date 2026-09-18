@@ -4,7 +4,16 @@ import { normalizeResumeForExport } from '@/features/export/normalizeResumeExpor
 import { createDefaultResume } from '@/lib/resume/defaultResume';
 import type { ResumeData } from '@/types/resume';
 import { readMarkdown } from '../readMarkdown';
-import { entry, everything, lines, resume, section, shown } from './roundTrip';
+import {
+  entry,
+  everything,
+  lines,
+  resume,
+  section,
+  shown,
+  buildExpectedShown,
+  createStyledHeaderResume,
+} from './roundTrip';
 
 const markdownOf = (data: ResumeData) => createMarkdownExport(normalizeResumeForExport(data));
 
@@ -36,6 +45,17 @@ describe('readMarkdown', () => {
       expect(parsed.warnings).toEqual([]);
       expect(parsed.leftOut).toEqual([]);
     }
+  });
+
+  it('gives back a header’s links and separators, but not alignment or underlining', () => {
+    const data = createStyledHeaderResume();
+    // Markdown has no way to set a line left or centred, or to say how a link looks.
+    expect(shown(readMarkdown(markdownOf(data)).resume)).toEqual(
+      buildExpectedShown(data, (expected) => {
+        expected.linkStyle = 'plain';
+        expected.header[0].align = 'center';
+      })
+    );
   });
 
   it('gives back text that looks like Markdown as it was typed', () => {

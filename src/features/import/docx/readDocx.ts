@@ -10,7 +10,7 @@ import {
   type DocxTable,
 } from './docxModel';
 import { docxLines } from './docxLines';
-import { linkText } from '../importLines';
+import { markLink } from '../importLines';
 import { parseResumeLines, type ParsedResume } from '../parseResume';
 import {
   attribute,
@@ -352,7 +352,7 @@ interface Gathering {
 function endLink(gathering: Gathering, start: number, url: string | undefined) {
   if (!url) return;
   const words = gathering.text.slice(start);
-  gathering.text = gathering.text.slice(0, start) + linkText(words, url);
+  gathering.text = gathering.text.slice(0, start) + markLink(words, url);
 }
 
 /** Pictures and text boxes: a text box's paragraphs are read; a picture is only counted. */

@@ -5,7 +5,7 @@ import { createDefaultResume } from '@/lib/resume/defaultResume';
 import type { ResumeData, ResumeSection } from '@/types/resume';
 import { textToLines, type ImportLine } from '../importLines';
 import { parseResumeLines, parseResumeText } from '../parseResume';
-import { everything, shown } from './roundTrip';
+import { everything, shown, buildExpectedShown, createStyledHeaderResume } from './roundTrip';
 
 const SAMPLE = `Jane Developer
 San Francisco, CA
@@ -330,6 +330,26 @@ describe('plain text round trip', () => {
     });
 
     expect(shown(parseResumeText(textOf(data)).resume)).toEqual(expected);
+  });
+
+  it('reads a header’s links back from their brackets, but not alignment or underlining', () => {
+    const data = createStyledHeaderResume();
+    expect(shown(parseResumeText(textOf(data)).resume)).toEqual(
+      buildExpectedShown(data, (expected) => {
+        expected.linkStyle = 'plain';
+        expected.header[0].align = 'center';
+        // Text can't say an address isn't linked, so one on its own links to itself.
+        expected.header[0].links.push(['ada@example.com', 'mailto:ada@example.com']);
+      })
+    );
+  });
+
+  it('writes a link after its words, unless the words already are the address', () => {
+    expect(textOf(createStyledHeaderResume()).split('\n').slice(1, 4)).toEqual([
+      '555-0100 · Notes [draft] *1* (https://ada.dev/notes_(2025)) · ada@example.com',
+      'F-1 OPT — authorized through 2028 — London, UK',
+      'github.com/ada    Portfolio (https://ada.dev)',
+    ]);
   });
 });
 

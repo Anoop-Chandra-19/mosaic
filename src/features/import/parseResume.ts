@@ -1,8 +1,14 @@
-import { HEADER_SEPARATORS, createHeaderItem, createHeaderLine } from '@/lib/resume/resumeHeader';
+import {
+  HEADER_SEPARATORS,
+  createHeaderItem,
+  createHeaderLine,
+  resolveHeaderItemHref,
+} from '@/lib/resume/resumeHeader';
 import { SECTION_PRESETS } from '@/lib/resume/sectionPresets';
 import type {
   Bullet,
   ContactInfo,
+  HeaderAlign,
   HeaderItemKind,
   HeaderLine,
   HeaderSeparator,
@@ -12,7 +18,13 @@ import type {
   SectionKind,
   SectionLayout,
 } from '@/types/resume';
-import { textToLines, type ImportLine } from './importLines';
+import {
+  findMarkedLinkUrl,
+  removeLinkMarks,
+  replaceMarkedLinksWithText,
+  textToLines,
+  type ImportLine,
+} from './importLines';
 import { matchSectionHeader } from './sectionHeaders';
 
 export interface ParsedResume {
@@ -101,7 +113,7 @@ const isReach = (text: string) =>
   [EMAIL_RE, PHONE_RE, LINKEDIN_RE, GITHUB_RE, WEB_RE].some((re) => re.test(text));
 
 /** What a contact field is about, by its words. Only meaning: it prints as written. */
-function kindOf(field: string): HeaderItemKind {
+function guessHeaderItemKind(field: string): HeaderItemKind {
   if (EMAIL_RE.test(field)) return 'email';
   // A profile written as its address, or as its name, the way the example resume has it.
   if (LINKEDIN_RE.test(field) || /^linkedin\b/i.test(field)) return 'linkedin';
@@ -114,7 +126,7 @@ function kindOf(field: string): HeaderItemKind {
 }
 
 /** The separator a line's fields are written apart with; Mosaic's own when it has none. */
-function separatorOf(line: string): HeaderSeparator {
+function detectHeaderSeparator(line: string): HeaderSeparator {
   const mark = FIELD_SEPARATOR.exec(line)?.[0].trim();
   const known = HEADER_SEPARATORS.find(({ value }) => value.trim() === mark);
   return known?.value ?? HEADER_SEPARATORS[0].value;
@@ -122,16 +134,41 @@ function separatorOf(line: string): HeaderSeparator {
 
 /** "LinkedIn https://linkedin.com/in/ada": words, then the full address they stand for. */
 const WORDS_THEN_ADDRESS = /^(.*\S)\s+((?:https?:\/\/|mailto:)\S+)$/i;
+/** "LinkedIn (linkedin.com/in/ada)": how Mosaic's plain text writes a link after its words. */
+const WORDS_THEN_BRACKETED = /^(.*\S)\s+\((\S+)\)$/;
 
-/** A contact field as an item: its words, and the address written after them as its link. */
-function headerItemOf(field: string) {
-  const [, words, address] = WORDS_THEN_ADDRESS.exec(field) ?? [];
-  return createHeaderItem(kindOf(field), words ? { text: words, url: address } : { text: field });
+/** A contact-block line, with where it sat when the source could say. */
+interface ContactLine {
+  text: string;
+  align?: HeaderAlign;
+}
+
+/** A field's words and its link, as the source gave them — or as its words spell one out. */
+function splitFieldTextAndLink(field: string, marked: boolean): { text: string; url: string } {
+  const text = removeLinkMarks(field);
+  const url = findMarkedLinkUrl(field);
+  if (url) return { text, url };
+  for (const pattern of [WORDS_THEN_BRACKETED, WORDS_THEN_ADDRESS]) {
+    const [, words, address] = pattern.exec(text) ?? [];
+    if (words && resolveHeaderItemHref({ url: address })) return { text: words, url: address };
+  }
+  // Plain text can't mark a link, so an address on its own is taken to link to itself.
+  if (!marked && isReach(text) && resolveHeaderItemHref({ url: text })) return { text, url: text };
+  return { text, url: '' };
+}
+
+/** A contact field as an item, its kind from its words and its link together. */
+function createHeaderItemFromField(field: string, marked: boolean) {
+  const { text, url } = splitFieldTextAndLink(field, marked);
+  return createHeaderItem(guessHeaderItemKind(url ? `${text} ${url}` : text), { text, url });
 }
 
 /** A contact-block line as a header line: each field an item, kept as written. */
-function headerLineOf(line: string): HeaderLine {
-  const items = fieldsOf(line).map(headerItemOf);
+function createHeaderLineFromContactLine(
+  { text, align = 'center' }: ContactLine,
+  marked: boolean
+): HeaderLine {
+  const items = fieldsOf(text).map((field) => createHeaderItemFromField(field, marked));
   // Two fields and one of them a status or a place: the other is the other one.
   if (items.length === 2) {
     const kinds = items.map((item) => item.kind);
@@ -139,7 +176,10 @@ function headerLineOf(line: string): HeaderLine {
     if (other && kinds.includes('auth')) other.kind = 'location';
     else if (other && kinds.includes('location')) other.kind = 'auth';
   }
-  return createHeaderLine(items, { separator: separatorOf(line) });
+  return createHeaderLine(items, {
+    separator: detectHeaderSeparator(removeLinkMarks(text)),
+    align,
+  });
 }
 
 /**
@@ -147,28 +187,33 @@ function headerLineOf(line: string): HeaderLine {
  * else a header holds, and every other line of the block is a header line — Mosaic's own
  * files write "phone | email | links" and "status | location", and many resumes the same.
  */
-function parseContact(preamble: string[], fullText: string): ContactInfo {
-  const nameAt = preamble.findIndex(
+function parseContact(preamble: ContactLine[], fullText: string, marked: boolean): ContactInfo {
+  const shown = preamble.map((line) => removeLinkMarks(line.text));
+  const nameAt = shown.findIndex(
     (line) =>
       fieldsOf(line).length === 1 &&
       !isReach(line) &&
       !STATUS_RE.test(line) &&
       !LOCATION_RE.test(line)
   );
-  const lines = preamble.filter((line, index) => index !== nameAt && line.trim()).map(headerLineOf);
+  const lines = preamble
+    .filter((line, index) => index !== nameAt && line.text.trim())
+    .map((line) => createHeaderLineFromContactLine(line, marked));
 
   // With no contact block, the address and number can be anywhere.
-  if (!preamble.some((line) => line.trim())) {
+  if (!shown.some((line) => line.trim())) {
     const found = [EMAIL_RE, PHONE_RE, LINKEDIN_RE, GITHUB_RE]
       .map((re) => fullText.match(re)?.[0].trim() ?? '')
       .filter(Boolean);
     if (found.length > 0) {
-      lines.push(createHeaderLine(found.map((text) => createHeaderItem(kindOf(text), { text }))));
+      lines.push(
+        createHeaderLine(found.map((text) => createHeaderItem(guessHeaderItemKind(text), { text })))
+      );
     }
   }
 
   return {
-    name: nameAt < 0 ? '' : preamble[nameAt].trim(),
+    name: nameAt < 0 ? '' : shown[nameAt].trim(),
     header: { linkStyle: 'plain', lines },
   };
 }
@@ -259,9 +304,24 @@ export function parseResumeLines(
 ): ParsedResume {
   const warnings: string[] = [];
   const headings = lines.flatMap((line, index) => (line.role === 'heading' ? [index] : []));
+  const contactEnd = headings[0] ?? lines.length;
 
-  const preamble = lines.slice(0, headings[0] ?? lines.length).flatMap(textsOf);
-  const contact = parseContact(preamble, lines.flatMap(textsOf).join('\n'));
+  // The contact block makes its links into header items; anywhere else, a link reads as its
+  // words and then its address.
+  const preamble = lines
+    .slice(0, contactEnd)
+    .flatMap((line) => textsOf(line).map((text) => ({ text, align: line.align })));
+  lines = lines.map((line, index) =>
+    index < contactEnd
+      ? line
+      : {
+          ...line,
+          text: replaceMarkedLinksWithText(line.text),
+          ...(line.aside !== undefined && { aside: replaceMarkedLinksWithText(line.aside) }),
+        }
+  );
+  const fullText = lines.flatMap(textsOf).map(replaceMarkedLinksWithText).join('\n');
+  const contact = parseContact(preamble, fullText, marked);
   const leftOut: string[] = [];
 
   const sections: ResumeSection[] = [];

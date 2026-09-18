@@ -19,6 +19,8 @@ export interface ExportFormatInfo {
   fileType: FileType;
   /** Text that can go on the clipboard as well as into a file. */
   copyable: boolean;
+  /** How the header's links come out in this format. */
+  headerLinkNote: string;
 }
 
 export const EXPORT_FORMATS: ExportFormatInfo[] = [
@@ -29,6 +31,7 @@ export const EXPORT_FORMATS: ExportFormatInfo[] = [
     extension: 'pdf',
     fileType: 'pdf',
     copyable: false,
+    headerLinkNote: 'Linked in place: the text prints as you wrote it, with the link embedded.',
   },
   {
     id: 'markdown',
@@ -37,6 +40,7 @@ export const EXPORT_FORMATS: ExportFormatInfo[] = [
     extension: 'md',
     fileType: 'markdown',
     copyable: true,
+    headerLinkNote: 'Written as [text](link).',
   },
   {
     id: 'plaintext',
@@ -45,6 +49,7 @@ export const EXPORT_FORMATS: ExportFormatInfo[] = [
     extension: 'txt',
     fileType: 'text',
     copyable: true,
+    headerLinkNote: 'Plain text can’t link, so each link is written after its text: “text (link)”.',
   },
   {
     id: 'json-resume',
@@ -53,6 +58,7 @@ export const EXPORT_FORMATS: ExportFormatInfo[] = [
     extension: 'json',
     fileType: 'json',
     copyable: true,
+    headerLinkNote: 'Text and link kept apart, in the fields other tools read and in Mosaic’s own.',
   },
   {
     id: 'mosaic-json',
@@ -61,6 +67,7 @@ export const EXPORT_FORMATS: ExportFormatInfo[] = [
     extension: 'json',
     fileType: 'json',
     copyable: true,
+    headerLinkNote: 'Text and link kept apart, exactly as in the resume.',
   },
 ];
 

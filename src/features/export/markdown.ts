@@ -1,4 +1,4 @@
-import { formatHeaderLineText } from '@/lib/resume/resumeHeader';
+import type { PrintedHeaderLine } from '@/lib/resume/resumeHeader';
 import type { ExportEntry, NormalizedResumeExport } from './normalizeResumeExport';
 
 const WORD_CHARACTER = /[\p{L}\p{N}]/u;
@@ -19,13 +19,32 @@ function escapeInline(text: string): string {
     );
 }
 
-/** A line of text that must not start a heading, a list, a quote, or a rule. */
-function escapeLine(text: string): string {
-  return escapeInline(text)
+/** Escaped text that must not start a heading, a list, a quote, or a rule. */
+function escapeLineStart(escaped: string): string {
+  return escaped
     .replace(/^(#{1,6}|[-+])(?=\s|$)/, '\\$1')
     .replace(/^>/, '\\>')
     .replace(/^(\d+)([.)])(?=\s|$)/, '$1\\$2')
     .replace(/^(?=(?:-\s*){3,}$)/, '\\');
+}
+
+/** A line of text that must not start a heading, a list, a quote, or a rule. */
+const escapeLine = (text: string) => escapeLineStart(escapeInline(text));
+
+/**
+ * A link's address as a Markdown link holds it: as it is, or in angle brackets when a space
+ * or a parenthesis would end it early — so it reads back exactly as written.
+ */
+const formatMarkdownLinkAddress = (href: string) =>
+  /[\s()]/.test(href) ? `<${href.replace(/[<>]/g, encodeURIComponent)}>` : href;
+
+/** A header line: its items joined by its separator, a linked item as `[text](link)`. */
+function formatMarkdownHeaderLine({ separator, items }: PrintedHeaderLine): string {
+  const written = items.map(({ text, href }) => {
+    const shown = escapeInline(text);
+    return href ? `[${shown.replace(/]/g, '\\]')}](${formatMarkdownLinkAddress(href)})` : shown;
+  });
+  return escapeLineStart(written.join(separator));
 }
 
 /** A heading's words: a run of # at the end, after a space, would close the heading. */
@@ -50,9 +69,7 @@ export function createMarkdownExport(data: NormalizedResumeExport) {
   const name = data.contact.name || 'Mosaic Resume';
 
   lines.push(`# ${escapeHeading(name)}`);
-  for (const line of data.contact.lines) {
-    lines.push(escapeLine(formatHeaderLineText(line)));
-  }
+  lines.push(...data.contact.lines.map(formatMarkdownHeaderLine));
   if (data.contact.lines.length > 0) {
     lines.push('');
   }

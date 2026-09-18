@@ -79,6 +79,28 @@ export function resolveHeaderItemHref({ url }: Pick<HeaderItem, 'url'>): string 
   return '';
 }
 
+/** An address as a reader would say it: no scheme, no "www.", no trailing slash, any case. */
+const normalizeAddress = (text: string) =>
+  text
+    .trim()
+    .replace(/^(?:mailto:|tel:|[a-z][a-z\d+.-]*:\/\/)/i, '')
+    .replace(/^www\./i, '')
+    .replace(/\/+$/, '')
+    .toLowerCase();
+
+/** A link without the part only software reads: `mailto:` and `tel:` go, a web link stays. */
+export const stripMailtoOrTelScheme = (href: string) => href.replace(/^(?:mailto|tel):/i, '');
+
+/**
+ * Whether two pieces of text name the same address: "github.com/ada" and
+ * "https://github.com/ada/", or "(555) 010-0100" and "tel:5550100100".
+ */
+export function isSameAddress(a: string, b: string): boolean {
+  const digits = (text: string) => text.replace(/\D/g, '');
+  if (/^tel:/i.test(a) || /^tel:/i.test(b)) return digits(a) !== '' && digits(a) === digits(b);
+  return normalizeAddress(a) !== '' && normalizeAddress(a) === normalizeAddress(b);
+}
+
 export interface PrintedHeaderItem {
   id: string;
   kind: HeaderItemKind;

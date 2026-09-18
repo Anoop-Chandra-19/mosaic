@@ -11,6 +11,7 @@ import {
   type XmlElement,
 } from '../parseXml';
 import { readDocx, readDocxContent } from '../readDocx';
+import { replaceMarkedLinksWithText } from '../../importLines';
 import type { ParsedResume } from '../../parseResume';
 import { cell, docx, para, picture, run, table, textBox } from './buildDocx';
 
@@ -114,7 +115,7 @@ function unaccounted(parsed: ParsedResume, inFile: Map<string, number>): string[
 /** Every word the reader took out of the file, as often as the file holds it. */
 async function unread(bytes: Uint8Array): Promise<string[]> {
   const read = paragraphsOf((await readDocxContent(bytes)).blocks)
-    .map((p) => p.text)
+    .map((p) => replaceMarkedLinksWithText(p.text))
     .join('\n');
   return missingFrom(read, await wordsInFile(bytes));
 }

@@ -71,7 +71,7 @@ interface PdfJsFont {
 }
 
 /** Glyph widths by the text they draw: the font's widths, through its codes' meanings. */
-function widthsOf(font: PdfJsFont | undefined): Map<string, number> | undefined {
+function readGlyphWidths(font: PdfJsFont | undefined): Map<string, number> | undefined {
   const byCode = font?.widths;
   const meanings = font?.toUnicode?._map;
   if (!byCode || !meanings) return undefined;
@@ -89,7 +89,10 @@ function widthsOf(font: PdfJsFont | undefined): Map<string, number> | undefined 
  * Each UTF-16 unit's share of a run's width, or undefined when the font can't say. A
  * character the font has no width for takes the average of those it has.
  */
-function sharesOf(text: string, widths: Map<string, number> | undefined): number[] | undefined {
+function computeCharacterWidthShares(
+  text: string,
+  widths: Map<string, number> | undefined
+): number[] | undefined {
   if (!widths) return undefined;
   const known = [...text].map((char) => widths.get(char));
   const found = known.filter((width): width is number => width !== undefined);
@@ -119,7 +122,7 @@ async function fontsOf(page: PDFPageProxy, ids: Set<string>): Promise<Map<string
       bold: Boolean(font?.bold || font?.black) || /bold|black|heavy/i.test(name),
       italic: Boolean(font?.italic) || /italic|oblique/i.test(name),
       name,
-      widths: widthsOf(font),
+      widths: readGlyphWidths(font),
     });
   }
   return fonts;
@@ -141,7 +144,7 @@ async function readPage(page: PDFPageProxy, budget: Budget): Promise<PdfPage> {
   const runs: PdfRun[] = items.map((item) => {
     const [a, b, c, d, e, f] = item.transform as number[];
     const font = fonts.get(item.fontName)!;
-    const shares = sharesOf(item.str, font.widths);
+    const shares = computeCharacterWidthShares(item.str, font.widths);
     return {
       text: item.str,
       x: e - left,
@@ -158,12 +161,14 @@ async function readPage(page: PDFPageProxy, budget: Budget): Promise<PdfPage> {
 
   const links: PdfLink[] = [];
   for (const annotation of await page.getAnnotations()) {
-    // pdf.js sets `url` only for an address it accepts as absolute; `unsafeUrl` is raw.
+    // pdf.js sets `url` only for an address it accepts as absolute, tidied ("ada.dev/");
+    // `unsafeUrl` is the address as the file writes it, taken only once pdf.js accepts it.
     if (annotation.subtype !== 'Link' || typeof annotation.url !== 'string') continue;
+    const url = typeof annotation.unsafeUrl === 'string' ? annotation.unsafeUrl : annotation.url;
     if (--budget.links < 0) throw new PdfLimitError('This PDF holds more links than Mosaic reads.');
     const [x1, y1, x2, y2] = annotation.rect as number[];
     links.push({
-      url: annotation.url,
+      url,
       left: Math.min(x1, x2) - left,
       right: Math.max(x1, x2) - left,
       top: top - Math.max(y1, y2),

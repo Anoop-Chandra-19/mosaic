@@ -1,4 +1,4 @@
-import type { ImportLine } from './importLines';
+import { markLink, type ImportLine } from './importLines';
 import { parseResumeLines, type ParsedResume } from './parseResume';
 import { matchSectionHeader } from './sectionHeaders';
 
@@ -23,15 +23,21 @@ const restore = (text: string) =>
 const ITALIC_LINE = /^(?:_(?!_)(.*[^_\s])_|\*(?!\*)(.*[^*\s])\*)$/;
 
 /**
- * A line's words without its inline markup: emphasis and code marks go, a link keeps its
- * text and its address. Takes and gives protected text.
+ * A line's words without its inline markup: emphasis and code marks go, a link is marked
+ * with its words and its address (`markLink`). Takes and gives protected text.
  */
 function unmark(text: string): string {
   return text
-    .replace(/!?\[([^\]]*)\]\(([^)\s]+)[^)]*\)/g, (_, words: string, url: string) =>
-      !words || words === url || url.endsWith(words) ? url : `${words} ${url}`
+    .replace(
+      /!?\[([^\]]*)\]\((?:<([^<>\n]*)>|([^)\s]+))[^)]*\)/g,
+      (_, words: string, bracketed: string | undefined, bare: string | undefined) => {
+        const url = bracketed ?? bare ?? '';
+        return words ? markLink(words, url) : url;
+      }
     )
-    .replace(/<((?:https?:|mailto:)[^>\s]+|[^>\s]+@[^>\s]+)>/g, '$1')
+    .replace(/<((?:https?:|mailto:)[^>\s]+|[^>\s]+@[^>\s]+)>/g, (_, url: string) =>
+      markLink(url, url)
+    )
     .replace(/(\*\*|__)(?=\S)(.+?)(?<=\S)\1/g, '$2')
     .replace(/(?<![\w*])\*(?=\S)(.+?)(?<=\S)\*(?![\w*])/g, '$1')
     .replace(/(?<![\p{L}\p{N}_])_(?=\S)(.+?)(?<=\S)_(?![\p{L}\p{N}_])/gu, '$1')

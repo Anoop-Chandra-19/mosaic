@@ -125,13 +125,13 @@ const PROFILE_SITES: { network: RegExp; kind: HeaderItemKind; site: string }[] =
  * how to reach the person on one line, where they are on the next.
  */
 function headerOfBasics(basics: Json): HeaderLine[] {
-  const linked = (kind: HeaderItemKind, value: string) =>
+  const createLinkedItems = (kind: HeaderItemKind, value: string) =>
     value ? [createHeaderItem(kind, { text: value, url: value })] : [];
   const profiles = items(basics.profiles).flatMap((profile) => {
     const known = PROFILE_SITES.find(({ network }) => network.test(text(profile.network)));
     const username = text(profile.username);
     const address = text(profile.url) || (known && username ? `${known.site}/${username}` : '');
-    return linked(known?.kind ?? 'custom', address);
+    return createLinkedItems(known?.kind ?? 'custom', address);
   });
   const location = isRecord(basics.location) ? basics.location : {};
   const place =
@@ -139,10 +139,10 @@ function headerOfBasics(basics: Json): HeaderLine[] {
     [text(location.city), text(location.region)].filter(Boolean).join(', ');
   return [
     [
-      ...linked('phone', text(basics.phone)),
-      ...linked('email', text(basics.email)),
+      ...createLinkedItems('phone', text(basics.phone)),
+      ...createLinkedItems('email', text(basics.email)),
       ...profiles,
-      ...linked('site', text(basics.url)),
+      ...createLinkedItems('site', text(basics.url)),
     ],
     place ? [createHeaderItem('location', { text: place })] : [],
   ]

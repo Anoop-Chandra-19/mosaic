@@ -4,6 +4,7 @@ import { paragraphsOf, type DocxParagraph, type DocxTable } from '../docxModel';
 import { NotADocxError, readDocxContent } from '../readDocx';
 import { XmlError } from '../parseXml';
 import { ZipError } from '../openZip';
+import { markLink, replaceMarkedLinksWithText } from '../../importLines';
 import {
   cell,
   deleted,
@@ -201,30 +202,31 @@ describe('readDocxContent', () => {
   });
 
   describe('links', () => {
-    it('gives a link’s words and its address', async () => {
+    it('marks a link’s words with its address', async () => {
       const body = para([hyperlink('rLink', 'LinkedIn')]);
       const texts = await textsOf(body, { links: { rLink: 'https://linkedin.com/in/ada' } });
-      expect(texts).toEqual(['LinkedIn https://linkedin.com/in/ada']);
+      expect(texts).toEqual([markLink('LinkedIn', 'https://linkedin.com/in/ada')]);
     });
 
     it('reads a link written as a field', async () => {
       expect(await textsOf(para([hyperlinkField('https://ada.dev', 'my site')]))).toEqual([
-        'my site https://ada.dev',
+        markLink('my site', 'https://ada.dev'),
       ]);
     });
 
-    it('keeps an address written as its own words just once', async () => {
+    it('keeps an address written as its own words, for the parser to write once', async () => {
       const texts = await textsOf(para([hyperlink('rLink', 'github.com/ada')]), {
         links: { rLink: 'https://github.com/ada' },
       });
-      expect(texts).toEqual(['https://github.com/ada']);
+      expect(texts).toEqual([markLink('github.com/ada', 'https://github.com/ada')]);
+      expect(replaceMarkedLinksWithText(texts[0])).toBe('https://github.com/ada');
     });
 
     it('keeps the address when the words name only part of it', async () => {
       const texts = await textsOf(para([hyperlink('rLink', 'linkedin.com')]), {
         links: { rLink: 'https://www.linkedin.com/in/ada-lovelace' },
       });
-      expect(texts).toEqual(['linkedin.com https://www.linkedin.com/in/ada-lovelace']);
+      expect(texts).toEqual([markLink('linkedin.com', 'https://www.linkedin.com/in/ada-lovelace')]);
     });
 
     it('reads a field’s address with or without quotes', async () => {
@@ -234,8 +236,8 @@ describe('readDocxContent', () => {
         `<w:r><w:fldChar w:fldCharType="separate"/></w:r>${run('my blog')}<w:r><w:fldChar w:fldCharType="end"/></w:r>`;
       const bookmark = `<w:fldSimple w:instr='HYPERLINK \\l "top"'>${run('back to top')}</w:fldSimple>`;
       expect(await textsOf([para([simple]), para([complex]), para([bookmark])].join(''))).toEqual([
-        'my site https://ada.dev',
-        'my blog https://ada.blog',
+        markLink('my site', 'https://ada.dev'),
+        markLink('my blog', 'https://ada.blog'),
         'back to top',
       ]);
     });
@@ -253,7 +255,7 @@ describe('readDocxContent', () => {
     });
     const paragraphs = paragraphsOf((await readDocxContent(file)).blocks);
     expect(paragraphs[0]).toMatchObject({ text: 'Ada Lovelace', bold: true, outline: 0 });
-    expect(paragraphs[1].text).toBe('my site https://ada.dev');
+    expect(paragraphs[1].text).toBe(markLink('my site', 'https://ada.dev'));
   });
 
   describe('formatting a style turns on, and a style it builds on turns off again', () => {

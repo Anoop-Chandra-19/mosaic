@@ -86,7 +86,7 @@ export function HeaderItemRow({
   const Icon = HEADER_ICONS[item.kind];
   const index = line.items.indexOf(item);
   const href = resolveHeaderItemHref(item);
-  const sameAsText = shortLink(item.url) === shortLink(item.text);
+  const isLinkSameAsText = shortLink(item.url) === shortLink(item.text);
 
   return (
     <div className="group/item relative flex items-start gap-2 rounded-md px-1.5 py-1 hover:bg-zinc-100 dark:hover:bg-zinc-900">
@@ -111,7 +111,7 @@ export function HeaderItemRow({
             aria-label="Edit link"
           >
             <Link2 className="size-3 shrink-0" />
-            {!sameAsText && <span className="truncate">{shortLink(item.url)}</span>}
+            {!isLinkSameAsText && <span className="truncate">{shortLink(item.url)}</span>}
           </AppButton>
         )}
 

@@ -17,10 +17,12 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { useActiveTemplate } from '@/features/templates/useActiveTemplate';
 import { buildExportName, toFileName } from '@/lib/files/filename';
+import { LINK_STYLES } from '@/lib/resume/resumeHeader';
 import { cn } from '@/lib/utils';
 import { showToast, useOverlayStore, type ExportVersion } from '@/stores/overlayStore';
 import { getResumeSnapshot, useResumeStore } from '@/stores/resumeStore';
 import { useUIStore } from '@/stores/uiStore';
+import type { LinkStyle } from '@/types/resume';
 import type { PaperSize } from '@/types/ui';
 import {
   copyText,
@@ -172,6 +174,9 @@ function ExportForm({ version, onDone }: { version: ExportVersion | null; onDone
               </ToggleGroup>
             </Row>
           )}
+          <Row label="Header links" description={format.headerLinkNote}>
+            {format.id === 'pdf' && <HeaderLinksControl version={version} />}
+          </Row>
           <Row label="File name">
             <div className="flex w-[min(18rem,100%)]">
               <Input
@@ -253,11 +258,59 @@ function FormatOption({ format, selected }: { format: ExportFormatInfo; selected
   );
 }
 
-function Row({ label, children }: { label: string; children: ReactNode }) {
+function Row({
+  label,
+  description,
+  children,
+}: {
+  label: string;
+  description?: string;
+  children?: ReactNode;
+}) {
   return (
     <div className="flex flex-wrap items-center justify-between gap-2 border-b border-zinc-200 py-2.5 last:border-b-0 dark:border-zinc-800">
-      <span className="text-sm font-medium text-zinc-900 dark:text-zinc-100">{label}</span>
+      <span className="min-w-0 flex-1 basis-60">
+        <span className="block text-sm font-medium text-zinc-900 dark:text-zinc-100">{label}</span>
+        {description && (
+          <span className="mt-0.5 block text-xs leading-snug text-zinc-600 dark:text-zinc-400">
+            {description}
+          </span>
+        )}
+      </span>
       {children}
     </div>
+  );
+}
+
+/**
+ * How the header's links look in the PDF. It is the resume's own setting, so the draft's
+ * can be changed here; a version shows the one it was saved with.
+ */
+function HeaderLinksControl({ version }: { version: ExportVersion | null }) {
+  const draftLinkStyle = useResumeStore((s) => s.contact.header.linkStyle);
+  const setLinkStyle = useResumeStore((s) => s.setLinkStyle);
+  if (version) {
+    const { linkStyle } = version.version.doc.contact.header;
+    return (
+      <span className="text-sm text-zinc-600 dark:text-zinc-400">
+        {LINK_STYLES.find((style) => style.value === linkStyle)?.label}
+      </span>
+    );
+  }
+  return (
+    <ToggleGroup
+      type="single"
+      variant="outline"
+      size="sm"
+      value={draftLinkStyle}
+      onValueChange={(value) => value && setLinkStyle(value as LinkStyle)}
+      aria-label="Header links"
+    >
+      {LINK_STYLES.map(({ value, label }) => (
+        <ToggleGroupItem key={value} value={value}>
+          {label}
+        </ToggleGroupItem>
+      ))}
+    </ToggleGroup>
   );
 }

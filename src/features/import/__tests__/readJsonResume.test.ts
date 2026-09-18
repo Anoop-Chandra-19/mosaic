@@ -5,7 +5,15 @@ import { createDefaultResume } from '@/lib/resume/defaultResume';
 import { createHeaderItem } from '@/lib/resume/resumeHeader';
 import type { ResumeData } from '@/types/resume';
 import { isJsonResume, readJsonResume } from '../readJsonResume';
-import { entry, everything, kinds, resume, section, shown } from './roundTrip';
+import {
+  entry,
+  everything,
+  kinds,
+  resume,
+  section,
+  shown,
+  createStyledHeaderResume,
+} from './roundTrip';
 
 const exported = (resume: ResumeData) =>
   JSON.parse(createJsonResumeExport(normalizeResumeForExport(resume)));
@@ -26,6 +34,11 @@ describe('readJsonResume', () => {
       expect(parsed.warnings).toEqual([]);
       expect(parsed.leftOut).toEqual([]);
     }
+  });
+
+  it('gives back every way a header can print', () => {
+    const data = createStyledHeaderResume();
+    expect(shown(readJsonResume(exported(data)).resume)).toEqual(shown(data));
   });
 
   it('gives back the header whole: kinds, links, separators, alignment, link style', () => {

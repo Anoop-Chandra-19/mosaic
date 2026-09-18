@@ -1,6 +1,6 @@
-import { Document, Font, Page, StyleSheet, Text, View } from '@react-pdf/renderer';
+import { Fragment } from 'react';
+import { Document, Font, Link, Page, StyleSheet, Text, View } from '@react-pdf/renderer';
 import type { PaperSize } from '@/types/ui';
-import { formatHeaderLineText } from '@/lib/resume/resumeHeader';
 import type { NormalizedResumeExport } from '../normalizeResumeExport';
 import { HEADLESS_LAYOUT } from '@/lib/resume/headlessLayout';
 
@@ -21,6 +21,15 @@ const FONT_ITALIC = 'Helvetica-Oblique';
 // "tomers"): an ATS then reads a word that isn't there, and the preview, which doesn't
 // hyphenate, breaks lines at different words than the PDF.
 Font.registerHyphenationCallback((word) => [word]);
+
+const NO_BREAK_SPACE = String.fromCharCode(0xa0);
+
+/**
+ * A run of spaces as it is typed: react-pdf collapses ordinary ones into one, so they go in
+ * as no-break spaces, which Helvetica sets the same width.
+ */
+const preserveSpaceRuns = (text: string) =>
+  text.replace(/ {2,}/g, (spaces) => NO_BREAK_SPACE.repeat(spaces.length));
 
 const styles = StyleSheet.create({
   page: {
@@ -131,6 +140,10 @@ const styles = StyleSheet.create({
 export function PDFResumeDocument({ data, paperSize }: PDFResumeDocumentProps) {
   const size = paperSize === 'a4' ? 'A4' : 'LETTER';
   const name = data.contact.name || 'Mosaic Resume';
+  const linkStyle = {
+    color: L.color,
+    textDecoration: data.contact.linkStyle === 'underline' ? 'underline' : 'none',
+  } as const;
 
   return (
     <Document title={name}>
@@ -140,7 +153,20 @@ export function PDFResumeDocument({ data, paperSize }: PDFResumeDocumentProps) {
           <Text style={styles.name}>{name}</Text>
           {data.contact.lines.map((line) => (
             <Text key={line.id} style={[styles.contactLine, { textAlign: line.align }]}>
-              {formatHeaderLineText(line)}
+              {line.items.map((item, index) => (
+                <Fragment key={item.id}>
+                  {index > 0 && preserveSpaceRuns(line.separator)}
+                  {/* The printed text carries the link; it looks like the text around it
+                      unless the header asks for underlined links. */}
+                  {item.href ? (
+                    <Link src={item.href} style={linkStyle}>
+                      {item.text}
+                    </Link>
+                  ) : (
+                    item.text
+                  )}
+                </Fragment>
+              ))}
             </Text>
           ))}
         </View>

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { ImportLine } from '../../importLines';
+import { markLink, type ImportLine } from '../../importLines';
 import type { PdfLink, PdfPage, PdfRun } from '../pdfModel';
 import { pdfLines } from '../pdfLines';
 
@@ -256,7 +256,7 @@ describe('pdfLines', () => {
     ]);
   });
 
-  it('gives linked words their address', () => {
+  it('marks linked words with their address', () => {
     // "ada@example.com | LinkedIn": each character is 5 points wide from x = 100.
     const at = (from: number, to: number) => ({ left: 100 + from * 5, right: 100 + to * 5 });
     const { lines } = read(
@@ -268,7 +268,9 @@ describe('pdfLines', () => {
         ]
       )
     );
-    expect(lines[1].text).toBe('ada@example.com | LinkedIn https://linkedin.com/in/ada');
+    expect(lines[1].text).toBe(
+      `${markLink('ada@example.com', 'mailto:ada@example.com')} | ${markLink('LinkedIn', 'https://linkedin.com/in/ada')}`
+    );
   });
 
   it('leaves out sideways text, and says so', () => {
