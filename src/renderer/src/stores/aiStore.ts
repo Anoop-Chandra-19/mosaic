@@ -29,7 +29,7 @@ export const DEFAULT_AI_STATE = {
   ollamaAddress: DEFAULT_OLLAMA_ADDRESS,
 };
 
-interface AIStoreState {
+interface AiStoreState {
   enabled: boolean;
   provider: AIProvider;
   modelsByProvider: Record<AIProvider, string>;
@@ -43,7 +43,7 @@ interface AIStoreState {
   resetModelForProvider: (provider: AIProvider) => void;
 }
 
-type LegacyAIState = {
+type LegacyAiState = {
   enabled?: boolean;
   provider?: AIProvider;
   model?: string;
@@ -51,8 +51,8 @@ type LegacyAIState = {
   ollamaAddress?: string;
 };
 
-function normalizePersistedAIState(persisted: unknown): typeof DEFAULT_AI_STATE {
-  const parsed = (persisted ?? {}) as LegacyAIState;
+function normalizePersistedAiState(persisted: unknown): typeof DEFAULT_AI_STATE {
+  const parsed = (persisted ?? {}) as LegacyAiState;
 
   const provider = parsed.provider ?? DEFAULT_AI_STATE.provider;
   const modelsByProvider = {
@@ -76,7 +76,7 @@ function normalizePersistedAIState(persisted: unknown): typeof DEFAULT_AI_STATE 
   };
 }
 
-export const useAIStore = create<AIStoreState>()(
+export const useAiStore = create<AiStoreState>()(
   persist(
     (set, get) => ({
       ...DEFAULT_AI_STATE,
@@ -110,7 +110,7 @@ export const useAIStore = create<AIStoreState>()(
     {
       name: 'ai',
       version: 1,
-      migrate: (persistedState) => normalizePersistedAIState(persistedState),
+      migrate: (persistedState) => normalizePersistedAiState(persistedState),
       storage: createJSONStorage(() => settingsStorage),
       // Hydrated by `hydrateStores` once boot has loaded the settings.
       skipHydration: true,

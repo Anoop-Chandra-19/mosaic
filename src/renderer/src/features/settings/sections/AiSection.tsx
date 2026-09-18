@@ -13,7 +13,7 @@ import { Switch } from '@/components/ui/switch';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { isLocalOllamaAddress } from '@shared/ai/ollamaAddress';
 import { cn } from '@/lib/utils';
-import { AI_PROVIDER_DEFAULT_MODEL, useAIStore } from '@/stores/aiStore';
+import { AI_PROVIDER_DEFAULT_MODEL, useAiStore } from '@/stores/aiStore';
 import type { AIProvider } from '@shared/types/resume';
 import {
   isKeyedProvider,
@@ -27,15 +27,15 @@ import { AI_PROVIDER_BY_ID, AI_PROVIDER_OPTIONS } from './aiProviderOptions';
 import { OllamaAddressRow, OllamaModelRow } from './OllamaRows';
 
 export function AiSection() {
-  const enabled = useAIStore((s) => s.enabled);
-  const provider = useAIStore((s) => s.provider);
-  const modelsByProvider = useAIStore((s) => s.modelsByProvider);
-  const setEnabled = useAIStore((s) => s.setEnabled);
-  const setProvider = useAIStore((s) => s.setProvider);
-  const setModel = useAIStore((s) => s.setModelForActiveProvider);
-  const resetModel = useAIStore((s) => s.resetModelForProvider);
-  const ollamaAddress = useAIStore((s) => s.ollamaAddress);
-  const setOllamaAddress = useAIStore((s) => s.setOllamaAddress);
+  const enabled = useAiStore((s) => s.enabled);
+  const provider = useAiStore((s) => s.provider);
+  const modelsByProvider = useAiStore((s) => s.modelsByProvider);
+  const setEnabled = useAiStore((s) => s.setEnabled);
+  const setProvider = useAiStore((s) => s.setProvider);
+  const setModel = useAiStore((s) => s.setModelForActiveProvider);
+  const resetModel = useAiStore((s) => s.resetModelForProvider);
+  const ollamaAddress = useAiStore((s) => s.ollamaAddress);
+  const setOllamaAddress = useAiStore((s) => s.setOllamaAddress);
 
   const active = AI_PROVIDER_BY_ID[provider];
   const model = modelsByProvider[provider] ?? AI_PROVIDER_DEFAULT_MODEL[provider];

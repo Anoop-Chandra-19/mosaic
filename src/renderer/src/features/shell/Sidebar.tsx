@@ -1,6 +1,6 @@
 import { useRef } from 'react';
 import { FileText, LayoutTemplate } from 'lucide-react';
-import { useUIStore, type SidebarTab, SIDEBAR_MIN_PX, SIDEBAR_MAX_RATIO } from '@/stores/uiStore';
+import { useUiStore, type SidebarTab, SIDEBAR_MIN_PX, SIDEBAR_MAX_RATIO } from '@/stores/uiStore';
 import { ContentTab } from '@/features/editor/ContentTab';
 import { TemplatesTab } from '@/features/templates/TemplatesTab';
 import { startPaneResize } from './paneResize';
@@ -12,7 +12,7 @@ const tabs: { id: SidebarTab; label: string; icon: React.ReactNode }[] = [
 
 export function Sidebar() {
   const { activeSidebarTab, setActiveSidebarTab, sidebarRatio, sidebarCollapsed, setSidebarRatio } =
-    useUIStore();
+    useUiStore();
   const sidebarRef = useRef<HTMLElement>(null);
 
   // Hidden and shown from the status bar, or with Ctrl/⌘+B.

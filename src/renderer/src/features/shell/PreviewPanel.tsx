@@ -5,14 +5,14 @@ import { ResumePreview } from '@/features/preview/ResumePreview';
 import type { PaperSize } from '@/types/paper';
 import { VersionPreviewBanner } from '@/features/templates/VersionPreviewBanner';
 import { useOverlayStore } from '@/stores/overlayStore';
-import { PREVIEW_ZOOM_STEPS, useUIStore } from '@/stores/uiStore';
+import { PREVIEW_ZOOM_STEPS, useUiStore } from '@/stores/uiStore';
 
 export function PreviewPanel() {
-  const paperSize = useUIStore((s) => s.paperSize);
-  const setPaperSize = useUIStore((s) => s.setPaperSize);
-  const previewZoom = useUIStore((s) => s.previewZoom);
-  const zoomPreviewIn = useUIStore((s) => s.zoomPreviewIn);
-  const zoomPreviewOut = useUIStore((s) => s.zoomPreviewOut);
+  const paperSize = useUiStore((s) => s.paperSize);
+  const setPaperSize = useUiStore((s) => s.setPaperSize);
+  const previewZoom = useUiStore((s) => s.previewZoom);
+  const zoomPreviewIn = useUiStore((s) => s.zoomPreviewIn);
+  const zoomPreviewOut = useUiStore((s) => s.zoomPreviewOut);
   const meta = useOverlayStore((s) => s.previewMeta);
   const setMeta = useOverlayStore((s) => s.setPreviewMeta);
   const preview = useOverlayStore((s) => s.preview);

@@ -4,7 +4,7 @@ import { useOverlayStore } from '@/stores/overlayStore';
 import { AppButton } from '@/components/AppButton';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
-import { useAIStore } from '@/stores/aiStore';
+import { useAiStore } from '@/stores/aiStore';
 import { SETTINGS_GROUPS, SETTINGS_SECTION_BY_ID, type SettingsSectionId } from './settingsNav';
 import { AboutSection } from './sections/AboutSection';
 import { AiSection } from './sections/AiSection';
@@ -23,7 +23,7 @@ export function SettingsDialog() {
   const [lastSection, setLastSection] = useState<SettingsSectionId>('general');
   if (showing !== null && showing !== lastSection) setLastSection(showing);
   const section = showing ?? lastSection;
-  const aiEnabled = useAIStore((s) => s.enabled);
+  const aiEnabled = useAiStore((s) => s.enabled);
   const active = SETTINGS_SECTION_BY_ID[section];
 
   return (

@@ -23,7 +23,7 @@ import {
 import { resolveHeaderItemHref, getHeaderKindInfo } from '@shared/resume/resumeHeader';
 import { cn } from '@/lib/utils';
 import { useResumeStore } from '@/stores/resumeStore';
-import { useUIStore } from '@/stores/uiStore';
+import { useUiStore } from '@/stores/uiStore';
 import type { HeaderItem, HeaderLine } from '@shared/types/resume';
 import { HEADER_ICONS } from './headerIcons';
 import { HeaderItemEditor, type HeaderItemField } from './HeaderItemEditor';
@@ -53,7 +53,7 @@ export function HeaderItemRow({
   lines,
   shouldStartEditing = false,
 }: HeaderItemRowProps) {
-  const shouldShowIcon = useUIStore((s) => s.shouldShowHeaderIcons);
+  const shouldShowIcon = useUiStore((s) => s.shouldShowHeaderIcons);
   const update = useResumeStore((s) => s.updateHeaderItem);
   const move = useResumeStore((s) => s.moveHeaderItem);
   const moveToLine = useResumeStore((s) => s.moveHeaderItemToLine);

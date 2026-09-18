@@ -10,13 +10,13 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { attempt, showToast } from '@/stores/overlayStore';
-import { useUIStore } from '@/stores/uiStore';
+import { useUiStore } from '@/stores/uiStore';
 import { SettingRow, SettingsNote } from '../SettingRow';
 import { useSecretsStatus } from '../useSecretsStatus';
 
 export function PrivacySection() {
   const { status, apply } = useSecretsStatus();
-  const resetUIState = useUIStore((s) => s.resetUIState);
+  const resetUiState = useUiStore((s) => s.resetUiState);
   const [confirmingErase, setConfirmingErase] = useState(false);
   const [erasing, setErasing] = useState(false);
   const hasKeys = Object.keys(status?.saved ?? {}).length > 0;
@@ -65,7 +65,7 @@ export function PrivacySection() {
           variant="outline"
           size="sm"
           onClick={() => {
-            resetUIState();
+            resetUiState();
             showToast('Interface reset');
           }}
         >

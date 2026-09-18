@@ -12,11 +12,11 @@ import { SettingsDialog } from '@/features/settings/SettingsDialog';
 import { StartPanel } from '@/features/start/StartPanel';
 import { NameVersionDialog } from '@/features/templates/NameVersionDialog';
 import { isModKey } from '@/lib/keyboardShortcuts';
-import { useAIStore } from '@/stores/aiStore';
+import { useAiStore } from '@/stores/aiStore';
 import { showToast, useOverlayStore } from '@/stores/overlayStore';
 import { useResumeStore } from '@/stores/resumeStore';
 import { useTemplateStore } from '@/stores/templateStore';
-import { useUIStore } from '@/stores/uiStore';
+import { useUiStore } from '@/stores/uiStore';
 import { useDarkMode } from '@/lib/hooks/useDarkMode';
 
 export function AppShell() {
@@ -24,8 +24,8 @@ export function AppShell() {
   useShortcuts();
   const hasTemplates = useTemplateStore((s) => s.templates.length > 0);
   const showStart = useOverlayStore((s) => s.startOpen);
-  const aiEnabled = useAIStore((s) => s.enabled);
-  const agentPaneOpen = useUIStore((s) => s.agentPaneOpen);
+  const aiEnabled = useAiStore((s) => s.enabled);
+  const agentPaneOpen = useUiStore((s) => s.agentPaneOpen);
   const showAgentPane = aiEnabled && agentPaneOpen;
 
   return (
@@ -66,12 +66,12 @@ function useShortcuts() {
       if (!isModKey(event)) return;
       if (event.key.toLowerCase() === 'b') {
         event.preventDefault();
-        useUIStore.getState().toggleSidebarCollapsed();
+        useUiStore.getState().toggleSidebarCollapsed();
         return;
       }
-      if (event.key === '\\' && useAIStore.getState().enabled) {
+      if (event.key === '\\' && useAiStore.getState().enabled) {
         event.preventDefault();
-        useUIStore.getState().toggleAgentPane();
+        useUiStore.getState().toggleAgentPane();
         return;
       }
       if (event.key.toLowerCase() !== 's') return;

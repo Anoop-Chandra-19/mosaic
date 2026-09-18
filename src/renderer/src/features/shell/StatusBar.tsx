@@ -4,10 +4,10 @@ import { formatRelativeTime } from '@/features/templates/formatRelativeTime';
 import { useActiveTemplate } from '@/features/templates/useActiveTemplate';
 import { shortcutLabel } from '@/lib/keyboardShortcuts';
 import { cn } from '@/lib/utils';
-import { useAIStore } from '@/stores/aiStore';
+import { useAiStore } from '@/stores/aiStore';
 import { useOverlayStore } from '@/stores/overlayStore';
 import { useResumeStore } from '@/stores/resumeStore';
-import { useUIStore } from '@/stores/uiStore';
+import { useUiStore } from '@/stores/uiStore';
 import { countWords } from './wordCount';
 
 /** The current time, refreshed often enough for "2 min ago" to stay true. */
@@ -80,12 +80,12 @@ export function StatusBar() {
   const savedAt = useResumeStore((s) => s.savedAt);
   const saveFailed = useResumeStore((s) => s.saveFailed);
   const meta = useOverlayStore((s) => s.previewMeta);
-  const paperSize = useUIStore((s) => s.paperSize);
-  const sidebarCollapsed = useUIStore((s) => s.sidebarCollapsed);
-  const toggleSidebar = useUIStore((s) => s.toggleSidebarCollapsed);
-  const agentPaneOpen = useUIStore((s) => s.agentPaneOpen);
-  const toggleAgentPane = useUIStore((s) => s.toggleAgentPane);
-  const aiEnabled = useAIStore((s) => s.enabled);
+  const paperSize = useUiStore((s) => s.paperSize);
+  const sidebarCollapsed = useUiStore((s) => s.sidebarCollapsed);
+  const toggleSidebar = useUiStore((s) => s.toggleSidebarCollapsed);
+  const agentPaneOpen = useUiStore((s) => s.agentPaneOpen);
+  const toggleAgentPane = useUiStore((s) => s.toggleAgentPane);
+  const aiEnabled = useAiStore((s) => s.enabled);
   const now = useNow(30_000);
 
   let saveState: ReactNode;

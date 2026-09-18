@@ -1,10 +1,10 @@
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
-import { useUIStore } from '@/stores/uiStore';
+import { useUiStore } from '@/stores/uiStore';
 import { SettingRow } from '../SettingRow';
 
 export function AppearanceSection() {
-  const darkMode = useUIStore((s) => s.darkMode);
-  const setDarkMode = useUIStore((s) => s.setDarkMode);
+  const darkMode = useUiStore((s) => s.darkMode);
+  const setDarkMode = useUiStore((s) => s.setDarkMode);
 
   return (
     <SettingRow label="Theme">

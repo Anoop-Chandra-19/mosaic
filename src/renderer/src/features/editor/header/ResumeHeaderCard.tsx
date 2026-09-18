@@ -20,7 +20,7 @@ import {
 } from '@shared/resume/resumeHeader';
 import { cn } from '@/lib/utils';
 import { useResumeStore } from '@/stores/resumeStore';
-import { useUIStore } from '@/stores/uiStore';
+import { useUiStore } from '@/stores/uiStore';
 import type { LinkStyle } from '@shared/types/resume';
 import { InlineEditField } from '../InlineEditField';
 import { HeaderLineBlock } from './HeaderLineBlock';
@@ -31,8 +31,8 @@ export function ResumeHeaderCard() {
   const setName = useResumeStore((s) => s.setName);
   const setLinkStyle = useResumeStore((s) => s.setLinkStyle);
   const addLine = useResumeStore((s) => s.addHeaderLine);
-  const shouldShowIcons = useUIStore((s) => s.shouldShowHeaderIcons);
-  const toggleIcons = useUIStore((s) => s.toggleHeaderIcons);
+  const shouldShowIcons = useUiStore((s) => s.shouldShowHeaderIcons);
+  const toggleIcons = useUiStore((s) => s.toggleHeaderIcons);
   const [open, setOpen] = useState(true);
   const { header } = contact;
   const printed = getPrintableHeaderLines(header);

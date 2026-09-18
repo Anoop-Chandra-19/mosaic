@@ -12,7 +12,7 @@ import { cn } from '@/lib/utils';
 import { getResumeSnapshot, useResumeStore } from '@/stores/resumeStore';
 import { attempt, showToast, useOverlayStore } from '@/stores/overlayStore';
 import { useTemplateStore } from '@/stores/templateStore';
-import { useUIStore } from '@/stores/uiStore';
+import { useUiStore } from '@/stores/uiStore';
 import { MAX_FILE_BYTES } from '@shared/types/files';
 import type { ContactInfo, ResumeSection, SectionLayout } from '@shared/types/resume';
 import { buildImportedResume, keepsHeader, type ImportMode } from './buildImportedResume';
@@ -290,7 +290,7 @@ function ReviewStep({
   const setStartOpen = useOverlayStore((s) => s.setStartOpen);
   const createTemplate = useTemplateStore((s) => s.createTemplate);
   const importIntoDraft = useTemplateStore((s) => s.importIntoDraft);
-  const setActiveSidebarTab = useUIStore((s) => s.setActiveSidebarTab);
+  const setActiveSidebarTab = useUiStore((s) => s.setActiveSidebarTab);
   const openContact = useResumeStore((s) => s.contact);
   const [excludedIds, setExcludedIds] = useState<Set<string>>(new Set());
   const [chosenMode, setMode] = useState<ImportMode>('new');

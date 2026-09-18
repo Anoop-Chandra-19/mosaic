@@ -1,7 +1,7 @@
 import { useRef } from 'react';
 import { attempt, showToast, useOverlayStore } from '@/stores/overlayStore';
 import { useTemplateStore } from '@/stores/templateStore';
-import { useUIStore } from '@/stores/uiStore';
+import { useUiStore } from '@/stores/uiStore';
 import type { ResumeData } from '@shared/types/resume';
 
 /**
@@ -11,7 +11,7 @@ import type { ResumeData } from '@shared/types/resume';
 export function useStartResume() {
   const createTemplate = useTemplateStore((s) => s.createTemplate);
   const setStartOpen = useOverlayStore((s) => s.setStartOpen);
-  const setActiveSidebarTab = useUIStore((s) => s.setActiveSidebarTab);
+  const setActiveSidebarTab = useUiStore((s) => s.setActiveSidebarTab);
   const busy = useRef(false);
 
   return async (name: string, doc: ResumeData, toast: string) => {

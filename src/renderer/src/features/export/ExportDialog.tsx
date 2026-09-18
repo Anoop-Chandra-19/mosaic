@@ -21,7 +21,7 @@ import { LINK_STYLES } from '@shared/resume/resumeHeader';
 import { cn } from '@/lib/utils';
 import { showToast, useOverlayStore, type ExportVersion } from '@/stores/overlayStore';
 import { getResumeSnapshot, useResumeStore } from '@/stores/resumeStore';
-import { useUIStore } from '@/stores/uiStore';
+import { useUiStore } from '@/stores/uiStore';
 import type { LinkStyle } from '@shared/types/resume';
 import type { PaperSize } from '@/types/paper';
 import {
@@ -63,8 +63,8 @@ function ExportForm({ version, onDone }: { version: ExportVersion | null; onDone
   const draftContactName = useResumeStore((s) => s.contact.name);
   const templateId = useResumeStore((s) => s.templateId);
   const activeTemplate = useActiveTemplate();
-  const paperSize = useUIStore((s) => s.paperSize);
-  const setPaperSize = useUIStore((s) => s.setPaperSize);
+  const paperSize = useUiStore((s) => s.paperSize);
+  const setPaperSize = useUiStore((s) => s.setPaperSize);
 
   // A version is exported as it was; Mosaic JSON is a template's whole history, so it only
   // goes with the draft.

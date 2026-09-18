@@ -39,7 +39,7 @@ export const DEFAULT_UI_STATE = {
   shouldShowHeaderIcons: true,
 };
 
-interface UIState {
+interface UiState {
   darkMode: boolean;
   activeSidebarTab: SidebarTab;
   currentPreviewPage: number;
@@ -63,10 +63,10 @@ interface UIState {
   toggleAgentPane: () => void;
   setAgentPaneRatio: (ratio: number) => void;
   toggleHeaderIcons: () => void;
-  resetUIState: () => void;
+  resetUiState: () => void;
 }
 
-export const useUIStore = create<UIState>()(
+export const useUiStore = create<UiState>()(
   persist(
     immer((set) => ({
       ...DEFAULT_UI_STATE,
@@ -125,7 +125,7 @@ export const useUIStore = create<UIState>()(
         set((state) => {
           state.shouldShowHeaderIcons = !state.shouldShowHeaderIcons;
         }),
-      resetUIState: () =>
+      resetUiState: () =>
         set((state) => {
           Object.assign(state, DEFAULT_UI_STATE);
         }),
@@ -135,7 +135,7 @@ export const useUIStore = create<UIState>()(
       storage: createJSONStorage(() => settingsStorage),
       // AI Tools was a sidebar tab before the assistant moved to its own pane.
       merge: (persisted, current) => {
-        const stored = (persisted ?? {}) as Partial<UIState>;
+        const stored = (persisted ?? {}) as Partial<UiState>;
         const tab = stored.activeSidebarTab === 'templates' ? 'templates' : 'content';
         return { ...current, ...stored, activeSidebarTab: tab };
       },
