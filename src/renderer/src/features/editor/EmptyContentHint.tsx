@@ -9,7 +9,7 @@ import { STARTER_KINDS } from '@/features/start/blankResume';
 import { BUILT_IN_KINDS, SECTION_PRESETS } from '@shared/resume/sectionPresets';
 import { useResumeStore } from '@/stores/resumeStore';
 import type { BuiltInSectionKind } from '@shared/types/resume';
-import { PRESET_ICONS } from './section-icons';
+import { PRESET_ICONS } from './sectionIcons';
 import { CustomMenuItems, PresetMenuItems } from './SectionMenuItems';
 import { useAddCustomSection } from './useAddCustomSection';
 

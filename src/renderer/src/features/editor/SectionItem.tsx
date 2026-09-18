@@ -5,7 +5,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { ConfirmDeleteDialog } from '@/components/ConfirmDeleteDialog';
 import { ItemActionsMenu } from '@/components/ItemActionsMenu';
 import { InlineEditField } from './InlineEditField';
-import { CUSTOM_ICONS, PRESET_ICONS } from './section-icons';
+import { CUSTOM_ICONS, PRESET_ICONS } from './sectionIcons';
 import { EntryCard } from './EntryCard';
 import type { ResumeSection } from '@shared/types/resume';
 import { useResumeStore } from '@/stores/resumeStore';

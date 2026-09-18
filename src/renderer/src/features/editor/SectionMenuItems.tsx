@@ -1,7 +1,7 @@
 import { DropdownMenuItem } from '@/components/ui/dropdown-menu';
 import { SECTION_PRESETS } from '@shared/resume/sectionPresets';
 import type { BuiltInSectionKind, SectionLayout } from '@shared/types/resume';
-import { CUSTOM_ICONS, PRESET_ICONS } from './section-icons';
+import { CUSTOM_ICONS, PRESET_ICONS } from './sectionIcons';
 
 /** Menu items that add a built-in section, one per kind. */
 export function PresetMenuItems({
