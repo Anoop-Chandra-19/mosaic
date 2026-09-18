@@ -1,5 +1,5 @@
 import type { SectionLayout } from '@/types/resume';
-import { HEADLESS_LAYOUT as L } from '@/lib/resume/headlessLayout';
+import { HEADLESS_LAYOUT as LYT } from '@/lib/resume/headlessLayout';
 
 export interface PreviewEntry {
   id: string;
@@ -21,8 +21,8 @@ interface PreviewSectionProps {
 }
 
 const bodyText = {
-  fontSize: `${L.bodyFontSize}px`,
-  lineHeight: `${L.bodyLeading}px`,
+  fontSize: `${LYT.bodyFontSize}px`,
+  lineHeight: `${LYT.bodyLeading}px`,
 };
 
 export function PreviewSection({ section }: PreviewSectionProps) {
@@ -31,10 +31,10 @@ export function PreviewSection({ section }: PreviewSectionProps) {
   return (
     <section
       style={{
-        fontFamily: L.fontStack,
-        color: L.color,
+        fontFamily: LYT.fontStack,
+        color: LYT.color,
         // One blank body line above each section header, none above the first.
-        marginTop: `${L.bodyLeading}px`,
+        marginTop: `${LYT.bodyLeading}px`,
       }}
       className="first:mt-0"
       data-preview-section-id={section.id}
@@ -74,8 +74,9 @@ export function PreviewSection({ section }: PreviewSectionProps) {
                   className="flex items-baseline justify-between italic"
                   style={{
                     ...bodyText,
-                    gap: `${L.entryHeadingGap}px`,
-                    marginBottom: entry.bullets.length > 0 ? `${L.entryHeadingMarginBottom}px` : 0,
+                    gap: `${LYT.entryHeadingGap}px`,
+                    marginBottom:
+                      entry.bullets.length > 0 ? `${LYT.entryHeadingMarginBottom}px` : 0,
                   }}
                   data-preview-entry-heading-key={`${section.id}::${entry.id}`}
                 >
@@ -91,7 +92,7 @@ export function PreviewSection({ section }: PreviewSectionProps) {
                   className="list-disc"
                   style={{
                     ...bodyText,
-                    paddingLeft: `${L.bulletTextIndent}px`,
+                    paddingLeft: `${LYT.bulletTextIndent}px`,
                   }}
                 >
                   {entry.bullets.map((bullet, idx) => (
