@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createMarkdownExport } from '@/features/export/markdown';
+import { createMarkdownExport } from '@/features/export/markdownExport';
 import { normalizeResumeForExport } from '@/features/export/normalizeResumeExport';
 import { createDefaultResume } from '@shared/resume/defaultResume';
 import type { ResumeData } from '@shared/types/resume';

@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import type { PaperSize } from '@/types/ui';
-import { PAGE_MARGINS_PT, PAPER_DIMENSIONS_PT } from './paper';
+import { PAGE_MARGINS_PT, PAPER_DIMENSIONS_PT } from './pageGeometry';
 
 interface PreviewPageProps {
   children: ReactNode;

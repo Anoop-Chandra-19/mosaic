@@ -1,11 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { createPlaintextExport } from '../plaintext';
+import { createMarkdownExport } from '../markdownExport';
 import type { NormalizedResumeExport } from '../normalizeResumeExport';
 import type { PrintedHeaderLine } from '@shared/resume/resumeHeader';
 
-const line = (texts: string[]): PrintedHeaderLine => ({
+const line = (
+  texts: string[],
+  separator: PrintedHeaderLine['separator'] = ' | '
+): PrintedHeaderLine => ({
   id: texts.join(),
-  separator: ' | ',
+  separator,
   align: 'center',
   items: texts.map((text) => ({ id: text, kind: 'custom', text, href: '' })),
 });
@@ -47,27 +50,43 @@ const exportData: NormalizedResumeExport = {
   ],
 };
 
-describe('createPlaintextExport', () => {
-  it('formats readable plaintext with uppercase section labels', () => {
-    expect(createPlaintextExport(exportData)).toBe(`Alex Johnson
+describe('createMarkdownExport', () => {
+  it('formats contact lines, sections, text entries, and bullet entries', () => {
+    expect(createMarkdownExport(exportData)).toBe(`# Alex Johnson
 555-0100 | alex@example.com | linkedin.com/in/alex | github.com/alex
 Detroit, MI
 
-SUMMARY
+## Summary
+
 Focused builder.
 
-EXPERIENCE
-Engineer | Mosaic
+## Experience
+
+### Engineer
+_Mosaic_
 - Built export flow
 - Improved preview accuracy`);
   });
 
+  it('writes each header line with its own separator', () => {
+    expect(
+      createMarkdownExport({
+        contact: {
+          name: 'Alex',
+          linkStyle: 'plain',
+          lines: [line(['US Citizen', 'Detroit, MI'], ' · '), line(['a', 'b'], '    ')],
+        },
+        sections: [],
+      })
+    ).toBe('# Alex\nUS Citizen · Detroit, MI\na    b');
+  });
+
   it('uses the Mosaic Resume fallback name', () => {
     expect(
-      createPlaintextExport({
+      createMarkdownExport({
         contact: { name: '', linkStyle: 'plain', lines: [] },
         sections: [],
       })
-    ).toBe('Mosaic Resume');
+    ).toBe('# Mosaic Resume');
   });
 });

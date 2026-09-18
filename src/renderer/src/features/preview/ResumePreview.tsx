@@ -11,7 +11,7 @@ import {
   paginateSections,
   type PaginationMeasurements,
 } from './pagination';
-import { PAPER_DIMENSIONS_PT, getPageContentSize } from './paper';
+import { PAPER_DIMENSIONS_PT, getPageContentSize } from './pageGeometry';
 
 interface ResumePreviewProps {
   paperSize: PaperSize;

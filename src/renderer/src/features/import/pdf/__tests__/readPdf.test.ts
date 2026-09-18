@@ -2,7 +2,7 @@ import { createElement as h } from 'react';
 import { Document, Link, Page, renderToBuffer, Text } from '@react-pdf/renderer';
 import { describe, expect, it } from 'vitest';
 import { normalizeResumeForExport } from '@/features/export/normalizeResumeExport';
-import { PDFResumeDocument } from '@/features/export/pdf/document';
+import { PdfResumeDocument } from '@/features/export/pdf/PdfResumeDocument';
 import { createDefaultResume } from '@shared/resume/defaultResume';
 import type { ResumeData } from '@shared/types/resume';
 import {
@@ -28,7 +28,7 @@ import { buildPdf } from './buildPdf';
 type Renderable = Parameters<typeof renderToBuffer>[0];
 
 async function exportedPdf(data: ResumeData, paperSize: 'letter' | 'a4' = 'letter') {
-  const document = h(PDFResumeDocument, { data: normalizeResumeForExport(data), paperSize });
+  const document = h(PdfResumeDocument, { data: normalizeResumeForExport(data), paperSize });
   return new Uint8Array(await renderToBuffer(document as Renderable));
 }
 

@@ -4,7 +4,7 @@ import {
   type JsonResumeSource,
   type MosaicHeader,
   type MosaicJsonResumeMeta,
-} from '@/features/export/jsonResume';
+} from '@/features/export/jsonResumeExport';
 import {
   atPlace,
   compact,

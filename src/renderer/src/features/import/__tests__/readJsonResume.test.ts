@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createJsonResumeExport } from '@/features/export/jsonResume';
+import { createJsonResumeExport } from '@/features/export/jsonResumeExport';
 import { normalizeResumeForExport } from '@/features/export/normalizeResumeExport';
 import { createDefaultResume } from '@shared/resume/defaultResume';
 import { createHeaderItem } from '@shared/resume/resumeHeader';

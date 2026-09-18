@@ -4,16 +4,16 @@ import { describe, expect, it } from 'vitest';
 import { createDefaultResume } from '@shared/resume/defaultResume';
 import { extractPdfText } from '../../../../../../e2e/pdfText';
 import { normalizeResumeForExport } from '../normalizeResumeExport';
-import { PDFResumeDocument } from '../pdf/document';
+import { PdfResumeDocument } from '../pdf/PdfResumeDocument';
 
-describe('PDFResumeDocument', () => {
+describe('PdfResumeDocument', () => {
   it('never splits a word across lines', async () => {
     const resume = createDefaultResume();
     // Long words that react-pdf's hyphenation would break at a syllable.
     resume.sections[1].items[0].bullets[0].text =
       'Reimplemented the incomprehensibilities of the synchronization subsystem so that characteristically uncharacteristic workloads finished noticeably faster than before';
     const pdf = await renderToBuffer(
-      createElement(PDFResumeDocument, {
+      createElement(PdfResumeDocument, {
         data: normalizeResumeForExport(resume),
         paperSize: 'letter',
       }) as Parameters<typeof renderToBuffer>[0]

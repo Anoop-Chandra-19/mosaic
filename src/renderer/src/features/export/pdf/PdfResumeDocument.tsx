@@ -4,7 +4,7 @@ import type { PaperSize } from '@/types/ui';
 import type { NormalizedResumeExport } from '../normalizeResumeExport';
 import { HEADLESS_LAYOUT } from '@/lib/resume/headlessLayout';
 
-interface PDFResumeDocumentProps {
+interface PdfResumeDocumentProps {
   data: NormalizedResumeExport;
   paperSize: PaperSize;
 }
@@ -137,7 +137,7 @@ const styles = StyleSheet.create({
   },
 });
 
-export function PDFResumeDocument({ data, paperSize }: PDFResumeDocumentProps) {
+export function PdfResumeDocument({ data, paperSize }: PdfResumeDocumentProps) {
   const size = paperSize === 'a4' ? 'A4' : 'LETTER';
   const name = data.contact.name || 'Mosaic Resume';
   const linkStyle = {

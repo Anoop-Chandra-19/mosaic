@@ -9,12 +9,12 @@ interface RenderResumePdfOptions {
 /** The resume as PDF file bytes. */
 export async function renderResumePdf(options: RenderResumePdfOptions): Promise<Uint8Array> {
   // Lazy-load PDF rendering so the editor stays lighter on initial load.
-  const [{ pdf }, { PDFResumeDocument }] = await Promise.all([
+  const [{ pdf }, { PdfResumeDocument }] = await Promise.all([
     import('@react-pdf/renderer'),
-    import('./document'),
+    import('./PdfResumeDocument'),
   ]);
   const blob = await pdf(
-    <PDFResumeDocument data={options.data} paperSize={options.paperSize} />
+    <PdfResumeDocument data={options.data} paperSize={options.paperSize} />
   ).toBlob();
   return new Uint8Array(await blob.arrayBuffer());
 }
