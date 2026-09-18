@@ -31,7 +31,7 @@ export function ResumeHeaderCard() {
   const setName = useResumeStore((s) => s.setName);
   const setLinkStyle = useResumeStore((s) => s.setLinkStyle);
   const addLine = useResumeStore((s) => s.addHeaderLine);
-  const icons = useUIStore((s) => s.headerIcons);
+  const shouldShowIcons = useUIStore((s) => s.shouldShowHeaderIcons);
   const toggleIcons = useUIStore((s) => s.toggleHeaderIcons);
   const [open, setOpen] = useState(true);
   const { header } = contact;
@@ -74,7 +74,7 @@ export function ResumeHeaderCard() {
               ))}
             </DropdownMenuRadioGroup>
             <DropdownMenuSeparator />
-            <DropdownMenuCheckboxItem checked={icons} onCheckedChange={toggleIcons}>
+            <DropdownMenuCheckboxItem checked={shouldShowIcons} onCheckedChange={toggleIcons}>
               <Shapes />
               Icons in this list
             </DropdownMenuCheckboxItem>

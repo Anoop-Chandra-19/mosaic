@@ -36,7 +36,7 @@ export const DEFAULT_UI_STATE = {
   agentPaneOpen: true,
   agentPaneRatio: AGENT_PANE_DEFAULT_RATIO,
   /** Icons beside the header's items in the editor; the page never has them. */
-  headerIcons: true,
+  shouldShowHeaderIcons: true,
 };
 
 interface UIState {
@@ -49,7 +49,7 @@ interface UIState {
   sidebarCollapsed: boolean;
   agentPaneOpen: boolean;
   agentPaneRatio: number;
-  headerIcons: boolean;
+  shouldShowHeaderIcons: boolean;
   toggleDarkMode: () => void;
   setDarkMode: (enabled: boolean) => void;
   setActiveSidebarTab: (tab: SidebarTab) => void;
@@ -123,7 +123,7 @@ export const useUIStore = create<UIState>()(
         }),
       toggleHeaderIcons: () =>
         set((state) => {
-          state.headerIcons = !state.headerIcons;
+          state.shouldShowHeaderIcons = !state.shouldShowHeaderIcons;
         }),
       resetUIState: () =>
         set((state) => {

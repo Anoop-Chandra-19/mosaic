@@ -53,7 +53,7 @@ export function HeaderItemRow({
   lines,
   shouldStartEditing = false,
 }: HeaderItemRowProps) {
-  const icons = useUIStore((s) => s.headerIcons);
+  const shouldShowIcon = useUIStore((s) => s.shouldShowHeaderIcons);
   const update = useResumeStore((s) => s.updateHeaderItem);
   const move = useResumeStore((s) => s.moveHeaderItem);
   const moveToLine = useResumeStore((s) => s.moveHeaderItemToLine);
@@ -90,7 +90,7 @@ export function HeaderItemRow({
 
   return (
     <div className="group/item relative flex items-start gap-2 rounded-md px-1.5 py-1 hover:bg-zinc-100 dark:hover:bg-zinc-900">
-      {icons && <Icon className="mt-1.5 size-3.5 shrink-0 text-zinc-500" aria-hidden />}
+      {shouldShowIcon && <Icon className="mt-1.5 size-3.5 shrink-0 text-zinc-500" aria-hidden />}
       <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2">
         <AppButton
           type="button"
