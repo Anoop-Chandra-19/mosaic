@@ -1,9 +1,9 @@
-import type { AIProvider } from '@shared/types/resume';
+import type { AiProvider } from '@shared/types/resume';
 
 export type ProviderTrust = 'Direct API' | 'Proxy' | 'Local';
 
 export interface ProviderOption {
-  id: AIProvider;
+  id: AiProvider;
   label: string;
   trust: ProviderTrust;
   hint: string;
@@ -44,5 +44,5 @@ export const AI_PROVIDER_OPTIONS: ProviderOption[] = [
 
 export const AI_PROVIDER_BY_ID = AI_PROVIDER_OPTIONS.reduce(
   (acc, provider) => ({ ...acc, [provider.id]: provider }),
-  {} as Record<AIProvider, ProviderOption>
+  {} as Record<AiProvider, ProviderOption>
 );

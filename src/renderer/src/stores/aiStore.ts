@@ -2,14 +2,14 @@ import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import { DEFAULT_OLLAMA_ADDRESS } from '@shared/ai/ollamaAddress';
 import { settingsStorage } from '@/lib/storage/settingsStorage';
-import type { AIProvider } from '@shared/types/resume';
+import type { AiProvider } from '@shared/types/resume';
 
 /**
  * Each provider's current mid tier — capable enough for resume writing, without the top
  * tier's price. Checked against the providers' model lists on 2026-09-14. Ollama's has to
  * be pulled first (`ollama pull qwen3.5:9b`); Test checks the others can be reached.
  */
-export const AI_PROVIDER_DEFAULT_MODEL: Record<AIProvider, string> = {
+export const AI_PROVIDER_DEFAULT_MODEL: Record<AiProvider, string> = {
   openai: 'gpt-5.6-terra',
   anthropic: 'claude-sonnet-5',
   gemini: 'gemini-3.8-flash',
@@ -17,13 +17,13 @@ export const AI_PROVIDER_DEFAULT_MODEL: Record<AIProvider, string> = {
   openrouter: 'openai/gpt-5.6-terra',
 };
 
-function createDefaultModelsByProvider(): Record<AIProvider, string> {
+function createDefaultModelsByProvider(): Record<AiProvider, string> {
   return { ...AI_PROVIDER_DEFAULT_MODEL };
 }
 
 export const DEFAULT_AI_STATE = {
   enabled: false,
-  provider: 'openai' as AIProvider,
+  provider: 'openai' as AiProvider,
   modelsByProvider: createDefaultModelsByProvider(),
   /** Where Ollama is: this machine unless it runs somewhere on the network. */
   ollamaAddress: DEFAULT_OLLAMA_ADDRESS,
@@ -31,23 +31,23 @@ export const DEFAULT_AI_STATE = {
 
 interface AiStoreState {
   enabled: boolean;
-  provider: AIProvider;
-  modelsByProvider: Record<AIProvider, string>;
+  provider: AiProvider;
+  modelsByProvider: Record<AiProvider, string>;
   ollamaAddress: string;
   setEnabled: (enabled: boolean) => void;
   /** Takes an address already checked with `normalizeOllamaAddress`. */
   setOllamaAddress: (address: string) => void;
-  setProvider: (provider: AIProvider) => void;
-  setModelForProvider: (provider: AIProvider, model: string) => void;
+  setProvider: (provider: AiProvider) => void;
+  setModelForProvider: (provider: AiProvider, model: string) => void;
   setModelForActiveProvider: (model: string) => void;
-  resetModelForProvider: (provider: AIProvider) => void;
+  resetModelForProvider: (provider: AiProvider) => void;
 }
 
 type LegacyAiState = {
   enabled?: boolean;
-  provider?: AIProvider;
+  provider?: AiProvider;
   model?: string;
-  modelsByProvider?: Partial<Record<AIProvider, string>>;
+  modelsByProvider?: Partial<Record<AiProvider, string>>;
   ollamaAddress?: string;
 };
 

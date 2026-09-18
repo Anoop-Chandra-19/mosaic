@@ -119,11 +119,11 @@ export interface PendingTextAiChange {
   reason?: string;
 }
 
-export type AIProvider = 'openai' | 'anthropic' | 'gemini' | 'ollama' | 'openrouter';
+export type AiProvider = 'openai' | 'anthropic' | 'gemini' | 'ollama' | 'openrouter';
 
-export interface AISettings {
+export interface AiSettings {
   enabled: boolean;
-  provider: AIProvider;
+  provider: AiProvider;
   model: string;
   keyStorageMode: 'session' | 'keychain';
 }

@@ -4,7 +4,7 @@ import { withApp } from './launch';
 const mosaic = withApp();
 
 /** AI is turned on and off in one place only: Settings. */
-async function setAI(page: Page, on: boolean) {
+async function setAiEnabled(page: Page, on: boolean) {
   await page.getByRole('button', { name: 'Open settings' }).click();
   const settings = page.getByRole('dialog', { name: 'Settings' });
   await settings
@@ -27,7 +27,7 @@ test('the assistant pane appears on the right only while AI is on', async () => 
   await expect(page.getByRole('button', { name: 'Toggle assistant' })).toHaveCount(0);
   await expect(page.getByText(/\bAI\b/)).toHaveCount(0);
 
-  await setAI(page, true);
+  await setAiEnabled(page, true);
   await expect(pane).toBeVisible();
   await expect(pane.getByText('Not built yet.')).toBeVisible();
   await expect(pane.getByText('OpenAI · gpt-5.6-terra')).toBeVisible();
@@ -62,7 +62,7 @@ test('the assistant pane appears on the right only while AI is on', async () => 
 test('on a narrow window the assistant lies over the preview instead of squeezing it', async () => {
   const { page } = mosaic();
   await page.getByRole('button', { name: /Blank resume/ }).click();
-  await setAI(page, true);
+  await setAiEnabled(page, true);
   const pane = page.getByRole('complementary', { name: 'Assistant' });
 
   await page.setViewportSize({ width: 1600, height: 900 });

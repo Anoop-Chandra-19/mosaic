@@ -1,4 +1,4 @@
-import type { AIProvider } from './resume';
+import type { AiProvider } from './resume';
 
 /** Providers that take an API key. Ollama runs on this machine and has none. */
 export const KEYED_PROVIDERS = [
@@ -6,12 +6,12 @@ export const KEYED_PROVIDERS = [
   'anthropic',
   'gemini',
   'openrouter',
-] as const satisfies readonly AIProvider[];
+] as const satisfies readonly AiProvider[];
 
 export type KeyedProvider = (typeof KEYED_PROVIDERS)[number];
 
-export function isKeyedProvider(provider: AIProvider): provider is KeyedProvider {
-  return (KEYED_PROVIDERS as readonly AIProvider[]).includes(provider);
+export function isKeyedProvider(provider: AiProvider): provider is KeyedProvider {
+  return (KEYED_PROVIDERS as readonly AiProvider[]).includes(provider);
 }
 
 /** Longer than any provider's keys; this only stops a runaway paste. */

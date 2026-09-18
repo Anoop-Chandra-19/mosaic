@@ -14,7 +14,7 @@ import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { isLocalOllamaAddress } from '@shared/ai/ollamaAddress';
 import { cn } from '@/lib/utils';
 import { AI_PROVIDER_DEFAULT_MODEL, useAiStore } from '@/stores/aiStore';
-import type { AIProvider } from '@shared/types/resume';
+import type { AiProvider } from '@shared/types/resume';
 import {
   isKeyedProvider,
   type KeyedProvider,
@@ -66,7 +66,7 @@ export function AiSection() {
               : 'Bring your own key. Ollama runs entirely on this machine — nothing leaves it.'
           }
         >
-          <Select value={provider} onValueChange={(value) => setProvider(value as AIProvider)}>
+          <Select value={provider} onValueChange={(value) => setProvider(value as AiProvider)}>
             <SelectTrigger size="sm" className="w-44" aria-label="Provider">
               <SelectValue />
             </SelectTrigger>

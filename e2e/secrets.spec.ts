@@ -15,7 +15,7 @@ async function providerAnswers(app: ElectronApplication, status: number) {
   }, status);
 }
 
-async function openAISettings(page: Page) {
+async function goToAiSettings(page: Page) {
   await page.getByRole('button', { name: 'Open settings' }).click();
   const settings = page.getByRole('dialog', { name: 'Settings' });
   await settings
@@ -41,7 +41,7 @@ test('with no keychain, a key is tested, kept for the session, and forgotten', a
   const { app, page, userDataDir, errors } = first;
   try {
     await page.getByRole('button', { name: /Blank resume/ }).click();
-    const settings = await openAISettings(page);
+    const settings = await goToAiSettings(page);
     await settings.getByRole('switch', { name: 'Enable AI assistant' }).click();
     await settings.getByRole('combobox', { name: 'Provider' }).click();
     await page.getByRole('option', { name: 'Anthropic' }).click();
@@ -76,7 +76,7 @@ test('with no keychain, a key is tested, kept for the session, and forgotten', a
 
     // A reload keeps the session's key: it lives in main, not in the page.
     await page.reload();
-    const reloaded = await openAISettings(page);
+    const reloaded = await goToAiSettings(page);
     await expect(reloaded.getByText('Saved for this session')).toBeVisible();
     await providerAnswers(app, 200);
     await reloaded.getByRole('button', { name: 'Test' }).click();
@@ -101,7 +101,7 @@ test('with no keychain, a key is tested, kept for the session, and forgotten', a
 
     const second = await launchApp(userDataDir);
     try {
-      const again = await openAISettings(second.page);
+      const again = await goToAiSettings(second.page);
       await expect(again.getByRole('textbox', { name: 'Anthropic API key' })).toBeVisible();
       expect(await second.page.evaluate(() => window.mosaic.secrets.status())).toMatchObject({
         saved: {},
@@ -119,7 +119,7 @@ test('a pasted key with spaces is caught before anything is sent', async () => {
   const { app, page, userDataDir } = await launchApp();
   try {
     await page.getByRole('button', { name: /Blank resume/ }).click();
-    const settings = await openAISettings(page);
+    const settings = await goToAiSettings(page);
     await settings.getByRole('switch', { name: 'Enable AI assistant' }).click();
     await settings.getByRole('combobox', { name: 'Provider' }).click();
     await page.getByRole('option', { name: 'OpenAI' }).click();
