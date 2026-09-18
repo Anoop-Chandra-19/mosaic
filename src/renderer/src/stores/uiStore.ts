@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { immer } from 'zustand/middleware/immer';
 import { settingsStorage } from '@/lib/storage/settingsStorage';
-import type { PaperSize } from '@/types/ui';
+import type { PaperSize } from '@/types/paper';
 
 export type SidebarTab = 'content' | 'templates';
 

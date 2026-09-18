@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { PanelLeft, PanelRight, type LucideIcon } from 'lucide-react';
 import { formatWhen } from '@/features/templates/formatWhen';
 import { useActiveTemplate } from '@/features/templates/useActiveTemplate';
-import { shortcutLabel } from '@/lib/shortcuts';
+import { shortcutLabel } from '@/lib/keyboardShortcuts';
 import { cn } from '@/lib/utils';
 import { useAIStore } from '@/stores/aiStore';
 import { useOverlayStore } from '@/stores/overlayStore';

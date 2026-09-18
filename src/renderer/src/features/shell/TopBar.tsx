@@ -1,6 +1,6 @@
 import { Download, FileInput, Moon, Save, Settings, Sun } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
-import { shortcutLabel } from '@/lib/shortcuts';
+import { shortcutLabel } from '@/lib/keyboardShortcuts';
 import { showToast, useOverlayStore } from '@/stores/overlayStore';
 import { useDarkMode } from '@/lib/hooks/useDarkMode';
 import { useActiveTemplate } from '@/features/templates/useActiveTemplate';

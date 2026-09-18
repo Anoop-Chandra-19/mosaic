@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { Minus, Plus, TriangleAlert } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
 import { ResumePreview } from '@/features/preview/ResumePreview';
-import type { PaperSize } from '@/types/ui';
+import type { PaperSize } from '@/types/paper';
 import { VersionPreviewBanner } from '@/features/templates/VersionPreviewBanner';
 import { useOverlayStore } from '@/stores/overlayStore';
 import { PREVIEW_ZOOM_STEPS, useUIStore } from '@/stores/uiStore';

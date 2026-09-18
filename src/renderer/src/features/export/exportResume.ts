@@ -2,7 +2,7 @@ import { getDb } from '@/lib/storage/mosaicDb';
 import { flushDraft } from '@/stores/resumeStore';
 import type { FileType } from '@shared/types/files';
 import type { ResumeData } from '@shared/types/resume';
-import type { PaperSize } from '@/types/ui';
+import type { PaperSize } from '@/types/paper';
 import { createJsonResumeExport } from './jsonResumeExport';
 import { createMarkdownExport } from './markdownExport';
 import { normalizeResumeForExport } from './normalizeResumeExport';

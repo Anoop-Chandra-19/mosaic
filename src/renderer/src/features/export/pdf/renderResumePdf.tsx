@@ -1,4 +1,4 @@
-import type { PaperSize } from '@/types/ui';
+import type { PaperSize } from '@/types/paper';
 import type { NormalizedResumeExport } from '../normalizeResumeExport';
 
 interface RenderResumePdfOptions {

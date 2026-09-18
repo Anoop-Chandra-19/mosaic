@@ -11,7 +11,7 @@ import { ImportResumeDialog } from '@/features/import/ImportResumeDialog';
 import { SettingsDialog } from '@/features/settings/SettingsDialog';
 import { StartPanel } from '@/features/start/StartPanel';
 import { NameVersionDialog } from '@/features/templates/NameVersionDialog';
-import { isModKey } from '@/lib/shortcuts';
+import { isModKey } from '@/lib/keyboardShortcuts';
 import { useAIStore } from '@/stores/aiStore';
 import { showToast, useOverlayStore } from '@/stores/overlayStore';
 import { useResumeStore } from '@/stores/resumeStore';

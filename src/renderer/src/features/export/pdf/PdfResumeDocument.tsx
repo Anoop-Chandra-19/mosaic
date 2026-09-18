@@ -1,6 +1,6 @@
 import { Fragment } from 'react';
 import { Document, Font, Link, Page, StyleSheet, Text, View } from '@react-pdf/renderer';
-import type { PaperSize } from '@/types/ui';
+import type { PaperSize } from '@/types/paper';
 import type { NormalizedResumeExport } from '../normalizeResumeExport';
 import { HEADLESS_LAYOUT } from '@/lib/resume/headlessLayout';
 

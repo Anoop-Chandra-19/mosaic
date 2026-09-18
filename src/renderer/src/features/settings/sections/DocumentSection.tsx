@@ -1,6 +1,6 @@
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { useUIStore } from '@/stores/uiStore';
-import type { PaperSize } from '@/types/ui';
+import type { PaperSize } from '@/types/paper';
 import { AlwaysOn, SettingRow } from '../SettingRow';
 
 export function DocumentSection() {

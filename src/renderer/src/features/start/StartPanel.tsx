@@ -2,7 +2,7 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { ArrowRight, FileText, Info, Lock, Sparkles, Upload, X } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
 import { cn } from '@/lib/utils';
-import { isModKey, shortcutLabel } from '@/lib/shortcuts';
+import { isModKey, shortcutLabel } from '@/lib/keyboardShortcuts';
 import { createDefaultResume } from '@shared/resume/defaultResume';
 import { useOverlayStore } from '@/stores/overlayStore';
 import { useTemplateStore } from '@/stores/templateStore';

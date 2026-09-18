@@ -3,7 +3,7 @@ import { Sparkles, X } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
 import { AI_PROVIDER_BY_ID } from '@/features/settings/sections/aiProviderOptions';
 import { startPaneResize } from '@/features/shell/paneResize';
-import { shortcutLabel } from '@/lib/shortcuts';
+import { shortcutLabel } from '@/lib/keyboardShortcuts';
 import { AI_PROVIDER_DEFAULT_MODEL, useAIStore } from '@/stores/aiStore';
 import { useOverlayStore } from '@/stores/overlayStore';
 import { AGENT_PANE_MAX_RATIO, AGENT_PANE_MIN_PX, useUIStore } from '@/stores/uiStore';

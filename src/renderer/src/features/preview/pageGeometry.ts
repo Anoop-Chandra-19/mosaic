@@ -1,4 +1,4 @@
-import type { PaperSize } from '@/types/ui';
+import type { PaperSize } from '@/types/paper';
 import { HEADLESS_LAYOUT, PAPER_SIZE_PT, getPageContentSizePt } from '@/lib/resume/headlessLayout';
 
 /**

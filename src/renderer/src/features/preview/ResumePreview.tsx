@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useResumeStore } from '@/stores/resumeStore';
 import type { ResumeData } from '@shared/types/resume';
-import type { PaperSize } from '@/types/ui';
+import type { PaperSize } from '@/types/paper';
 import { PreviewHeader } from './PreviewHeader';
 import { PreviewPage } from './PreviewPage';
 import { PreviewSection, type PreviewRenderableSection } from './PreviewSection';
