@@ -146,6 +146,31 @@ describe('paginateSections', () => {
     expect(pages[1][0].entries.map((entry) => entry.id)).toEqual(['job-2-cont-0']);
   });
 
+  it('moves an entry with no bullets to the next page whole, rather than losing it', () => {
+    const degrees = ['edu-1', 'edu-2', 'edu-3'];
+    const pages = paginateSections(
+      [
+        {
+          id: 'education',
+          layout: 'entries',
+          label: 'Education',
+          entries: degrees.map((id) => ({ id, title: id, subtitle: '2025', bullets: [] })),
+        },
+      ],
+      createMeasurements({
+        sectionTitleHeights: { education: 18 },
+        entryHeights: Object.fromEntries(degrees.map((id) => [`education::${id}`, 18])),
+      }),
+      // A blank line, the title, and two degrees fill the page.
+      72
+    );
+
+    expect(pages.map((page) => page[0].entries.map((entry) => entry.title))).toEqual([
+      ['edu-1', 'edu-2'],
+      ['edu-3'],
+    ]);
+  });
+
   it('reserves room for the header on the first page only', () => {
     const jobs = ['job-1', 'job-2', 'job-3', 'job-4'];
     const pages = paginateSections(

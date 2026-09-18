@@ -333,7 +333,10 @@ export function paginateSections(
         continuationIndex
       );
 
+      // Nothing to split it at — an entry with no bullets — so it goes on the new page whole.
       if (!forcedSplit?.first) {
+        ensureSection(page, section).entries.push(candidate);
+        page.usedHeight += freshSectionCost + candidateHeight;
         continue;
       }
 
