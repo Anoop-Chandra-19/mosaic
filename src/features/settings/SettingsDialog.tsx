@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Settings, X } from 'lucide-react';
 import { useOverlayStore } from '@/stores/overlayStore';
-import { Button } from '@/components/ui/button';
+import { AppButton } from '@/components/AppButton';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 import { useAIStore } from '@/stores/aiStore';
@@ -40,9 +40,9 @@ export function SettingsDialog() {
           <DialogDescription className="sr-only">
             How Mosaic behaves, looks, and handles your data on this machine.
           </DialogDescription>
-          <Button variant="ghost" size="icon-sm" onClick={close} aria-label="Close settings">
+          <AppButton variant="ghost" size="icon-sm" onClick={close} aria-label="Close settings">
             <X className="size-4" />
-          </Button>
+          </AppButton>
         </header>
 
         <div className="flex min-h-0 flex-1 flex-col md:flex-row">

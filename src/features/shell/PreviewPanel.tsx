@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { Minus, Plus, TriangleAlert } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { AppButton } from '@/components/AppButton';
 import { ResumePreview } from '@/features/preview/ResumePreview';
 import type { PaperSize } from '@/types/ui';
 import { VersionPreviewBanner } from '@/features/templates/VersionPreviewBanner';
@@ -42,7 +42,7 @@ export function PreviewPanel() {
 
         <div className="flex items-center gap-1.5">
           <div className="inline-flex items-center gap-1">
-            <Button
+            <AppButton
               variant="ghost"
               size="icon-xs"
               onClick={zoomPreviewOut}
@@ -50,11 +50,11 @@ export function PreviewPanel() {
               aria-label="Zoom preview out"
             >
               <Minus className="size-3.5" />
-            </Button>
+            </AppButton>
             <span className="min-w-10 text-center text-xs font-semibold text-zinc-600 dark:text-zinc-400">
               {Math.round(previewZoom * 100)}%
             </span>
-            <Button
+            <AppButton
               variant="ghost"
               size="icon-xs"
               onClick={zoomPreviewIn}
@@ -62,7 +62,7 @@ export function PreviewPanel() {
               aria-label="Zoom preview in"
             >
               <Plus className="size-3.5" />
-            </Button>
+            </AppButton>
           </div>
 
           <div className="inline-flex items-center rounded-md border border-zinc-300 bg-background p-0.5 dark:border-zinc-700">

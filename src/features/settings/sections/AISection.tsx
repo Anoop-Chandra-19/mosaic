@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from 'react';
 import { Check, Eye, EyeOff, ShieldCheck } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { AppButton } from '@/components/AppButton';
 import { Input } from '@/components/ui/input';
 import {
   Select,
@@ -102,14 +102,14 @@ export function AISection() {
               className="h-8 w-54 text-sm"
             />
             {model !== suggested && (
-              <Button
+              <AppButton
                 variant="ghost"
                 size="sm"
                 className="h-8 text-xs"
                 onClick={() => resetModel(provider)}
               >
                 Use {suggested}
-              </Button>
+              </AppButton>
             )}
           </SettingRow>
         )}
@@ -233,7 +233,7 @@ function ApiKeyRows({ provider, model }: { provider: KeyedProvider; model: strin
   };
 
   const testButton = (
-    <Button
+    <AppButton
       type="button"
       variant="outline"
       size="sm"
@@ -251,7 +251,7 @@ function ApiKeyRows({ provider, model }: { provider: KeyedProvider; model: strin
       ) : (
         'Test'
       )}
-    </Button>
+    </AppButton>
   );
 
   const note =
@@ -282,9 +282,9 @@ function ApiKeyRows({ provider, model }: { provider: KeyedProvider; model: strin
               {savedIn === 'keychain' ? 'Saved in the keychain' : 'Saved for this session'}
             </span>
             {testButton}
-            <Button variant="outline" size="sm" className="h-8" onClick={() => void remove()}>
+            <AppButton variant="outline" size="sm" className="h-8" onClick={() => void remove()}>
               Remove
-            </Button>
+            </AppButton>
           </>
         ) : (
           <form
@@ -305,7 +305,7 @@ function ApiKeyRows({ provider, model }: { provider: KeyedProvider; model: strin
                 spellCheck={false}
                 className="h-8 w-54 pr-8 font-mono text-xs"
               />
-              <Button
+              <AppButton
                 type="button"
                 variant="ghost"
                 size="icon-xs"
@@ -314,10 +314,10 @@ function ApiKeyRows({ provider, model }: { provider: KeyedProvider; model: strin
                 aria-label={reveal ? 'Hide key' : 'Show key'}
               >
                 {reveal ? <EyeOff /> : <Eye />}
-              </Button>
+              </AppButton>
             </div>
             {testButton}
-            <Button
+            <AppButton
               type="submit"
               variant="outline"
               size="sm"
@@ -325,7 +325,7 @@ function ApiKeyRows({ provider, model }: { provider: KeyedProvider; model: strin
               disabled={!key || keyHasSpaces}
             >
               Save
-            </Button>
+            </AppButton>
           </form>
         )}
       </SettingRow>

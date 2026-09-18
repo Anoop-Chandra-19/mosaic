@@ -1,5 +1,5 @@
 import { Trash2 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { AppButton } from '@/components/AppButton';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { useSaveOnBlur } from '@/lib/hooks/useSaveOnBlur';
@@ -36,7 +36,7 @@ export function EditableBullet({
         placeholder="Add achievement detail…"
         className="min-w-0 flex-1"
       />
-      <Button
+      <AppButton
         variant="ghost"
         size="icon-xs"
         onClick={onRemove}
@@ -44,7 +44,7 @@ export function EditableBullet({
         className="mt-1 shrink-0 text-muted-foreground hover:text-destructive"
       >
         <Trash2 />
-      </Button>
+      </AppButton>
     </div>
   );
 }

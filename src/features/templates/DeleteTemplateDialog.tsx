@@ -1,5 +1,5 @@
 import { Info, Trash2 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { AppButton } from '@/components/AppButton';
 import {
   Dialog,
   DialogContent,
@@ -59,10 +59,10 @@ export function DeleteTemplateDialog({
           </span>
         </p>
         <DialogFooter>
-          <Button variant="ghost" onClick={() => onOpenChange(false)}>
+          <AppButton variant="ghost" onClick={() => onOpenChange(false)}>
             Cancel
-          </Button>
-          <Button
+          </AppButton>
+          <AppButton
             variant="destructive"
             onClick={() => {
               onDelete();
@@ -71,7 +71,7 @@ export function DeleteTemplateDialog({
           >
             <Trash2 />
             Delete template
-          </Button>
+          </AppButton>
         </DialogFooter>
       </DialogContent>
     </Dialog>

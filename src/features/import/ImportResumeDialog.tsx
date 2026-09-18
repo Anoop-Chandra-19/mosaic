@@ -1,7 +1,7 @@
 import { useMemo, useState, type DragEvent } from 'react';
 import { AlertTriangle, FileText, Info, Upload } from 'lucide-react';
 import { DialogFrameFooter, DialogFrameHeader } from '@/components/DialogFrame';
-import { Button } from '@/components/ui/button';
+import { AppButton } from '@/components/AppButton';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
@@ -225,9 +225,9 @@ function PickStep({
           <p className="mt-1 mb-3 text-xs text-zinc-600 dark:text-zinc-400">
             PDF, Word (.docx), Markdown, plain text, JSON Resume, or a Mosaic JSON backup.
           </p>
-          <Button variant="outline" size="sm" onClick={() => void choose()}>
+          <AppButton variant="outline" size="sm" onClick={() => void choose()}>
             Choose a file…
-          </Button>
+          </AppButton>
         </div>
 
         {fileError && (
@@ -266,12 +266,12 @@ function PickStep({
       </div>
 
       <DialogFrameFooter>
-        <Button variant="ghost" size="sm" onClick={onCancel}>
+        <AppButton variant="ghost" size="sm" onClick={onCancel}>
           Cancel
-        </Button>
-        <Button size="sm" disabled={text.trim() === ''} onClick={() => onPaste(text)}>
+        </AppButton>
+        <AppButton size="sm" disabled={text.trim() === ''} onClick={() => onPaste(text)}>
           Read pasted text
-        </Button>
+        </AppButton>
       </DialogFrameFooter>
     </>
   );
@@ -351,9 +351,9 @@ function ReviewStep({
               read
             </span>
           </p>
-          <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={onBack}>
+          <AppButton variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={onBack}>
             Choose another
-          </Button>
+          </AppButton>
         </div>
 
         <ul className="divide-y divide-zinc-200 rounded-lg border border-zinc-200 text-sm dark:divide-zinc-800 dark:border-zinc-800">
@@ -456,16 +456,16 @@ function ReviewStep({
       </div>
 
       <DialogFrameFooter>
-        <Button variant="ghost" size="sm" onClick={onDone}>
+        <AppButton variant="ghost" size="sm" onClick={onDone}>
           Cancel
-        </Button>
-        <Button
+        </AppButton>
+        <AppButton
           size="sm"
           disabled={included.length === 0 || importing}
           onClick={() => void importResume()}
         >
           {IMPORT_LABELS[mode]}
-        </Button>
+        </AppButton>
       </DialogFrameFooter>
     </>
   );

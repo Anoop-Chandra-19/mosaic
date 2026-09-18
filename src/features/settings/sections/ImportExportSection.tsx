@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Download, Info, Upload } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { AppButton } from '@/components/AppButton';
 import {
   backUpNow,
   chooseBackup,
@@ -67,7 +67,7 @@ export function ImportExportSection({ onCloseSettings }: { onCloseSettings: () =
         label="Export this resume"
         description="PDF for applications; Markdown or plain text for anything else; JSON for other tools."
       >
-        <Button
+        <AppButton
           variant="outline"
           size="sm"
           onClick={() => {
@@ -78,14 +78,14 @@ export function ImportExportSection({ onCloseSettings }: { onCloseSettings: () =
         >
           <Download />
           Export…
-        </Button>
+        </AppButton>
       </SettingRow>
 
       <SettingRow
         label="Import a resume"
         description="Read a Markdown or text resume into the content model, or restore a Mosaic backup."
       >
-        <Button
+        <AppButton
           variant="outline"
           size="sm"
           onClick={() => {
@@ -95,19 +95,19 @@ export function ImportExportSection({ onCloseSettings }: { onCloseSettings: () =
         >
           <Upload />
           Import…
-        </Button>
+        </AppButton>
       </SettingRow>
 
       <SettingRow
         label="Full backup"
         description="Every template and its version history in one JSON file. Restoring it rebuilds this app exactly."
       >
-        <Button variant="outline" size="sm" onClick={() => void chooseRestore()}>
+        <AppButton variant="outline" size="sm" onClick={() => void chooseRestore()}>
           Restore…
-        </Button>
-        <Button size="sm" disabled={backingUp} onClick={() => void backUp()}>
+        </AppButton>
+        <AppButton size="sm" disabled={backingUp} onClick={() => void backUp()}>
           Back up now
-        </Button>
+        </AppButton>
       </SettingRow>
 
       {lastBackup && (

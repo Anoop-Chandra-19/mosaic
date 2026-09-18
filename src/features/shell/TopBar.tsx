@@ -1,6 +1,5 @@
 import { Download, FileInput, Moon, Save, Settings, Sun } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
-import { Button } from '@/components/ui/button';
 import { shortcutLabel } from '@/lib/shortcuts';
 import { showToast, useOverlayStore } from '@/stores/overlayStore';
 import { useDarkMode } from '@/lib/hooks/useDarkMode';
@@ -51,36 +50,41 @@ export function TopBar() {
       </div>
 
       <div className="flex shrink-0 items-center gap-1.5">
-        <Button variant="ghost" size="icon-sm" onClick={toggleDarkMode} aria-label="Toggle theme">
+        <AppButton
+          variant="ghost"
+          size="icon-sm"
+          onClick={toggleDarkMode}
+          aria-label="Toggle theme"
+        >
           {darkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-        </Button>
+        </AppButton>
 
-        <Button
+        <AppButton
           variant="ghost"
           size="icon-sm"
           onClick={() => openImport(!activeTemplate)}
           aria-label="Import resume"
         >
           <FileInput className="h-4 w-4" />
-        </Button>
+        </AppButton>
 
-        <Button
+        <AppButton
           variant="ghost"
           size="icon-sm"
           onClick={() => openSettings()}
           aria-label="Open settings"
         >
           <Settings className="h-4 w-4" />
-        </Button>
+        </AppButton>
 
-        <Button
+        <AppButton
           size="sm"
           onClick={() => (activeTemplate ? openExport() : showToast('Nothing to export yet'))}
           aria-label="Open export dialog"
         >
           <Download className="h-4 w-4" />
           Export
-        </Button>
+        </AppButton>
       </div>
     </header>
   );

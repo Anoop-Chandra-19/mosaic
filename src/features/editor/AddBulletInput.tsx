@@ -1,6 +1,6 @@
 import { useEffect, useId, useRef, useState, type ClipboardEvent, type KeyboardEvent } from 'react';
 import { Plus, X } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { AppButton } from '@/components/AppButton';
 import { Input } from '@/components/ui/input';
 
 interface AddBulletInputProps {
@@ -79,7 +79,7 @@ export function AddBulletInput({ onAdd }: AddBulletInputProps) {
   if (!expanded) {
     return (
       <div className="pt-1.5">
-        <Button
+        <AppButton
           variant="ghost"
           size="sm"
           className="h-8 px-2 text-muted-foreground"
@@ -87,7 +87,7 @@ export function AddBulletInput({ onAdd }: AddBulletInputProps) {
         >
           <Plus />
           Add Bullet
-        </Button>
+        </AppButton>
       </div>
     );
   }
@@ -115,7 +115,7 @@ export function AddBulletInput({ onAdd }: AddBulletInputProps) {
           aria-labelledby={labelId}
           className="h-8 min-w-0 flex-1 border-transparent bg-background px-2 text-sm shadow-none"
         />
-        <Button
+        <AppButton
           variant="ghost"
           size="icon-xs"
           onClick={submit}
@@ -124,8 +124,8 @@ export function AddBulletInput({ onAdd }: AddBulletInputProps) {
           className="[&_svg]:size-3.5"
         >
           <Plus />
-        </Button>
-        <Button
+        </AppButton>
+        <AppButton
           variant="ghost"
           size="icon-xs"
           onClick={close}
@@ -133,7 +133,7 @@ export function AddBulletInput({ onAdd }: AddBulletInputProps) {
           className="text-muted-foreground [&_svg]:size-3.5"
         >
           <X />
-        </Button>
+        </AppButton>
       </div>
       <p className="px-1 text-xs text-muted-foreground">
         Enter adds a bullet. Paste multiple lines to add many.

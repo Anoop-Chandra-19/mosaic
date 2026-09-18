@@ -1,4 +1,4 @@
-import { Button } from '@/components/ui/button';
+import { AppButton } from '@/components/AppButton';
 import {
   Dialog,
   DialogContent,
@@ -31,10 +31,10 @@ export function ConfirmDeleteDialog({
           <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+          <AppButton variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
-          </Button>
-          <Button
+          </AppButton>
+          <AppButton
             variant="destructive"
             onClick={() => {
               onConfirm();
@@ -42,7 +42,7 @@ export function ConfirmDeleteDialog({
             }}
           >
             Delete
-          </Button>
+          </AppButton>
         </DialogFooter>
       </DialogContent>
     </Dialog>

@@ -14,7 +14,6 @@ import {
   Trash2,
 } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
-import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -225,9 +224,9 @@ export function TemplateCard({ template, active, expanded, onToggle }: TemplateC
           )}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon-xs" aria-label={`Options for ${template.name}`}>
+              <AppButton variant="ghost" size="icon-xs" aria-label={`Options for ${template.name}`}>
                 <MoreHorizontal className="size-3.5" />
-              </Button>
+              </AppButton>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
               <DropdownMenuItem disabled={active} onClick={() => void open()}>
@@ -298,14 +297,14 @@ export function TemplateCard({ template, active, expanded, onToggle }: TemplateC
                 Showing {preview.label} in the sheet. Your draft is untouched — restore from the
                 banner if you want it.
               </span>
-              <Button
+              <AppButton
                 variant="outline"
                 size="sm"
                 className="h-6 px-2 text-xs"
                 onClick={() => setPreview(null)}
               >
                 Exit
-              </Button>
+              </AppButton>
             </Note>
           )}
 

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Check, ChevronRight, Copy } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { AppButton } from '@/components/AppButton';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { copyText } from '@/features/export/exportResume';
 
@@ -28,18 +28,23 @@ export function LeftOutLines({ lines }: { lines: string[] }) {
     <Collapsible className="mt-3 rounded-lg border border-zinc-200 dark:border-zinc-800">
       <div className="flex items-center justify-between gap-2 p-1">
         <CollapsibleTrigger asChild>
-          <Button variant="ghost" size="sm" className="group h-7 gap-1.5 px-2">
+          <AppButton variant="ghost" size="sm" className="group h-7 gap-1.5 px-2">
             <ChevronRight className="size-3.5 text-zinc-500 transition-transform group-data-[state=open]:rotate-90" />
             <span className="font-medium text-zinc-900 dark:text-zinc-100">Left out</span>{' '}
             <span className="text-xs font-normal text-zinc-600 dark:text-zinc-400">
               — {lines.length === 1 ? '1 line' : `${lines.length} lines`}
             </span>
-          </Button>
+          </AppButton>
         </CollapsibleTrigger>
-        <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={() => void copy()}>
+        <AppButton
+          variant="ghost"
+          size="sm"
+          className="h-7 px-2 text-xs"
+          onClick={() => void copy()}
+        >
           {copyState === 'copied' ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}
           {COPY_LABELS[copyState]}
-        </Button>
+        </AppButton>
       </div>
       <CollapsibleContent>
         <div className="border-t border-zinc-200 px-3 py-2 dark:border-zinc-800">
@@ -48,7 +53,7 @@ export function LeftOutLines({ lines }: { lines: string[] }) {
           </p>
           <ul className="max-h-32 overflow-y-auto font-mono text-xs leading-5 text-zinc-900 dark:text-zinc-100">
             {lines.map((line, index) => (
-              <li key={index} className="break-words">
+              <li key={index} className="wrap-break-word">
                 {line}
               </li>
             ))}

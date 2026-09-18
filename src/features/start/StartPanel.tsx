@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { ArrowRight, FileText, Info, Lock, Sparkles, Upload, X } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { AppButton } from '@/components/AppButton';
 import { cn } from '@/lib/utils';
 import { isModKey, shortcutLabel } from '@/lib/shortcuts';
 import { createDefaultResume } from '@/lib/resume/defaultResume';
@@ -57,7 +57,7 @@ export function StartPanel({ closable }: StartPanelProps) {
     <div className="absolute inset-0 z-30 flex items-center justify-center overflow-auto bg-[color-mix(in_srgb,var(--background)_78%,transparent)] p-5 backdrop-blur-[3px]">
       <section
         aria-labelledby="start-title"
-        className="max-h-full w-full max-w-[35rem] overflow-auto rounded-xl border border-zinc-300 bg-white px-6 pt-6 pb-3.5 shadow-2xl dark:border-zinc-800 dark:bg-zinc-950"
+        className="max-h-full w-full max-w-140 overflow-auto rounded-xl border border-zinc-300 bg-white px-6 pt-6 pb-3.5 shadow-2xl dark:border-zinc-800 dark:bg-zinc-950"
       >
         {view === 'routes' ? (
           <>
@@ -119,14 +119,14 @@ export function StartPanel({ closable }: StartPanelProps) {
             </div>
             <PanelFoot icon={Info}>
               One sample so far — more are being written.
-              <Button
+              <AppButton
                 variant="outline"
                 size="sm"
                 className="ml-auto h-7 text-xs"
                 onClick={() => setView('routes')}
               >
                 Back
-              </Button>
+              </AppButton>
             </PanelFoot>
           </>
         )}
@@ -161,9 +161,9 @@ function PanelHead({
         </p>
       </div>
       {onClose && (
-        <Button variant="ghost" size="icon-sm" onClick={onClose} aria-label="Close">
+        <AppButton variant="ghost" size="icon-sm" onClick={onClose} aria-label="Close">
           <X className="size-4" />
-        </Button>
+        </AppButton>
       )}
     </div>
   );

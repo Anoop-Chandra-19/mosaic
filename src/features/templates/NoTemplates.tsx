@@ -1,5 +1,5 @@
 import { LayoutTemplate, Plus } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { AppButton } from '@/components/AppButton';
 import { createBlankResume } from '@/features/start/blankResume';
 import { useStartResume } from '@/features/start/useStartResume';
 import { createEmptyResume } from '@/lib/resume/defaultResume';
@@ -40,10 +40,10 @@ export function NoTemplates() {
           ? 'A template holds one resume’s content and its history. Your first one is created as soon as you start writing.'
           : 'Nothing is open. Start a resume and Mosaic creates a template for it, with its own history.'}
       </p>
-      <Button variant="outline" size="sm" onClick={() => void startResume()}>
+      <AppButton variant="outline" size="sm" onClick={() => void startResume()}>
         <Plus />
         Start a resume
-      </Button>
+      </AppButton>
     </div>
   );
 }

@@ -1,7 +1,6 @@
 import { useMemo } from 'react';
 import { Eye, History } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
-import { Button } from '@/components/ui/button';
 import { attempt, showToast, useOverlayStore, type VersionPreview } from '@/stores/overlayStore';
 import { useResumeStore } from '@/stores/resumeStore';
 import { useTemplateStore } from '@/stores/templateStore';
@@ -48,14 +47,14 @@ export function VersionPreviewBanner({ preview }: { preview: VersionPreview }) {
             : ` — ${changed} ${changed === 1 ? 'line differs' : 'lines differ'} from your draft`}
         </span>
       </span>
-      <Button
+      <AppButton
         variant="ghost"
         size="sm"
         className="h-6 px-2 text-xs"
         onClick={() => setPreview(null)}
       >
         Back to draft
-      </Button>
+      </AppButton>
       <AppButton variant="emphasis" size="xs" onClick={() => void restore()}>
         <History className="size-3" />
         Restore this version

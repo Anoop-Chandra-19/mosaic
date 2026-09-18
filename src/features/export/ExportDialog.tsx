@@ -10,7 +10,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { DialogFrameFooter, DialogFrameHeader } from '@/components/DialogFrame';
-import { Button } from '@/components/ui/button';
+import { AppButton } from '@/components/AppButton';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -189,19 +189,24 @@ function ExportForm({ version, onDone }: { version: ExportVersion | null; onDone
       </div>
 
       <DialogFrameFooter note="Exports never leave this machine.">
-        <Button variant="ghost" size="sm" onClick={onDone}>
+        <AppButton variant="ghost" size="sm" onClick={onDone}>
           Cancel
-        </Button>
+        </AppButton>
         {format.copyable && (
-          <Button variant="outline" size="sm" disabled={busy !== null} onClick={() => void copy()}>
+          <AppButton
+            variant="outline"
+            size="sm"
+            disabled={busy !== null}
+            onClick={() => void copy()}
+          >
             <Copy />
             Copy to clipboard
-          </Button>
+          </AppButton>
         )}
-        <Button size="sm" disabled={busy !== null} onClick={() => void save()}>
+        <AppButton size="sm" disabled={busy !== null} onClick={() => void save()}>
           <Download />
           {busy === 'save' ? 'Saving…' : `Save ${format.extension.toUpperCase()}`}
-        </Button>
+        </AppButton>
       </DialogFrameFooter>
     </>
   );
