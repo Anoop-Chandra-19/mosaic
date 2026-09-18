@@ -1,9 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createDefaultResume } from '@shared/resume/defaultResume';
 import type { ResumeData } from '@shared/types/resume';
-import { boot } from '../boot';
 import { openDatabase, type Database } from '../connection';
 import { readDraft, saveDraft } from '../drafts';
+import { readBootState } from '../readBootState';
 import { ACTIVE_TEMPLATE_KEY, getSetting, removeSetting, setSetting } from '../settings';
 import {
   createTemplate,
@@ -53,9 +53,9 @@ function countRows(table: string, templateId: string): number {
     .get(templateId) as number;
 }
 
-describe('boot', () => {
+describe('readBootState', () => {
   it('opens a new install empty: no templates, no draft', () => {
-    expect(boot(db)).toEqual({ settings: {}, templates: [], draft: null });
+    expect(readBootState(db)).toEqual({ settings: {}, templates: [], draft: null });
     expect(listTemplates(db)).toEqual([]);
   });
 
@@ -64,7 +64,7 @@ describe('boot', () => {
     const other = createTemplate(db, 'Other', resumeFor('Other'));
     openTemplate(db, other.id);
 
-    const state = boot(db);
+    const state = readBootState(db);
     expect(state.templates.map((t) => t.name)).toEqual(['First', 'Other']);
     expect(state.draft).toEqual({ templateId: other.id, doc: resumeFor('Other'), rev: 0 });
     expect(state.settings[ACTIVE_TEMPLATE_KEY]).toBe(other.id);
@@ -75,7 +75,7 @@ describe('boot', () => {
     openTemplate(db, id);
     removeTemplate(db, id);
 
-    const state = boot(db);
+    const state = readBootState(db);
     expect(state.templates).toEqual([]);
     expect(state.draft).toBeNull();
     expect(state.settings[ACTIVE_TEMPLATE_KEY]).toBeUndefined();
@@ -90,7 +90,7 @@ describe('boot', () => {
     saveDraft(db, first.id, resumeFor('First, edited'), 1);
     setSetting(db, ACTIVE_TEMPLATE_KEY, 'deleted-template');
 
-    expect(boot(db).draft?.templateId).toBe(first.id);
+    expect(readBootState(db).draft?.templateId).toBe(first.id);
     expect(getSetting(db, ACTIVE_TEMPLATE_KEY)).toBe(first.id);
   });
 });

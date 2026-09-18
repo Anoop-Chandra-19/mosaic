@@ -1,5 +1,5 @@
 import Database from 'better-sqlite3';
-import { migrate, type MigrateOptions } from './migrate';
+import { migrateDatabase, type MigrateOptions } from './migrateDatabase';
 
 export type { Database } from 'better-sqlite3';
 
@@ -14,7 +14,7 @@ export function openDatabase(file: string, options?: MigrateOptions): Database.D
     db.pragma('synchronous = NORMAL'); // with WAL: durable across app crashes, not power loss
     db.pragma('foreign_keys = ON');
     db.pragma('busy_timeout = 2000');
-    migrate(db, options);
+    migrateDatabase(db, options);
     return db;
   } catch (error) {
     db.close();

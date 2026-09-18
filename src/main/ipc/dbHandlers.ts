@@ -6,11 +6,11 @@ import type { DbResult, MosaicDb } from '@shared/types/db';
 import { MAX_FILE_BYTES } from '@shared/types/files';
 import type { ResumeData } from '@shared/types/resume';
 import type { DbMethod } from '@shared/ipc/dbMethods';
-import { boot } from '../db/boot';
 import { exportBundle, importBundle } from '../db/bundle';
 import { saveDraft } from '../db/drafts';
-import { StorageError } from '../db/errors';
+import { readBootState } from '../db/readBootState';
 import { MAIN_SETTINGS_PREFIX, removeSetting, setSetting } from '../db/settings';
+import { StorageError } from '../db/storageError';
 import {
   createTemplate,
   duplicateTemplate,
@@ -109,7 +109,7 @@ function bundle(value: unknown): MosaicBundle {
 
 export function createDbHandlers(db: Database): Handlers<MosaicDb> {
   return {
-    boot: () => boot(db),
+    boot: () => readBootState(db),
     templates: {
       list: () => listTemplates(db),
       create: (name, doc, importedFrom) =>

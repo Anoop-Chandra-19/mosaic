@@ -4,7 +4,12 @@ import path from 'node:path';
 import BetterSqlite from 'better-sqlite3';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { openDatabase, type Database } from '../connection';
-import { bundledMigrations, EditedMigrationError, migrate, NewerDatabaseError } from '../migrate';
+import {
+  bundledMigrations,
+  EditedMigrationError,
+  migrateDatabase,
+  NewerDatabaseError,
+} from '../migrateDatabase';
 import { hashMigration, parseMigrations, type Migration } from '../migrationFiles';
 
 const MIGRATIONS_DIR = path.resolve(import.meta.dirname, '../migrations');
@@ -34,7 +39,7 @@ const first: Migration = {
 };
 const second: Migration = { version: 2, name: '002_b.sql', sql: 'create table b (y text) strict' };
 
-describe('migrate', () => {
+describe('migrateDatabase', () => {
   it('builds the schema on an empty database and records its version', () => {
     db = openDatabase(':memory:');
     expect(db.pragma('user_version', { simple: true })).toBe(bundledMigrations().length);
@@ -50,17 +55,17 @@ describe('migrate', () => {
   it('is a no-op on an up-to-date database', () => {
     db = openDatabase(':memory:');
     db.prepare("insert into settings (key, value) values ('k', 'v')").run();
-    migrate(db);
+    migrateDatabase(db);
     expect(db.pragma('user_version', { simple: true })).toBe(bundledMigrations().length);
     expect(db.prepare('select value from settings').pluck().get()).toBe('v');
   });
 
   it('runs only the migrations a database has not run yet, and fingerprints each', () => {
     db = new BetterSqlite(':memory:');
-    migrate(db, { migrations: [first] });
+    migrateDatabase(db, { migrations: [first] });
     db.prepare('insert into a (x) values (1)').run();
 
-    migrate(db, { migrations: [first, second] });
+    migrateDatabase(db, { migrations: [first, second] });
 
     expect(db.pragma('user_version', { simple: true })).toBe(2);
     expect(db.prepare('select x from a').pluck().get()).toBe(1);
@@ -72,27 +77,27 @@ describe('migrate', () => {
 
   it('refuses a database written by a newer build, without touching it', () => {
     db = new BetterSqlite(':memory:');
-    migrate(db, { migrations: [first, second] });
+    migrateDatabase(db, { migrations: [first, second] });
 
-    expect(() => migrate(db!, { migrations: [first] })).toThrow(NewerDatabaseError);
+    expect(() => migrateDatabase(db!, { migrations: [first] })).toThrow(NewerDatabaseError);
   });
 
   it('stops when an applied migration has been edited', () => {
     db = new BetterSqlite(':memory:');
-    migrate(db, { migrations: [first] });
+    migrateDatabase(db, { migrations: [first] });
     const edited = { ...first, sql: 'create table a (x integer, z integer) strict' };
 
-    expect(() => migrate(db!, { migrations: [edited] })).toThrow(EditedMigrationError);
-    expect(() => migrate(db!, { migrations: [edited] })).toThrow(/bun run dev:reset/);
+    expect(() => migrateDatabase(db!, { migrations: [edited] })).toThrow(EditedMigrationError);
+    expect(() => migrateDatabase(db!, { migrations: [edited] })).toThrow(/bun run dev:reset/);
   });
 
   it('only warns about an edited migration when told to tolerate it (installed builds)', () => {
     db = new BetterSqlite(':memory:');
-    migrate(db, { migrations: [first] });
+    migrateDatabase(db, { migrations: [first] });
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const edited = { ...first, sql: `${first.sql};` };
 
-    migrate(db, { migrations: [edited, second], tolerateEditedMigrations: true });
+    migrateDatabase(db, { migrations: [edited, second], tolerateEditedMigrations: true });
 
     expect(warn).toHaveBeenCalledWith(expect.stringContaining('001_a.sql has changed'));
     expect(db.pragma('user_version', { simple: true })).toBe(2);
@@ -103,7 +108,7 @@ describe('migrate', () => {
     db.exec(first.sql);
     db.pragma('user_version = 1'); // migrated before fingerprints existed
 
-    expect(() => migrate(db!, { migrations: [first] })).toThrow(EditedMigrationError);
+    expect(() => migrateDatabase(db!, { migrations: [first] })).toThrow(EditedMigrationError);
   });
 
   it('enforces column types and JSON documents', () => {

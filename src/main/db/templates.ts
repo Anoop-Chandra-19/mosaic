@@ -2,10 +2,10 @@ import { randomUUID } from 'node:crypto';
 import type { Database } from 'better-sqlite3';
 import type { Draft, TemplateSummary, VersionSource } from '@shared/types/db';
 import type { ResumeData } from '@shared/types/resume';
-import { encodeDoc } from './doc';
 import { readDraft } from './drafts';
-import { StorageError } from './errors';
 import { ACTIVE_TEMPLATE_KEY, getSetting, removeSetting, setSetting } from './settings';
+import { StorageError } from './storageError';
+import { encodeStoredResume } from './storedResume';
 import { countVersions, getVersion, headVersion, insertVersion } from './versions';
 
 interface TemplateRow {
@@ -65,7 +65,7 @@ export function insertTemplateRow(db: Database, template: NewTemplate): void {
   ).run(template.id, template.name, template.rev, template.createdAt, template.updatedAt);
   db.prepare('insert into drafts (template_id, doc, updated_at) values (?, ?, ?)').run(
     template.id,
-    encodeDoc(template.draft),
+    encodeStoredResume(template.draft),
     template.updatedAt
   );
 }

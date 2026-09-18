@@ -1,8 +1,8 @@
 import type { Database } from 'better-sqlite3';
 import type { Draft } from '@shared/types/db';
 import type { ResumeData } from '@shared/types/resume';
-import { decodeDoc, encodeDoc } from './doc';
-import { StorageError } from './errors';
+import { StorageError } from './storageError';
+import { encodeStoredResume, parseAndMigrateStoredResume } from './storedResume';
 
 interface DraftRow {
   template_id: string;
@@ -19,7 +19,7 @@ export function readDraft(db: Database, templateId: string): Draft {
     )
     .get(templateId);
   if (!row) throw new StorageError('not-found', `No template with id ${templateId}`);
-  return { templateId: row.template_id, doc: decodeDoc(row.doc), rev: row.rev };
+  return { templateId: row.template_id, doc: parseAndMigrateStoredResume(row.doc), rev: row.rev };
 }
 
 /** The draft and its rev are written together; the anchor check trusts that they match. */
@@ -27,7 +27,7 @@ export function writeDraft(db: Database, templateId: string, doc: ResumeData, re
   const now = Date.now();
   db.transaction(() => {
     db.prepare('update drafts set doc = ?, updated_at = ? where template_id = ?').run(
-      encodeDoc(doc),
+      encodeStoredResume(doc),
       now,
       templateId
     );

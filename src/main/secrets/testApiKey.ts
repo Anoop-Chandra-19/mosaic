@@ -51,7 +51,7 @@ function probeFor(provider: KeyedProvider, key: string, model: string): Probe {
 }
 
 /** Asks the provider whether `key` works. Every outcome is data; this never throws. */
-export async function testKey(
+export async function testApiKey(
   provider: KeyedProvider,
   key: string,
   model: string,

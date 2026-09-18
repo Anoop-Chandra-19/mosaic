@@ -8,7 +8,7 @@ import { listTemplates, openTemplate } from './templates';
  * install, or every template deleted — there is no draft, and the editor shows its
  * empty state (start blank, from the example, or from an import).
  */
-export function boot(db: Database): BootState {
+export function readBootState(db: Database): BootState {
   return db.transaction(() => {
     const templates = listTemplates(db);
     if (templates.length === 0) {

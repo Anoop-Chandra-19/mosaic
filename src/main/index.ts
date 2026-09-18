@@ -15,14 +15,14 @@ import { listOllamaModels } from './ai/ollamaModels';
 import { openDatabase, type Database } from './db/connection';
 import { API_KEYS_KEY, getSetting, setSetting } from './db/settings';
 import { eraseAll } from './eraseAll';
-import { flushBeforeClose } from './flushOnClose';
-import { registerDbHandlers } from './ipc/db';
-import { registerFileHandlers } from './ipc/files';
-import { registerSecretsHandlers } from './ipc/secrets';
+import { flushBeforeClose } from './flushBeforeClose';
+import { registerDbHandlers } from './ipc/registerDbHandlers';
+import { registerFileHandlers } from './ipc/registerFileHandlers';
+import { registerSecretsHandlers } from './ipc/registerSecretsHandlers';
 import { createSecretsHandlers } from './ipc/secretsHandlers';
 import { createApiKeys } from './secrets/apiKeys';
 import { osKeyring } from './secrets/osKeyring';
-import { testKey } from './secrets/testKey';
+import { testApiKey } from './secrets/testApiKey';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 
@@ -146,7 +146,7 @@ if (!app.requestSingleInstanceLock()) {
     });
     registerSecretsHandlers(
       createSecretsHandlers(apiKeys, (provider, key, model) =>
-        testKey(provider, key, model, net.fetch)
+        testApiKey(provider, key, model, net.fetch)
       ),
       isAppFrame
     );

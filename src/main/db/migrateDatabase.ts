@@ -60,7 +60,7 @@ export interface MigrateOptions {
  * fingerprint, and the version bump commit together, so a crash mid-upgrade leaves the
  * previous schema.
  */
-export function migrate(
+export function migrateDatabase(
   db: Database,
   { tolerateEditedMigrations = false, migrations = bundledMigrations() }: MigrateOptions = {}
 ): void {

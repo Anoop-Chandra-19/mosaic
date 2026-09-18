@@ -9,9 +9,9 @@ import type {
   VersionSource,
 } from '@shared/types/db';
 import type { ResumeData } from '@shared/types/resume';
-import { decodeDoc, encodeDoc } from './doc';
 import { readDraft, writeDraft } from './drafts';
-import { StorageError } from './errors';
+import { StorageError } from './storageError';
+import { encodeStoredResume, parseAndMigrateStoredResume } from './storedResume';
 
 interface VersionRow {
   id: string;
@@ -75,7 +75,7 @@ export function getVersion(db: Database, versionId: string): Version {
     >(`select ${META_COLUMNS}, doc from versions where id = ?`)
     .get(versionId);
   if (!row) throw new StorageError('not-found', `No version with id ${versionId}`);
-  return { ...toMeta(row), doc: decodeDoc(row.doc) };
+  return { ...toMeta(row), doc: parseAndMigrateStoredResume(row.doc) };
 }
 
 export interface NewVersion {
@@ -114,7 +114,7 @@ export function insertVersion(db: Database, version: NewVersion): VersionMeta {
     meta.kind,
     meta.source,
     meta.summary,
-    encodeDoc(version.doc),
+    encodeStoredResume(version.doc),
     meta.rev,
     meta.createdAt
   );
@@ -154,7 +154,8 @@ export function nameDraft(db: Database, templateId: string, name: string): Versi
     const head = headVersion(db, templateId);
     const clean =
       head !== undefined &&
-      (head.rev === draft.rev || encodeDoc(getVersion(db, head.id).doc) === encodeDoc(draft.doc));
+      (head.rev === draft.rev ||
+        encodeStoredResume(getVersion(db, head.id).doc) === encodeStoredResume(draft.doc));
 
     if (clean) {
       db.prepare(`update versions set kind = 'named', summary = ?, rev = ? where id = ?`).run(
