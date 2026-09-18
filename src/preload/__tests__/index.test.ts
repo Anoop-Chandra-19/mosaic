@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { contextBridge, ipcRenderer } from 'electron';
 import { DB_METHODS, dbChannel } from '@shared/ipc/dbMethods';
-import './index';
+import '../index';
 
 vi.mock('electron', () => ({
   contextBridge: { exposeInMainWorld: vi.fn() },

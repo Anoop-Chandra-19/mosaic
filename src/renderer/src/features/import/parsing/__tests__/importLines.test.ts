@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { linkText } from './importLines';
+import { linkText } from '../importLines';
 
 describe('linkText', () => {
   it('shows the words and the address, unless the words are the address', () => {

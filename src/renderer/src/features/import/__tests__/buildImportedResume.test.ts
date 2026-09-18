@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { createHeaderItem, createHeaderLine } from '@shared/resume/resumeHeader';
 import type { ContactInfo, HeaderItem, ResumeData, ResumeSection } from '@shared/types/resume';
-import { buildImportedResume, describeImport, keepsHeader } from './buildImportedResume';
-import type { ParsedResume } from './parsing/parseResume';
+import { buildImportedResume, describeImport, keepsHeader } from '../buildImportedResume';
+import type { ParsedResume } from '../parsing/parseResume';
 
 /** A contact with a name, and a header of one line holding these items. */
 function contact(name = '', ...items: HeaderItem[]): ContactInfo {

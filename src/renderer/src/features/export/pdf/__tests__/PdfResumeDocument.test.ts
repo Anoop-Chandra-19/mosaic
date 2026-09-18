@@ -2,9 +2,9 @@ import { createElement } from 'react';
 import { renderToBuffer } from '@react-pdf/renderer';
 import { describe, expect, it } from 'vitest';
 import { createDefaultResume } from '@shared/resume/defaultResume';
-import { extractPdfText } from '../../../../../../e2e/pdfText';
-import { normalizeResumeForExport } from '../normalizeResumeExport';
-import { PdfResumeDocument } from '../pdf/PdfResumeDocument';
+import { extractPdfText } from '../../../../../../../e2e/pdfText';
+import { normalizeResumeForExport } from '../../normalizeResumeExport';
+import { PdfResumeDocument } from '../PdfResumeDocument';
 
 describe('PdfResumeDocument', () => {
   it('never splits a word across lines', async () => {

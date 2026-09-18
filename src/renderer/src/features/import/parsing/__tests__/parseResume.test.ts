@@ -3,14 +3,14 @@ import { normalizeResumeForExport } from '@/features/export/normalizeResumeExpor
 import { createPlaintextExport } from '@/features/export/plaintextExport';
 import { createDefaultResume } from '@shared/resume/defaultResume';
 import type { ResumeData, ResumeSection } from '@shared/types/resume';
-import { textToLines, type ImportLine } from './importLines';
-import { parseResumeLines, parseResumeText } from './parseResume';
+import { textToLines, type ImportLine } from '../importLines';
+import { parseResumeLines, parseResumeText } from '../parseResume';
 import {
   everything,
   shown,
   buildExpectedShown,
   createStyledHeaderResume,
-} from '../__tests__/resumeFixtures';
+} from '../../__tests__/resumeFixtures';
 
 const SAMPLE = `Jane Developer
 San Francisco, CA

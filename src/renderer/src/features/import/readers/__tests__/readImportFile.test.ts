@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { UnreadableBackupError } from '@/features/backup/backupFiles';
-import { readImportFile, UnreadableFileError } from './readImportFile';
-import { docx, para } from './docx/__tests__/buildDocx';
-import { buildPdf } from './pdf/__tests__/buildPdf';
-import { PDF_LIMITS } from './pdf/readPdf';
+import { readImportFile, UnreadableFileError } from '../readImportFile';
+import { docx, para } from '../docx/__tests__/buildDocx';
+import { buildPdf } from '../pdf/__tests__/buildPdf';
+import { PDF_LIMITS } from '../pdf/readPdf';
 
 const bytes = (text: string) => new TextEncoder().encode(text);
 const BYTE_ORDER_MARK = String.fromCharCode(0xfeff);

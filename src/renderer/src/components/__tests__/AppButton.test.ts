@@ -2,7 +2,7 @@ import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import { Button } from '@/components/ui/button';
-import { AppButton } from './AppButton';
+import { AppButton } from '../AppButton';
 
 function getClasses(markup: string) {
   return markup.match(/class="([^"]*)"/)![1].split(' ');

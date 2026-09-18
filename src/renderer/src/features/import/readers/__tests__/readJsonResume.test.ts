@@ -4,7 +4,7 @@ import { normalizeResumeForExport } from '@/features/export/normalizeResumeExpor
 import { createDefaultResume } from '@shared/resume/defaultResume';
 import { createHeaderItem } from '@shared/resume/resumeHeader';
 import type { ResumeData } from '@shared/types/resume';
-import { isJsonResume, readJsonResume } from './readJsonResume';
+import { isJsonResume, readJsonResume } from '../readJsonResume';
 import {
   entry,
   everything,
@@ -13,7 +13,7 @@ import {
   section,
   shown,
   createStyledHeaderResume,
-} from '../__tests__/resumeFixtures';
+} from '../../__tests__/resumeFixtures';
 
 const exported = (resume: ResumeData) =>
   JSON.parse(createJsonResumeExport(normalizeResumeForExport(resume)));

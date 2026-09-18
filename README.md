@@ -65,7 +65,8 @@ e2e/              # Playwright specs against the built app
 
 `@/` maps to `src/renderer/src/`; `@shared/` maps to `src/shared/`. Shared modules are
 environment-neutral contracts and logic, not React, DOM, or Electron implementations.
-Unit tests live next to the modules they cover; build output remains in `out/`.
+Unit tests live in a `__tests__/` folder beside the modules they cover; build output
+remains in `out/`.
 
 ## Data and Privacy
 

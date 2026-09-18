@@ -5,7 +5,8 @@ Read with the root and renderer `CLAUDE.md` files, plus `docs/resume-format.md`
 
 - Layout: `readers/` turns file bytes into lines (or a parsed resume, for JSON Resume);
   `parsing/` turns lines into a resume; the dialog and `buildImportedResume` (new, replace,
-  merge) stay at the top. `__tests__/resumeFixtures.ts` holds shared round-trip fixtures.
+  merge) stay at the top. `__tests__/resumeFixtures.ts` holds the round-trip fixtures
+  shared across folders.
 - `files.open('import')` returns bytes. `readImportFile` selects by extension: PDF, Word
   (.docx), Markdown, plain text, JSON Resume, or Mosaic JSON (sent to Restore). Unreadable
   inputs (scans, passwords, older .doc) get actionable messages in the dialog.

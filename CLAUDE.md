@@ -29,6 +29,8 @@ Paths below are relative to the repository root. Read the relevant files before 
   no React, DOM, or Electron implementations. Renderer-only code stays in the renderer.
 - Keep feature code and tests together, folders flat until subfolders help navigation,
   and abstractions driven by actual reuse. Don't reorganize unrelated code.
+- Unit tests go in a `__tests__/` folder beside the code they cover, never directly beside
+  the module; test-only helpers and fixtures live there too. Root `e2e/` holds Playwright specs.
 
 ## Commands and dependencies
 
@@ -76,7 +78,7 @@ Bun and npm both work (Node ≥ 22.18): `bun run <script>` = `npm run <script>`;
   `drafts.save()` and `saveDraft()` are both clear; local names can be short.
 - Component files: PascalCase matching the component. Other TS modules: camelCase matching
   the main operation or subject + responsibility. Avoid catch-all utils/helpers/manager files.
-- Stores: `<subject>Store.ts`; type modules: domain names; tests: `<module>.test.ts`;
+- Stores: `<subject>Store.ts`; type modules: domain names; tests: `__tests__/<module>.test.ts`;
   folders: kebab-case. Use `.tsx` only for JSX; keep tool-required and shadcn names unchanged.
 - Types/components: PascalCase; functions/variables: camelCase; fixed module constants:
   SCREAMING_SNAKE_CASE. Acronyms are words (`Pdf`, `Ai`, `Db`, `Id`).

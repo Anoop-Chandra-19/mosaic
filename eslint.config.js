@@ -26,7 +26,7 @@ export default defineConfig([
     ignores: [
       'src/renderer/src/components/ui/**',
       'src/renderer/src/components/AppButton.tsx',
-      'src/renderer/src/components/AppButton.test.ts',
+      'src/renderer/src/components/__tests__/AppButton.test.ts',
     ],
     rules: {
       'no-restricted-imports': [
