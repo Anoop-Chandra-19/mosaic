@@ -17,8 +17,8 @@ import { MAX_FILE_BYTES } from '@shared/types/files';
 import type { ContactInfo, ResumeSection, SectionLayout } from '@shared/types/resume';
 import { buildImportedResume, keepsHeader, type ImportMode } from './buildImportedResume';
 import { LeftOutLines } from './LeftOutLines';
-import { parseResumeText, type ParsedResume } from './parseResume';
-import { readImportFile, UnreadableFileError, type ImportRead } from './readImportFile';
+import { parseResumeText, type ParsedResume } from './parsing/parseResume';
+import { readImportFile, UnreadableFileError, type ImportRead } from './readers/readImportFile';
 
 /** Recorded in the template's history as where pasted content came from. */
 const PASTED = 'pasted text';

@@ -11,8 +11,8 @@ import {
   type DocxTable,
 } from './docxModel';
 import { docxLines } from './docxLines';
-import { markLink } from '../importLines';
-import { parseResumeLines, type ParsedResume } from '../parseResume';
+import { markLink } from '../../parsing/importLines';
+import { parseResumeLines, type ParsedResume } from '../../parsing/parseResume';
 import {
   attribute,
   childNamed,

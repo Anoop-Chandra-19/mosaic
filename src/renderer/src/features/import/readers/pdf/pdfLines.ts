@@ -6,8 +6,12 @@ import {
   PAGE_NUMBER,
   titleCase,
   type ImportLine,
-} from '../importLines';
-import { isHeadingLength, matchSectionHeader, SHORT_LINE_LENGTH } from '../sectionHeaders';
+} from '../../parsing/importLines';
+import {
+  isHeadingLength,
+  matchSectionHeader,
+  SHORT_LINE_LENGTH,
+} from '../../parsing/sectionHeaders';
 import type { PdfDocument, PdfLink, PdfNote, PdfPage, PdfRun } from './pdfModel';
 
 /*

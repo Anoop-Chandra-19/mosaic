@@ -1,6 +1,6 @@
-import { markLink, type ImportLine } from './importLines';
-import { parseResumeLines, type ParsedResume } from './parseResume';
-import { matchSectionHeader } from './sectionHeaders';
+import { markLink, type ImportLine } from '../parsing/importLines';
+import { parseResumeLines, type ParsedResume } from '../parsing/parseResume';
+import { matchSectionHeader } from '../parsing/sectionHeaders';
 
 const ATX_HEADING = /^ {0,3}(#{1,6})(?:[ \t]+(.*?))?[ \t]*$/;
 const SETEXT_H1_UNDERLINE = /^ {0,3}=+[ \t]*$/;

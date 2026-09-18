@@ -2,7 +2,7 @@ import { readBackup } from '@/features/backup/backupFiles';
 import { isRecord } from '@shared/resume/validateResume';
 import type { OpenedBackup } from '@shared/types/bundle';
 import { decodeText } from '@shared/types/files';
-import { parseResumeText, type ParsedResume } from './parseResume';
+import { parseResumeText, type ParsedResume } from '../parsing/parseResume';
 import { NotADocxError, readDocx } from './docx/readDocx';
 import { isJsonResume, readJsonResume } from './readJsonResume';
 import { readMarkdown } from './readMarkdown';

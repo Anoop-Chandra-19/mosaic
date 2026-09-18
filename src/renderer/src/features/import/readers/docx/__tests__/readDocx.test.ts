@@ -4,7 +4,7 @@ import { paragraphsOf, type DocxParagraph, type DocxTable } from '../docxModel';
 import { NotADocxError, readDocxContent } from '../readDocx';
 import { XmlError } from '../parseXml';
 import { ZipError } from '../openZip';
-import { markLink, replaceMarkedLinksWithText } from '../../importLines';
+import { markLink, replaceMarkedLinksWithText } from '../../../parsing/importLines';
 import {
   cell,
   deleted,

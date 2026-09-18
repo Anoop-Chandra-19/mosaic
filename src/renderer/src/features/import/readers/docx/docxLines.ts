@@ -15,8 +15,12 @@ import {
   PAGE_NUMBER,
   titleCase,
   type ImportLine,
-} from '../importLines';
-import { isHeadingLength, matchSectionHeader, SHORT_LINE_LENGTH } from '../sectionHeaders';
+} from '../../parsing/importLines';
+import {
+  isHeadingLength,
+  matchSectionHeader,
+  SHORT_LINE_LENGTH,
+} from '../../parsing/sectionHeaders';
 
 /** A bullet typed by hand in a symbol font, whose glyphs Word keeps in the Private Use Area. */
 const SYMBOL_BULLET = /^\s*[-]\s*/;

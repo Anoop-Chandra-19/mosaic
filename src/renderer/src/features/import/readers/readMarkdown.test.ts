@@ -3,7 +3,7 @@ import { createMarkdownExport } from '@/features/export/markdownExport';
 import { normalizeResumeForExport } from '@/features/export/normalizeResumeExport';
 import { createDefaultResume } from '@shared/resume/defaultResume';
 import type { ResumeData } from '@shared/types/resume';
-import { readMarkdown } from '../readMarkdown';
+import { readMarkdown } from './readMarkdown';
 import {
   entry,
   everything,
@@ -13,7 +13,7 @@ import {
   shown,
   buildExpectedShown,
   createStyledHeaderResume,
-} from './resumeFixtures';
+} from '../__tests__/resumeFixtures';
 
 const markdownOf = (data: ResumeData) => createMarkdownExport(normalizeResumeForExport(data));
 

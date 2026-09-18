@@ -1,6 +1,6 @@
 import { getPrintableHeaderLines } from '@shared/resume/resumeHeader';
 import type { ContactInfo, ResumeData, ResumeSection } from '@shared/types/resume';
-import type { ParsedResume } from './parseResume';
+import type { ParsedResume } from './parsing/parseResume';
 
 /**
  * `new` opens the import as its own template; `replace` swaps the open template's content

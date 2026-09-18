@@ -11,8 +11,8 @@ import {
   type XmlElement,
 } from '../parseXml';
 import { readDocx, readDocxContent } from '../readDocx';
-import { replaceMarkedLinksWithText } from '../../importLines';
-import type { ParsedResume } from '../../parseResume';
+import { replaceMarkedLinksWithText } from '../../../parsing/importLines';
+import type { ParsedResume } from '../../../parsing/parseResume';
 import { cell, docx, para, picture, run, table, textBox } from './buildDocx';
 
 const W = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main';

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { markLink, type ImportLine } from '../../importLines';
+import { markLink, type ImportLine } from '../../../parsing/importLines';
 import type { PdfLink, PdfPage, PdfRun } from '../pdfModel';
 import { pdfLines } from '../pdfLines';
 

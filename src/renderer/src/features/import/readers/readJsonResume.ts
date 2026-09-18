@@ -36,7 +36,7 @@ import type {
   SectionKind,
   SectionLayout,
 } from '@shared/types/resume';
-import type { ParsedResume } from './parseResume';
+import type { ParsedResume } from '../parsing/parseResume';
 
 type Json = Record<string, unknown>;
 type MetaSection = MosaicJsonResumeMeta['sections'][number];

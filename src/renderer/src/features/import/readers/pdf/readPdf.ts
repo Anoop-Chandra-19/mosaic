@@ -1,6 +1,6 @@
 import type { PDFDocumentProxy, PDFPageProxy } from 'pdfjs-dist';
 import type { TextItem } from 'pdfjs-dist/types/src/display/api';
-import { parseResumeLines, type ParsedResume } from '../parseResume';
+import { parseResumeLines, type ParsedResume } from '../../parsing/parseResume';
 import type { PdfDocument, PdfLink, PdfPage, PdfRun } from './pdfModel';
 import { pdfLines } from './pdfLines';
 

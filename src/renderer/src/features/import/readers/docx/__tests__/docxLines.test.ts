@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { docxLines } from '../docxLines';
 import type { DocxBlock, DocxDocument, DocxParagraph, DocxSource } from '../docxModel';
-import type { ImportLine } from '../../importLines';
+import type { ImportLine } from '../../../parsing/importLines';
 
 /**
  * These drive the interpreting half on made-up paragraphs, so a rule can be shown on its

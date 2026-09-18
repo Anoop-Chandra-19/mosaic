@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { expect, test } from '@playwright/test';
-import { buildPdf } from '../src/renderer/src/features/import/pdf/__tests__/buildPdf';
+import { buildPdf } from '../src/renderer/src/features/import/readers/pdf/__tests__/buildPdf';
 import { openWith } from './dialogs';
 import { withApp } from './launch';
 
