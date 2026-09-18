@@ -201,6 +201,27 @@ describe('readDocxContent', () => {
     });
   });
 
+  it('says how a paragraph is aligned: its own setting, then its style’s, then Word’s left', async () => {
+    const styles = `<w:style w:type="paragraph" w:styleId="Contact"><w:pPr><w:jc w:val="center"/></w:pPr></w:style>`;
+    const { blocks } = await read(
+      [
+        para('Ada Lovelace', { align: 'center' }),
+        para('555-0100 | ada@example.com', { paragraphStyle: 'Contact' }),
+        para('London, UK', { paragraphStyle: 'Contact', align: 'left' }),
+        para('Education', { align: 'both' }),
+        para('Mathematics'),
+      ].join(''),
+      { styles }
+    );
+    expect(paragraphsOf(blocks).map((p) => p.align)).toEqual([
+      'center',
+      'center',
+      'left',
+      'justify',
+      'left',
+    ]);
+  });
+
   describe('links', () => {
     it('marks a link’s words with its address', async () => {
       const body = para([hyperlink('rLink', 'LinkedIn')]);

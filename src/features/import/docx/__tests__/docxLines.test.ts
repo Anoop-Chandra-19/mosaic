@@ -28,6 +28,7 @@ function p(text: string, over: Partial<DocxParagraph> = {}): DocxParagraph {
     caps: false,
     size: 22,
     spaceBefore: 0,
+    align: 'left',
     source: source(`body/p[${++next}]`),
     ...over,
   };
