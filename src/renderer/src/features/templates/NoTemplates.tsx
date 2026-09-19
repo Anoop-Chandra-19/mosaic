@@ -19,7 +19,7 @@ export function NoTemplates() {
       ? start(
           'Untitled resume',
           createBlankResume(),
-          'Created “Untitled resume” — your first template, autosaving as you type'
+          'Created “Untitled resume”, your first template. It saves as you type.'
         )
       : start(
           'Untitled resume',

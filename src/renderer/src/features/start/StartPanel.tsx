@@ -1,4 +1,10 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import {
+  useEffect,
+  useState,
+  type KeyboardEvent as ReactKeyboardEvent,
+  type PointerEvent as ReactPointerEvent,
+  type ReactNode,
+} from 'react';
 import { ArrowRight, FileText, Info, Lock, Sparkles, Upload, X } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
 import { cn } from '@/lib/utils';
@@ -33,7 +39,7 @@ export function StartPanel({ closable }: StartPanelProps) {
       'Untitled resume',
       createBlankResume(),
       first
-        ? 'Created “Untitled resume” — your first template, autosaving as you type'
+        ? 'Created “Untitled resume”, your first template. It saves as you type.'
         : 'Created “Untitled resume”'
     );
 
@@ -64,13 +70,12 @@ export function StartPanel({ closable }: StartPanelProps) {
             <PanelHead
               mark={<MosaicMark />}
               title={first ? 'Start your first resume' : 'Start a new resume'}
-              subtitle="Mosaic keeps everything on this machine — your drafts, history and exports never leave it."
+              subtitle="Mosaic keeps everything on this machine. Your drafts, history and exports never leave it."
               onClose={closable ? () => setStartOpen(false) : undefined}
             />
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-2" onKeyDown={moveFocusWithArrows}>
               <StartRoute
                 icon={FileText}
-                primary
                 title="Blank resume"
                 description="Experience, Education and Skills, all empty."
                 hint={shortcutLabel('N')}
@@ -102,11 +107,16 @@ export function StartPanel({ closable }: StartPanelProps) {
               subtitle="Pick one and it opens as a new template, fully editable."
               onClose={closable ? () => setStartOpen(false) : undefined}
             />
-            <div className="grid grid-cols-2 gap-2.5">
+            <div className="grid grid-cols-2 gap-2.5" onKeyDown={moveFocusWithArrows}>
               <button
                 type="button"
+                data-start-option
                 onClick={() => void startFromSample()}
-                className="flex flex-col items-center gap-2 rounded-lg border border-zinc-300 bg-zinc-50 p-3 text-xs font-medium text-zinc-700 transition-colors hover:border-zinc-400 hover:bg-zinc-100 focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:outline-none dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-zinc-600 dark:hover:bg-zinc-800"
+                onPointerEnter={focusOnPointer}
+                className={cn(
+                  'flex flex-col items-center gap-2 rounded-lg border border-zinc-300 bg-zinc-50 p-3 text-xs font-medium text-zinc-700 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300',
+                  OPTION_HIGHLIGHT
+                )}
                 autoFocus
               >
                 <SlotPaper />
@@ -118,7 +128,7 @@ export function StartPanel({ closable }: StartPanelProps) {
               </div>
             </div>
             <PanelFoot icon={Info}>
-              One sample so far — more are being written.
+              One sample so far. More are being written.
               <AppButton
                 variant="outline"
                 size="sm"
@@ -187,14 +197,13 @@ function MosaicMark() {
   );
 }
 
-function RouteIcon({ icon: Icon, primary }: { icon: typeof Lock; primary?: boolean }) {
+/** A route's icon; it turns amber with its route while that route is the one in focus. */
+function RouteIcon({ icon: Icon }: { icon: typeof Lock }) {
   return (
     <span
       className={cn(
-        'grid size-8 shrink-0 place-items-center rounded-lg border',
-        primary
-          ? 'border-amber-300 bg-amber-50 text-amber-600 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-400'
-          : 'border-zinc-300 bg-zinc-100 text-zinc-600 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300'
+        'grid size-8 shrink-0 place-items-center rounded-lg border border-zinc-300 bg-zinc-100 text-zinc-600 transition-colors dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300',
+        'group-focus/route:border-amber-300 group-focus/route:bg-amber-50 group-focus/route:text-amber-600 dark:group-focus/route:border-amber-800 dark:group-focus/route:bg-amber-950 dark:group-focus/route:text-amber-400'
       )}
     >
       <Icon className="size-4" />
@@ -207,33 +216,52 @@ interface StartRouteProps {
   title: string;
   description: string;
   hint?: string;
-  primary?: boolean;
   autoFocus?: boolean;
   onClick: () => void;
 }
 
-function StartRoute({
-  icon,
-  title,
-  description,
-  hint,
-  primary,
-  autoFocus,
-  onClick,
-}: StartRouteProps) {
+/**
+ * One highlight, as in a menu: the amber marks the focused option, which is the one Enter
+ * picks. The pointer moves focus as it goes over an option, and the arrow keys move it too
+ * (`moveFocusWithArrows`), so hover and keyboard never disagree.
+ */
+const OPTION_HIGHLIGHT =
+  'transition-colors outline-none focus:border-amber-500 focus:bg-zinc-100 dark:focus:border-amber-600 dark:focus:bg-zinc-800';
+
+/** Pointing at an option focuses it, so the highlight follows the pointer. */
+const focusOnPointer = (event: ReactPointerEvent<HTMLButtonElement>) =>
+  event.currentTarget.focus({ preventScroll: true });
+
+/** Up/Down and Left/Right move between a group's options, wrapping; Home and End jump. */
+function moveFocusWithArrows(event: ReactKeyboardEvent<HTMLElement>) {
+  const options = [
+    ...event.currentTarget.querySelectorAll<HTMLButtonElement>('[data-start-option]'),
+  ];
+  const at = options.indexOf(document.activeElement as HTMLButtonElement);
+  const step = { ArrowDown: 1, ArrowRight: 1, ArrowUp: -1, ArrowLeft: -1 }[event.key];
+  let next: number | undefined;
+  if (step !== undefined) next = (at + step + options.length) % options.length;
+  else if (event.key === 'Home') next = 0;
+  else if (event.key === 'End') next = options.length - 1;
+  if (next === undefined || options.length === 0) return;
+  event.preventDefault();
+  options[next].focus();
+}
+
+function StartRoute({ icon, title, description, hint, autoFocus, onClick }: StartRouteProps) {
   return (
     <button
       type="button"
+      data-start-option
       onClick={onClick}
+      onPointerEnter={focusOnPointer}
       autoFocus={autoFocus}
       className={cn(
-        'flex w-full items-center gap-3 rounded-lg border bg-zinc-50 p-3 text-left text-zinc-900 transition-colors hover:bg-zinc-100 focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:outline-none dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800',
-        primary
-          ? 'border-zinc-400 dark:border-zinc-700'
-          : 'border-zinc-300 hover:border-zinc-400 dark:border-zinc-800 dark:hover:border-zinc-700'
+        'group/route flex w-full items-center gap-3 rounded-lg border border-zinc-300 bg-zinc-50 p-3 text-left text-zinc-900 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100',
+        OPTION_HIGHLIGHT
       )}
     >
-      <RouteIcon icon={icon} primary={primary} />
+      <RouteIcon icon={icon} />
       <span className="flex min-w-0 flex-1 flex-col gap-0.5">
         <span className="text-sm font-semibold">{title}</span>
         <span className="text-xs leading-snug text-zinc-600 dark:text-zinc-400">{description}</span>
