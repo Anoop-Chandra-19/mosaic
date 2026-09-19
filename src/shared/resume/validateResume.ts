@@ -54,6 +54,7 @@ function isResumeSection(value: unknown): boolean {
     typeof value.layout === 'string' &&
     SECTION_LAYOUTS.has(value.layout) &&
     typeof value.order === 'number' &&
+    (value.hidden === undefined || typeof value.hidden === 'boolean') &&
     Array.isArray(value.items) &&
     value.items.every(isResumeEntry)
   );

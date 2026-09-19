@@ -16,10 +16,14 @@ export function ContentTab() {
   if (!open) return <NoTemplates />;
 
   return (
-    <div className="space-y-5">
+    <div>
       <ResumeHeaderCard />
       <SectionList showAddSection={!empty} namingId={namingId} onCustomAdded={setNamingId} />
-      {empty && <EmptyContentHint onCustomAdded={setNamingId} />}
+      {empty && (
+        <div className="mt-3">
+          <EmptyContentHint onCustomAdded={setNamingId} />
+        </div>
+      )}
     </div>
   );
 }

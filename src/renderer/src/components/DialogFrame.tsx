@@ -31,7 +31,7 @@ export function DialogFrameHeader({
         {title}
       </DialogTitle>
       <DialogDescription className="sr-only">{description}</DialogDescription>
-      <AppButton variant="ghost" size="icon-sm" onClick={onClose} aria-label={closeLabel}>
+      <AppButton variant="ghost" size="sm" shape="square" onClick={onClose} aria-label={closeLabel}>
         <X className="size-4" />
       </AppButton>
     </header>

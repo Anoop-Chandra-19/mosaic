@@ -39,7 +39,8 @@ export function Toast() {
           )}
           <AppButton
             variant="ghost"
-            size="icon-sm"
+            size="sm"
+            shape="square"
             className="size-6 shrink-0 rounded-full"
             onClick={dismiss}
             aria-label="Dismiss"

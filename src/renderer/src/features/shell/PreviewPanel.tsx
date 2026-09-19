@@ -44,7 +44,8 @@ export function PreviewPanel() {
           <div className="inline-flex items-center gap-1">
             <AppButton
               variant="ghost"
-              size="icon-xs"
+              size="xs"
+              shape="square"
               onClick={zoomPreviewOut}
               disabled={previewZoom <= minZoom}
               aria-label="Zoom preview out"
@@ -56,7 +57,8 @@ export function PreviewPanel() {
             </span>
             <AppButton
               variant="ghost"
-              size="icon-xs"
+              size="xs"
+              shape="square"
               onClick={zoomPreviewIn}
               disabled={previewZoom >= maxZoom}
               aria-label="Zoom preview in"

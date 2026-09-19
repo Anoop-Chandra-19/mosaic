@@ -1,3 +1,4 @@
+import { current } from 'immer';
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
 import { DbError, getDb } from '@/lib/storage/mosaicDb';
@@ -70,6 +71,8 @@ interface ResumeState extends ResumeData {
   removeSection: (sectionId: string) => void;
   reorderSections: (orderedIds: string[]) => void;
   updateSectionLabel: (sectionId: string, label: string) => void;
+  /** Leaves the whole section off the resume, or puts it back. */
+  toggleSection: (sectionId: string) => void;
 
   addEntry: (sectionId: string, entry: Omit<ResumeEntry, 'id'>) => void;
   updateEntry: (
@@ -80,11 +83,16 @@ interface ResumeState extends ResumeData {
   removeEntry: (sectionId: string, entryId: string) => void;
   toggleEntry: (sectionId: string, entryId: string) => void;
   reorderEntries: (sectionId: string, orderedIds: string[]) => void;
+  /** A copy right below it, bullets included, all with new ids. */
+  duplicateEntry: (sectionId: string, entryId: string) => void;
 
   addBullet: (sectionId: string, entryId: string, text: string) => void;
   updateBullet: (sectionId: string, entryId: string, bulletId: string, text: string) => void;
   removeBullet: (sectionId: string, entryId: string, bulletId: string) => void;
   toggleBullet: (sectionId: string, entryId: string, bulletId: string) => void;
+  /** A copy right below it. */
+  duplicateBullet: (sectionId: string, entryId: string, bulletId: string) => void;
+  moveBullet: (sectionId: string, entryId: string, bulletId: string, offset: -1 | 1) => void;
 }
 
 /** Moves `list[index]` one place up or down; nothing past either end. */
@@ -255,6 +263,14 @@ export const useResumeStore = create<ResumeState>()(
           if (section) section.label = label;
         }),
 
+      toggleSection: (sectionId) =>
+        edit((state) => {
+          const section = state.sections.find((s) => s.id === sectionId);
+          if (!section) return;
+          if (section.hidden) delete section.hidden;
+          else section.hidden = true;
+        }),
+
       // Entry CRUD
 
       addEntry: (sectionId, entry) =>
@@ -298,6 +314,19 @@ export const useResumeStore = create<ResumeState>()(
             .filter((e): e is (typeof section.items)[number] => e !== undefined);
         }),
 
+      duplicateEntry: (sectionId, entryId) =>
+        edit((state) => {
+          const section = state.sections.find((s) => s.id === sectionId);
+          if (!section) return;
+          const index = section.items.findIndex((e) => e.id === entryId);
+          if (index < 0) return;
+          // A draft is a proxy; clone the plain entry it stands for.
+          const copy = structuredClone(current(section.items[index]));
+          copy.id = crypto.randomUUID();
+          for (const b of copy.bullets) b.id = crypto.randomUUID();
+          section.items.splice(index + 1, 0, copy);
+        }),
+
       // Bullet CRUD
 
       addBullet: (sectionId, entryId, text) =>
@@ -334,6 +363,30 @@ export const useResumeStore = create<ResumeState>()(
           if (!entry) return;
           const bullet = entry.bullets.find((b) => b.id === bulletId);
           if (bullet) bullet.selected = !bullet.selected;
+        }),
+
+      duplicateBullet: (sectionId, entryId, bulletId) =>
+        edit((state) => {
+          const entry = state.sections
+            .find((s) => s.id === sectionId)
+            ?.items.find((e) => e.id === entryId);
+          if (!entry) return;
+          const index = entry.bullets.findIndex((b) => b.id === bulletId);
+          if (index < 0) return;
+          entry.bullets.splice(index + 1, 0, { ...entry.bullets[index], id: crypto.randomUUID() });
+        }),
+
+      moveBullet: (sectionId, entryId, bulletId, offset) =>
+        edit((state) => {
+          const entry = state.sections
+            .find((s) => s.id === sectionId)
+            ?.items.find((e) => e.id === entryId);
+          if (!entry) return;
+          moveBy(
+            entry.bullets,
+            entry.bullets.findIndex((b) => b.id === bulletId),
+            offset
+          );
         }),
     };
   })

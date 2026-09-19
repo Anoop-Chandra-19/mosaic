@@ -29,7 +29,7 @@ test('the status bar keeps autosave, history, and the page apart', async () => {
 test('the sidebar hides and comes back from the status bar or Ctrl+B', async () => {
   const { page } = mosaic();
   await page.getByRole('button', { name: /Blank resume/ }).click();
-  const contentTab = page.getByRole('button', { name: 'Content' });
+  const contentTab = page.getByRole('tab', { name: 'Content' });
   const toggle = page.getByRole('button', { name: 'Toggle sidebar' });
 
   await expect(toggle).toHaveAttribute('aria-pressed', 'true');

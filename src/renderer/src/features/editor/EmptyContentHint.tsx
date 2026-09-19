@@ -1,4 +1,5 @@
 import { Plus } from 'lucide-react';
+import { AppButton } from '@/components/AppButton';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,9 +13,6 @@ import type { BuiltInSectionKind } from '@shared/types/resume';
 import { PRESET_ICONS } from './sectionIcons';
 import { CustomMenuItems, PresetMenuItems } from './SectionMenuItems';
 import { useAddCustomSection } from './useAddCustomSection';
-
-const CHIP =
-  'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1.5 text-xs transition-colors focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:outline-none';
 
 /**
  * While the resume is still empty, the sections people usually add, one click each —
@@ -45,23 +43,25 @@ export function EmptyContentHint({
         {suggested.map((kind) => {
           const Icon = PRESET_ICONS[kind];
           return (
-            <button
+            <AppButton
               key={kind}
-              type="button"
+              variant="outline"
+              size="xs"
+              shape="pill"
               onClick={() => add(kind)}
-              className={`${CHIP} border-zinc-300 bg-white text-zinc-700 hover:border-zinc-400 hover:text-zinc-900 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-300 dark:hover:border-zinc-600 dark:hover:text-zinc-100`}
+              className="font-normal"
             >
-              <Icon className="size-3" />
+              <Icon />
               {SECTION_PRESETS[kind].label}
-            </button>
+            </AppButton>
           );
         })}
         <DropdownMenu>
-          <DropdownMenuTrigger
-            className={`${CHIP} border-dashed border-zinc-300 text-zinc-500 hover:border-zinc-400 hover:text-zinc-700 dark:border-zinc-700 dark:hover:border-zinc-600 dark:hover:text-zinc-300`}
-          >
-            <Plus className="size-3" />
-            Something else
+          <DropdownMenuTrigger asChild>
+            <AppButton variant="dashed" size="xs" shape="pill" className="font-normal">
+              <Plus />
+              Something else
+            </AppButton>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" onCloseAutoFocus={custom.onCloseAutoFocus}>
             <PresetMenuItems kinds={others} onAdd={add} />

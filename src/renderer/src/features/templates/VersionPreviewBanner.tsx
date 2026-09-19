@@ -55,7 +55,7 @@ export function VersionPreviewBanner({ preview }: { preview: VersionPreview }) {
       >
         Back to draft
       </AppButton>
-      <AppButton variant="emphasis" size="xs" onClick={() => void restore()}>
+      <AppButton variant="accent" size="xs" onClick={() => void restore()}>
         <History className="size-3" />
         Restore this version
       </AppButton>

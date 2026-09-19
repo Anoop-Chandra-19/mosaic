@@ -1,55 +1,90 @@
 import type { ComponentProps } from 'react';
+import { cva, type VariantProps } from 'class-variance-authority';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
-type ButtonProps = ComponentProps<typeof Button>;
+/*
+ * Every button in Mosaic, on three independent axes (the Claude Design's buttons):
+ * - variant: tone and fill;
+ * - size: scale only — height, padding, font size, and icon size;
+ * - shape: the box's outline.
+ * Typography beyond the size's font size, colour tweaks, and layout (full width, alignment,
+ * margins) go in `className`: they belong to where a button sits, not to what it is.
+ */
+const appButtonVariants = cva(
+  'inline-flex shrink-0 items-center justify-center font-medium whitespace-nowrap transition-colors outline-none focus-visible:ring-[3px] focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0',
+  {
+    variants: {
+      variant: {
+        solid: 'bg-foreground text-background hover:bg-zinc-700 dark:hover:bg-zinc-300',
+        accent: 'bg-amber-500 text-zinc-950 hover:bg-amber-600',
+        // "Open" means a menu this button opened is showing. A collapsible's trigger is open
+        // too, but only a menu's trigger (`aria-haspopup="menu"`) is drawn pressed.
+        outline:
+          'border border-line-strong text-ink-soft hover:border-line-heavy hover:bg-line hover:text-foreground aria-[haspopup=menu]:data-[state=open]:border-line-heavy aria-[haspopup=menu]:data-[state=open]:bg-line aria-[haspopup=menu]:data-[state=open]:text-foreground',
+        dashed:
+          'border border-dashed border-line-heavy text-ink-muted hover:border-ink-faint hover:bg-line hover:text-foreground aria-[haspopup=menu]:data-[state=open]:bg-line aria-[haspopup=menu]:data-[state=open]:text-foreground',
+        ghost:
+          'text-ink-soft hover:bg-line hover:text-foreground aria-[haspopup=menu]:data-[state=open]:bg-line-strong aria-[haspopup=menu]:data-[state=open]:text-foreground',
+        quiet:
+          'text-ink-faint hover:bg-line hover:text-ink-soft aria-[haspopup=menu]:data-[state=open]:bg-line aria-[haspopup=menu]:data-[state=open]:text-ink-soft',
+        destructive:
+          'bg-destructive text-white hover:bg-red-700 dark:bg-red-900 dark:hover:bg-red-800',
+        link: 'text-foreground underline-offset-4 hover:underline',
+      },
+      size: {
+        '2xs': "h-[1.375rem] gap-1 px-1.5 text-[0.6875rem] [&_svg:not([class*='size-'])]:size-2.5",
+        xs: "h-[1.625rem] gap-[0.3125rem] px-[0.5625rem] text-[0.78125rem] [&_svg:not([class*='size-'])]:size-3",
+        sm: "h-8 gap-1.5 px-3 text-sm [&_svg:not([class*='size-'])]:size-3.5",
+        md: "h-9 gap-2 px-4 text-sm [&_svg:not([class*='size-'])]:size-4",
+        lg: "h-10 gap-2 px-6 text-sm [&_svg:not([class*='size-'])]:size-4",
+      },
+      shape: {
+        rect: 'rounded-md',
+        pill: 'rounded-full',
+        // As wide as it is tall: an icon on its own.
+        square: 'aspect-square rounded-md px-0',
+        // Words that open an editor: no fixed height, wrapping like the prose they are.
+        text: 'block h-auto min-w-0 rounded-[0.3125rem] px-1.5 py-1 text-left font-normal text-pretty wrap-break-word whitespace-normal',
+      },
+    },
+    compoundVariants: [
+      // An icon on its own reads a step larger than one beside a label.
+      { shape: 'square', size: '2xs', className: "[&_svg:not([class*='size-'])]:size-3" },
+      {
+        shape: 'square',
+        size: 'xs',
+        className: "[&_svg:not([class*='size-'])]:size-[0.8125rem]",
+      },
+      { shape: 'square', size: 'sm', className: "[&_svg:not([class*='size-'])]:size-4" },
+    ],
+    defaultVariants: { variant: 'solid', size: 'md', shape: 'rect' },
+  }
+);
 
-const APP_BUTTON_STYLES = {
-  muted:
-    'text-muted-foreground hover:bg-accent hover:text-accent-foreground data-[state=open]:bg-accent data-[state=open]:text-foreground',
-  emphasis: 'bg-amber-500 text-zinc-950 hover:bg-amber-600 dark:bg-amber-500',
-  'inline-edit':
-    'block min-w-0 shrink rounded text-left text-sm leading-6 font-normal whitespace-normal wrap-break-word',
-  'link-chip':
-    'max-w-full min-w-0 shrink gap-1 rounded border border-zinc-300 px-1 font-mono text-xs leading-5 font-normal text-zinc-600 hover:text-zinc-900 dark:border-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-100',
-};
+type AppButtonProps = Omit<ComponentProps<typeof Button>, 'variant' | 'size'> &
+  VariantProps<typeof appButtonVariants>;
 
-type AppVariant = keyof typeof APP_BUTTON_STYLES;
-type AppButtonProps = Omit<ButtonProps, 'variant' | 'size'> & {
-  variant?: ButtonProps['variant'] | AppVariant;
-  size?: ButtonProps['size'] | 'compact' | 'content';
-};
-
-function isAppVariant(variant: ButtonProps['variant'] | AppVariant): variant is AppVariant {
-  return variant != null && Object.hasOwn(APP_BUTTON_STYLES, variant);
-}
-
-/** Mosaic treatments over the upstream primitive; standard variants and sizes still work. */
+/** Mosaic's button: the upstream primitive (focus, `asChild`), styled on Mosaic's axes. */
 export function AppButton({
-  variant = 'default',
-  size = variant === 'inline-edit' || variant === 'link-chip' ? 'content' : 'default',
+  variant,
+  size,
+  shape,
   className,
   asChild,
   type,
   ...props
 }: AppButtonProps) {
-  const isCustomVariant = isAppVariant(variant);
-  const isCustomSize = size === 'compact' || size === 'content';
-
   return (
     <Button
-      variant={isCustomVariant ? null : variant}
-      size={isCustomSize ? null : size}
+      variant={null}
+      size={null}
       asChild={asChild}
       type={type ?? (asChild ? undefined : 'button')}
-      data-variant={variant}
-      data-size={size}
-      className={cn(
-        size === 'compact' && 'h-7 gap-1.5 px-2 py-0 text-xs',
-        size === 'content' && 'h-auto p-0',
-        isCustomVariant && APP_BUTTON_STYLES[variant],
-        className
-      )}
+      data-variant={variant ?? 'solid'}
+      data-size={size ?? 'md'}
+      data-shape={shape ?? 'rect'}
+      className={cn(appButtonVariants({ variant, size, shape }), className)}
       {...props}
     />
   );

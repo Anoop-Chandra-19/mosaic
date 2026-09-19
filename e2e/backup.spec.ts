@@ -62,7 +62,7 @@ test('a full backup restores every template with its history', async () => {
   await (await openImportExport(page)).getByRole('button', { name: 'Restore…' }).click();
   await restore.getByRole('button', { name: 'Add 1 template' }).click();
   await expect(page.getByText('Added 1 template from the backup')).toBeVisible();
-  await page.getByRole('button', { name: 'Templates' }).click();
+  await page.getByRole('tab', { name: 'Templates' }).click();
   await expect(page.getByRole('button', { name: 'Options for Untitled resume' })).toHaveCount(2);
 });
 
@@ -113,7 +113,7 @@ test('a backup opened on the Start panel rebuilds the app', async () => {
 
   await expect(page.getByText('Restored 1 template from the backup')).toBeVisible();
   await expect(page.getByRole('button', { name: /Blank resume/ })).toHaveCount(0);
-  await page.getByRole('button', { name: 'Content' }).click();
+  await page.getByRole('tab', { name: 'Content' }).click();
   await expect(page.getByRole('complementary').getByText('Ada Lovelace')).toBeVisible();
 });
 
@@ -122,7 +122,7 @@ test('deleting a template can be undone', async () => {
   await page.getByRole('button', { name: /Blank resume/ }).click();
   await setName(page, 'Your name', 'Ada Lovelace');
 
-  await page.getByRole('button', { name: 'Templates' }).click();
+  await page.getByRole('tab', { name: 'Templates' }).click();
   await page.getByRole('button', { name: 'Options for Untitled resume' }).click();
   await page.getByRole('menuitem', { name: 'Delete template…' }).click();
   await page
@@ -134,6 +134,6 @@ test('deleting a template can be undone', async () => {
 
   await page.getByRole('button', { name: 'Undo' }).click();
   await expect(page.getByText('Brought back “Untitled resume”')).toBeVisible();
-  await page.getByRole('button', { name: 'Content' }).click();
+  await page.getByRole('tab', { name: 'Content' }).click();
   await expect(page.getByRole('complementary').getByText('Ada Lovelace')).toBeVisible();
 });

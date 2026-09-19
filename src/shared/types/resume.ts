@@ -52,6 +52,12 @@ export interface ResumeSection {
   label: string;
   items: ResumeEntry[];
   order: number;
+  /**
+   * Kept, but left off the resume as a whole: nothing of it prints, exports, or counts.
+   * Absent means on the resume. Its entries keep their own `selected`, so putting the
+   * section back brings back exactly what was chosen.
+   */
+  hidden?: boolean;
 }
 
 /**

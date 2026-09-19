@@ -34,7 +34,7 @@ export function TopBar() {
           {activeTemplate && (
             <AppButton
               variant="outline"
-              size="compact"
+              size="xs"
               onClick={() => setNameVersionOpen(true)}
               title={`${
                 templateStatus === 'edited'
@@ -52,7 +52,8 @@ export function TopBar() {
       <div className="flex shrink-0 items-center gap-1.5">
         <AppButton
           variant="ghost"
-          size="icon-sm"
+          size="sm"
+          shape="square"
           onClick={toggleDarkMode}
           aria-label="Toggle theme"
         >
@@ -61,7 +62,8 @@ export function TopBar() {
 
         <AppButton
           variant="ghost"
-          size="icon-sm"
+          size="sm"
+          shape="square"
           onClick={() => openImport(!activeTemplate)}
           aria-label="Import resume"
         >
@@ -70,7 +72,8 @@ export function TopBar() {
 
         <AppButton
           variant="ghost"
-          size="icon-sm"
+          size="sm"
+          shape="square"
           onClick={() => openSettings()}
           aria-label="Open settings"
         >

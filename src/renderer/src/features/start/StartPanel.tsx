@@ -161,7 +161,7 @@ function PanelHead({
         </p>
       </div>
       {onClose && (
-        <AppButton variant="ghost" size="icon-sm" onClick={onClose} aria-label="Close">
+        <AppButton variant="ghost" size="sm" shape="square" onClick={onClose} aria-label="Close">
           <X className="size-4" />
         </AppButton>
       )}

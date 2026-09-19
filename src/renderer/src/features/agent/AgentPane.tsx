@@ -2,11 +2,11 @@ import { useRef } from 'react';
 import { Sparkles, X } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
 import { AI_PROVIDER_BY_ID } from '@/features/settings/sections/aiProviderOptions';
-import { startPaneResize } from '@/features/shell/paneResize';
+import { formatPaneWidth, startPaneResize } from '@/features/shell/paneResize';
 import { shortcutLabel } from '@/lib/keyboardShortcuts';
 import { AI_PROVIDER_DEFAULT_MODEL, useAiStore } from '@/stores/aiStore';
 import { useOverlayStore } from '@/stores/overlayStore';
-import { AGENT_PANE_MAX_RATIO, AGENT_PANE_MIN_PX, useUiStore } from '@/stores/uiStore';
+import { AGENT_PANE_WIDTH, useUiStore } from '@/stores/uiStore';
 
 function Spark() {
   return (
@@ -22,8 +22,8 @@ function Spark() {
  * use. On a window too narrow for editor, preview, and pane, it lies over the preview.
  */
 export function AgentPane() {
-  const ratio = useUiStore((s) => s.agentPaneRatio);
-  const setRatio = useUiStore((s) => s.setAgentPaneRatio);
+  const widthPx = useUiStore((s) => s.agentPaneWidthPx);
+  const setWidthPx = useUiStore((s) => s.setAgentPaneWidthPx);
   const close = useUiStore((s) => s.toggleAgentPane);
   const provider = useAiStore((s) => s.provider);
   const model = useAiStore((s) => s.modelsByProvider[s.provider]);
@@ -35,18 +35,19 @@ export function AgentPane() {
       ref={paneRef}
       aria-label="Assistant"
       className="relative flex shrink-0 flex-col border-l border-border bg-card @max-5xl/workspace:absolute @max-5xl/workspace:inset-y-0 @max-5xl/workspace:right-0 @max-5xl/workspace:z-20 @max-5xl/workspace:shadow-xl"
-      style={{ width: `max(${AGENT_PANE_MIN_PX}px, ${ratio * 100}vw)` }}
+      style={{ width: formatPaneWidth(widthPx, AGENT_PANE_WIDTH) }}
     >
       <div
         onPointerDown={(event) =>
           startPaneResize(event, {
             pane: paneRef.current,
             anchor: 'right',
-            minPx: AGENT_PANE_MIN_PX,
-            maxRatio: AGENT_PANE_MAX_RATIO,
-            onDone: setRatio,
+            limits: AGENT_PANE_WIDTH,
+            onDone: setWidthPx,
           })
         }
+        onDoubleClick={() => setWidthPx(AGENT_PANE_WIDTH.defaultPx)}
+        title="Drag to resize · double-click to reset"
         className="absolute top-0 bottom-0 left-0 z-10 w-1 cursor-col-resize transition-colors hover:bg-amber-500 active:bg-amber-600"
       />
 
@@ -58,7 +59,8 @@ export function AgentPane() {
         </div>
         <AppButton
           variant="ghost"
-          size="icon-xs"
+          size="xs"
+          shape="square"
           onClick={close}
           aria-label="Close assistant"
           title={`Close  ${shortcutLabel('\\')}`}

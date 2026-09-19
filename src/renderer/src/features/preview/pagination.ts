@@ -79,7 +79,7 @@ function normalizeEntry(entry: ResumeEntry, layout: SectionLayout): PaginatedEnt
 
 export function normalizeSections(sections: ResumeSection[]): PreviewRenderableSection[] {
   return sections
-    .slice()
+    .filter((section) => !section.hidden)
     .sort((a, b) => a.order - b.order)
     .map((section) => ({
       id: section.id,
