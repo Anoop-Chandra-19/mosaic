@@ -1,4 +1,10 @@
-import type { LinkStyle, ResumeData, SectionKind, SectionLayout } from '@shared/types/resume';
+import type {
+  LinkColor,
+  LinkStyle,
+  ResumeData,
+  SectionKind,
+  SectionLayout,
+} from '@shared/types/resume';
 import { formatEntryHeading, type EntryHeadingFields } from '@shared/resume/entryHeading';
 import { getPrintableHeaderLines, type PrintedHeaderLine } from '@shared/resume/resumeHeader';
 
@@ -23,6 +29,7 @@ export interface ExportSection {
 export interface ExportContact {
   name: string;
   linkStyle: LinkStyle;
+  linkColor: LinkColor;
   lines: PrintedHeaderLine[];
 }
 
@@ -108,6 +115,7 @@ export function normalizeResumeForExport(resume: ResumeData): NormalizedResumeEx
     contact: {
       name: trim(name),
       linkStyle: header.linkStyle,
+      linkColor: header.linkColor ?? 'ink',
       lines: getPrintableHeaderLines(header),
     },
     sections,

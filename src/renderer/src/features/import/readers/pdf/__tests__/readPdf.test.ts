@@ -65,16 +65,25 @@ describe('readPdf', () => {
     }
   }, 60_000);
 
-  it('gives back a header’s links, separators, alignment, and underlining', async () => {
+  it('gives back a header’s links, separators, alignment, underlining, and blue', async () => {
     const data = createStyledHeaderResume();
-    expect(data.contact.header.linkStyle).toBe('underline');
+    expect(data.contact.header).toMatchObject({ linkStyle: 'underline', linkColor: 'blue' });
     const parsed = await readPdf(await exportedPdf(data));
-    // The underline is a line drawn under the words, found among the page's drawings.
+    // The underline is a line drawn under the words, found among the page's drawings, and
+    // drawn in their blue.
     expect(shown(parsed.resume)).toEqual(shown(data));
 
+    const black = createStyledHeaderResume();
+    delete black.contact.header.linkColor;
+    expect(shown((await readPdf(await exportedPdf(black))).resume)).toEqual(shown(black));
+
+    // Without an underline, blue words can't be told from black ones: the text's own
+    // colour isn't read. It comes back plain and black, a stated loss.
     const plain = createStyledHeaderResume();
     plain.contact.header.linkStyle = 'plain';
-    expect((await readPdf(await exportedPdf(plain))).resume.contact.header.linkStyle).toBe('plain');
+    const { header } = (await readPdf(await exportedPdf(plain))).resume.contact;
+    expect(header.linkStyle).toBe('plain');
+    expect(header).not.toHaveProperty('linkColor');
   });
 
   it('keeps a link’s address with the words it is set on', async () => {
@@ -149,6 +158,8 @@ describe('readPdf', () => {
     expect(page.rules).toHaveLength(2);
     const { resume: read } = await readPdf(bytes);
     expect(read.contact.header.linkStyle).toBe('underline');
+    // Drawn in blue, as Word draws a link's underline in its words' blue.
+    expect(read.contact.header.linkColor).toBe('blue');
     expect(read.contact.header.lines[0].items.map((item) => item.url)).toEqual([
       'mailto:ada@example.com',
       'https://linkedin.com/in/ada',

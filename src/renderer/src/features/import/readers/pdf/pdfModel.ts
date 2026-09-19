@@ -47,6 +47,8 @@ export interface PdfRule {
   right: number;
   top: number;
   bottom: number;
+  /** The colour it is painted in, as `#rrggbb`: an underline takes its words' colour. */
+  color: string;
 }
 
 export interface PdfPage {

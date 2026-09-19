@@ -18,6 +18,7 @@ const exportData: NormalizedResumeExport = {
   contact: {
     name: 'Alex Johnson',
     linkStyle: 'plain',
+    linkColor: 'ink',
     lines: [
       line(['555-0100', 'alex@example.com', 'linkedin.com/in/alex', 'github.com/alex']),
       line(['Detroit, MI']),
@@ -69,7 +70,7 @@ _Jan 2021 to Current_
 
   it('escapes a comma inside a title or organization, not inside the location', () => {
     const markdown = createMarkdownExport({
-      contact: { name: 'Alex', linkStyle: 'plain', lines: [] },
+      contact: { name: 'Alex', linkStyle: 'plain', linkColor: 'ink', lines: [] },
       sections: [
         {
           id: 'experience',
@@ -95,6 +96,7 @@ _Jan 2021 to Current_
         contact: {
           name: 'Alex',
           linkStyle: 'plain',
+          linkColor: 'ink',
           lines: [line(['US Citizen', 'Detroit, MI'], ' · '), line(['a', 'b'], '    ')],
         },
         sections: [],
@@ -105,7 +107,7 @@ _Jan 2021 to Current_
   it('uses the Mosaic Resume fallback name', () => {
     expect(
       createMarkdownExport({
-        contact: { name: '', linkStyle: 'plain', lines: [] },
+        contact: { name: '', linkStyle: 'plain', linkColor: 'ink', lines: [] },
         sections: [],
       })
     ).toBe('# Mosaic Resume');

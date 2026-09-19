@@ -305,11 +305,15 @@ function ReviewStep({
   );
   const found = getContactFieldLabels(contact);
   const headerKept = mode === 'merge' && keepsHeader(openContact);
-  // Underlined links are a look read from the file, so the review says so.
+  // A link look other than plain black was read from the file, so the review says so.
   const hasLinks = getPrintableHeaderLines(contact.header).some((line) =>
     line.items.some((item) => item.href)
   );
-  const linkLook = hasLinks && contact.header.linkStyle === 'underline' ? 'Links underlined' : null;
+  const looks = [
+    contact.header.linkStyle === 'underline' && 'underlined',
+    contact.header.linkColor === 'blue' && 'blue',
+  ].filter(Boolean);
+  const linkLook = hasLinks && looks.length > 0 ? `Links ${looks.join(' and ')}` : null;
 
   const toggle = (id: string) =>
     setExcludedIds((previous) => {

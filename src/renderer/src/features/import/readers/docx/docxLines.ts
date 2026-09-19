@@ -8,10 +8,11 @@ import {
   type DocxParagraph,
   type DocxTable,
 } from './docxModel';
-import type { LinkStyle } from '@shared/types/resume';
+import type { LinkColor, LinkStyle } from '@shared/types/resume';
 import {
   BULLET_MARKER,
   DATE_LIKE,
+  decideLinkColor,
   decideLinkStyle,
   isCapitals,
   PAGE_NUMBER,
@@ -61,6 +62,8 @@ export interface DocxReading {
   leftOut: string[];
   /** How the document draws its links; undefined when it has none to go by. */
   linkStyle?: LinkStyle;
+  /** The ink its links print in; undefined when it has none. */
+  linkColor?: LinkColor;
 }
 
 const cellIsEmpty = (cell: DocxCell) =>
@@ -435,10 +438,13 @@ export function docxLines(document: DocxDocument): DocxReading {
     (paragraph) => paragraph.links ?? []
   );
   const linkStyle = decideLinkStyle(links.map((link) => link.underlined));
+  // A link with no colour of its own prints in Word's automatic ink: black, for this.
+  const linkColor = decideLinkColor(links.map((link) => link.color ?? '#000000'));
   return {
     lines: pieces.map((piece) => piece.line),
     notes,
     leftOut,
     ...(linkStyle && { linkStyle }),
+    ...(linkColor && { linkColor }),
   };
 }

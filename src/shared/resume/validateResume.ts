@@ -3,6 +3,7 @@ import {
   BUILT_IN_HEADER_KINDS,
   HEADER_ALIGNS,
   HEADER_SEPARATORS,
+  LINK_COLORS,
   LINK_STYLES,
 } from './resumeHeader';
 import { BUILT_IN_KINDS } from './sectionPresets';
@@ -64,6 +65,7 @@ const HEADER_KIND_IDS: ReadonlySet<string> = new Set([...BUILT_IN_HEADER_KINDS, 
 const SEPARATORS: ReadonlySet<string> = new Set(HEADER_SEPARATORS.map((s) => s.value));
 const ALIGNS: ReadonlySet<string> = new Set(HEADER_ALIGNS.map((a) => a.value));
 const STYLES: ReadonlySet<string> = new Set(LINK_STYLES.map((s) => s.value));
+const COLORS: ReadonlySet<string> = new Set(LINK_COLORS.map((c) => c.value));
 
 const isOneOf = (value: unknown, allowed: ReadonlySet<string>) =>
   typeof value === 'string' && allowed.has(value);
@@ -96,6 +98,7 @@ function isContact(value: unknown): boolean {
   return (
     isRecord(header) &&
     isOneOf(header.linkStyle, STYLES) &&
+    (header.linkColor === undefined || isOneOf(header.linkColor, COLORS)) &&
     Array.isArray(header.lines) &&
     header.lines.every(isHeaderLine)
   );

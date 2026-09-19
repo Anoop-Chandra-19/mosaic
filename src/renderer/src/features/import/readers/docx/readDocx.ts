@@ -57,6 +57,8 @@ interface RunProps {
   hidden?: boolean;
   /** Any line under the text (`w:u` other than "none"); Word's Hyperlink style sets one. */
   underline?: boolean;
+  /** The text's colour as `#rrggbb`; "auto", Word's default ink, is left out. */
+  color?: string;
   /** In half-points. */
   size?: number;
 }
@@ -198,6 +200,8 @@ function runPropsOf(rPr: XmlElement | undefined): RunProps {
   set('hidden', onOff(childNamed(rPr, W, 'vanish')));
   const underline = childNamed(rPr, W, 'u');
   set('underline', underline ? attribute(underline, W, 'val') !== 'none' : undefined);
+  const color = attribute(childNamed(rPr, W, 'color'), W, 'val') ?? '';
+  set('color', /^[\da-f]{6}$/i.test(color) ? `#${color.toLowerCase()}` : undefined);
   const size = Number(attribute(childNamed(rPr, W, 'sz'), W, 'val'));
   set('size', size > 0 ? size : undefined);
   return props;
@@ -212,8 +216,9 @@ function throughStyles(start: RunProps, styles: Style[]): RunProps {
   const props = { ...start };
   for (const { run } of styles) {
     for (const key of TOGGLES) if (run[key]) props[key] = !props[key];
-    // Not a toggle: the nearest style that says wins.
+    // Not toggles: the nearest style that says wins.
     if (run.underline !== undefined) props.underline = run.underline;
+    if (run.color !== undefined) props.color = run.color;
     if (run.size !== undefined) props.size = run.size;
   }
   return props;
@@ -390,7 +395,13 @@ function endLink(gathering: Gathering, start: LinkStart, url: string | undefined
   const words = gathering.text.slice(start.text);
   gathering.text = gathering.text.slice(0, start.text) + markLink(words, url);
   const runs = gathering.runs.slice(start.run);
-  gathering.links.push({ underlined: runs.length > 0 && runs.every((run) => run.underline) });
+  const colors = new Set(runs.map((run) => run.color ?? 'auto'));
+  const [color] = colors;
+  gathering.links.push({
+    underlined: runs.length > 0 && runs.every((run) => run.underline),
+    // One colour across all its words, or nothing to say.
+    ...(colors.size === 1 && color !== 'auto' && { color }),
+  });
 }
 
 /** Pictures and text boxes: a text box's paragraphs are read; a picture is only counted. */
@@ -768,8 +779,8 @@ export async function readDocxContent(bytes: Uint8Array): Promise<DocxDocument> 
 /** A Word file as a resume to review. */
 export async function readDocx(bytes: Uint8Array): Promise<ParsedResume> {
   const document = await readDocxContent(bytes);
-  const { lines, notes, leftOut, linkStyle } = docxLines(document);
-  const parsed = parseResumeLines(lines, { linkStyle });
+  const { lines, notes, leftOut, linkStyle, linkColor } = docxLines(document);
+  const parsed = parseResumeLines(lines, { linkStyle, linkColor });
   parsed.warnings.push(...notes.map((note) => note.message));
   parsed.leftOut.push(...leftOut);
   return parsed;

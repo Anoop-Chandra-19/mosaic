@@ -36,6 +36,8 @@ export interface PdfOps {
   transform: number;
   setLineWidth: number;
   setGState: number;
+  setFillRGBColor: number;
+  setStrokeRGBColor: number;
   constructPath: number;
   paintFormXObjectBegin: number;
   paintFormXObjectEnd: number;
@@ -75,7 +77,13 @@ function boxOfPath(path: ArrayLike<number>): [number, number, number, number] | 
 interface DrawState {
   matrix: Matrix;
   lineWidth: number;
+  /** As pdf.js hands every colour over, whatever space the file set it in: `#rrggbb`. */
+  fill: string;
+  stroke: string;
 }
+
+const asColor = (value: unknown) =>
+  typeof value === 'string' && /^#[\da-f]{6}$/i.test(value) ? value.toLowerCase() : null;
 
 /**
  * The thin horizontal lines a page draws, from pdf.js's operator list: each path that is
@@ -112,7 +120,7 @@ export function readPdfRules(
 
   const rules: PdfRule[] = [];
   const stack: DrawState[] = [];
-  let state: DrawState = { matrix: IDENTITY, lineWidth: 1 };
+  let state: DrawState = { matrix: IDENTITY, lineWidth: 1, fill: '#000000', stroke: '#000000' };
 
   for (let i = 0; i < operators.fnArray.length && rules.length < limit; i++) {
     const op = operators.fnArray[i];
@@ -133,6 +141,10 @@ export function readPdfRules(
       state = stack.pop() ?? state;
     } else if (op === ops.setLineWidth && args) {
       state = { ...state, lineWidth: Number(args[0]) || 0 };
+    } else if (op === ops.setFillRGBColor && args) {
+      state = { ...state, fill: asColor(args[0]) ?? state.fill };
+    } else if (op === ops.setStrokeRGBColor && args) {
+      state = { ...state, stroke: asColor(args[0]) ?? state.stroke };
     } else if (op === ops.setGState && args) {
       // A graphics state dictionary can set the line width too: [['LW', 0.5], …].
       for (const entry of (args[0] as unknown[]) ?? []) {
@@ -151,13 +163,15 @@ export function readPdfRules(
             ? boxOfPath(path as ArrayLike<number>)
             : null;
       if (!box) continue;
-      const rule = placeRule(box, state, strokers.has(paint));
+      const isStroked = strokers.has(paint);
+      const rule = placeRule(box, state, isStroked);
       if (!rule) continue;
       rules.push({
         left: rule.left - viewLeft,
         right: rule.right - viewLeft,
         top: viewTop - rule.top,
         bottom: viewTop - rule.bottom,
+        color: isStroked ? state.stroke : state.fill,
       });
     }
   }

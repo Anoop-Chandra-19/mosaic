@@ -1,7 +1,8 @@
-import type { LinkStyle } from '@shared/types/resume';
+import type { LinkColor, LinkStyle } from '@shared/types/resume';
 import {
   BULLET_MARKER,
   DATE_LIKE,
+  decideLinkColor,
   decideLinkStyle,
   isCapitals,
   markLink,
@@ -111,6 +112,11 @@ export interface PdfReading {
   leftOut: string[];
   /** How the file draws its links; undefined when it has none to go by. */
   linkStyle?: LinkStyle;
+  /**
+   * The ink its links print in, told by their underlines' colour: text colour isn't read,
+   * so links without underlines leave it undefined.
+   */
+  linkColor?: LinkColor;
 }
 
 /**
@@ -150,14 +156,15 @@ function findLinkUnderline(link: PdfLink, page: PdfPage): PdfRule | null | undef
 }
 
 /** How the document draws its links, judged over every link that has words in it. */
-function linkLookOf(document: PdfDocument): Pick<PdfReading, 'linkStyle'> {
+function linkLookOf(document: PdfDocument): Pick<PdfReading, 'linkStyle' | 'linkColor'> {
   const underlines = document.pages.flatMap((page) =>
     page.links
       .map((link) => findLinkUnderline(link, page))
       .filter((underline) => underline !== undefined)
   );
   const linkStyle = decideLinkStyle(underlines.map((underline) => underline !== null));
-  return linkStyle ? { linkStyle } : {};
+  const linkColor = decideLinkColor(underlines.map((underline) => underline?.color));
+  return { ...(linkStyle && { linkStyle }), ...(linkColor && { linkColor }) };
 }
 
 const largest = (values: number[]) => values.reduce((top, value) => Math.max(top, value), 0);

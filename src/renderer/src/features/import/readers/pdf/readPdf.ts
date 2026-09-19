@@ -239,8 +239,8 @@ export async function readPdfContent(bytes: Uint8Array): Promise<PdfDocument> {
 
 /** A PDF as a resume to review. */
 export async function readPdf(bytes: Uint8Array): Promise<ParsedResume> {
-  const { lines, notes, leftOut, linkStyle } = pdfLines(await readPdfContent(bytes));
-  const parsed = parseResumeLines(lines, { linkStyle });
+  const { lines, notes, leftOut, linkStyle, linkColor } = pdfLines(await readPdfContent(bytes));
+  const parsed = parseResumeLines(lines, { linkStyle, linkColor });
   parsed.warnings.push(...notes.map((note) => note.message));
   parsed.leftOut.push(...leftOut);
   return parsed;

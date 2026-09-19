@@ -17,12 +17,12 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { useActiveTemplate } from '@/features/templates/useActiveTemplate';
 import { buildExportName, toFileName } from '@/lib/files/fileNames';
-import { LINK_STYLES } from '@shared/resume/resumeHeader';
+import { HeaderLinkToggles } from '@/features/editor/header/HeaderLinkToggles';
+import { describeLinkLook } from '@shared/resume/resumeHeader';
 import { cn } from '@/lib/utils';
 import { showToast, useOverlayStore, type ExportVersion } from '@/stores/overlayStore';
 import { getResumeSnapshot, useResumeStore } from '@/stores/resumeStore';
 import { useUiStore } from '@/stores/uiStore';
-import type { LinkStyle } from '@shared/types/resume';
 import type { PaperSize } from '@/types/paper';
 import {
   copyText,
@@ -287,30 +287,12 @@ function Row({
  * can be changed here; a version shows the one it was saved with.
  */
 function HeaderLinksControl({ version }: { version: ExportVersion | null }) {
-  const draftLinkStyle = useResumeStore((s) => s.contact.header.linkStyle);
-  const setLinkStyle = useResumeStore((s) => s.setLinkStyle);
   if (version) {
-    const { linkStyle } = version.version.doc.contact.header;
     return (
       <span className="text-sm text-zinc-600 dark:text-zinc-400">
-        {LINK_STYLES.find((style) => style.value === linkStyle)?.label}
+        {describeLinkLook(version.version.doc.contact.header)}
       </span>
     );
   }
-  return (
-    <ToggleGroup
-      type="single"
-      variant="outline"
-      size="sm"
-      value={draftLinkStyle}
-      onValueChange={(value) => value && setLinkStyle(value as LinkStyle)}
-      aria-label="Header links"
-    >
-      {LINK_STYLES.map(({ value, label }) => (
-        <ToggleGroupItem key={value} value={value}>
-          {label}
-        </ToggleGroupItem>
-      ))}
-    </ToggleGroup>
-  );
+  return <HeaderLinkToggles />;
 }

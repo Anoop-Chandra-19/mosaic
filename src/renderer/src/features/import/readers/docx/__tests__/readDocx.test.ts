@@ -269,7 +269,7 @@ describe('readDocxContent', () => {
       const underlinedBy = async (body: string, styles = '') =>
         paragraphsOf((await read(body, { links, styles })).blocks).map((p) => p.links);
 
-      // Word's Hyperlink style underlines; a run can turn that off again.
+      // Word's Hyperlink style underlines, in its blue; a run can turn the underline off.
       expect(
         await underlinedBy(
           para([
@@ -279,7 +279,12 @@ describe('readDocxContent', () => {
           ]),
           HYPERLINK_STYLE
         )
-      ).toEqual([[{ underlined: true }, { underlined: false }]]);
+      ).toEqual([
+        [
+          { underlined: true, color: '#0563c1' },
+          { underlined: false, color: '#0563c1' },
+        ],
+      ]);
       // Without the style, only direct formatting underlines, in a field as anywhere.
       expect(
         await underlinedBy(

@@ -1,7 +1,7 @@
 import { Fragment } from 'react';
 import type { ContactInfo } from '@shared/types/resume';
 import { HEADLESS_LAYOUT as L } from '@/lib/resume/headlessLayout';
-import { getPrintableHeaderLines } from '@shared/resume/resumeHeader';
+import { getPrintableHeaderLines, LINK_BLUE } from '@shared/resume/resumeHeader';
 import { cn } from '@/lib/utils';
 
 interface PreviewHeaderProps {
@@ -16,6 +16,7 @@ interface PreviewHeaderProps {
 export function PreviewHeader({ contact }: PreviewHeaderProps) {
   const displayName = contact.name?.trim() || 'Your Name';
   const underline = contact.header.linkStyle === 'underline';
+  const isBlue = contact.header.linkColor === 'blue';
 
   return (
     <header
@@ -57,6 +58,7 @@ export function PreviewHeader({ contact }: PreviewHeaderProps) {
                   rel="noreferrer"
                   title={item.href}
                   className={cn('text-inherit', underline ? 'underline' : 'no-underline')}
+                  style={isBlue ? { color: LINK_BLUE } : undefined}
                 >
                   {item.text}
                 </a>

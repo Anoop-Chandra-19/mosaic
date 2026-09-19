@@ -120,6 +120,7 @@ export function shown(data: ResumeData) {
   return {
     name: contact.name,
     linkStyle: contact.linkStyle,
+    linkColor: contact.linkColor,
     header: contact.lines.map((line) => ({
       align: line.align,
       text: formatHeaderLineText(line),
@@ -168,6 +169,7 @@ export function createStyledHeaderResume(): ResumeData {
   const data = resume([section('skills', 'lines', 'Skills', lines('Mathematics'))]);
   data.contact.header = {
     linkStyle: 'underline',
+    linkColor: 'blue',
     lines: [
       createHeaderLine(
         [

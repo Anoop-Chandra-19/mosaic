@@ -356,11 +356,12 @@ describe('plain text round trip', () => {
     expect(shown(parseResumeText(textOf(data)).resume)).toEqual(expected);
   });
 
-  it('reads a header’s links back from their brackets, but not alignment or underlining', () => {
+  it('reads a header’s links back from their brackets, but not alignment or how links look', () => {
     const data = createStyledHeaderResume();
     expect(shown(parseResumeText(textOf(data)).resume)).toEqual(
       buildExpectedShown(data, (expected) => {
         expected.linkStyle = 'plain';
+        expected.linkColor = 'ink';
         expected.header[0].align = 'center';
         // Text can't say an address isn't linked, so one on its own links to itself.
         expected.header[0].links.push(['ada@example.com', 'mailto:ada@example.com']);

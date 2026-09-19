@@ -307,9 +307,10 @@ describe('how a Word file draws its links', () => {
       para('Analyst at Babbage & Co'),
     ].join('');
 
-  it('comes in underlined when its links are, as Word’s Hyperlink style has them', async () => {
+  it('comes in underlined and blue when its links are, as Word’s Hyperlink style has them', async () => {
     const parsed = await readDocx(await docx(resumeWith(), { links, styles: HYPERLINK_STYLE }));
     expect(parsed.resume.contact.header.linkStyle).toBe('underline');
+    expect(parsed.resume.contact.header.linkColor).toBe('blue');
     expect(parsed.resume.contact.header.lines[0].items.map((item) => item.url)).toEqual([
       'mailto:ada@example.com',
       'https://ada.dev',
@@ -322,7 +323,9 @@ describe('how a Word file draws its links', () => {
       styles: HYPERLINK_STYLE,
     });
     expect((await readDocx(styled)).resume.contact.header.linkStyle).toBe('plain');
-    const unstyled = await docx(resumeWith(), { links });
-    expect((await readDocx(unstyled)).resume.contact.header.linkStyle).toBe('plain');
+    // Words in the automatic ink, with no style colouring them, print black.
+    const unstyled = (await readDocx(await docx(resumeWith(), { links }))).resume.contact.header;
+    expect(unstyled.linkStyle).toBe('plain');
+    expect(unstyled).not.toHaveProperty('linkColor');
   });
 });
