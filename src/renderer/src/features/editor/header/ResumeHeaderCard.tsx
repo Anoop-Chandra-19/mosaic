@@ -13,12 +13,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { LINK_STYLES, getPrintableHeaderLines } from '@shared/resume/resumeHeader';
+import { LINK_COLORS, LINK_STYLES, getPrintableHeaderLines } from '@shared/resume/resumeHeader';
 import { cn } from '@/lib/utils';
 import { HEADER_OUTLINE_ID, useOutlineStore } from '@/stores/outlineStore';
 import { useResumeStore } from '@/stores/resumeStore';
 import { useUiStore } from '@/stores/uiStore';
-import type { LinkStyle } from '@shared/types/resume';
+import type { LinkColor, LinkStyle } from '@shared/types/resume';
 import { InlineEditField } from '../InlineEditField';
 import { HeaderLineBlock } from './HeaderLineBlock';
 
@@ -27,6 +27,7 @@ export function ResumeHeaderCard() {
   const contact = useResumeStore((s) => s.contact);
   const setName = useResumeStore((s) => s.setName);
   const setLinkStyle = useResumeStore((s) => s.setLinkStyle);
+  const setLinkColor = useResumeStore((s) => s.setLinkColor);
   const addLine = useResumeStore((s) => s.addHeaderLine);
   const shouldShowIcons = useUiStore((s) => s.shouldShowHeaderIcons);
   const toggleIcons = useUiStore((s) => s.toggleHeaderIcons);
@@ -72,6 +73,20 @@ export function ResumeHeaderCard() {
                 ))}
               </DropdownMenuRadioGroup>
               <DropdownMenuSeparator />
+              <DropdownMenuLabel className="text-xs font-normal text-zinc-500">
+                Link color
+              </DropdownMenuLabel>
+              <DropdownMenuRadioGroup
+                value={header.linkColor ?? 'ink'}
+                onValueChange={(value) => setLinkColor(value as LinkColor)}
+              >
+                {LINK_COLORS.map(({ value, label }) => (
+                  <DropdownMenuRadioItem key={value} value={value}>
+                    {label}
+                  </DropdownMenuRadioItem>
+                ))}
+              </DropdownMenuRadioGroup>
+              <DropdownMenuSeparator />
               <DropdownMenuCheckboxItem checked={shouldShowIcons} onCheckedChange={toggleIcons}>
                 <Shapes />
                 Icons in this list
@@ -101,7 +116,10 @@ export function ResumeHeaderCard() {
         className={cn(
           'mt-2.5 rounded-md border border-line bg-pane-sunken px-[0.6875rem] py-2.5 text-center text-[0.775rem] leading-[1.65] wrap-break-word text-ink-soft',
           header.linkStyle === 'underline' &&
-            '[&_a]:underline [&_a]:decoration-line-heavy [&_a]:underline-offset-2'
+            '[&_a]:underline [&_a]:decoration-line-heavy [&_a]:underline-offset-2',
+          // The page's blue is too dark to read on the dark box, so a lighter one there.
+          header.linkColor === 'blue' &&
+            '[&_a]:text-blue-700 [&_a]:decoration-current dark:[&_a]:text-sky-400'
         )}
         title="Exactly how the header is written on the page"
         data-header-printed

@@ -15,6 +15,7 @@ const exportData: NormalizedResumeExport = {
   contact: {
     name: 'Alex Johnson',
     linkStyle: 'plain',
+    linkColor: 'ink',
     lines: [
       line(['555-0100', 'alex@example.com', 'linkedin.com/in/alex', 'github.com/alex']),
       line(['Detroit, MI']),
@@ -64,7 +65,7 @@ Engineer, Mosaic, Detroit, MI | Jan 2021 to Current
   it('uses the Mosaic Resume fallback name', () => {
     expect(
       createPlaintextExport({
-        contact: { name: '', linkStyle: 'plain', lines: [] },
+        contact: { name: '', linkStyle: 'plain', linkColor: 'ink', lines: [] },
         sections: [],
       })
     ).toBe('Mosaic Resume');

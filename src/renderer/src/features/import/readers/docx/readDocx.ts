@@ -55,6 +55,10 @@ interface RunProps {
   italic?: boolean;
   caps?: boolean;
   hidden?: boolean;
+  /** Any line under the text (`w:u` other than "none"); Word's Hyperlink style sets one. */
+  underline?: boolean;
+  /** The text's colour as `#rrggbb`; "auto", Word's default ink, is left out. */
+  color?: string;
   /** In half-points. */
   size?: number;
 }
@@ -194,6 +198,10 @@ function runPropsOf(rPr: XmlElement | undefined): RunProps {
   set('italic', onOff(childNamed(rPr, W, 'i')));
   set('caps', onOff(childNamed(rPr, W, 'caps')));
   set('hidden', onOff(childNamed(rPr, W, 'vanish')));
+  const underline = childNamed(rPr, W, 'u');
+  set('underline', underline ? attribute(underline, W, 'val') !== 'none' : undefined);
+  const color = attribute(childNamed(rPr, W, 'color'), W, 'val') ?? '';
+  set('color', /^[\da-f]{6}$/i.test(color) ? `#${color.toLowerCase()}` : undefined);
   const size = Number(attribute(childNamed(rPr, W, 'sz'), W, 'val'));
   set('size', size > 0 ? size : undefined);
   return props;
@@ -208,6 +216,9 @@ function throughStyles(start: RunProps, styles: Style[]): RunProps {
   const props = { ...start };
   for (const { run } of styles) {
     for (const key of TOGGLES) if (run[key]) props[key] = !props[key];
+    // Not toggles: the nearest style that says wins.
+    if (run.underline !== undefined) props.underline = run.underline;
+    if (run.color !== undefined) props.color = run.color;
     if (run.size !== undefined) props.size = run.size;
   }
   return props;
@@ -362,14 +373,35 @@ interface Gathering {
   rightTab: boolean;
   /** Text boxes met inside the paragraph, read after it. */
   boxes: XmlElement[];
-  /** Fields being read: their instruction, and where their shown text starts. */
-  fields: { instruction: string; start: number }[];
+  /** Fields being read: their instruction, and where their shown text and runs start. */
+  fields: { instruction: string; start: number; runStart: number }[];
+  /** Each link in the paragraph, in order, and how its words are set. */
+  links: NonNullable<DocxParagraph['links']>;
 }
 
-function endLink(gathering: Gathering, start: number, url: string | undefined) {
+/** Where a link's words start: in the paragraph's text, and among its runs. */
+interface LinkStart {
+  text: number;
+  run: number;
+}
+
+const startLink = (gathering: Gathering): LinkStart => ({
+  text: gathering.text.length,
+  run: gathering.runs.length,
+});
+
+function endLink(gathering: Gathering, start: LinkStart, url: string | undefined) {
   if (!url) return;
-  const words = gathering.text.slice(start);
-  gathering.text = gathering.text.slice(0, start) + markLink(words, url);
+  const words = gathering.text.slice(start.text);
+  gathering.text = gathering.text.slice(0, start.text) + markLink(words, url);
+  const runs = gathering.runs.slice(start.run);
+  const colors = new Set(runs.map((run) => run.color ?? 'auto'));
+  const [color] = colors;
+  gathering.links.push({
+    underlined: runs.length > 0 && runs.every((run) => run.underline),
+    // One colour across all its words, or nothing to say.
+    ...(colors.size === 1 && color !== 'auto' && { color }),
+  });
 }
 
 /** Pictures and text boxes: a text box's paragraphs are read; a picture is only counted. */
@@ -426,11 +458,20 @@ function readRun(context: Context, run: XmlElement, base: RunProps, gathering: G
         }
         case 'fldChar': {
           const type = attribute(node, W, 'fldCharType');
-          if (type === 'begin') gathering.fields.push({ instruction: '', start: -1 });
-          else if (type === 'separate' && field) field.start = gathering.text.length;
-          else if (type === 'end' && field) {
+          if (type === 'begin') {
+            gathering.fields.push({ instruction: '', start: -1, runStart: -1 });
+          } else if (type === 'separate' && field) {
+            field.start = gathering.text.length;
+            field.runStart = gathering.runs.length;
+          } else if (type === 'end' && field) {
             gathering.fields.pop();
-            if (field.start >= 0) endLink(gathering, field.start, fieldAddress(field.instruction));
+            if (field.start >= 0) {
+              endLink(
+                gathering,
+                { text: field.start, run: field.runStart },
+                fieldAddress(field.instruction)
+              );
+            }
           }
           break;
         }
@@ -463,13 +504,13 @@ function gather(context: Context, element: XmlElement, base: RunProps, gathering
         readRun(context, node, base, gathering);
         break;
       case 'hyperlink': {
-        const start = gathering.text.length;
+        const start = startLink(gathering);
         gather(context, node, base, gathering);
         endLink(gathering, start, context.links.get(attribute(node, R, 'id') ?? ''));
         break;
       }
       case 'fldSimple': {
-        const start = gathering.text.length;
+        const start = startLink(gathering);
         gather(context, node, base, gathering);
         endLink(gathering, start, fieldAddress(attribute(node, W, 'instr') ?? ''));
         break;
@@ -511,6 +552,7 @@ function readParagraph(context: Context, p: XmlElement, at: string): DocxBlock[]
     rightTab: hasRightTab(pPr) || chain.some((s) => s.rightTab),
     boxes: [],
     fields: [],
+    links: [],
   };
   gather(context, p, base, gathering);
 
@@ -530,6 +572,7 @@ function readParagraph(context: Context, p: XmlElement, at: string): DocxBlock[]
     spaceBefore:
       spaceBeforeOf(pPr) ?? chain.findLast((s) => s.spaceBefore !== undefined)?.spaceBefore ?? 0,
     align: alignmentOf(pPr) ?? chain.findLast((s) => s.align !== undefined)?.align ?? 'left',
+    ...(gathering.links.length > 0 && { links: gathering.links }),
     source: sourceOf(context, at),
   };
 
@@ -736,8 +779,8 @@ export async function readDocxContent(bytes: Uint8Array): Promise<DocxDocument> 
 /** A Word file as a resume to review. */
 export async function readDocx(bytes: Uint8Array): Promise<ParsedResume> {
   const document = await readDocxContent(bytes);
-  const { lines, notes, leftOut } = docxLines(document);
-  const parsed = parseResumeLines(lines);
+  const { lines, notes, leftOut, linkStyle, linkColor } = docxLines(document);
+  const parsed = parseResumeLines(lines, { linkStyle, linkColor });
   parsed.warnings.push(...notes.map((note) => note.message));
   parsed.leftOut.push(...leftOut);
   return parsed;

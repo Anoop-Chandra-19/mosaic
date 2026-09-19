@@ -5,6 +5,7 @@ import type {
   HeaderItemKind,
   HeaderLine,
   HeaderSeparator,
+  LinkColor,
   LinkStyle,
   ResumeHeader,
 } from '../types/resume';
@@ -51,6 +52,23 @@ export const LINK_STYLES: { value: LinkStyle; label: string }[] = [
   { value: 'plain', label: 'Plain' },
   { value: 'underline', label: 'Underlined' },
 ];
+
+export const LINK_COLORS: { value: LinkColor; label: string }[] = [
+  { value: 'ink', label: 'Black' },
+  { value: 'blue', label: 'Blue' },
+];
+
+/** The blue a blue link prints in: Word's hyperlink blue, which readers expect a link to be. */
+export const LINK_BLUE = '#0563C1';
+
+/** How a header's links print, in words: "Plain", "Underlined, blue". */
+export function describeLinkLook({
+  linkStyle,
+  linkColor,
+}: Pick<ResumeHeader, 'linkStyle' | 'linkColor'>) {
+  const style = LINK_STYLES.find((option) => option.value === linkStyle)?.label ?? '';
+  return linkColor === 'blue' ? `${style}, blue` : style;
+}
 
 const EXPLICIT_SCHEME = /^(?:https?:|mailto:|tel:)/i;
 const EMAIL_ADDRESS = /^[^\s@/]+@[^\s@/]+\.[^\s@/]+$/;

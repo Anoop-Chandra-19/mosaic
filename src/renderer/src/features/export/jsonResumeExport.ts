@@ -2,6 +2,7 @@ import type {
   HeaderAlign,
   HeaderItemKind,
   HeaderSeparator,
+  LinkColor,
   LinkStyle,
   SectionKind,
   SectionLayout,
@@ -52,6 +53,8 @@ export interface MosaicHeaderLine {
 /** The header as it prints, which `basics` can only say part of. */
 export interface MosaicHeader {
   linkStyle: LinkStyle;
+  /** Written only when links print blue. */
+  linkColor?: LinkColor;
   lines: MosaicHeaderLine[];
 }
 
@@ -167,9 +170,14 @@ function buildBasics(data: NormalizedResumeExport, header: MosaicHeader, summary
 }
 
 /** The printed header as `meta.mosaic` keeps it: each item's text and its written link. */
-function mosaicHeader({ linkStyle, lines }: NormalizedResumeExport['contact']): MosaicHeader {
+function mosaicHeader({
+  linkStyle,
+  linkColor,
+  lines,
+}: NormalizedResumeExport['contact']): MosaicHeader {
   return {
     linkStyle,
+    ...(linkColor !== 'ink' && { linkColor }),
     lines: lines.map(({ separator, align, items }) => ({
       separator,
       align,

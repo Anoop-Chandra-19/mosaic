@@ -23,6 +23,7 @@ function createExportData(): NormalizedResumeExport {
     contact: {
       name: 'Alex Johnson',
       linkStyle: 'plain',
+      linkColor: 'ink',
       lines: [
         {
           id: 'reach',
@@ -334,7 +335,7 @@ describe('createJsonResumeExport', () => {
 
   it('omits empty arrays and empty contact fields', () => {
     const resume = parseExport({
-      contact: { name: 'Alex', linkStyle: 'plain', lines: [] },
+      contact: { name: 'Alex', linkStyle: 'plain', linkColor: 'ink', lines: [] },
       sections: [
         {
           id: 'summary',

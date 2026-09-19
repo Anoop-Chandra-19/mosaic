@@ -8,9 +8,12 @@ import {
   type DocxParagraph,
   type DocxTable,
 } from './docxModel';
+import type { LinkColor, LinkStyle } from '@shared/types/resume';
 import {
   BULLET_MARKER,
   DATE_LIKE,
+  decideLinkColor,
+  decideLinkStyle,
   isCapitals,
   PAGE_NUMBER,
   titleCase,
@@ -57,6 +60,10 @@ export interface DocxReading {
   notes: DocxNote[];
   /** Text read but deliberately not made into lines, so the review step can still show it. */
   leftOut: string[];
+  /** How the document draws its links; undefined when it has none to go by. */
+  linkStyle?: LinkStyle;
+  /** The ink its links print in; undefined when it has none. */
+  linkColor?: LinkColor;
 }
 
 const cellIsEmpty = (cell: DocxCell) =>
@@ -426,5 +433,18 @@ export function docxLines(document: DocxDocument): DocxReading {
       where: whereIs(floating[0].paragraph.source),
     });
   }
-  return { lines: pieces.map((piece) => piece.line), notes, leftOut };
+  // Judged over the links in what was kept: a page header's links are not the resume's.
+  const links = [...new Set(pieces.map((piece) => piece.paragraph))].flatMap(
+    (paragraph) => paragraph.links ?? []
+  );
+  const linkStyle = decideLinkStyle(links.map((link) => link.underlined));
+  // A link with no colour of its own prints in Word's automatic ink: black, for this.
+  const linkColor = decideLinkColor(links.map((link) => link.color ?? '#000000'));
+  return {
+    lines: pieces.map((piece) => piece.line),
+    notes,
+    leftOut,
+    ...(linkStyle && { linkStyle }),
+    ...(linkColor && { linkColor }),
+  };
 }

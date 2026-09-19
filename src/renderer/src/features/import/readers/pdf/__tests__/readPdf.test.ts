@@ -11,7 +11,6 @@ import {
   resume,
   section,
   shown,
-  buildExpectedShown,
   createStyledHeaderResume,
 } from '../../../__tests__/resumeFixtures';
 import {
@@ -66,15 +65,25 @@ describe('readPdf', () => {
     }
   }, 60_000);
 
-  it('gives back a header’s links, separators and alignment, but not underlining', async () => {
+  it('gives back a header’s links, separators, alignment, underlining, and blue', async () => {
     const data = createStyledHeaderResume();
+    expect(data.contact.header).toMatchObject({ linkStyle: 'underline', linkColor: 'blue' });
     const parsed = await readPdf(await exportedPdf(data));
-    // An underline is a line drawn under the words, which pdf.js's text doesn't carry.
-    expect(shown(parsed.resume)).toEqual(
-      buildExpectedShown(data, (expected) => {
-        expected.linkStyle = 'plain';
-      })
-    );
+    // The underline is a line drawn under the words, found among the page's drawings, and
+    // drawn in their blue.
+    expect(shown(parsed.resume)).toEqual(shown(data));
+
+    const black = createStyledHeaderResume();
+    delete black.contact.header.linkColor;
+    expect(shown((await readPdf(await exportedPdf(black))).resume)).toEqual(shown(black));
+
+    // Without an underline, blue words can't be told from black ones: the text's own
+    // colour isn't read. It comes back plain and black, a stated loss.
+    const plain = createStyledHeaderResume();
+    plain.contact.header.linkStyle = 'plain';
+    const { header } = (await readPdf(await exportedPdf(plain))).resume.contact;
+    expect(header.linkStyle).toBe('plain');
+    expect(header).not.toHaveProperty('linkColor');
   });
 
   it('keeps a link’s address with the words it is set on', async () => {
@@ -118,6 +127,51 @@ describe('readPdf', () => {
       ],
     ]);
     expect(leftOut).toEqual([]);
+  });
+
+  it('finds underlines drawn as Word draws them: a filled bar, or a line in a moved space', async () => {
+    // Helvetica 11pt at y = 700: "ada@example.com" is 94.9 points wide, " | " 9, and
+    // "LinkedIn" 41.6, from x = 150.
+    const content = [
+      'BT /F1 16 Tf 150 730 Td (Ada Lovelace) Tj ET',
+      'BT /F1 11 Tf 150 700 Td (ada@example.com | LinkedIn) Tj ET',
+      // Blue ink, and a thin filled bar under the address.
+      '0 0 1 rg 150 698.3 94.9 0.6 re f',
+      // A stroked line under "LinkedIn", drawn in a space moved 100 points right.
+      'q 1 0 0 1 100 0 cm 0 0 1 RG 0.6 w 153.9 698.6 m 195.5 698.6 l S Q',
+      'BT /F1 12 Tf 150 660 Td (Experience) Tj ET',
+      'BT /F1 11 Tf 150 640 Td (Engineer at Engine Works) Tj ET',
+    ].join('\n');
+    const links = [
+      {
+        rect: [150, 696, 244.9, 710] as [number, number, number, number],
+        url: 'mailto:ada@example.com',
+      },
+      {
+        rect: [253.9, 696, 295.5, 710] as [number, number, number, number],
+        url: 'https://linkedin.com/in/ada',
+      },
+    ];
+    const bytes = buildPdf({ pages: [content], hasFont: true, links: [links] });
+
+    const [page] = (await readPdfContent(bytes)).pages;
+    expect(page.rules).toHaveLength(2);
+    const { resume: read } = await readPdf(bytes);
+    expect(read.contact.header.linkStyle).toBe('underline');
+    // Drawn in blue, as Word draws a link's underline in its words' blue.
+    expect(read.contact.header.linkColor).toBe('blue');
+    expect(read.contact.header.lines[0].items.map((item) => item.url)).toEqual([
+      'mailto:ada@example.com',
+      'https://linkedin.com/in/ada',
+    ]);
+
+    // The same page without the underlines has plain links.
+    const bare = content
+      .split('\n')
+      .filter((line) => !/ re f| S Q/.test(line))
+      .join('\n');
+    const plain = await readPdf(buildPdf({ pages: [bare], hasFont: true, links: [links] }));
+    expect(plain.resume.contact.header.linkStyle).toBe('plain');
   });
 
   it('says what is wrong with a PDF it cannot read', async () => {

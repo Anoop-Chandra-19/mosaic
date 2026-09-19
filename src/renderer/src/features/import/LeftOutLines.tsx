@@ -30,9 +30,9 @@ export function LeftOutLines({ lines }: { lines: string[] }) {
         <CollapsibleTrigger asChild>
           <AppButton variant="ghost" size="sm" className="group h-7 gap-1.5 px-2">
             <ChevronRight className="size-3.5 text-zinc-500 transition-transform group-data-[state=open]:rotate-90" />
-            <span className="font-medium text-zinc-900 dark:text-zinc-100">Left out</span>{' '}
+            <span className="font-medium text-zinc-900 dark:text-zinc-100">Left out</span>
             <span className="text-xs font-normal text-zinc-600 dark:text-zinc-400">
-              — {lines.length === 1 ? '1 line' : `${lines.length} lines`}
+              {lines.length === 1 ? '1 line' : `${lines.length} lines`}
             </span>
           </AppButton>
         </CollapsibleTrigger>

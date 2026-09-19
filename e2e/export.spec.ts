@@ -53,7 +53,7 @@ test('Markdown can be copied or saved, and reads back in through Import', async 
   await expect(importing.getByRole('checkbox', { name: 'Import Work History' })).toBeChecked();
   await importing.getByRole('button', { name: 'Import as new template' }).click();
 
-  await expect(page.getByText('Imported — check the sections in the sidebar')).toBeVisible();
+  await expect(page.getByText('Imported. Check the sections in the sidebar.')).toBeVisible();
   await expect(page.getByRole('banner').getByText('Your Name', { exact: true })).toBeVisible();
 });
 
@@ -78,7 +78,7 @@ test('JSON Resume reads back in through Import with its own headings', async () 
   }
   await importing.getByRole('button', { name: 'Import as new template' }).click();
 
-  await expect(page.getByText('Imported — check the sections in the sidebar')).toBeVisible();
+  await expect(page.getByText('Imported. Check the sections in the sidebar.')).toBeVisible();
 });
 
 test('Mosaic JSON holds the template’s history and restores like a backup', async () => {
@@ -149,9 +149,12 @@ test('Save PDF writes the resume as a real PDF, which reads back in through Impo
   const exporting = page.getByRole('dialog', { name: 'Export' });
   // How the header's links look is the resume's own setting, so the preview follows it.
   await exporting.getByRole('radio', { name: 'Underlined' }).click();
+  await exporting.getByRole('radio', { name: 'Blue' }).click();
   // Found by its text: behind an open dialog, the page is hidden from role queries.
   const linkedIn = page.locator('[data-preview-header] a', { hasText: 'LinkedIn' }).first();
   await expect(linkedIn).toHaveCSS('text-decoration-line', 'underline');
+  // Word's hyperlink blue, #0563C1.
+  await expect(linkedIn).toHaveCSS('color', 'rgb(5, 99, 193)');
   await exporting.getByRole('button', { name: 'Save PDF' }).click();
 
   // Named for the person and the template. If PDF generation breaks (e.g. the CSP blocks
@@ -179,14 +182,18 @@ test('Save PDF writes the resume as a real PDF, which reads back in through Impo
     ['Projects', '2 entries, 6 bullets'],
   ]) {
     await expect(importing.getByRole('checkbox', { name: `Import ${heading}` })).toBeChecked();
-    await expect(importing.getByRole('listitem').filter({ hasText: heading })).toHaveText(
-      `${heading} — ${holds}`
-    );
+    await expect(importing.getByRole('listitem').filter({ hasText: heading })).toContainText(holds);
   }
   await expect(importing.getByRole('button', { name: /^Left out/ })).toHaveCount(0);
+  // The blue underlines are read off the page, and the review says so.
+  await expect(importing.getByRole('listitem').filter({ hasText: 'Contact' })).toContainText(
+    'Links underlined and blue, as in the file.'
+  );
   await importing.getByRole('button', { name: 'Import as new template' }).click();
-  await expect(page.getByText('Imported — check the sections in the sidebar')).toBeVisible();
-  // The header's links come back from the PDF with the words they are set on.
+  await expect(page.getByText('Imported. Check the sections in the sidebar.')).toBeVisible();
+  // The header's links come back from the PDF with the words they are set on, as they were.
   await expect(linkedIn).toHaveAttribute('href', 'https://linkedin.com/in/you');
+  await expect(linkedIn).toHaveCSS('text-decoration-line', 'underline');
+  await expect(linkedIn).toHaveCSS('color', 'rgb(5, 99, 193)');
   expect(errors).toEqual([]);
 });

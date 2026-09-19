@@ -63,12 +63,13 @@ describe('readMarkdown', () => {
     expect(entryFields(readMarkdown(markdownOf(data)).resume)).toEqual(entryFields(data));
   });
 
-  it('gives back a header’s links and separators, but not alignment or underlining', () => {
+  it('gives back a header’s links and separators, but not alignment or how links look', () => {
     const data = createStyledHeaderResume();
     // Markdown has no way to set a line left or centred, or to say how a link looks.
     expect(shown(readMarkdown(markdownOf(data)).resume)).toEqual(
       buildExpectedShown(data, (expected) => {
         expected.linkStyle = 'plain';
+        expected.linkColor = 'ink';
         expected.header[0].align = 'center';
       })
     );

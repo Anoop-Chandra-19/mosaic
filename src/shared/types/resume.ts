@@ -85,6 +85,9 @@ export type HeaderAlign = 'center' | 'left';
 /** How linked header text looks on the page: like the rest of the text, or underlined. */
 export type LinkStyle = 'plain' | 'underline';
 
+/** The ink a header link prints in: the page's black, or a link blue. Only links change. */
+export type LinkColor = 'ink' | 'blue';
+
 export interface HeaderItem {
   id: string;
   kind: HeaderItemKind;
@@ -105,6 +108,8 @@ export interface HeaderLine {
 
 export interface ResumeHeader {
   linkStyle: LinkStyle;
+  /** Absent means `ink`. */
+  linkColor?: LinkColor;
   lines: HeaderLine[];
 }
 

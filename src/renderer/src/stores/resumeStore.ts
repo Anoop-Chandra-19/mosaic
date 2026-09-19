@@ -9,6 +9,7 @@ import type {
   HeaderItem,
   HeaderItemKind,
   HeaderLine,
+  LinkColor,
   LinkStyle,
   ResumeData,
   ResumeEntry,
@@ -45,6 +46,7 @@ interface ResumeState extends ResumeData {
 
   setName: (name: string) => void;
   setLinkStyle: (linkStyle: LinkStyle) => void;
+  setLinkColor: (linkColor: LinkColor) => void;
   /** Adds an empty line at the end of the header; returns its id. */
   addHeaderLine: () => string;
   updateHeaderLine: (
@@ -154,6 +156,13 @@ export const useResumeStore = create<ResumeState>()(
       setLinkStyle: (linkStyle) =>
         edit((state) => {
           state.contact.header.linkStyle = linkStyle;
+        }),
+
+      setLinkColor: (linkColor) =>
+        edit((state) => {
+          // Black is the default, so it is written by leaving the colour out.
+          if (linkColor === 'ink') delete state.contact.header.linkColor;
+          else state.contact.header.linkColor = linkColor;
         }),
 
       addHeaderLine: () => {

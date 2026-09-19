@@ -18,6 +18,7 @@ function pageLines(doc: ResumeData): Map<string, string> {
         formatHeaderLineText(line),
         line.align,
         header.linkStyle,
+        header.linkColor ?? 'ink',
         ...line.items.map((i) => i.href),
       ].join('|')
     );

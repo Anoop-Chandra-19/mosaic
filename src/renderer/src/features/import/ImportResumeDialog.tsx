@@ -305,6 +305,15 @@ function ReviewStep({
   );
   const found = getContactFieldLabels(contact);
   const headerKept = mode === 'merge' && keepsHeader(openContact);
+  // A link look other than plain black was read from the file, so the review says so.
+  const hasLinks = getPrintableHeaderLines(contact.header).some((line) =>
+    line.items.some((item) => item.href)
+  );
+  const looks = [
+    contact.header.linkStyle === 'underline' && 'underlined',
+    contact.header.linkColor === 'blue' && 'blue',
+  ].filter(Boolean);
+  const linkLook = hasLinks && looks.length > 0 ? `Links ${looks.join(' and ')}` : null;
 
   const toggle = (id: string) =>
     setExcludedIds((previous) => {
@@ -329,7 +338,7 @@ function ReviewStep({
     onDone();
     setStartOpen(false);
     setActiveSidebarTab('content');
-    showToast('Imported — check the sections in the sidebar');
+    showToast('Imported. Check the sections in the sidebar.');
   };
 
   return (
@@ -357,20 +366,26 @@ function ReviewStep({
         </div>
 
         <ul className="divide-y divide-zinc-200 rounded-lg border border-zinc-200 text-sm dark:divide-zinc-800 dark:border-zinc-800">
-          <li className="flex items-center gap-2.5 px-3 py-2">
-            <span className="size-4 shrink-0" />
-            <span className="font-medium text-zinc-900 dark:text-zinc-100">Contact</span>
-            <span
-              className={cn(
-                'text-xs',
-                found.length
-                  ? 'text-zinc-600 dark:text-zinc-400'
-                  : 'text-amber-700 dark:text-amber-400'
-              )}
-            >
-              — {found.length ? `${found.join(', ')} found` : 'nothing found'}
-              {headerKept && ', but your header stays as it is'}
-            </span>
+          <li className="px-3 py-2">
+            <div className="flex items-baseline gap-2.5">
+              <span className="size-4 shrink-0 self-center" />
+              <span className="shrink-0 font-medium text-zinc-900 dark:text-zinc-100">Contact</span>
+              <span
+                className={cn(
+                  'ml-auto min-w-0 text-right text-xs',
+                  found.length
+                    ? 'text-zinc-600 dark:text-zinc-400'
+                    : 'text-amber-700 dark:text-amber-400'
+                )}
+              >
+                {found.length ? found.join(', ') : 'Nothing found'}
+              </span>
+            </div>
+            {(headerKept || linkLook) && (
+              <p className="mt-0.5 pl-[1.625rem] text-xs text-zinc-500">
+                {headerKept ? 'Your header stays as it is.' : `${linkLook}, as in the file.`}
+              </p>
+            )}
           </li>
           {sections.map((section) => {
             const on = !excludedIds.has(section.id);
@@ -378,33 +393,31 @@ function ReviewStep({
             const custom = section.kind === 'custom';
             return (
               <li key={section.id}>
-                <label className="flex cursor-pointer items-center gap-2.5 px-3 py-2">
-                  <Checkbox
-                    checked={on}
-                    onCheckedChange={() => toggle(section.id)}
-                    aria-label={`Import ${section.label}`}
-                  />
-                  <span className="min-w-0">
+                <label className="block cursor-pointer px-3 py-2">
+                  <span className="flex items-baseline gap-2.5">
+                    <Checkbox
+                      checked={on}
+                      onCheckedChange={() => toggle(section.id)}
+                      aria-label={`Import ${section.label}`}
+                      className="self-center"
+                    />
                     <span
                       className={cn(
-                        'font-medium',
+                        'min-w-0 font-medium',
                         on ? 'text-zinc-900 dark:text-zinc-100' : 'text-zinc-500'
                       )}
                     >
                       {section.label}
-                    </span>{' '}
-                    <span
-                      className={cn(
-                        'text-xs',
-                        custom
-                          ? 'text-amber-700 dark:text-amber-400'
-                          : 'text-zinc-600 dark:text-zinc-400'
-                      )}
-                    >
-                      — {describeSection(section)}
-                      {custom && `, imported as a ${CUSTOM_NAMES[section.layout]}`}
+                    </span>
+                    <span className="ml-auto shrink-0 text-xs text-zinc-600 dark:text-zinc-400">
+                      {describeSection(section)}
                     </span>
                   </span>
+                  {custom && (
+                    <span className="mt-0.5 block pl-[1.625rem] text-xs text-amber-700 dark:text-amber-400">
+                      Comes in as a {CUSTOM_NAMES[section.layout]}.
+                    </span>
+                  )}
                 </label>
               </li>
             );

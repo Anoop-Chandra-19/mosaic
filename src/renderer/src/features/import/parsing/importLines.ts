@@ -1,4 +1,5 @@
 import type { EntryHeadingFields } from '@shared/resume/entryHeading';
+import type { LinkColor, LinkStyle } from '@shared/types/resume';
 import { stripMailtoOrTelScheme, isSameAddress } from '@shared/resume/resumeHeader';
 import { isHeadingLength, matchSectionHeader } from './sectionHeaders';
 
@@ -102,6 +103,37 @@ export function markLink(words: string, url: string): string {
   if (!shown) return words;
   const address = url.replace(LINK_MARKS, '');
   return `${lead}${LINK_START}${shown}${LINK_ADDRESS}${address}${LINK_END}${trail}`;
+}
+
+/**
+ * How a source draws its links, from whether each one is underlined: underlined when most
+ * are. Undefined when there are no links to go by — the header then keeps Mosaic's default.
+ */
+export function decideLinkStyle(underlined: boolean[]): LinkStyle | undefined {
+  if (underlined.length === 0) return undefined;
+  const count = underlined.filter(Boolean).length;
+  return count * 2 > underlined.length ? 'underline' : 'plain';
+}
+
+/**
+ * Whether a colour (`#rrggbb`) is a link blue: blue clearly ahead of red and green, as
+ * Word's hyperlink blue (#0563C1) and a browser's (#0000EE) both are.
+ */
+export function isLinkBlue(color: string): boolean {
+  const match = /^#?([\da-f]{2})([\da-f]{2})([\da-f]{2})$/i.exec(color);
+  if (!match) return false;
+  const [red, green, blue] = match.slice(1).map((hex) => parseInt(hex, 16));
+  return blue >= 0x80 && blue > red * 1.5 && blue > green * 1.2;
+}
+
+/**
+ * The ink a source's links print in, from the colour of each link a reader could tell:
+ * blue when most are. Undefined when none could tell.
+ */
+export function decideLinkColor(colors: (string | undefined)[]): LinkColor | undefined {
+  const known = colors.filter((color): color is string => color !== undefined);
+  if (known.length === 0) return undefined;
+  return known.filter(isLinkBlue).length * 2 > known.length ? 'blue' : 'ink';
 }
 
 /** A line's text with each marked link written out as `linkText` writes it. */

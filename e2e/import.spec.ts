@@ -29,15 +29,15 @@ test('the review lists what Mosaic found no place for, ready to copy', async () 
     );
   await importing.getByRole('button', { name: 'Read pasted text' }).click();
 
-  await expect(importing.getByRole('listitem').filter({ hasText: 'Skills' })).toHaveText(
-    'Skills — 2 lines'
+  await expect(importing.getByRole('listitem').filter({ hasText: 'Skills' })).toContainText(
+    '2 lines'
   );
   // A line under the name goes in the header, which holds anything.
   await expect(importing.getByRole('listitem').filter({ hasText: 'Contact' })).toContainText(
-    'name, other details, email found'
+    'name, other details, email'
   );
   const leftOut = importing.getByRole('button', { name: /^Left out/ });
-  await expect(leftOut).toHaveText('Left out — 1 line');
+  await expect(leftOut).toContainText('1 line');
   await leftOut.click();
   await expect(importing.getByText('Certifications', { exact: true })).toBeVisible();
 

@@ -37,7 +37,8 @@ See root `CLAUDE.md` for schema-version and data-safety rules.
   margins, font sizes, leading, indents. Preview and PDF read it; change numbers there,
   not in components.
 - "Headless Headhunter" format: section headers are the only bold text below the name;
-  job/project lines are italic; all text is black. Never add `letter-spacing` or
+  job/project lines are italic; all text is black, but header links when the header asks
+  for blue ones. Never add `letter-spacing` or
   `text-transform: uppercase` to section headers: both break ATS text extraction.
 - Spacing follows the 18pt leading grid. Extra margins between bullets or entries push
   the page off-grid, compounding down the page.
@@ -47,6 +48,15 @@ See root `CLAUDE.md` for schema-version and data-safety rules.
 ## Exports and round trips
 
 - PDF embeds links on printed text, underlined only when the header requests it.
+- Header links can print blue (`linkColor: 'blue'`, Word's hyperlink blue); only the links
+  change, everything else stays black. Preview and PDF honour it; Markdown and plain text
+  can't carry it, and JSON Resume keeps it in `meta.mosaic.header`.
+- Import reads the link look back where the file shows it: a PDF's underline is a thin
+  line drawn just under a link's words (`readPdfRules`, judged in `pdfLines`), and its
+  colour is the words' colour; a Word file's is run formatting, usually from its Hyperlink
+  style. Most links underlined or blue sets the header so, and the review says so. A PDF's
+  blue links with no underline come back black: text colour isn't read. Plain text and
+  Markdown carry no styling.
 - Markdown writes `[text](link)`; plain text writes `text (link)` unless text already is
   the address. JSON Resume fills standard fields and preserves the whole header in
   `meta.mosaic.header`.
@@ -62,4 +72,4 @@ See root `CLAUDE.md` for schema-version and data-safety rules.
   representation; plain text explicitly states its losses. A DOCX export, when built,
   needs a round-trip test too.
 - Document unsupported round-trip details in tests: alignment/underlining in Markdown
-  and plain text, and underlining in PDF. These exceptions must not become silent losses.
+  and plain text. These exceptions must not become silent losses.

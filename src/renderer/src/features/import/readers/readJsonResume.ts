@@ -20,6 +20,7 @@ import {
   BUILT_IN_HEADER_KINDS,
   HEADER_ALIGNS,
   HEADER_SEPARATORS,
+  LINK_COLORS,
   LINK_STYLES,
   createHeaderItem,
   createHeaderLine,
@@ -163,6 +164,7 @@ function restoreHeaderIfUnchanged(basics: Json, header: MosaicHeader): ResumeHea
   if (JSON.stringify(now) !== JSON.stringify(written)) return null;
   return {
     linkStyle: header.linkStyle,
+    ...(header.linkColor === 'blue' && { linkColor: 'blue' as const }),
     lines: header.lines.map(({ separator, align, items: lineItems }) =>
       createHeaderLine(
         lineItems.map(({ kind, text: shown, url }) => createHeaderItem(kind, { text: shown, url })),
@@ -211,6 +213,7 @@ function isMetaHeader(value: unknown): value is MosaicHeader {
   return (
     isRecord(value) &&
     isIn(value.linkStyle, LINK_STYLES) &&
+    (value.linkColor === undefined || isIn(value.linkColor, LINK_COLORS)) &&
     Array.isArray(value.lines) &&
     value.lines.every(
       (line) =>

@@ -117,6 +117,7 @@ describe('normalizeResumeForExport', () => {
     expect(normalized.contact).toEqual({
       name: 'Alex Johnson',
       linkStyle: 'underline',
+      linkColor: 'ink',
       lines: [
         {
           id: 'reach',

@@ -131,15 +131,25 @@ export interface RunOptions {
   size?: number;
   /** A character style. */
   style?: string;
+  /** Word's underline value (`w:u`): "single", "double", "none"… */
+  underline?: string;
 }
 
-function runProps({ bold, italic, caps, hidden, size, style }: RunOptions): string {
+/**
+ * Word's own Hyperlink character style: blue, underlined. The built-in styles here leave
+ * it out; a test that wants it passes this as `styles`.
+ */
+export const HYPERLINK_STYLE =
+  '<w:style w:type="character" w:styleId="Hyperlink"><w:name w:val="Hyperlink"/><w:rPr><w:color w:val="0563C1"/><w:u w:val="single"/></w:rPr></w:style>';
+
+function runProps({ bold, italic, caps, hidden, size, style, underline }: RunOptions): string {
   const props = [
     style && `<w:rStyle w:val="${style}"/>`,
     bold && '<w:b/><w:bCs/>',
     italic && '<w:i/>',
     caps && '<w:caps/>',
     hidden && '<w:vanish/>',
+    underline && `<w:u w:val="${underline}"/>`,
     size && `<w:sz w:val="${size}"/>`,
   ]
     .filter(Boolean)
@@ -196,14 +206,14 @@ export function para(text: string | string[], options: ParaOptions = {}): string
 }
 
 /** A hyperlink to `url` around these words; `id` is its relationship, listed in `links`. */
-export const hyperlink = (id: string, words: string) =>
-  `<w:hyperlink r:id="${id}">${run(words, { style: 'Hyperlink' })}</w:hyperlink>`;
+export const hyperlink = (id: string, words: string, options: RunOptions = {}) =>
+  `<w:hyperlink r:id="${id}">${run(words, { style: 'Hyperlink', ...options })}</w:hyperlink>`;
 
 /** A hyperlink written as a field, the way older documents keep one. */
-export const hyperlinkField = (url: string, words: string) =>
+export const hyperlinkField = (url: string, words: string, options: RunOptions = {}) =>
   `<w:r><w:fldChar w:fldCharType="begin"/></w:r>` +
   `<w:r><w:instrText xml:space="preserve"> HYPERLINK "${escapeXml(url)}" </w:instrText></w:r>` +
-  `<w:r><w:fldChar w:fldCharType="separate"/></w:r>${run(words)}` +
+  `<w:r><w:fldChar w:fldCharType="separate"/></w:r>${run(words, options)}` +
   `<w:r><w:fldChar w:fldCharType="end"/></w:r>`;
 
 /** Text a tracked change added, and text one took out. */

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { markLink, type ImportLine } from '../../../parsing/importLines';
-import type { PdfLink, PdfPage, PdfRun } from '../pdfModel';
+import type { PdfLink, PdfPage, PdfRule, PdfRun } from '../pdfModel';
 import { pdfLines } from '../pdfLines';
 
 /** Every character half an em wide, so a run's width follows from its text. */
@@ -32,11 +32,12 @@ const right = (text: string, y: number, more: Partial<PdfRun> = {}) =>
 /** A line of text that fills the width from `x` to the margin. */
 const full = (text: string, x: number, y: number) => run(text, x, y, { width: MARGIN - x });
 
-const page = (runs: PdfRun[], links: PdfLink[] = []): PdfPage => ({
+const page = (runs: PdfRun[], links: PdfLink[] = [], rules: PdfRule[] = []): PdfPage => ({
   width: 612,
   height: 792,
   runs,
   links,
+  rules,
 });
 
 const read = (...pages: PdfPage[]) => pdfLines({ pages, notes: [] });
@@ -271,6 +272,36 @@ describe('pdfLines', () => {
     expect(lines[1].text).toBe(
       `${markLink('ada@example.com', 'mailto:ada@example.com')} | ${markLink('LinkedIn', 'https://linkedin.com/in/ada')}`
     );
+  });
+
+  it('finds links underlined by a line under their words, not by a rule across the page', () => {
+    const at = (from: number, to: number) => ({ left: 100 + from * 5, right: 100 + to * 5 });
+    const runs = [bold('Ada Lovelace', 100, 40), run('ada@example.com | LinkedIn', 100, 60)];
+    const links: PdfLink[] = [
+      { url: 'mailto:ada@example.com', ...at(0, 15), top: 50, bottom: 63 },
+      { url: 'https://linkedin.com/in/ada', ...at(18, 26), top: 50, bottom: 63 },
+    ];
+    // Just under the baseline at y = 60, as wide as the words.
+    const under = (from: number, to: number, color = '#000000'): PdfRule => ({
+      ...at(from, to),
+      top: 61,
+      bottom: 62,
+      color,
+    });
+
+    const black = read(page(runs, links, [under(0, 15), under(18, 26)]));
+    expect([black.linkStyle, black.linkColor]).toEqual(['underline', 'ink']);
+    // An underline is drawn in its words' colour, which says the links are blue.
+    const blue = read(page(runs, links, [under(0, 15, '#0563c1'), under(18, 26, '#0563c1')]));
+    expect([blue.linkStyle, blue.linkColor]).toEqual(['underline', 'blue']);
+    // Without underlines, the colour of the words isn't known.
+    const bare = read(page(runs, links));
+    expect([bare.linkStyle, bare.linkColor]).toEqual(['plain', undefined]);
+    // A rule between sections sits under the line too, but runs across the page.
+    const rule: PdfRule = { left: 72, right: 540, top: 61, bottom: 62, color: '#0563c1' };
+    expect(read(page(runs, links, [rule])).linkStyle).toBe('plain');
+    // No links: nothing to go by.
+    expect(read(page(runs)).linkStyle).toBeUndefined();
   });
 
   it('leaves out sideways text, and says so', () => {

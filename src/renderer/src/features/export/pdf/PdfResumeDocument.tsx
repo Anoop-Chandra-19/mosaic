@@ -3,6 +3,7 @@ import { Document, Font, Link, Page, StyleSheet, Text, View } from '@react-pdf/r
 import type { PaperSize } from '@/types/paper';
 import type { NormalizedResumeExport } from '../normalizeResumeExport';
 import { HEADLESS_LAYOUT } from '@/lib/resume/headlessLayout';
+import { LINK_BLUE } from '@shared/resume/resumeHeader';
 
 interface PdfResumeDocumentProps {
   data: NormalizedResumeExport;
@@ -141,7 +142,7 @@ export function PdfResumeDocument({ data, paperSize }: PdfResumeDocumentProps) {
   const size = paperSize === 'a4' ? 'A4' : 'LETTER';
   const name = data.contact.name || 'Mosaic Resume';
   const linkStyle = {
-    color: L.color,
+    color: data.contact.linkColor === 'blue' ? LINK_BLUE : L.color,
     textDecoration: data.contact.linkStyle === 'underline' ? 'underline' : 'none',
   } as const;
 
@@ -157,7 +158,7 @@ export function PdfResumeDocument({ data, paperSize }: PdfResumeDocumentProps) {
                 <Fragment key={item.id}>
                   {index > 0 && preserveSpaceRuns(line.separator)}
                   {/* The printed text carries the link; it looks like the text around it
-                      unless the header asks for underlined links. */}
+                      unless the header asks for underlined or blue links. */}
                   {item.href ? (
                     <Link src={item.href} style={linkStyle}>
                       {item.text}
