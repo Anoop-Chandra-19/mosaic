@@ -79,7 +79,7 @@ function useShortcuts() {
       if (useResumeStore.getState().templateId !== null) {
         useOverlayStore.getState().setNameVersionOpen(true);
       } else {
-        showToast('Nothing open — start a resume first');
+        showToast('Nothing is open. Start a resume first.');
       }
     };
     window.addEventListener('keydown', onKeyDown);

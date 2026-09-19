@@ -24,7 +24,7 @@ export function NoTemplates() {
       : start(
           'Untitled resume',
           createEmptyResume(),
-          'Created “Untitled resume” — it saves as you type'
+          'Created “Untitled resume”. It saves as you type.'
         );
 
   return (

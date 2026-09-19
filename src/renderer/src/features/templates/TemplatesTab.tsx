@@ -47,7 +47,7 @@ export function TemplatesTab() {
         </AppButton>
       </div>
       <p className="mb-2.5 ml-0.5 text-xs leading-relaxed text-zinc-600 dark:text-zinc-400">
-        A template holds your content and its history. Your draft saves as you type — name a version
+        A template holds your content and its history. Your draft saves as you type. Name a version
         when you want to find it again.
       </p>
 

@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { Minus, Plus, TriangleAlert } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { ResumePreview } from '@/features/preview/ResumePreview';
 import type { PaperSize } from '@/types/paper';
 import { VersionPreviewBanner } from '@/features/templates/VersionPreviewBanner';
@@ -67,24 +68,26 @@ export function PreviewPanel() {
             </AppButton>
           </div>
 
-          <div className="inline-flex items-center rounded-md border border-zinc-300 bg-background p-0.5 dark:border-zinc-700">
+          <ToggleGroup
+            type="single"
+            variant="outline"
+            size="sm"
+            value={paperSize}
+            // A single-choice group reports '' when the pressed item is pressed again.
+            onValueChange={(value) => value && setPaperSize(value as PaperSize)}
+            aria-label="Paper size"
+          >
             {(['a4', 'letter'] as PaperSize[]).map((size) => (
-              <button
+              <ToggleGroupItem
                 key={size}
-                type="button"
-                onClick={() => setPaperSize(size)}
-                className={[
-                  'rounded px-2 py-0.5 text-xs font-semibold uppercase transition-colors',
-                  paperSize === size
-                    ? 'bg-zinc-200 text-zinc-900 dark:bg-zinc-700 dark:text-zinc-100'
-                    : 'text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800',
-                ].join(' ')}
+                value={size}
                 aria-label={`Switch paper size to ${size === 'a4' ? 'A4' : 'US Letter'}`}
+                className="h-[1.625rem] px-2 text-xs font-semibold"
               >
                 {size === 'a4' ? 'A4' : 'Letter'}
-              </button>
+              </ToggleGroupItem>
             ))}
-          </div>
+          </ToggleGroup>
 
           {meta.hasOverflowBeyondTwo && (
             <span className="inline-flex items-center gap-1 rounded-full border border-amber-300 bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-900 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-300">

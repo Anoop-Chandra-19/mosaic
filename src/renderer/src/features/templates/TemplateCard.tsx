@@ -158,15 +158,18 @@ export function TemplateCard({ template, active, expanded, onToggle }: TemplateC
       )}
     >
       <div className="flex items-start gap-2 px-3 py-2.5">
-        <button
-          type="button"
+        {/* The negative margins keep the chevron where it sat before it had a button's box. */}
+        <AppButton
+          variant="quiet"
+          size="2xs"
+          shape="square"
           onClick={onToggle}
           aria-expanded={expanded}
           aria-label={`${expanded ? 'Hide' : 'Show'} history of ${template.name}`}
-          className="mt-0.5 shrink-0 rounded text-zinc-500 hover:text-zinc-800 focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:outline-none dark:hover:text-zinc-200"
+          className="-mx-1 -mt-0.5"
         >
           <Chevron className="size-3.5" />
-        </button>
+        </AppButton>
 
         <div className="min-w-0 flex-1">
           <div className="flex min-w-0 items-center gap-1.5">
@@ -184,13 +187,13 @@ export function TemplateCard({ template, active, expanded, onToggle }: TemplateC
                 className="h-7 text-sm font-semibold"
               />
             ) : (
-              <button
-                type="button"
+              <AppButton
+                variant="link"
                 onClick={onToggle}
-                className="truncate text-left text-sm font-semibold text-zinc-900 dark:text-zinc-100"
+                className="h-auto min-w-0 shrink justify-start p-0 text-sm font-semibold"
               >
-                {template.name}
-              </button>
+                <span className="truncate">{template.name}</span>
+              </AppButton>
             )}
             {active && !renaming && (
               <span className="shrink-0 rounded bg-zinc-900 px-1.5 py-px text-[0.7rem] font-semibold text-white dark:bg-zinc-100 dark:text-zinc-900">
@@ -299,8 +302,8 @@ export function TemplateCard({ template, active, expanded, onToggle }: TemplateC
           {previewId && preview && (
             <Note icon={Eye} tone="amber">
               <span className="flex-1">
-                Showing {preview.label} in the sheet. Your draft is untouched — restore from the
-                banner if you want it.
+                Showing {preview.label} in the sheet. Your draft is untouched. Restore from the
+                banner if you want this version back.
               </span>
               <AppButton variant="outline" size="xs" onClick={() => setPreview(null)}>
                 Exit

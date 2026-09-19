@@ -77,7 +77,7 @@ function NameVersionForm({ onDone }: { onDone: () => void }) {
         <Info className="mt-0.5 size-3.5 shrink-0 text-zinc-500" />
         {status === 'clean'
           ? 'Nothing has changed since the newest version, so this names that version rather than making a new one.'
-          : 'Your draft is already saved. Naming pins it in history so you can find it later — nothing is overwritten.'}
+          : 'Your draft is already saved. Naming pins it in history so you can find it later. Nothing is overwritten.'}
       </p>
 
       <DialogFooter>

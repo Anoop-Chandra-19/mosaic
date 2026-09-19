@@ -104,8 +104,8 @@ export function VersionList({
                 title={
                   canPreview
                     ? previewing
-                      ? 'Stop previewing — back to your draft'
-                      : 'Read this version in the sheet — nothing is changed'
+                      ? 'Stop previewing and go back to your draft'
+                      : 'Read this version in the sheet. Nothing is changed.'
                     : 'Open this template to preview its versions'
                 }
                 onClick={() => onPreview(version, label)}
@@ -119,7 +119,7 @@ export function VersionList({
                   size="xs"
                   shape="square"
                   aria-label={`Restore ${label}`}
-                  title="Restore — what you have now is kept in history first"
+                  title="Restore. What you have now is kept in history first."
                   onClick={() => onRestore(version)}
                 >
                   <History className="size-3" />

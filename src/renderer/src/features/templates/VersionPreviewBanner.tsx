@@ -43,8 +43,8 @@ export function VersionPreviewBanner({ preview }: { preview: VersionPreview }) {
         {version.summary}
         <span className="text-zinc-500">
           {changed === 0
-            ? ' — identical to your draft'
-            : ` — ${changed} ${changed === 1 ? 'line differs' : 'lines differ'} from your draft`}
+            ? ' · identical to your draft'
+            : ` · ${changed} ${changed === 1 ? 'line differs' : 'lines differ'} from your draft`}
         </span>
       </span>
       <AppButton
