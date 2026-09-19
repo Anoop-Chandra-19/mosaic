@@ -112,7 +112,7 @@ test('Mosaic JSON holds the template’s history and restores like a backup', as
     .getByRole('button', { name: 'Add 1 template' })
     .click();
   await expect(page.getByText('Added 1 template from the backup')).toBeVisible();
-  await page.getByRole('button', { name: 'Templates' }).click();
+  await page.getByRole('tab', { name: 'Templates' }).click();
   await expect(page.getByRole('button', { name: 'Options for Example resume' })).toHaveCount(2);
 });
 
@@ -124,7 +124,7 @@ test('a version exports as it was, not as the draft', async () => {
   await page.getByPlaceholder('Your name').fill('Ada Lovelace');
   await page.getByPlaceholder('Your name').press('Enter');
 
-  await page.getByRole('button', { name: 'Templates' }).click();
+  await page.getByRole('tab', { name: 'Templates' }).click();
   await page.getByRole('button', { name: 'Export this version' }).click();
   // Naming the untouched sample named its first version.
   const dialog = page.getByRole('dialog', { name: 'Export v1' });

@@ -24,7 +24,7 @@ test('a version can be read in the sheet, then restored', async () => {
   await nameVersion(page, 'Sent to Striped');
   await setName(page, 'Ada Lovelace', 'Grace Hopper');
 
-  await page.getByRole('button', { name: 'Templates' }).click();
+  await page.getByRole('tab', { name: 'Templates' }).click();
   // The open template's history is showing: its creation, and the named version on top.
   await expect(page.getByText('Working draft · saved as you type.')).toBeVisible();
   const named = page.getByRole('listitem').filter({ hasText: 'Sent to Striped' });
@@ -42,7 +42,7 @@ test('a version can be read in the sheet, then restored', async () => {
   await expect(page.getByText('Restored “Sent to Striped”')).toBeVisible();
   await expect(sheet.getByText('Live Preview')).toBeVisible();
   await expect(page.getByText('Restored "Sent to Striped"', { exact: true })).toBeVisible();
-  await page.getByRole('button', { name: 'Content' }).click();
+  await page.getByRole('tab', { name: 'Content' }).click();
   await expect(page.getByRole('complementary').getByText('Ada Lovelace')).toBeVisible();
 });
 
@@ -52,7 +52,7 @@ test('a version can be duplicated as its own template', async () => {
   await setName(page, 'Your name', 'Ada Lovelace');
   await nameVersion(page, 'First');
 
-  await page.getByRole('button', { name: 'Templates' }).click();
+  await page.getByRole('tab', { name: 'Templates' }).click();
   const named = page.getByRole('listitem').filter({ hasText: 'First' });
   await named.hover();
   await named.getByRole('button', { name: 'Duplicate v2 as a new template' }).click();
@@ -64,7 +64,7 @@ test('a version can be duplicated as its own template', async () => {
 test('templates can be found by name', async () => {
   const { page } = mosaic();
   await page.getByRole('button', { name: /Blank resume/ }).click();
-  await page.getByRole('button', { name: 'Templates' }).click();
+  await page.getByRole('tab', { name: 'Templates' }).click();
 
   await page.getByLabel('Find a template').fill('backend');
   await expect(page.getByText('No template is named like “backend”.')).toBeVisible();

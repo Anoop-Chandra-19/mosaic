@@ -222,7 +222,8 @@ export function OllamaModelRow({
       </Select>
       <AppButton
         variant="ghost"
-        size="icon-sm"
+        size="sm"
+        shape="square"
         aria-label="Refresh Ollama models"
         title="Refresh"
         disabled={!active || checking}

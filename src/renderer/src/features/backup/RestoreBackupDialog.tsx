@@ -138,7 +138,7 @@ function RestoreForm({ backup, onDone }: { backup: OpenedBackup; onDone: () => v
           Cancel
         </AppButton>
         <AppButton
-          variant={replacing ? 'destructive' : 'default'}
+          variant={replacing ? 'destructive' : 'solid'}
           disabled={restoring}
           onClick={() => void restore()}
         >

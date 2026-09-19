@@ -28,6 +28,11 @@ See root `CLAUDE.md` for schema-version and data-safety rules.
   dates sit on the right (`src/shared/resume/entryHeading.ts`). Formats that carry only
   that line read it back with `splitEntryHeading`: first part the title, second the
   organization, the rest the location.
+- What prints is chosen at three levels: a section's `hidden` (absent means on the
+  resume), an entry's `selected`, and a bullet's `selected`. A hidden section keeps its
+  entries' own choices, so putting it back restores exactly what was picked. Preview,
+  every export, the word count, and the version diff all skip what is off; Mosaic JSON and
+  bundles keep it, since they hold the whole document.
 - `src/renderer/src/lib/resume/headlessLayout.ts` is the single source of page metrics:
   margins, font sizes, leading, indents. Preview and PDF read it; change numbers there,
   not in components.

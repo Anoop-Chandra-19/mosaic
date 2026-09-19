@@ -1,51 +1,83 @@
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
-import { Button } from '@/components/ui/button';
 import { AppButton } from '../AppButton';
 
-function getClasses(markup: string) {
+type Props = Parameters<typeof AppButton>[0];
+
+function classesOf(props: Props) {
+  const markup = renderToStaticMarkup(createElement(AppButton, props));
   return markup.match(/class="([^"]*)"/)![1].split(' ');
 }
 
 describe('AppButton', () => {
-  it('preserves standard primitive styling', () => {
-    const props = { variant: 'outline', size: 'sm', children: 'Save' } as const;
-    expect(getClasses(renderToStaticMarkup(createElement(AppButton, props)))).toEqual(
-      getClasses(renderToStaticMarkup(createElement(Button, props)))
+  it('defaults to a solid, medium, rectangular non-submit button', () => {
+    const markup = renderToStaticMarkup(createElement(AppButton, null, 'Save'));
+    expect(markup).toContain('type="button"');
+    expect(markup).toContain('data-variant="solid"');
+    expect(markup).toContain('data-size="md"');
+    expect(markup).toContain('data-shape="rect"');
+    expect(classesOf({ children: 'Save' })).toEqual(
+      expect.arrayContaining(['bg-foreground', 'h-9', 'rounded-md'])
     );
-  });
-
-  it('defaults to a non-submit button but permits explicit submit', () => {
-    expect(renderToStaticMarkup(createElement(AppButton, null, 'Save'))).toContain('type="button"');
     expect(renderToStaticMarkup(createElement(AppButton, { type: 'submit' }, 'Save'))).toContain(
       'type="submit"'
     );
   });
 
-  it('forwards disabled, aria and Radix state props while keeping primitive focus styles', () => {
+  it('keeps the three axes independent', () => {
+    const chip = classesOf({ variant: 'outline', size: '2xs', shape: 'pill' });
+    expect(chip).toEqual(
+      expect.arrayContaining(['border-line-strong', 'h-[1.375rem]', 'rounded-full'])
+    );
+    // The same size and shape in another tone changes only the tone.
+    const dashed = classesOf({ variant: 'dashed', size: '2xs', shape: 'pill' });
+    expect(dashed).toEqual(
+      expect.arrayContaining(['border-dashed', 'h-[1.375rem]', 'rounded-full'])
+    );
+  });
+
+  it('makes a square as wide as it is tall, with no side padding', () => {
+    const classes = classesOf({ variant: 'ghost', size: 'xs', shape: 'square' });
+    expect(classes).toEqual(expect.arrayContaining(['aspect-square', 'px-0', 'h-[1.625rem]']));
+    expect(classes).not.toContain('px-[0.5625rem]');
+  });
+
+  it('lets text wrap like prose instead of keeping a button’s height', () => {
+    const classes = classesOf({ variant: 'ghost', size: 'sm', shape: 'text' });
+    expect(classes).toEqual(
+      expect.arrayContaining(['block', 'h-auto', 'whitespace-normal', 'text-left'])
+    );
+    for (const layout of ['h-8', 'whitespace-nowrap', 'inline-flex']) {
+      expect(classes).not.toContain(layout);
+    }
+  });
+
+  it('forwards disabled, aria and Radix state props and keeps a focus ring', () => {
     const markup = renderToStaticMarkup(
       createElement(AppButton, {
-        variant: 'muted',
-        size: 'icon-xs',
+        variant: 'ghost',
         disabled: true,
         'aria-label': 'Actions',
         'data-state': 'open',
-      } as Parameters<typeof AppButton>[0])
+      } as Props)
     );
     expect(markup).toContain('disabled=""');
     expect(markup).toContain('aria-label="Actions"');
     expect(markup).toContain('data-state="open"');
-    expect(markup).toContain('data-variant="muted"');
-    expect(getClasses(markup)).toContain('focus-visible:border-ring');
-    expect(getClasses(markup)).toContain('data-[state=open]:bg-accent');
+    expect(classesOf({ variant: 'ghost' })).toEqual(
+      expect.arrayContaining([
+        'focus-visible:ring-[3px]',
+        'aria-[haspopup=menu]:data-[state=open]:bg-line-strong',
+      ])
+    );
   });
 
   it('supports asChild without adding button semantics to a link', () => {
     const markup = renderToStaticMarkup(
       createElement(
         AppButton,
-        { asChild: true, variant: 'muted' },
+        { asChild: true, variant: 'ghost' },
         createElement('a', { href: '#help' }, 'Help')
       )
     );
@@ -54,47 +86,10 @@ describe('AppButton', () => {
     expect(markup).not.toContain('type="button"');
   });
 
-  it('gives inline editing intrinsic size and wrapping instead of standard button layout', () => {
-    const classes = getClasses(
-      renderToStaticMarkup(createElement(AppButton, { variant: 'inline-edit' }, 'Edit text'))
-    );
-    expect(classes).toEqual(
-      expect.arrayContaining([
-        'block',
-        'h-auto',
-        'p-0',
-        'shrink',
-        'whitespace-normal',
-        'font-normal',
-      ])
-    );
-    for (const inherited of ['inline-flex', 'h-9', 'px-4', 'shrink-0', 'whitespace-nowrap']) {
-      expect(classes).not.toContain(inherited);
-    }
-  });
-
-  it('keeps link chips shrinkable without icon-conditioned padding', () => {
-    const classes = getClasses(
-      renderToStaticMarkup(createElement(AppButton, { variant: 'link-chip' }, 'example.com'))
-    );
-    expect(classes).toEqual(
-      expect.arrayContaining(['h-auto', 'max-w-full', 'min-w-0', 'shrink', 'px-1'])
-    );
-    expect(classes.some((value) => value.startsWith('has-[>svg]:'))).toBe(false);
-  });
-
-  it('combines emphasis with compact sizing and lets callers override layout', () => {
-    const classes = getClasses(
-      renderToStaticMarkup(
-        createElement(
-          AppButton,
-          { variant: 'emphasis', size: 'compact', className: 'px-3' },
-          'Save'
-        )
-      )
-    );
-    expect(classes).toEqual(expect.arrayContaining(['bg-amber-500', 'h-7', 'text-xs', 'px-3']));
-    expect(classes).not.toContain('px-2');
-    expect(classes.some((value) => value.startsWith('has-[>svg]:'))).toBe(false);
+  it('lets callers override typography and layout', () => {
+    const classes = classesOf({ variant: 'accent', size: 'xs', className: 'px-3 font-semibold' });
+    expect(classes).toEqual(expect.arrayContaining(['bg-amber-500', 'px-3', 'font-semibold']));
+    expect(classes).not.toContain('px-[0.5625rem]');
+    expect(classes).not.toContain('font-medium');
   });
 });

@@ -1,29 +1,48 @@
 import { useState } from 'react';
-import { Checkbox } from '@/components/ui/checkbox';
+import { ArrowDown, ArrowUp, Copy, Ellipsis, Eye, EyeOff, Trash2 } from 'lucide-react';
+import { AppButton } from '@/components/AppButton';
 import { ConfirmDeleteDialog } from '@/components/ConfirmDeleteDialog';
-import { ItemActionsMenu } from '@/components/ItemActionsMenu';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
-import { InlineEditField } from './InlineEditField';
-import { BulletItem } from './BulletItem';
-import { AddBulletInput } from './AddBulletInput';
 import { formatEntryHeading } from '@shared/resume/entryHeading';
 import type { ResumeEntry, SectionLayout } from '@shared/types/resume';
 import { useResumeStore } from '@/stores/resumeStore';
+import { AddBulletButton } from './AddBulletButton';
+import { BulletItem } from './BulletItem';
+import { EditorCheckbox } from './EditorCheckbox';
+import { InlineEditField } from './InlineEditField';
 
 interface EntryCardProps {
   entry: ResumeEntry;
   sectionId: string;
   layout: SectionLayout;
+  /** The whole section is left off, so its entries are toned down with it. */
+  isSectionHidden?: boolean;
   isFirst: boolean;
   isLast: boolean;
   onMoveUp: () => void;
   onMoveDown: () => void;
 }
 
+/** The design's `.emeta` fields: small, and only as wide as their text. */
+const META_FIELD =
+  '-mx-[0.3125rem] max-w-full flex-none px-[0.3125rem] py-0.5 text-[0.775rem] text-ink-muted';
+
+/**
+ * An entry in the outline, hanging off its section's rail: its checkbox, its heading's
+ * parts, its bullets, and — floating top-right on hover — its menu.
+ */
 export function EntryCard({
   entry,
   sectionId,
   layout,
+  isSectionHidden = false,
   isFirst,
   isLast,
   onMoveUp,
@@ -32,123 +51,158 @@ export function EntryCard({
   const toggleEntry = useResumeStore((s) => s.toggleEntry);
   const updateEntry = useResumeStore((s) => s.updateEntry);
   const removeEntry = useResumeStore((s) => s.removeEntry);
+  const duplicateEntry = useResumeStore((s) => s.duplicateEntry);
   const addBullet = useResumeStore((s) => s.addBullet);
-  const updateBullet = useResumeStore((s) => s.updateBullet);
-  const removeBullet = useResumeStore((s) => s.removeBullet);
-  const toggleBullet = useResumeStore((s) => s.toggleBullet);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [actionsOpen, setActionsOpen] = useState(false);
   const isTextOnly = layout === 'lines';
+  // The design fades a left-off entry; the repo's rule is tones, not opacity, so every
+  // ink in it drops to the faintest.
+  const isDimmed = !entry.selected || isSectionHidden;
+  const update = (patch: Partial<ResumeEntry>) => updateEntry(sectionId, entry.id, patch);
 
   return (
     <div
       className={cn(
-        'group/entry rounded-md px-2.5 py-2 transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-900',
-        !entry.selected && 'text-zinc-500 dark:text-zinc-500'
+        'group/entry relative ml-3.5 rounded-md border-l border-line pt-[0.4375rem] pr-1.5 pb-[0.5625rem] pl-[0.5625rem] hover:bg-line',
+        isDimmed && '**:text-ink-faint'
       )}
     >
       <div className="flex items-start gap-2">
-        <Checkbox
+        <EditorCheckbox
+          dimmed={isDimmed}
           checked={entry.selected}
           onCheckedChange={() => toggleEntry(sectionId, entry.id)}
-          className="mt-1 shrink-0"
+          className="mt-0.5"
           aria-label="Toggle entry visibility"
         />
 
         <div className="min-w-0 flex-1">
           {isTextOnly ? (
-            <InlineEditField
-              value={entry.text ?? ''}
-              onSave={(v) => updateEntry(sectionId, entry.id, { text: v })}
-              placeholder="Click to edit..."
-              className="text-sm leading-7 wrap-break-word"
-              inputClassName="h-8 text-sm leading-7"
-            />
+            <div className="flex pr-[2.125rem]">
+              <InlineEditField
+                value={entry.text ?? ''}
+                onSave={(v) => update({ text: v })}
+                placeholder="Click to edit..."
+                className="leading-normal"
+              />
+            </div>
           ) : (
-            <>
-              <InlineEditField
-                value={entry.title ?? ''}
-                onSave={(v) => updateEntry(sectionId, entry.id, { title: v })}
-                placeholder="Title or role"
-                label="Title"
-                className="text-base leading-6 font-medium"
-                inputClassName="h-8 text-base leading-6 font-medium"
-                as="div"
-              />
-              <InlineEditField
-                value={entry.organization ?? ''}
-                onSave={(v) => updateEntry(sectionId, entry.id, { organization: v })}
-                placeholder="Company or context"
-                label="Organization"
-                className="text-sm leading-6 text-zinc-700 dark:text-zinc-300"
-                inputClassName="h-7 text-sm leading-6"
-                as="div"
-              />
-              <div className="flex min-w-0 items-baseline gap-1.5 text-[0.8125rem] leading-6 text-muted-foreground">
+            <div className="flex flex-col gap-0.5 pr-[2.125rem]">
+              <div className="flex min-w-0">
                 <InlineEditField
-                  value={entry.location ?? ''}
-                  onSave={(v) => updateEntry(sectionId, entry.id, { location: v })}
-                  placeholder="Location or Remote"
-                  label="Location"
-                  className="flex-none truncate"
-                  inputClassName="h-7 text-[0.8125rem] leading-6"
-                />
-                <span aria-hidden="true">·</span>
-                <InlineEditField
-                  value={entry.dates ?? ''}
-                  onSave={(v) => updateEntry(sectionId, entry.id, { dates: v })}
-                  placeholder="Dates"
-                  label="Dates"
-                  className="truncate"
-                  inputClassName="h-7 text-[0.8125rem] leading-6"
+                  value={entry.title ?? ''}
+                  onSave={(v) => update({ title: v })}
+                  placeholder="Role or title"
+                  label="Title"
+                  className="text-[0.9375rem] leading-[1.35] font-semibold tracking-[-0.012em] text-foreground"
+                  inputClassName="text-[0.9375rem] font-semibold md:text-[0.9375rem]"
                 />
               </div>
-            </>
+              <div className="flex min-w-0">
+                <InlineEditField
+                  value={entry.organization ?? ''}
+                  onSave={(v) => update({ organization: v })}
+                  placeholder="Company or context"
+                  label="Organization"
+                  className="text-[0.8375rem]"
+                  inputClassName="text-[0.8375rem] md:text-[0.8375rem]"
+                />
+              </div>
+              <div className="mt-0.5 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-ink-faint">
+                <InlineEditField
+                  value={entry.location ?? ''}
+                  onSave={(v) => update({ location: v })}
+                  placeholder="Location or Remote"
+                  label="Location"
+                  className={META_FIELD}
+                  inputClassName="text-[0.775rem] md:text-[0.775rem]"
+                />
+                <span aria-hidden="true" className="text-xs">
+                  ·
+                </span>
+                <InlineEditField
+                  value={entry.dates ?? ''}
+                  onSave={(v) => update({ dates: v })}
+                  placeholder="Dates"
+                  label="Dates"
+                  className={META_FIELD}
+                  inputClassName="text-[0.775rem] md:text-[0.775rem]"
+                />
+              </div>
+            </div>
+          )}
+
+          {/* A left-off entry keeps its bullets, but out of the way until it is back on. */}
+          {!isTextOnly && entry.selected && (
+            <div className="mt-[0.5625rem] flex flex-col gap-[0.4375rem]">
+              {entry.bullets.map((bullet, index) => (
+                <BulletItem
+                  key={bullet.id}
+                  bullet={bullet}
+                  sectionId={sectionId}
+                  entryId={entry.id}
+                  isDimmed={isSectionHidden}
+                  isFirst={index === 0}
+                  isLast={index === entry.bullets.length - 1}
+                />
+              ))}
+              <AddBulletButton onAdd={(text) => addBullet(sectionId, entry.id, text)} />
+            </div>
           )}
         </div>
 
+        {/* Floats over the heading's top-right corner in a raised card, on hover. */}
         <div
           className={cn(
-            'flex shrink-0 items-center',
+            'absolute top-[0.3125rem] right-[0.3125rem] z-10 flex rounded-[0.4375rem] border border-line-strong bg-pane-raised p-0.5 shadow-md',
             actionsOpen
               ? 'visible'
-              : 'invisible group-hover/entry:visible group-focus-within/entry:visible'
+              : 'invisible group-focus-within/entry:visible group-hover/entry:visible'
           )}
         >
-          <ItemActionsMenu
-            label="Entry actions"
-            deleteLabel="Delete Entry"
-            isFirst={isFirst}
-            isLast={isLast}
-            onMoveUp={onMoveUp}
-            onMoveDown={onMoveDown}
-            onDelete={() => setConfirmOpen(true)}
-            open={actionsOpen}
-            onOpenChange={setActionsOpen}
-          />
+          <DropdownMenu open={actionsOpen} onOpenChange={setActionsOpen}>
+            <DropdownMenuTrigger asChild>
+              <AppButton variant="ghost" size="xs" shape="square" aria-label="Entry actions">
+                <Ellipsis />
+              </AppButton>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onSelect={() => toggleEntry(sectionId, entry.id)}>
+                {entry.selected ? <EyeOff /> : <Eye />}
+                {entry.selected ? 'Leave off the resume' : 'Put on the resume'}
+              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => duplicateEntry(sectionId, entry.id)}>
+                <Copy />
+                Duplicate entry
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem disabled={isFirst} onSelect={onMoveUp}>
+                <ArrowUp />
+                Move up
+              </DropdownMenuItem>
+              <DropdownMenuItem disabled={isLast} onSelect={onMoveDown}>
+                <ArrowDown />
+                Move down
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onSelect={() => setConfirmOpen(true)}
+                className="text-destructive focus:text-destructive"
+              >
+                <Trash2 />
+                Delete entry…
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
-
-      {!isTextOnly && (
-        <div className="mt-2 ml-6 space-y-1.5">
-          {entry.bullets.map((b) => (
-            <BulletItem
-              key={b.id}
-              bullet={b}
-              onToggle={() => toggleBullet(sectionId, entry.id, b.id)}
-              onUpdate={(text) => updateBullet(sectionId, entry.id, b.id, text)}
-              onRemove={() => removeBullet(sectionId, entry.id, b.id)}
-            />
-          ))}
-          <AddBulletInput onAdd={(text) => addBullet(sectionId, entry.id, text)} />
-        </div>
-      )}
 
       <ConfirmDeleteDialog
         open={confirmOpen}
         onOpenChange={setConfirmOpen}
         title="Delete entry?"
-        description={`This will permanently remove \u201c${formatEntryHeading(entry) || entry.text || 'this entry'}\u201d and all its bullets.`}
+        description={`This will permanently remove “${formatEntryHeading(entry) || entry.text || 'this entry'}” and all its bullets.`}
         onConfirm={() => removeEntry(sectionId, entry.id)}
       />
     </div>

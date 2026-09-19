@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { ArrowDown, ArrowUp, ChevronDown, Ellipsis, Plus, Trash2 } from 'lucide-react';
+import { ArrowDown, ArrowUp, Ellipsis, Plus, Trash2 } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
 import {
   DropdownMenu,
@@ -33,9 +33,6 @@ interface HeaderLineBlockProps {
 
 const ADDABLE: HeaderItemKind[] = [...BUILT_IN_HEADER_KINDS, 'custom'];
 
-const chip =
-  'h-6 gap-1 px-1.5 text-xs font-normal text-zinc-600 dark:text-zinc-400 data-[state=open]:bg-accent';
-
 /** One header line: how its items are separated and aligned, its items, and adding one. */
 export function HeaderLineBlock({ line, lines }: HeaderLineBlockProps) {
   const updateLine = useResumeStore((s) => s.updateHeaderLine);
@@ -53,15 +50,24 @@ export function HeaderLineBlock({ line, lines }: HeaderLineBlockProps) {
   const align = HEADER_ALIGNS.find((a) => a.value === line.align)!;
 
   return (
-    <section aria-label={`Line ${number}`} className="space-y-0.5">
-      <div className="flex items-center gap-1 pl-1.5">
-        <h4 className="flex-1 text-xs font-medium text-zinc-500">Line {number}</h4>
+    <section
+      aria-label={`Line ${number}`}
+      className="border-t border-line pt-1.5 pb-0.5 first:border-t-0"
+    >
+      <div className="flex items-center gap-1 pt-0.5 pb-[0.1875rem]">
+        <h4 className="flex-1 text-[0.6875rem] font-bold tracking-[0.08em] text-ink-faint uppercase">
+          Line {number}
+        </h4>
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <AppButton variant="ghost" size="xs" className={chip} title="Between items">
-              <span className="min-w-3 font-mono">{separator.label}</span>
-              <ChevronDown className="size-3" />
+            <AppButton
+              variant="outline"
+              size="2xs"
+              title="Between items"
+              className="px-[0.4375rem] text-[0.65625rem] font-semibold tracking-[0.04em]"
+            >
+              {separator.label.toLowerCase()}
             </AppButton>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
@@ -82,9 +88,13 @@ export function HeaderLineBlock({ line, lines }: HeaderLineBlockProps) {
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <AppButton variant="ghost" size="xs" className={chip} title="Alignment">
-              {align.label}
-              <ChevronDown className="size-3" />
+            <AppButton
+              variant="outline"
+              size="2xs"
+              title="Alignment"
+              className="px-[0.4375rem] text-[0.65625rem] font-semibold tracking-[0.04em]"
+            >
+              {align.label.toLowerCase()}
             </AppButton>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
@@ -103,7 +113,12 @@ export function HeaderLineBlock({ line, lines }: HeaderLineBlockProps) {
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <AppButton variant="muted" size="icon-xs" aria-label={`Line ${number} actions`}>
+            <AppButton
+              variant="ghost"
+              size="xs"
+              shape="square"
+              aria-label={`Line ${number} actions`}
+            >
               <Ellipsis />
             </AppButton>
           </DropdownMenuTrigger>
@@ -143,7 +158,11 @@ export function HeaderLineBlock({ line, lines }: HeaderLineBlockProps) {
 
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <AppButton variant="muted" size="xs">
+          <AppButton
+            variant="quiet"
+            size="xs"
+            className="mt-0.5 mb-1.5 justify-start pr-[0.5625rem] pl-[0.4375rem] text-[0.775rem] font-normal"
+          >
             <Plus />
             Add to line {number}
           </AppButton>

@@ -38,7 +38,7 @@ export function SectionList({
   };
 
   return (
-    <div className="space-y-1.5">
+    <div>
       {sorted.map((section, i) => (
         <SectionItem
           key={section.id}
@@ -54,9 +54,9 @@ export function SectionList({
       {showAddSection && (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <AppButton variant="outline" size="sm" className="w-full">
+            <AppButton variant="outline" size="xs" className="mt-3 ml-1.5">
               <Plus />
-              Add Section
+              Add section
             </AppButton>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" onCloseAutoFocus={custom.onCloseAutoFocus}>

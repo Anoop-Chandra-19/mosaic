@@ -103,6 +103,14 @@ function createResumeFixture(): ResumeData {
 }
 
 describe('normalizeResumeForExport', () => {
+  it('leaves out a section that is left off the resume, whatever its entries say', () => {
+    const resume = createResumeFixture();
+    resume.sections[0].hidden = true;
+
+    const normalized = normalizeResumeForExport(resume);
+    expect(normalized.sections.map((section) => section.id)).toEqual(['summary']);
+  });
+
   it('keeps only the header that prints: shown items with text, lines with items', () => {
     const normalized = normalizeResumeForExport(createResumeFixture());
 

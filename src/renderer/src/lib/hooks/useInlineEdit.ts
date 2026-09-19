@@ -1,7 +1,15 @@
 import { useState, useCallback, type KeyboardEvent } from 'react';
 
-/** `openAtStart`: start in editing, for a field whose value was only a placeholder. */
-export function useInlineEdit(value: string, onSave: (next: string) => void, openAtStart = false) {
+/**
+ * `openAtStart`: start in editing, for a field whose value was only a placeholder.
+ * `onClose`: called when editing ends, whether it saved or was cancelled.
+ */
+export function useInlineEdit(
+  value: string,
+  onSave: (next: string) => void,
+  openAtStart = false,
+  onClose?: () => void
+) {
   const [editing, setEditing] = useState(openAtStart);
   const [draft, setDraft] = useState(value);
 
@@ -14,7 +22,8 @@ export function useInlineEdit(value: string, onSave: (next: string) => void, ope
     setEditing(false);
     const trimmed = draft.trim();
     if (trimmed !== value) onSave(trimmed);
-  }, [draft, value, onSave]);
+    onClose?.();
+  }, [draft, value, onSave, onClose]);
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
@@ -24,9 +33,10 @@ export function useInlineEdit(value: string, onSave: (next: string) => void, ope
       } else if (e.key === 'Escape') {
         setDraft(value);
         setEditing(false);
+        onClose?.();
       }
     },
-    [value]
+    [value, onClose]
   );
 
   return { editing, draft, setDraft, startEditing, handleBlur, handleKeyDown };

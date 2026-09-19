@@ -6,15 +6,38 @@ import type { PaperSize } from '@/types/paper';
 
 export type SidebarTab = 'content' | 'templates';
 
-/** Sidebar width stored as a ratio (0–1) of the viewport width */
-export const SIDEBAR_DEFAULT_RATIO = 0.22;
-/** Enough for the editor's cards to keep a line of text; the preview scales to what is left. */
-export const SIDEBAR_MIN_PX = 280;
-export const SIDEBAR_MAX_RATIO = 0.4;
-/** The assistant pane on the right, sized the same way: a share of the window, with a floor. */
-export const AGENT_PANE_DEFAULT_RATIO = 0.24;
-export const AGENT_PANE_MIN_PX = 300;
-export const AGENT_PANE_MAX_RATIO = 0.4;
+/**
+ * A side pane's width, kept in pixels like a code editor's: it comes back exactly as it was
+ * left. `maxShare` is the most of the window it takes, so on a small window the preview
+ * keeps its room; the stored width is untouched and returns when the window grows.
+ */
+export interface PaneWidthLimits {
+  defaultPx: number;
+  minPx: number;
+  maxPx: number;
+  maxShare: number;
+}
+
+/** The content sidebar. The floor keeps the editor's cards a line of text wide. */
+export const SIDEBAR_WIDTH: PaneWidthLimits = {
+  defaultPx: 380,
+  minPx: 300,
+  maxPx: 600,
+  maxShare: 0.42,
+};
+/** The assistant pane on the right. */
+export const AGENT_PANE_WIDTH: PaneWidthLimits = {
+  defaultPx: 352,
+  minPx: 300,
+  maxPx: 620,
+  maxShare: 0.38,
+};
+
+/** A width within the pane's limits, in whole pixels; anything unreadable is the default. */
+export function clampPaneWidth(px: number, limits: PaneWidthLimits): number {
+  if (!Number.isFinite(px)) return limits.defaultPx;
+  return Math.round(Math.min(limits.maxPx, Math.max(limits.minPx, px)));
+}
 export const PREVIEW_ZOOM_STEPS = [0.75, 0.9, 1, 1.1, 1.25, 1.5] as const;
 export const PREVIEW_DEFAULT_ZOOM = 1;
 
@@ -30,11 +53,11 @@ export const DEFAULT_UI_STATE = {
   currentPreviewPage: 1,
   paperSize: 'a4' as PaperSize,
   previewZoom: PREVIEW_DEFAULT_ZOOM,
-  sidebarRatio: SIDEBAR_DEFAULT_RATIO,
+  sidebarWidthPx: SIDEBAR_WIDTH.defaultPx,
   sidebarCollapsed: false,
   /** Only drawn while AI is on; this remembers whether it was closed. */
   agentPaneOpen: true,
-  agentPaneRatio: AGENT_PANE_DEFAULT_RATIO,
+  agentPaneWidthPx: AGENT_PANE_WIDTH.defaultPx,
   /** Icons beside the header's items in the editor; the page never has them. */
   shouldShowHeaderIcons: true,
 };
@@ -45,10 +68,10 @@ interface UiState {
   currentPreviewPage: number;
   paperSize: PaperSize;
   previewZoom: number;
-  sidebarRatio: number;
+  sidebarWidthPx: number;
   sidebarCollapsed: boolean;
   agentPaneOpen: boolean;
-  agentPaneRatio: number;
+  agentPaneWidthPx: number;
   shouldShowHeaderIcons: boolean;
   toggleDarkMode: () => void;
   setDarkMode: (enabled: boolean) => void;
@@ -58,10 +81,10 @@ interface UiState {
   setPreviewZoom: (zoom: number) => void;
   zoomPreviewIn: () => void;
   zoomPreviewOut: () => void;
-  setSidebarRatio: (ratio: number) => void;
+  setSidebarWidthPx: (px: number) => void;
   toggleSidebarCollapsed: () => void;
   toggleAgentPane: () => void;
-  setAgentPaneRatio: (ratio: number) => void;
+  setAgentPaneWidthPx: (px: number) => void;
   toggleHeaderIcons: () => void;
   resetUiState: () => void;
 }
@@ -105,9 +128,9 @@ export const useUiStore = create<UiState>()(
           const index = PREVIEW_ZOOM_STEPS.indexOf(normalizePreviewZoom(state.previewZoom));
           state.previewZoom = PREVIEW_ZOOM_STEPS[Math.max(0, index - 1)];
         }),
-      setSidebarRatio: (ratio) =>
+      setSidebarWidthPx: (px) =>
         set((state) => {
-          state.sidebarRatio = Math.min(SIDEBAR_MAX_RATIO, Math.max(0.1, ratio));
+          state.sidebarWidthPx = clampPaneWidth(px, SIDEBAR_WIDTH);
         }),
       toggleSidebarCollapsed: () =>
         set((state) => {
@@ -117,9 +140,9 @@ export const useUiStore = create<UiState>()(
         set((state) => {
           state.agentPaneOpen = !state.agentPaneOpen;
         }),
-      setAgentPaneRatio: (ratio) =>
+      setAgentPaneWidthPx: (px) =>
         set((state) => {
-          state.agentPaneRatio = Math.min(AGENT_PANE_MAX_RATIO, Math.max(0.1, ratio));
+          state.agentPaneWidthPx = clampPaneWidth(px, AGENT_PANE_WIDTH);
         }),
       toggleHeaderIcons: () =>
         set((state) => {
@@ -133,11 +156,25 @@ export const useUiStore = create<UiState>()(
     {
       name: 'ui',
       storage: createJSONStorage(() => settingsStorage),
-      // AI Tools was a sidebar tab before the assistant moved to its own pane.
+      // AI Tools was a sidebar tab before the assistant moved to its own pane. Widths were
+      // once shares of the window; those keys are simply left behind.
       merge: (persisted, current) => {
-        const stored = (persisted ?? {}) as Partial<UiState>;
+        const stored = { ...(persisted as Record<string, unknown>) } as Partial<UiState>;
+        for (const key of ['sidebarRatio', 'agentPaneRatio']) delete (stored as never)[key];
         const tab = stored.activeSidebarTab === 'templates' ? 'templates' : 'content';
-        return { ...current, ...stored, activeSidebarTab: tab };
+        return {
+          ...current,
+          ...stored,
+          activeSidebarTab: tab,
+          sidebarWidthPx: clampPaneWidth(
+            stored.sidebarWidthPx ?? SIDEBAR_WIDTH.defaultPx,
+            SIDEBAR_WIDTH
+          ),
+          agentPaneWidthPx: clampPaneWidth(
+            stored.agentPaneWidthPx ?? AGENT_PANE_WIDTH.defaultPx,
+            AGENT_PANE_WIDTH
+          ),
+        };
       },
       // Hydrated by `hydrateStores` once boot has loaded the settings.
       skipHydration: true,

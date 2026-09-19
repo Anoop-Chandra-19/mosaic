@@ -38,7 +38,8 @@ export function EditableBullet({
       />
       <AppButton
         variant="ghost"
-        size="icon-xs"
+        size="xs"
+        shape="square"
         onClick={onRemove}
         aria-label="Delete bullet"
         className="mt-1 shrink-0 text-muted-foreground hover:text-destructive"

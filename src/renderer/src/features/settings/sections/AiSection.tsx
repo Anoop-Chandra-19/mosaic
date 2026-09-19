@@ -308,7 +308,8 @@ function ApiKeyRows({ provider, model }: { provider: KeyedProvider; model: strin
               <AppButton
                 type="button"
                 variant="ghost"
-                size="icon-xs"
+                size="xs"
+                shape="square"
                 className="absolute top-1 right-1"
                 onClick={() => setReveal((value) => !value)}
                 aria-label={reveal ? 'Hide key' : 'Show key'}

@@ -207,8 +207,8 @@ export function TemplateCard({ template, active, expanded, onToggle }: TemplateC
         <div className="flex shrink-0 items-center gap-0.5">
           {active ? (
             <AppButton
-              size="compact"
-              variant={dirty ? 'emphasis' : 'outline'}
+              size="xs"
+              variant={dirty ? 'accent' : 'outline'}
               title="Give this state a name so you can find it in history"
               aria-label="Name version"
               onClick={() => setNameVersionOpen(true)}
@@ -218,13 +218,18 @@ export function TemplateCard({ template, active, expanded, onToggle }: TemplateC
               <span className="hidden @[20rem]:inline">Name version</span>
             </AppButton>
           ) : (
-            <AppButton size="compact" variant="outline" onClick={() => void open()}>
+            <AppButton size="xs" variant="outline" onClick={() => void open()}>
               Open
             </AppButton>
           )}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <AppButton variant="ghost" size="icon-xs" aria-label={`Options for ${template.name}`}>
+              <AppButton
+                variant="ghost"
+                size="xs"
+                shape="square"
+                aria-label={`Options for ${template.name}`}
+              >
                 <MoreHorizontal className="size-3.5" />
               </AppButton>
             </DropdownMenuTrigger>
@@ -297,12 +302,7 @@ export function TemplateCard({ template, active, expanded, onToggle }: TemplateC
                 Showing {preview.label} in the sheet. Your draft is untouched — restore from the
                 banner if you want it.
               </span>
-              <AppButton
-                variant="outline"
-                size="sm"
-                className="h-6 px-2 text-xs"
-                onClick={() => setPreview(null)}
-              >
+              <AppButton variant="outline" size="xs" onClick={() => setPreview(null)}>
                 Exit
               </AppButton>
             </Note>
@@ -311,8 +311,8 @@ export function TemplateCard({ template, active, expanded, onToggle }: TemplateC
           {versions && (
             <AppButton
               variant="ghost"
-              size="compact"
-              className="mt-1.5 text-zinc-600 dark:text-zinc-400"
+              size="xs"
+              className="mt-1.5"
               title={
                 previewId && preview
                   ? `Export ${preview.label}, the version in the sheet`

@@ -56,7 +56,7 @@ test('the last template can be deleted, leaving nothing open', async () => {
   const { page } = mosaic();
   await startBlank(page);
 
-  await page.getByRole('button', { name: 'Templates' }).click();
+  await page.getByRole('tab', { name: 'Templates' }).click();
   await page.getByRole('button', { name: 'Options for Untitled resume' }).click();
   await page.getByRole('menuitem', { name: 'Delete template…' }).click();
   const confirm = page.getByRole('dialog');

@@ -96,7 +96,8 @@ export function VersionList({
             >
               <AppButton
                 variant="ghost"
-                size="icon-xs"
+                size="xs"
+                shape="square"
                 disabled={!canPreview}
                 aria-pressed={previewing}
                 aria-label={`Preview ${label}`}
@@ -115,7 +116,8 @@ export function VersionList({
               {!head && (
                 <AppButton
                   variant="ghost"
-                  size="icon-xs"
+                  size="xs"
+                  shape="square"
                   aria-label={`Restore ${label}`}
                   title="Restore — what you have now is kept in history first"
                   onClick={() => onRestore(version)}
@@ -125,7 +127,8 @@ export function VersionList({
               )}
               <AppButton
                 variant="ghost"
-                size="icon-xs"
+                size="xs"
+                shape="square"
                 aria-label={`Duplicate ${label} as a new template`}
                 title="Duplicate as a new template"
                 onClick={() => onDuplicate(version)}

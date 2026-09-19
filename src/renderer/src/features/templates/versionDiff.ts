@@ -4,7 +4,7 @@ import type { ResumeData } from '@shared/types/resume';
 /**
  * Every line that reaches the page, keyed so the same line in two documents lines up:
  * the name, each printed header line, each section heading, each shown entry's heading, each shown bullet.
- * Hidden entries and bullets are left out — they are not on the page.
+ * Hidden sections, entries, and bullets are left out — they are not on the page.
  */
 function pageLines(doc: ResumeData): Map<string, string> {
   const lines = new Map<string, string>();
@@ -23,6 +23,7 @@ function pageLines(doc: ResumeData): Map<string, string> {
     );
   }
   for (const section of [...doc.sections].sort((a, b) => a.order - b.order)) {
+    if (section.hidden) continue;
     lines.set(`section:${section.id}`, section.label);
     for (const entry of section.items) {
       if (!entry.selected) continue;

@@ -149,3 +149,55 @@ describe('resumeStore header', () => {
     expect(store().contact.header.linkStyle).toBe('underline');
   });
 });
+
+describe('resumeStore sections, entries, and bullets', () => {
+  const section = (id: string) => store().sections.find((s) => s.id === id)!;
+  const job = () => section('sec-experience').items[0];
+
+  it('leaves a whole section off and puts it back, keeping its entries’ choices', () => {
+    store().toggleEntry('sec-education', 'edu2');
+    store().toggleSection('sec-education');
+    expect(section('sec-education').hidden).toBe(true);
+
+    store().toggleSection('sec-education');
+    // Back on the resume is the default, so the flag goes rather than turning false.
+    expect(section('sec-education')).not.toHaveProperty('hidden');
+    expect(section('sec-education').items.map((e) => e.selected)).toEqual([true, false]);
+  });
+
+  it('duplicates an entry right below it, bullets and all, with new ids', () => {
+    const original = job();
+    store().duplicateEntry('sec-experience', original.id);
+
+    const [first, copy] = section('sec-experience').items;
+    expect(first.id).toBe(original.id);
+    expect(copy.id).not.toBe(original.id);
+    expect(copy.title).toBe(original.title);
+    expect(copy.bullets.map((b) => b.text)).toEqual(original.bullets.map((b) => b.text));
+    for (const [index, bullet] of copy.bullets.entries()) {
+      expect(bullet.id).not.toBe(original.bullets[index].id);
+    }
+  });
+
+  it('duplicates and moves a bullet within its entry', () => {
+    const [a, b] = job().bullets;
+    store().duplicateBullet('sec-experience', job().id, a.id);
+    expect(
+      job()
+        .bullets.map((x) => x.text)
+        .slice(0, 3)
+    ).toEqual([a.text, a.text, b.text]);
+    const copyId = job().bullets[1].id;
+    expect(copyId).not.toBe(a.id);
+
+    store().moveBullet('sec-experience', job().id, b.id, -1);
+    expect(
+      job()
+        .bullets.map((x) => x.id)
+        .slice(0, 3)
+    ).toEqual([a.id, b.id, copyId]);
+    // Nothing moves past either end.
+    store().moveBullet('sec-experience', job().id, a.id, -1);
+    expect(job().bullets[0].id).toBe(a.id);
+  });
+});

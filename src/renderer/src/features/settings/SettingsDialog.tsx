@@ -40,7 +40,13 @@ export function SettingsDialog() {
           <DialogDescription className="sr-only">
             How Mosaic behaves, looks, and handles your data on this machine.
           </DialogDescription>
-          <AppButton variant="ghost" size="icon-sm" onClick={close} aria-label="Close settings">
+          <AppButton
+            variant="ghost"
+            size="sm"
+            shape="square"
+            onClick={close}
+            aria-label="Close settings"
+          >
             <X className="size-4" />
           </AppButton>
         </header>
