@@ -3,6 +3,7 @@ import type { TextItem } from 'pdfjs-dist/types/src/display/api';
 import { parseResumeLines, type ParsedResume } from '../../parsing/parseResume';
 import type { PdfDocument, PdfLink, PdfPage, PdfRun } from './pdfModel';
 import { pdfLines } from './pdfLines';
+import { MAX_PDF_RULES, readPdfRules, type PdfOps } from './readPdfRules';
 
 /**
  * How much of a PDF Mosaic reads. A long CV runs to a few pages and a few thousand pieces
@@ -107,11 +108,11 @@ function computeCharacterWidthShares(
 }
 
 /**
- * How a font is set. pdf.js knows once it has read the page's drawing instructions, which
- * load each font's details; text content alone names fonts only by an id.
+ * How a font is set. pdf.js knows once it has read the page's drawing instructions (the
+ * operator list), which load each font's details; text content alone names fonts only by an
+ * id. Call it after `getOperatorList`.
  */
-async function fontsOf(page: PDFPageProxy, ids: Set<string>): Promise<Map<string, FontStyle>> {
-  await page.getOperatorList();
+function fontsOf(page: PDFPageProxy, ids: Set<string>): Map<string, FontStyle> {
   const fonts = new Map<string, FontStyle>();
   for (const id of ids) {
     const font = page.commonObjs.has(id) ? (page.commonObjs.get(id) as PdfJsFont) : undefined;
@@ -131,16 +132,21 @@ async function fontsOf(page: PDFPageProxy, ids: Set<string>): Promise<Map<string
 interface Budget {
   runs: number;
   links: number;
+  /** Rules still to be read; past it, drawings are not looked at (they are not text). */
+  rules: number;
 }
 
-async function readPage(page: PDFPageProxy, budget: Budget): Promise<PdfPage> {
+async function readPage(page: PDFPageProxy, budget: Budget, ops: PdfOps): Promise<PdfPage> {
   const [left, bottom, right, top] = page.view;
   const content = await page.getTextContent();
   const items = content.items.filter((item): item is TextItem => 'str' in item && item.str !== '');
   budget.runs -= items.length;
   if (budget.runs < 0) throw new PdfLimitError('This PDF holds more text than Mosaic reads.');
 
-  const fonts = await fontsOf(page, new Set(items.map((item) => item.fontName)));
+  const operators = await page.getOperatorList();
+  const rules = readPdfRules(operators, ops, page.view, Math.max(0, budget.rules));
+  budget.rules -= rules.length;
+  const fonts = fontsOf(page, new Set(items.map((item) => item.fontName)));
   const runs: PdfRun[] = items.map((item) => {
     const [a, b, c, d, e, f] = item.transform as number[];
     const font = fonts.get(item.fontName)!;
@@ -175,19 +181,19 @@ async function readPage(page: PDFPageProxy, budget: Budget): Promise<PdfPage> {
       bottom: top - Math.min(y1, y2),
     });
   }
-  return { width: right - left, height: top - bottom, runs, links };
+  return { width: right - left, height: top - bottom, runs, links, rules };
 }
 
-async function readPages(document: PDFDocumentProxy): Promise<PdfDocument> {
+async function readPages(document: PDFDocumentProxy, ops: PdfOps): Promise<PdfDocument> {
   if (document.numPages > PDF_LIMITS.pages) {
     throw new PdfLimitError(`This PDF has more than ${PDF_LIMITS.pages} pages.`);
   }
-  const budget: Budget = { runs: PDF_LIMITS.runs, links: PDF_LIMITS.links };
+  const budget: Budget = { runs: PDF_LIMITS.runs, links: PDF_LIMITS.links, rules: MAX_PDF_RULES };
   const pages: PdfPage[] = [];
   for (let number = 1; number <= document.numPages; number++) {
     const page = await document.getPage(number);
     try {
-      pages.push(await readPage(page, budget));
+      pages.push(await readPage(page, budget, ops));
     } finally {
       page.cleanup();
     }
@@ -195,7 +201,7 @@ async function readPages(document: PDFDocumentProxy): Promise<PdfDocument> {
   return { pages, notes: [] };
 }
 
-/** What a PDF holds: its pages' text, where each piece sits, and its links. */
+/** What a PDF holds: its pages' text, where each piece sits, its links, and its rules. */
 export async function readPdfContent(bytes: Uint8Array): Promise<PdfDocument> {
   const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs');
   const worker = await workerFor(pdfjs);
@@ -221,7 +227,7 @@ export async function readPdfContent(bytes: Uint8Array): Promise<PdfDocument> {
       if (name === 'PasswordException') throw new PdfPasswordError('This PDF is locked.');
       throw new NotAPdfError(error instanceof Error ? error.message : String(error));
     });
-    const content = await readPages(document);
+    const content = await readPages(document, pdfjs.OPS);
     const hasText = content.pages.some((page) => page.runs.some((run) => run.text.trim()));
     if (!hasText) throw new PdfHasNoTextError('This PDF has no text in it.');
     return content;
@@ -233,8 +239,8 @@ export async function readPdfContent(bytes: Uint8Array): Promise<PdfDocument> {
 
 /** A PDF as a resume to review. */
 export async function readPdf(bytes: Uint8Array): Promise<ParsedResume> {
-  const { lines, notes, leftOut } = pdfLines(await readPdfContent(bytes));
-  const parsed = parseResumeLines(lines);
+  const { lines, notes, leftOut, linkStyle } = pdfLines(await readPdfContent(bytes));
+  const parsed = parseResumeLines(lines, { linkStyle });
   parsed.warnings.push(...notes.map((note) => note.message));
   parsed.leftOut.push(...leftOut);
   return parsed;

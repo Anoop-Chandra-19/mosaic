@@ -47,6 +47,10 @@ See root `CLAUDE.md` for schema-version and data-safety rules.
 ## Exports and round trips
 
 - PDF embeds links on printed text, underlined only when the header requests it.
+- Import reads link style back where the file shows it: a PDF's underline is a thin line
+  drawn just under a link's words (`readPdfRules`, judged in `pdfLines`); a Word file's is
+  run formatting, usually from its Hyperlink style. Most links underlined makes the header
+  `underline`, and the review says so. Plain text and Markdown carry no styling: `plain`.
 - Markdown writes `[text](link)`; plain text writes `text (link)` unless text already is
   the address. JSON Resume fills standard fields and preserves the whole header in
   `meta.mosaic.header`.
@@ -62,4 +66,4 @@ See root `CLAUDE.md` for schema-version and data-safety rules.
   representation; plain text explicitly states its losses. A DOCX export, when built,
   needs a round-trip test too.
 - Document unsupported round-trip details in tests: alignment/underlining in Markdown
-  and plain text, and underlining in PDF. These exceptions must not become silent losses.
+  and plain text. These exceptions must not become silent losses.

@@ -38,11 +38,23 @@ export interface PdfLink {
   bottom: number;
 }
 
+/**
+ * A thin horizontal line the page draws — stroked, or filled as a bar — as the box it
+ * covers. Underlines are drawn this way, and so are rules between sections.
+ */
+export interface PdfRule {
+  left: number;
+  right: number;
+  top: number;
+  bottom: number;
+}
+
 export interface PdfPage {
   width: number;
   height: number;
   runs: PdfRun[];
   links: PdfLink[];
+  rules: PdfRule[];
 }
 
 /**

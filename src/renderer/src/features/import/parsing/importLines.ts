@@ -1,4 +1,5 @@
 import type { EntryHeadingFields } from '@shared/resume/entryHeading';
+import type { LinkStyle } from '@shared/types/resume';
 import { stripMailtoOrTelScheme, isSameAddress } from '@shared/resume/resumeHeader';
 import { isHeadingLength, matchSectionHeader } from './sectionHeaders';
 
@@ -102,6 +103,16 @@ export function markLink(words: string, url: string): string {
   if (!shown) return words;
   const address = url.replace(LINK_MARKS, '');
   return `${lead}${LINK_START}${shown}${LINK_ADDRESS}${address}${LINK_END}${trail}`;
+}
+
+/**
+ * How a source draws its links, from whether each one is underlined: underlined when most
+ * are. Undefined when there are no links to go by — the header then keeps Mosaic's default.
+ */
+export function decideLinkStyle(underlined: boolean[]): LinkStyle | undefined {
+  if (underlined.length === 0) return undefined;
+  const count = underlined.filter(Boolean).length;
+  return count * 2 > underlined.length ? 'underline' : 'plain';
 }
 
 /** A line's text with each marked link written out as `linkText` writes it. */

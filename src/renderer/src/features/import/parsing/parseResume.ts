@@ -17,6 +17,7 @@ import type {
   HeaderItemKind,
   HeaderLine,
   HeaderSeparator,
+  LinkStyle,
   ResumeData,
   ResumeEntry,
   ResumeSection,
@@ -65,6 +66,8 @@ interface ParseOptions {
    * and a summary's wrapped lines join.
    */
   marked?: boolean;
+  /** How the source draws its links, for a reader that can tell; Mosaic's default if not. */
+  linkStyle?: LinkStyle;
 }
 
 /** A line's text, and its aside as a line of its own. */
@@ -193,7 +196,12 @@ function createHeaderLineFromContactLine(
  * else a header holds, and every other line of the block is a header line — Mosaic's own
  * files write "phone | email | links" and "status | location", and many resumes the same.
  */
-function parseContact(preamble: ContactLine[], fullText: string, marked: boolean): ContactInfo {
+function parseContact(
+  preamble: ContactLine[],
+  fullText: string,
+  marked: boolean,
+  linkStyle: LinkStyle
+): ContactInfo {
   const shown = preamble.map((line) => removeLinkMarks(line.text));
   const nameAt = shown.findIndex(
     (line) =>
@@ -220,7 +228,7 @@ function parseContact(preamble: ContactLine[], fullText: string, marked: boolean
 
   return {
     name: nameAt < 0 ? '' : shown[nameAt].trim(),
-    header: { linkStyle: 'plain', lines },
+    header: { linkStyle, lines },
   };
 }
 
@@ -360,7 +368,7 @@ function layoutOf(body: ImportLine[], marked: boolean): SectionLayout {
  */
 export function parseResumeLines(
   lines: ImportLine[],
-  { marked = true }: ParseOptions = {}
+  { marked = true, linkStyle = 'plain' }: ParseOptions = {}
 ): ParsedResume {
   const warnings: string[] = [];
   const headings = lines.flatMap((line, index) => (line.role === 'heading' ? [index] : []));
@@ -388,7 +396,7 @@ export function parseResumeLines(
         }
   );
   const fullText = lines.flatMap(textsOf).map(replaceMarkedLinksWithText).join('\n');
-  const contact = parseContact(preamble, fullText, marked);
+  const contact = parseContact(preamble, fullText, marked, linkStyle);
   const leftOut: string[] = [];
 
   const sections: ResumeSection[] = [];

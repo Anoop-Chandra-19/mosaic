@@ -1,6 +1,8 @@
+import type { LinkStyle } from '@shared/types/resume';
 import {
   BULLET_MARKER,
   DATE_LIKE,
+  decideLinkStyle,
   isCapitals,
   markLink,
   PAGE_NUMBER,
@@ -12,7 +14,7 @@ import {
   matchSectionHeader,
   SHORT_LINE_LENGTH,
 } from '../../parsing/sectionHeaders';
-import type { PdfDocument, PdfLink, PdfNote, PdfPage, PdfRun } from './pdfModel';
+import type { PdfDocument, PdfLink, PdfNote, PdfPage, PdfRule, PdfRun } from './pdfModel';
 
 /*
  * Distances are in ems — multiples of the size of the text they measure — so a resume set
@@ -107,6 +109,55 @@ export interface PdfReading {
   notes: PdfNote[];
   /** Text read but deliberately not made into lines, so the review step can still show it. */
   leftOut: string[];
+  /** How the file draws its links; undefined when it has none to go by. */
+  linkStyle?: LinkStyle;
+}
+
+/**
+ * A link's underline: a rule drawn just under its words' baseline, across most of them,
+ * and not much wider — a rule between sections runs on past the words. Null when there is
+ * none; undefined when no words sit in the link's area to judge by.
+ */
+function findLinkUnderline(link: PdfLink, page: PdfPage): PdfRule | null | undefined {
+  const words = page.runs.filter((run) => {
+    if (!run.upright || !run.text.trim()) return false;
+    const middle = run.y - run.size * 0.35;
+    return (
+      middle >= link.top &&
+      middle <= link.bottom &&
+      run.x < link.right &&
+      run.x + run.width > link.left
+    );
+  });
+  if (words.length === 0) return undefined;
+  const left = Math.max(link.left, Math.min(...words.map((run) => run.x)));
+  const right = Math.min(link.right, Math.max(...words.map((run) => run.x + run.width)));
+  const baseline = Math.max(...words.map((run) => run.y));
+  const size = Math.max(...words.map((run) => run.size));
+  const span = right - left;
+  if (span <= 0) return undefined;
+  const underline = page.rules.find((rule) => {
+    const middle = (rule.top + rule.bottom) / 2;
+    const covered = Math.min(rule.right, right) - Math.max(rule.left, left);
+    return (
+      middle >= baseline - size * 0.15 &&
+      middle <= baseline + size * 0.45 &&
+      covered >= span * 0.6 &&
+      rule.right - rule.left <= span + size * 2
+    );
+  });
+  return underline ?? null;
+}
+
+/** How the document draws its links, judged over every link that has words in it. */
+function linkLookOf(document: PdfDocument): Pick<PdfReading, 'linkStyle'> {
+  const underlines = document.pages.flatMap((page) =>
+    page.links
+      .map((link) => findLinkUnderline(link, page))
+      .filter((underline) => underline !== undefined)
+  );
+  const linkStyle = decideLinkStyle(underlines.map((underline) => underline !== null));
+  return linkStyle ? { linkStyle } : {};
 }
 
 const largest = (values: number[]) => values.reduce((top, value) => Math.max(top, value), 0);
@@ -729,5 +780,10 @@ export function pdfLines(document: PdfDocument): PdfReading {
   const pieces = document.pages.flatMap((page, index) => piecesOfPage(page, index + 1, notes));
   const kept = joinWraps(withoutFurniture(pieces, document.pages.length));
   markRoles(kept);
-  return { lines: kept.map((piece) => piece.line), notes, leftOut };
+  return {
+    lines: kept.map((piece) => piece.line),
+    notes,
+    leftOut,
+    ...linkLookOf(document),
+  };
 }

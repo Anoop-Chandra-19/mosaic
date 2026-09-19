@@ -40,6 +40,8 @@ export interface DocxParagraph {
   spaceBefore: number;
   /** Across the page, as the paragraph or its style sets it; Word's own default is left. */
   align: DocxAlignment;
+  /** Each link in its text, in order: whether all of its words are underlined. */
+  links?: { underlined: boolean }[];
   source: DocxSource;
 }
 

@@ -11,6 +11,7 @@ import {
   docx,
   hyperlink,
   hyperlinkField,
+  HYPERLINK_STYLE,
   inserted,
   para,
   picture,
@@ -261,6 +262,35 @@ describe('readDocxContent', () => {
         markLink('my blog', 'https://ada.blog'),
         'back to top',
       ]);
+    });
+
+    it('says whether each link’s words are underlined, through styles or directly', async () => {
+      const links = { rMail: 'mailto:ada@example.com', rSite: 'https://ada.dev' };
+      const underlinedBy = async (body: string, styles = '') =>
+        paragraphsOf((await read(body, { links, styles })).blocks).map((p) => p.links);
+
+      // Word's Hyperlink style underlines; a run can turn that off again.
+      expect(
+        await underlinedBy(
+          para([
+            hyperlink('rMail', 'ada@example.com'),
+            run(' | '),
+            hyperlink('rSite', 'ada.dev', { underline: 'none' }),
+          ]),
+          HYPERLINK_STYLE
+        )
+      ).toEqual([[{ underlined: true }, { underlined: false }]]);
+      // Without the style, only direct formatting underlines, in a field as anywhere.
+      expect(
+        await underlinedBy(
+          para([
+            hyperlink('rMail', 'ada@example.com'),
+            hyperlinkField('https://ada.dev', 'ada.dev', { underline: 'single' }),
+          ])
+        )
+      ).toEqual([[{ underlined: false }, { underlined: true }]]);
+      // A paragraph with no links says nothing about them.
+      expect(await underlinedBy(para('Ada Lovelace'))).toEqual([undefined]);
     });
   });
 

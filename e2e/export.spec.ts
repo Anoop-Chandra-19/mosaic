@@ -182,9 +182,14 @@ test('Save PDF writes the resume as a real PDF, which reads back in through Impo
     await expect(importing.getByRole('listitem').filter({ hasText: heading })).toContainText(holds);
   }
   await expect(importing.getByRole('button', { name: /^Left out/ })).toHaveCount(0);
+  // The underlines are read off the page, and the review says so.
+  await expect(importing.getByRole('listitem').filter({ hasText: 'Contact' })).toContainText(
+    'Links underlined, as in the file.'
+  );
   await importing.getByRole('button', { name: 'Import as new template' }).click();
   await expect(page.getByText('Imported. Check the sections in the sidebar.')).toBeVisible();
-  // The header's links come back from the PDF with the words they are set on.
+  // The header's links come back from the PDF with the words they are set on, underlined.
   await expect(linkedIn).toHaveAttribute('href', 'https://linkedin.com/in/you');
+  await expect(linkedIn).toHaveCSS('text-decoration-line', 'underline');
   expect(errors).toEqual([]);
 });

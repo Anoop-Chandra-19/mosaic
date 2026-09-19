@@ -14,7 +14,18 @@ import { formatEntryHeading } from '@shared/resume/entryHeading';
 import { readDocx, readDocxContent } from '../readDocx';
 import { replaceMarkedLinksWithText } from '../../../parsing/importLines';
 import type { ParsedResume } from '../../../parsing/parseResume';
-import { cell, docx, para, picture, run, table, textBox } from './buildDocx';
+import {
+  cell,
+  docx,
+  hyperlink,
+  HYPERLINK_STYLE,
+  para,
+  picture,
+  run,
+  table,
+  textBox,
+  type RunOptions,
+} from './buildDocx';
 
 const W = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
 
@@ -279,5 +290,39 @@ describe('what a strange document still gives up', () => {
     );
     expect(parsed.resume.sections.map((s) => s.label)).toEqual(['Skills', 'Work History']);
     expect(parsed.warnings).toEqual([expect.stringContaining('columns')]);
+  });
+});
+
+describe('how a Word file draws its links', () => {
+  const links = { rMail: 'mailto:ada@example.com', rSite: 'https://ada.dev' };
+  const resumeWith = (linkOptions: RunOptions = {}) =>
+    [
+      para('Ada Lovelace', { bold: true }),
+      para([
+        hyperlink('rMail', 'ada@example.com', linkOptions),
+        run(' | '),
+        hyperlink('rSite', 'ada.dev', linkOptions),
+      ]),
+      para('Work History', { bold: true }),
+      para('Analyst at Babbage & Co'),
+    ].join('');
+
+  it('comes in underlined when its links are, as Word’s Hyperlink style has them', async () => {
+    const parsed = await readDocx(await docx(resumeWith(), { links, styles: HYPERLINK_STYLE }));
+    expect(parsed.resume.contact.header.linkStyle).toBe('underline');
+    expect(parsed.resume.contact.header.lines[0].items.map((item) => item.url)).toEqual([
+      'mailto:ada@example.com',
+      'https://ada.dev',
+    ]);
+  });
+
+  it('comes in plain when its links are not underlined', async () => {
+    const styled = await docx(resumeWith({ underline: 'none' }), {
+      links,
+      styles: HYPERLINK_STYLE,
+    });
+    expect((await readDocx(styled)).resume.contact.header.linkStyle).toBe('plain');
+    const unstyled = await docx(resumeWith(), { links });
+    expect((await readDocx(unstyled)).resume.contact.header.linkStyle).toBe('plain');
   });
 });

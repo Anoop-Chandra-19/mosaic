@@ -305,6 +305,11 @@ function ReviewStep({
   );
   const found = getContactFieldLabels(contact);
   const headerKept = mode === 'merge' && keepsHeader(openContact);
+  // Underlined links are a look read from the file, so the review says so.
+  const hasLinks = getPrintableHeaderLines(contact.header).some((line) =>
+    line.items.some((item) => item.href)
+  );
+  const linkLook = hasLinks && contact.header.linkStyle === 'underline' ? 'Links underlined' : null;
 
   const toggle = (id: string) =>
     setExcludedIds((previous) => {
@@ -372,9 +377,9 @@ function ReviewStep({
                 {found.length ? found.join(', ') : 'Nothing found'}
               </span>
             </div>
-            {headerKept && (
+            {(headerKept || linkLook) && (
               <p className="mt-0.5 pl-[1.625rem] text-xs text-zinc-500">
-                Your header stays as it is.
+                {headerKept ? 'Your header stays as it is.' : `${linkLook}, as in the file.`}
               </p>
             )}
           </li>
