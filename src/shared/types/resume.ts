@@ -18,8 +18,8 @@ export type BuiltInSectionKind = Exclude<SectionKind, 'custom'>;
 
 /**
  * How a section's items print. `lines`: each item is a line of plain text (`text`), as in a
- * summary or a skills list. `entries`: each item is an italic title line — `title` on the
- * left, `subtitle` on the right — followed by bullets.
+ * summary or a skills list. `entries`: each item is an italic line — its title,
+ * organization, and location on the left, its dates on the right — followed by bullets.
  */
 export type SectionLayout = 'lines' | 'entries';
 
@@ -33,8 +33,14 @@ export interface ResumeEntry {
   id: string;
   selected: boolean;
   bullets: Bullet[];
+  /** What you were: "Analyst", "M.S. in Physics", a project's name. */
   title?: string;
-  subtitle?: string;
+  /** Where or for whom: a company, a school, an issuer. */
+  organization?: string;
+  location?: string;
+  /** When, as written: "Jan 2021 to Current", "2025" — or whatever goes on the right. */
+  dates?: string;
+  /** A lines section's item. */
   text?: string;
   meta?: Record<string, string>;
 }

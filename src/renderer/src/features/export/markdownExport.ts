@@ -1,3 +1,4 @@
+import { formatEntryHeading } from '@shared/resume/entryHeading';
 import type { PrintedHeaderLine } from '@shared/resume/resumeHeader';
 import type { ExportEntry, NormalizedResumeExport } from './normalizeResumeExport';
 
@@ -47,19 +48,31 @@ function formatMarkdownHeaderLine({ separator, items }: PrintedHeaderLine): stri
   return escapeLineStart(written.join(separator));
 }
 
-/** A heading's words: a run of # at the end, after a space, would close the heading. */
-function escapeHeading(text: string): string {
-  return escapeInline(text).replace(/(^|\s)(#+)$/, '$1\\$2');
-}
+/** A heading's escaped words: a run of # at the end, after a space, would close the heading. */
+const escapeHeadingEnd = (escaped: string) => escaped.replace(/(^|\s)(#+)$/, '$1\\$2');
+
+const escapeHeading = (text: string) => escapeHeadingEnd(escapeInline(text));
 
 /**
- * An entry: its title as a heading, the subtitle on its own line in italics, then the
- * bullets. With no title, the subtitle is the heading (`### _2025_`).
+ * A part of an entry's line that must not split where it has a comma: "Babbage & Co\, Ltd"
+ * reads back as one organization. The location is last and takes the rest, so it needn't.
  */
-function entryLines({ title, subtitle, bullets }: ExportEntry): string[] {
-  const italic = subtitle && `_${escapeInline(subtitle)}_`;
-  const lines = title
-    ? [`### ${escapeHeading(title)}`, ...(italic ? [italic] : [])]
+const escapeEntryPart = (text: string) => escapeInline(text).replace(/,(?=\s)/g, '\\,');
+
+/**
+ * An entry: its line as a heading — "Analyst, Babbage & Co, London" — its dates on their own
+ * line in italics, then the bullets. With nothing on the left, the dates are the heading
+ * (`### _2025_`).
+ */
+function entryLines({ title, organization, location, dates, bullets }: ExportEntry): string[] {
+  const heading = formatEntryHeading({
+    title: escapeEntryPart(title),
+    organization: escapeEntryPart(organization),
+    location: escapeInline(location),
+  });
+  const italic = dates && `_${escapeInline(dates)}_`;
+  const lines = heading
+    ? [`### ${escapeHeadingEnd(heading)}`, ...(italic ? [italic] : [])]
     : [italic ? `### ${italic}` : '###'];
   return [...lines, ...bullets.map((bullet) => `- ${escapeLine(bullet)}`)];
 }

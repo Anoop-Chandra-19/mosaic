@@ -41,7 +41,8 @@ describe('normalizeSections', () => {
             id: 'job-1',
             selected: true,
             title: ' Engineer ',
-            subtitle: ' Mosaic ',
+            organization: ' Mosaic ',
+            dates: ' 2024 ',
             bullets: [
               { id: 'b1', text: ' Built export flow ', selected: true },
               { id: 'b2', text: ' Hidden bullet ', selected: false },
@@ -51,7 +52,6 @@ describe('normalizeSections', () => {
             id: 'job-2',
             selected: false,
             title: 'Hidden',
-            subtitle: '',
             bullets: [{ id: 'b3', text: 'Hidden', selected: true }],
           },
         ],
@@ -85,8 +85,8 @@ describe('normalizeSections', () => {
         entries: [
           {
             id: 'job-1',
-            title: 'Engineer',
-            subtitle: 'Mosaic',
+            heading: 'Engineer, Mosaic',
+            dates: '2024',
             bullets: ['Built export flow'],
             _sourceKey: 'job-1',
           },
@@ -105,8 +105,8 @@ describe('paginateSections', () => {
     const pages = paginateSections(
       [
         createExperienceSection([
-          { id: 'job-1', title: 'Engineer 1', subtitle: '', bullets: ['A'] },
-          { id: 'job-2', title: 'Engineer 2', subtitle: '', bullets: ['B'] },
+          { id: 'job-1', heading: 'Engineer 1', bullets: ['A'] },
+          { id: 'job-2', heading: 'Engineer 2', bullets: ['B'] },
         ]),
       ],
       createMeasurements({
@@ -127,8 +127,8 @@ describe('paginateSections', () => {
     const pages = paginateSections(
       [
         createExperienceSection([
-          { id: 'job-1', title: 'Engineer 1', subtitle: '', bullets: ['A'] },
-          { id: 'job-2', title: 'Engineer 2', subtitle: '', bullets: ['B'] },
+          { id: 'job-1', heading: 'Engineer 1', bullets: ['A'] },
+          { id: 'job-2', heading: 'Engineer 2', bullets: ['B'] },
         ]),
       ],
       createMeasurements({
@@ -154,7 +154,7 @@ describe('paginateSections', () => {
           id: 'education',
           layout: 'entries',
           label: 'Education',
-          entries: degrees.map((id) => ({ id, title: id, subtitle: '2025', bullets: [] })),
+          entries: degrees.map((id) => ({ id, heading: id, dates: '2025', bullets: [] })),
         },
       ],
       createMeasurements({
@@ -165,7 +165,7 @@ describe('paginateSections', () => {
       72
     );
 
-    expect(pages.map((page) => page[0].entries.map((entry) => entry.title))).toEqual([
+    expect(pages.map((page) => page[0].entries.map((entry) => entry.heading))).toEqual([
       ['edu-1', 'edu-2'],
       ['edu-3'],
     ]);
@@ -174,11 +174,7 @@ describe('paginateSections', () => {
   it('reserves room for the header on the first page only', () => {
     const jobs = ['job-1', 'job-2', 'job-3', 'job-4'];
     const pages = paginateSections(
-      [
-        createExperienceSection(
-          jobs.map((id) => ({ id, title: id, subtitle: '', bullets: ['A'] }))
-        ),
-      ],
+      [createExperienceSection(jobs.map((id) => ({ id, heading: id, bullets: ['A'] })))],
       createMeasurements({
         headerHeight: 70,
         sectionTitleHeights: { experience: 10 },
@@ -220,11 +216,7 @@ describe('paginateSections', () => {
   it('splits a long bullet when no complete bullet fits the available height', () => {
     const bullet = Array.from({ length: 40 }, (_, index) => `detail${index}`).join(' ');
     const pages = paginateSections(
-      [
-        createExperienceSection([
-          { id: 'job-1', title: 'Engineer', subtitle: '', bullets: [bullet] },
-        ]),
-      ],
+      [createExperienceSection([{ id: 'job-1', heading: 'Engineer', bullets: [bullet] }])],
       createMeasurements({
         sectionTitleHeights: { experience: 10 },
         entryHeights: { 'experience::job-1': 120 },
@@ -243,8 +235,7 @@ describe('paginateSections', () => {
   it('caps returned pages at the existing three-page limit', () => {
     const entries = Array.from({ length: 8 }, (_, index) => ({
       id: `job-${index}`,
-      title: `Engineer ${index}`,
-      subtitle: '',
+      heading: `Engineer ${index}`,
       bullets: [`Detail ${index}`],
     }));
 

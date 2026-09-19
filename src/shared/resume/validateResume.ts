@@ -35,7 +35,9 @@ function isResumeEntry(value: unknown): boolean {
     Array.isArray(value.bullets) &&
     value.bullets.every(isBullet) &&
     isOptionalString(value.title) &&
-    isOptionalString(value.subtitle) &&
+    isOptionalString(value.organization) &&
+    isOptionalString(value.location) &&
+    isOptionalString(value.dates) &&
     isOptionalString(value.text)
   );
 }

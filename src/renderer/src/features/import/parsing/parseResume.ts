@@ -1,4 +1,9 @@
 import {
+  ENTRY_HEADING_SEPARATOR,
+  splitEntryHeading,
+  type EntryHeadingFields,
+} from '@shared/resume/entryHeading';
+import {
   HEADER_SEPARATORS,
   createHeaderItem,
   createHeaderLine,
@@ -19,6 +24,7 @@ import type {
   SectionLayout,
 } from '@shared/types/resume';
 import {
+  DATE_LIKE,
   findMarkedLinkUrl,
   removeLinkMarks,
   replaceMarkedLinksWithText,
@@ -55,7 +61,7 @@ interface ParseOptions {
    * The source marks its lines itself — entries, bullets, headings — and gives one logical
    * line per item (a DOCX, a PDF, Mosaic's Markdown). A section's shape then comes from its
    * marks. Off for plain text, whose lines are as the author broke them: a known heading
-   * gives the shape, "title | subtitle" splits, a line after bullets starts the next entry,
+   * gives the shape, "heading | dates" splits, a line after bullets starts the next entry,
    * and a summary's wrapped lines join.
    */
   marked?: boolean;
@@ -90,10 +96,10 @@ function splitBlocks(lines: ImportLine[], marked: boolean): ImportLine[][] {
   return blocks;
 }
 
-/** Plain text's "Title | Subtitle", as Mosaic's text export writes an entry's first line. */
+/** Plain text's "Heading | Dates", as Mosaic's text export writes an entry's first line. */
 const TITLE_SEPARATOR = ' | ';
 
-/** A line's title and subtitle: its aside, or in plain text what follows the last " | ". */
+/** A line's left side and its dates: its aside, or in plain text what follows the last " | ". */
 function titleOf(line: ImportLine, marked: boolean): [string, string] {
   if (marked || line.aside) return [line.text, line.aside ?? ''];
   const at = line.text.lastIndexOf(TITLE_SEPARATOR);
@@ -238,18 +244,59 @@ function parseLineSection(body: ImportLine[], joinWrapped: boolean): ResumeEntry
   return texts.map(textEntry);
 }
 
-function titledEntry(title: string, subtitle: string, bullets: string[] = []): ResumeEntry {
+function titledEntry(
+  { title, organization, location }: EntryHeadingFields,
+  dates: string,
+  bullets: string[] = []
+): ResumeEntry {
   const entry: ResumeEntry = {
     id: crypto.randomUUID(),
     selected: true,
     bullets: bullets.map(newBullet),
   };
   if (title) entry.title = title;
-  if (subtitle) entry.subtitle = subtitle;
+  if (organization) entry.organization = organization;
+  if (location) entry.location = location;
+  if (dates) entry.dates = dates;
   return entry;
 }
 
-/** An entries section: each block is an entry — a title line, maybe a subtitle, bullets. */
+const DATE_WORDS = new RegExp(DATE_LIKE.source, 'gi');
+
+/** Text that says when and nothing else: "Jan 2021 – Present", "2019 - 2021". */
+const isOnlyDates = (text: string) =>
+  DATE_LIKE.test(text) && !/\p{L}/u.test(text.replace(DATE_WORDS, ''));
+
+/** Between words and the dates written after them: a dash, a bar, or a dot. */
+const BEFORE_DATES = /\s+[—–|·-]\s+/g;
+
+/**
+ * A line's left side and its dates, when nothing sat on its right: dates written after it
+ * ("Acme Corp — Jan 2021 – Present"), or a line that is only dates, come apart from it.
+ */
+function splitTrailingDates([text, dates]: [string, string]): [string, string] {
+  if (dates || !text) return [text, dates];
+  if (isOnlyDates(text)) return ['', text];
+  for (const separator of text.matchAll(BEFORE_DATES)) {
+    const words = text.slice(0, separator.index).trim();
+    const after = text.slice(separator.index + separator[0].length).trim();
+    if (words && isOnlyDates(after)) return [words, after];
+  }
+  return [text, dates];
+}
+
+/** A one-line entry: its parts as the reader found them, or as its left side splits. */
+function lineEntry(line: ImportLine, marked: boolean): ResumeEntry {
+  if (line.fields) return titledEntry(line.fields, titleOf(line, marked)[1]);
+  const [heading, dates] = splitTrailingDates(titleOf(line, marked));
+  return titledEntry(splitEntryHeading(heading), dates);
+}
+
+/**
+ * An entries section: each block is an entry — its line, maybe more lines under it, then
+ * bullets. A line under the first is more of the left side ("Acme Corp, Detroit" under a
+ * job title), and anything on its right more of the dates.
+ */
 function parseEntrySection(body: ImportLine[], marked: boolean): ResumeEntry[] {
   const entries: ResumeEntry[] = [];
 
@@ -265,16 +312,29 @@ function parseEntrySection(body: ImportLine[], marked: boolean): ResumeEntry[] {
     const plainList = headerLines.every((line) => line.role === undefined);
     if (bullets.length === 0 && headerLines.length > 1 && plainList) {
       for (const line of headerLines) {
-        if (line.text || line.aside) entries.push(titledEntry(...titleOf(line, marked)));
+        if (line.text || line.aside) entries.push(lineEntry(line, marked));
       }
       continue;
     }
 
     const [first, ...rest] = headerLines;
-    const [title, aside] = first ? titleOf(first, marked) : ['', ''];
-    const subtitle = [aside, ...rest.flatMap(textsOf)].filter(Boolean).join(' — ');
-    if (!title && !subtitle && bullets.length === 0) continue;
-    entries.push(titledEntry(title, subtitle, bullets));
+    const firstParts: [string, string] = first ? titleOf(first, marked) : ['', ''];
+    const parts = [
+      // The reader's own parts stand as they are.
+      first?.fields ? firstParts : splitTrailingDates(firstParts),
+      ...rest.map((line) => splitTrailingDates([line.text, line.aside ?? ''])),
+    ];
+    const left = parts.map(([text]) => text).filter(Boolean);
+    const dates = parts
+      .map(([, aside]) => aside)
+      .filter(Boolean)
+      .join(' — ');
+    if (left.length === 0 && !dates && bullets.length === 0) continue;
+    const fields =
+      first?.fields && rest.length === 0
+        ? first.fields
+        : splitEntryHeading(left.join(ENTRY_HEADING_SEPARATOR));
+    entries.push(titledEntry(fields, dates, bullets));
   }
 
   return entries;
@@ -282,8 +342,8 @@ function parseEntrySection(body: ImportLine[], marked: boolean): ResumeEntry[] {
 
 /**
  * A section's shape from its marks: entries when a line is an entry's — marked as one, or
- * with a subtitle beside it. Bullets alone are a list. Plain text marks no entries, so
- * there its bullets, or a "title | subtitle" line, make them.
+ * with dates beside it. Bullets alone are a list. Plain text marks no entries, so
+ * there its bullets, or a "heading | dates" line, make them.
  */
 function layoutOf(body: ImportLine[], marked: boolean): SectionLayout {
   const entryLine = marked
@@ -318,6 +378,13 @@ export function parseResumeLines(
           ...line,
           text: replaceMarkedLinksWithText(line.text),
           ...(line.aside !== undefined && { aside: replaceMarkedLinksWithText(line.aside) }),
+          ...(line.fields && {
+            fields: {
+              title: replaceMarkedLinksWithText(line.fields.title),
+              organization: replaceMarkedLinksWithText(line.fields.organization),
+              location: replaceMarkedLinksWithText(line.fields.location),
+            },
+          }),
         }
   );
   const fullText = lines.flatMap(textsOf).map(replaceMarkedLinksWithText).join('\n');

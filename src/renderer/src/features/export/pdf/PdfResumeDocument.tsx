@@ -105,7 +105,7 @@ const styles = StyleSheet.create({
     fontSize: L.bodyFontSize,
     lineHeight: L.bodyLineHeight,
   },
-  entrySubtitle: {
+  entryDates: {
     fontFamily: FONT_ITALIC,
     fontSize: L.bodyFontSize,
     lineHeight: L.bodyLineHeight,
@@ -200,7 +200,7 @@ export function PdfResumeDocument({ data, paperSize }: PdfResumeDocumentProps) {
 
                   return (
                     <View key={entry.id} style={styles.entry}>
-                      {entry.title || entry.subtitle ? (
+                      {entry.heading || entry.dates ? (
                         <View
                           style={
                             entry.bullets.length > 0
@@ -208,8 +208,8 @@ export function PdfResumeDocument({ data, paperSize }: PdfResumeDocumentProps) {
                               : styles.entryHeading
                           }
                         >
-                          <Text style={styles.entryTitle}>{entry.title}</Text>
-                          <Text style={styles.entrySubtitle}>{entry.subtitle}</Text>
+                          <Text style={styles.entryTitle}>{entry.heading}</Text>
+                          <Text style={styles.entryDates}>{entry.dates}</Text>
                         </View>
                       ) : null}
 

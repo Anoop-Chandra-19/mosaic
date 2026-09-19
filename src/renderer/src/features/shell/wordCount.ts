@@ -14,8 +14,8 @@ export function countWords(doc: ResumeData): number {
     ...sections.flatMap((section) => [
       section.label,
       ...section.entries.flatMap((entry) => [
-        entry.title,
-        entry.subtitle,
+        entry.heading,
+        entry.dates,
         entry.text,
         ...entry.bullets,
       ]),

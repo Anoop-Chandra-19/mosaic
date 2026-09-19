@@ -1,11 +1,12 @@
 /**
- * How a Mosaic entry maps to a JSON Resume item and back. Mosaic writes an entry the
- * Headless way — "Engineer at Acme, Detroit" over "Jan 2021 to Current" — and JSON Resume
- * has a field for each part, so the title splits into position, company, and location and
- * the subtitle into ISO dates. A title splits only where joining the parts gives it back
- * as it was. A subtitle that isn't dates has no field in work or education; the export
- * records it, with any other text the fields don't give back, in `meta.mosaic`.
+ * How a Mosaic entry maps to a JSON Resume item and back. Each of an entry's parts goes in
+ * the field that means it — a job's title is its position, its organization the company —
+ * and its dates become ISO dates where they read as dates. A degree's title splits into its
+ * type and field only where joining them gives it back as it was. What an item has no field
+ * for — a school's location, dates that aren't dates — the export records in `meta.mosaic`.
  */
+
+import type { EntryHeadingFields } from '@shared/resume/entryHeading';
 
 /** The arrays an entry can go in. */
 export type ItemSource = 'work' | 'education' | 'projects' | 'skills' | 'certificates';
@@ -13,12 +14,16 @@ export type ItemSource = 'work' | 'education' | 'projects' | 'skills' | 'certifi
 /** One item of a section array. Its fields depend on the array. */
 export type JsonResumeItem = Record<string, string | string[]>;
 
-/** What the page shows of an entry — for a list item, its text is the title. */
-export interface EntryParts {
-  title: string;
-  subtitle: string;
+/** An entry's parts — for a list item, its text is the title. */
+export interface EntryParts extends EntryHeadingFields {
+  dates: string;
   bullets: string[];
 }
+
+/** The parts of an entry that are text, which `meta.mosaic` can keep as written. */
+export const ENTRY_TEXT_PARTS = ['title', 'organization', 'location', 'dates'] as const;
+
+export type EntryTextPart = (typeof ENTRY_TEXT_PARTS)[number];
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const MONTH_NAMES = [
@@ -36,7 +41,7 @@ const MONTH_NAMES = [
   'december',
 ];
 
-/** A subtitle's end when it hasn't ended. */
+/** A range's end when it hasn't ended. */
 const ONGOING = /^(?:current|present|now|ongoing|today)$/i;
 /** Between a range's two dates: "to", or a dash. */
 const RANGE = /\s+(?:to|through|until|[–—-])\s+|\s*[–—]\s*/i;
@@ -74,11 +79,11 @@ function isoDate(text: string): string | null {
 }
 
 /**
- * A subtitle's dates, when it is a date ("2025": when it ended) or a range of two ("Jan
- * 2021 to Current"); null when it is anything else.
+ * An entry's dates as ISO dates, when they are a date ("2025": when it ended) or a range of
+ * two ("Jan 2021 to Current"); null when they are anything else.
  */
-export function datesOf(subtitle: string): { startDate?: string; endDate?: string } | null {
-  const text = subtitle.trim();
+export function datesOf(dates: string): { startDate?: string; endDate?: string } | null {
+  const text = dates.trim();
   if (!text) return null;
   const single = isoDate(text);
   if (single) return { endDate: single };
@@ -108,70 +113,53 @@ export function when(start: string, end: string): string {
   return from ? `${from} to Current` : to;
 }
 
-/** "Engineer at Acme, Detroit" — whichever parts there are. */
-export function atPlace(what: string, ...where: string[]): string {
-  const place = where.filter(Boolean).join(', ');
-  return what && place ? `${what} at ${place}` : what || place;
+/** "M.S. in Physics" — whichever parts there are. */
+export function degree(studyType: string, area: string): string {
+  return [studyType, area].filter(Boolean).join(' in ');
 }
 
-/** "M.S. in Physics from MIT" — whichever parts there are. */
-export function degree(studyType: string, area: string, institution: string): string {
-  const field = [studyType, area].filter(Boolean).join(' in ');
-  return field && institution ? `${field} from ${institution}` : field || institution;
-}
-
-/** A job's title as position, company, and location, where they join back to it. */
-function workTitle(title: string): JsonResumeItem {
-  const at = title.indexOf(' at ');
-  if (at > 0) {
-    const position = title.slice(0, at);
-    const place = title.slice(at + ' at '.length);
-    const comma = place.indexOf(', ');
-    const name = comma < 0 ? place : place.slice(0, comma);
-    const location = comma < 0 ? '' : place.slice(comma + ', '.length);
-    if (atPlace(position, name, location) === title) return itemOf({ position, name, location });
-  }
-  return itemOf({ position: title });
-}
-
-/** A degree's title as its type, field, and school, where they join back to it. */
-function educationTitle(title: string): JsonResumeItem {
-  const from = title.indexOf(' from ');
-  if (from > 0) {
-    const field = title.slice(0, from);
-    const institution = title.slice(from + ' from '.length);
-    const inAt = field.indexOf(' in ');
-    const studyType = inAt > 0 ? field.slice(0, inAt) : '';
-    const area = inAt > 0 ? field.slice(inAt + ' in '.length) : field;
-    if (degree(studyType, area, institution) === title) {
-      return itemOf({ studyType, area, institution });
-    }
-  }
-  return itemOf({ area: title });
+/** A degree's title as its type and field, where they join back to it. */
+function degreeFields(title: string): JsonResumeItem {
+  const inAt = title.indexOf(' in ');
+  const studyType = inAt > 0 ? title.slice(0, inAt) : '';
+  const area = inAt > 0 ? title.slice(inAt + ' in '.length) : title;
+  return itemOf(degree(studyType, area) === title ? { studyType, area } : { area: title });
 }
 
 /** An entry as an item of `source`. `type` names a project's section, when it has one. */
 export function toItem(source: ItemSource, entry: EntryParts, type?: string): JsonResumeItem {
-  const { title, subtitle, bullets } = entry;
-  const dates = datesOf(subtitle);
+  const { title, organization, location, bullets } = entry;
+  const dates = datesOf(entry.dates);
   switch (source) {
     case 'work':
-      return itemOf({ ...workTitle(title), ...dates, highlights: bullets });
+      return itemOf({
+        position: title,
+        name: organization,
+        location,
+        ...dates,
+        highlights: bullets,
+      });
     case 'education':
-      return itemOf({ ...educationTitle(title), ...dates, courses: bullets });
+      return itemOf({
+        ...degreeFields(title),
+        institution: organization,
+        ...dates,
+        courses: bullets,
+      });
     case 'projects':
       return itemOf({
         name: title,
-        ...(dates ?? { description: subtitle }),
+        entity: organization,
+        ...(dates ?? { description: entry.dates }),
         highlights: bullets,
         type,
       });
     case 'skills':
-      return itemOf({ name: title, level: subtitle, keywords: bullets });
+      return itemOf({ name: title, level: entry.dates, keywords: bullets });
     case 'certificates': {
-      // One date is when it was earned; anything else says who gave it.
+      // One date is when it was earned.
       const date = dates && !dates.startDate ? dates.endDate : undefined;
-      return itemOf(date ? { name: title, date } : { name: title, issuer: subtitle });
+      return itemOf({ name: title, issuer: organization, date });
     }
   }
 }
@@ -185,40 +173,43 @@ const list = (item: Record<string, unknown>, key: string) =>
       )
     : [];
 
-/** An item of `source` as the entry `toItem` made it from: the parts joined back up. */
+/** An item of `source` as the entry `toItem` made it from. */
 export function fromItem(source: ItemSource, item: Record<string, unknown>): EntryParts {
   const dates = when(field(item, 'startDate'), field(item, 'endDate'));
+  const parts = (
+    title: string,
+    organization: string,
+    rest: Partial<EntryParts> & { bullets: string[] }
+  ): EntryParts => ({ title, organization, location: '', dates, ...rest });
   switch (source) {
     case 'work':
-      return {
-        title: atPlace(field(item, 'position'), field(item, 'name'), field(item, 'location')),
-        subtitle: dates,
+      return parts(field(item, 'position'), field(item, 'name'), {
+        location: field(item, 'location'),
         bullets: list(item, 'highlights'),
-      };
+      });
     case 'education':
-      return {
-        title: degree(field(item, 'studyType'), field(item, 'area'), field(item, 'institution')),
-        subtitle: dates,
-        bullets: list(item, 'courses'),
-      };
+      return parts(
+        degree(field(item, 'studyType'), field(item, 'area')),
+        field(item, 'institution'),
+        {
+          bullets: list(item, 'courses'),
+        }
+      );
     case 'projects':
-      return {
-        title: field(item, 'name'),
-        subtitle: dates || field(item, 'description'),
+      return parts(field(item, 'name'), field(item, 'entity'), {
+        dates: dates || field(item, 'description'),
         bullets: list(item, 'highlights'),
-      };
+      });
     case 'skills':
-      return {
-        title: field(item, 'name'),
-        subtitle: field(item, 'level'),
+      return parts(field(item, 'name'), '', {
+        dates: field(item, 'level'),
         bullets: list(item, 'keywords'),
-      };
+      });
     case 'certificates':
-      return {
-        title: field(item, 'name'),
-        subtitle: field(item, 'date') ? formatDate(field(item, 'date')) : field(item, 'issuer'),
+      return parts(field(item, 'name'), field(item, 'issuer'), {
+        dates: formatDate(field(item, 'date')),
         bullets: [],
-      };
+      });
   }
 }
 

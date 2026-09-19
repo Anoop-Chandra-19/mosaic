@@ -53,15 +53,19 @@ export const DEFAULT_RESUME: ResumeData = {
         {
           id: 'edu1',
           selected: true,
-          title: 'M.S. in Your Field from Your University in City, State',
-          subtitle: '2025',
+          title: 'M.S. in Your Field',
+          organization: 'Your University',
+          location: 'City, State',
+          dates: '2025',
           bullets: [],
         },
         {
           id: 'edu2',
           selected: true,
-          title: 'B.S. in Your Field from Your University in City, State',
-          subtitle: 'Status - Graduated',
+          title: 'B.S. in Your Field',
+          organization: 'Your University',
+          location: 'City, State',
+          dates: 'Status - Graduated',
           bullets: [],
         },
       ],
@@ -76,8 +80,10 @@ export const DEFAULT_RESUME: ResumeData = {
         {
           id: 'job1',
           selected: true,
-          title: 'Job Title at Company, Location',
-          subtitle: 'Month Year to Current',
+          title: 'Job Title',
+          organization: 'Company',
+          location: 'Location',
+          dates: 'Month Year to Current',
           bullets: [
             {
               id: 'j1b1',
@@ -124,7 +130,6 @@ export const DEFAULT_RESUME: ResumeData = {
           id: 'proj1',
           selected: true,
           title: 'First Project',
-          subtitle: '',
           bullets: [
             {
               id: 'p1b1',
@@ -147,7 +152,6 @@ export const DEFAULT_RESUME: ResumeData = {
           id: 'proj2',
           selected: true,
           title: 'Second Project',
-          subtitle: '',
           bullets: [
             {
               id: 'p2b1',

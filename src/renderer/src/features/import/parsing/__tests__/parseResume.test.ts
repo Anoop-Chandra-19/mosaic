@@ -104,14 +104,18 @@ describe('parseResumeText', () => {
     expect(summary.items[0].bullets).toHaveLength(0);
   });
 
-  it('groups experience blocks into title/subtitle entries with bullets', () => {
+  it('groups experience blocks into entries, the line under a title its company and dates', () => {
     const { resume } = parseResumeText(SAMPLE);
     const experience = sectionOf(resume.sections, 'experience');
     expect(experience.items).toHaveLength(2);
 
     const [first, second] = experience.items;
-    expect(first.title).toBe('Senior Engineer');
-    expect(first.subtitle).toBe('Acme Corp — Jan 2021 – Present');
+    expect([first.title, first.organization, first.dates]).toEqual([
+      'Senior Engineer',
+      'Acme Corp',
+      'Jan 2021 – Present',
+    ]);
+    expect([second.organization, second.dates]).toEqual(['StartupXYZ', '2019 – 2021']);
     expect(first.bullets.map((b) => b.text)).toEqual([
       'Led migration to a microservices architecture',
       'Mentored three junior engineers',
@@ -215,15 +219,37 @@ describe('parseResumeLines', () => {
     { text: 'Punched cards, Difference engines' },
   ];
 
-  it('starts an entry at each marked line, taking the aside as its subtitle', () => {
+  it('starts an entry at each marked line, taking the aside as its dates', () => {
     const { resume } = parseResumeLines(lines);
     const work = sectionOf(resume.sections, 'experience');
     expect(work.label).toBe('Work History');
-    expect(
-      work.items.map(({ title, subtitle, bullets }) => [title, subtitle, bullets.length])
-    ).toEqual([
+    expect(work.items.map(({ title, dates, bullets }) => [title, dates, bullets.length])).toEqual([
       ['Analyst at Babbage & Co', '1842 to 1843', 1],
       [undefined, '1840', 0],
+    ]);
+  });
+
+  it('splits an entry’s line into title, organization, and the rest as its location', () => {
+    const { resume } = parseResumeLines([
+      { text: 'Work', role: 'heading' },
+      { text: 'Physicist, CERN, Geneva, Switzerland', role: 'entry', aside: '2020' },
+      { text: 'Analyst, Globex', role: 'entry' },
+      { text: 'Engineer', role: 'entry' },
+      { text: 'Acme Corp, Detroit' },
+      { text: 'Jan 2021 – Present' },
+    ]);
+    expect(
+      resume.sections[0].items.map(({ title, organization, location, dates }) => [
+        title,
+        organization,
+        location,
+        dates,
+      ])
+    ).toEqual([
+      ['Physicist', 'CERN', 'Geneva, Switzerland', '2020'],
+      ['Analyst', 'Globex', undefined, undefined],
+      // Lines under the first add to it, and a line of dates is its dates.
+      ['Engineer', 'Acme Corp', 'Detroit', 'Jan 2021 – Present'],
     ]);
   });
 
@@ -321,17 +347,10 @@ describe('plain text round trip', () => {
     const data = everything();
     const expected = shown(data);
     const sectionNamed = (label: string) => expected.sections.find((s) => s.label === label)!;
-    // A subtitle with no title reads as a title…
-    sectionNamed('Work History').entries[1] = {
-      title: '1840',
-      subtitle: '',
-      text: '',
-      bullets: [],
-    };
-    // …and a section of titles alone, under a name Mosaic doesn't know, reads as a list.
+    // A section of titles alone, under a name Mosaic doesn't know, reads as a list.
     Object.assign(sectionNamed('Highlights'), {
       layout: 'lines',
-      entries: [{ title: '', subtitle: '', text: 'First programmer', bullets: [] }],
+      entries: [{ heading: '', dates: '', text: 'First programmer', bullets: [] }],
     });
 
     expect(shown(parseResumeText(textOf(data)).resume)).toEqual(expected);

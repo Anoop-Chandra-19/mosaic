@@ -1,3 +1,4 @@
+import type { EntryHeadingFields } from '@shared/resume/entryHeading';
 import { stripMailtoOrTelScheme, isSameAddress } from '@shared/resume/resumeHeader';
 import { isHeadingLength, matchSectionHeader } from './sectionHeaders';
 
@@ -13,12 +14,17 @@ export interface ImportLine {
   /**
    * How the source marks the line; a plain line when absent.
    * - `heading`: a section heading.
-   * - `entry`: an entry's title line (`text` is the title; `aside` its subtitle).
+   * - `entry`: an entry's line (`text` is its left side; `aside` its dates).
    * - `bullet`: a list item, its marker already removed.
    */
   role?: 'heading' | 'entry' | 'bullet';
-  /** Text set apart on the right of the same line — an entry's subtitle. */
+  /** Text set apart on the right of the same line — an entry's dates. */
   aside?: string;
+  /**
+   * An entry line's parts, for a reader that can tell where each ends — Mosaic's Markdown
+   * escapes a comma inside a part. Otherwise the parts come from `text` (`splitEntryHeading`).
+   */
+  fields?: EntryHeadingFields;
   /** Visible space before the line: a blank line, paragraph spacing, a gap on the page. */
   gapBefore?: boolean;
   /** Where the line sits across the page, for a reader that can tell. */

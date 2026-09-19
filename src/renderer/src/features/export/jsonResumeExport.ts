@@ -7,10 +7,12 @@ import type {
   SectionLayout,
 } from '@shared/types/resume';
 import {
+  ENTRY_TEXT_PARTS,
   compact,
   fromItem,
   toItem,
   type EntryParts,
+  type EntryTextPart,
   type ItemSource,
   type JsonResumeItem,
 } from './jsonResumeEntry';
@@ -72,11 +74,11 @@ export interface MosaicJsonResumeMeta {
     from: JsonResumeSource;
     count: number;
     /**
-     * By the item's place in the section: its title or subtitle where the item's fields
-     * don't give it back as it was — "January 2021 to Present" reads back from ISO dates as
-     * "Jan 2021 to Current", and a work subtitle that isn't dates has no field at all.
+     * By the item's place in the section: each part of it the item's fields don't give back
+     * as it was — "January 2021 to Present" reads back from ISO dates as "Jan 2021 to
+     * Current", and a school's location or a job's dates that aren't dates have no field.
      */
-    exact?: Record<string, Partial<Pick<EntryParts, 'title' | 'subtitle'>>>;
+    exact?: Record<string, Partial<Pick<EntryParts, EntryTextPart>>>;
   }[];
 }
 
@@ -195,13 +197,20 @@ export function createJsonResumeExport(data: NormalizedResumeExport): string {
       summary.push(...section.entries.map(lineText));
     } else {
       section.entries.forEach((entry, index) => {
-        const parts = { title: lineText(entry), subtitle: entry.subtitle, bullets: entry.bullets };
+        const parts: EntryParts = {
+          title: lineText(entry),
+          organization: entry.organization,
+          location: entry.location,
+          dates: entry.dates,
+          bullets: entry.bullets,
+        };
         const item = toItem(from, parts, projectType(kind, label));
         arrays[from].push(item);
         const back = fromItem(from, item);
         const differs: (typeof exact)[string] = {};
-        if (back.title !== parts.title) differs.title = parts.title;
-        if (back.subtitle !== parts.subtitle) differs.subtitle = parts.subtitle;
+        for (const part of ENTRY_TEXT_PARTS) {
+          if (back[part] !== parts[part]) differs[part] = parts[part];
+        }
         if (Object.keys(differs).length > 0) exact[index] = differs;
       });
     }

@@ -68,31 +68,44 @@ export function everything(): ResumeData {
   return resume([
     section('summary', 'lines', 'Profile', lines('Builds engines.', 'Writes programs.')),
     section('experience', 'entries', 'Work History', [
-      entry({ title: 'Analyst at Babbage & Co', subtitle: '1842 to 1843', bullets: ['Wrote it'] }),
-      entry({ subtitle: '1840' }),
+      entry({
+        title: 'Analyst',
+        organization: 'Babbage & Co',
+        location: 'London',
+        dates: '1842 to 1843',
+        bullets: ['Wrote it'],
+      }),
+      entry({ dates: '1840' }),
       entry({ title: 'Hidden job', selected: false }),
     ]),
     section('experience', 'lines', 'Consulting', lines('Advised the Royal Society')),
-    section('internships', 'entries', 'Internships', [entry({ title: 'Intern at Mint' })]),
+    section('internships', 'entries', 'Internships', [
+      entry({ title: 'Intern', organization: 'Mint' }),
+    ]),
     section('education', 'entries', 'Education', [
-      entry({ title: 'Tutored in mathematics', subtitle: '1829', bullets: ['By De Morgan'] }),
+      entry({
+        title: 'Tutored in mathematics',
+        organization: 'University of London',
+        dates: '1829',
+        bullets: ['By De Morgan'],
+      }),
     ]),
     section('projects', 'entries', 'Projects', [
-      entry({ title: 'Note G', subtitle: '1843', bullets: ['Bernoulli numbers', 'Loops'] }),
+      entry({ title: 'Note G', dates: '1843', bullets: ['Bernoulli numbers', 'Loops'] }),
     ]),
     section('skills', 'lines', 'Skills', lines('Mathematics: analysis, algebra')),
     section('skills', 'entries', 'Toolbox', [
-      entry({ title: 'Punched cards', subtitle: 'expert', bullets: ['Jacquard'] }),
+      entry({ title: 'Punched cards', dates: 'expert', bullets: ['Jacquard'] }),
     ]),
     section('certifications', 'entries', 'Certifications', [
-      entry({ title: 'Fellow', subtitle: 'Royal Society' }),
+      entry({ title: 'Fellow', organization: 'Royal Society' }),
     ]),
     section('certifications', 'entries', 'Licenses', [
       entry({ title: 'Engine operator', bullets: ['Renewed yearly'] }),
     ]),
     section('summary', 'entries', 'Highlights', [entry({ title: 'First programmer' })]),
     section('custom', 'entries', 'Volunteering', [
-      entry({ title: 'Tutor', subtitle: '1850', bullets: ['Taught girls maths'] }),
+      entry({ title: 'Tutor', dates: '1850', bullets: ['Taught girls maths'] }),
     ]),
     section('custom', 'lines', 'Languages', lines('English', 'French')),
   ]);
@@ -116,9 +129,9 @@ export function shown(data: ResumeData) {
     sections: sections.map(({ layout, label, entries }) => ({
       layout,
       label,
-      entries: entries.map(({ title, subtitle, text, bullets }) => ({
-        title,
-        subtitle,
+      entries: entries.map(({ heading, dates, text, bullets }) => ({
+        heading,
+        dates,
         text,
         bullets,
       })),
@@ -127,6 +140,23 @@ export function shown(data: ResumeData) {
 }
 
 export const kinds = (data: ResumeData) => data.sections.map((s) => s.kind);
+
+/**
+ * Each printed entry's parts — what a format that keeps them apart (Markdown, JSON Resume)
+ * has to give back, beyond the line they print as.
+ */
+export function entryFields(data: ResumeData) {
+  return normalizeResumeForExport(data).sections.flatMap(({ layout, entries }) =>
+    layout === 'entries'
+      ? entries.map(({ title, organization, location, dates }) => ({
+          title,
+          organization,
+          location,
+          dates,
+        }))
+      : []
+  );
+}
 
 /**
  * A header using what a header can: a left-aligned line with its own separator, a link

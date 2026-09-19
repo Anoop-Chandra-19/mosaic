@@ -6,6 +6,7 @@ import type { ResumeData } from '@shared/types/resume';
 import { readMarkdown } from '../readMarkdown';
 import {
   entry,
+  entryFields,
   everything,
   lines,
   resume,
@@ -42,9 +43,24 @@ describe('readMarkdown', () => {
     for (const data of [everything(), createDefaultResume()]) {
       const parsed = readMarkdown(markdownOf(data));
       expect(shown(parsed.resume)).toEqual(shown(data));
+      expect(entryFields(parsed.resume)).toEqual(entryFields(data));
       expect(parsed.warnings).toEqual([]);
       expect(parsed.leftOut).toEqual([]);
     }
+  });
+
+  it('keeps each part of an entry apart, even with commas in it', () => {
+    const data = resume([
+      section('experience', 'entries', 'Experience', [
+        entry({
+          title: 'Engineer, Platform',
+          organization: 'Babbage & Co, Ltd',
+          location: 'London, UK',
+          dates: '1842',
+        }),
+      ]),
+    ]);
+    expect(entryFields(readMarkdown(markdownOf(data)).resume)).toEqual(entryFields(data));
   });
 
   it('gives back a header’s links and separators, but not alignment or underlining', () => {
@@ -65,13 +81,17 @@ describe('readMarkdown', () => {
         'custom',
         'entries',
         'Odd entries',
-        LOOKS_LIKE_MARKUP.map((text) => entry({ title: text, subtitle: text, bullets: [text] }))
+        LOOKS_LIKE_MARKUP.map((text) =>
+          entry({ title: text, organization: text, location: text, dates: text, bullets: [text] })
+        )
       ),
     ]);
     data.contact.name = 'Ada *the* Countess #';
     data.contact.header.lines[0].items[1].text = 'first_last@example.com';
 
-    expect(shown(readMarkdown(markdownOf(data)).resume)).toEqual(shown(data));
+    const read = readMarkdown(markdownOf(data)).resume;
+    expect(shown(read)).toEqual(shown(data));
+    expect(entryFields(read)).toEqual(entryFields(data));
   });
 
   it('reads other Markdown the same way, as far as it follows that shape', () => {
@@ -117,7 +137,13 @@ describe('readMarkdown', () => {
         layout,
         label,
         items.map(
-          (item) => item.text ?? [item.title, item.subtitle, item.bullets.map((b) => b.text)]
+          (item) =>
+            item.text ?? [
+              item.title,
+              item.organization,
+              item.dates,
+              item.bullets.map((b) => b.text),
+            ]
         ),
       ])
     ).toEqual([
@@ -127,7 +153,8 @@ describe('readMarkdown', () => {
         'Experience',
         [
           [
-            'Rear Admiral, US Navy',
+            'Rear Admiral',
+            'US Navy',
             'Aug 1967 – 1986',
             ['Standardized COBOL across the Navy', 'Retired twice'],
           ],

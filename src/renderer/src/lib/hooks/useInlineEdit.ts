@@ -13,7 +13,7 @@ export function useInlineEdit(value: string, onSave: (next: string) => void, ope
   const handleBlur = useCallback(() => {
     setEditing(false);
     const trimmed = draft.trim();
-    if (trimmed && trimmed !== value) onSave(trimmed);
+    if (trimmed !== value) onSave(trimmed);
   }, [draft, value, onSave]);
 
   const handleKeyDown = useCallback(

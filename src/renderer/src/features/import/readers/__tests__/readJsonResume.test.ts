@@ -7,6 +7,7 @@ import type { ResumeData } from '@shared/types/resume';
 import { isJsonResume, readJsonResume } from '../readJsonResume';
 import {
   entry,
+  entryFields,
   everything,
   kinds,
   resume,
@@ -90,23 +91,23 @@ describe('readJsonResume', () => {
   it('gives back dates as they were written, until another tool changes them', () => {
     const data = resume([
       section('experience', 'entries', 'Work History', [
-        entry({ title: 'Engineer at Acme, Detroit', subtitle: 'January 2021 to Present' }),
-        entry({ title: 'Analyst at Globex', subtitle: 'Month Year to Current' }),
+        entry({
+          title: 'Engineer',
+          organization: 'Acme',
+          location: 'Detroit',
+          dates: 'January 2021 to Present',
+        }),
+        entry({ title: 'Analyst', organization: 'Globex', dates: 'Month Year to Current' }),
       ]),
     ]);
     const file = exported(data);
     expect(shown(readJsonResume(file).resume)).toEqual(shown(data));
+    expect(entryFields(readJsonResume(file).resume)).toEqual(entryFields(data));
 
     // Moved in another tool: the file's dates win over the words Mosaic kept.
     file.work[0].startDate = '2020-03';
-    const titles = readJsonResume(file).resume.sections[0].items.map((item) => [
-      item.title,
-      item.subtitle,
-    ]);
-    expect(titles).toEqual([
-      ['Engineer at Acme, Detroit', 'Mar 2020 to Current'],
-      ['Analyst at Globex', 'Month Year to Current'],
-    ]);
+    const dates = readJsonResume(file).resume.sections[0].items.map((item) => item.dates);
+    expect(dates).toEqual(['Mar 2020 to Current', 'Month Year to Current']);
   });
 
   it('reads a file another tool changed by its standard fields, and says so', () => {
@@ -194,10 +195,11 @@ describe('readJsonResume', () => {
       layout,
       label,
       items.map(
-        ({ title, subtitle, text, bullets }) =>
-          text ?? [title, subtitle, bullets.map((bullet) => bullet.text)]
+        ({ title, organization, location, dates, text, bullets }) =>
+          text ?? [title, organization, location, dates, bullets.map((bullet) => bullet.text)]
       ),
     ]);
+    const none = undefined;
     expect(read).toEqual([
       ['summary', 'lines', 'Summary', ['First paragraph.', 'Second paragraph.']],
       [
@@ -206,32 +208,49 @@ describe('readJsonResume', () => {
         'Experience',
         [
           [
-            'Rear Admiral at US Navy, Washington, DC',
+            'Rear Admiral',
+            'US Navy',
+            'Washington, DC',
             'Aug 1967 to Current',
             ['Standardized languages.', 'COBOL validation'],
           ],
-          ['Senior Mathematician at Remington Rand', '1949 to Jun 1967', []],
+          ['Senior Mathematician', 'Remington Rand', none, '1949 to Jun 1967', []],
         ],
       ],
-      ['custom', 'entries', 'Volunteering', [['Lecturer at ACM', undefined, ['Talks']]]],
+      ['custom', 'entries', 'Volunteering', [['Lecturer', 'ACM', none, none, ['Talks']]]],
       [
         'education',
         'entries',
         'Education',
-        [['Ph.D. in Mathematics from Yale University', '1934', ['Algebra', 'GPA: 4.0']]],
+        [['Ph.D. in Mathematics', 'Yale University', none, '1934', ['Algebra', 'GPA: 4.0']]],
       ],
       [
         'custom',
         'entries',
         'Awards',
-        [['National Medal of Technology', '1991', ['For languages.']]],
+        [['National Medal of Technology', none, none, '1991', ['For languages.']]],
       ],
-      ['certifications', 'entries', 'Certifications', [['Navigator, US Navy', 'Dec 1944', []]]],
-      ['custom', 'entries', 'Publications', [['The Education of a Computer, ACM', undefined, []]]],
+      [
+        'certifications',
+        'entries',
+        'Certifications',
+        [['Navigator', 'US Navy', none, 'Dec 1944', []]],
+      ],
+      [
+        'custom',
+        'entries',
+        'Publications',
+        [['The Education of a Computer', 'ACM', none, none, []]],
+      ],
       ['skills', 'lines', 'Skills', ['Languages: COBOL, FLOW-MATIC']],
       ['custom', 'lines', 'Languages', ['English — Native speaker']],
       ['custom', 'lines', 'Interests', ['Clocks']],
-      ['projects', 'entries', 'Projects', [['A-0 System', '1951 to 1952', ['A compiler.']]]],
+      [
+        'projects',
+        'entries',
+        'Projects',
+        [['A-0 System', none, none, '1951 to 1952', ['A compiler.']]],
+      ],
       ['custom', 'lines', 'Talk', ['Nanosecond wire']],
     ]);
     expect(parsed.leftOut).toEqual(['Computer scientist', 'Howard Aiken: A fine programmer.']);

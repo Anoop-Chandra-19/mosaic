@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { createPlaintextExport } from '../plaintextExport';
 import type { NormalizedResumeExport } from '../normalizeResumeExport';
 import type { PrintedHeaderLine } from '@shared/resume/resumeHeader';
+import { createExportEntry } from './exportEntries';
 
 const line = (texts: string[]): PrintedHeaderLine => ({
   id: texts.join(),
@@ -25,9 +26,7 @@ const exportData: NormalizedResumeExport = {
       kind: 'summary',
       layout: 'lines',
       label: 'Summary',
-      entries: [
-        { id: 'summary-1', title: '', subtitle: '', text: 'Focused builder.', bullets: [] },
-      ],
+      entries: [createExportEntry('summary-1', { text: 'Focused builder.' })],
     },
     {
       id: 'experience',
@@ -35,13 +34,13 @@ const exportData: NormalizedResumeExport = {
       layout: 'entries',
       label: 'Experience',
       entries: [
-        {
-          id: 'job-1',
+        createExportEntry('job-1', {
           title: 'Engineer',
-          subtitle: 'Mosaic',
-          text: '',
+          organization: 'Mosaic',
+          location: 'Detroit, MI',
+          dates: 'Jan 2021 to Current',
           bullets: ['Built export flow', 'Improved preview accuracy'],
-        },
+        }),
       ],
     },
   ],
@@ -57,7 +56,7 @@ SUMMARY
 Focused builder.
 
 EXPERIENCE
-Engineer | Mosaic
+Engineer, Mosaic, Detroit, MI | Jan 2021 to Current
 - Built export flow
 - Improved preview accuracy`);
   });

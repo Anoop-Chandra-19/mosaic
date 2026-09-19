@@ -44,7 +44,7 @@ export function SectionItem({
     addEntry(section.id, {
       selected: true,
       bullets: [],
-      ...(section.layout === 'lines' ? { text: '' } : { title: '', subtitle: '' }),
+      ...(section.layout === 'lines' ? { text: '' } : { title: '' }),
     });
   };
 
