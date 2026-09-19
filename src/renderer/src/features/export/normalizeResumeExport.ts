@@ -1,10 +1,12 @@
 import type { LinkStyle, ResumeData, SectionKind, SectionLayout } from '@shared/types/resume';
+import { formatEntryHeading, type EntryHeadingFields } from '@shared/resume/entryHeading';
 import { getPrintableHeaderLines, type PrintedHeaderLine } from '@shared/resume/resumeHeader';
 
-export interface ExportEntry {
+export interface ExportEntry extends EntryHeadingFields {
   id: string;
-  title: string;
-  subtitle: string;
+  dates: string;
+  /** The printed left side: title, organization, and location (`formatEntryHeading`). */
+  heading: string;
   text: string;
   bullets: string[];
 }
@@ -42,7 +44,10 @@ function normalizeTextOnlyEntry(id: string, text: string): ExportEntry | null {
   return {
     id,
     title: '',
-    subtitle: '',
+    organization: '',
+    location: '',
+    dates: '',
+    heading: '',
     text: cleanText,
     bullets: [],
   };
@@ -61,21 +66,27 @@ export function normalizeResumeForExport(resume: ResumeData): NormalizedResumeEx
             return normalizeTextOnlyEntry(entry.id, entry.text ?? '');
           }
 
-          const title = trim(entry.title);
-          const subtitle = trim(entry.subtitle);
+          const fields = {
+            title: trim(entry.title),
+            organization: trim(entry.organization),
+            location: trim(entry.location),
+          };
+          const heading = formatEntryHeading(fields);
+          const dates = trim(entry.dates);
           const bullets = entry.bullets
             .filter((bullet) => bullet.selected)
             .map((bullet) => trim(bullet.text))
             .filter(Boolean);
 
-          if (!title && !subtitle && bullets.length === 0) {
+          if (!heading && !dates && bullets.length === 0) {
             return null;
           }
 
           return {
             id: entry.id,
-            title,
-            subtitle,
+            ...fields,
+            dates,
+            heading,
             text: '',
             bullets,
           } satisfies ExportEntry;

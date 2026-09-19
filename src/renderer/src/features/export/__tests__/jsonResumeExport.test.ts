@@ -1,29 +1,22 @@
 import { describe, expect, it } from 'vitest';
 import { createJsonResumeExport } from '../jsonResumeExport';
 import type { ExportEntry, NormalizedResumeExport } from '../normalizeResumeExport';
+import type { EntryTextPart } from '../jsonResumeEntry';
 import type { HeaderItemKind } from '@shared/types/resume';
+import { createExportEntry } from './exportEntries';
 
 let nextId = 0;
-const entry = (title: string, subtitle = '', bullets: string[] = []): ExportEntry => ({
-  id: `e${nextId++}`,
-  title,
-  subtitle,
-  text: '',
-  bullets,
-});
+const entry = (
+  parts: Pick<ExportEntry, 'title'> & Partial<Pick<ExportEntry, EntryTextPart>>,
+  bullets: string[] = []
+): ExportEntry => createExportEntry(`e${nextId++}`, { ...parts, bullets });
 const item = (kind: HeaderItemKind, text: string, href = '') => ({
   id: `h${nextId++}`,
   kind,
   text,
   href,
 });
-const line = (text: string): ExportEntry => ({
-  id: `l${nextId++}`,
-  title: '',
-  subtitle: '',
-  text,
-  bullets: [],
-});
+const line = (text: string): ExportEntry => createExportEntry(`l${nextId++}`, { text });
 
 function createExportData(): NormalizedResumeExport {
   return {
@@ -65,9 +58,14 @@ function createExportData(): NormalizedResumeExport {
         layout: 'entries',
         label: 'Education',
         entries: [
-          entry('B.S. in Computer Science from University of Michigan', '2019 to 2023', [
-            'GPA: 3.8/4.0',
-          ]),
+          entry(
+            {
+              title: 'B.S. in Computer Science',
+              organization: 'University of Michigan',
+              dates: '2019 to 2023',
+            },
+            ['GPA: 3.8/4.0']
+          ),
         ],
       },
       {
@@ -76,7 +74,15 @@ function createExportData(): NormalizedResumeExport {
         layout: 'entries',
         label: 'Experience',
         entries: [
-          entry('Engineer at Mosaic, Detroit, MI', 'Jun 2023 to Current', ['Built export flow']),
+          entry(
+            {
+              title: 'Engineer',
+              organization: 'Mosaic',
+              location: 'Detroit, MI',
+              dates: 'Jun 2023 to Current',
+            },
+            ['Built export flow']
+          ),
         ],
       },
       {
@@ -84,14 +90,19 @@ function createExportData(): NormalizedResumeExport {
         kind: 'internships',
         layout: 'entries',
         label: 'Internships',
-        entries: [entry('Intern at Startup Co', '2022')],
+        entries: [entry({ title: 'Intern', organization: 'Startup Co', dates: '2022' })],
       },
       {
         id: 'projects',
         kind: 'projects',
         layout: 'entries',
         label: 'Projects',
-        entries: [entry('Mosaic', 'Modular resume builder', ['React 19', 'Local-first'])],
+        entries: [
+          entry({ title: 'Mosaic', organization: 'Open source', dates: 'Modular resume builder' }, [
+            'React 19',
+            'Local-first',
+          ]),
+        ],
       },
       {
         id: 'skills',
@@ -105,7 +116,10 @@ function createExportData(): NormalizedResumeExport {
         kind: 'certifications',
         layout: 'entries',
         label: 'Certifications',
-        entries: [entry('AWS Solutions Architect', 'Jan 2025'), entry('CKA', 'CNCF')],
+        entries: [
+          entry({ title: 'AWS Solutions Architect', organization: 'Amazon', dates: 'Jan 2025' }),
+          entry({ title: 'CKA', organization: 'CNCF' }),
+        ],
       },
     ],
   };
@@ -156,18 +170,19 @@ describe('createJsonResumeExport', () => {
         courses: ['GPA: 3.8/4.0'],
       },
     ]);
-    // A project's subtitle that isn't dates describes it.
+    // A project's organization is its entity; words on its right that aren't dates describe it.
     expect(resume.projects).toEqual([
       {
         name: 'Mosaic',
+        entity: 'Open source',
         description: 'Modular resume builder',
         highlights: ['React 19', 'Local-first'],
       },
     ]);
     expect(resume.skills).toEqual([{ name: 'TypeScript, React' }]);
-    // A certificate's date is when it was earned; anything else is who gave it.
+    // A certificate's date is when it was earned, and its organization gave it.
     expect(resume.certificates).toEqual([
-      { name: 'AWS Solutions Architect', date: '2025-01' },
+      { name: 'AWS Solutions Architect', issuer: 'Amazon', date: '2025-01' },
       { name: 'CKA', issuer: 'CNCF' },
     ]);
     // Everything above reads back from its fields as it was written.
@@ -179,9 +194,9 @@ describe('createJsonResumeExport', () => {
   it('reads the dates people write, and keeps the words where the fields can’t', () => {
     const data = createExportData();
     data.sections[2].entries = [
-      entry('Engineer at Acme', 'January 2021 to Present'),
-      entry('Analyst at Globex', '03/2019 – 12/2020'),
-      entry('Consultant', 'Month Year to Current'),
+      entry({ title: 'Engineer', organization: 'Acme', dates: 'January 2021 to Present' }),
+      entry({ title: 'Analyst', organization: 'Globex', dates: '03/2019 – 12/2020' }),
+      entry({ title: 'Consultant', dates: 'Month Year to Current' }),
     ];
 
     const { work, meta } = parseExport(data);
@@ -192,22 +207,26 @@ describe('createJsonResumeExport', () => {
       { position: 'Consultant' },
     ]);
     expect(meta.mosaic.sections[2].exact).toEqual({
-      0: { subtitle: 'January 2021 to Present' },
-      1: { subtitle: '03/2019 – 12/2020' },
-      2: { subtitle: 'Month Year to Current' },
+      0: { dates: 'January 2021 to Present' },
+      1: { dates: '03/2019 – 12/2020' },
+      2: { dates: 'Month Year to Current' },
     });
   });
 
-  it('splits a title only where the parts join back to it', () => {
+  it('splits a degree into its type and field, and keeps a school’s location in meta', () => {
     const data = createExportData();
-    data.sections[2].entries = [entry('Engineer at , Detroit')];
-    data.sections[1].entries = [entry('Tutored in mathematics')];
+    data.sections[1].entries = [
+      entry({ title: 'M.S. in Physics', organization: 'MIT', location: 'Cambridge, MA' }),
+      entry({ title: 'Physics' }),
+    ];
 
-    const { work, education } = parseExport(data);
-    // "at" with no company before the comma: the parts would read back as "Engineer at Detroit".
-    expect(work[0]).toEqual({ position: 'Engineer at , Detroit' });
-    // No school, so no telling the degree from the field.
-    expect(education[0]).toEqual({ area: 'Tutored in mathematics' });
+    const { education, meta } = parseExport(data);
+    expect(education).toEqual([
+      { studyType: 'M.S.', area: 'Physics', institution: 'MIT' },
+      { area: 'Physics' },
+    ]);
+    // Education has no location field.
+    expect(meta.mosaic.sections[1].exact).toEqual({ 0: { location: 'Cambridge, MA' } });
   });
 
   it('puts custom sections under projects, keeping the section’s name', () => {
@@ -217,7 +236,7 @@ describe('createJsonResumeExport', () => {
       kind: 'custom',
       layout: 'entries',
       label: 'Volunteering',
-      entries: [entry('Food bank', '2022', ['Ran logistics'])],
+      entries: [entry({ title: 'Food bank', dates: '2022' }, ['Ran logistics'])],
     });
 
     data.sections.push({
@@ -293,18 +312,19 @@ describe('createJsonResumeExport', () => {
       kind: 'skills',
       layout: 'entries',
       label: 'Toolbox',
-      entries: [entry('Go', 'expert', ['Concurrency'])],
+      entries: [entry({ title: 'Go', dates: 'expert' }, ['Concurrency'])],
     });
 
     const resume = parseExport(data);
     expect(resume).not.toHaveProperty('certificates');
     expect(resume.projects).toContainEqual({
       name: 'AWS Solutions Architect',
+      entity: 'Amazon',
       endDate: '2025-01',
       type: 'Certifications',
       highlights: ['Renewed yearly'],
     });
-    // Skills in entries keep their subtitle and bullets as level and keywords.
+    // Skills in entries keep what's on their right and their bullets as level and keywords.
     expect(resume.skills).toContainEqual({
       name: 'Go',
       level: 'expert',

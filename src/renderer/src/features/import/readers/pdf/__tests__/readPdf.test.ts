@@ -43,8 +43,10 @@ function longResume(): ResumeData {
       'Work History',
       Array.from({ length: 8 }, (_, i) =>
         entry({
-          title: `Analyst at Engine Works ${i + 1}`,
-          subtitle: `18${40 + i} to 18${41 + i}`,
+          title: 'Analyst',
+          organization: `Engine Works ${i + 1}`,
+          location: 'London, UK',
+          dates: `18${40 + i} to 18${41 + i}`,
           bullets: Array.from({ length: 5 }, (_, j) => bullet(i * 5 + j)),
         })
       )

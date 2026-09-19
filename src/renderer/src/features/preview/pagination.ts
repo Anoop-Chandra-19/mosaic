@@ -1,3 +1,4 @@
+import { formatEntryHeading } from '@shared/resume/entryHeading';
 import type { ResumeEntry, ResumeSection, SectionLayout } from '@shared/types/resume';
 import { HEADLESS_LAYOUT } from '@/lib/resume/headlessLayout';
 import type { PreviewEntry, PreviewRenderableSection } from './PreviewSection';
@@ -58,19 +59,19 @@ function normalizeEntry(entry: ResumeEntry, layout: SectionLayout): PaginatedEnt
     return { id: entry.id, text, bullets: [], _sourceKey: entry.id };
   }
 
-  const title = (entry.title ?? '').trim();
-  const subtitle = (entry.subtitle ?? '').trim();
+  const heading = formatEntryHeading(entry);
+  const dates = (entry.dates ?? '').trim();
   const bullets = entry.bullets
     .filter((bullet) => bullet.selected)
     .map((bullet) => bullet.text.trim())
     .filter(Boolean);
 
-  if (!title && !subtitle && bullets.length === 0) return null;
+  if (!heading && !dates && bullets.length === 0) return null;
 
   return {
     id: entry.id,
-    title,
-    subtitle,
+    heading,
+    dates,
     bullets,
     _sourceKey: entry.id,
   };
@@ -116,7 +117,7 @@ function getEntryHeight(
     return estimateTextHeight(entry.text ?? '', BODY_LINE_HEIGHT_PX, TEXT_CHARS_PER_LINE);
   }
 
-  const headingHeight = entry.title || entry.subtitle ? HEADING_LINE_HEIGHT_PX : 0;
+  const headingHeight = entry.heading || entry.dates ? HEADING_LINE_HEIGHT_PX : 0;
   const bulletsHeight = entry.bullets.reduce(
     (sum, bullet) => sum + estimateTextHeight(bullet, BODY_LINE_HEIGHT_PX, BULLET_CHARS_PER_LINE),
     0
@@ -165,7 +166,7 @@ function splitEntryByAvailableHeight(
   const entryKey = `${section.id}::${entry._sourceKey ?? entry.id}`;
   const headingHeight =
     measurements.entryHeadingHeights[entryKey] ??
-    (entry.title || entry.subtitle ? HEADING_LINE_HEIGHT_PX : 0);
+    (entry.heading || entry.dates ? HEADING_LINE_HEIGHT_PX : 0);
   const bulletHeights =
     measurements.bulletHeights[entryKey] ??
     entry.bullets.map((bullet) =>

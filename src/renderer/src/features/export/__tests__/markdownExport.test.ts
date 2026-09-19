@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { createMarkdownExport } from '../markdownExport';
 import type { NormalizedResumeExport } from '../normalizeResumeExport';
 import type { PrintedHeaderLine } from '@shared/resume/resumeHeader';
+import { createExportEntry } from './exportEntries';
 
 const line = (
   texts: string[],
@@ -28,9 +29,7 @@ const exportData: NormalizedResumeExport = {
       kind: 'summary',
       layout: 'lines',
       label: 'Summary',
-      entries: [
-        { id: 'summary-1', title: '', subtitle: '', text: 'Focused builder.', bullets: [] },
-      ],
+      entries: [createExportEntry('summary-1', { text: 'Focused builder.' })],
     },
     {
       id: 'experience',
@@ -38,13 +37,13 @@ const exportData: NormalizedResumeExport = {
       layout: 'entries',
       label: 'Experience',
       entries: [
-        {
-          id: 'job-1',
+        createExportEntry('job-1', {
           title: 'Engineer',
-          subtitle: 'Mosaic',
-          text: '',
+          organization: 'Mosaic',
+          location: 'Detroit, MI',
+          dates: 'Jan 2021 to Current',
           bullets: ['Built export flow', 'Improved preview accuracy'],
-        },
+        }),
       ],
     },
   ],
@@ -62,10 +61,32 @@ Focused builder.
 
 ## Experience
 
-### Engineer
-_Mosaic_
+### Engineer, Mosaic, Detroit, MI
+_Jan 2021 to Current_
 - Built export flow
 - Improved preview accuracy`);
+  });
+
+  it('escapes a comma inside a title or organization, not inside the location', () => {
+    const markdown = createMarkdownExport({
+      contact: { name: 'Alex', linkStyle: 'plain', lines: [] },
+      sections: [
+        {
+          id: 'experience',
+          kind: 'experience',
+          layout: 'entries',
+          label: 'Experience',
+          entries: [
+            createExportEntry('job', {
+              title: 'Engineer, Platform',
+              organization: 'Babbage & Co, Ltd',
+              location: 'London, UK',
+            }),
+          ],
+        },
+      ],
+    });
+    expect(markdown).toContain('### Engineer\\, Platform, Babbage & Co\\, Ltd, London, UK');
   });
 
   it('writes each header line with its own separator', () => {

@@ -23,6 +23,11 @@ See root `CLAUDE.md` for schema-version and data-safety rules.
 - Sections print by `layout` (`lines` or `entries`), never by `kind`. Kind is meaning only
   (icon, importer headings, JSON Resume). `src/shared/resume/sectionPresets.ts` defines
   built-ins, with any number of each; `custom` is a user-named section.
+- An entry has a title, organization, location, and dates, all free text. It prints as one
+  italic line: `formatEntryHeading` joins the first three with ", " on the left, and the
+  dates sit on the right (`src/shared/resume/entryHeading.ts`). Formats that carry only
+  that line read it back with `splitEntryHeading`: first part the title, second the
+  organization, the rest the location.
 - `src/renderer/src/lib/resume/headlessLayout.ts` is the single source of page metrics:
   margins, font sizes, leading, indents. Preview and PDF read it; change numbers there,
   not in components.
@@ -40,6 +45,13 @@ See root `CLAUDE.md` for schema-version and data-safety rules.
 - Markdown writes `[text](link)`; plain text writes `text (link)` unless text already is
   the address. JSON Resume fills standard fields and preserves the whole header in
   `meta.mosaic.header`.
+- Entries: Markdown writes the entry's line as a `###` heading with a comma inside the
+  title or organization escaped (`\,`), so its parts come back exactly — unless the title
+  or organization is empty and a later part isn't, which moves the parts up a place; the
+  dates go on the line under it in italics. JSON Resume puts each part in its field (position/name,
+  institution, entity, issuer, ISO dates) and keeps what no field holds in
+  `meta.mosaic.sections[].exact`. Plain text, PDF, and DOCX carry only the printed line:
+  it reads back the same, but a comma inside a title or organization moves the parts.
 - Every export format needs a round-trip test: export, import, compare what the page shows.
   Mosaic's own PDF, Markdown, and JSON come back exactly within each format's supported
   representation; plain text explicitly states its losses. A DOCX export, when built,

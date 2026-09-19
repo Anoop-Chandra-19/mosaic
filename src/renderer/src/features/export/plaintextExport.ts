@@ -34,7 +34,7 @@ export function createPlaintextExport(data: NormalizedResumeExport) {
         continue;
       }
 
-      const heading = [entry.title, entry.subtitle].filter(Boolean).join(' | ');
+      const heading = [entry.heading, entry.dates].filter(Boolean).join(' | ');
       if (heading) {
         lines.push(heading);
       }

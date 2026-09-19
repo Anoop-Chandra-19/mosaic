@@ -1,3 +1,4 @@
+import { splitEntryHeading, type EntryHeadingFields } from '@shared/resume/entryHeading';
 import { markLink, type ImportLine } from '../parsing/importLines';
 import { parseResumeLines, type ParsedResume } from '../parsing/parseResume';
 import { matchSectionHeader } from '../parsing/sectionHeaders';
@@ -19,7 +20,7 @@ const protect = (text: string) =>
 const restore = (text: string) =>
   text.replace(PROTECTED, (char) => String.fromCharCode(char.charCodeAt(0) - 0xe000));
 
-/** A line in italics and nothing else — how Mosaic writes an entry's subtitle. */
+/** A line in italics and nothing else — how Mosaic writes an entry's dates. */
 const ITALIC_LINE = /^(?:_(?!_)(.*[^_\s])_|\*(?!\*)(.*[^*\s])\*)$/;
 
 /**
@@ -46,6 +47,19 @@ function unmark(text: string): string {
 }
 
 const plain = (protectedText: string) => restore(unmark(protectedText));
+
+/**
+ * An entry heading's parts. A comma Mosaic's export escaped is protected, so only the
+ * commas between parts split it.
+ */
+function entryFieldsOf(protectedText: string): EntryHeadingFields {
+  const { title, organization, location } = splitEntryHeading(unmark(protectedText));
+  return {
+    title: restore(title),
+    organization: restore(organization),
+    location: restore(location),
+  };
+}
 
 type Token =
   | { type: 'blank' }
@@ -84,7 +98,7 @@ function tokenize(markdown: string): Token[] {
 /**
  * Markdown as lines. The name is the first heading when the document starts with one;
  * the next level of heading down starts sections, and anything deeper starts an entry —
- * its subtitle the line in italics under it. List items are bullets. This is the shape
+ * its dates the line in italics under it. List items are bullets. This is the shape
  * Mosaic's own Markdown export writes, so that comes back exactly; other Markdown is read
  * the same way, as far as it follows it.
  */
@@ -114,8 +128,8 @@ export function markdownToLines(markdown: string): ImportLine[] {
     } else if (token.type === 'heading' && token.level <= sectionLevel) {
       line = { text: plain(token.text), role: 'heading' };
     } else if (token.type === 'heading') {
-      line = { text: plain(token.text), role: 'entry' };
-      // The subtitle: the heading itself in italics, or the line in italics under it.
+      line = { text: plain(token.text), role: 'entry', fields: entryFieldsOf(token.text) };
+      // The dates: the heading itself in italics, or the line in italics under it.
       const own = ITALIC_LINE.exec(token.text);
       const next = tokens[i + 1];
       const under = next?.type === 'text' ? ITALIC_LINE.exec(next.text) : null;

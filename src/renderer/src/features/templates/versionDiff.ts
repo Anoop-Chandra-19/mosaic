@@ -26,7 +26,10 @@ function pageLines(doc: ResumeData): Map<string, string> {
     lines.set(`section:${section.id}`, section.label);
     for (const entry of section.items) {
       if (!entry.selected) continue;
-      lines.set(`entry:${entry.id}`, [entry.title, entry.subtitle, entry.text].join('|'));
+      lines.set(
+        `entry:${entry.id}`,
+        [entry.title, entry.organization, entry.location, entry.dates, entry.text].join('|')
+      );
       for (const bullet of entry.bullets) {
         if (bullet.selected) lines.set(`bullet:${bullet.id}`, bullet.text);
       }

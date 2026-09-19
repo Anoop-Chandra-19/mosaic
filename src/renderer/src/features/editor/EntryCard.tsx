@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils';
 import { InlineEditField } from './InlineEditField';
 import { BulletItem } from './BulletItem';
 import { AddBulletInput } from './AddBulletInput';
+import { formatEntryHeading } from '@shared/resume/entryHeading';
 import type { ResumeEntry, SectionLayout } from '@shared/types/resume';
 import { useResumeStore } from '@/stores/resumeStore';
 
@@ -68,19 +69,40 @@ export function EntryCard({
               <InlineEditField
                 value={entry.title ?? ''}
                 onSave={(v) => updateEntry(sectionId, entry.id, { title: v })}
-                placeholder="Click to edit title..."
+                placeholder="Title or role"
+                label="Title"
                 className="text-base leading-6 font-medium"
                 inputClassName="h-8 text-base leading-6 font-medium"
                 as="div"
               />
               <InlineEditField
-                value={entry.subtitle ?? ''}
-                onSave={(v) => updateEntry(sectionId, entry.id, { subtitle: v })}
-                placeholder="Click to edit subtitle..."
-                className="text-sm leading-6 text-muted-foreground"
-                inputClassName="h-7 text-sm leading-6 text-muted-foreground"
+                value={entry.organization ?? ''}
+                onSave={(v) => updateEntry(sectionId, entry.id, { organization: v })}
+                placeholder="Company or context"
+                label="Organization"
+                className="text-sm leading-6 text-zinc-700 dark:text-zinc-300"
+                inputClassName="h-7 text-sm leading-6"
                 as="div"
               />
+              <div className="flex min-w-0 items-baseline gap-1.5 text-[0.8125rem] leading-6 text-muted-foreground">
+                <InlineEditField
+                  value={entry.location ?? ''}
+                  onSave={(v) => updateEntry(sectionId, entry.id, { location: v })}
+                  placeholder="Location or Remote"
+                  label="Location"
+                  className="flex-none truncate"
+                  inputClassName="h-7 text-[0.8125rem] leading-6"
+                />
+                <span aria-hidden="true">·</span>
+                <InlineEditField
+                  value={entry.dates ?? ''}
+                  onSave={(v) => updateEntry(sectionId, entry.id, { dates: v })}
+                  placeholder="Dates"
+                  label="Dates"
+                  className="truncate"
+                  inputClassName="h-7 text-[0.8125rem] leading-6"
+                />
+              </div>
             </>
           )}
         </div>
@@ -126,7 +148,7 @@ export function EntryCard({
         open={confirmOpen}
         onOpenChange={setConfirmOpen}
         title="Delete entry?"
-        description={`This will permanently remove \u201c${entry.title || entry.text || 'this entry'}\u201d and all its bullets.`}
+        description={`This will permanently remove \u201c${formatEntryHeading(entry) || entry.text || 'this entry'}\u201d and all its bullets.`}
         onConfirm={() => removeEntry(sectionId, entry.id)}
       />
     </div>

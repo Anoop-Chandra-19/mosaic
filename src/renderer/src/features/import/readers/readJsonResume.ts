@@ -6,7 +6,7 @@ import {
   type MosaicJsonResumeMeta,
 } from '@/features/export/jsonResumeExport';
 import {
-  atPlace,
+  ENTRY_TEXT_PARTS,
   compact,
   degree,
   formatDate,
@@ -14,6 +14,7 @@ import {
   sameItem,
   toItem,
   when,
+  type EntryParts,
 } from '@/features/export/jsonResumeEntry';
 import {
   BUILT_IN_HEADER_KINDS,
@@ -79,16 +80,10 @@ const texts = (value: unknown): string[] =>
 const items = (value: unknown): Json[] => (Array.isArray(value) ? value.filter(isRecord) : []);
 
 function entryOf({
-  title = '',
-  subtitle = '',
   line = '',
   bullets = [],
-}: {
-  title?: string;
-  subtitle?: string;
-  line?: string;
-  bullets?: string[];
-}): ResumeEntry {
+  ...parts
+}: Partial<Omit<EntryParts, 'bullets'>> & { line?: string; bullets?: string[] }): ResumeEntry {
   const entry: ResumeEntry = {
     id: crypto.randomUUID(),
     selected: true,
@@ -96,14 +91,15 @@ function entryOf({
       .filter(Boolean)
       .map((bullet) => ({ id: crypto.randomUUID(), text: bullet, selected: true })),
   };
-  if (title) entry.title = title;
-  if (subtitle) entry.subtitle = subtitle;
+  for (const part of ENTRY_TEXT_PARTS) {
+    if (parts[part]) entry[part] = parts[part];
+  }
   if (line) entry.text = line;
   return entry;
 }
 
 const isEmpty = (entry: ResumeEntry) =>
-  !entry.title && !entry.subtitle && !entry.text && entry.bullets.length === 0;
+  ENTRY_TEXT_PARTS.every((part) => !entry[part]) && !entry.text && entry.bullets.length === 0;
 
 function sectionOf(
   kind: SectionKind,
@@ -178,7 +174,9 @@ function restoreHeaderIfUnchanged(basics: Json, header: MosaicHeader): ResumeHea
 
 // ── Mosaic's own export: `meta.mosaic` puts the sections back exactly ──
 
-/** `exact`: by item place, a title or subtitle as text. */
+const TEXT_PARTS: ReadonlySet<string> = new Set(ENTRY_TEXT_PARTS);
+
+/** `exact`: by item place, parts of an entry as text. */
 function isExact(value: unknown): boolean {
   return (
     isRecord(value) &&
@@ -186,7 +184,7 @@ function isExact(value: unknown): boolean {
       (parts) =>
         isRecord(parts) &&
         Object.entries(parts).every(
-          ([key, part]) => (key === 'title' || key === 'subtitle') && typeof part === 'string'
+          ([key, part]) => TEXT_PARTS.has(key) && typeof part === 'string'
         )
     )
   );
@@ -273,20 +271,11 @@ function ownSections(resume: Json, meta: MosaicJsonResumeMeta): ResumeSection[] 
     const start = taken[from] ?? 0;
     taken[from] = start + count;
     const slice = queues[from].slice(start, start + count);
-    const read = ({
-      title,
-      subtitle,
-      bullets,
-    }: {
-      title: string;
-      subtitle: string;
-      bullets: string[];
-    }) => (layout === 'lines' ? entryOf({ line: title }) : entryOf({ title, subtitle, bullets }));
+    const read = (parts: EntryParts) =>
+      layout === 'lines' ? entryOf({ line: parts.title }) : entryOf(parts);
 
     if (from === 'summary') {
-      const entries = (slice as string[]).map((line) =>
-        read({ title: line, subtitle: '', bullets: [] })
-      );
+      const entries = (slice as string[]).map((line) => entryOf({ line }));
       sections.push(sectionOf(kind, layout, label, entries));
       continue;
     }
@@ -308,9 +297,8 @@ function ownSections(resume: Json, meta: MosaicJsonResumeMeta): ResumeSection[] 
   return sections;
 }
 
-// ── Any other JSON Resume: entries in the Headless line — what and where, then when ──
+// ── Any other JSON Resume: each item's fields as an entry's parts ──
 
-const joined = (...parts: string[]) => parts.filter(Boolean).join(', ');
 const capitalized = (value: string) => value.charAt(0).toUpperCase() + value.slice(1);
 
 /** "Languages: TypeScript, Go" — a name and its keywords. */
@@ -324,23 +312,27 @@ const dates = (item: Json) => when(text(item.startDate), text(item.endDate));
 
 const roleEntry = (item: Json, role: string, where: string) =>
   entryOf({
-    title: atPlace(text(item[role]), text(item[where]), text(item.location)),
-    subtitle: dates(item),
+    title: text(item[role]),
+    organization: text(item[where]),
+    location: text(item.location),
+    dates: dates(item),
     bullets: [text(item.summary), ...texts(item.highlights)],
   });
 
 const projectEntry = (item: Json) =>
   entryOf({
     title: text(item.name),
-    subtitle: dates(item),
+    organization: text(item.entity),
+    dates: dates(item),
     bullets: [text(item.description), ...texts(item.highlights)],
   });
 
 function educationEntry(item: Json): ResumeEntry {
   const score = text(item.score);
   return entryOf({
-    title: degree(text(item.studyType), text(item.area), text(item.institution)),
-    subtitle: dates(item),
+    title: degree(text(item.studyType), text(item.area)),
+    organization: text(item.institution),
+    dates: dates(item),
     bullets: [...texts(item.courses), score && !/gpa/i.test(score) ? `GPA: ${score}` : score],
   });
 }
@@ -370,7 +362,9 @@ function projectSections(projects: Json[]): ResumeSection[] {
     const entries = group.map(projectEntry);
     if (!type) return preset('projects', entries);
     // A type whose items are only names is a list.
-    const namesOnly = entries.every((entry) => !entry.subtitle && entry.bullets.length === 0);
+    const namesOnly = entries.every(
+      (entry) => !entry.organization && !entry.dates && entry.bullets.length === 0
+    );
     return namesOnly
       ? customList(
           capitalized(type),
@@ -383,8 +377,9 @@ function projectSections(projects: Json[]): ResumeSection[] {
 /** An award or a publication: what and from whom, its date, and a line about it. */
 const noteEntry = (item: Json, what: string, from: string, date: string) =>
   entryOf({
-    title: joined(text(item[what]), text(item[from])),
-    subtitle: formatDate(text(item[date])),
+    title: text(item[what]),
+    organization: text(item[from]),
+    dates: formatDate(text(item[date])),
     bullets: [text(item.summary)],
   });
 
@@ -433,8 +428,9 @@ function standardSections(resume: Json): ResumeSection[] {
             'certifications',
             items(value).map((item) =>
               entryOf({
-                title: joined(text(item.name), text(item.issuer)),
-                subtitle: formatDate(text(item.date)),
+                title: text(item.name),
+                organization: text(item.issuer),
+                dates: formatDate(text(item.date)),
               })
             )
           ),

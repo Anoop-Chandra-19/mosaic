@@ -58,3 +58,47 @@ test('custom sections and lists are named as they are added, as many as you like
     ]);
   expect(errors).toEqual([]);
 });
+
+/** Click a field of an entry in the editor, type its new text, and save it. */
+async function editEntryField(page: Page, shown: string, label: string, text: string) {
+  await page.getByRole('complementary').getByText(shown, { exact: true }).click();
+  const field = page.getByRole('textbox', { name: label });
+  await field.fill(text);
+  await field.press('Enter');
+  await expect(field).toBeHidden();
+}
+
+test('an entry’s title, organization, location, and dates print as one line', async () => {
+  const { page, errors } = mosaic();
+  await page.getByRole('button', { name: /Start from a sample/ }).click();
+  await page.getByRole('button', { name: 'Example resume' }).click();
+
+  const job = page.locator('[data-preview-entry-heading-key="sec-experience::job1"]').first();
+  await expect(job).toContainText('Job Title, Company, Location');
+  await expect(job).toContainText('Month Year to Current');
+
+  await editEntryField(page, 'Company', 'Organization', 'Babbage & Co');
+  await editEntryField(page, 'Location', 'Location', '');
+  await editEntryField(page, 'Month Year to Current', 'Dates', '1842 to 1843');
+
+  // An empty part leaves no gap on the page, and waits in the editor for text.
+  await expect(job).toContainText('Job Title, Babbage & Co');
+  await expect(job).not.toContainText('Babbage & Co,');
+  await expect(job).toContainText('1842 to 1843');
+  // The job's, above the example's projects, which have no location either.
+  await expect(
+    page.getByRole('complementary').getByText('Location or Remote', { exact: true })
+  ).toHaveCount(3);
+
+  await expect
+    .poll(() =>
+      page.evaluate(async () => {
+        const boot = await window.mosaic.db.boot();
+        if (!boot.ok) throw new Error(boot.message);
+        const entry = boot.value.draft?.doc.sections[1].items[0];
+        return [entry?.title, entry?.organization, entry?.location, entry?.dates];
+      })
+    )
+    .toEqual(['Job Title', 'Babbage & Co', '', '1842 to 1843']);
+  expect(errors).toEqual([]);
+});

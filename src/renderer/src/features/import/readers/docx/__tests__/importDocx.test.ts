@@ -10,6 +10,7 @@ import {
   textOf,
   type XmlElement,
 } from '../parseXml';
+import { formatEntryHeading } from '@shared/resume/entryHeading';
 import { readDocx, readDocxContent } from '../readDocx';
 import { replaceMarkedLinksWithText } from '../../../parsing/importLines';
 import type { ParsedResume } from '../../../parsing/parseResume';
@@ -66,7 +67,7 @@ const shape = ({ resume }: ParsedResume) =>
     kind: section.kind,
     layout: section.layout,
     items: section.items.map((item) =>
-      [item.title, item.subtitle, item.text, ...item.bullets.map((b) => b.text)]
+      [formatEntryHeading(item), item.dates, item.text, ...item.bullets.map((b) => b.text)]
         .filter(Boolean)
         .join(' | ')
     ),
@@ -100,8 +101,9 @@ function unaccounted(parsed: ParsedResume, inFile: Map<string, number>): string[
     ...parsed.resume.sections.flatMap((section) => [
       section.label,
       ...section.items.flatMap((item) => [
-        item.title ?? '',
-        item.subtitle ?? '',
+        // As it prints: the commas between its parts are words' commas in the file.
+        formatEntryHeading(item),
+        item.dates ?? '',
         item.text ?? '',
         ...item.bullets.map((bullet) => bullet.text),
       ]),

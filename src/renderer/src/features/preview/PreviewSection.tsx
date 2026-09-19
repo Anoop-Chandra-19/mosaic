@@ -3,8 +3,9 @@ import { HEADLESS_LAYOUT as LYT } from '@/lib/resume/headlessLayout';
 
 export interface PreviewEntry {
   id: string;
-  title?: string;
-  subtitle?: string;
+  /** The printed left side: title, organization, and location (`formatEntryHeading`). */
+  heading?: string;
+  dates?: string;
   text?: string;
   bullets: string[];
 }
@@ -67,7 +68,7 @@ export function PreviewSection({ section }: PreviewSectionProps) {
               data-preview-entry-key={`${section.id}::${entry.id}`}
               data-preview-section-id={section.id}
             >
-              {(entry.title || entry.subtitle) && (
+              {(entry.heading || entry.dates) && (
                 // Job and project lines are italic, never bold. Only an entry
                 // that has bullets needs the gap beneath its title line.
                 <div
@@ -80,8 +81,8 @@ export function PreviewSection({ section }: PreviewSectionProps) {
                   }}
                   data-preview-entry-heading-key={`${section.id}::${entry.id}`}
                 >
-                  <h3>{entry.title}</h3>
-                  {entry.subtitle && <p className="shrink-0 text-right">{entry.subtitle}</p>}
+                  <h3>{entry.heading}</h3>
+                  {entry.dates && <p className="shrink-0 text-right">{entry.dates}</p>}
                 </div>
               )}
 
