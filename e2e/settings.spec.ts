@@ -145,6 +145,15 @@ test('Ollama can live elsewhere on the network, and Settings says where text goe
   expect(stored.state.ollamaAddress).toBe('http://127.0.0.1:11434');
 });
 
+test('Ctrl+, opens Settings', async () => {
+  const { page } = mosaic();
+  await page.getByRole('button', { name: /Blank resume/ }).click();
+
+  await page.keyboard.press('Control+,');
+  const settings = page.getByRole('dialog', { name: 'Settings' });
+  await expect(settings.getByRole('heading', { name: 'General' })).toBeVisible();
+});
+
 test('Import & export opens the import dialog', async () => {
   const { page } = mosaic();
   await page.getByRole('button', { name: /Blank resume/ }).click();

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { PanelLeft, PanelRight, type LucideIcon } from 'lucide-react';
+import { AppButton } from '@/components/AppButton';
 import { formatRelativeTime } from '@/features/templates/formatRelativeTime';
 import { useActiveTemplate } from '@/features/templates/useActiveTemplate';
 import { shortcutLabel } from '@/lib/keyboardShortcuts';
@@ -34,19 +35,22 @@ function PaneToggle({
   onToggle: () => void;
 }) {
   return (
-    <button
-      type="button"
+    // The design's status bar button: 22 by 20, amber while its pane is showing.
+    <AppButton
+      variant="quiet"
+      size="2xs"
+      shape="square"
       onClick={onToggle}
       aria-label={label}
       aria-pressed={pressed}
       title={`${label}  ${shortcutLabel(shortcut)}`}
       className={cn(
-        'flex size-5 items-center justify-center rounded transition-colors hover:bg-zinc-200 hover:text-zinc-900 dark:hover:bg-zinc-800 dark:hover:text-zinc-100',
-        pressed ? 'bg-zinc-200 text-zinc-900 dark:bg-zinc-800 dark:text-zinc-100' : 'text-zinc-500'
+        'aspect-auto h-5 w-[1.375rem] rounded-sm hover:text-foreground',
+        pressed && 'text-amber-600 dark:text-amber-400'
       )}
     >
       <Icon className="size-3.5" />
-    </button>
+    </AppButton>
   );
 }
 
