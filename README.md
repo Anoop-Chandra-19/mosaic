@@ -35,6 +35,9 @@ exports. Everything stays on your machine: there is no account, no sync, and no 
 
 ## Architecture
 
+See [docs/architecture.md](docs/architecture.md) for the diagram: how the processes divide
+the work, where data lives, and what crosses each boundary.
+
 ```text
 src/
   main/           # Main process: window, database, IPC handlers, erase; see src/main/CLAUDE.md
