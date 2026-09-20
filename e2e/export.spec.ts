@@ -40,15 +40,15 @@ test('Markdown can be copied or saved, and reads back in through Import', async 
   expect(copied).toMatch(/^# Your Name\n/);
 
   await (await openExport(page, /^Markdown/)).getByRole('button', { name: 'Save MD' }).click();
-  await expect(page.getByText('Saved Your Name — Example resume.md')).toBeVisible();
-  const file = path.join(userDataDir, 'Your Name — Example resume.md');
+  await expect(page.getByText('Saved Your Name - Example resume.md')).toBeVisible();
+  const file = path.join(userDataDir, 'Your Name - Example resume.md');
   expect(fs.readFileSync(file, 'utf8')).toBe(copied);
 
   await openWith(app, file);
   await page.getByRole('button', { name: 'Import resume' }).click();
   const importing = page.getByRole('dialog', { name: 'Import' });
   await importing.getByRole('button', { name: 'Choose a file…' }).click();
-  await expect(importing.getByText('Your Name — Example resume.md')).toBeVisible();
+  await expect(importing.getByText('Your Name - Example resume.md')).toBeVisible();
   // Headings come back as written, not renamed to a stock name.
   await expect(importing.getByRole('checkbox', { name: 'Import Work History' })).toBeChecked();
   await importing.getByRole('button', { name: 'Import as new template' }).click();
@@ -66,17 +66,22 @@ test('an export takes what is on the page, or everything the resume holds', asyn
   await bullet.click();
   await expect(bullet).not.toBeChecked();
 
+  // Emptied first, so what is read back is this copy rather than the one before it.
   const copyMarkdown = async (content: string) => {
+    await app.evaluate(({ clipboard }) => clipboard.writeText(''));
     const exporting = await openExport(page, /^Markdown/);
     await exporting.getByRole('radio', { name: content }).click();
     await exporting.getByRole('button', { name: 'Copy to clipboard' }).click();
-    await expect(page.getByText('Markdown copied')).toBeVisible();
-    return app.evaluate(({ clipboard }) => clipboard.readText());
+    return expect
+      .poll(() => app.evaluate(({ clipboard }) => clipboard.readText()))
+      .toMatch(/^# Your Name\n/);
   };
 
   const left = 'Worked in Agile sprints';
-  expect(await copyMarkdown('What’s on the page')).not.toContain(left);
-  expect(await copyMarkdown('Everything')).toContain(left);
+  await copyMarkdown('What’s on the page');
+  expect(await app.evaluate(({ clipboard }) => clipboard.readText())).not.toContain(left);
+  await copyMarkdown('Everything');
+  expect(await app.evaluate(({ clipboard }) => clipboard.readText())).toContain(left);
 });
 
 test('JSON Resume reads back in through Import with its own headings', async () => {
@@ -85,15 +90,15 @@ test('JSON Resume reads back in through Import with its own headings', async () 
   await startFromSample(page);
 
   await (await openExport(page, /^JSON Resume/)).getByRole('button', { name: 'Save JSON' }).click();
-  await expect(page.getByText('Saved Your Name — Example resume.json')).toBeVisible();
-  const file = path.join(userDataDir, 'Your Name — Example resume.json');
+  await expect(page.getByText('Saved Your Name - Example resume.json')).toBeVisible();
+  const file = path.join(userDataDir, 'Your Name - Example resume.json');
   expect(JSON.parse(fs.readFileSync(file, 'utf8')).meta.mosaic.version).toBe(1);
 
   await openWith(app, file);
   await page.getByRole('button', { name: 'Import resume' }).click();
   const importing = page.getByRole('dialog', { name: 'Import' });
   await importing.getByRole('button', { name: 'Choose a file…' }).click();
-  await expect(importing.getByText('Your Name — Example resume.json')).toBeVisible();
+  await expect(importing.getByText('Your Name - Example resume.json')).toBeVisible();
   // meta.mosaic brings back the headings as written, not JSON Resume's stock names.
   for (const heading of ['Education & Certificates', 'Work History', 'Projects']) {
     await expect(importing.getByRole('checkbox', { name: `Import ${heading}` })).toBeChecked();
@@ -114,8 +119,8 @@ test('Mosaic JSON holds the template’s history and restores like a backup', as
   await nameVersion(page, 'Sent to Acme');
 
   await (await openExport(page, /^Mosaic JSON/)).getByRole('button', { name: 'Save JSON' }).click();
-  await expect(page.getByText('Saved Ada Lovelace — Example resume.json')).toBeVisible();
-  const file = path.join(userDataDir, 'Ada Lovelace — Example resume.json');
+  await expect(page.getByText('Saved Ada Lovelace - Example resume.json')).toBeVisible();
+  const file = path.join(userDataDir, 'Ada Lovelace - Example resume.json');
   const bundle = JSON.parse(fs.readFileSync(file, 'utf8'));
   expect(bundle.bundleVersion).toBe(2);
   expect(bundle.templates[0].versions.map((v: { summary: string }) => v.summary)).toEqual([
@@ -152,7 +157,7 @@ test('a version exports as it was, not as the draft', async () => {
   const dialog = page.getByRole('dialog', { name: 'Export v1' });
   // A single version has no history to carry, so there is no Mosaic JSON for it.
   await expect(dialog.getByRole('radio', { name: /^Mosaic JSON/ })).toHaveCount(0);
-  await expect(dialog.getByLabel('File name')).toHaveValue('Your Name — Example resume (v1)');
+  await expect(dialog.getByLabel('File name')).toHaveValue('Your Name - Example resume (v1)');
   await dialog.getByRole('radio', { name: /^Plain text/ }).click();
   await dialog.getByRole('button', { name: 'Copy to clipboard' }).click();
 
@@ -181,8 +186,8 @@ test('Save PDF writes the resume as a real PDF, which reads back in through Impo
 
   // Named for the person and the template. If PDF generation breaks (e.g. the CSP blocks
   // react-pdf's Wasm) nothing is ever saved, so wait on the toast with a clear timeout.
-  const file = path.join(userDataDir, 'Your Name — Example resume.pdf');
-  await expect(page.getByText('Saved Your Name — Example resume.pdf')).toBeVisible({
+  const file = path.join(userDataDir, 'Your Name - Example resume.pdf');
+  await expect(page.getByText('Saved Your Name - Example resume.pdf')).toBeVisible({
     timeout: 15_000,
   });
 
@@ -197,7 +202,7 @@ test('Save PDF writes the resume as a real PDF, which reads back in through Impo
   await page.getByRole('button', { name: 'Import resume' }).click();
   const importing = page.getByRole('dialog', { name: 'Import' });
   await importing.getByRole('button', { name: 'Choose a file…' }).click();
-  await expect(importing.getByText('Your Name — Example resume.pdf')).toBeVisible();
+  await expect(importing.getByText('Your Name - Example resume.pdf')).toBeVisible();
   for (const [heading, holds] of [
     ['Education & Certificates', '2 entries'],
     ['Work History', '1 entry, 6 bullets'],
@@ -231,8 +236,8 @@ test('Save DOCX writes a Word file, which reads back in through Import', async (
   await exporting.getByRole('radio', { name: 'Underlined' }).click();
   await exporting.getByRole('button', { name: 'Save DOCX' }).click();
 
-  const file = path.join(userDataDir, 'Your Name — Example resume.docx');
-  await expect(page.getByText('Saved Your Name — Example resume.docx')).toBeVisible();
+  const file = path.join(userDataDir, 'Your Name - Example resume.docx');
+  await expect(page.getByText('Saved Your Name - Example resume.docx')).toBeVisible();
   // A zip, as every .docx is.
   expect(fs.readFileSync(file).subarray(0, 4).toString('hex')).toBe('504b0304');
 
@@ -240,7 +245,7 @@ test('Save DOCX writes a Word file, which reads back in through Import', async (
   await page.getByRole('button', { name: 'Import resume' }).click();
   const importing = page.getByRole('dialog', { name: 'Import' });
   await importing.getByRole('button', { name: 'Choose a file…' }).click();
-  await expect(importing.getByText('Your Name — Example resume.docx')).toBeVisible();
+  await expect(importing.getByText('Your Name - Example resume.docx')).toBeVisible();
   for (const [heading, holds] of [
     ['Education & Certificates', '2 entries'],
     ['Work History', '1 entry, 6 bullets'],

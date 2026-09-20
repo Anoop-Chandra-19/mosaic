@@ -12,9 +12,9 @@ interface ExportNameOptions {
   versionLabel?: string;
 }
 
-/** "Ada Lovelace — Backend", as the Export dialog suggests it before the user edits it. */
+/** "Ada Lovelace - Backend", as the Export dialog suggests it before the user edits it. */
 export function buildExportName({ contactName, templateName, versionLabel }: ExportNameOptions) {
-  const base = [contactName?.trim(), templateName?.trim()].filter(Boolean).join(' — ') || 'Resume';
+  const base = [contactName?.trim(), templateName?.trim()].filter(Boolean).join(' - ') || 'Resume';
   return versionLabel ? `${base} (${versionLabel})` : base;
 }
 

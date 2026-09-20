@@ -6,7 +6,7 @@ const fixedDate = new Date(2026, 3, 23);
 describe('buildExportName', () => {
   it('names the person and the template', () => {
     expect(buildExportName({ contactName: 'Alex Johnson', templateName: 'Backend' })).toBe(
-      'Alex Johnson — Backend'
+      'Alex Johnson - Backend'
     );
   });
 
@@ -19,7 +19,7 @@ describe('buildExportName', () => {
   it('says which version it is', () => {
     expect(
       buildExportName({ contactName: 'Alex', templateName: 'Backend', versionLabel: 'v3' })
-    ).toBe('Alex — Backend (v3)');
+    ).toBe('Alex - Backend (v3)');
   });
 });
 
