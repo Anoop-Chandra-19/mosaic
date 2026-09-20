@@ -66,7 +66,7 @@ San Francisco, CA · jane@example.com · (555) 987-6543
 
 Experience
 Senior Engineer
-Acme Corp — 2021 to Present
+Acme Corp - 2021 to Present
 - Led the migration to a microservices architecture`;
 
 const count = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
