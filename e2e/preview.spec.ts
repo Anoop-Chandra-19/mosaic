@@ -51,6 +51,47 @@ test('the preview draws every page, numbered, and says when a resume runs long',
   expect(errors).toEqual([]);
 });
 
+test('the preview zooms to the pointer, pans with Space, and fits again', async () => {
+  const { page, errors } = mosaic();
+  await page.getByRole('button', { name: /Blank resume/ }).click();
+  const fit = page.getByRole('button', { name: 'Reset zoom' });
+  const sheet = page.locator('[data-preview-page-content]').first();
+  await expect(fit).toHaveText('100%');
+
+  // Ctrl and the wheel, pointing a third of the way down the page.
+  const box = (await sheet.boundingBox())!;
+  const pointer = { x: box.x + box.width / 2, y: box.y + box.height / 3 };
+  await page.mouse.move(pointer.x, pointer.y);
+  await page.keyboard.down('Control');
+  await page.mouse.wheel(0, -400);
+  await page.keyboard.up('Control');
+  await expect(fit).not.toHaveText('100%');
+
+  const zoomed = (await sheet.boundingBox())!;
+  expect(zoomed.width).toBeGreaterThan(box.width);
+  // Whatever was under the pointer is still under it: the page grew around that line,
+  // rather than the panel jumping to a different part of the resume.
+  const grew = zoomed.height / box.height;
+  const stayed = zoomed.y + (pointer.y - box.y) * grew;
+  expect(Math.abs(stayed - pointer.y)).toBeLessThan(4);
+
+  // Space and a drag move the page rather than selecting it.
+  const scroller = page.locator('main > div').last();
+  await page.keyboard.down('Space');
+  await page.mouse.move(zoomed.x + 100, zoomed.y + 200);
+  await page.mouse.down();
+  await page.mouse.move(zoomed.x + 100, zoomed.y + 80, { steps: 4 });
+  await page.mouse.up();
+  await page.keyboard.up('Space');
+  expect(await scroller.evaluate((node) => node.scrollTop)).toBeGreaterThan(0);
+
+  // The readout puts it back to a page that fits, scrolled to the top.
+  await fit.click();
+  await expect(fit).toHaveText('100%');
+  expect(await scroller.evaluate((node) => node.scrollTop)).toBe(0);
+  expect(errors).toEqual([]);
+});
+
 test('a resume past ten pages is drawn as far as the preview goes, and says so', async () => {
   const { page, errors } = mosaic();
   await page.getByRole('button', { name: /Blank resume/ }).click();

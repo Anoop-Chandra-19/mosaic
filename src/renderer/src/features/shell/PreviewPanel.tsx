@@ -1,23 +1,25 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { Minus, Plus, TriangleAlert } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { ResumePreview } from '@/features/preview/ResumePreview';
+import { usePreviewCanvas } from '@/features/preview/usePreviewCanvas';
 import { cn } from '@/lib/utils';
+import { shortcutLabel } from '@/lib/keyboardShortcuts';
 import type { PaperSize } from '@/types/paper';
 import { VersionPreviewBanner } from '@/features/templates/VersionPreviewBanner';
 import { useOverlayStore } from '@/stores/overlayStore';
-import { PREVIEW_ZOOM_STEPS, useUiStore } from '@/stores/uiStore';
+import { PREVIEW_ZOOM_RANGE, useUiStore } from '@/stores/uiStore';
 
 export function PreviewPanel() {
   const paperSize = useUiStore((s) => s.paperSize);
   const setPaperSize = useUiStore((s) => s.setPaperSize);
   const previewZoom = useUiStore((s) => s.previewZoom);
-  const zoomPreviewIn = useUiStore((s) => s.zoomPreviewIn);
-  const zoomPreviewOut = useUiStore((s) => s.zoomPreviewOut);
   const meta = useOverlayStore((s) => s.previewMeta);
   const setMeta = useOverlayStore((s) => s.setPreviewMeta);
   const preview = useOverlayStore((s) => s.preview);
+  const scrollRef = useRef<HTMLDivElement | null>(null);
+  const canvas = usePreviewCanvas(scrollRef);
 
   useEffect(() => {
     // Expose paper size to global CSS for page-specific print/preview styling.
@@ -26,11 +28,9 @@ export function PreviewPanel() {
 
   // One page is the thing to aim for, so anything longer is called out rather than stated.
   const runsLong = meta.totalPages > 1;
-  const minZoom = PREVIEW_ZOOM_STEPS[0];
-  const maxZoom = PREVIEW_ZOOM_STEPS[PREVIEW_ZOOM_STEPS.length - 1];
 
   return (
-    <main className="flex flex-1 flex-col overflow-hidden bg-background">
+    <main className="@container/preview flex flex-1 flex-col overflow-hidden bg-background">
       {preview && <VersionPreviewBanner preview={preview} />}
       <div className="flex items-center justify-between border-b border-border bg-card px-4 py-2.5 md:px-6">
         <div className="flex items-center gap-2">
@@ -52,26 +52,34 @@ export function PreviewPanel() {
         </div>
 
         <div className="flex items-center gap-1.5">
-          <div className="inline-flex items-center gap-1">
+          {/* A narrow window gives the page all the room it has; zooming can wait. */}
+          <div className="inline-flex items-center gap-1 @max-4xl/preview:hidden">
             <AppButton
               variant="ghost"
               size="xs"
               shape="square"
-              onClick={zoomPreviewOut}
-              disabled={previewZoom <= minZoom}
+              onClick={() => canvas.zoomByStep(-1)}
+              disabled={previewZoom <= PREVIEW_ZOOM_RANGE.min}
               aria-label="Zoom preview out"
             >
               <Minus className="size-3.5" />
             </AppButton>
-            <span className="min-w-10 text-center text-xs font-semibold text-zinc-600 dark:text-zinc-400">
+            <AppButton
+              variant="ghost"
+              size="xs"
+              className="min-w-11 font-semibold text-ink-soft"
+              onClick={canvas.resetZoom}
+              aria-label="Reset zoom"
+              title={`Reset zoom. ${shortcutLabel('scroll')} zooms to the pointer, and Space drags the page.`}
+            >
               {Math.round(previewZoom * 100)}%
-            </span>
+            </AppButton>
             <AppButton
               variant="ghost"
               size="xs"
               shape="square"
-              onClick={zoomPreviewIn}
-              disabled={previewZoom >= maxZoom}
+              onClick={() => canvas.zoomByStep(1)}
+              disabled={previewZoom >= PREVIEW_ZOOM_RANGE.max}
               aria-label="Zoom preview in"
             >
               <Plus className="size-3.5" />
@@ -101,7 +109,14 @@ export function PreviewPanel() {
         </div>
       </div>
 
-      <div className="flex-1 overflow-auto px-3 py-4 md:px-6 md:py-6">
+      <div
+        ref={scrollRef}
+        onPointerDown={canvas.onPointerDown}
+        className={cn(
+          'flex-1 overflow-auto overscroll-contain px-3 py-4 md:px-6 md:py-6',
+          canvas.panning ? 'cursor-grabbing select-none' : canvas.readyToPan && 'cursor-grab'
+        )}
+      >
         <ResumePreview
           paperSize={paperSize}
           previewZoom={previewZoom}

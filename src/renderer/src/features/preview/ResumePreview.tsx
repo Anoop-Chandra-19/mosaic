@@ -180,6 +180,7 @@ export function ResumePreview({
             layout. mx-auto centers it when it fits and falls back to flush left
             (auto margins resolve to zero) once it is wider than the panel. */}
         <div
+          data-preview-stack
           className="mx-auto"
           style={{ width: `${paper.width * scale}px`, height: `${scaledHeight}px` }}
         >
