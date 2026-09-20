@@ -58,12 +58,17 @@ export function AppShell() {
 
 /**
  * Ctrl/⌘+S names a version — the draft itself is always saved already. Ctrl/⌘+B shows or
- * hides the sidebar, and Ctrl/⌘+\ the assistant while AI is on.
+ * hides the sidebar, Ctrl/⌘+\ the assistant while AI is on, and Ctrl/⌘+, opens Settings.
  */
 function useShortcuts() {
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if (!isModKey(event)) return;
+      if (event.key === ',') {
+        event.preventDefault();
+        useOverlayStore.getState().openSettings();
+        return;
+      }
       if (event.key.toLowerCase() === 'b') {
         event.preventDefault();
         useUiStore.getState().toggleSidebarCollapsed();

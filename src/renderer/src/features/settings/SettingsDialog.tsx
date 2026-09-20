@@ -67,16 +67,17 @@ export function SettingsDialog() {
                   const Icon = item.icon;
                   const isActive = item.id === section;
                   return (
-                    <button
+                    <AppButton
                       key={item.id}
-                      type="button"
+                      variant="ghost"
+                      size="sm"
                       onClick={() => setSection(item.id)}
                       aria-current={isActive ? 'page' : undefined}
                       className={cn(
-                        'flex h-8 shrink-0 items-center gap-2 rounded-md px-2 text-left text-sm whitespace-nowrap transition-colors focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:outline-none',
+                        'justify-start gap-2 px-2 font-normal',
                         isActive
-                          ? 'bg-white font-medium text-zinc-900 ring-1 ring-zinc-200 ring-inset dark:bg-zinc-800 dark:text-zinc-100 dark:ring-zinc-700'
-                          : 'text-zinc-700 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-zinc-100'
+                          ? 'bg-white font-medium text-zinc-900 ring-1 ring-zinc-200 ring-inset hover:bg-white dark:bg-zinc-800 dark:text-zinc-100 dark:ring-zinc-700 dark:hover:bg-zinc-800'
+                          : 'text-zinc-700 dark:text-zinc-300'
                       )}
                     >
                       <Icon
@@ -91,7 +92,7 @@ export function SettingsDialog() {
                           off
                         </span>
                       )}
-                    </button>
+                    </AppButton>
                   );
                 })}
               </div>

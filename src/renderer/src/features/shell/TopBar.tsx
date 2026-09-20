@@ -1,4 +1,4 @@
-import { Download, FileInput, Moon, Save, Settings, Sun } from 'lucide-react';
+import { Download, Moon, Save, Settings, Sun, Upload } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
 import { shortcutLabel } from '@/lib/keyboardShortcuts';
 import { showToast, useOverlayStore } from '@/stores/overlayStore';
@@ -49,35 +49,39 @@ export function TopBar() {
         </div>
       </div>
 
+      {/* As in the design: Settings, then the theme and the two file actions by name. */}
       <div className="flex shrink-0 items-center gap-1.5">
-        <AppButton
-          variant="ghost"
-          size="sm"
-          shape="square"
-          onClick={toggleDarkMode}
-          aria-label="Toggle theme"
-        >
-          {darkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-        </AppButton>
-
-        <AppButton
-          variant="ghost"
-          size="sm"
-          shape="square"
-          onClick={() => openImport(!activeTemplate)}
-          aria-label="Import resume"
-        >
-          <FileInput className="h-4 w-4" />
-        </AppButton>
-
         <AppButton
           variant="ghost"
           size="sm"
           shape="square"
           onClick={() => openSettings()}
           aria-label="Open settings"
+          title={`Settings  ${shortcutLabel(',')}`}
         >
           <Settings className="h-4 w-4" />
+        </AppButton>
+        <span aria-hidden className="mx-0.5 h-4.5 w-px bg-line-strong" />
+
+        <AppButton
+          variant="ghost"
+          size="sm"
+          shape="square"
+          onClick={toggleDarkMode}
+          aria-label="Toggle theme"
+          title={darkMode ? 'Light theme' : 'Dark theme'}
+        >
+          {darkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+        </AppButton>
+
+        <AppButton
+          variant="outline"
+          size="sm"
+          onClick={() => openImport(!activeTemplate)}
+          aria-label="Import resume"
+        >
+          <Upload />
+          Import
         </AppButton>
 
         <AppButton
