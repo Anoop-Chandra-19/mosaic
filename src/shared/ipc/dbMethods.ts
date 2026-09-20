@@ -26,6 +26,7 @@ export const DB_METHODS = [
   'versions.list',
   'versions.get',
   'versions.name',
+  'versions.snapshot',
   'versions.restore',
   'versions.duplicate',
   'settings.set',

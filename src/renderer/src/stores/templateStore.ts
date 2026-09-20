@@ -51,6 +51,12 @@ interface TemplateState {
 
   /** Names what is in the editor — see `MosaicDb['versions']['name']`. */
   nameVersion: (name: string) => Promise<VersionMeta>;
+  /**
+   * Keeps what is in the editor as an auto version, so this much survives quitting. Taken
+   * while editing (`useAutoSnapshot`), when another template opens, and on the way out.
+   * The undo stack stays as it is. Nothing to keep, or no template open, does nothing.
+   */
+  snapshotOpenDraft: () => Promise<void>;
   /** Replaces the open draft, keeping unsaved edits in history first. */
   importIntoDraft: (doc: ResumeData, from: string) => Promise<void>;
   /**
@@ -120,7 +126,8 @@ export const useTemplateStore = create<TemplateState>()(
       },
 
       createTemplate: async (name, doc, importedFrom) => {
-        await flushDraft();
+        // The new one takes the editor, so the draft it displaces is kept first.
+        await get().snapshotOpenDraft();
         const db = getDb();
         const created = await db.templates.create(name, doc, importedFrom);
         showDraft(await db.templates.open(created.id));
@@ -129,7 +136,8 @@ export const useTemplateStore = create<TemplateState>()(
 
       openTemplate: async (id) => {
         if (id === openTemplateId()) return;
-        await flushDraft();
+        // Undo does not survive the switch, so what it could have taken back is kept.
+        await get().snapshotOpenDraft();
         showDraft(await getDb().templates.open(id));
         // The template left behind may have just saved; its summary is out of date.
         await get().refresh();
@@ -199,6 +207,24 @@ export const useTemplateStore = create<TemplateState>()(
         useResumeStore.getState().markVersionSaved(version.rev);
         await get().refresh();
         return version;
+      },
+
+      snapshotOpenDraft: async () => {
+        await flushDraft();
+        const templateId = openTemplateId();
+        if (templateId === null) return;
+        try {
+          const version = await getDb().versions.snapshot(templateId);
+          // Still the same draft? An open that overtook this one has its own baseline.
+          if (openTemplateId() === templateId) {
+            useResumeStore.getState().markVersionSaved(version.rev);
+          }
+          await get().refresh();
+        } catch (error) {
+          // A snapshot is taken for the user, not asked for. Failing one must not stop
+          // them switching template or closing the window.
+          console.error('Could not keep a version of the draft', error);
+        }
       },
 
       importIntoDraft: async (doc, from) => {

@@ -11,6 +11,7 @@ import { ImportResumeDialog } from '@/features/import/ImportResumeDialog';
 import { SettingsDialog } from '@/features/settings/SettingsDialog';
 import { StartPanel } from '@/features/start/StartPanel';
 import { NameVersionDialog } from '@/features/templates/NameVersionDialog';
+import { useAutoSnapshot } from '@/features/templates/useAutoSnapshot';
 import { isModKey, isRedoKey, isTypingField, isUndoKey } from '@/lib/keyboardShortcuts';
 import { useAiStore } from '@/stores/aiStore';
 import { showToast, useOverlayStore } from '@/stores/overlayStore';
@@ -22,6 +23,7 @@ import { useDarkMode } from '@/lib/hooks/useDarkMode';
 export function AppShell() {
   useDarkMode();
   useShortcuts();
+  useAutoSnapshot();
   const hasTemplates = useTemplateStore((s) => s.templates.length > 0);
   const showStart = useOverlayStore((s) => s.startOpen);
   const aiEnabled = useAiStore((s) => s.enabled);

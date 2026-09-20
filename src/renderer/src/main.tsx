@@ -5,7 +5,7 @@ import App from './App.tsx';
 import { BootFailure } from '@/features/shell/BootFailure';
 import { getDb } from '@/lib/storage/mosaicDb';
 import { hydrateStores } from '@/stores/hydrateStores';
-import { flushDraft } from '@/stores/resumeStore';
+import { useTemplateStore } from '@/stores/templateStore';
 
 const root = createRoot(document.getElementById('root')!);
 
@@ -14,7 +14,9 @@ getDb()
   .boot()
   .then((boot) => {
     hydrateStores(boot);
-    window.mosaic.app.onFlushRequest(flushDraft);
+    // On the way out, the draft is saved and then kept as a version: undo does not survive
+    // quitting, so this is the only record left of an editing session nobody named.
+    window.mosaic.app.onFlushRequest(() => useTemplateStore.getState().snapshotOpenDraft());
     root.render(
       <StrictMode>
         <App />

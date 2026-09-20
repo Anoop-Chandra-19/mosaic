@@ -8,6 +8,7 @@ import type {
   VersionMeta,
   VersionSource,
 } from '@shared/types/db';
+import { describeDraftChanges } from '@shared/resume/describeDraftChanges';
 import type { ResumeData } from '@shared/types/resume';
 import { readDraft, writeDraft } from './drafts';
 import { StorageError } from './storageError';
@@ -122,14 +123,35 @@ export function insertVersion(db: Database, version: NewVersion): VersionMeta {
 }
 
 /**
- * Keep the draft as an auto version — before an import or restore replaces it. A clean
- * draft is already the head, so the head is returned and no duplicate row is written.
+ * The newest version, when the draft is still that version and there is nothing to keep:
+ * either the revs match, or edit-then-undo left the rev bumped over identical content, so
+ * the documents are compared as a tie-breaker. In that second case the head adopts the
+ * draft's rev, which makes the draft clean again and saves a row that says nothing.
+ */
+function headHoldingDraft(
+  db: Database,
+  head: VersionMeta | undefined,
+  draft: Draft
+): VersionMeta | undefined {
+  if (!head) return undefined;
+  if (head.rev === draft.rev) return head;
+  if (encodeStoredResume(getVersion(db, head.id).doc) !== encodeStoredResume(draft.doc)) {
+    return undefined;
+  }
+  db.prepare('update versions set rev = ? where id = ?').run(draft.rev, head.id);
+  return { ...head, rev: draft.rev };
+}
+
+/**
+ * Keep the draft as an auto version — before an import or restore replaces it. A draft
+ * the head already holds writes nothing, and that head is returned instead.
  */
 export function snapshotDraft(db: Database, input: AutoSnapshot): VersionMeta {
   return db.transaction(() => {
     const draft = readDraft(db, input.templateId);
     const head = headVersion(db, input.templateId);
-    if (head && head.rev === draft.rev) return head;
+    const kept = headHoldingDraft(db, head, draft);
+    if (kept) return kept;
     return insertVersion(db, {
       templateId: input.templateId,
       parentId: head?.id ?? null,
@@ -143,27 +165,47 @@ export function snapshotDraft(db: Database, input: AutoSnapshot): VersionMeta {
 }
 
 /**
- * Name what is in the editor. A clean draft renames the head instead of minting a
- * duplicate. Edit-then-undo leaves the rev bumped over identical content, so the
- * documents are compared as a tie-breaker — and the head adopts the draft's rev,
- * which makes the draft clean again.
+ * Keep the draft as an auto version of editing itself, summarizing what changed since the
+ * newest one ("Edited 3 bullets in Experience"). Undo is a session; this is what survives
+ * quitting. The renderer decides when: past so many changes, on a template switch, and on
+ * the way out.
+ */
+export function snapshotEditedDraft(db: Database, templateId: string): VersionMeta {
+  return db.transaction(() => {
+    const draft = readDraft(db, templateId);
+    const head = headVersion(db, templateId);
+    const kept = headHoldingDraft(db, head, draft);
+    if (kept) return kept;
+    return insertVersion(db, {
+      templateId,
+      parentId: head?.id ?? null,
+      kind: 'auto',
+      source: 'edit',
+      summary: head
+        ? describeDraftChanges(getVersion(db, head.id).doc, draft.doc)
+        : 'Edited the resume',
+      doc: draft.doc,
+      rev: draft.rev,
+    });
+  })();
+}
+
+/**
+ * Name what is in the editor. A draft the head already holds renames that version instead
+ * of minting a duplicate.
  */
 export function nameDraft(db: Database, templateId: string, name: string): VersionMeta {
   return db.transaction(() => {
     const draft = readDraft(db, templateId);
     const head = headVersion(db, templateId);
-    const clean =
-      head !== undefined &&
-      (head.rev === draft.rev ||
-        encodeStoredResume(getVersion(db, head.id).doc) === encodeStoredResume(draft.doc));
+    const clean = headHoldingDraft(db, head, draft);
 
     if (clean) {
-      db.prepare(`update versions set kind = 'named', summary = ?, rev = ? where id = ?`).run(
+      db.prepare(`update versions set kind = 'named', summary = ? where id = ?`).run(
         name,
-        draft.rev,
-        head.id
+        clean.id
       );
-      return { ...head, kind: 'named' as const, summary: name, rev: draft.rev };
+      return { ...clean, kind: 'named' as const, summary: name };
     }
 
     return insertVersion(db, {

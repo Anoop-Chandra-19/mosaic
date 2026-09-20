@@ -28,6 +28,7 @@ const VERSION_SOURCES: ReadonlySet<string> = new Set<VersionSource>([
   'name',
   'import',
   'restore',
+  'edit',
 ]);
 
 class BundleError extends Error {

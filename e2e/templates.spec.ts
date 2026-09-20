@@ -1,5 +1,6 @@
+import fs from 'node:fs';
 import { expect, test, type Page } from '@playwright/test';
-import { withApp } from './launch';
+import { launchApp, withApp } from './launch';
 
 const mosaic = withApp();
 
@@ -59,6 +60,50 @@ test('a version can be duplicated as its own template', async () => {
 
   await expect(page.getByText('Duplicated as “Untitled resume (copy)”')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Open', exact: true })).toBeVisible();
+});
+
+test('editing alone is kept in history when another template takes the editor', async () => {
+  const { page } = mosaic();
+  await page.getByRole('button', { name: /Blank resume/ }).click();
+  await setName(page, 'Your name', 'Ada Lovelace');
+
+  // Nothing was named, and undo does not survive the switch, so the draft is kept for them.
+  await page.getByRole('tab', { name: 'Templates' }).click();
+  await page.getByRole('button', { name: 'New', exact: true }).click();
+  await page.getByRole('button', { name: /Blank resume/ }).click();
+
+  await page.getByRole('tab', { name: 'Templates' }).click();
+  await page.getByRole('button', { name: 'Open', exact: true }).click();
+  const kept = page.getByRole('listitem').filter({ hasText: 'Changed the name' });
+  await expect(kept).toContainText('auto');
+  await expect(kept).toContainText('current');
+  await expect(page.getByRole('contentinfo').getByText('Matches v2')).toBeVisible();
+  await page.getByRole('tab', { name: 'Content' }).click();
+  await expect(page.getByRole('complementary').getByText('Ada Lovelace')).toBeVisible();
+});
+
+test('editing alone is kept in history when the window closes', async () => {
+  const first = await launchApp();
+  const { userDataDir } = first;
+  try {
+    await first.page.getByRole('button', { name: /Blank resume/ }).click();
+    await setName(first.page, 'Your name', 'Ada Lovelace');
+    await first.app.close();
+
+    // Undo did not survive quitting; the version taken on the way out did.
+    const second = await launchApp(userDataDir);
+    try {
+      await second.page.getByRole('tab', { name: 'Templates' }).click();
+      await expect(
+        second.page.getByRole('listitem').filter({ hasText: 'Changed the name' })
+      ).toContainText('auto');
+      expect(second.errors).toEqual([]);
+    } finally {
+      await second.app.close();
+    }
+  } finally {
+    fs.rmSync(userDataDir, { recursive: true, force: true });
+  }
 });
 
 test('templates can be found by name', async () => {
