@@ -10,7 +10,7 @@ interface PdfResumeDocumentProps {
   paperSize: PaperSize;
 }
 
-const L = HEADLESS_LAYOUT;
+const LYT = HEADLESS_LAYOUT;
 
 // Helvetica is one of the 14 fonts built into every PDF reader and is metrically
 // identical to Arial, so lines wrap at the same points without shipping a font file.
@@ -35,7 +35,7 @@ const NO_BREAK_SPACE = String.fromCharCode(0xa0);
  *   under it (`minPresenceAhead`) or the whole entry moves.
  */
 const BULLET_SPLITS_ACROSS_PAGES = false;
-const LINE_NEEDED_UNDER_ENTRY_HEADING = L.bodyLeading;
+const LINE_NEEDED_UNDER_ENTRY_HEADING = LYT.bodyLeading;
 
 /**
  * A run of spaces as it is typed: react-pdf collapses ordinary ones into one, so they go in
@@ -46,32 +46,32 @@ const preserveSpaceRuns = (text: string) =>
 
 const styles = StyleSheet.create({
   page: {
-    paddingTop: L.marginTop,
-    paddingBottom: L.marginBottom,
-    paddingHorizontal: L.marginSide,
+    paddingTop: LYT.marginTop,
+    paddingBottom: LYT.marginBottom,
+    paddingHorizontal: LYT.marginSide,
     fontFamily: FONT,
-    color: L.color,
-    fontSize: L.bodyFontSize,
+    color: LYT.color,
+    fontSize: LYT.bodyFontSize,
   },
   header: {
-    marginBottom: L.headerMarginBottom,
+    marginBottom: LYT.headerMarginBottom,
     textAlign: 'center',
   },
   name: {
     fontFamily: FONT_BOLD,
-    fontSize: L.nameFontSize,
-    lineHeight: L.nameLineHeight,
-    marginTop: L.nameMarginTop,
-    marginBottom: L.nameMarginBottom,
+    fontSize: LYT.nameFontSize,
+    lineHeight: LYT.nameLineHeight,
+    marginTop: LYT.nameMarginTop,
+    marginBottom: LYT.nameMarginBottom,
   },
   contactLine: {
-    fontSize: L.contactFontSize,
-    lineHeight: L.contactLineHeight,
-    color: L.color,
+    fontSize: LYT.contactFontSize,
+    lineHeight: LYT.contactLineHeight,
+    color: LYT.color,
   },
   // One blank body line above each section header, none above the first.
   section: {
-    marginTop: L.bodyLeading,
+    marginTop: LYT.bodyLeading,
   },
   firstSection: {
     marginTop: 0,
@@ -80,8 +80,8 @@ const styles = StyleSheet.create({
   // letter-spacing: both mangle text extraction for ATS parsers.
   sectionTitle: {
     fontFamily: FONT_BOLD,
-    fontSize: L.bodyFontSize,
-    lineHeight: L.bodyLineHeight,
+    fontSize: LYT.bodyFontSize,
+    lineHeight: LYT.bodyLineHeight,
   },
   sectionBody: {
     marginTop: 0,
@@ -90,8 +90,8 @@ const styles = StyleSheet.create({
     marginTop: 0,
   },
   textOnlyEntry: {
-    fontSize: L.bodyFontSize,
-    lineHeight: L.bodyLineHeight,
+    fontSize: LYT.bodyFontSize,
+    lineHeight: LYT.bodyLineHeight,
   },
   lastTextOnlyEntry: {
     marginBottom: 0,
@@ -106,24 +106,24 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'baseline',
-    gap: L.entryHeadingGap,
+    gap: LYT.entryHeadingGap,
   },
   // Only an entry that actually has bullets needs the gap under its title line.
   // Education rows have none, and the gap there pushes the next section off grid.
   // The page-break rules above say why the one with bullets reserves a line below it.
   entryHeadingWithBullets: {
-    marginBottom: L.entryHeadingMarginBottom,
+    marginBottom: LYT.entryHeadingMarginBottom,
   },
   entryTitle: {
     fontFamily: FONT_ITALIC,
-    fontSize: L.bodyFontSize,
-    lineHeight: L.bodyLineHeight,
+    fontSize: LYT.bodyFontSize,
+    lineHeight: LYT.bodyLineHeight,
   },
   entryDates: {
     fontFamily: FONT_ITALIC,
-    fontSize: L.bodyFontSize,
-    lineHeight: L.bodyLineHeight,
-    color: L.color,
+    fontSize: LYT.bodyFontSize,
+    lineHeight: LYT.bodyLineHeight,
+    color: LYT.color,
     textAlign: 'right',
   },
   // Bullet spacing comes entirely from the 1.5-line leading. Adding margin here
@@ -133,12 +133,12 @@ const styles = StyleSheet.create({
   bulletRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    marginLeft: L.bulletMarkerIndent,
+    marginLeft: LYT.bulletMarkerIndent,
   },
   bulletMarker: {
-    width: L.bulletTextIndent - L.bulletMarkerIndent,
-    fontSize: L.bodyFontSize,
-    lineHeight: L.bodyLineHeight,
+    width: LYT.bulletTextIndent - LYT.bulletMarkerIndent,
+    fontSize: LYT.bodyFontSize,
+    lineHeight: LYT.bodyLineHeight,
   },
   // flexBasis 0 makes the text size from the row's free space. Left on `auto` it
   // sizes from its own unwrapped content and spills past the right margin.
@@ -146,8 +146,8 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     flexShrink: 1,
     flexBasis: 0,
-    fontSize: L.bodyFontSize,
-    lineHeight: L.bodyLineHeight,
+    fontSize: LYT.bodyFontSize,
+    lineHeight: LYT.bodyLineHeight,
   },
 });
 
@@ -155,7 +155,7 @@ export function PdfResumeDocument({ data, paperSize }: PdfResumeDocumentProps) {
   const size = paperSize === 'a4' ? 'A4' : 'LETTER';
   const name = data.contact.name || 'Mosaic Resume';
   const linkStyle = {
-    color: data.contact.linkColor === 'blue' ? LINK_BLUE : L.color,
+    color: data.contact.linkColor === 'blue' ? LINK_BLUE : LYT.color,
     textDecoration: data.contact.linkStyle === 'underline' ? 'underline' : 'none',
   } as const;
 
