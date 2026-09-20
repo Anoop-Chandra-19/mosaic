@@ -26,6 +26,18 @@ Font.registerHyphenationCallback((word) => [word]);
 const NO_BREAK_SPACE = String.fromCharCode(0xa0);
 
 /**
+ * Where pages break. Left to itself react-pdf splits a bullet's text across pages and leaves
+ * the marker behind on the first one. Two rules stop that, and they are the preview's rules
+ * (`pagination.ts`), which is what makes the two agree — and Word's, so a resume breaks the
+ * same wherever it is opened:
+ * - a bullet moves to the next page whole (`wrap={false}` on its row);
+ * - an entry's italic line never ends a page on its own: it needs a line of its bullets
+ *   under it (`minPresenceAhead`) or the whole entry moves.
+ */
+const BULLET_SPLITS_ACROSS_PAGES = false;
+const LINE_NEEDED_UNDER_ENTRY_HEADING = L.bodyLeading;
+
+/**
  * A run of spaces as it is typed: react-pdf collapses ordinary ones into one, so they go in
  * as no-break spaces, which Helvetica sets the same width.
  */
@@ -98,6 +110,7 @@ const styles = StyleSheet.create({
   },
   // Only an entry that actually has bullets needs the gap under its title line.
   // Education rows have none, and the gap there pushes the next section off grid.
+  // The page-break rules above say why the one with bullets reserves a line below it.
   entryHeadingWithBullets: {
     marginBottom: L.entryHeadingMarginBottom,
   },
@@ -203,6 +216,9 @@ export function PdfResumeDocument({ data, paperSize }: PdfResumeDocumentProps) {
                     <View key={entry.id} style={styles.entry}>
                       {entry.heading || entry.dates ? (
                         <View
+                          minPresenceAhead={
+                            entry.bullets.length > 0 ? LINE_NEEDED_UNDER_ENTRY_HEADING : 0
+                          }
                           style={
                             entry.bullets.length > 0
                               ? [styles.entryHeading, styles.entryHeadingWithBullets]
@@ -215,7 +231,11 @@ export function PdfResumeDocument({ data, paperSize }: PdfResumeDocumentProps) {
                       ) : null}
 
                       {entry.bullets.map((bullet, index) => (
-                        <View key={`${entry.id}-${index}`} style={styles.bulletRow}>
+                        <View
+                          key={`${entry.id}-${index}`}
+                          wrap={BULLET_SPLITS_ACROSS_PAGES}
+                          style={styles.bulletRow}
+                        >
                           <Text style={styles.bulletMarker}>{'\u2022'}</Text>
                           <Text style={styles.bulletText}>{bullet}</Text>
                         </View>
