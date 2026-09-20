@@ -12,7 +12,7 @@ import { zipFiles } from './zipFiles';
  * and header links are real Word hyperlinks.
  */
 
-const L = HEADLESS_LAYOUT;
+const LYT = HEADLESS_LAYOUT;
 
 const W_NS = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
 const R_NS = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships';
@@ -76,24 +76,24 @@ function writeStyles(data: NormalizedResumeExport, rightTabTwips: number): strin
     `<w:spacing w:before="${before}" w:after="${after}" w:line="${line}" w:lineRule="auto"/>`;
   return `${XML_DECLARATION}<w:styles xmlns:w="${W_NS}">
 <w:docDefaults>
-<w:rPrDefault><w:rPr>${font}<w:color w:val="000000"/><w:sz w:val="${toHalfPoints(L.bodyFontSize)}"/><w:szCs w:val="${toHalfPoints(L.bodyFontSize)}"/><w:lang w:val="en-US"/></w:rPr></w:rPrDefault>
+<w:rPrDefault><w:rPr>${font}<w:color w:val="000000"/><w:sz w:val="${toHalfPoints(LYT.bodyFontSize)}"/><w:szCs w:val="${toHalfPoints(LYT.bodyFontSize)}"/><w:lang w:val="en-US"/></w:rPr></w:rPrDefault>
 <w:pPrDefault><w:pPr>${spacing(0, 0, LINE_ONE_AND_HALF)}</w:pPr></w:pPrDefault>
 </w:docDefaults>
 <w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/><w:qFormat/></w:style>
 <w:style w:type="paragraph" w:styleId="Title"><w:name w:val="Title"/><w:basedOn w:val="Normal"/><w:next w:val="Contact"/><w:qFormat/>
-<w:pPr><w:keepNext/>${spacing(toTwips(L.nameMarginTop), toTwips(L.nameMarginBottom), LINE_SINGLE)}<w:jc w:val="center"/></w:pPr>
-<w:rPr><w:b/><w:bCs/><w:sz w:val="${toHalfPoints(L.nameFontSize)}"/><w:szCs w:val="${toHalfPoints(L.nameFontSize)}"/></w:rPr></w:style>
+<w:pPr><w:keepNext/>${spacing(toTwips(LYT.nameMarginTop), toTwips(LYT.nameMarginBottom), LINE_SINGLE)}<w:jc w:val="center"/></w:pPr>
+<w:rPr><w:b/><w:bCs/><w:sz w:val="${toHalfPoints(LYT.nameFontSize)}"/><w:szCs w:val="${toHalfPoints(LYT.nameFontSize)}"/></w:rPr></w:style>
 <w:style w:type="paragraph" w:customStyle="1" w:styleId="Contact"><w:name w:val="Contact"/><w:basedOn w:val="Normal"/><w:qFormat/>
 <w:pPr>${spacing(0, 0, LINE_HEADER)}<w:jc w:val="center"/></w:pPr>
-<w:rPr><w:sz w:val="${toHalfPoints(L.contactFontSize)}"/><w:szCs w:val="${toHalfPoints(L.contactFontSize)}"/></w:rPr></w:style>
+<w:rPr><w:sz w:val="${toHalfPoints(LYT.contactFontSize)}"/><w:szCs w:val="${toHalfPoints(LYT.contactFontSize)}"/></w:rPr></w:style>
 <w:style w:type="paragraph" w:styleId="Heading1"><w:name w:val="heading 1"/><w:basedOn w:val="Normal"/><w:next w:val="Normal"/><w:qFormat/>
-<w:pPr><w:keepNext/>${spacing(toTwips(L.bodyLeading), 0, LINE_ONE_AND_HALF)}<w:outlineLvl w:val="0"/></w:pPr>
+<w:pPr><w:keepNext/>${spacing(toTwips(LYT.bodyLeading), 0, LINE_ONE_AND_HALF)}<w:outlineLvl w:val="0"/></w:pPr>
 <w:rPr><w:b/><w:bCs/></w:rPr></w:style>
 <w:style w:type="paragraph" w:customStyle="1" w:styleId="EntryHeading"><w:name w:val="Entry Heading"/><w:basedOn w:val="Normal"/><w:next w:val="ListBullet"/><w:qFormat/>
 <w:pPr><w:keepNext/><w:tabs><w:tab w:val="right" w:pos="${rightTabTwips}"/></w:tabs></w:pPr>
 <w:rPr><w:i/><w:iCs/></w:rPr></w:style>
 <w:style w:type="paragraph" w:styleId="ListBullet"><w:name w:val="List Bullet"/><w:basedOn w:val="Normal"/><w:qFormat/>
-<w:pPr><w:numPr><w:numId w:val="1"/></w:numPr><w:ind w:left="${toTwips(L.bulletTextIndent)}" w:hanging="${toTwips(L.bulletTextIndent - L.bulletMarkerIndent)}"/></w:pPr></w:style>
+<w:pPr><w:numPr><w:numId w:val="1"/></w:numPr><w:ind w:left="${toTwips(LYT.bulletTextIndent)}" w:hanging="${toTwips(LYT.bulletTextIndent - LYT.bulletMarkerIndent)}"/></w:pPr></w:style>
 <w:style w:type="character" w:styleId="Hyperlink"><w:name w:val="Hyperlink"/><w:rPr><w:color w:val="${linkColor}"/><w:u w:val="${linkUnderline}"/></w:rPr></w:style>
 </w:styles>`;
 }
@@ -102,7 +102,7 @@ function writeStyles(data: NormalizedResumeExport, rightTabTwips: number): strin
 const NUMBERING = `${XML_DECLARATION}<w:numbering xmlns:w="${W_NS}">
 <w:abstractNum w:abstractNumId="0"><w:multiLevelType w:val="singleLevel"/>
 <w:lvl w:ilvl="0"><w:start w:val="1"/><w:numFmt w:val="bullet"/><w:lvlText w:val="•"/><w:lvlJc w:val="left"/>
-<w:pPr><w:ind w:left="${toTwips(L.bulletTextIndent)}" w:hanging="${toTwips(L.bulletTextIndent - L.bulletMarkerIndent)}"/></w:pPr></w:lvl></w:abstractNum>
+<w:pPr><w:ind w:left="${toTwips(LYT.bulletTextIndent)}" w:hanging="${toTwips(LYT.bulletTextIndent - LYT.bulletMarkerIndent)}"/></w:pPr></w:lvl></w:abstractNum>
 <w:num w:numId="1"><w:abstractNumId w:val="0"/></w:num>
 </w:numbering>`;
 
@@ -143,7 +143,7 @@ function writeBody(data: NormalizedResumeExport): DocxBody {
         // Only a heading with bullets under it has the small gap the PDF leaves there.
         const gap =
           entry.bullets.length > 0
-            ? `<w:spacing w:after="${toTwips(L.entryHeadingMarginBottom)}"/>`
+            ? `<w:spacing w:after="${toTwips(LYT.entryHeadingMarginBottom)}"/>`
             : '';
         paragraphs.push(writeParagraph('EntryHeading', writeRun(text), gap));
       }
@@ -161,12 +161,12 @@ export async function createDocxExport(
   paperSize: PaperSize
 ): Promise<Uint8Array> {
   const paper = PAPER_SIZE_PT[paperSize];
-  const rightTabTwips = toTwips(paper.width - L.marginSide * 2);
+  const rightTabTwips = toTwips(paper.width - LYT.marginSide * 2);
   const body = writeBody(data);
   const pageSettings =
     `<w:pgSz w:w="${toTwips(paper.width)}" w:h="${toTwips(paper.height)}"/>` +
-    `<w:pgMar w:top="${toTwips(L.marginTop)}" w:right="${toTwips(L.marginSide)}" ` +
-    `w:bottom="${toTwips(L.marginBottom)}" w:left="${toTwips(L.marginSide)}" ` +
+    `<w:pgMar w:top="${toTwips(LYT.marginTop)}" w:right="${toTwips(LYT.marginSide)}" ` +
+    `w:bottom="${toTwips(LYT.marginBottom)}" w:left="${toTwips(LYT.marginSide)}" ` +
     `w:header="720" w:footer="720" w:gutter="0"/>`;
   const documentXml =
     `${XML_DECLARATION}<w:document xmlns:w="${W_NS}" xmlns:r="${R_NS}"><w:body>` +
