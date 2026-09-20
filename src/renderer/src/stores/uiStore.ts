@@ -38,13 +38,21 @@ export function clampPaneWidth(px: number, limits: PaneWidthLimits): number {
   if (!Number.isFinite(px)) return limits.defaultPx;
   return Math.round(Math.min(limits.maxPx, Math.max(limits.minPx, px)));
 }
-export const PREVIEW_ZOOM_STEPS = [0.75, 0.9, 1, 1.1, 1.25, 1.5] as const;
+/** What the zoom buttons step through. The wheel is free to land anywhere between. */
+export const PREVIEW_ZOOM_STEPS = [0.75, 0.9, 1, 1.15, 1.3, 1.5, 2, 3] as const;
+/** 100% is the page fitted to the panel's width, as in a PDF viewer. */
 export const PREVIEW_DEFAULT_ZOOM = 1;
+export const PREVIEW_ZOOM_RANGE = { min: 0.5, max: 3 } as const;
 
-function normalizePreviewZoom(zoom: number) {
-  return PREVIEW_ZOOM_STEPS.reduce((closest, step) =>
-    Math.abs(step - zoom) < Math.abs(closest - zoom) ? step : closest
-  );
+function clampPreviewZoom(zoom: number) {
+  if (!Number.isFinite(zoom)) return PREVIEW_DEFAULT_ZOOM;
+  return Math.min(PREVIEW_ZOOM_RANGE.max, Math.max(PREVIEW_ZOOM_RANGE.min, zoom));
+}
+
+/** The next step past `zoom`, going up or down; undefined at either end. */
+export function nextPreviewZoomStep(zoom: number, direction: 1 | -1): number | undefined {
+  const steps = direction === 1 ? [...PREVIEW_ZOOM_STEPS] : [...PREVIEW_ZOOM_STEPS].reverse();
+  return steps.find((step) => (direction === 1 ? step > zoom + 0.001 : step < zoom - 0.001));
 }
 
 export const DEFAULT_UI_STATE = {
@@ -115,18 +123,15 @@ export const useUiStore = create<UiState>()(
         }),
       setPreviewZoom: (zoom) =>
         set((state) => {
-          state.previewZoom = normalizePreviewZoom(zoom);
+          state.previewZoom = clampPreviewZoom(zoom);
         }),
       zoomPreviewIn: () =>
         set((state) => {
-          const index = PREVIEW_ZOOM_STEPS.indexOf(normalizePreviewZoom(state.previewZoom));
-          state.previewZoom =
-            PREVIEW_ZOOM_STEPS[Math.min(PREVIEW_ZOOM_STEPS.length - 1, index + 1)];
+          state.previewZoom = nextPreviewZoomStep(state.previewZoom, 1) ?? state.previewZoom;
         }),
       zoomPreviewOut: () =>
         set((state) => {
-          const index = PREVIEW_ZOOM_STEPS.indexOf(normalizePreviewZoom(state.previewZoom));
-          state.previewZoom = PREVIEW_ZOOM_STEPS[Math.max(0, index - 1)];
+          state.previewZoom = nextPreviewZoomStep(state.previewZoom, -1) ?? state.previewZoom;
         }),
       setSidebarWidthPx: (px) =>
         set((state) => {

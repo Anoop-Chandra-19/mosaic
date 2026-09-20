@@ -7,6 +7,7 @@ import { PreviewPage } from './PreviewPage';
 import { PreviewSection, type PreviewRenderableSection } from './PreviewSection';
 import {
   createFallbackMeasurements,
+  MAX_PREVIEW_PAGES,
   normalizeSections,
   paginateSections,
   type PaginationMeasurements,
@@ -22,9 +23,10 @@ interface ResumePreviewProps {
 }
 
 export interface ResumePreviewMeta {
-  visiblePages: number;
+  /** Pages laid out, which is every page unless the resume runs past the limit. */
   totalPages: number;
-  hasOverflowBeyondTwo: boolean;
+  /** The resume runs past `MAX_PREVIEW_PAGES`, so the rest was not laid out. */
+  hasMorePages: boolean;
 }
 
 const MEASUREMENT_THROTTLE_MS = 100;
@@ -138,27 +140,30 @@ export function ResumePreview({
   const paginationMeasurements = measurements ?? createFallbackMeasurements(activeSections);
 
   const paginated = useMemo(
-    () => paginateSections(activeSections, paginationMeasurements, pageContentSize.height),
+    // One page past the limit, so "exactly ten" can be told from "more than ten".
+    () =>
+      paginateSections(
+        activeSections,
+        paginationMeasurements,
+        pageContentSize.height,
+        MAX_PREVIEW_PAGES + 1
+      ),
     [activeSections, paginationMeasurements, pageContentSize.height]
   );
 
-  const meta = useMemo<ResumePreviewMeta>(() => {
-    const totalPages = paginated.length;
-    return {
-      visiblePages: Math.min(2, totalPages),
-      totalPages,
-      hasOverflowBeyondTwo: totalPages > 2,
-    };
-  }, [paginated]);
+  const meta = useMemo<ResumePreviewMeta>(
+    () => ({
+      totalPages: Math.min(MAX_PREVIEW_PAGES, paginated.length),
+      hasMorePages: paginated.length > MAX_PREVIEW_PAGES,
+    }),
+    [paginated]
+  );
 
   useEffect(() => {
     onMetaChange(meta);
   }, [meta, onMetaChange]);
 
-  const visiblePages = Array.from(
-    { length: meta.visiblePages },
-    (_, index) => paginated[index] ?? []
-  );
+  const drawnPages = paginated.slice(0, MAX_PREVIEW_PAGES);
 
   // Chrome's PDF viewer model: the page's layout never changes, it is just
   // drawn larger or smaller. transform (not CSS zoom) is what guarantees that,
@@ -166,8 +171,7 @@ export function ResumePreview({
   const fitScale = availableWidth > 0 ? Math.min(1, availableWidth / paper.width) : 1;
   const scale = fitScale * previewZoom;
   const scaledHeight =
-    (paper.height * visiblePages.length + PAGE_GAP_PX * Math.max(0, visiblePages.length - 1)) *
-    scale;
+    (paper.height * drawnPages.length + PAGE_GAP_PX * Math.max(0, drawnPages.length - 1)) * scale;
 
   return (
     <>
@@ -176,6 +180,7 @@ export function ResumePreview({
             layout. mx-auto centers it when it fits and falls back to flush left
             (auto margins resolve to zero) once it is wider than the panel. */}
         <div
+          data-preview-stack
           className="mx-auto"
           style={{ width: `${paper.width * scale}px`, height: `${scaledHeight}px` }}
         >
@@ -187,8 +192,15 @@ export function ResumePreview({
               transformOrigin: 'top left',
             }}
           >
-            {visiblePages.map((pageSections, pageIndex) => (
-              <PreviewPage key={`preview-page-${pageIndex}`} paperSize={paperSize}>
+            {drawnPages.map((pageSections, pageIndex) => (
+              <PreviewPage
+                key={`preview-page-${pageIndex}`}
+                paperSize={paperSize}
+                // One sheet needs no number; several do, as in a printed document.
+                pageNumber={drawnPages.length > 1 ? pageIndex + 1 : undefined}
+                pageCount={meta.totalPages}
+                pageCountIsPartial={meta.hasMorePages}
+              >
                 {pageIndex === 0 && <PreviewHeader contact={contact} />}
                 {pageSections.map((section) => (
                   <PreviewSection key={`${section.id}-${pageIndex}`} section={section} />
@@ -197,6 +209,12 @@ export function ResumePreview({
             ))}
           </div>
         </div>
+        {meta.hasMorePages && (
+          <p className="mt-4 text-center text-xs text-ink-faint">
+            This resume runs past {MAX_PREVIEW_PAGES} pages. The preview stops here; the export
+            holds all of it.
+          </p>
+        )}
       </div>
 
       {/* Offscreen, unpaginated, unscaled render that page splitting measures. */}

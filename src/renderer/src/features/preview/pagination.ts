@@ -245,10 +245,19 @@ function createEmptyPage(pageIndex: number, measurements: PaginationMeasurements
   return { sections: [], usedHeight: pageIndex === 0 ? measurements.headerHeight : 0 };
 }
 
+/**
+ * How many pages the preview draws. A resume is one or two; a few more happen while an
+ * import is being sorted out. Past this, laying out pages nobody will send only costs time,
+ * so the preview stops and says so.
+ */
+export const MAX_PREVIEW_PAGES = 10;
+
 export function paginateSections(
   sections: PreviewRenderableSection[],
   measurements: PaginationMeasurements,
-  pageContentHeight: number
+  pageContentHeight: number,
+  /** Stop once this many pages are laid out. */
+  maxPages = MAX_PREVIEW_PAGES
 ): PreviewRenderableSection[][] {
   const pages: PageLayout[] = [createEmptyPage(0, measurements)];
   let continuationIndex = 0;
@@ -352,10 +361,7 @@ export function paginateSections(
       }
     }
 
-    if (pages.length >= 3) {
-      // The UI previews up to three pages and reports any extra overflow separately.
-      break;
-    }
+    if (pages.length >= maxPages) break;
   }
 
   const normalizedPages = pages
@@ -364,7 +370,7 @@ export function paginateSections(
       sections: page.sections.filter((section) => section.entries.length > 0),
     }))
     .filter((page) => page.sections.length > 0)
-    .slice(0, 3)
+    .slice(0, maxPages)
     .map((page) => page.sections);
 
   return normalizedPages.length > 0 ? normalizedPages : [[]];

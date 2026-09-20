@@ -116,8 +116,8 @@ export function StatusBar() {
     );
   }
 
-  const pages = meta.hasOverflowBeyondTwo ? '2+' : String(meta.visiblePages);
-  const pagesWord = meta.visiblePages === 1 && !meta.hasOverflowBeyondTwo ? 'page' : 'pages';
+  const pages = `${meta.totalPages}${meta.hasMorePages ? '+' : ''}`;
+  const pagesWord = meta.totalPages === 1 && !meta.hasMorePages ? 'page' : 'pages';
 
   return (
     <footer className="flex h-7 shrink-0 items-center justify-between gap-3 border-t border-border bg-card px-2 text-xs text-zinc-600 dark:text-zinc-400">

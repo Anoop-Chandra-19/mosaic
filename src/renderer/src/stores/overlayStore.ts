@@ -83,7 +83,7 @@ export const useOverlayStore = create<OverlayState>()((set) => ({
   exportVersion: null,
   pendingRestore: null,
   preview: null,
-  previewMeta: { visiblePages: 1, totalPages: 1, hasOverflowBeyondTwo: false },
+  previewMeta: { totalPages: 1, hasMorePages: false },
   toast: null,
   setStartOpen: (startOpen) => set({ startOpen }),
   openSettings: (section = 'general') => set({ settingsSection: section }),
@@ -100,9 +100,8 @@ export const useOverlayStore = create<OverlayState>()((set) => ({
   // equal copy would re-render the preview, which reports again — a loop.
   setPreviewMeta: (meta) =>
     set((state) =>
-      state.previewMeta.visiblePages === meta.visiblePages &&
       state.previewMeta.totalPages === meta.totalPages &&
-      state.previewMeta.hasOverflowBeyondTwo === meta.hasOverflowBeyondTwo
+      state.previewMeta.hasMorePages === meta.hasMorePages
         ? state
         : { previewMeta: meta }
     ),
