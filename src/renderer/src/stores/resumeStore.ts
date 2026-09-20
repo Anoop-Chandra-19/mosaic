@@ -29,6 +29,25 @@ const SAVE_DELAY_MS = 1000;
 /** …or after this long of non-stop edits, so a crash loses seconds, not a session. */
 const SAVE_MAX_WAIT_MS = 5000;
 
+/** How many steps back the editor remembers, within one open draft. */
+const UNDO_HISTORY_LIMIT = 100;
+
+/** A step that can be taken back: the document before it, and what the step did. */
+interface HistoryStep {
+  doc: ResumeData;
+  /** Reads after "Undo": "delete bullet". */
+  label: string;
+}
+
+/*
+ * The two stacks sit outside the store: they are whole documents, nothing renders them,
+ * and immer has no business drafting them. What the buttons and the status bar need is in
+ * the store instead, as `undoLabel`, `redoLabel`, and the count against the baseline.
+ * Both stacks belong to the draft in the editor and are dropped when another one loads.
+ */
+let past: HistoryStep[] = [];
+let future: HistoryStep[] = [];
+
 interface ResumeState extends ResumeData {
   /** The template whose draft this is; null while no template is open. */
   templateId: string | null;
@@ -42,7 +61,31 @@ interface ResumeState extends ResumeData {
    */
   savedAt: number | null;
 
-  loadDraft: (draft: Draft | null) => void;
+  /** What Ctrl/⌘+Z would take back ("delete bullet"), or null when there is nothing. */
+  undoLabel: string | null;
+  /** What redo would put back, or null. */
+  redoLabel: string | null;
+  /**
+   * Steps between the draft and `baselineRev`: negative once the draft has been undone
+   * past it. The status bar counts with it ("3 changes since v2").
+   */
+  changesSinceBaseline: number;
+  /** The rev the count runs from: the draft as it loaded, or as the newest version named it. */
+  baselineRev: number;
+  /** False once an edit on top of an undo dropped the states between here and the baseline. */
+  baselineReachable: boolean;
+
+  /**
+   * Put a document from main in the editor. `asStep` names it as one step that can be
+   * taken back ("import", "restore") when it replaces the same template's draft; without
+   * it the history starts again, because the steps belong to the document that just left.
+   */
+  loadDraft: (draft: Draft | null, options?: { asStep?: string }) => void;
+  /** Takes back the newest step, and saves the result like any other change. */
+  undo: () => void;
+  redo: () => void;
+  /** A version was just named at `rev`: the draft matches it, so counting starts again. */
+  markVersionSaved: (rev: number) => void;
 
   setName: (name: string) => void;
   setLinkStyle: (linkStyle: LinkStyle) => void;
@@ -104,6 +147,23 @@ function moveBy<T>(list: T[], index: number, offset: -1 | 1) {
   [list[index], list[to]] = [list[to], list[index]];
 }
 
+/** The section as it stands, for a label that depends on it. */
+function findSection(sectionId: string) {
+  return useResumeStore.getState().sections.find((s) => s.id === sectionId);
+}
+
+/** The entry as it stands, for a label that depends on it. */
+function findEntry(sectionId: string, entryId: string) {
+  return findSection(sectionId)?.items.find((e) => e.id === entryId);
+}
+
+/** Puts a whole document in the editor, leaving everything around it alone. */
+function putDocument(state: ResumeState, doc: ResumeData) {
+  state.schemaVersion = doc.schemaVersion;
+  state.contact = doc.contact;
+  state.sections = doc.sections;
+}
+
 function findHeaderItemPosition(header: ResumeHeader, itemId: string) {
   for (const line of header.lines) {
     const index = line.items.findIndex((item) => item.id === itemId);
@@ -116,11 +176,25 @@ function findHeaderItemPosition(header: ResumeHeader, itemId: string) {
 
 export const useResumeStore = create<ResumeState>()(
   immer((set) => {
-    /** An edit: change the document, bump the rev, and queue a save. */
-    const edit = (recipe: (state: ResumeState) => void) => {
+    /**
+     * An edit: change the document, bump the rev, queue a save, and remember the document
+     * as it was so `label` can be taken back.
+     */
+    const edit = (label: string, recipe: (state: ResumeState) => void) => {
+      const before = getResumeSnapshot();
+      // A step taken after an undo drops what had been undone. The baseline goes with it
+      // when it was among those states, and then the count no longer means anything.
+      const lostBaseline = future.length > 0 && useResumeStore.getState().changesSinceBaseline < 0;
+      past.push({ doc: before, label });
+      if (past.length > UNDO_HISTORY_LIMIT) past.shift();
+      future = [];
       set((state) => {
         recipe(state);
         state.rev += 1;
+        state.changesSinceBaseline += 1;
+        if (lostBaseline) state.baselineReachable = false;
+        state.undoLabel = label;
+        state.redoLabel = null;
       });
       scheduleSave();
     };
@@ -131,35 +205,94 @@ export const useResumeStore = create<ResumeState>()(
       rev: 0,
       saveFailed: false,
       savedAt: null,
+      undoLabel: null,
+      redoLabel: null,
+      changesSinceBaseline: 0,
+      baselineRev: 0,
+      baselineReachable: true,
 
-      loadDraft: (draft) => {
+      /*
+       * Another document takes the editor. An import or a restore replaces the draft that
+       * is open, and reads as one step of it, so Ctrl/⌘+Z puts the old document back — in
+       * the draft only. Main keeps both of its version rows either way: undo moves the
+       * draft, it never rewrites the history of what happened. A different template is a
+       * different document, and its steps are not this one's, so those start again.
+       */
+      loadDraft: (draft, options) => {
         cancelPendingSave();
         const doc = draft?.doc ?? createEmptyResume();
+        const step = options?.asStep;
+        if (step) {
+          past.push({ doc: getResumeSnapshot(), label: step });
+          if (past.length > UNDO_HISTORY_LIMIT) past.shift();
+        } else {
+          past = [];
+        }
+        future = [];
         set((state) => {
-          state.schemaVersion = doc.schemaVersion;
-          state.contact = doc.contact;
-          state.sections = doc.sections;
+          putDocument(state, doc);
           state.templateId = draft?.templateId ?? null;
           state.rev = draft?.rev ?? 0;
           state.saveFailed = false;
           state.savedAt = null;
+          state.undoLabel = step ?? null;
+          state.redoLabel = null;
+          // Main wrote a version holding exactly this document, so the count starts here.
+          state.changesSinceBaseline = 0;
+          state.baselineRev = draft?.rev ?? 0;
+          state.baselineReachable = true;
         });
       },
+
+      undo: () => {
+        const step = past.pop();
+        if (!step) return;
+        future.push({ doc: getResumeSnapshot(), label: step.label });
+        set((state) => {
+          putDocument(state, structuredClone(step.doc));
+          state.rev += 1;
+          state.changesSinceBaseline -= 1;
+          state.undoLabel = past.at(-1)?.label ?? null;
+          state.redoLabel = step.label;
+        });
+        scheduleSave();
+      },
+
+      redo: () => {
+        const step = future.pop();
+        if (!step) return;
+        past.push({ doc: getResumeSnapshot(), label: step.label });
+        set((state) => {
+          putDocument(state, structuredClone(step.doc));
+          state.rev += 1;
+          state.changesSinceBaseline += 1;
+          state.undoLabel = step.label;
+          state.redoLabel = future.at(-1)?.label ?? null;
+        });
+        scheduleSave();
+      },
+
+      markVersionSaved: (rev) =>
+        set((state) => {
+          state.changesSinceBaseline = 0;
+          state.baselineRev = rev;
+          state.baselineReachable = true;
+        }),
 
       // Name and header
 
       setName: (name) =>
-        edit((state) => {
+        edit('edit the name', (state) => {
           state.contact.name = name;
         }),
 
       setLinkStyle: (linkStyle) =>
-        edit((state) => {
+        edit('change the link style', (state) => {
           state.contact.header.linkStyle = linkStyle;
         }),
 
       setLinkColor: (linkColor) =>
-        edit((state) => {
+        edit('change the link color', (state) => {
           // Black is the default, so it is written by leaving the colour out.
           if (linkColor === 'ink') delete state.contact.header.linkColor;
           else state.contact.header.linkColor = linkColor;
@@ -167,20 +300,20 @@ export const useResumeStore = create<ResumeState>()(
 
       addHeaderLine: () => {
         const line = createHeaderLine();
-        edit((state) => {
+        edit('add a header line', (state) => {
           state.contact.header.lines.push(line);
         });
         return line.id;
       },
 
       updateHeaderLine: (lineId, patch) =>
-        edit((state) => {
+        edit('change a header line', (state) => {
           const line = state.contact.header.lines.find((l) => l.id === lineId);
           if (line) Object.assign(line, patch);
         }),
 
       moveHeaderLine: (lineId, offset) =>
-        edit((state) => {
+        edit('move a header line', (state) => {
           const { lines } = state.contact.header;
           moveBy(
             lines,
@@ -190,33 +323,33 @@ export const useResumeStore = create<ResumeState>()(
         }),
 
       removeHeaderLine: (lineId) =>
-        edit((state) => {
+        edit('delete a header line', (state) => {
           const { header } = state.contact;
           header.lines = header.lines.filter((l) => l.id !== lineId);
         }),
 
       addHeaderItem: (lineId, kind) => {
         const item = createHeaderItem(kind);
-        edit((state) => {
+        edit('add to the header', (state) => {
           state.contact.header.lines.find((l) => l.id === lineId)?.items.push(item);
         });
         return item.id;
       },
 
       updateHeaderItem: (itemId, patch) =>
-        edit((state) => {
+        edit('edit the header', (state) => {
           const found = findHeaderItemPosition(state.contact.header, itemId);
           if (found) Object.assign(found.line.items[found.index], patch);
         }),
 
       moveHeaderItem: (itemId, offset) =>
-        edit((state) => {
+        edit('move a header item', (state) => {
           const found = findHeaderItemPosition(state.contact.header, itemId);
           if (found) moveBy(found.line.items, found.index, offset);
         }),
 
       moveHeaderItemToLine: (itemId, lineId) =>
-        edit((state) => {
+        edit('move a header item', (state) => {
           const { header } = state.contact;
           const found = findHeaderItemPosition(header, itemId);
           const target = header.lines.find((l) => l.id === lineId);
@@ -226,7 +359,7 @@ export const useResumeStore = create<ResumeState>()(
         }),
 
       duplicateHeaderItem: (itemId) =>
-        edit((state) => {
+        edit('duplicate a header item', (state) => {
           const found = findHeaderItemPosition(state.contact.header, itemId);
           if (!found) return;
           const copy = { ...found.line.items[found.index], id: crypto.randomUUID() };
@@ -234,7 +367,7 @@ export const useResumeStore = create<ResumeState>()(
         }),
 
       removeHeaderItem: (itemId) =>
-        edit((state) => {
+        edit('delete from the header', (state) => {
           const found = findHeaderItemPosition(state.contact.header, itemId);
           if (found) found.line.items.splice(found.index, 1);
         }),
@@ -243,19 +376,19 @@ export const useResumeStore = create<ResumeState>()(
 
       addSection: ({ kind, layout, label }) => {
         const id = crypto.randomUUID();
-        edit((state) => {
+        edit('add a section', (state) => {
           state.sections.push({ id, kind, layout, label, items: [], order: state.sections.length });
         });
         return id;
       },
 
       removeSection: (sectionId) =>
-        edit((state) => {
+        edit('delete a section', (state) => {
           state.sections = state.sections.filter((s) => s.id !== sectionId);
         }),
 
       reorderSections: (orderedIds) =>
-        edit((state) => {
+        edit('reorder sections', (state) => {
           const byId = new Map(state.sections.map((s) => [s.id, s]));
           state.sections = orderedIds
             .map((id, i) => {
@@ -267,29 +400,31 @@ export const useResumeStore = create<ResumeState>()(
         }),
 
       updateSectionLabel: (sectionId, label) =>
-        edit((state) => {
+        edit('rename a section', (state) => {
           const section = state.sections.find((s) => s.id === sectionId);
           if (section) section.label = label;
         }),
 
-      toggleSection: (sectionId) =>
-        edit((state) => {
+      toggleSection: (sectionId) => {
+        const wasHidden = findSection(sectionId)?.hidden ?? false;
+        edit(wasHidden ? 'put a section back' : 'leave a section off', (state) => {
           const section = state.sections.find((s) => s.id === sectionId);
           if (!section) return;
           if (section.hidden) delete section.hidden;
           else section.hidden = true;
-        }),
+        });
+      },
 
       // Entry CRUD
 
       addEntry: (sectionId, entry) =>
-        edit((state) => {
+        edit('add an entry', (state) => {
           const section = state.sections.find((s) => s.id === sectionId);
           if (section) section.items.push({ ...entry, id: crypto.randomUUID() });
         }),
 
       updateEntry: (sectionId, entryId, patch) =>
-        edit((state) => {
+        edit('edit an entry', (state) => {
           const section = state.sections.find((s) => s.id === sectionId);
           if (!section) return;
           const entry = section.items.find((e) => e.id === entryId);
@@ -297,13 +432,14 @@ export const useResumeStore = create<ResumeState>()(
         }),
 
       removeEntry: (sectionId, entryId) =>
-        edit((state) => {
+        edit('delete an entry', (state) => {
           const section = state.sections.find((s) => s.id === sectionId);
           if (section) section.items = section.items.filter((e) => e.id !== entryId);
         }),
 
-      toggleEntry: (sectionId, entryId) =>
-        edit((state) => {
+      toggleEntry: (sectionId, entryId) => {
+        const wasOn = findEntry(sectionId, entryId)?.selected ?? false;
+        edit(wasOn ? 'leave an entry off' : 'put an entry back', (state) => {
           const section = state.sections.find((s) => s.id === sectionId);
           if (!section) return;
           const entry = section.items.find((e) => e.id === entryId);
@@ -311,10 +447,11 @@ export const useResumeStore = create<ResumeState>()(
           const next = !entry.selected;
           entry.selected = next;
           for (const b of entry.bullets) b.selected = next;
-        }),
+        });
+      },
 
       reorderEntries: (sectionId, orderedIds) =>
-        edit((state) => {
+        edit('reorder entries', (state) => {
           const section = state.sections.find((s) => s.id === sectionId);
           if (!section) return;
           const byId = new Map(section.items.map((e) => [e.id, e]));
@@ -324,7 +461,7 @@ export const useResumeStore = create<ResumeState>()(
         }),
 
       duplicateEntry: (sectionId, entryId) =>
-        edit((state) => {
+        edit('duplicate an entry', (state) => {
           const section = state.sections.find((s) => s.id === sectionId);
           if (!section) return;
           const index = section.items.findIndex((e) => e.id === entryId);
@@ -339,7 +476,7 @@ export const useResumeStore = create<ResumeState>()(
       // Bullet CRUD
 
       addBullet: (sectionId, entryId, text) =>
-        edit((state) => {
+        edit('add a bullet', (state) => {
           const section = state.sections.find((s) => s.id === sectionId);
           if (!section) return;
           const entry = section.items.find((e) => e.id === entryId);
@@ -347,7 +484,7 @@ export const useResumeStore = create<ResumeState>()(
         }),
 
       updateBullet: (sectionId, entryId, bulletId, text) =>
-        edit((state) => {
+        edit('edit a bullet', (state) => {
           const section = state.sections.find((s) => s.id === sectionId);
           if (!section) return;
           const entry = section.items.find((e) => e.id === entryId);
@@ -357,25 +494,28 @@ export const useResumeStore = create<ResumeState>()(
         }),
 
       removeBullet: (sectionId, entryId, bulletId) =>
-        edit((state) => {
+        edit('delete a bullet', (state) => {
           const section = state.sections.find((s) => s.id === sectionId);
           if (!section) return;
           const entry = section.items.find((e) => e.id === entryId);
           if (entry) entry.bullets = entry.bullets.filter((b) => b.id !== bulletId);
         }),
 
-      toggleBullet: (sectionId, entryId, bulletId) =>
-        edit((state) => {
+      toggleBullet: (sectionId, entryId, bulletId) => {
+        const wasOn =
+          findEntry(sectionId, entryId)?.bullets.find((b) => b.id === bulletId)?.selected ?? false;
+        edit(wasOn ? 'leave a bullet off' : 'put a bullet back', (state) => {
           const section = state.sections.find((s) => s.id === sectionId);
           if (!section) return;
           const entry = section.items.find((e) => e.id === entryId);
           if (!entry) return;
           const bullet = entry.bullets.find((b) => b.id === bulletId);
           if (bullet) bullet.selected = !bullet.selected;
-        }),
+        });
+      },
 
       duplicateBullet: (sectionId, entryId, bulletId) =>
-        edit((state) => {
+        edit('duplicate a bullet', (state) => {
           const entry = state.sections
             .find((s) => s.id === sectionId)
             ?.items.find((e) => e.id === entryId);
@@ -386,7 +526,7 @@ export const useResumeStore = create<ResumeState>()(
         }),
 
       moveBullet: (sectionId, entryId, bulletId, offset) =>
-        edit((state) => {
+        edit('move a bullet', (state) => {
           const entry = state.sections
             .find((s) => s.id === sectionId)
             ?.items.find((e) => e.id === entryId);

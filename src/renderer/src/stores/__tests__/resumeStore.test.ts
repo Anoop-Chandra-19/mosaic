@@ -201,3 +201,136 @@ describe('resumeStore sections, entries, and bullets', () => {
     expect(job().bullets[0].id).toBe(a.id);
   });
 });
+
+describe('resumeStore undo and redo', () => {
+  const job = () => store().sections.find((s) => s.id === 'sec-experience')!.items[0];
+
+  it('takes back a change and puts it back, naming each step', () => {
+    const before = job().bullets.length;
+    store().removeBullet('sec-experience', job().id, job().bullets[0].id);
+    expect([store().undoLabel, store().redoLabel]).toEqual(['delete a bullet', null]);
+
+    store().undo();
+    expect(job().bullets).toHaveLength(before);
+    expect([store().undoLabel, store().redoLabel]).toEqual([null, 'delete a bullet']);
+
+    store().redo();
+    expect(job().bullets).toHaveLength(before - 1);
+    expect([store().undoLabel, store().redoLabel]).toEqual(['delete a bullet', null]);
+  });
+
+  it('does nothing at either end of the history', () => {
+    const rev = store().rev;
+    store().undo();
+    store().redo();
+    expect(store().rev).toBe(rev);
+    expect([store().undoLabel, store().redoLabel]).toEqual([null, null]);
+  });
+
+  it('walks back through every step in order', () => {
+    store().setName('Ada');
+    store().addSection({ kind: 'custom', layout: 'entries', label: 'Awards' });
+    store().setName('Grace');
+
+    expect(store().undoLabel).toBe('edit the name');
+    store().undo();
+    expect([store().contact.name, store().undoLabel]).toEqual(['Ada', 'add a section']);
+    store().undo();
+    expect(store().sections.some((s) => s.label === 'Awards')).toBe(false);
+    store().undo();
+    expect(store().contact.name).toBe(createDefaultResume().contact.name);
+    expect(store().undoLabel).toBeNull();
+  });
+
+  it('bumps the rev and saves, so an undo is on disk like any other change', async () => {
+    store().setName('Ada');
+    await flushDraft();
+    const saved = store().rev;
+
+    store().undo();
+    expect(store().rev).toBe(saved + 1);
+    await flushDraft();
+    const [, doc, rev] = save.mock.calls.at(-1)!;
+    expect([doc.contact.name, rev]).toEqual([createDefaultResume().contact.name, saved + 1]);
+  });
+
+  it('drops what was undone once a new change is made', () => {
+    store().setName('Ada');
+    store().undo();
+    expect(store().redoLabel).toBe('edit the name');
+
+    store().setName('Grace');
+    expect(store().redoLabel).toBeNull();
+    store().undo();
+    expect(store().contact.name).toBe(createDefaultResume().contact.name);
+  });
+
+  it('starts again for the next draft', () => {
+    store().setName('Ada');
+    store().loadDraft({ templateId: 't2', doc: createDefaultResume(), rev: 9 });
+    expect([store().undoLabel, store().redoLabel]).toEqual([null, null]);
+
+    store().undo();
+    expect(store().rev).toBe(9);
+  });
+
+  it('takes back an import or a restore as one step, with the steps before it intact', () => {
+    const fromTheFile: ResumeData = {
+      ...createDefaultResume(),
+      contact: { ...createDefaultResume().contact, name: 'From the file' },
+    };
+    store().setName('Ada');
+
+    store().loadDraft({ templateId: 't1', doc: fromTheFile, rev: 20 }, { asStep: 'import' });
+    expect(store().contact.name).toBe('From the file');
+    // Main wrote a version holding this document, so the draft matches it.
+    expect([store().undoLabel, store().changesSinceBaseline, store().baselineRev]).toEqual([
+      'import',
+      0,
+      20,
+    ]);
+
+    store().undo();
+    expect([store().contact.name, store().changesSinceBaseline]).toEqual(['Ada', -1]);
+    // The editing that happened before the import is still there to walk back through.
+    expect(store().undoLabel).toBe('edit the name');
+    store().redo();
+    expect(store().contact.name).toBe('From the file');
+  });
+
+  it('counts the steps between the draft and the newest version, either way', () => {
+    expect([store().changesSinceBaseline, store().baselineRev]).toEqual([0, 4]);
+
+    store().setName('Ada');
+    store().setName('Grace');
+    expect(store().changesSinceBaseline).toBe(2);
+
+    // A version named here is what the count runs from from now on.
+    store().markVersionSaved(store().rev);
+    store().setName('Hopper');
+    expect(store().changesSinceBaseline).toBe(1);
+
+    store().undo();
+    expect(store().changesSinceBaseline).toBe(0);
+    store().undo();
+    // A step further back than that version: the count says which way it went.
+    expect([store().contact.name, store().changesSinceBaseline]).toEqual(['Ada', -1]);
+    expect(store().baselineReachable).toBe(true);
+
+    // A new step drops the ones that were undone, the version's own among them.
+    store().setName('Hedy');
+    expect(store().baselineReachable).toBe(false);
+
+    store().markVersionSaved(store().rev);
+    expect([store().changesSinceBaseline, store().baselineReachable]).toEqual([0, true]);
+  });
+
+  it('remembers a hundred steps, and lets go of the oldest', () => {
+    for (let step = 0; step < 120; step++) store().setName(`Name ${step}`);
+    for (let step = 0; step < 120; step++) store().undo();
+
+    // The first twenty are gone, so the name is as it was at the twentieth step.
+    expect(store().contact.name).toBe('Name 19');
+    expect(store().undoLabel).toBeNull();
+  });
+});

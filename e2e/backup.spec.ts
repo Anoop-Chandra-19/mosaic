@@ -132,7 +132,8 @@ test('deleting a template can be undone', async () => {
   await expect(page.getByText('Deleted “Untitled resume” and its 1 version')).toBeVisible();
   await expect(page.getByRole('banner').getByText('No resume open')).toBeVisible();
 
-  await page.getByRole('button', { name: 'Undo' }).click();
+  // The toast's own Undo, not the top bar's, which is about the document being edited.
+  await page.getByRole('status').getByRole('button', { name: 'Undo' }).click();
   await expect(page.getByText('Brought back “Untitled resume”')).toBeVisible();
   await page.getByRole('tab', { name: 'Content' }).click();
   await expect(page.getByRole('complementary').getByText('Ada Lovelace')).toBeVisible();

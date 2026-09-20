@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { TopBar } from './TopBar';
+import { READING_A_VERSION, TopBar } from './TopBar';
 import { Sidebar } from './Sidebar';
 import { StatusBar } from './StatusBar';
 import { PreviewPanel } from './PreviewPanel';
@@ -11,7 +11,7 @@ import { ImportResumeDialog } from '@/features/import/ImportResumeDialog';
 import { SettingsDialog } from '@/features/settings/SettingsDialog';
 import { StartPanel } from '@/features/start/StartPanel';
 import { NameVersionDialog } from '@/features/templates/NameVersionDialog';
-import { isModKey } from '@/lib/keyboardShortcuts';
+import { isModKey, isRedoKey, isTypingField, isUndoKey } from '@/lib/keyboardShortcuts';
 import { useAiStore } from '@/stores/aiStore';
 import { showToast, useOverlayStore } from '@/stores/overlayStore';
 import { useResumeStore } from '@/stores/resumeStore';
@@ -57,12 +57,27 @@ export function AppShell() {
 }
 
 /**
- * Ctrl/⌘+S names a version — the draft itself is always saved already. Ctrl/⌘+B shows or
- * hides the sidebar, Ctrl/⌘+\ the assistant while AI is on, and Ctrl/⌘+, opens Settings.
+ * Ctrl/⌘+S names a version — the draft itself is always saved already. Ctrl/⌘+Z undoes and
+ * Ctrl/⌘+Shift+Z (or Ctrl+Y) redoes, except while a field is being typed in, where the
+ * browser's own undo belongs to that field. Ctrl/⌘+B shows or hides the sidebar, Ctrl/⌘+\
+ * the assistant while AI is on, and Ctrl/⌘+, opens Settings.
  */
 function useShortcuts() {
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
+      if (isUndoKey(event) || isRedoKey(event)) {
+        if (isTypingField(event.target)) return;
+        event.preventDefault();
+        // Reading an older version changes nothing, least of all out of sight.
+        if (useOverlayStore.getState().preview) {
+          showToast(READING_A_VERSION);
+          return;
+        }
+        const resume = useResumeStore.getState();
+        if (isUndoKey(event)) resume.undo();
+        else resume.redo();
+        return;
+      }
       if (!isModKey(event)) return;
       if (event.key === ',') {
         event.preventDefault();

@@ -1,11 +1,15 @@
-import { Download, Moon, Save, Settings, Sun, Upload } from 'lucide-react';
+import { Download, Moon, Redo2, Save, Settings, Sun, Undo2, Upload } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
-import { shortcutLabel } from '@/lib/keyboardShortcuts';
+import { redoShortcutLabel, shortcutLabel } from '@/lib/keyboardShortcuts';
 import { showToast, useOverlayStore } from '@/stores/overlayStore';
+import { useResumeStore } from '@/stores/resumeStore';
 import { useDarkMode } from '@/lib/hooks/useDarkMode';
 import { useActiveTemplate } from '@/features/templates/useActiveTemplate';
 import { useTemplateStatus } from '@/features/templates/useTemplateStatus';
 import { TemplateStatusBadge } from '@/features/templates/TemplateStatusBadge';
+
+/** Reading an older version is a read mode: the draft is left where it is. */
+export const READING_A_VERSION = 'Go back to your draft to edit it.';
 
 export function TopBar() {
   const { darkMode, toggleDarkMode } = useDarkMode();
@@ -15,6 +19,11 @@ export function TopBar() {
   const templateStatus = useTemplateStatus();
   const openImport = useOverlayStore((s) => s.openImport);
   const setNameVersionOpen = useOverlayStore((s) => s.setNameVersionOpen);
+  const undoLabel = useResumeStore((s) => s.undoLabel);
+  const redoLabel = useResumeStore((s) => s.redoLabel);
+  const undo = useResumeStore((s) => s.undo);
+  const redo = useResumeStore((s) => s.redo);
+  const previewing = useOverlayStore((s) => s.preview !== null);
 
   return (
     <header className="flex h-12 shrink-0 items-center justify-between gap-3 border-b border-border bg-card px-4">
@@ -49,8 +58,40 @@ export function TopBar() {
         </div>
       </div>
 
-      {/* As in the design: Settings, then the theme and the two file actions by name. */}
+      {/* As in the design: undo and redo, Settings, then the theme and the file actions. */}
       <div className="flex shrink-0 items-center gap-1.5">
+        <AppButton
+          variant="ghost"
+          size="sm"
+          shape="square"
+          onClick={undo}
+          disabled={previewing || undoLabel === null}
+          aria-label="Undo"
+          title={
+            previewing
+              ? READING_A_VERSION
+              : `${undoLabel ? `Undo ${undoLabel}` : 'Nothing to undo'}  ${shortcutLabel('Z')}`
+          }
+        >
+          <Undo2 className="h-4 w-4" />
+        </AppButton>
+        <AppButton
+          variant="ghost"
+          size="sm"
+          shape="square"
+          onClick={redo}
+          disabled={previewing || redoLabel === null}
+          aria-label="Redo"
+          title={
+            previewing
+              ? READING_A_VERSION
+              : `${redoLabel ? `Redo ${redoLabel}` : 'Nothing to redo'}  ${redoShortcutLabel()}`
+          }
+        >
+          <Redo2 className="h-4 w-4" />
+        </AppButton>
+        <span aria-hidden className="mx-0.5 h-4.5 w-px bg-line-strong" />
+
         <AppButton
           variant="ghost"
           size="sm"

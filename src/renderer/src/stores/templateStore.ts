@@ -92,14 +92,15 @@ export const useTemplateStore = create<TemplateState>()(
   immer((set, get) => {
     /**
      * Put a draft from main in the editor. Staged AI changes and a version preview were
-     * about the draft being replaced, so they go.
+     * about the draft being replaced, so they go. `asStep` names a replacement of the same
+     * template's draft as one undoable step — see `loadDraft`.
      */
-    const showDraft = (draft: Draft | null) => {
+    const showDraft = (draft: Draft | null, asStep?: string) => {
       set((state) => {
         state.pendingAiChanges = [];
       });
       useOverlayStore.getState().setPreview(null);
-      useResumeStore.getState().loadDraft(draft);
+      useResumeStore.getState().loadDraft(draft, asStep ? { asStep } : undefined);
     };
 
     return {
@@ -194,6 +195,8 @@ export const useTemplateStore = create<TemplateState>()(
         const templateId = requireOpenTemplate();
         await flushDraft();
         const version = await getDb().versions.name(templateId, name);
+        // The draft is that version now, so the status bar counts changes from here.
+        useResumeStore.getState().markVersionSaved(version.rev);
         await get().refresh();
         return version;
       },
@@ -201,7 +204,7 @@ export const useTemplateStore = create<TemplateState>()(
       importIntoDraft: async (doc, from) => {
         const templateId = requireOpenTemplate();
         await flushDraft();
-        showDraft(await getDb().drafts.importInto(templateId, doc, from));
+        showDraft(await getDb().drafts.importInto(templateId, doc, from), 'import');
         await get().refresh();
       },
 
@@ -209,7 +212,9 @@ export const useTemplateStore = create<TemplateState>()(
         await flushDraft();
         const db = getDb();
         const restored = await db.versions.restore(templateId, versionId);
-        showDraft(templateId === openTemplateId() ? restored : await db.templates.open(templateId));
+        // Restoring into the open draft is a step of it; another template is a fresh start.
+        if (templateId === openTemplateId()) showDraft(restored, 'restore');
+        else showDraft(await db.templates.open(templateId));
         await get().refresh();
       },
 

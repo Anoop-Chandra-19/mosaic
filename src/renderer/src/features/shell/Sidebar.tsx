@@ -1,9 +1,18 @@
 import { useRef } from 'react';
-import { ChevronsDownUp, ChevronsUpDown, FileText, LayoutTemplate } from 'lucide-react';
+import {
+  ChevronsDownUp,
+  ChevronsUpDown,
+  Eye,
+  FileText,
+  History,
+  LayoutTemplate,
+} from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { HEADER_OUTLINE_ID, useOutlineStore } from '@/stores/outlineStore';
+import { attempt, showToast, useOverlayStore, type VersionPreview } from '@/stores/overlayStore';
 import { useResumeStore } from '@/stores/resumeStore';
+import { useTemplateStore } from '@/stores/templateStore';
 import { useUiStore, type SidebarTab, SIDEBAR_WIDTH } from '@/stores/uiStore';
 import { ContentTab } from '@/features/editor/ContentTab';
 import { TemplatesTab } from '@/features/templates/TemplatesTab';
@@ -34,6 +43,7 @@ export function Sidebar() {
   const widthPx = useUiStore((s) => s.sidebarWidthPx);
   const setWidthPx = useUiStore((s) => s.setSidebarWidthPx);
   const sidebarCollapsed = useUiStore((s) => s.sidebarCollapsed);
+  const preview = useOverlayStore((s) => s.preview);
   const sidebarRef = useRef<HTMLElement>(null);
 
   // Hidden and shown from the status bar, or with Ctrl/⌘+B.
@@ -69,7 +79,12 @@ export function Sidebar() {
         </div>
 
         <TabsContent value="content" className="overflow-y-auto px-2.5 pb-3.5 @container/pane">
-          <ContentTab />
+          {preview && <ReadingVersionNote preview={preview} />}
+          {/* Reading a version is a read mode, and both panes read the same document: the
+              editor lays out the version itself, and nothing here can reach the draft. */}
+          <div inert={preview !== null}>
+            <ContentTab doc={preview?.version.doc} />
+          </div>
         </TabsContent>
         <TabsContent value="templates" className="overflow-y-auto px-2.5 pb-3.5 @container/pane">
           <TemplatesTab />
@@ -91,6 +106,53 @@ export function Sidebar() {
         className="absolute top-0 right-0 bottom-0 w-1 cursor-col-resize transition-colors hover:bg-amber-500 active:bg-amber-600"
       />
     </aside>
+  );
+}
+
+/**
+ * What the editor is showing while a version is being read, and the two ways on: take this
+ * version up as the draft, or leave it and go back to the draft as it was left.
+ */
+function ReadingVersionNote({ preview }: { preview: VersionPreview }) {
+  const setPreview = useOverlayStore((s) => s.setPreview);
+  const restoreVersion = useTemplateStore((s) => s.restoreVersion);
+  const { version, label } = preview;
+
+  const restore = async () => {
+    if (
+      await attempt(
+        restoreVersion(version.templateId, version.id),
+        'Could not restore that version'
+      )
+    ) {
+      showToast(`Restored “${version.summary}”`);
+    }
+  };
+
+  return (
+    <div className="mb-2 rounded-md border border-amber-300 bg-amber-50 p-2 text-xs text-amber-900 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200">
+      <div className="flex items-start gap-1.5">
+        <Eye className="mt-px size-3.5 shrink-0 text-amber-600 dark:text-amber-400" />
+        <span className="min-w-0 flex-1">
+          Reading <span className="font-mono font-semibold">{label}</span>, not your draft. Restore
+          it to edit it.
+        </span>
+      </div>
+      <div className="mt-1.5 flex justify-end gap-1.5">
+        <AppButton
+          variant="ghost"
+          size="xs"
+          className="h-6 px-2 text-xs"
+          onClick={() => setPreview(null)}
+        >
+          Back to draft
+        </AppButton>
+        <AppButton variant="accent" size="xs" onClick={() => void restore()}>
+          <History className="size-3" />
+          Restore to edit
+        </AppButton>
+      </div>
+    </div>
   );
 }
 

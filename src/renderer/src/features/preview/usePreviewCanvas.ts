@@ -7,6 +7,7 @@ import {
   type PointerEvent as ReactPointerEvent,
   type RefObject,
 } from 'react';
+import { isTypingField } from '@/lib/keyboardShortcuts';
 import { PREVIEW_DEFAULT_ZOOM, nextPreviewZoomStep, useUiStore } from '@/stores/uiStore';
 
 /*
@@ -33,10 +34,6 @@ interface ZoomAnchor {
   /** How much larger the stack is about to be drawn. */
   ratio: number;
 }
-
-const isTyping = (target: EventTarget | null) =>
-  target instanceof HTMLElement &&
-  (target.isContentEditable || ['INPUT', 'TEXTAREA'].includes(target.tagName));
 
 export interface PreviewCanvas {
   /** Space is down, so a drag would pan rather than select. */
@@ -107,7 +104,7 @@ export function usePreviewCanvas(scrollRef: RefObject<HTMLDivElement | null>): P
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.code !== 'Space' || isTyping(event.target)) return;
+      if (event.code !== 'Space' || isTypingField(event.target)) return;
       setReadyToPan(true);
       // Space scrolls the panel by default; while it is a pan key, it must not.
       if (scrollRef.current?.matches(':hover')) event.preventDefault();
