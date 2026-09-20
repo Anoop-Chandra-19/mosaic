@@ -16,6 +16,7 @@ const FILTERS: Record<FileType, FileFilter[]> = {
   markdown: [{ name: 'Markdown', extensions: ['md'] }],
   text: [{ name: 'Plain text', extensions: ['txt'] }],
   pdf: [{ name: 'PDF', extensions: ['pdf'] }],
+  docx: [{ name: 'Word document', extensions: ['docx'] }],
   import: [
     {
       name: 'Resumes and Mosaic backups',

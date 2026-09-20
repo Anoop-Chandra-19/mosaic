@@ -34,6 +34,7 @@ import {
 
 const FORMAT_ICONS: Record<ExportFormat, LucideIcon> = {
   pdf: FileText,
+  docx: FileText,
   markdown: AlignLeft,
   plaintext: Type,
   'json-resume': Braces,
@@ -142,8 +143,8 @@ function ExportForm({ version, onDone }: { version: ExportVersion | null; onDone
       <div className="min-h-0 flex-1 overflow-y-auto px-4 pt-3.5 pb-1">
         {version && (
           <p className="mb-3 text-xs leading-relaxed text-zinc-600 dark:text-zinc-400">
-            {version.label} of {version.templateName}, “{version.version.summary}” — as it was then,
-            not your draft.
+            {version.label} of {version.templateName}, “{version.version.summary}”, as it was then
+            and not your draft.
           </p>
         )}
 
@@ -159,7 +160,7 @@ function ExportForm({ version, onDone }: { version: ExportVersion | null; onDone
         </RadioGroup>
 
         <div className="mt-2">
-          {format.id === 'pdf' && (
+          {format.isPaged && (
             <Row label="Paper">
               <ToggleGroup
                 type="single"
@@ -175,7 +176,7 @@ function ExportForm({ version, onDone }: { version: ExportVersion | null; onDone
             </Row>
           )}
           <Row label="Header links" description={format.headerLinkNote}>
-            {format.id === 'pdf' && <HeaderLinksControl version={version} />}
+            {format.isPaged && <HeaderLinksControl version={version} />}
           </Row>
           <Row label="File name">
             <div className="flex w-[min(18rem,100%)]">
@@ -283,7 +284,7 @@ function Row({
 }
 
 /**
- * How the header's links look in the PDF. It is the resume's own setting, so the draft's
+ * How the header's links look in the PDF and the Word file. It is the resume's own setting, so the draft's
  * can be changed here; a version shows the one it was saved with.
  */
 function HeaderLinksControl({ version }: { version: ExportVersion | null }) {

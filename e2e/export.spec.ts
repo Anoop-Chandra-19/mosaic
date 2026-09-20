@@ -197,3 +197,39 @@ test('Save PDF writes the resume as a real PDF, which reads back in through Impo
   await expect(linkedIn).toHaveCSS('color', 'rgb(5, 99, 193)');
   expect(errors).toEqual([]);
 });
+
+test('Save DOCX writes a Word file, which reads back in through Import', async () => {
+  const { app, page, userDataDir, errors } = mosaic();
+  await saveInto(app, userDataDir);
+  await startFromSample(page);
+
+  const exporting = await openExport(page, /^Word/);
+  // A Word file is laid out on paper too, so it takes the same paper and link settings.
+  await expect(exporting.getByRole('radio', { name: 'Letter' })).toBeVisible();
+  await exporting.getByRole('radio', { name: 'Underlined' }).click();
+  await exporting.getByRole('button', { name: 'Save DOCX' }).click();
+
+  const file = path.join(userDataDir, 'Your Name — Example resume.docx');
+  await expect(page.getByText('Saved Your Name — Example resume.docx')).toBeVisible();
+  // A zip, as every .docx is.
+  expect(fs.readFileSync(file).subarray(0, 4).toString('hex')).toBe('504b0304');
+
+  await openWith(app, file);
+  await page.getByRole('button', { name: 'Import resume' }).click();
+  const importing = page.getByRole('dialog', { name: 'Import' });
+  await importing.getByRole('button', { name: 'Choose a file…' }).click();
+  await expect(importing.getByText('Your Name — Example resume.docx')).toBeVisible();
+  for (const [heading, holds] of [
+    ['Education & Certificates', '2 entries'],
+    ['Work History', '1 entry, 6 bullets'],
+    ['Projects', '2 entries, 6 bullets'],
+  ]) {
+    await expect(importing.getByRole('checkbox', { name: `Import ${heading}` })).toBeChecked();
+    await expect(importing.getByRole('listitem').filter({ hasText: heading })).toContainText(holds);
+  }
+  await expect(importing.getByRole('button', { name: /^Left out/ })).toHaveCount(0);
+  await expect(importing.getByRole('listitem').filter({ hasText: 'Contact' })).toContainText(
+    'Links underlined, as in the file.'
+  );
+  expect(errors).toEqual([]);
+});

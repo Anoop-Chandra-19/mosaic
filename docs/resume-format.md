@@ -48,8 +48,15 @@ See root `CLAUDE.md` for schema-version and data-safety rules.
 ## Exports and round trips
 
 - PDF embeds links on printed text, underlined only when the header requests it.
+- DOCX (`features/export/docx/`) is written by Mosaic itself, no library: its own zip
+  writer and the Word XML parts. It prints the PDF's page (the layout's numbers came from
+  the format's Word template) through named styles: Title, Contact, Heading 1, Entry
+  Heading (italic, dates after a right tab stop at the margin), List Bullet, and a
+  Hyperlink character style carrying the header's link look. Links are real hyperlinks.
+  Keep XML elements in the order the OOXML schema gives them: Word refuses a file that
+  breaks it even where LibreOffice and Mosaic's reader don't.
 - Header links can print blue (`linkColor: 'blue'`, Word's hyperlink blue); only the links
-  change, everything else stays black. Preview and PDF honour it; Markdown and plain text
+  change, everything else stays black. Preview, PDF, and DOCX honour it; Markdown and plain text
   can't carry it, and JSON Resume keeps it in `meta.mosaic.header`.
 - Import reads the link look back where the file shows it: a PDF's underline is a thin
   line drawn just under a link's words (`readPdfRules`, judged in `pdfLines`), and its
@@ -68,8 +75,7 @@ See root `CLAUDE.md` for schema-version and data-safety rules.
   `meta.mosaic.sections[].exact`. Plain text, PDF, and DOCX carry only the printed line:
   it reads back the same, but a comma inside a title or organization moves the parts.
 - Every export format needs a round-trip test: export, import, compare what the page shows.
-  Mosaic's own PDF, Markdown, and JSON come back exactly within each format's supported
-  representation; plain text explicitly states its losses. A DOCX export, when built,
-  needs a round-trip test too.
+  Mosaic's own PDF, DOCX, Markdown, and JSON come back exactly within each format's
+  supported representation; plain text explicitly states its losses.
 - Document unsupported round-trip details in tests: alignment/underlining in Markdown
   and plain text. These exceptions must not become silent losses.
