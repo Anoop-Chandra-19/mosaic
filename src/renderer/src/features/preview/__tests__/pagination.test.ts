@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { normalizeSections, paginateSections, type PaginationMeasurements } from '../pagination';
+import {
+  MAX_PREVIEW_PAGES,
+  normalizeSections,
+  paginateSections,
+  type PaginationMeasurements,
+} from '../pagination';
 import type { PreviewRenderableSection } from '../PreviewSection';
 import type { ResumeSection } from '@shared/types/resume';
 
@@ -232,22 +237,25 @@ describe('paginateSections', () => {
     expect(pages[1][0].entries[0].bullets.join(' ')).toContain('detail');
   });
 
-  it('caps returned pages at the existing three-page limit', () => {
-    const entries = Array.from({ length: 8 }, (_, index) => ({
+  it('lays out every page a long resume runs to, up to the limit it is given', () => {
+    const entries = Array.from({ length: 30 }, (_, index) => ({
       id: `job-${index}`,
       heading: `Engineer ${index}`,
       bullets: [`Detail ${index}`],
     }));
+    const measurements = createMeasurements({
+      sectionTitleHeights: { experience: 10 },
+      entryHeights: Object.fromEntries(entries.map((entry) => [`experience::${entry.id}`, 50])),
+    });
+    const paginate = (maxPages?: number) =>
+      paginateSections([createExperienceSection(entries)], measurements, 70, maxPages);
 
-    const pages = paginateSections(
-      [createExperienceSection(entries)],
-      createMeasurements({
-        sectionTitleHeights: { experience: 10 },
-        entryHeights: Object.fromEntries(entries.map((entry) => [`experience::${entry.id}`, 50])),
-      }),
-      70
-    );
-
-    expect(pages).toHaveLength(3);
+    // One entry to a page here, and none of them is dropped for being far down the resume.
+    expect(paginate(30)).toHaveLength(30);
+    // Split entries carry a continuation id, so the last page is the last entry's.
+    expect(paginate(30).at(-1)?.[0].entries[0].id).toMatch(/^job-29/);
+    // The preview's own limit, when nothing else is asked for.
+    expect(paginate()).toHaveLength(MAX_PREVIEW_PAGES);
+    expect(paginate(4)).toHaveLength(4);
   });
 });

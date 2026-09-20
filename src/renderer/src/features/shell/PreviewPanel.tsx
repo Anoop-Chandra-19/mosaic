@@ -3,6 +3,7 @@ import { Minus, Plus, TriangleAlert } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { ResumePreview } from '@/features/preview/ResumePreview';
+import { cn } from '@/lib/utils';
 import type { PaperSize } from '@/types/paper';
 import { VersionPreviewBanner } from '@/features/templates/VersionPreviewBanner';
 import { useOverlayStore } from '@/stores/overlayStore';
@@ -23,7 +24,8 @@ export function PreviewPanel() {
     document.documentElement.dataset.paperSize = paperSize;
   }, [paperSize]);
 
-  const pageLabel = meta.hasOverflowBeyondTwo ? '2+' : `${meta.visiblePages}`;
+  // One page is the thing to aim for, so anything longer is called out rather than stated.
+  const runsLong = meta.totalPages > 1;
   const minZoom = PREVIEW_ZOOM_STEPS[0];
   const maxZoom = PREVIEW_ZOOM_STEPS[PREVIEW_ZOOM_STEPS.length - 1];
 
@@ -35,9 +37,17 @@ export function PreviewPanel() {
           <span className="text-xs font-semibold tracking-widest text-zinc-900 uppercase dark:text-zinc-100">
             {preview ? `Previewing ${preview.label}` : 'Live Preview'}
           </span>
-          <span className="inline-flex items-center rounded-md border border-zinc-300 bg-zinc-100 px-2 py-0.5 text-xs font-semibold text-zinc-700 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300">
-            {pageLabel}{' '}
-            {meta.hasOverflowBeyondTwo ? 'pages' : meta.visiblePages === 1 ? 'page' : 'pages'}
+          <span
+            className={cn(
+              'inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-xs font-semibold',
+              runsLong
+                ? 'border-amber-300 bg-amber-100 text-amber-900 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-300'
+                : 'border-zinc-300 bg-zinc-100 text-zinc-700 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300'
+            )}
+          >
+            {runsLong && <TriangleAlert className="size-3" />}
+            {meta.totalPages}
+            {meta.hasMorePages && '+'} {meta.totalPages === 1 ? 'page' : 'pages'}
           </span>
         </div>
 
@@ -88,13 +98,6 @@ export function PreviewPanel() {
               </ToggleGroupItem>
             ))}
           </ToggleGroup>
-
-          {meta.hasOverflowBeyondTwo && (
-            <span className="inline-flex items-center gap-1 rounded-full border border-amber-300 bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-900 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-300">
-              <TriangleAlert className="size-3" />
-              2+ pages
-            </span>
-          )}
         </div>
       </div>
 
