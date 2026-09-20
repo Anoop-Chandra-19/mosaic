@@ -7,6 +7,7 @@ export type FileType =
   | 'markdown'
   | 'text'
   | 'pdf'
+  | 'docx'
   /** Anything the Import dialog can read: a resume in any format it knows, or a backup. */
   | 'import';
 

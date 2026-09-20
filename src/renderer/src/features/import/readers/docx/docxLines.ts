@@ -209,19 +209,24 @@ function flatten(blocks: DocxBlock[], notes: DocxNote[]): Flat[] {
 
 /**
  * A line's text and the aside set on its right. Text after a right-aligned tab stop is an
- * aside; so is short text pushed right by several tabs or a run of spaces, and short text
+ * aside; so is short text pushed right by several tabs or a run of spaces (on a line that
+ * isn't centred), and short text
  * after a single tab when it reads as a date — which is how a file written without tab
  * stops still gives up its dates. Not in a list item, where only a tab stop says so.
  */
 function splitAside(raw: string, paragraph: DocxParagraph, listed: boolean): ImportLine {
   const text = raw.trim();
   const last = [...text.matchAll(BREAK)].at(-1);
-  const flat = { text: text.replace(BREAK, ' ') };
+  const centred = paragraph.align === 'center';
+  // A centred line keeps its runs of spaces; elsewhere they were pushing text along.
+  const flat = { text: centred ? text.replace(/\t+/g, ' ') : text.replace(BREAK, ' ') };
   if (!last) return flat;
   const aside = text.slice(last.index + last[0].length).trim();
   const short = aside.length <= SHORT_LINE_LENGTH;
   const byTabStop = last[0].startsWith('\t') && paragraph.rightTab;
-  const pushed = !listed && last[0] !== '\t' && short;
+  // Spaces can't push anything to the edge of a centred line: there they only space it out,
+  // as between a header's items.
+  const pushed = !listed && !centred && last[0] !== '\t' && short;
   const dated = !listed && last[0] === '\t' && short && DATE_LIKE.test(aside);
   if (!byTabStop && !pushed && !dated) return flat;
   const before = text

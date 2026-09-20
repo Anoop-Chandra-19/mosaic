@@ -3,13 +3,20 @@ import { flushDraft } from '@/stores/resumeStore';
 import type { FileType } from '@shared/types/files';
 import type { ResumeData } from '@shared/types/resume';
 import type { PaperSize } from '@/types/paper';
+import { createDocxExport } from './docx/createDocxExport';
 import { createJsonResumeExport } from './jsonResumeExport';
 import { createMarkdownExport } from './markdownExport';
 import { normalizeResumeForExport } from './normalizeResumeExport';
 import { renderResumePdf } from './pdf/renderResumePdf';
 import { createPlaintextExport } from './plaintextExport';
 
-export type ExportFormat = 'pdf' | 'markdown' | 'plaintext' | 'json-resume' | 'mosaic-json';
+export type ExportFormat =
+  | 'pdf'
+  | 'docx'
+  | 'markdown'
+  | 'plaintext'
+  | 'json-resume'
+  | 'mosaic-json';
 
 export interface ExportFormatInfo {
   id: ExportFormat;
@@ -19,6 +26,8 @@ export interface ExportFormatInfo {
   fileType: FileType;
   /** Text that can go on the clipboard as well as into a file. */
   copyable: boolean;
+  /** Laid out on paper, so the paper size and the header links' look apply. */
+  isPaged: boolean;
   /** How the header's links come out in this format. */
   headerLinkNote: string;
 }
@@ -31,7 +40,19 @@ export const EXPORT_FORMATS: ExportFormatInfo[] = [
     extension: 'pdf',
     fileType: 'pdf',
     copyable: false,
+    isPaged: true,
     headerLinkNote: 'Linked in place: the text prints as you wrote it, with the link embedded.',
+  },
+  {
+    id: 'docx',
+    name: 'Word (.docx)',
+    description: 'Editable document, styles mapped to real Word paragraph styles.',
+    extension: 'docx',
+    fileType: 'docx',
+    copyable: false,
+    isPaged: true,
+    headerLinkNote:
+      'Real Word hyperlinks, so the text stays editable and the links survive Word’s own PDF export.',
   },
   {
     id: 'markdown',
@@ -40,15 +61,17 @@ export const EXPORT_FORMATS: ExportFormatInfo[] = [
     extension: 'md',
     fileType: 'markdown',
     copyable: true,
+    isPaged: false,
     headerLinkNote: 'Written as [text](link).',
   },
   {
     id: 'plaintext',
     name: 'Plain text',
-    description: 'One column, no formatting — for paste-into-a-textarea applications.',
+    description: 'One column, no formatting. For applications that want text pasted in.',
     extension: 'txt',
     fileType: 'text',
     copyable: true,
+    isPaged: false,
     headerLinkNote: 'Plain text can’t link, so each link is written after its text: “text (link)”.',
   },
   {
@@ -58,6 +81,7 @@ export const EXPORT_FORMATS: ExportFormatInfo[] = [
     extension: 'json',
     fileType: 'json',
     copyable: true,
+    isPaged: false,
     headerLinkNote: 'Text and link kept apart, in the fields other tools read and in Mosaic’s own.',
   },
   {
@@ -67,6 +91,7 @@ export const EXPORT_FORMATS: ExportFormatInfo[] = [
     extension: 'json',
     fileType: 'json',
     copyable: true,
+    isPaged: false,
     headerLinkNote: 'Text and link kept apart, exactly as in the resume.',
   },
 ];
@@ -79,7 +104,7 @@ export interface ExportSource {
 }
 
 /**
- * The file's content. PDF and the text formats take what is on the page — selected entries
+ * The file's content. PDF, Word, and the text formats take what is on the page — selected entries
  * and bullets only. Mosaic JSON is the template itself, as a one-template backup that
  * Restore or Import reads back in.
  */
@@ -91,6 +116,8 @@ export async function renderExport(
   switch (format) {
     case 'pdf':
       return renderResumePdf({ data: normalizeResumeForExport(doc), paperSize });
+    case 'docx':
+      return createDocxExport(normalizeResumeForExport(doc), paperSize);
     case 'markdown':
       return createMarkdownExport(normalizeResumeForExport(doc));
     case 'plaintext':
