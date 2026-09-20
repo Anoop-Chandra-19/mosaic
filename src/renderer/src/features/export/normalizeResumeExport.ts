@@ -60,14 +60,26 @@ function normalizeTextOnlyEntry(id: string, text: string): ExportEntry | null {
   };
 }
 
-export function normalizeResumeForExport(resume: ResumeData): NormalizedResumeExport {
+/**
+ * What an export holds: what the page shows, or everything the resume holds. Hidden
+ * sections, unpicked entries and bullets, and hidden header items are kept either way; this
+ * only says whether they are written out.
+ */
+export interface ExportContentOptions {
+  includeHidden?: boolean;
+}
+
+export function normalizeResumeForExport(
+  resume: ResumeData,
+  { includeHidden = false }: ExportContentOptions = {}
+): NormalizedResumeExport {
   // Export only selected, non-empty content so all output formats share the same rules.
   const sections = resume.sections
-    .filter((section) => !section.hidden)
+    .filter((section) => includeHidden || !section.hidden)
     .sort((a, b) => a.order - b.order)
     .map((section) => {
       const entries = section.items
-        .filter((entry) => entry.selected)
+        .filter((entry) => includeHidden || entry.selected)
         .map((entry) => {
           if (section.layout === 'lines') {
             return normalizeTextOnlyEntry(entry.id, entry.text ?? '');
@@ -81,7 +93,7 @@ export function normalizeResumeForExport(resume: ResumeData): NormalizedResumeEx
           const heading = formatEntryHeading(fields);
           const dates = trim(entry.dates);
           const bullets = entry.bullets
-            .filter((bullet) => bullet.selected)
+            .filter((bullet) => includeHidden || bullet.selected)
             .map((bullet) => trim(bullet.text))
             .filter(Boolean);
 
@@ -116,7 +128,7 @@ export function normalizeResumeForExport(resume: ResumeData): NormalizedResumeEx
       name: trim(name),
       linkStyle: header.linkStyle,
       linkColor: header.linkColor ?? 'ink',
-      lines: getPrintableHeaderLines(header),
+      lines: getPrintableHeaderLines(header, { includeHidden }),
     },
     sections,
   };

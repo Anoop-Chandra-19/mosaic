@@ -57,6 +57,28 @@ test('Markdown can be copied or saved, and reads back in through Import', async 
   await expect(page.getByRole('banner').getByText('Your Name', { exact: true })).toBeVisible();
 });
 
+test('an export takes what is on the page, or everything the resume holds', async () => {
+  const { app, page } = mosaic();
+  await startFromSample(page);
+
+  // Leave the first bullet off the resume; it stays in the sidebar either way.
+  const bullet = page.getByRole('checkbox', { name: 'Toggle bullet visibility' }).first();
+  await bullet.click();
+  await expect(bullet).not.toBeChecked();
+
+  const copyMarkdown = async (content: string) => {
+    const exporting = await openExport(page, /^Markdown/);
+    await exporting.getByRole('radio', { name: content }).click();
+    await exporting.getByRole('button', { name: 'Copy to clipboard' }).click();
+    await expect(page.getByText('Markdown copied')).toBeVisible();
+    return app.evaluate(({ clipboard }) => clipboard.readText());
+  };
+
+  const left = 'Worked in Agile sprints';
+  expect(await copyMarkdown('What’s on the page')).not.toContain(left);
+  expect(await copyMarkdown('Everything')).toContain(left);
+});
+
 test('JSON Resume reads back in through Import with its own headings', async () => {
   const { app, page, userDataDir } = mosaic();
   await saveInto(app, userDataDir);

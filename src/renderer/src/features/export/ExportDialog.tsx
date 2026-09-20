@@ -86,6 +86,10 @@ function ExportForm({ version, onDone }: { version: ExportVersion | null; onDone
     )
   );
   const [busy, setBusy] = useState<'save' | 'copy' | null>(null);
+  // Mosaic JSON is a backup: it holds the whole template either way.
+  const [includeHidden, setIncludeHidden] = useState(false);
+  const holdsEverything = format.id === 'mosaic-json';
+  const options = { paperSize, includeHidden: includeHidden && !holdsEverything };
 
   const source = () => ({
     doc: version ? version.version.doc : getResumeSnapshot(),
@@ -96,7 +100,7 @@ function ExportForm({ version, onDone }: { version: ExportVersion | null; onDone
     setBusy('save');
     const fileName = toFileName(name, format.extension);
     try {
-      const content = await renderExport(format.id, source(), paperSize);
+      const content = await renderExport(format.id, source(), options);
       const saved = await window.mosaic.files.save(format.fileType, fileName, content);
       // Cancelled: stay, so a different name or format is one click away.
       if (saved === null) return;
@@ -113,7 +117,7 @@ function ExportForm({ version, onDone }: { version: ExportVersion | null; onDone
   const copy = async () => {
     setBusy('copy');
     try {
-      const content = await renderExport(format.id, source(), paperSize);
+      const content = await renderExport(format.id, source(), options);
       if (typeof content !== 'string') throw new Error(`${format.name} is not text`);
       await copyText(content);
       showToast(`${format.name} copied`);
@@ -160,6 +164,28 @@ function ExportForm({ version, onDone }: { version: ExportVersion | null; onDone
         </RadioGroup>
 
         <div className="mt-2">
+          <Row
+            label="Content"
+            description={
+              holdsEverything
+                ? 'A Mosaic JSON backup holds the whole template, hidden content included.'
+                : 'Hidden sections, entries, bullets and header items stay in your resume either way.'
+            }
+          >
+            {!holdsEverything && (
+              <ToggleGroup
+                type="single"
+                variant="outline"
+                size="sm"
+                value={includeHidden ? 'all' : 'shown'}
+                onValueChange={(value) => value && setIncludeHidden(value === 'all')}
+                aria-label="Content"
+              >
+                <ToggleGroupItem value="shown">What’s on the page</ToggleGroupItem>
+                <ToggleGroupItem value="all">Everything</ToggleGroupItem>
+              </ToggleGroup>
+            )}
+          </Row>
           {format.isPaged && (
             <Row label="Paper">
               <ToggleGroup

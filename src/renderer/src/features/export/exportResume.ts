@@ -6,7 +6,7 @@ import type { PaperSize } from '@/types/paper';
 import { createDocxExport } from './docx/createDocxExport';
 import { createJsonResumeExport } from './jsonResumeExport';
 import { createMarkdownExport } from './markdownExport';
-import { normalizeResumeForExport } from './normalizeResumeExport';
+import { normalizeResumeForExport, type ExportContentOptions } from './normalizeResumeExport';
 import { renderResumePdf } from './pdf/renderResumePdf';
 import { createPlaintextExport } from './plaintextExport';
 
@@ -104,26 +104,27 @@ export interface ExportSource {
 }
 
 /**
- * The file's content. PDF, Word, and the text formats take what is on the page — selected entries
- * and bullets only. Mosaic JSON is the template itself, as a one-template backup that
- * Restore or Import reads back in.
+ * The file's content. PDF, Word, and the text formats take what is on the page (or
+ * everything, hidden content included, when asked). Mosaic JSON is the template itself, as a
+ * one-template backup that Restore or Import reads back in, so it always holds everything.
  */
 export async function renderExport(
   format: ExportFormat,
   { doc, templateId }: ExportSource,
-  paperSize: PaperSize
+  { paperSize, includeHidden }: { paperSize: PaperSize } & ExportContentOptions
 ): Promise<string | Uint8Array> {
+  const data = normalizeResumeForExport(doc, { includeHidden });
   switch (format) {
     case 'pdf':
-      return renderResumePdf({ data: normalizeResumeForExport(doc), paperSize });
+      return renderResumePdf({ data, paperSize });
     case 'docx':
-      return createDocxExport(normalizeResumeForExport(doc), paperSize);
+      return createDocxExport(data, paperSize);
     case 'markdown':
-      return createMarkdownExport(normalizeResumeForExport(doc));
+      return createMarkdownExport(data);
     case 'plaintext':
-      return createPlaintextExport(normalizeResumeForExport(doc));
+      return createPlaintextExport(data);
     case 'json-resume':
-      return createJsonResumeExport(normalizeResumeForExport(doc));
+      return createJsonResumeExport(data);
     case 'mosaic-json': {
       if (templateId === null) throw new Error('Only a template exports as Mosaic JSON');
       // The file should hold the edits still waiting to be saved.

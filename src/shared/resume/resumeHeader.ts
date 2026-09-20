@@ -138,14 +138,18 @@ export interface PrintedHeaderLine {
  * page, meaning different things — a hidden item keeps its data, an item with no text has
  * nothing to print.
  */
-export function getPrintableHeaderLines(header: ResumeHeader): PrintedHeaderLine[] {
+export function getPrintableHeaderLines(
+  header: ResumeHeader,
+  /** An export of everything takes the hidden items too; nothing else does. */
+  { includeHidden = false }: { includeHidden?: boolean } = {}
+): PrintedHeaderLine[] {
   return header.lines
     .map(({ id, separator, align, items }) => ({
       id,
       separator,
       align,
       items: items
-        .filter((item) => item.shown && item.text.trim())
+        .filter((item) => (includeHidden || item.shown) && item.text.trim())
         .map((item) => ({
           id: item.id,
           kind: item.kind,

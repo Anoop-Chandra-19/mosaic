@@ -111,6 +111,30 @@ describe('normalizeResumeForExport', () => {
     expect(normalized.sections.map((section) => section.id)).toEqual(['summary']);
   });
 
+  it('takes the hidden content too when the export asks for everything', () => {
+    const resume = createResumeFixture();
+    resume.sections[0].hidden = true;
+
+    const normalized = normalizeResumeForExport(resume, { includeHidden: true });
+
+    // The section left off the resume, the entry not picked, and the bullet not picked.
+    const [experience] = normalized.sections.filter((section) => section.id === 'experience');
+    expect(experience.entries.map((entry) => entry.id)).toEqual(['job-1', 'job-2']);
+    expect(experience.entries[0].bullets).toEqual(['Built export flow', 'Hidden bullet']);
+    expect(experience.entries[1].bullets).toEqual(['Should not export']);
+    // Hidden header items print here; an item with no text still has nothing to print.
+    expect(normalized.contact.lines.map((line) => line.items.map((item) => item.text))).toEqual([
+      ['555-0100', 'LinkedIn'],
+      ['US Citizen'],
+    ]);
+    // Empty text is still nothing to export, whatever is asked for.
+    const [summary] = normalized.sections.filter((section) => section.id === 'summary');
+    expect(summary.entries.map((entry) => entry.text)).toEqual([
+      'Focused builder.',
+      'Hidden summary.',
+    ]);
+  });
+
   it('keeps only the header that prints: shown items with text, lines with items', () => {
     const normalized = normalizeResumeForExport(createResumeFixture());
 
