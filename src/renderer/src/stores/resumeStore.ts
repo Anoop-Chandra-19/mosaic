@@ -84,7 +84,11 @@ interface ResumeState extends ResumeData {
   /** Takes back the newest step, and saves the result like any other change. */
   undo: () => void;
   redo: () => void;
-  /** A version was just named at `rev`: the draft matches it, so counting starts again. */
+  /**
+   * A version now holds the draft as it stood at `rev`, named or taken automatically, so
+   * counting starts again from there. Only anything edited since it was written is ahead
+   * of it. The undo stack is untouched: a snapshot records history, it does not end it.
+   */
   markVersionSaved: (rev: number) => void;
 
   setName: (name: string) => void;
@@ -274,7 +278,8 @@ export const useResumeStore = create<ResumeState>()(
 
       markVersionSaved: (rev) =>
         set((state) => {
-          state.changesSinceBaseline = 0;
+          // Edits made while main was writing the version are still ahead of it.
+          state.changesSinceBaseline = state.rev - rev;
           state.baselineRev = rev;
           state.baselineReachable = true;
         }),

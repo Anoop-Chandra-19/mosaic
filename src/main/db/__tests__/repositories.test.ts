@@ -23,6 +23,7 @@ import {
   nameDraft,
   restoreVersion,
   snapshotDraft,
+  snapshotEditedDraft,
 } from '../versions';
 
 let db: Database;
@@ -193,6 +194,34 @@ describe('versions', () => {
 
     expect(snap).toMatchObject({ kind: 'auto', source: 'import', rev: 1 });
     expect(getVersion(db, snap.id).doc).toEqual(resumeFor('B'));
+    expect(isClean(id)).toBe(true);
+  });
+
+  it('an auto snapshot of edit-then-undo keeps no row, and the draft is clean again', () => {
+    const { id, head } = createTemplate(db, 'CV', resumeFor('A'));
+    saveDraft(db, id, resumeFor('A'), 4); // four steps out and back
+
+    expect(snapshotEditedDraft(db, id)).toMatchObject({ id: head.id, rev: 4 });
+    expect(listVersions(db, id)).toHaveLength(1);
+    expect(isClean(id)).toBe(true);
+  });
+
+  it('an auto snapshot while editing says what changed since the newest version', () => {
+    const { id } = createTemplate(db, 'CV', resumeFor('A'));
+    const edited = resumeFor('A');
+    const experience = edited.sections.find((s) => s.kind === 'experience')!;
+    experience.items[0].bullets[0].text = 'Shipped the thing, twice';
+
+    saveDraft(db, id, edited, 1);
+    const snap = snapshotEditedDraft(db, id);
+
+    expect(snap).toMatchObject({
+      kind: 'auto',
+      source: 'edit',
+      rev: 1,
+      summary: `Edited a bullet in ${experience.label}`,
+    });
+    expect(getVersion(db, snap.id).doc).toEqual(edited);
     expect(isClean(id)).toBe(true);
   });
 

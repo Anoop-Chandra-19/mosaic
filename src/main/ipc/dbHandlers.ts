@@ -26,6 +26,7 @@ import {
   listVersions,
   nameDraft,
   restoreVersion,
+  snapshotEditedDraft,
 } from '../db/versions';
 
 /*
@@ -134,6 +135,7 @@ export function createDbHandlers(db: Database): Handlers<MosaicDb> {
       list: (templateId) => listVersions(db, text(templateId, 'templateId')),
       get: (versionId) => getVersion(db, text(versionId, 'versionId')),
       name: (templateId, name) => nameDraft(db, text(templateId, 'templateId'), text(name, 'name')),
+      snapshot: (templateId) => snapshotEditedDraft(db, text(templateId, 'templateId')),
       restore: (templateId, versionId) =>
         restoreVersion(db, text(templateId, 'templateId'), text(versionId, 'versionId')),
       duplicate: (versionId) => duplicateVersion(db, text(versionId, 'versionId')),

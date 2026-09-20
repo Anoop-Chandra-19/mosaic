@@ -24,7 +24,12 @@ Read with the root `CLAUDE.md`. This covers `src/main/` and its contract with pr
   `drafts` (one row per template), `versions` (`auto` | `named`), `settings`.
 - `templates.rev` bumps in the same transaction as every draft write. The draft is clean
   when its rev matches the newest version's; naming a clean draft renames that version
-  rather than adding one. Every template has at least one version; zero templates is valid.
+  rather than adding one. A version the draft still holds word for word is never
+  duplicated either: it adopts the draft's rev, which makes the draft clean again. Every
+  template has at least one version; zero templates is valid.
+- Versions are appended, never rewritten: undo moves the draft alone. The renderer decides
+  when an auto version is taken (`useAutoSnapshot`, template switch, window close); main
+  writes it and describes what changed (`describeDraftChanges`).
 - `app.*` settings belong to main (`app.activeTemplateId`, `app.apiKeys`), and
   `db.settings` refuses them from the renderer. Boot sends every setting to the renderer,
   so none may hold a secret.

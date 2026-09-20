@@ -16,7 +16,8 @@ export type VersionSource =
   | 'duplicate' // copied from another template
   | 'name' // the user named the draft
   | 'import' // a resume import (pasted text, later PDF/DOCX), or the draft it replaced
-  | 'restore'; // taken before, or produced by, restoring an older version
+  | 'restore' // taken before, or produced by, restoring an older version
+  | 'edit'; // editing alone, kept for the user as they go
 
 export interface VersionMeta {
   id: string;
@@ -101,6 +102,11 @@ export interface MosaicDb {
     get(versionId: string): Promise<Version>;
     /** Renames the newest version if the draft matches it, otherwise adds a named one. */
     name(templateId: string, name: string): Promise<VersionMeta>;
+    /**
+     * Keeps the draft as an auto version summarizing what changed since the newest one.
+     * A draft that is already that version writes nothing and returns it.
+     */
+    snapshot(templateId: string): Promise<VersionMeta>;
     /**
      * Puts a version back as its template's draft. Template-scoped: the version must be
      * one of that template's own, so each template's history stays self-contained.

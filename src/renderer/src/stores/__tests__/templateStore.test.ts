@@ -233,3 +233,65 @@ describe('templateStore', () => {
     await expect(templates().openTemplate('missing')).rejects.toMatchObject({ code: 'not-found' });
   });
 });
+
+describe('auto snapshots', () => {
+  const history = () => db.current!.versions.list(resume().templateId!);
+
+  it('keeps the draft as a version saying what changed, and counts from it', async () => {
+    await templates().createTemplate('Backend', createDefaultResume());
+    resume().setName('Ada Lovelace');
+
+    await templates().snapshotOpenDraft();
+
+    const [head] = await history();
+    expect(head).toMatchObject({
+      kind: 'auto',
+      source: 'edit',
+      summary: 'Changed the name',
+      rev: resume().rev,
+    });
+    expect(templates().templates[0].head.id).toBe(head.id);
+    expect(resume().changesSinceBaseline).toBe(0);
+    expect(resume().baselineRev).toBe(resume().rev);
+  });
+
+  it('leaves the undo stack alone: the version stands and the edit still comes back', async () => {
+    await templates().createTemplate('Backend', createDefaultResume());
+    resume().setName('Ada Lovelace');
+    await templates().snapshotOpenDraft();
+
+    expect(resume().undoLabel).toBe('edit the name');
+    resume().undo();
+
+    expect(resume().contact.name).toBe('Your Name');
+    expect((await history()).map((v) => v.summary)).toEqual(['Changed the name', 'Created']);
+    expect(resume().changesSinceBaseline).toBe(-1);
+  });
+
+  it('writes nothing when there is nothing new to keep', async () => {
+    await templates().createTemplate('Backend', createDefaultResume());
+    resume().setName('Ada Lovelace');
+    await templates().snapshotOpenDraft();
+
+    await templates().snapshotOpenDraft();
+
+    expect(await history()).toHaveLength(2);
+  });
+
+  it('keeps the draft it leaves when another template opens', async () => {
+    await templates().createTemplate('Backend', createDefaultResume());
+    const backend = resume().templateId!;
+    await templates().createTemplate('Frontend', createEmptyResume());
+    await templates().openTemplate(backend);
+    resume().setName('Ada Lovelace');
+
+    await templates().openTemplate(templates().templates.find((t) => t.name === 'Frontend')!.id);
+
+    const kept = await db.current!.versions.list(backend);
+    expect(kept.map((v) => v.summary)).toEqual(['Changed the name', 'Created']);
+  });
+
+  it('does nothing at all with no template open', async () => {
+    await expect(templates().snapshotOpenDraft()).resolves.toBeUndefined();
+  });
+});
