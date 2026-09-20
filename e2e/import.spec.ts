@@ -59,7 +59,7 @@ test('a PDF with no text in it is explained as probably a scan', async () => {
   await importing.getByRole('button', { name: 'Choose a file…' }).click();
 
   await expect(importing.getByRole('alert')).toHaveText(
-    'scanned.pdf has no text in it — it’s probably a scan. Paste the text instead.'
+    'scanned.pdf has no text in it, so it is probably a scan. Paste the text instead.'
   );
 });
 

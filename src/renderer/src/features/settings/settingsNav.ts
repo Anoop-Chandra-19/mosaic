@@ -37,7 +37,7 @@ export const SETTINGS_GROUPS: SettingsGroup[] = [
       {
         id: 'appearance',
         label: 'Appearance',
-        description: 'Chrome only — the resume page is always black on white.',
+        description: 'Chrome only. The resume page is always black on white.',
         icon: Contrast,
       },
       {

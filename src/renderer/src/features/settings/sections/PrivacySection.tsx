@@ -75,7 +75,7 @@ export function PrivacySection() {
 
       <SettingRow
         label="Delete everything"
-        description="Templates, versions, settings, keys. Back up first — this cannot be undone."
+        description="Templates, versions, settings, keys. Back up first: this cannot be undone."
       >
         <AppButton
           variant="outline"

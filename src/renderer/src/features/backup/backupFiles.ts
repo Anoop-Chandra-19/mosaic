@@ -72,7 +72,7 @@ function unreadable(fileName: string, result: Extract<BundleParseResult, { ok: f
     case 'not-a-bundle':
       return `${fileName} isn’t a Mosaic backup`;
     case 'unsupported-version':
-      return `${fileName} is from a newer Mosaic — update Mosaic to restore it`;
+      return `${fileName} is from a newer Mosaic. Update Mosaic to restore it.`;
     default:
       return `${fileName} is damaged and can’t be restored${result.detail ? `: ${result.detail}` : ''}`;
   }

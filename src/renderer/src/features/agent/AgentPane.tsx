@@ -79,7 +79,7 @@ export function AgentPane() {
       <footer className="border-t border-border px-4 py-2.5 text-xs text-zinc-500">
         {AI_PROVIDER_BY_ID[provider].label} ·{' '}
         <span className="font-mono">{model || AI_PROVIDER_DEFAULT_MODEL[provider]}</span>
-        {' — '}
+        {' · '}
         <button
           type="button"
           onClick={() => openSettings('ai')}

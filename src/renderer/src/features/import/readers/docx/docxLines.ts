@@ -139,7 +139,7 @@ function columnsOf(table: DocxTable, notes: DocxNote[]): Flat[] {
       notes.push({
         kind: 'uncertain',
         message:
-          'A table lays out part of this file in columns, and a row of it spans them all. Mosaic read it row by row — check the order.',
+          'A table lays out part of this file in columns, and a row of it spans them all. Mosaic read it row by row, so check the order.',
         where: whereIs(table.source),
       });
     }
@@ -150,7 +150,7 @@ function columnsOf(table: DocxTable, notes: DocxNote[]): Flat[] {
     notes.push({
       kind: 'uncertain',
       message:
-        'A table lays out part of this file in columns. Mosaic read the first column, then the next — check the order.',
+        'A table lays out part of this file in columns. Mosaic read the first column, then the next, so check the order.',
       where: whereIs(table.source),
     });
   }
@@ -434,7 +434,7 @@ export function docxLines(document: DocxDocument): DocxReading {
   if (floating.length) {
     notes.push({
       kind: 'uncertain',
-      message: `${floating.length === 1 ? 'A text box holds' : 'Text boxes hold'} some of this file. Mosaic read ${floating.length === 1 ? 'it' : 'them'} where ${floating.length === 1 ? 'it is' : 'they are'} anchored — check the order.`,
+      message: `${floating.length === 1 ? 'A text box holds' : 'Text boxes hold'} some of this file. Mosaic read ${floating.length === 1 ? 'it' : 'them'} where ${floating.length === 1 ? 'it is' : 'they are'} anchored, so check the order.`,
       where: whereIs(floating[0].paragraph.source),
     });
   }

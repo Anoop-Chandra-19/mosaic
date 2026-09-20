@@ -510,7 +510,7 @@ export function readJsonResume(resume: Json): ParsedResume {
     );
   }
   if (sections.length === 0) warnings.push('This file has no sections Mosaic can read.');
-  if (!contact.name) warnings.push('This file has no name — add it after importing.');
+  if (!contact.name) warnings.push('This file has no name. Add it after importing.');
 
   return {
     resume: { schemaVersion: 1, contact, sections },

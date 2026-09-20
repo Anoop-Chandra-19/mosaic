@@ -531,7 +531,7 @@ function piecesOfPage(page: PdfPage, number: number, notes: PdfNote[]): Piece[] 
 
   notes.push({
     kind: 'uncertain',
-    message: `Page ${number} of this PDF is set in two columns. Mosaic read the left one, then the right — check sections came out in order.`,
+    message: `Page ${number} of this PDF is set in two columns. Mosaic read the left one, then the right, so check sections came out in order.`,
   });
   const band = read(rows.slice(0, columns.from), 0, pageRight);
   const sides = ([1, 2] as const).flatMap((side) =>

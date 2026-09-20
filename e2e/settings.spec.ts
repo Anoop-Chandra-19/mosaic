@@ -122,10 +122,10 @@ test('Ollama can live elsewhere on the network, and Settings says where text goe
   await expect(field).toHaveValue('http://gpu-box:8080');
   await expect.poll(asked).toContain('http://gpu-box:8080/api/tags');
   await expect(
-    settings.getByText(/Ollama at gpu-box:8080 — your resume text goes there/)
+    settings.getByText(/Ollama at gpu-box:8080, so your resume text goes there/)
   ).toBeVisible();
   await expect(
-    settings.getByText(/Ollama runs on your own hardware — here, on your network/)
+    settings.getByText(/Ollama runs on your own hardware, here on your network/)
   ).toBeVisible();
 
   // Not an address: said so, and nothing is sent there.

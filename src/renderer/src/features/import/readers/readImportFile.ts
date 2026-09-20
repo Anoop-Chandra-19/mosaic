@@ -100,7 +100,7 @@ async function readPdfFile(name: string, bytes: Uint8Array): Promise<ImportRead>
     }
     if (error instanceof PdfHasNoTextError) {
       throw new UnreadableFileError(
-        `${name} has no text in it — it’s probably a scan. Paste the text instead.`
+        `${name} has no text in it, so it is probably a scan. Paste the text instead.`
       );
     }
     if (error instanceof PdfLimitError) {

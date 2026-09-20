@@ -434,7 +434,7 @@ export function parseResumeLines(
     );
   }
   if (!contact.name) {
-    warnings.push('Could not detect a name — add it after importing.');
+    warnings.push('Could not detect a name. Add it after importing.');
   }
 
   return {

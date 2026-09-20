@@ -88,7 +88,7 @@ describe('readImportFile', () => {
 
   it('says what to do with a PDF it cannot read', async () => {
     const cases: [Uint8Array, string][] = [
-      [buildPdf(), 'cv.pdf has no text in it — it’s probably a scan. Paste the text instead.'],
+      [buildPdf(), 'cv.pdf has no text in it, so it is probably a scan. Paste the text instead.'],
       [
         buildPdf({ locked: true }),
         'cv.pdf is locked with a password. Save an unlocked copy and try again.',

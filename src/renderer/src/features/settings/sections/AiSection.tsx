@@ -44,8 +44,8 @@ export function AiSection() {
   return (
     <>
       <SettingsNote icon={ShieldCheck} className="mb-4">
-        Mosaic is a complete resume editor with AI switched off — nothing is gated behind it. When
-        it’s on, your resume text is sent to the provider you choose, and only when you ask for
+        Mosaic is a complete resume editor with AI switched off, and nothing is gated behind it.
+        When it’s on, your resume text is sent to the provider you choose, and only when you ask for
         something.
       </SettingsNote>
 
@@ -62,8 +62,8 @@ export function AiSection() {
           label="Provider"
           description={
             provider === 'ollama' && !isLocalOllamaAddress(ollamaAddress)
-              ? 'Bring your own key. Ollama runs on your own hardware — here, on your network.'
-              : 'Bring your own key. Ollama runs entirely on this machine — nothing leaves it.'
+              ? 'Bring your own key. Ollama runs on your own hardware, here on your network.'
+              : 'Bring your own key. Ollama runs entirely on this machine, so nothing leaves it.'
           }
         >
           <Select value={provider} onValueChange={(value) => setProvider(value as AiProvider)}>

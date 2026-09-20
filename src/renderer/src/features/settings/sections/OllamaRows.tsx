@@ -74,8 +74,8 @@ export function OllamaAddressRow({
       description={
         <>
           {isLocalOllamaAddress(address)
-            ? 'Ollama on this machine — your resume text never leaves it.'
-            : `Ollama at ${ollamaHost(address)} — your resume text goes there, on your network, when you ask for something.`}
+            ? 'Ollama on this machine, so your resume text never leaves it.'
+            : `Ollama at ${ollamaHost(address)}, so your resume text goes there, on your network, when you ask for something.`}
           {invalid && (
             <Note tone="error">
               That isn’t an address. For example: <Command>192.168.1.50:11434</Command>

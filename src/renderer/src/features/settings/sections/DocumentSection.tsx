@@ -15,7 +15,7 @@ export function DocumentSection() {
     <>
       <SettingRow
         label="Paper size"
-        description="Used by the preview and the PDF. Switch any time — the content stays the same."
+        description="Used by the preview and the PDF. Switch any time: the content stays the same."
       >
         <ToggleGroup
           type="single"
@@ -39,7 +39,7 @@ export function DocumentSection() {
       )}
       <SettingRow
         label="ATS-safe headings"
-        description="Section headers stay plain — no small caps, no letter-spacing — so parsers read them."
+        description="Section headers stay plain, with no small caps and no letter-spacing, so parsers read them."
       >
         <AlwaysOn />
       </SettingRow>
