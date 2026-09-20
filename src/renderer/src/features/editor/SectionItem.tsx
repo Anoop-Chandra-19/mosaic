@@ -90,11 +90,7 @@ export function SectionItem({
   const hiddenLabel = isHidden ? 'Put section on the resume' : 'Leave section off the resume';
 
   return (
-    <Collapsible
-      open={open}
-      onOpenChange={(next) => setOpen(section.id, next)}
-      className="mb-[0.1875rem]"
-    >
+    <Collapsible open={open} onOpenChange={(next) => setOpen(section.id, next)} className="mb-0.75">
       {/* The whole row opens and closes the section; its buttons do their own thing. */}
       <div
         onClick={() => !isRenaming && setOpen(section.id, !open)}
@@ -240,7 +236,7 @@ export function SectionItem({
 
       <CollapsibleContent>
         {section.items.length === 0 ? (
-          <p className="ml-3.5 border-l border-line py-1.5 pl-[0.5625rem] text-[0.775rem] text-ink-faint">
+          <p className="ml-3.5 border-l border-line py-1.5 pl-2.25 text-[0.775rem] text-ink-faint">
             No entries yet. Add one with +.
           </p>
         ) : (

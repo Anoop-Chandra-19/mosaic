@@ -382,7 +382,7 @@ function ReviewStep({
               </span>
             </div>
             {(headerKept || linkLook) && (
-              <p className="mt-0.5 pl-[1.625rem] text-xs text-zinc-500">
+              <p className="mt-0.5 pl-6.5 text-xs text-zinc-500">
                 {headerKept ? 'Your header stays as it is.' : `${linkLook}, as in the file.`}
               </p>
             )}
@@ -414,7 +414,7 @@ function ReviewStep({
                     </span>
                   </span>
                   {custom && (
-                    <span className="mt-0.5 block pl-[1.625rem] text-xs text-amber-700 dark:text-amber-400">
+                    <span className="mt-0.5 block pl-6.5 text-xs text-amber-700 dark:text-amber-400">
                       Comes in as a {CUSTOM_NAMES[section.layout]}.
                     </span>
                   )}

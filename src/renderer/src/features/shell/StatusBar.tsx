@@ -46,7 +46,7 @@ function PaneToggle({
       aria-pressed={pressed}
       title={`${label}  ${shortcutLabel(shortcut)}`}
       className={cn(
-        'aspect-auto h-5 w-[1.375rem] rounded-sm hover:text-foreground',
+        'aspect-auto h-5 w-5.5 rounded-sm hover:text-foreground',
         pressed && 'text-amber-600 dark:text-amber-400'
       )}
     >

@@ -86,9 +86,9 @@ export function BulletEditor({
           const end = event.target.value.length;
           event.target.setSelectionRange(end, end);
         }}
-        className="block field-sizing-content w-full resize-none overflow-hidden border-0 bg-transparent px-2.5 pt-2 pb-[0.3125rem] text-[0.8125rem] leading-normal text-foreground outline-none placeholder:text-ink-faint"
+        className="block field-sizing-content w-full resize-none overflow-hidden border-0 bg-transparent px-2.5 pt-2 pb-1.25 text-[0.8125rem] leading-normal text-foreground outline-none placeholder:text-ink-faint"
       />
-      <div className="flex items-center gap-1.5 overflow-hidden border-t border-line pt-1 pr-1.5 pb-[0.3125rem] pl-[0.5625rem]">
+      <div className="flex items-center gap-1.5 overflow-hidden border-t border-line pt-1 pr-1.5 pb-1.25 pl-2.25">
         <span className="font-mono text-[0.6875rem] text-ink-faint">{length} chars</span>
         {length > LONG_BULLET_CHARS && (
           <span className="inline-flex h-4 shrink-0 items-center rounded-md border border-amber-300 bg-amber-100 px-2 text-[0.625rem] font-medium whitespace-nowrap text-amber-700 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-400">

@@ -64,7 +64,7 @@ export function EntryCard({
   return (
     <div
       className={cn(
-        'group/entry relative ml-3.5 rounded-md border-l border-line pt-[0.4375rem] pr-1.5 pb-[0.5625rem] pl-[0.5625rem] hover:bg-line',
+        'group/entry relative ml-3.5 rounded-md border-l border-line pt-1.75 pr-1.5 pb-2.25 pl-2.25 hover:bg-line',
         isDimmed && '**:text-ink-faint'
       )}
     >
@@ -79,7 +79,7 @@ export function EntryCard({
 
         <div className="min-w-0 flex-1">
           {isTextOnly ? (
-            <div className="flex pr-[2.125rem]">
+            <div className="flex pr-8.5">
               <InlineEditField
                 value={entry.text ?? ''}
                 onSave={(v) => update({ text: v })}
@@ -88,7 +88,7 @@ export function EntryCard({
               />
             </div>
           ) : (
-            <div className="flex flex-col gap-0.5 pr-[2.125rem]">
+            <div className="flex flex-col gap-0.5 pr-8.5">
               <div className="flex min-w-0">
                 <InlineEditField
                   value={entry.title ?? ''}
@@ -135,7 +135,7 @@ export function EntryCard({
 
           {/* A left-off entry keeps its bullets, but out of the way until it is back on. */}
           {!isTextOnly && entry.selected && (
-            <div className="mt-[0.5625rem] flex flex-col gap-[0.4375rem]">
+            <div className="mt-2.25 flex flex-col gap-1.75">
               {entry.bullets.map((bullet, index) => (
                 <BulletItem
                   key={bullet.id}
@@ -155,7 +155,7 @@ export function EntryCard({
         {/* Floats over the heading's top-right corner in a raised card, on hover. */}
         <div
           className={cn(
-            'absolute top-[0.3125rem] right-[0.3125rem] z-10 flex rounded-[0.4375rem] border border-line-strong bg-pane-raised p-0.5 shadow-md',
+            'absolute top-1.25 right-1.25 z-10 flex rounded-[0.4375rem] border border-line-strong bg-pane-raised p-0.5 shadow-md',
             actionsOpen
               ? 'visible'
               : 'invisible group-focus-within/entry:visible group-hover/entry:visible'

@@ -100,7 +100,7 @@ export function PreviewPanel() {
                 key={size}
                 value={size}
                 aria-label={`Switch paper size to ${size === 'a4' ? 'A4' : 'US Letter'}`}
-                className="h-[1.625rem] px-2 text-xs font-semibold"
+                className="h-6.5 px-2 text-xs font-semibold"
               >
                 {size === 'a4' ? 'A4' : 'Letter'}
               </ToggleGroupItem>

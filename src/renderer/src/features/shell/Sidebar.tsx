@@ -23,13 +23,13 @@ const tabs: { id: SidebarTab; label: string; caption: string; icon: React.ReactN
     id: 'content',
     label: 'Content',
     caption: 'This resume',
-    icon: <FileText className="size-[0.8125rem]" />,
+    icon: <FileText className="size-3.25" />,
   },
   {
     id: 'templates',
     label: 'Templates',
     caption: 'Saved templates',
-    icon: <LayoutTemplate className="size-[0.8125rem]" />,
+    icon: <LayoutTemplate className="size-3.25" />,
   },
 ];
 
@@ -62,7 +62,7 @@ export function Sidebar() {
         onValueChange={(value) => setActiveSidebarTab(value as SidebarTab)}
         className="min-h-0 flex-1 gap-0"
       >
-        <TabsList className="h-auto w-full shrink-0 gap-[0.1875rem] rounded-none bg-transparent px-[0.5625rem] pt-[0.5625rem] pb-[0.4375rem]">
+        <TabsList className="h-auto w-full shrink-0 gap-0.75 rounded-none bg-transparent px-2.25 pt-2.25 pb-1.75">
           {tabs.map((tab) => (
             <TabsTrigger key={tab.id} value={tab.id} className={TAB_TRIGGER}>
               {tab.icon}
@@ -71,7 +71,7 @@ export function Sidebar() {
           ))}
         </TabsList>
 
-        <div className="flex min-h-[1.5625rem] shrink-0 items-center justify-between gap-2 px-3 pt-0.5 pb-2">
+        <div className="flex min-h-6.25 shrink-0 items-center justify-between gap-2 px-3 pt-0.5 pb-2">
           <span className="text-[0.65625rem] font-semibold tracking-[0.09em] text-ink-faint uppercase">
             {active.caption}
           </span>
