@@ -44,7 +44,7 @@ export function VersionList({
             key={version.id}
             className={cn(
               'group relative flex items-start gap-2.5 py-1.5',
-              previewing && 'rounded-md bg-amber-50 dark:bg-amber-950'
+              previewing && 'rounded-sm bg-amber-soft ring-4 ring-amber-soft'
             )}
           >
             <span
@@ -52,7 +52,7 @@ export function VersionList({
               className={cn(
                 'relative mt-0.5 size-3 shrink-0 rounded-full border-2 border-white dark:border-zinc-950',
                 head
-                  ? 'bg-amber-500 ring-3 ring-amber-200 dark:ring-amber-900'
+                  ? 'bg-amber-500 ring-3 ring-amber-soft'
                   : auto
                     ? 'bg-zinc-300 dark:bg-zinc-700'
                     : 'bg-zinc-500'
@@ -109,7 +109,7 @@ export function VersionList({
                     : 'Open this template to preview its versions'
                 }
                 onClick={() => onPreview(version, label)}
-                className={cn(previewing && 'bg-amber-100 dark:bg-amber-900')}
+                className={cn(previewing && 'bg-line-strong text-foreground')}
               >
                 <Eye className="size-3" />
               </AppButton>
