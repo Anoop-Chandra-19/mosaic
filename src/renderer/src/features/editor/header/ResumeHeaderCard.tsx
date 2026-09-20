@@ -18,13 +18,17 @@ import { cn } from '@/lib/utils';
 import { HEADER_OUTLINE_ID, useOutlineStore } from '@/stores/outlineStore';
 import { useResumeStore } from '@/stores/resumeStore';
 import { useUiStore } from '@/stores/uiStore';
-import type { LinkColor, LinkStyle } from '@shared/types/resume';
+import type { ContactInfo, LinkColor, LinkStyle } from '@shared/types/resume';
 import { InlineEditField } from '../InlineEditField';
 import { HeaderLineBlock } from './HeaderLineBlock';
 
-/** The top of the resume: the name, and the header's lines of items below it. */
-export function ResumeHeaderCard() {
-  const contact = useResumeStore((s) => s.contact);
+/**
+ * The top of the resume: the name, and the header's lines of items below it. `contact`
+ * shows a document other than the draft, which is how an older version is read.
+ */
+export function ResumeHeaderCard({ contact: shown }: { contact?: ContactInfo }) {
+  const draftContact = useResumeStore((s) => s.contact);
+  const contact = shown ?? draftContact;
   const setName = useResumeStore((s) => s.setName);
   const setLinkStyle = useResumeStore((s) => s.setLinkStyle);
   const setLinkColor = useResumeStore((s) => s.setLinkColor);

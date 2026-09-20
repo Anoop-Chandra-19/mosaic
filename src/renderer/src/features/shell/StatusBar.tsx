@@ -3,6 +3,7 @@ import { PanelLeft, PanelRight, type LucideIcon } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
 import { formatRelativeTime } from '@/features/templates/formatRelativeTime';
 import { useActiveTemplate } from '@/features/templates/useActiveTemplate';
+import { useVersionDistance, type VersionDistance } from '@/features/templates/useVersionDistance';
 import { shortcutLabel } from '@/lib/keyboardShortcuts';
 import { cn } from '@/lib/utils';
 import { useAiStore } from '@/stores/aiStore';
@@ -74,13 +75,24 @@ function Words() {
 }
 
 /**
+ * The draft against the newest version: how many steps away it is, and which way. A draft
+ * that was opened with edits already in it has nothing to count, so it just says so.
+ */
+function describeDistance({ matches, changes, undone, counted }: VersionDistance, version: number) {
+  if (matches) return `Matches v${version}`;
+  if (!counted) return `Edited since v${version}`;
+  const steps = `${changes} ${changes === 1 ? 'change' : 'changes'}`;
+  return `${steps} ${undone ? 'undone past' : 'since'} v${version}`;
+}
+
+/**
  * Three separate facts, never one word: the draft on disk (autosave), the draft against the
  * newest version in history, and the page as the preview lays it out. The two pane toggles
  * sit at the ends, next to the panes they open.
  */
 export function StatusBar() {
   const template = useActiveTemplate();
-  const rev = useResumeStore((s) => s.rev);
+  const distance = useVersionDistance();
   const savedAt = useResumeStore((s) => s.savedAt);
   const saveFailed = useResumeStore((s) => s.saveFailed);
   const meta = useOverlayStore((s) => s.previewMeta);
@@ -138,9 +150,7 @@ export function StatusBar() {
               title={`v${template.versionCount}: ${template.head.summary}`}
             >
               {/* Unlike the top bar's badge, this speaks even for a brand-new template's v1. */}
-              {rev !== template.head.rev
-                ? `Edited since v${template.versionCount}`
-                : `Matches v${template.versionCount}`}
+              {describeDistance(distance, template.versionCount)}
             </span>
           </>
         )}

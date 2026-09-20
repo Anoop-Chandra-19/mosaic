@@ -7,22 +7,27 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { BUILT_IN_KINDS, SECTION_PRESETS } from '@shared/resume/sectionPresets';
+import type { ResumeSection } from '@shared/types/resume';
 import { useResumeStore } from '@/stores/resumeStore';
 import { SectionItem } from './SectionItem';
 import { CustomMenuItems, PresetMenuItems } from './SectionMenuItems';
 import { useAddCustomSection } from './useAddCustomSection';
 
 export function SectionList({
+  sections: shown,
   showAddSection = true,
   namingId,
   onCustomAdded,
 }: {
+  /** Sections of a document other than the draft, which is how an older version is read. */
+  sections?: ResumeSection[];
   showAddSection?: boolean;
   /** A custom section just added: it shows with its name open for editing. */
   namingId: string | null;
   onCustomAdded: (sectionId: string) => void;
 }) {
-  const sections = useResumeStore((s) => s.sections);
+  const draftSections = useResumeStore((s) => s.sections);
+  const sections = shown ?? draftSections;
   const addSection = useResumeStore((s) => s.addSection);
   const reorderSections = useResumeStore((s) => s.reorderSections);
   const custom = useAddCustomSection(onCustomAdded);

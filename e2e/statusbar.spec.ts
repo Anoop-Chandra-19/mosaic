@@ -19,7 +19,7 @@ test('the status bar keeps autosave, history, and the page apart', async () => {
   await page.getByPlaceholder('Your name').fill('Ada Lovelace');
   await page.getByPlaceholder('Your name').press('Enter');
   await expect(bar.getByText('2 words')).toBeVisible();
-  await expect(bar.getByText('Edited since v1')).toBeVisible();
+  await expect(bar.getByText('1 change since v1')).toBeVisible();
 
   await page.getByRole('radio', { name: 'Switch paper size to US Letter' }).click();
   await expect(bar.getByText('1 page · Letter')).toBeVisible();
