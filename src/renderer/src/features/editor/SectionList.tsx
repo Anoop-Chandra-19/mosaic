@@ -11,6 +11,8 @@ import type { ResumeSection } from '@shared/types/resume';
 import { useResumeStore } from '@/stores/resumeStore';
 import { SectionItem } from './SectionItem';
 import { CustomMenuItems, PresetMenuItems } from './SectionMenuItems';
+import { swapNeighbours } from './listOrder';
+import { SortList } from './SortList';
 import { useAddCustomSection } from './useAddCustomSection';
 
 export function SectionList({
@@ -33,28 +35,34 @@ export function SectionList({
   const custom = useAddCustomSection(onCustomAdded);
 
   const sorted = [...sections].sort((a, b) => a.order - b.order);
+  const sectionIds = sorted.map((section) => section.id);
 
   const moveSection = (index: number, direction: -1 | 1) => {
-    const ids = sorted.map((s) => s.id);
-    const target = index + direction;
-    if (target < 0 || target >= ids.length) return;
-    [ids[index], ids[target]] = [ids[target], ids[index]];
-    reorderSections(ids);
+    const next = swapNeighbours(sectionIds, index, direction);
+    if (next) reorderSections(next);
   };
 
   return (
     <div>
-      {sorted.map((section, i) => (
-        <SectionItem
-          key={section.id}
-          section={section}
-          nameAtStart={section.id === namingId}
-          isFirst={i === 0}
-          isLast={i === sorted.length - 1}
-          onMoveUp={() => moveSection(i, -1)}
-          onMoveDown={() => moveSection(i, 1)}
-        />
-      ))}
+      <SortList
+        ids={sectionIds}
+        kind="section"
+        onReorder={reorderSections}
+        renderRow={(id, grip) => {
+          const i = sectionIds.indexOf(id);
+          return (
+            <SectionItem
+              section={sorted[i]}
+              nameAtStart={id === namingId}
+              grip={grip}
+              isFirst={i === 0}
+              isLast={i === sorted.length - 1}
+              onMoveUp={() => moveSection(i, -1)}
+              onMoveDown={() => moveSection(i, 1)}
+            />
+          );
+        }}
+      />
 
       {showAddSection && (
         <DropdownMenu>

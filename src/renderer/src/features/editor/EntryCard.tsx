@@ -17,6 +17,8 @@ import { AddBulletButton } from './AddBulletButton';
 import { BulletItem } from './BulletItem';
 import { EditorCheckbox } from './EditorCheckbox';
 import { InlineEditField } from './InlineEditField';
+import { swapNeighbours } from './listOrder';
+import { SortGripHandle, SortList, type SortGrip } from './SortList';
 
 interface EntryCardProps {
   entry: ResumeEntry;
@@ -28,6 +30,8 @@ interface EntryCardProps {
   isLast: boolean;
   onMoveUp: () => void;
   onMoveDown: () => void;
+  /** Its place in the section's list, so the card can be dragged by its heading. */
+  grip: SortGrip;
 }
 
 /** The design's `.emeta` fields: small, and only as wide as their text. */
@@ -47,12 +51,14 @@ export function EntryCard({
   isLast,
   onMoveUp,
   onMoveDown,
+  grip,
 }: EntryCardProps) {
   const toggleEntry = useResumeStore((s) => s.toggleEntry);
   const updateEntry = useResumeStore((s) => s.updateEntry);
   const removeEntry = useResumeStore((s) => s.removeEntry);
   const duplicateEntry = useResumeStore((s) => s.duplicateEntry);
   const addBullet = useResumeStore((s) => s.addBullet);
+  const reorderBullets = useResumeStore((s) => s.reorderBullets);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [actionsOpen, setActionsOpen] = useState(false);
   const isTextOnly = layout === 'lines';
@@ -60,6 +66,12 @@ export function EntryCard({
   // ink in it drops to the faintest.
   const isDimmed = !entry.selected || isSectionHidden;
   const update = (patch: Partial<ResumeEntry>) => updateEntry(sectionId, entry.id, patch);
+
+  const bulletIds = entry.bullets.map((bullet) => bullet.id);
+  const moveBullet = (index: number, direction: -1 | 1) => {
+    const next = swapNeighbours(bulletIds, index, direction);
+    if (next) reorderBullets(sectionId, entry.id, next);
+  };
 
   return (
     <div
@@ -69,6 +81,13 @@ export function EntryCard({
       )}
     >
       <div className="flex items-start gap-2">
+        {/* The controls align to the heading line, not the card: an entry grows downward
+            with its meta and bullets, so centring on the box would drift them off. */}
+        <SortGripHandle
+          grip={grip}
+          label="Drag entry to reorder"
+          className="invisible mt-1 group-focus-within/entry:visible group-hover/entry:visible"
+        />
         <EditorCheckbox
           dimmed={isDimmed}
           checked={entry.selected}
@@ -136,17 +155,28 @@ export function EntryCard({
           {/* A left-off entry keeps its bullets, but out of the way until it is back on. */}
           {!isTextOnly && entry.selected && (
             <div className="mt-2.25 flex flex-col gap-1.75">
-              {entry.bullets.map((bullet, index) => (
-                <BulletItem
-                  key={bullet.id}
-                  bullet={bullet}
-                  sectionId={sectionId}
-                  entryId={entry.id}
-                  isDimmed={isSectionHidden}
-                  isFirst={index === 0}
-                  isLast={index === entry.bullets.length - 1}
-                />
-              ))}
+              <SortList
+                ids={bulletIds}
+                kind="bullet"
+                className="flex flex-col gap-1.75"
+                onReorder={(ids) => reorderBullets(sectionId, entry.id, ids)}
+                renderRow={(id, grip) => {
+                  const index = entry.bullets.findIndex((bullet) => bullet.id === id);
+                  return (
+                    <BulletItem
+                      bullet={entry.bullets[index]}
+                      sectionId={sectionId}
+                      entryId={entry.id}
+                      grip={grip}
+                      isDimmed={isSectionHidden}
+                      isFirst={index === 0}
+                      isLast={index === entry.bullets.length - 1}
+                      onMoveUp={() => moveBullet(index, -1)}
+                      onMoveDown={() => moveBullet(index, 1)}
+                    />
+                  );
+                }}
+              />
               <AddBulletButton onAdd={(text) => addBullet(sectionId, entry.id, text)} />
             </div>
           )}

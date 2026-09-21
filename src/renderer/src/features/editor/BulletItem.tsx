@@ -13,6 +13,7 @@ import { useResumeStore } from '@/stores/resumeStore';
 import type { Bullet } from '@shared/types/resume';
 import { BulletEditor } from './BulletEditor';
 import { EditorCheckbox } from './EditorCheckbox';
+import { SortGripHandle, type SortGrip } from './SortList';
 
 interface BulletItemProps {
   bullet: Bullet;
@@ -22,6 +23,10 @@ interface BulletItemProps {
   isDimmed?: boolean;
   isFirst: boolean;
   isLast: boolean;
+  onMoveUp: () => void;
+  onMoveDown: () => void;
+  /** Its place in the entry's list, so it can be dragged. */
+  grip: SortGrip;
 }
 
 /**
@@ -35,12 +40,14 @@ export function BulletItem({
   isDimmed = false,
   isFirst,
   isLast,
+  onMoveUp,
+  onMoveDown,
+  grip,
 }: BulletItemProps) {
   const toggleBullet = useResumeStore((s) => s.toggleBullet);
   const updateBullet = useResumeStore((s) => s.updateBullet);
   const removeBullet = useResumeStore((s) => s.removeBullet);
   const duplicateBullet = useResumeStore((s) => s.duplicateBullet);
-  const moveBullet = useResumeStore((s) => s.moveBullet);
   const [editing, setEditing] = useState(false);
   const [actionsOpen, setActionsOpen] = useState(false);
   // "Edit text" opens the editor once the menu has closed, so the editor keeps focus.
@@ -68,6 +75,11 @@ export function BulletItem({
         bullet.selected ? 'text-ink-soft' : 'text-ink-faint line-through decoration-line-heavy'
       )}
     >
+      <SortGripHandle
+        grip={grip}
+        label="Drag bullet to reorder"
+        className="invisible mt-px group-focus-within/bullet:visible group-hover/bullet:visible"
+      />
       <EditorCheckbox
         small
         dimmed={isDimmed}
@@ -122,17 +134,11 @@ export function BulletItem({
                 Duplicate
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem
-                disabled={isFirst}
-                onSelect={() => moveBullet(sectionId, entryId, bullet.id, -1)}
-              >
+              <DropdownMenuItem disabled={isFirst} onSelect={onMoveUp}>
                 <ArrowUp />
                 Move up
               </DropdownMenuItem>
-              <DropdownMenuItem
-                disabled={isLast}
-                onSelect={() => moveBullet(sectionId, entryId, bullet.id, 1)}
-              >
+              <DropdownMenuItem disabled={isLast} onSelect={onMoveDown}>
                 <ArrowDown />
                 Move down
               </DropdownMenuItem>
