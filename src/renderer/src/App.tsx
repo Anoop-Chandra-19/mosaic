@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { AppTooltipProvider } from '@/components/AppTooltip';
 import { AppShell } from '@/features/shell/AppShell';
 
 const SCROLLBAR_IDLE_MS = 900;
@@ -60,7 +61,11 @@ function App() {
     };
   }, []);
 
-  return <AppShell />;
+  return (
+    <AppTooltipProvider>
+      <AppShell />
+    </AppTooltipProvider>
+  );
 }
 
 export default App;

@@ -1,5 +1,6 @@
 import type { ComponentProps } from 'react';
 import { cva, type VariantProps } from 'class-variance-authority';
+import { AppTooltip } from '@/components/AppTooltip';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
@@ -65,7 +66,12 @@ const appButtonVariants = cva(
 type AppButtonProps = Omit<ComponentProps<typeof Button>, 'variant' | 'size'> &
   VariantProps<typeof appButtonVariants>;
 
-/** Mosaic's button: the upstream primitive (focus, `asChild`), styled on Mosaic's axes. */
+/**
+ * Mosaic's button: the upstream primitive (focus, `asChild`), styled on Mosaic's axes. Its
+ * `title` shows as an `AppTooltip` rather than the native box, and a square (icon-only)
+ * button without one shows its `aria-label` instead. Every icon-only button has an
+ * `aria-label`, so no button's name ever came from its title.
+ */
 export function AppButton({
   variant,
   size,
@@ -73,19 +79,27 @@ export function AppButton({
   className,
   asChild,
   type,
+  title,
+  disabled,
   ...props
 }: AppButtonProps) {
+  // An icon on its own says what it is on hover, as every icon button and ⋯ menu in the
+  // design does. A button with words already says it.
+  const hint = title ?? (shape === 'square' ? props['aria-label'] : undefined);
   return (
-    <Button
-      variant={null}
-      size={null}
-      asChild={asChild}
-      type={type ?? (asChild ? undefined : 'button')}
-      data-variant={variant ?? 'solid'}
-      data-size={size ?? 'md'}
-      data-shape={shape ?? 'rect'}
-      className={cn(appButtonVariants({ variant, size, shape }), className)}
-      {...props}
-    />
+    <AppTooltip content={hint} disabled={disabled}>
+      <Button
+        variant={null}
+        size={null}
+        asChild={asChild}
+        disabled={disabled}
+        type={type ?? (asChild ? undefined : 'button')}
+        data-variant={variant ?? 'solid'}
+        data-size={size ?? 'md'}
+        data-shape={shape ?? 'rect'}
+        className={cn(appButtonVariants({ variant, size, shape }), className)}
+        {...props}
+      />
+    </AppTooltip>
   );
 }

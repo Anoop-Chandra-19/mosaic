@@ -8,6 +8,7 @@ import {
   LayoutTemplate,
 } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
+import { AppTooltip } from '@/components/AppTooltip';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { HEADER_OUTLINE_ID, useOutlineStore } from '@/stores/outlineStore';
 import { attempt, showToast, useOverlayStore, type VersionPreview } from '@/stores/overlayStore';
@@ -91,20 +92,21 @@ export function Sidebar() {
         </TabsContent>
       </Tabs>
 
-      <div
-        // Thin resize handle keeps the sidebar adjustable without adding visual weight.
-        onPointerDown={(event) =>
-          startPaneResize(event, {
-            pane: sidebarRef.current,
-            anchor: 'left',
-            limits: SIDEBAR_WIDTH,
-            onDone: setWidthPx,
-          })
-        }
-        onDoubleClick={() => setWidthPx(SIDEBAR_WIDTH.defaultPx)}
-        title="Drag to resize · double-click to reset"
-        className="absolute top-0 right-0 bottom-0 w-1 cursor-col-resize transition-colors hover:bg-amber-500 active:bg-amber-600"
-      />
+      <AppTooltip side="right" content="Drag to resize · double-click to reset">
+        <div
+          // Thin resize handle keeps the sidebar adjustable without adding visual weight.
+          onPointerDown={(event) =>
+            startPaneResize(event, {
+              pane: sidebarRef.current,
+              anchor: 'left',
+              limits: SIDEBAR_WIDTH,
+              onDone: setWidthPx,
+            })
+          }
+          onDoubleClick={() => setWidthPx(SIDEBAR_WIDTH.defaultPx)}
+          className="absolute top-0 right-0 bottom-0 w-1 cursor-col-resize transition-colors hover:bg-amber-500 active:bg-amber-600"
+        />
+      </AppTooltip>
     </aside>
   );
 }

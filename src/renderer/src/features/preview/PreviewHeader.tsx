@@ -1,4 +1,5 @@
 import { Fragment } from 'react';
+import { AppTooltip } from '@/components/AppTooltip';
 import type { ContactInfo } from '@shared/types/resume';
 import { HEADLESS_LAYOUT as L } from '@/lib/resume/headlessLayout';
 import { getPrintableHeaderLines, LINK_BLUE } from '@shared/resume/resumeHeader';
@@ -52,16 +53,17 @@ export function PreviewHeader({ contact }: PreviewHeaderProps) {
             <Fragment key={item.id}>
               {index > 0 && <span className="whitespace-pre">{line.separator}</span>}
               {item.href ? (
-                <a
-                  href={item.href}
-                  target="_blank"
-                  rel="noreferrer"
-                  title={item.href}
-                  className={cn('text-inherit', underline ? 'underline' : 'no-underline')}
-                  style={isBlue ? { color: LINK_BLUE } : undefined}
-                >
-                  {item.text}
-                </a>
+                <AppTooltip content={item.href}>
+                  <a
+                    href={item.href}
+                    target="_blank"
+                    rel="noreferrer"
+                    className={cn('text-inherit', underline ? 'underline' : 'no-underline')}
+                    style={isBlue ? { color: LINK_BLUE } : undefined}
+                  >
+                    {item.text}
+                  </a>
+                </AppTooltip>
               ) : (
                 item.text
               )}

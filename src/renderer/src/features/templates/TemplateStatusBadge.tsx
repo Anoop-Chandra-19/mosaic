@@ -1,3 +1,4 @@
+import { AppTooltip } from '@/components/AppTooltip';
 import { cn } from '@/lib/utils';
 import type { TemplateStatus } from './useTemplateStatus';
 
@@ -22,14 +23,15 @@ export function TemplateStatusBadge({ status }: { status: TemplateStatus }) {
   const badge = BADGES[status];
   if (!badge) return null;
   return (
-    <span
-      title={badge.title}
-      className={cn(
-        'inline-flex shrink-0 items-center rounded-md border px-1.5 py-0.5 text-xs font-semibold',
-        badge.className
-      )}
-    >
-      {badge.label}
-    </span>
+    <AppTooltip content={badge.title}>
+      <span
+        className={cn(
+          'inline-flex shrink-0 items-center rounded-md border px-1.5 py-0.5 text-xs font-semibold',
+          badge.className
+        )}
+      >
+        {badge.label}
+      </span>
+    </AppTooltip>
   );
 }

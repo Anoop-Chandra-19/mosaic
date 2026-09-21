@@ -1,7 +1,20 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Locator, type Page } from '@playwright/test';
 import { withApp } from './launch';
 
 const mosaic = withApp();
+
+/**
+ * What a button's hint says, read the way a person reads it: by pointing at it. The pointer
+ * travels there in steps, as a real one does: leaving another button's hint opens a moment
+ * in which the pointer may still be on its way to that hint, and only further movement
+ * ends it. `hover()` jumps in one move. The hint just left can still be fading out beside
+ * the new one, so the new one is found by what it says.
+ */
+async function expectHint(page: Page, button: Locator, text: RegExp) {
+  const box = (await button.boundingBox())!;
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2, { steps: 6 });
+  await expect(page.getByRole('tooltip', { name: text })).toBeAttached();
+}
 
 /** Replace the contact name, whatever it is now, and leave the field. */
 async function setName(page: Page, current: string, next: string) {
@@ -27,14 +40,14 @@ test('a change is taken back and put back, from the keyboard or the top bar', as
 
   await setName(page, 'Your name', 'Ada Lovelace');
   await expect(bar.getByText('1 change since v1')).toBeVisible();
-  await expect(undo).toHaveAttribute('title', /^Undo edit the name/);
+  await expectHint(page, undo, /^Undo edit the name/);
 
   // Ctrl+Z takes it back, and the status bar counts the draft back to the version.
   await page.keyboard.press('Control+z');
   await expect(name(page, 'Your name')).toBeVisible();
   await expect(bar.getByText('Matches v1')).toBeVisible();
   await expect(undo).toBeDisabled();
-  await expect(redo).toHaveAttribute('title', /^Redo edit the name/);
+  await expectHint(page, redo, /^Redo edit the name/);
 
   // Both redo shortcuts work, whichever one the reader learned elsewhere.
   await page.keyboard.press('Control+Shift+z');
@@ -144,10 +157,7 @@ test('an import is one step, and taking it back leaves the history standing', as
   await expect(name(page, 'Grace Hopper')).toBeVisible();
 
   // One step back is the whole import, and the resume that was there returns.
-  await expect(page.getByRole('button', { name: 'Undo', exact: true })).toHaveAttribute(
-    'title',
-    /^Undo import/
-  );
+  await expectHint(page, page.getByRole('button', { name: 'Undo', exact: true }), /^Undo import/);
   await page.keyboard.press('Control+z');
   await expect(name(page, 'Ada Lovelace')).toBeVisible();
 

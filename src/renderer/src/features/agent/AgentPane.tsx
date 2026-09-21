@@ -1,6 +1,7 @@
 import { useRef } from 'react';
 import { Sparkles, X } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
+import { AppTooltip } from '@/components/AppTooltip';
 import { AI_PROVIDER_BY_ID } from '@/features/settings/sections/aiProviderOptions';
 import { formatPaneWidth, startPaneResize } from '@/features/shell/paneResize';
 import { shortcutLabel } from '@/lib/keyboardShortcuts';
@@ -37,19 +38,20 @@ export function AgentPane() {
       className="relative flex shrink-0 flex-col border-l border-border bg-card @max-5xl/workspace:absolute @max-5xl/workspace:inset-y-0 @max-5xl/workspace:right-0 @max-5xl/workspace:z-20 @max-5xl/workspace:shadow-xl"
       style={{ width: formatPaneWidth(widthPx, AGENT_PANE_WIDTH) }}
     >
-      <div
-        onPointerDown={(event) =>
-          startPaneResize(event, {
-            pane: paneRef.current,
-            anchor: 'right',
-            limits: AGENT_PANE_WIDTH,
-            onDone: setWidthPx,
-          })
-        }
-        onDoubleClick={() => setWidthPx(AGENT_PANE_WIDTH.defaultPx)}
-        title="Drag to resize · double-click to reset"
-        className="absolute top-0 bottom-0 left-0 z-10 w-1 cursor-col-resize transition-colors hover:bg-amber-500 active:bg-amber-600"
-      />
+      <AppTooltip side="left" content="Drag to resize · double-click to reset">
+        <div
+          onPointerDown={(event) =>
+            startPaneResize(event, {
+              pane: paneRef.current,
+              anchor: 'right',
+              limits: AGENT_PANE_WIDTH,
+              onDone: setWidthPx,
+            })
+          }
+          onDoubleClick={() => setWidthPx(AGENT_PANE_WIDTH.defaultPx)}
+          className="absolute top-0 bottom-0 left-0 z-10 w-1 cursor-col-resize transition-colors hover:bg-amber-500 active:bg-amber-600"
+        />
+      </AppTooltip>
 
       {/* Same padding and control size as the preview's header, so the two rules line up. */}
       <header className="flex shrink-0 items-center justify-between gap-2 border-b border-border px-4 py-2.5">

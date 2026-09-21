@@ -1,6 +1,7 @@
 import { useId, useState, type KeyboardEvent } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
+import { AppTooltip } from '@/components/AppTooltip';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
@@ -119,12 +120,11 @@ export function HeaderItemEditor({
       <div className="mt-0.5 flex items-center gap-[0.3125rem]">
         {/* Worth saying only when the file gets something other than what was typed with
             https:// in front: a mail or phone link. */}
-        <span
-          className="min-w-0 flex-1 truncate font-mono text-[0.65625rem] text-ink-faint"
-          title="How the link is written into exported files. The field keeps what you typed."
-        >
-          {/^(?:mailto|tel):/i.test(href) ? href : ''}
-        </span>
+        <AppTooltip content="How the link is written into exported files. The field keeps what you typed.">
+          <span className="min-w-0 flex-1 truncate font-mono text-[0.65625rem] text-ink-faint">
+            {/^(?:mailto|tel):/i.test(href) ? href : ''}
+          </span>
+        </AppTooltip>
         {text && (
           <AppButton
             variant="ghost"
