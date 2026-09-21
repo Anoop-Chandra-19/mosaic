@@ -10,6 +10,11 @@ async function openSettings(page: Page, section: string) {
   return dialog;
 }
 
+/** Calls reach main in order, so once this answers every setting written before it has landed. */
+async function waitForSettingWrites(page: Page) {
+  await page.evaluate(() => window.mosaic.db.boot());
+}
+
 const mosaic = withApp();
 
 test('settings are grouped as the design has them, and take effect', async () => {
@@ -40,7 +45,7 @@ test('settings are grouped as the design has them, and take effect', async () =>
     if (!boot.ok) throw new Error(boot.message);
     return { ui: JSON.parse(boot.value.settings.ui), ai: JSON.parse(boot.value.settings.ai) };
   });
-  expect(stored.ui.state).toMatchObject({ paperSize: 'letter', darkMode: false });
+  expect(stored.ui.state).toMatchObject({ paperSize: 'letter', theme: 'light' });
   expect(stored.ai.state).toMatchObject({ enabled: true, provider: 'ollama' });
   expect(errors).toEqual([]);
 });
@@ -204,7 +209,7 @@ test('settings survive quitting and relaunching', async () => {
       if (!boot.ok) throw new Error(boot.message);
       return boot.value;
     });
-    expect(JSON.parse(settings.ui)).toMatchObject({ state: { darkMode: false } });
+    expect(JSON.parse(settings.ui)).toMatchObject({ state: { theme: 'light' } });
     await first.app.close();
 
     const second = await launchApp(userDataDir);
@@ -213,6 +218,95 @@ test('settings survive quitting and relaunching', async () => {
       expect(second.errors).toEqual([]);
     } finally {
       await second.app.close();
+    }
+  } finally {
+    fs.rmSync(userDataDir, { recursive: true, force: true });
+  }
+});
+
+test('the System theme follows the operating system, and changes when it does', async () => {
+  const { page, errors } = mosaic();
+  await page.getByRole('button', { name: /Blank resume/ }).click();
+  const html = page.locator('html');
+  await page.emulateMedia({ colorScheme: 'light' });
+
+  const settings = await openSettings(page, 'Appearance');
+  await settings.getByRole('radio', { name: 'System' }).click();
+  await expect(html).not.toHaveClass(/dark/);
+  await page.emulateMedia({ colorScheme: 'dark' });
+  await expect(html).toHaveClass(/dark/);
+
+  // The top bar's button is a choice of its own: it leaves System for the other theme.
+  await page.keyboard.press('Escape');
+  await page.getByRole('button', { name: 'Toggle theme' }).click();
+  await expect(html).not.toHaveClass(/dark/);
+  await page.emulateMedia({ colorScheme: 'dark' });
+  await expect(html).not.toHaveClass(/dark/);
+  expect(errors).toEqual([]);
+});
+
+test('without the live preview, the editor takes the whole width', async () => {
+  const { page, errors } = mosaic();
+  await page.getByRole('button', { name: /Blank resume/ }).click();
+  const sidebar = page.getByRole('complementary');
+
+  const settings = await openSettings(page, 'Appearance');
+  await settings.getByRole('switch', { name: 'Show live preview' }).click();
+  await page.keyboard.press('Escape');
+
+  await expect(page.getByRole('main')).toHaveCount(0);
+  const windowWidth = await page.evaluate(() => innerWidth);
+  expect((await sidebar.boundingBox())!.width).toBeGreaterThan(windowWidth * 0.9);
+  // Nothing else is left to show, so the sidebar cannot be hidden.
+  await expect(page.getByRole('button', { name: 'Toggle sidebar' })).toHaveCount(0);
+  await page.keyboard.press('Control+b');
+  await expect(sidebar).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
+test('Settings lists every keyboard shortcut', async () => {
+  const { page, errors } = mosaic();
+  const settings = await openSettings(page, 'About');
+  await settings.getByRole('button', { name: 'View all' }).click();
+
+  const editing = settings.getByRole('region', { name: 'Editing' });
+  await expect(editing.getByText('Name a version')).toBeVisible();
+  await expect(editing.getByText('Ctrl+S', { exact: true })).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
+test('a launch opens what Settings says: the Start panel, or the template picker', async () => {
+  const first = await launchApp();
+  const { userDataDir } = first;
+  try {
+    await first.page.getByRole('button', { name: /Blank resume/ }).click();
+    const settings = await openSettings(first.page, 'General');
+    await settings.getByRole('combobox', { name: 'Open on launch' }).click();
+    await first.page.getByRole('option', { name: 'Start a new resume' }).click();
+    await waitForSettingWrites(first.page);
+    await first.app.close();
+
+    // The Start panel, over the template that was open, and it can be closed.
+    const second = await launchApp(userDataDir);
+    await expect(second.page.getByRole('heading', { name: 'Start a new resume' })).toBeVisible();
+    await second.page.getByRole('button', { name: 'Close', exact: true }).click();
+    await expect(second.page.getByText('Untitled resume').first()).toBeVisible();
+    const again = await openSettings(second.page, 'General');
+    await again.getByRole('combobox', { name: 'Open on launch' }).click();
+    await second.page.getByRole('option', { name: 'Template picker' }).click();
+    await waitForSettingWrites(second.page);
+    await second.app.close();
+
+    const third = await launchApp(userDataDir);
+    try {
+      await expect(third.page.getByRole('heading', { name: /Start/ })).toHaveCount(0);
+      await expect(third.page.getByRole('tab', { name: 'Templates' })).toHaveAttribute(
+        'aria-selected',
+        'true'
+      );
+      expect(third.errors).toEqual([]);
+    } finally {
+      await third.app.close();
     }
   } finally {
     fs.rmSync(userDataDir, { recursive: true, force: true });

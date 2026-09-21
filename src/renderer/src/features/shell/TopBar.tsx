@@ -3,7 +3,8 @@ import { AppButton } from '@/components/AppButton';
 import { redoShortcutLabel, shortcutLabel } from '@/lib/keyboardShortcuts';
 import { showToast, useOverlayStore } from '@/stores/overlayStore';
 import { useResumeStore } from '@/stores/resumeStore';
-import { useDarkMode } from '@/lib/hooks/useDarkMode';
+import { useIsDarkTheme } from '@/lib/hooks/useTheme';
+import { useUiStore } from '@/stores/uiStore';
 import { useActiveTemplate } from '@/features/templates/useActiveTemplate';
 import { useTemplateStatus } from '@/features/templates/useTemplateStatus';
 import { TemplateStatusBadge } from '@/features/templates/TemplateStatusBadge';
@@ -12,7 +13,8 @@ import { TemplateStatusBadge } from '@/features/templates/TemplateStatusBadge';
 export const READING_A_VERSION = 'Go back to your draft to edit it.';
 
 export function TopBar() {
-  const { darkMode, toggleDarkMode } = useDarkMode();
+  const isDark = useIsDarkTheme();
+  const setTheme = useUiStore((s) => s.setTheme);
   const openSettings = useOverlayStore((s) => s.openSettings);
   const openExport = useOverlayStore((s) => s.openExport);
   const activeTemplate = useActiveTemplate();
@@ -108,11 +110,12 @@ export function TopBar() {
           variant="ghost"
           size="sm"
           shape="square"
-          onClick={toggleDarkMode}
+          // A choice made here is a choice: it leaves System for the theme it switches to.
+          onClick={() => setTheme(isDark ? 'light' : 'dark')}
           aria-label="Toggle theme"
-          title={darkMode ? 'Light theme' : 'Dark theme'}
+          title={isDark ? 'Light theme' : 'Dark theme'}
         >
-          {darkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+          {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
         </AppButton>
 
         <AppButton

@@ -5,6 +5,7 @@ import {
   BrowserWindow,
   dialog,
   ipcMain,
+  nativeTheme,
   net,
   screen,
   shell,
@@ -65,6 +66,22 @@ function isAppFrame(event: IpcMainInvokeEvent): boolean {
   );
 }
 
+/**
+ * The window's colour before the page paints, matching the theme it is about to draw, so
+ * there is no flash of the other one. The theme is the renderer's `ui` setting.
+ */
+function readWindowBackground(): string {
+  let theme: unknown;
+  try {
+    theme = JSON.parse((db && getSetting(db, 'ui')) || '{}')?.state?.theme;
+  } catch {
+    theme = undefined;
+  }
+  const isDark =
+    theme === 'light' ? false : theme === 'system' ? nativeTheme.shouldUseDarkColors : true;
+  return isDark ? '#09090b' : '#ffffff';
+}
+
 function createWindow(): BrowserWindow {
   // Size from the display rather than fixed pixels; the floor keeps the editor usable.
   const { width, height } = screen.getPrimaryDisplay().workAreaSize;
@@ -76,8 +93,7 @@ function createWindow(): BrowserWindow {
     minHeight: 540,
     show: false,
     title: 'Mosaic',
-    // Matches the app's default dark theme, so there is no white flash before first paint.
-    backgroundColor: '#09090b',
+    backgroundColor: readWindowBackground(),
     autoHideMenuBar: true,
     webPreferences: {
       preload: path.join(here, '../preload/index.cjs'),

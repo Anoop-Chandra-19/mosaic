@@ -5,6 +5,7 @@ import { DbError, getDb } from '@/lib/storage/mosaicDb';
 import { createEmptyResume } from '@shared/resume/defaultResume';
 import { createHeaderItem, createHeaderLine } from '@shared/resume/resumeHeader';
 import type { Draft } from '@shared/types/db';
+import { useUiStore } from './uiStore';
 import type {
   HeaderItem,
   HeaderItemKind,
@@ -29,9 +30,6 @@ const SAVE_DELAY_MS = 1000;
 /** …or after this long of non-stop edits, so a crash loses seconds, not a session. */
 const SAVE_MAX_WAIT_MS = 5000;
 
-/** How many steps back the editor remembers, within one open draft. */
-const UNDO_HISTORY_LIMIT = 100;
-
 /** A step that can be taken back: the document before it, and what the step did. */
 interface HistoryStep {
   doc: ResumeData;
@@ -47,6 +45,13 @@ interface HistoryStep {
  */
 let past: HistoryStep[] = [];
 let future: HistoryStep[] = [];
+
+/** Remember a step, keeping only as many as Settings allows: the oldest go first. */
+function rememberStep(step: HistoryStep) {
+  past.push(step);
+  const limit = useUiStore.getState().undoHistorySteps;
+  if (past.length > limit) past.splice(0, past.length - limit);
+}
 
 interface ResumeState extends ResumeData {
   /** The template whose draft this is; null while no template is open. */
@@ -190,8 +195,7 @@ export const useResumeStore = create<ResumeState>()(
       // A step taken after an undo drops what had been undone. The baseline goes with it
       // when it was among those states, and then the count no longer means anything.
       const lostBaseline = future.length > 0 && useResumeStore.getState().changesSinceBaseline < 0;
-      past.push({ doc: before, label });
-      if (past.length > UNDO_HISTORY_LIMIT) past.shift();
+      rememberStep({ doc: before, label });
       future = [];
       set((state) => {
         recipe(state);
@@ -228,8 +232,7 @@ export const useResumeStore = create<ResumeState>()(
         const doc = draft?.doc ?? createEmptyResume();
         const step = options?.asStep;
         if (step) {
-          past.push({ doc: getResumeSnapshot(), label: step });
-          if (past.length > UNDO_HISTORY_LIMIT) past.shift();
+          rememberStep({ doc: getResumeSnapshot(), label: step });
         } else {
           past = [];
         }

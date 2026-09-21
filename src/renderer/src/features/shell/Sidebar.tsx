@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
 import { AppTooltip } from '@/components/AppTooltip';
+import { cn } from '@/lib/utils';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { HEADER_OUTLINE_ID, useOutlineStore } from '@/stores/outlineStore';
 import { attempt, showToast, useOverlayStore, type VersionPreview } from '@/stores/overlayStore';
@@ -44,19 +45,24 @@ export function Sidebar() {
   const widthPx = useUiStore((s) => s.sidebarWidthPx);
   const setWidthPx = useUiStore((s) => s.setSidebarWidthPx);
   const sidebarCollapsed = useUiStore((s) => s.sidebarCollapsed);
+  const shouldShowPreview = useUiStore((s) => s.shouldShowPreview);
   const preview = useOverlayStore((s) => s.preview);
   const sidebarRef = useRef<HTMLElement>(null);
 
-  // Hidden and shown from the status bar, or with Ctrl/⌘+B.
-  if (sidebarCollapsed) return null;
+  // Hidden and shown from the status bar, or with Ctrl/⌘+B. Without the preview beside it,
+  // the sidebar is the editor: it takes the whole width and never hides.
+  if (sidebarCollapsed && shouldShowPreview) return null;
 
   const active = tabs.find((tab) => tab.id === activeSidebarTab) ?? tabs[0];
 
   return (
     <aside
       ref={sidebarRef}
-      className="relative flex shrink-0 flex-col border-r border-line bg-pane"
-      style={{ width: formatPaneWidth(widthPx, SIDEBAR_WIDTH) }}
+      className={cn(
+        'relative flex flex-col border-line bg-pane',
+        shouldShowPreview ? 'shrink-0 border-r' : 'min-w-0 flex-1'
+      )}
+      style={shouldShowPreview ? { width: formatPaneWidth(widthPx, SIDEBAR_WIDTH) } : undefined}
     >
       <Tabs
         value={active.id}
@@ -92,21 +98,23 @@ export function Sidebar() {
         </TabsContent>
       </Tabs>
 
-      <AppTooltip side="right" content="Drag to resize · double-click to reset">
-        <div
-          // Thin resize handle keeps the sidebar adjustable without adding visual weight.
-          onPointerDown={(event) =>
-            startPaneResize(event, {
-              pane: sidebarRef.current,
-              anchor: 'left',
-              limits: SIDEBAR_WIDTH,
-              onDone: setWidthPx,
-            })
-          }
-          onDoubleClick={() => setWidthPx(SIDEBAR_WIDTH.defaultPx)}
-          className="absolute top-0 right-0 bottom-0 w-1 cursor-col-resize transition-colors hover:bg-amber-500 active:bg-amber-600"
-        />
-      </AppTooltip>
+      {shouldShowPreview && (
+        <AppTooltip side="right" content="Drag to resize · double-click to reset">
+          <div
+            // Thin resize handle keeps the sidebar adjustable without adding visual weight.
+            onPointerDown={(event) =>
+              startPaneResize(event, {
+                pane: sidebarRef.current,
+                anchor: 'left',
+                limits: SIDEBAR_WIDTH,
+                onDone: setWidthPx,
+              })
+            }
+            onDoubleClick={() => setWidthPx(SIDEBAR_WIDTH.defaultPx)}
+            className="absolute top-0 right-0 bottom-0 w-1 cursor-col-resize transition-colors hover:bg-amber-500 active:bg-amber-600"
+          />
+        </AppTooltip>
+      )}
     </aside>
   );
 }

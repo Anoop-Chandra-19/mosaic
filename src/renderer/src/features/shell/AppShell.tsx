@@ -18,10 +18,10 @@ import { showToast, useOverlayStore } from '@/stores/overlayStore';
 import { useResumeStore } from '@/stores/resumeStore';
 import { useTemplateStore } from '@/stores/templateStore';
 import { useUiStore } from '@/stores/uiStore';
-import { useDarkMode } from '@/lib/hooks/useDarkMode';
+import { useApplyTheme } from '@/lib/hooks/useTheme';
 
 export function AppShell() {
-  useDarkMode();
+  useApplyTheme();
   useShortcuts();
   useAutoSnapshot();
   const hasTemplates = useTemplateStore((s) => s.templates.length > 0);
@@ -29,6 +29,7 @@ export function AppShell() {
   const aiEnabled = useAiStore((s) => s.enabled);
   const agentPaneOpen = useUiStore((s) => s.agentPaneOpen);
   const showAgentPane = aiEnabled && agentPaneOpen;
+  const shouldShowPreview = useUiStore((s) => s.shouldShowPreview);
 
   return (
     // Editor and preview side by side, at every window size; the assistant joins them on
@@ -42,7 +43,7 @@ export function AppShell() {
           inert={showStart}
         >
           <Sidebar />
-          <PreviewPanel />
+          {shouldShowPreview && <PreviewPanel />}
           {showAgentPane && <AgentPane />}
         </div>
         {showStart && <StartPanel closable={hasTemplates} />}
@@ -88,7 +89,7 @@ function useShortcuts() {
       }
       if (event.key.toLowerCase() === 'b') {
         event.preventDefault();
-        useUiStore.getState().toggleSidebarCollapsed();
+        if (useUiStore.getState().shouldShowPreview) useUiStore.getState().toggleSidebarCollapsed();
         return;
       }
       if (event.key === '\\' && useAiStore.getState().enabled) {

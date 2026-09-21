@@ -6,6 +6,26 @@ import type { PaperSize } from '@/types/paper';
 
 export type SidebarTab = 'content' | 'templates';
 
+/** The chrome's theme. System follows the operating system, and changes when it does. */
+export type ThemeChoice = 'dark' | 'light' | 'system';
+const THEME_CHOICES: readonly ThemeChoice[] = ['dark', 'light', 'system'];
+
+/**
+ * What a launch shows once there are templates: the last one as it was left, the Start
+ * panel over it, or the last one with the sidebar on Templates to pick another.
+ */
+export type LaunchView = 'last' | 'start' | 'templates';
+const LAUNCH_VIEWS: readonly LaunchView[] = ['last', 'start', 'templates'];
+
+/** How many steps back Ctrl/⌘+Z can go within one open draft. */
+export const UNDO_HISTORY_STEP_OPTIONS = [50, 200, 500] as const;
+export type UndoHistorySteps = (typeof UNDO_HISTORY_STEP_OPTIONS)[number];
+
+/** `value` when it is one of `choices`, else `fallback`: stored settings are not trusted. */
+function pickChoice<T>(value: unknown, choices: readonly T[], fallback: T): T {
+  return choices.includes(value as T) ? (value as T) : fallback;
+}
+
 /**
  * A side pane's width, kept in pixels like a code editor's: it comes back exactly as it was
  * left. `maxShare` is the most of the window it takes, so on a small window the preview
@@ -56,7 +76,11 @@ export function nextPreviewZoomStep(zoom: number, direction: 1 | -1): number | u
 }
 
 export const DEFAULT_UI_STATE = {
-  darkMode: true,
+  theme: 'dark' as ThemeChoice,
+  openOnLaunch: 'last' as LaunchView,
+  undoHistorySteps: 200 as UndoHistorySteps,
+  /** Off gives the editor the whole width, for a small screen. */
+  shouldShowPreview: true,
   activeSidebarTab: 'content' as SidebarTab,
   currentPreviewPage: 1,
   paperSize: 'a4' as PaperSize,
@@ -71,7 +95,10 @@ export const DEFAULT_UI_STATE = {
 };
 
 interface UiState {
-  darkMode: boolean;
+  theme: ThemeChoice;
+  openOnLaunch: LaunchView;
+  undoHistorySteps: UndoHistorySteps;
+  shouldShowPreview: boolean;
   activeSidebarTab: SidebarTab;
   currentPreviewPage: number;
   paperSize: PaperSize;
@@ -81,8 +108,10 @@ interface UiState {
   agentPaneOpen: boolean;
   agentPaneWidthPx: number;
   shouldShowHeaderIcons: boolean;
-  toggleDarkMode: () => void;
-  setDarkMode: (enabled: boolean) => void;
+  setTheme: (theme: ThemeChoice) => void;
+  setOpenOnLaunch: (view: LaunchView) => void;
+  setUndoHistorySteps: (steps: UndoHistorySteps) => void;
+  setShouldShowPreview: (shown: boolean) => void;
   setActiveSidebarTab: (tab: SidebarTab) => void;
   setCurrentPreviewPage: (page: number) => void;
   setPaperSize: (size: PaperSize) => void;
@@ -101,13 +130,21 @@ export const useUiStore = create<UiState>()(
   persist(
     immer((set) => ({
       ...DEFAULT_UI_STATE,
-      toggleDarkMode: () =>
+      setTheme: (theme) =>
         set((state) => {
-          state.darkMode = !state.darkMode;
+          state.theme = theme;
         }),
-      setDarkMode: (enabled) =>
+      setOpenOnLaunch: (view) =>
         set((state) => {
-          state.darkMode = enabled;
+          state.openOnLaunch = view;
+        }),
+      setUndoHistorySteps: (steps) =>
+        set((state) => {
+          state.undoHistorySteps = steps;
+        }),
+      setShouldShowPreview: (shown) =>
+        set((state) => {
+          state.shouldShowPreview = shown;
         }),
       setActiveSidebarTab: (tab) =>
         set((state) => {
@@ -162,15 +199,29 @@ export const useUiStore = create<UiState>()(
       name: 'ui',
       storage: createJSONStorage(() => settingsStorage),
       // AI Tools was a sidebar tab before the assistant moved to its own pane. Widths were
-      // once shares of the window; those keys are simply left behind.
+      // once shares of the window, and the theme a dark-or-not switch; those keys are simply
+      // left behind.
       merge: (persisted, current) => {
         const stored = { ...(persisted as Record<string, unknown>) } as Partial<UiState>;
-        for (const key of ['sidebarRatio', 'agentPaneRatio']) delete (stored as never)[key];
+        for (const key of ['sidebarRatio', 'agentPaneRatio', 'darkMode']) {
+          delete (stored as never)[key];
+        }
         const tab = stored.activeSidebarTab === 'templates' ? 'templates' : 'content';
         return {
           ...current,
           ...stored,
           activeSidebarTab: tab,
+          theme: pickChoice(stored.theme, THEME_CHOICES, DEFAULT_UI_STATE.theme),
+          openOnLaunch: pickChoice(
+            stored.openOnLaunch,
+            LAUNCH_VIEWS,
+            DEFAULT_UI_STATE.openOnLaunch
+          ),
+          undoHistorySteps: pickChoice(
+            stored.undoHistorySteps,
+            UNDO_HISTORY_STEP_OPTIONS,
+            DEFAULT_UI_STATE.undoHistorySteps
+          ),
           sidebarWidthPx: clampPaneWidth(
             stored.sidebarWidthPx ?? SIDEBAR_WIDTH.defaultPx,
             SIDEBAR_WIDTH

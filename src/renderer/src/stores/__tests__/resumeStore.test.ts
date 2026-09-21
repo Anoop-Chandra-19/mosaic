@@ -7,11 +7,12 @@ const save = vi.hoisted(() =>
 );
 vi.mock('@/lib/storage/mosaicDb', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/lib/storage/mosaicDb')>()),
-  getDb: () => ({ drafts: { save } }),
+  getDb: () => ({ drafts: { save }, settings: { set: async () => {} } }),
 }));
 
 const { DbError } = await import('@/lib/storage/mosaicDb');
 const { flushDraft, useResumeStore } = await import('../resumeStore');
+const { useUiStore } = await import('../uiStore');
 
 const store = () => useResumeStore.getState();
 
@@ -325,12 +326,24 @@ describe('resumeStore undo and redo', () => {
     expect([store().changesSinceBaseline, store().baselineReachable]).toEqual([0, true]);
   });
 
-  it('remembers a hundred steps, and lets go of the oldest', () => {
-    for (let step = 0; step < 120; step++) store().setName(`Name ${step}`);
-    for (let step = 0; step < 120; step++) store().undo();
+  it('remembers as many steps as Settings allows, and lets go of the oldest', () => {
+    useUiStore.getState().setUndoHistorySteps(50);
+    for (let step = 0; step < 70; step++) store().setName(`Name ${step}`);
+    for (let step = 0; step < 70; step++) store().undo();
 
     // The first twenty are gone, so the name is as it was at the twentieth step.
     expect(store().contact.name).toBe('Name 19');
     expect(store().undoLabel).toBeNull();
+    useUiStore.getState().setUndoHistorySteps(200);
+  });
+
+  it('drops the oldest steps at once when the allowance shrinks', () => {
+    for (let step = 0; step < 120; step++) store().setName(`Name ${step}`);
+    useUiStore.getState().setUndoHistorySteps(50);
+    store().setName('Name 120');
+    for (let step = 0; step < 121; step++) store().undo();
+
+    expect(store().contact.name).toBe('Name 70');
+    useUiStore.getState().setUndoHistorySteps(200);
   });
 });
