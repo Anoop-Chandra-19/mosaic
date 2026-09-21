@@ -1,6 +1,7 @@
 import { Fragment } from 'react';
 import { ChevronsDownUp, ChevronsUpDown, Ellipsis, Plus, Shapes } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
+import { AppTooltip } from '@/components/AppTooltip';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import {
   DropdownMenu,
@@ -116,33 +117,34 @@ export function ResumeHeaderCard({ contact: shown }: { contact?: ContactInfo }) 
       </div>
 
       {/* The header as it prints, so a collapsed card still says what is on the page. */}
-      <div
-        className={cn(
-          'mt-2.5 rounded-md border border-line bg-pane-sunken px-[0.6875rem] py-2.5 text-center text-[0.775rem] leading-[1.65] wrap-break-word text-ink-soft',
-          header.linkStyle === 'underline' &&
-            '[&_a]:underline [&_a]:decoration-line-heavy [&_a]:underline-offset-2',
-          // The page's blue is too dark to read on the dark box, so a lighter one there.
-          header.linkColor === 'blue' &&
-            '[&_a]:text-blue-700 [&_a]:decoration-current dark:[&_a]:text-sky-400'
-        )}
-        title="Exactly how the header is written on the page"
-        data-header-printed
-      >
-        {printed.length === 0 ? (
-          <p className="text-ink-faint">nothing in the header yet</p>
-        ) : (
-          printed.map((line) => (
-            <p key={line.id} className={line.align === 'center' ? 'text-center' : 'text-left'}>
-              {line.items.map((item, index) => (
-                <Fragment key={item.id}>
-                  {index > 0 && <span className="whitespace-pre">{line.separator}</span>}
-                  {item.href ? <a>{item.text}</a> : item.text}
-                </Fragment>
-              ))}
-            </p>
-          ))
-        )}
-      </div>
+      <AppTooltip content="Exactly how the header is written on the page">
+        <div
+          className={cn(
+            'mt-2.5 rounded-md border border-line bg-pane-sunken px-[0.6875rem] py-2.5 text-center text-[0.775rem] leading-[1.65] wrap-break-word text-ink-soft',
+            header.linkStyle === 'underline' &&
+              '[&_a]:underline [&_a]:decoration-line-heavy [&_a]:underline-offset-2',
+            // The page's blue is too dark to read on the dark box, so a lighter one there.
+            header.linkColor === 'blue' &&
+              '[&_a]:text-blue-700 [&_a]:decoration-current dark:[&_a]:text-sky-400'
+          )}
+          data-header-printed
+        >
+          {printed.length === 0 ? (
+            <p className="text-ink-faint">nothing in the header yet</p>
+          ) : (
+            printed.map((line) => (
+              <p key={line.id} className={line.align === 'center' ? 'text-center' : 'text-left'}>
+                {line.items.map((item, index) => (
+                  <Fragment key={item.id}>
+                    {index > 0 && <span className="whitespace-pre">{line.separator}</span>}
+                    {item.href ? <a>{item.text}</a> : item.text}
+                  </Fragment>
+                ))}
+              </p>
+            ))
+          )}
+        </div>
+      </AppTooltip>
 
       <CollapsibleContent>
         <div className="mt-2.5">

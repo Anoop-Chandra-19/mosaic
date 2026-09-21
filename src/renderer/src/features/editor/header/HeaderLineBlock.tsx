@@ -65,6 +65,7 @@ export function HeaderLineBlock({ line, lines }: HeaderLineBlockProps) {
               variant="outline"
               size="2xs"
               title="Between items"
+              aria-label={`Between items: ${separator.label.toLowerCase()}`}
               className="px-[0.4375rem] text-[0.65625rem] font-semibold tracking-[0.04em]"
             >
               {separator.label.toLowerCase()}
@@ -92,6 +93,7 @@ export function HeaderLineBlock({ line, lines }: HeaderLineBlockProps) {
               variant="outline"
               size="2xs"
               title="Alignment"
+              aria-label={`Alignment: ${align.label.toLowerCase()}`}
               className="px-[0.4375rem] text-[0.65625rem] font-semibold tracking-[0.04em]"
             >
               {align.label.toLowerCase()}

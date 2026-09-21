@@ -90,7 +90,6 @@ export function BulletItem({
       />
       <div
         onClick={() => setEditing(true)}
-        title="Click to edit"
         className="-mx-1 -my-px min-w-0 flex-1 cursor-text rounded-[0.3125rem] px-1 py-px hover:bg-line"
       >
         <span

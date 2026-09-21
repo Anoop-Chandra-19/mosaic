@@ -13,6 +13,7 @@ import {
   X,
 } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
+import { AppTooltip } from '@/components/AppTooltip';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -150,12 +151,11 @@ export function HeaderItemRow({
       )}
 
       {isUnprinted && item.url && (
-        <span
-          className="shrink-0 rounded border border-line-strong px-[0.3125rem] py-px text-[0.65625rem] tracking-[0.02em] text-ink-faint"
-          title="No text, so nothing prints for it. The link is kept."
-        >
-          no text
-        </span>
+        <AppTooltip content="No text, so nothing prints for it. The link is kept.">
+          <span className="shrink-0 rounded border border-line-strong px-[0.3125rem] py-px text-[0.65625rem] tracking-[0.02em] text-ink-faint">
+            no text
+          </span>
+        </AppTooltip>
       )}
 
       <AppButton

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { PanelLeft, PanelRight, type LucideIcon } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
+import { AppTooltip } from '@/components/AppTooltip';
 import { formatRelativeTime } from '@/features/templates/formatRelativeTime';
 import { useActiveTemplate } from '@/features/templates/useActiveTemplate';
 import { useVersionDistance, type VersionDistance } from '@/features/templates/useVersionDistance';
@@ -109,22 +110,21 @@ export function StatusBar() {
     saveState = <span className="text-zinc-500">No resume open</span>;
   } else if (saveFailed) {
     saveState = (
-      <span
-        className="text-red-700 dark:text-red-400"
-        title="The edits are still in the editor; Mosaic tries again with your next change."
+      <AppTooltip
+        side="top"
+        content="The edits are still in the editor; Mosaic tries again with your next change."
       >
-        Couldn’t save the last change
-      </span>
+        <span className="text-red-700 dark:text-red-400">Couldn’t save the last change</span>
+      </AppTooltip>
     );
   } else {
     saveState = (
-      <span
-        className="flex items-center gap-1.5"
-        title="Every change is written to this machine as you type."
-      >
-        <span className="size-1.5 rounded-full bg-emerald-500" />
-        Autosaved · {formatRelativeTime(savedAt ?? template.updatedAt, now)}
-      </span>
+      <AppTooltip side="top" content="Every change is written to this machine as you type.">
+        <span className="flex items-center gap-1.5">
+          <span className="size-1.5 rounded-full bg-emerald-500" />
+          Autosaved · {formatRelativeTime(savedAt ?? template.updatedAt, now)}
+        </span>
+      </AppTooltip>
     );
   }
 
@@ -145,13 +145,12 @@ export function StatusBar() {
         {template && (
           <>
             <Divider />
-            <span
-              className="truncate"
-              title={`v${template.versionCount}: ${template.head.summary}`}
-            >
-              {/* Unlike the top bar's badge, this speaks even for a brand-new template's v1. */}
-              {describeDistance(distance, template.versionCount)}
-            </span>
+            <AppTooltip side="top" content={`v${template.versionCount}: ${template.head.summary}`}>
+              <span className="truncate">
+                {/* Unlike the top bar's badge, this speaks even for a brand-new template's v1. */}
+                {describeDistance(distance, template.versionCount)}
+              </span>
+            </AppTooltip>
           </>
         )}
       </div>

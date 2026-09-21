@@ -12,6 +12,7 @@ import {
   Trash2,
 } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
+import { AppTooltip } from '@/components/AppTooltip';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import {
   DropdownMenu,
@@ -140,12 +141,11 @@ export function SectionItem({
           </span>
         )}
         {isHidden ? (
-          <span
-            className="shrink-0 rounded-[0.3125rem] border border-line-strong bg-line px-1.5 py-px text-[0.6875rem] font-semibold tracking-[0.02em] text-ink-muted"
-            title="This whole section is left off the resume"
-          >
-            not on resume
-          </span>
+          <AppTooltip content="This whole section is left off the resume">
+            <span className="shrink-0 rounded-[0.3125rem] border border-line-strong bg-line px-1.5 py-px text-[0.6875rem] font-semibold tracking-[0.02em] text-ink-muted">
+              not on resume
+            </span>
+          </AppTooltip>
         ) : (
           <span className="shrink-0 font-mono text-xs text-ink-faint">
             {shownCount}/{section.items.length}

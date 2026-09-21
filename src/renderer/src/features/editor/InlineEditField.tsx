@@ -63,7 +63,6 @@ export function InlineEditField({
   return (
     <Tag
       onClick={startEditing}
-      title="Click to edit"
       className={cn(
         '-mx-1.5 min-w-0 flex-1 cursor-text rounded-[0.3125rem] px-1.5 py-[0.1875rem] text-[0.8875rem] leading-[1.45] text-pretty wrap-anywhere text-ink-soft hover:bg-line hover:text-foreground',
         className

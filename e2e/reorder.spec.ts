@@ -85,11 +85,12 @@ test('a bullet is dragged into place, and one undo puts it back', async () => {
       'First bullet about the engine',
       'Second bullet about the engine',
     ]);
-  // The whole drag is one step, named like the menu's moves.
-  await expect(page.getByRole('button', { name: 'Undo', exact: true })).toHaveAttribute(
-    'title',
-    /^Undo reorder bullets/
-  );
+  // The whole drag is one step, named like the menu's moves. The pointer goes to Undo in
+  // steps, as a real one does: it leaves a row's ⋯ hint on the way, and one jump would
+  // leave it in that hint's grace area, where no other hint opens.
+  const undo = (await page.getByRole('button', { name: 'Undo', exact: true }).boundingBox())!;
+  await page.mouse.move(undo.x + undo.width / 2, undo.y + undo.height / 2, { steps: 6 });
+  await expect(page.getByRole('tooltip', { name: /^Undo reorder bullets/ })).toBeAttached();
   await page.keyboard.press('Control+z');
   await expect
     .poll(bullets)

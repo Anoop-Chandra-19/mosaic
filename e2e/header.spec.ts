@@ -59,7 +59,10 @@ test('header items take text and a link, hide, and move between lines', async ()
 
   // To line 2, which then prints with its own separator.
   await itemAction(page, 'github.com/ada', 'GitHub', 'Move to line 2');
-  await page.getByRole('region', { name: 'Line 2' }).getByTitle('Between items').click();
+  await page
+    .getByRole('region', { name: 'Line 2' })
+    .getByRole('button', { name: /^Between items/ })
+    .click();
   await page.getByRole('menuitemradio', { name: 'Separated by ·' }).click();
 
   await expect
