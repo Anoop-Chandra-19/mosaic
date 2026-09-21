@@ -141,7 +141,8 @@ interface ResumeState extends ResumeData {
   toggleBullet: (sectionId: string, entryId: string, bulletId: string) => void;
   /** A copy right below it. */
   duplicateBullet: (sectionId: string, entryId: string, bulletId: string) => void;
-  moveBullet: (sectionId: string, entryId: string, bulletId: string, offset: -1 | 1) => void;
+  /** The whole order, as `reorderSections` and `reorderEntries` take it. */
+  reorderBullets: (sectionId: string, entryId: string, orderedIds: string[]) => void;
 }
 
 /** Moves `list[index]` one place up or down; nothing past either end. */
@@ -530,17 +531,16 @@ export const useResumeStore = create<ResumeState>()(
           entry.bullets.splice(index + 1, 0, { ...entry.bullets[index], id: crypto.randomUUID() });
         }),
 
-      moveBullet: (sectionId, entryId, bulletId, offset) =>
-        edit('move a bullet', (state) => {
+      reorderBullets: (sectionId, entryId, orderedIds) =>
+        edit('reorder bullets', (state) => {
           const entry = state.sections
             .find((s) => s.id === sectionId)
             ?.items.find((e) => e.id === entryId);
           if (!entry) return;
-          moveBy(
-            entry.bullets,
-            entry.bullets.findIndex((b) => b.id === bulletId),
-            offset
-          );
+          const byId = new Map(entry.bullets.map((b) => [b.id, b]));
+          entry.bullets = orderedIds
+            .map((id) => byId.get(id))
+            .filter((b): b is (typeof entry.bullets)[number] => b !== undefined);
         }),
     };
   })

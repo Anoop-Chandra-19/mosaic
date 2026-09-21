@@ -190,15 +190,15 @@ describe('resumeStore sections, entries, and bullets', () => {
     const copyId = job().bullets[1].id;
     expect(copyId).not.toBe(a.id);
 
-    store().moveBullet('sec-experience', job().id, b.id, -1);
+    store().reorderBullets('sec-experience', job().id, [a.id, b.id, copyId]);
     expect(
       job()
         .bullets.map((x) => x.id)
         .slice(0, 3)
     ).toEqual([a.id, b.id, copyId]);
-    // Nothing moves past either end.
-    store().moveBullet('sec-experience', job().id, a.id, -1);
-    expect(job().bullets[0].id).toBe(a.id);
+    // Ids the entry does not have are ignored, and missing ones drop out.
+    store().reorderBullets('sec-experience', job().id, [b.id, 'not-a-bullet', a.id]);
+    expect(job().bullets.map((x) => x.id)).toEqual([b.id, a.id]);
   });
 });
 

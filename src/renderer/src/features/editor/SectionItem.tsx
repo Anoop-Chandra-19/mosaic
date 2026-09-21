@@ -28,6 +28,8 @@ import type { ResumeSection } from '@shared/types/resume';
 import { InlineEditField } from './InlineEditField';
 import { CUSTOM_ICONS, PRESET_ICONS } from './sectionIcons';
 import { EntryCard } from './EntryCard';
+import { swapNeighbours } from './listOrder';
+import { SortGripHandle, SortList, type SortGrip } from './SortList';
 
 interface SectionItemProps {
   section: ResumeSection;
@@ -37,6 +39,8 @@ interface SectionItemProps {
   isLast: boolean;
   onMoveUp: () => void;
   onMoveDown: () => void;
+  /** Its place in the outline, so it can be dragged. */
+  grip: SortGrip;
 }
 
 /**
@@ -50,6 +54,7 @@ export function SectionItem({
   isLast,
   onMoveUp,
   onMoveDown,
+  grip,
 }: SectionItemProps) {
   const updateSectionLabel = useResumeStore((s) => s.updateSectionLabel);
   const toggleSection = useResumeStore((s) => s.toggleSection);
@@ -79,12 +84,10 @@ export function SectionItem({
     });
   };
 
+  const entryIds = section.items.map((entry) => entry.id);
   const moveEntry = (index: number, direction: -1 | 1) => {
-    const ids = section.items.map((e) => e.id);
-    const target = index + direction;
-    if (target < 0 || target >= ids.length) return;
-    [ids[index], ids[target]] = [ids[target], ids[index]];
-    reorderEntries(section.id, ids);
+    const next = swapNeighbours(entryIds, index, direction);
+    if (next) reorderEntries(section.id, next);
   };
 
   const hiddenLabel = isHidden ? 'Put section on the resume' : 'Leave section off the resume';
@@ -96,6 +99,11 @@ export function SectionItem({
         onClick={() => !isRenaming && setOpen(section.id, !open)}
         className="group/section flex h-9 cursor-pointer items-center gap-2 rounded-md px-1.5 hover:bg-line"
       >
+        <SortGripHandle
+          grip={grip}
+          label={`Drag ${section.label} to reorder`}
+          className="invisible group-focus-within/section:visible group-hover/section:visible"
+        />
         <CollapsibleTrigger asChild>
           <AppButton
             variant="ghost"
@@ -240,19 +248,27 @@ export function SectionItem({
             No entries yet. Add one with +.
           </p>
         ) : (
-          section.items.map((entry, i) => (
-            <EntryCard
-              key={entry.id}
-              entry={entry}
-              sectionId={section.id}
-              layout={section.layout}
-              isSectionHidden={isHidden}
-              isFirst={i === 0}
-              isLast={i === section.items.length - 1}
-              onMoveUp={() => moveEntry(i, -1)}
-              onMoveDown={() => moveEntry(i, 1)}
-            />
-          ))
+          <SortList
+            ids={entryIds}
+            kind="entry"
+            onReorder={(ids) => reorderEntries(section.id, ids)}
+            renderRow={(id, grip) => {
+              const i = section.items.findIndex((entry) => entry.id === id);
+              return (
+                <EntryCard
+                  entry={section.items[i]}
+                  sectionId={section.id}
+                  layout={section.layout}
+                  isSectionHidden={isHidden}
+                  grip={grip}
+                  isFirst={i === 0}
+                  isLast={i === section.items.length - 1}
+                  onMoveUp={() => moveEntry(i, -1)}
+                  onMoveDown={() => moveEntry(i, 1)}
+                />
+              );
+            }}
+          />
         )}
       </CollapsibleContent>
 
