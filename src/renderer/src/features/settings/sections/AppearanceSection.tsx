@@ -1,19 +1,26 @@
 import { useState } from 'react';
 import { AppButton } from '@/components/AppButton';
 import { Input } from '@/components/ui/input';
+import { Switch } from '@/components/ui/switch';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import {
   AGENT_PANE_WIDTH,
   clampPaneWidth,
   SIDEBAR_WIDTH,
   useUiStore,
+  type InterfaceDensity,
   type PaneWidthLimits,
+  type ThemeChoice,
 } from '@/stores/uiStore';
 import { SettingRow } from '../SettingRow';
 
 export function AppearanceSection() {
-  const darkMode = useUiStore((s) => s.darkMode);
-  const setDarkMode = useUiStore((s) => s.setDarkMode);
+  const theme = useUiStore((s) => s.theme);
+  const setTheme = useUiStore((s) => s.setTheme);
+  const interfaceDensity = useUiStore((s) => s.interfaceDensity);
+  const setInterfaceDensity = useUiStore((s) => s.setInterfaceDensity);
+  const shouldShowPreview = useUiStore((s) => s.shouldShowPreview);
+  const setShouldShowPreview = useUiStore((s) => s.setShouldShowPreview);
   const sidebarWidthPx = useUiStore((s) => s.sidebarWidthPx);
   const setSidebarWidthPx = useUiStore((s) => s.setSidebarWidthPx);
   const agentPaneWidthPx = useUiStore((s) => s.agentPaneWidthPx);
@@ -21,19 +28,49 @@ export function AppearanceSection() {
 
   return (
     <>
-      <SettingRow label="Theme">
+      <SettingRow
+        label="Theme"
+        description="System follows your operating system, and changes when it does."
+      >
         <ToggleGroup
           type="single"
           variant="outline"
           size="sm"
-          value={darkMode ? 'dark' : 'light'}
+          value={theme}
           // A single-choice group reports '' when the pressed item is pressed again.
-          onValueChange={(value) => value && setDarkMode(value === 'dark')}
+          onValueChange={(value) => value && setTheme(value as ThemeChoice)}
           aria-label="Theme"
         >
           <ToggleGroupItem value="dark">Dark</ToggleGroupItem>
           <ToggleGroupItem value="light">Light</ToggleGroupItem>
+          <ToggleGroupItem value="system">System</ToggleGroupItem>
         </ToggleGroup>
+      </SettingRow>
+      <SettingRow
+        label="Interface density"
+        description="Tightens the content sidebar, lists and dialogs. The resume page never changes."
+      >
+        <ToggleGroup
+          type="single"
+          variant="outline"
+          size="sm"
+          value={interfaceDensity}
+          onValueChange={(value) => value && setInterfaceDensity(value as InterfaceDensity)}
+          aria-label="Interface density"
+        >
+          <ToggleGroupItem value="comfortable">Comfortable</ToggleGroupItem>
+          <ToggleGroupItem value="compact">Compact</ToggleGroupItem>
+        </ToggleGroup>
+      </SettingRow>
+      <SettingRow
+        label="Show live preview"
+        description="Turn off to edit content full-width on a small screen."
+      >
+        <Switch
+          checked={shouldShowPreview}
+          onCheckedChange={setShouldShowPreview}
+          aria-label="Show live preview"
+        />
       </SettingRow>
       <SettingRow
         label="Sidebar width"

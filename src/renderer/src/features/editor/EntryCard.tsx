@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type KeyboardEvent } from 'react';
 import { ArrowDown, ArrowUp, Copy, Ellipsis, Eye, EyeOff, Trash2 } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
 import { ConfirmDeleteDialog } from '@/components/ConfirmDeleteDialog';
@@ -9,6 +9,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { SHORTCUTS } from '@/features/shortcuts/shortcutList';
+import { isTypingField, matchesShortcut } from '@/lib/keyboardShortcuts';
 import { cn } from '@/lib/utils';
 import { formatEntryHeading } from '@shared/resume/entryHeading';
 import type { ResumeEntry, SectionLayout } from '@shared/types/resume';
@@ -73,10 +75,20 @@ export function EntryCard({
     if (next) reorderBullets(sectionId, entry.id, next);
   };
 
+  // With focus anywhere in the entry, except a field being typed in.
+  const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (isTypingField(event.target)) return;
+    if (!matchesShortcut(event.nativeEvent, SHORTCUTS.duplicateEntry)) return;
+    event.preventDefault();
+    event.stopPropagation();
+    duplicateEntry(sectionId, entry.id);
+  };
+
   return (
     <div
+      onKeyDown={handleKeyDown}
       className={cn(
-        'group/entry relative ml-3.5 rounded-md border-l border-line pt-1.75 pr-1.5 pb-2.25 pl-2.25 hover:bg-line',
+        'group/entry relative ml-3.5 rounded-md border-l border-line pt-1.75 pr-1.5 pb-2.25 pl-2.25 hover:bg-line dense:px-2 dense:py-1.75',
         isDimmed && '**:text-ink-faint'
       )}
     >
@@ -154,11 +166,11 @@ export function EntryCard({
 
           {/* A left-off entry keeps its bullets, but out of the way until it is back on. */}
           {!isTextOnly && entry.selected && (
-            <div className="mt-2.25 flex flex-col gap-1.75">
+            <div className="mt-(--density-gap) flex flex-col gap-(--density-row)">
               <SortList
                 ids={bulletIds}
                 kind="bullet"
-                className="flex flex-col gap-1.75"
+                className="flex flex-col gap-(--density-row)"
                 onReorder={(ids) => reorderBullets(sectionId, entry.id, ids)}
                 renderRow={(id, grip) => {
                   const index = entry.bullets.findIndex((bullet) => bullet.id === id);

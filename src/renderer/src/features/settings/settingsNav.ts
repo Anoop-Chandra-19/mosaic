@@ -1,10 +1,20 @@
 import type { LucideIcon } from 'lucide-react';
-import { Contrast, Database, FileText, Info, Settings, Shield, Sparkles } from 'lucide-react';
+import {
+  Contrast,
+  Database,
+  FileText,
+  Info,
+  Keyboard,
+  Settings,
+  Shield,
+  Sparkles,
+} from 'lucide-react';
 
 export type SettingsSectionId =
   | 'general'
   | 'appearance'
   | 'document'
+  | 'keys'
   | 'ai'
   | 'portability'
   | 'privacy'
@@ -45,6 +55,13 @@ export const SETTINGS_GROUPS: SettingsGroup[] = [
         label: 'Document',
         description: 'How the page is set up. Its metrics stay on the 18pt leading grid.',
         icon: FileText,
+      },
+      {
+        id: 'keys',
+        label: 'Keyboard shortcuts',
+        description:
+          'Every shortcut, grouped by where it works. Ctrl/⌘+/ opens this list anywhere.',
+        icon: Keyboard,
       },
     ],
   },

@@ -13,7 +13,7 @@ export function SettingRow({
   children: ReactNode;
 }) {
   return (
-    <div className="flex flex-col gap-2.5 border-b border-zinc-200 py-3 last:border-b-0 sm:flex-row sm:items-start sm:justify-between sm:gap-5 dark:border-zinc-800">
+    <div className="flex flex-col gap-2.5 border-b border-zinc-200 py-(--density-pad) last:border-b-0 sm:flex-row sm:items-start sm:justify-between sm:gap-5 dark:border-zinc-800">
       <div className="min-w-0 flex-1">
         <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">{label}</p>
         {description && (

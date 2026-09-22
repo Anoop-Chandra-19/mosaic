@@ -1,3 +1,5 @@
+import { applyDensityClass } from '@/lib/hooks/useDensity';
+import { applyThemeClass, isThemeDark } from '@/lib/hooks/useTheme';
 import { seedSettings } from '@/lib/storage/settingsStorage';
 import type { BootState } from '@shared/types/db';
 import { useAiStore } from './aiStore';
@@ -16,8 +18,15 @@ export function hydrateStores(boot: BootState): void {
   void useAiStore.persist.rehydrate();
   useTemplateStore.getState().load(boot.templates);
   useResumeStore.getState().loadDraft(boot.draft);
-  // Nothing to open: the launch starts on the Start panel.
-  useOverlayStore.getState().setStartOpen(boot.templates.length === 0);
-  // Set the theme now rather than in `useDarkMode`'s effect, which runs after the first paint.
-  document.documentElement.classList.toggle('dark', useUiStore.getState().darkMode);
+  const { openOnLaunch, theme, interfaceDensity } = useUiStore.getState();
+  // Nothing to open starts on the Start panel, and so does a launch set to show it.
+  const hasTemplates = boot.templates.length > 0;
+  useOverlayStore.getState().setStartOpen(!hasTemplates || openOnLaunch === 'start');
+  if (hasTemplates && openOnLaunch === 'templates') {
+    useUiStore.getState().setActiveSidebarTab('templates');
+    if (useUiStore.getState().sidebarCollapsed) useUiStore.getState().toggleSidebarCollapsed();
+  }
+  // Set the theme now rather than in `useApplyTheme`'s effect, which runs after the first paint.
+  applyThemeClass(isThemeDark(theme));
+  applyDensityClass(interfaceDensity);
 }

@@ -99,6 +99,7 @@ export function StatusBar() {
   const meta = useOverlayStore((s) => s.previewMeta);
   const paperSize = useUiStore((s) => s.paperSize);
   const sidebarCollapsed = useUiStore((s) => s.sidebarCollapsed);
+  const shouldShowPreview = useUiStore((s) => s.shouldShowPreview);
   const toggleSidebar = useUiStore((s) => s.toggleSidebarCollapsed);
   const agentPaneOpen = useUiStore((s) => s.agentPaneOpen);
   const toggleAgentPane = useUiStore((s) => s.toggleAgentPane);
@@ -134,13 +135,16 @@ export function StatusBar() {
   return (
     <footer className="flex h-7 shrink-0 items-center justify-between gap-3 border-t border-border bg-card px-2 text-xs text-zinc-600 dark:text-zinc-400">
       <div className="flex min-w-0 items-center gap-2 whitespace-nowrap">
-        <PaneToggle
-          label="Toggle sidebar"
-          shortcut="B"
-          icon={PanelLeft}
-          pressed={!sidebarCollapsed}
-          onToggle={toggleSidebar}
-        />
+        {/* Without the preview, the sidebar is all there is, so it stays. */}
+        {shouldShowPreview && (
+          <PaneToggle
+            label="Toggle sidebar"
+            shortcut="B"
+            icon={PanelLeft}
+            pressed={!sidebarCollapsed}
+            onToggle={toggleSidebar}
+          />
+        )}
         {saveState}
         {template && (
           <>
@@ -159,10 +163,15 @@ export function StatusBar() {
         {template && (
           <>
             <Words />
-            <Divider />
-            <span>
-              {pages} {pagesWord} · {paperSize === 'a4' ? 'A4' : 'Letter'}
-            </span>
+            {/* The preview is what lays out the pages; hidden, it has nothing to count. */}
+            {shouldShowPreview && (
+              <>
+                <Divider />
+                <span>
+                  {pages} {pagesWord} · {paperSize === 'a4' ? 'A4' : 'Letter'}
+                </span>
+              </>
+            )}
           </>
         )}
         {aiEnabled && (

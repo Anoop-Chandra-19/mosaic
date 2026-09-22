@@ -5,10 +5,13 @@ import {
   BrowserWindow,
   dialog,
   ipcMain,
+  Menu,
+  nativeTheme,
   net,
   screen,
   shell,
   type IpcMainInvokeEvent,
+  type MenuItemConstructorOptions,
 } from 'electron';
 import { AI_OLLAMA_MODELS, ERASE_ALL } from '@shared/ipc/appChannels';
 import { listOllamaModels } from './ai/ollamaModels';
@@ -65,6 +68,41 @@ function isAppFrame(event: IpcMainInvokeEvent): boolean {
   );
 }
 
+/**
+ * The window's colour before the page paints, matching the theme it is about to draw, so
+ * there is no flash of the other one. The theme is the renderer's `ui` setting.
+ */
+function readWindowBackground(): string {
+  let theme: unknown;
+  try {
+    theme = JSON.parse((db && getSetting(db, 'ui')) || '{}')?.state?.theme;
+  } catch {
+    theme = undefined;
+  }
+  const isDark =
+    theme === 'light' ? false : theme === 'system' ? nativeTheme.shouldUseDarkColors : true;
+  return isDark ? '#09090b' : '#ffffff';
+}
+
+/**
+ * Electron's default menu without its View menu, whose zoom keys (Ctrl/⌘+0, +, −) would
+ * zoom the whole window instead of the page in the preview. Edit keeps copy and paste
+ * working on macOS. Development keeps reload and DevTools on their usual keys; a release
+ * has neither.
+ */
+function setAppMenu(): void {
+  const template: MenuItemConstructorOptions[] = [
+    ...(process.platform === 'darwin' ? [{ role: 'appMenu' as const }] : []),
+    { role: 'fileMenu' },
+    { role: 'editMenu' },
+    { role: 'windowMenu' },
+  ];
+  if (!app.isPackaged) {
+    template.push({ label: 'Develop', submenu: [{ role: 'reload' }, { role: 'toggleDevTools' }] });
+  }
+  Menu.setApplicationMenu(Menu.buildFromTemplate(template));
+}
+
 function createWindow(): BrowserWindow {
   // Size from the display rather than fixed pixels; the floor keeps the editor usable.
   const { width, height } = screen.getPrimaryDisplay().workAreaSize;
@@ -76,14 +114,14 @@ function createWindow(): BrowserWindow {
     minHeight: 540,
     show: false,
     title: 'Mosaic',
-    // Matches the app's default dark theme, so there is no white flash before first paint.
-    backgroundColor: '#09090b',
+    backgroundColor: readWindowBackground(),
     autoHideMenuBar: true,
     webPreferences: {
       preload: path.join(here, '../preload/index.cjs'),
       contextIsolation: true,
       sandbox: true,
       nodeIntegration: false,
+      devTools: !app.isPackaged,
     },
   });
 
@@ -168,6 +206,7 @@ if (!app.requestSingleInstanceLock()) {
         },
       });
     });
+    setAppMenu();
     createWindow();
     app.on('activate', () => {
       if (BrowserWindow.getAllWindows().length === 0) createWindow();

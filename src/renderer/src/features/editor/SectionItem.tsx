@@ -98,7 +98,7 @@ export function SectionItem({
       {/* The whole row opens and closes the section; its buttons do their own thing. */}
       <div
         onClick={() => !isRenaming && setOpen(section.id, !open)}
-        className="group/section flex h-9 cursor-pointer items-center gap-2 rounded-md px-1.5 hover:bg-line"
+        className="group/section flex h-9 cursor-pointer dense:h-7.5 items-center gap-2 rounded-md px-1.5 hover:bg-line"
       >
         <SortGripHandle
           grip={grip}

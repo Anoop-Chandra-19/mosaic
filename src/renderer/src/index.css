@@ -51,6 +51,7 @@
 }
 
 @custom-variant dark (&:is(.dark *));
+@custom-variant dense (&:is(.dense *));
 
 @theme inline {
   --radius-checkbox: 0.25rem;
@@ -205,6 +206,21 @@
   --ink-muted: oklch(0.67 0.012 286);
   --ink-faint: oklch(0.56 0.012 286);
   --amber-soft: oklch(0.26 0.019 66);
+}
+
+/* Interface density: the chrome's spacing steps, never the page's. */
+:root {
+  --density-row: 0.4375rem;
+  --density-bullet: 1px;
+  --density-pad: 0.8125rem;
+  --density-gap: 0.5625rem;
+}
+
+.dense {
+  --density-row: 0.25rem;
+  --density-bullet: 0px;
+  --density-pad: 0.5625rem;
+  --density-gap: 0.375rem;
 }
 
 @layer base {

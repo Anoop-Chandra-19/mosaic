@@ -5,6 +5,7 @@ import { AppButton } from '@/components/AppButton';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 import { useAiStore } from '@/stores/aiStore';
+import { ShortcutsPanel } from '@/features/shortcuts/ShortcutsPanel';
 import { SETTINGS_GROUPS, SETTINGS_SECTION_BY_ID, type SettingsSectionId } from './settingsNav';
 import { AboutSection } from './sections/AboutSection';
 import { AiSection } from './sections/AiSection';
@@ -101,7 +102,7 @@ export function SettingsDialog() {
 
           <section
             aria-labelledby="settings-section-title"
-            className="min-h-0 flex-1 overflow-y-auto px-5.5 pt-4.5 pb-6"
+            className="min-h-0 flex-1 overflow-y-auto px-5.5 pt-4.5 pb-6 dense:px-5 dense:pt-3.5 dense:pb-5.5"
           >
             <h3
               id="settings-section-title"
@@ -115,6 +116,7 @@ export function SettingsDialog() {
             {section === 'general' && <GeneralSection />}
             {section === 'appearance' && <AppearanceSection />}
             {section === 'document' && <DocumentSection />}
+            {section === 'keys' && <ShortcutsPanel isEmbedded />}
             {section === 'ai' && <AiSection />}
             {section === 'portability' && <ImportExportSection onCloseSettings={close} />}
             {section === 'privacy' && <PrivacySection />}
