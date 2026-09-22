@@ -1,4 +1,5 @@
 import type { MosaicAI } from '@shared/types/ai';
+import type { MosaicBackup } from '@shared/types/backup';
 import type { MosaicDbBridge } from '@shared/types/db';
 import type { MosaicFiles } from '@shared/types/files';
 import type { MosaicSecrets } from '@shared/types/secrets';
@@ -10,6 +11,7 @@ declare global {
       platform: string;
       db: MosaicDbBridge;
       files: MosaicFiles;
+      backup: MosaicBackup;
       secrets: MosaicSecrets;
       ai: MosaicAI;
       app: {

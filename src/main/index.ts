@@ -19,6 +19,7 @@ import { openDatabase, type Database } from './db/connection';
 import { API_KEYS_KEY, getSetting, setSetting } from './db/settings';
 import { eraseAll } from './eraseAll';
 import { flushBeforeClose } from './flushBeforeClose';
+import { registerBackupHandlers } from './ipc/registerBackupHandlers';
 import { registerDbHandlers } from './ipc/registerDbHandlers';
 import { registerFileHandlers } from './ipc/registerFileHandlers';
 import { registerSecretsHandlers } from './ipc/registerSecretsHandlers';
@@ -176,6 +177,7 @@ if (!app.requestSingleInstanceLock()) {
     }
     registerDbHandlers(() => db, isAppFrame);
     registerFileHandlers(isAppFrame);
+    registerBackupHandlers(() => db, isAppFrame);
     const apiKeys = createApiKeys(osKeyring(app.isPackaged ? 'Mosaic' : 'Mosaic (dev)'), {
       read: () => (db ? getSetting(db, API_KEYS_KEY) : null),
       write: (value) => {

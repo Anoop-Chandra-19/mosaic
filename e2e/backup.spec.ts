@@ -138,3 +138,33 @@ test('deleting a template can be undone', async () => {
   await page.getByRole('tab', { name: 'Content' }).click();
   await expect(page.getByRole('complementary').getByText('Ada Lovelace')).toBeVisible();
 });
+
+test('a scheduled backup asks for a folder once, and writes into it straight away', async () => {
+  const { app, page, userDataDir } = mosaic();
+  await page.getByRole('button', { name: /Blank resume/ }).click();
+  await setName(page, 'Your name', 'Ada Lovelace');
+
+  const folder = path.join(userDataDir, 'Backups');
+  fs.mkdirSync(folder);
+  await openWith(app, folder);
+  const settings = await openImportExport(page);
+  await settings.getByRole('combobox', { name: 'Scheduled backup' }).click();
+  await page.getByRole('option', { name: 'Daily' }).click();
+
+  await expect(settings.getByText(folder, { exact: true })).toBeVisible();
+  await expect(settings.getByText(/Last backup: just now · 1 template/)).toBeVisible();
+  const [file] = fs.readdirSync(folder);
+  expect(file).toMatch(/^mosaic-backup-\d{4}-\d\d-\d\d\.json$/);
+  const backup = JSON.parse(fs.readFileSync(path.join(folder, file), 'utf8'));
+  expect(backup.templates[0].draft.contact.name).toBe('Ada Lovelace');
+
+  // Off keeps the folder for next time, and the schedule stays as set across Settings.
+  await settings.getByRole('combobox', { name: 'Scheduled backup' }).click();
+  await page.getByRole('option', { name: 'Off' }).click();
+  await expect(settings.getByText('Backup folder')).toHaveCount(0);
+  await settings.getByRole('combobox', { name: 'Scheduled backup' }).click();
+  await page.getByRole('option', { name: 'Weekly' }).click();
+  await expect(settings.getByText(folder, { exact: true })).toBeVisible();
+  // The same day's backup is already there: turning it back on writes no second file.
+  expect(fs.readdirSync(folder)).toEqual([file]);
+});

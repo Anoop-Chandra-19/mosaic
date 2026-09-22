@@ -1,5 +1,7 @@
 import { useRef, useState, type ClipboardEvent, type FocusEvent, type KeyboardEvent } from 'react';
 import { AppButton } from '@/components/AppButton';
+import { SHORTCUTS } from '@/features/shortcuts/shortcutList';
+import { matchesShortcut } from '@/lib/keyboardShortcuts';
 import { parseBulletLines } from './parseBulletLines';
 
 /** Past this many characters a bullet wraps to a third line on the page. */
@@ -12,6 +14,12 @@ interface BulletEditorProps {
   onCancel: () => void;
   /** Several lines pasted at once; when given, each line becomes a bullet. */
   onPasteLines?: (lines: string[]) => void;
+  /** Alt+Enter: saves the text, trimmed, and asks for a new bullet below. */
+  onAddBelow?: (text: string) => void;
+  /** Alt+↑/↓: the bullet moves with the editor still open on it. */
+  onMove?: (direction: -1 | 1) => void;
+  /** Ctrl/⌘+Shift+K: the bullet goes, text and all. */
+  onDelete?: () => void;
   placeholder?: string;
 }
 
@@ -25,12 +33,18 @@ export function BulletEditor({
   onSave,
   onCancel,
   onPasteLines,
+  onAddBelow,
+  onMove,
+  onDelete,
   placeholder = 'Describe the outcome, then the method. Start with a verb.',
 }: BulletEditorProps) {
   const [draft, setDraft] = useState(initial);
   const rootRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   // Set once the editor has saved or cancelled, so a blur as it closes does nothing more.
   const isDone = useRef(false);
+  // Set while the bullet moves: React may move the editor's node, which blurs it.
+  const isMoving = useRef(false);
   const length = draft.trim().length;
 
   const save = () => {
@@ -39,8 +53,36 @@ export function BulletEditor({
     onSave(draft.trim());
   };
 
+  const move = (direction: -1 | 1) => {
+    isMoving.current = true;
+    onMove?.(direction);
+    requestAnimationFrame(() => {
+      isMoving.current = false;
+      textareaRef.current?.focus();
+    });
+  };
+
   const handleKeyDown = (event: KeyboardEvent) => {
-    if (event.key === 'Enter') {
+    const keys = event.nativeEvent;
+    let run: (() => void) | undefined;
+    if (matchesShortcut(keys, SHORTCUTS.newBulletBelow) && onAddBelow) {
+      run = () => {
+        isDone.current = true;
+        onAddBelow(draft.trim());
+      };
+    } else if (matchesShortcut(keys, SHORTCUTS.moveBulletUp) && onMove) run = () => move(-1);
+    else if (matchesShortcut(keys, SHORTCUTS.moveBulletDown) && onMove) run = () => move(1);
+    else if (matchesShortcut(keys, SHORTCUTS.deleteBullet) && onDelete) {
+      run = () => {
+        isDone.current = true;
+        onDelete();
+      };
+    }
+    if (run) {
+      event.preventDefault();
+      event.stopPropagation();
+      run();
+    } else if (event.key === 'Enter') {
       event.preventDefault();
       save();
     } else if (event.key === 'Escape') {
@@ -63,7 +105,7 @@ export function BulletEditor({
 
   const handleBlur = (event: FocusEvent) => {
     // Moving to Save inside the editor is not leaving it.
-    if (rootRef.current?.contains(event.relatedTarget)) return;
+    if (isMoving.current || rootRef.current?.contains(event.relatedTarget)) return;
     save();
   };
 
@@ -73,6 +115,7 @@ export function BulletEditor({
       className="my-0.5 overflow-hidden rounded-md border border-amber-300 bg-pane-raised ring-[3px] ring-amber-100 @container dark:border-amber-800 dark:ring-amber-950"
     >
       <textarea
+        ref={textareaRef}
         value={draft}
         autoFocus
         rows={1}

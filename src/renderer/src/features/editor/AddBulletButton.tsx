@@ -6,11 +6,19 @@ import { BulletEditor } from './BulletEditor';
 /** "Add bullet", which opens the bullet editor empty. Pasting several lines adds each. */
 export function AddBulletButton({ onAdd }: { onAdd: (text: string) => void }) {
   const [open, setOpen] = useState(false);
+  // Alt+Enter saves and starts over with an empty editor: a fresh one, under a new key.
+  const [round, setRound] = useState(0);
 
   if (open) {
     return (
       <BulletEditor
+        key={round}
         initial=""
+        onAddBelow={(text) => {
+          if (!text) return setOpen(false);
+          onAdd(text);
+          setRound((current) => current + 1);
+        }}
         onSave={(text) => {
           if (text) onAdd(text);
           setOpen(false);

@@ -1,3 +1,4 @@
+import type { MosaicBackup } from '../types/backup';
 import type { MosaicSecrets } from '../types/secrets';
 
 /** Main → renderer: the window is closing, save what is pending. */
@@ -9,6 +10,14 @@ export const ERASE_ALL = 'app:erase-all';
 /** Renderer → main: `MosaicFiles` — the system Save and Open dialogs. */
 export const FILES_SAVE = 'files:save';
 export const FILES_OPEN = 'files:open';
+
+/** Renderer → main: `MosaicBackup`, one channel per method. */
+export const BACKUP_CHANNELS = {
+  status: 'backup:status',
+  backUpNow: 'backup:back-up-now',
+  setFrequency: 'backup:set-frequency',
+  chooseFolder: 'backup:choose-folder',
+} as const satisfies Record<keyof MosaicBackup, string>;
 
 /** Renderer → main: `MosaicAI` — the chat models pulled into the local Ollama. */
 export const AI_OLLAMA_MODELS = 'ai:ollama-models';
