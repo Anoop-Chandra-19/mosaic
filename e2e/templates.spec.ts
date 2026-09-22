@@ -27,7 +27,11 @@ test('a version can be read in the sheet, then restored', async () => {
 
   await page.getByRole('tab', { name: 'Templates' }).click();
   // The open template's history is showing: its creation, and the named version on top.
-  await expect(page.getByText('Working draft · saved as you type.')).toBeVisible();
+  await page.getByRole('button', { name: 'What the working draft is doing' }).hover();
+  await expect(
+    page.getByRole('tooltip', { name: /^Working draft · saved as you type\./ })
+  ).toBeAttached();
+  await page.keyboard.press('Escape');
   const named = page.getByRole('listitem').filter({ hasText: 'Sent to Striped' });
   await expect(named).toContainText('named');
 
