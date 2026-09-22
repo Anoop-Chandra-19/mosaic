@@ -151,7 +151,9 @@ export function TemplateCard({ template, active, expanded, onToggle }: TemplateC
   return (
     <div
       className={cn(
-        '@container overflow-hidden rounded-lg border bg-zinc-50 transition-colors dark:bg-zinc-900',
+        // Clip, not hidden: a card that could scroll would pin the history's day headers
+        // inside itself instead of to the sidebar.
+        '@container overflow-clip rounded-lg border bg-zinc-50 transition-colors dark:bg-zinc-900',
         active
           ? 'border-amber-300 dark:border-amber-800'
           : 'border-zinc-200 hover:border-zinc-300 dark:border-zinc-800 dark:hover:border-zinc-700'

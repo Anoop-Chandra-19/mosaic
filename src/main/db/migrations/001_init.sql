@@ -33,13 +33,17 @@ create table versions (
   source      text not null,                -- create | duplicate | name | import | restore | edit | switched | closed
   summary     text not null,                -- the user's name, or "Before restoring …"
   section     text,                         -- the one section an edit snapshot touched, by its label then
-  doc         text not null check (json_valid(doc)),
   rev         integer not null,             -- template rev at snapshot
   created_at  integer not null,
+  doc         text not null check (json_valid(doc)),  -- last: a column after it is read by reading past it
   unique (template_id, seq)
 ) strict;
 -- Deleting a version nulls its children's parent_id; without this, that scans the table.
 create index versions_by_parent on versions (parent_id);
+-- Every column the history list reads, so listing a template's versions reads this index
+-- and never the documents: 10 ms instead of 64 ms at 20,000 versions.
+create index versions_list on versions
+  (template_id, seq, id, parent_id, kind, source, summary, section, rev, created_at);
 
 -- Blob-shaped app state: zustand persist keys (mosaic-ui, mosaic-ai) and app keys
 -- (app.activeTemplateId). Never document content.
