@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import type { VersionMeta, VersionSource } from '@shared/types/db';
-import { formatTimeInDay, groupVersionHistory, type HistoryGroup } from '../groupVersionHistory';
+import {
+  describeRunSections,
+  formatTimeInDay,
+  groupVersionHistory,
+  type HistoryGroup,
+} from '../groupVersionHistory';
 
 const at = (day: number, hour: number, minute = 0) =>
   new Date(2026, 8, day, hour, minute).getTime();
@@ -103,6 +108,31 @@ describe('groupVersionHistory', () => {
       [1, true],
     ]);
     expect(groups[0].isToday).toBe(false);
+  });
+});
+
+describe('describeRunSections', () => {
+  const inSection = (section: string | null) => ({ ...version(NOW), section });
+
+  it('names the one or two sections most of the run was in', () => {
+    expect(describeRunSections([inSection('Projects'), inSection('Projects')])).toBe(
+      'mostly Projects'
+    );
+    expect(
+      describeRunSections([
+        inSection('Skills'),
+        inSection('Experience'),
+        inSection('Experience'),
+        inSection('Projects'),
+        inSection('Projects'),
+        inSection('Experience'),
+        inSection(null),
+      ])
+    ).toBe('mostly Experience and Projects');
+  });
+
+  it('says across the document when no edit was in one section', () => {
+    expect(describeRunSections([inSection(null), inSection(null)])).toBe('across the document');
   });
 });
 

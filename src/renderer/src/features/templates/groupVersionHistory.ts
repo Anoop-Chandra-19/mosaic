@@ -58,6 +58,10 @@ export function formatHistoryMonth(ms: number): string {
   return new Date(ms).toLocaleDateString(undefined, { month: 'short', year: 'numeric' });
 }
 
+export function formatTimeOfDay(ms: number): string {
+  return new Date(ms).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+}
+
 /** A row's time under its day's header: "12 min ago" or "3h ago" today, "9:12 PM" before. */
 export function formatTimeInDay(ms: number, now: number = Date.now()): string {
   const ago = now - ms;
@@ -67,7 +71,20 @@ export function formatTimeInDay(ms: number, now: number = Date.now()): string {
       ? `${Math.floor(ago / MINUTE)} min ago`
       : `${Math.floor(ago / (60 * MINUTE))}h ago`;
   }
-  return new Date(ms).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+  return formatTimeOfDay(ms);
+}
+
+/** Where a run's edits happened: "mostly Experience and Projects", or "across the document". */
+export function describeRunSections(versions: VersionMeta[]): string {
+  const tally = new Map<string, number>();
+  for (const { section } of versions) {
+    if (section !== null) tally.set(section, (tally.get(section) ?? 0) + 1);
+  }
+  const top = [...tally.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 2)
+    .map(([section]) => section);
+  return top.length === 0 ? 'across the document' : `mostly ${top.join(' and ')}`;
 }
 
 /**
