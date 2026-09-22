@@ -17,6 +17,10 @@ const THEME_CHOICES: readonly ThemeChoice[] = ['dark', 'light', 'system'];
 export type LaunchView = 'last' | 'start' | 'templates';
 const LAUNCH_VIEWS: readonly LaunchView[] = ['last', 'start', 'templates'];
 
+/** How tightly the chrome is spaced. The resume page never changes with it. */
+export type InterfaceDensity = 'comfortable' | 'compact';
+const INTERFACE_DENSITIES: readonly InterfaceDensity[] = ['comfortable', 'compact'];
+
 /** How many steps back Ctrl/⌘+Z can go within one open draft. */
 export const UNDO_HISTORY_STEP_OPTIONS = [50, 200, 500] as const;
 export type UndoHistorySteps = (typeof UNDO_HISTORY_STEP_OPTIONS)[number];
@@ -77,6 +81,7 @@ export function nextPreviewZoomStep(zoom: number, direction: 1 | -1): number | u
 
 export const DEFAULT_UI_STATE = {
   theme: 'dark' as ThemeChoice,
+  interfaceDensity: 'comfortable' as InterfaceDensity,
   openOnLaunch: 'last' as LaunchView,
   undoHistorySteps: 200 as UndoHistorySteps,
   /** Off gives the editor the whole width, for a small screen. */
@@ -96,6 +101,7 @@ export const DEFAULT_UI_STATE = {
 
 interface UiState {
   theme: ThemeChoice;
+  interfaceDensity: InterfaceDensity;
   openOnLaunch: LaunchView;
   undoHistorySteps: UndoHistorySteps;
   shouldShowPreview: boolean;
@@ -109,6 +115,7 @@ interface UiState {
   agentPaneWidthPx: number;
   shouldShowHeaderIcons: boolean;
   setTheme: (theme: ThemeChoice) => void;
+  setInterfaceDensity: (density: InterfaceDensity) => void;
   setOpenOnLaunch: (view: LaunchView) => void;
   setUndoHistorySteps: (steps: UndoHistorySteps) => void;
   setShouldShowPreview: (shown: boolean) => void;
@@ -133,6 +140,10 @@ export const useUiStore = create<UiState>()(
       setTheme: (theme) =>
         set((state) => {
           state.theme = theme;
+        }),
+      setInterfaceDensity: (density) =>
+        set((state) => {
+          state.interfaceDensity = density;
         }),
       setOpenOnLaunch: (view) =>
         set((state) => {
@@ -212,6 +223,11 @@ export const useUiStore = create<UiState>()(
           ...stored,
           activeSidebarTab: tab,
           theme: pickChoice(stored.theme, THEME_CHOICES, DEFAULT_UI_STATE.theme),
+          interfaceDensity: pickChoice(
+            stored.interfaceDensity,
+            INTERFACE_DENSITIES,
+            DEFAULT_UI_STATE.interfaceDensity
+          ),
           openOnLaunch: pickChoice(
             stored.openOnLaunch,
             LAUNCH_VIEWS,

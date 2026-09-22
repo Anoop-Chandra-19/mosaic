@@ -12,16 +12,20 @@ import { SettingsDialog } from '@/features/settings/SettingsDialog';
 import { StartPanel } from '@/features/start/StartPanel';
 import { NameVersionDialog } from '@/features/templates/NameVersionDialog';
 import { useAutoSnapshot } from '@/features/templates/useAutoSnapshot';
-import { isModKey, isRedoKey, isTypingField, isUndoKey } from '@/lib/keyboardShortcuts';
+import { ShortcutsDialog } from '@/features/shortcuts/ShortcutsDialog';
+import { SHORTCUTS } from '@/features/shortcuts/shortcutList';
+import { isRedoKey, isTypingField, isUndoKey, matchesShortcut } from '@/lib/keyboardShortcuts';
 import { useAiStore } from '@/stores/aiStore';
 import { showToast, useOverlayStore } from '@/stores/overlayStore';
 import { useResumeStore } from '@/stores/resumeStore';
 import { useTemplateStore } from '@/stores/templateStore';
-import { useUiStore } from '@/stores/uiStore';
+import { PREVIEW_DEFAULT_ZOOM, useUiStore, type SidebarTab } from '@/stores/uiStore';
+import { useApplyDensity } from '@/lib/hooks/useDensity';
 import { useApplyTheme } from '@/lib/hooks/useTheme';
 
 export function AppShell() {
   useApplyTheme();
+  useApplyDensity();
   useShortcuts();
   useAutoSnapshot();
   const hasTemplates = useTemplateStore((s) => s.templates.length > 0);
@@ -55,16 +59,96 @@ export function AppShell() {
       <RestoreBackupDialog />
       <ExportDialog />
       <NameVersionDialog />
+      <ShortcutsDialog />
     </div>
   );
 }
 
+const NOTHING_OPEN = 'Nothing is open. Start a resume first.';
+
+/** The sidebar, shown, on `tab`. */
+function showSidebarTab(tab: SidebarTab) {
+  const ui = useUiStore.getState();
+  ui.setActiveSidebarTab(tab);
+  if (ui.sidebarCollapsed) ui.toggleSidebarCollapsed();
+}
+
 /**
- * Ctrl/⌘+S names a version — the draft itself is always saved already. Ctrl/⌘+Z undoes and
- * Ctrl/⌘+Shift+Z (or Ctrl+Y) redoes, except while a field is being typed in, where the
- * browser's own undo belongs to that field. Ctrl/⌘+B shows or hides the sidebar, Ctrl/⌘+\
- * the assistant while AI is on, and Ctrl/⌘+, opens Settings.
+ * The shortcuts that work anywhere in the window (`SHORTCUTS`). Undo and redo leave a field
+ * that is being typed in alone: the browser's own undo belongs to it. Ctrl/⌘+S names a
+ * version; the draft itself is always saved already.
  */
+const GLOBAL_SHORTCUTS: { combos: string[]; run: () => void }[] = [
+  { combos: [SHORTCUTS.openSettings], run: () => useOverlayStore.getState().openSettings() },
+  {
+    combos: [SHORTCUTS.showShortcuts],
+    run: () => useOverlayStore.getState().setShortcutsOpen(true),
+  },
+  {
+    combos: [SHORTCUTS.toggleSidebar],
+    run: () => {
+      if (useUiStore.getState().shouldShowPreview) useUiStore.getState().toggleSidebarCollapsed();
+    },
+  },
+  {
+    combos: [SHORTCUTS.toggleAssistant],
+    run: () => {
+      if (useAiStore.getState().enabled) useUiStore.getState().toggleAgentPane();
+    },
+  },
+  {
+    combos: [SHORTCUTS.nameVersion],
+    run: () => {
+      if (useResumeStore.getState().templateId === null) showToast(NOTHING_OPEN);
+      else useOverlayStore.getState().setNameVersionOpen(true);
+    },
+  },
+  // On the Start panel the same keys make a blank resume; the panel listens for that.
+  { combos: [SHORTCUTS.newTemplate], run: () => useOverlayStore.getState().setStartOpen(true) },
+  { combos: [SHORTCUTS.switchTemplate], run: () => showSidebarTab('templates') },
+  {
+    combos: [SHORTCUTS.exportResume],
+    run: () => {
+      if (useResumeStore.getState().templateId === null) showToast(NOTHING_OPEN);
+      else useOverlayStore.getState().openExport();
+    },
+  },
+  {
+    combos: [SHORTCUTS.importResume],
+    run: () => useOverlayStore.getState().openImport(useResumeStore.getState().templateId === null),
+  },
+  {
+    combos: [SHORTCUTS.newSection],
+    run: () => {
+      if (useResumeStore.getState().templateId === null) return showToast(NOTHING_OPEN);
+      if (useOverlayStore.getState().preview) return showToast(READING_A_VERSION);
+      showSidebarTab('content');
+      // An empty resume suggests its sections in place of the menu, so those are shown.
+      const isEmpty = useResumeStore
+        .getState()
+        .sections.every((section) => section.items.length === 0);
+      if (!isEmpty) useOverlayStore.getState().setAddSectionMenuOpen(true);
+    },
+  },
+  // Ctrl/⌘+= and, with Shift, Ctrl/⌘++: both are the key marked +.
+  {
+    combos: [SHORTCUTS.zoomIn, `shift+${SHORTCUTS.zoomIn}`],
+    run: () => useUiStore.getState().zoomPreviewIn(),
+  },
+  { combos: [SHORTCUTS.zoomOut], run: () => useUiStore.getState().zoomPreviewOut() },
+  {
+    combos: [SHORTCUTS.fitPage],
+    run: () => useUiStore.getState().setPreviewZoom(PREVIEW_DEFAULT_ZOOM),
+  },
+  {
+    combos: [SHORTCUTS.toggleTheme],
+    run: () => {
+      const isDark = document.documentElement.classList.contains('dark');
+      useUiStore.getState().setTheme(isDark ? 'light' : 'dark');
+    },
+  },
+];
+
 function useShortcuts() {
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -81,29 +165,12 @@ function useShortcuts() {
         else resume.redo();
         return;
       }
-      if (!isModKey(event)) return;
-      if (event.key === ',') {
-        event.preventDefault();
-        useOverlayStore.getState().openSettings();
-        return;
-      }
-      if (event.key.toLowerCase() === 'b') {
-        event.preventDefault();
-        if (useUiStore.getState().shouldShowPreview) useUiStore.getState().toggleSidebarCollapsed();
-        return;
-      }
-      if (event.key === '\\' && useAiStore.getState().enabled) {
-        event.preventDefault();
-        useUiStore.getState().toggleAgentPane();
-        return;
-      }
-      if (event.key.toLowerCase() !== 's') return;
+      const shortcut = GLOBAL_SHORTCUTS.find(({ combos }) =>
+        combos.some((combo) => matchesShortcut(event, combo))
+      );
+      if (!shortcut) return;
       event.preventDefault();
-      if (useResumeStore.getState().templateId !== null) {
-        useOverlayStore.getState().setNameVersionOpen(true);
-      } else {
-        showToast('Nothing is open. Start a resume first.');
-      }
+      shortcut.run();
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);

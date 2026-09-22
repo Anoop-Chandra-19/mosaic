@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, type KeyboardEvent } from 'react';
 import { ArrowDown, ArrowUp, Copy, Ellipsis, Eye, EyeOff, Pencil, Trash2 } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
 import {
@@ -8,6 +8,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { SHORTCUTS } from '@/features/shortcuts/shortcutList';
+import { matchesShortcut } from '@/lib/keyboardShortcuts';
 import { cn } from '@/lib/utils';
 import { useResumeStore } from '@/stores/resumeStore';
 import type { Bullet } from '@shared/types/resume';
@@ -68,10 +70,26 @@ export function BulletItem({
     );
   }
 
+  // With focus anywhere in the row (its checkbox, grip, or menu button).
+  const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    const keys = event.nativeEvent;
+    let run: (() => void) | undefined;
+    if (matchesShortcut(keys, SHORTCUTS.moveBulletUp) && !isFirst) run = onMoveUp;
+    else if (matchesShortcut(keys, SHORTCUTS.moveBulletDown) && !isLast) run = onMoveDown;
+    else if (matchesShortcut(keys, SHORTCUTS.deleteBullet)) {
+      run = () => removeBullet(sectionId, entryId, bullet.id);
+    }
+    if (!run) return;
+    event.preventDefault();
+    event.stopPropagation();
+    run();
+  };
+
   return (
     <div
+      onKeyDown={handleKeyDown}
       className={cn(
-        'group/bullet relative flex items-start gap-2 py-px text-sm leading-[1.58] text-pretty',
+        'group/bullet relative flex items-start gap-2 py-(--density-bullet) text-sm leading-[1.58] text-pretty',
         bullet.selected ? 'text-ink-soft' : 'text-ink-faint line-through decoration-line-heavy'
       )}
     >

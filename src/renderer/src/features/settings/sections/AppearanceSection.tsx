@@ -8,6 +8,7 @@ import {
   clampPaneWidth,
   SIDEBAR_WIDTH,
   useUiStore,
+  type InterfaceDensity,
   type PaneWidthLimits,
   type ThemeChoice,
 } from '@/stores/uiStore';
@@ -16,6 +17,8 @@ import { SettingRow } from '../SettingRow';
 export function AppearanceSection() {
   const theme = useUiStore((s) => s.theme);
   const setTheme = useUiStore((s) => s.setTheme);
+  const interfaceDensity = useUiStore((s) => s.interfaceDensity);
+  const setInterfaceDensity = useUiStore((s) => s.setInterfaceDensity);
   const shouldShowPreview = useUiStore((s) => s.shouldShowPreview);
   const setShouldShowPreview = useUiStore((s) => s.setShouldShowPreview);
   const sidebarWidthPx = useUiStore((s) => s.sidebarWidthPx);
@@ -41,6 +44,22 @@ export function AppearanceSection() {
           <ToggleGroupItem value="dark">Dark</ToggleGroupItem>
           <ToggleGroupItem value="light">Light</ToggleGroupItem>
           <ToggleGroupItem value="system">System</ToggleGroupItem>
+        </ToggleGroup>
+      </SettingRow>
+      <SettingRow
+        label="Interface density"
+        description="Tightens the content sidebar, lists and dialogs. The resume page never changes."
+      >
+        <ToggleGroup
+          type="single"
+          variant="outline"
+          size="sm"
+          value={interfaceDensity}
+          onValueChange={(value) => value && setInterfaceDensity(value as InterfaceDensity)}
+          aria-label="Interface density"
+        >
+          <ToggleGroupItem value="comfortable">Comfortable</ToggleGroupItem>
+          <ToggleGroupItem value="compact">Compact</ToggleGroupItem>
         </ToggleGroup>
       </SettingRow>
       <SettingRow

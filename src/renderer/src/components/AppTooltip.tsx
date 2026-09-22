@@ -9,17 +9,20 @@ import { Tooltip } from 'radix-ui';
  */
 
 /**
- * Whether the last thing the person did was on the keyboard. Focus alone cannot say:
- * Chromium marks the focus a closing menu hands back as `:focus-visible` even when the
- * menu was used with the mouse.
+ * Whether the person last moved focus themselves, with Tab or the arrow keys. Focus alone
+ * cannot say: Chromium marks the focus a closing menu hands back as `:focus-visible` even
+ * when the menu was used with the mouse. Nor can any key: a shortcut that opens a dialog
+ * lands focus on its close button, and a hint there would take the first Escape.
  */
 let isKeyboardInput = false;
+
+const FOCUS_MOVING_KEYS = new Set(['Tab', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight']);
 
 /** Once for the whole app: a hint waits half a second, then the next one follows at once. */
 export function AppTooltipProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
-    const noteKeyboard = () => {
-      isKeyboardInput = true;
+    const noteKeyboard = (event: KeyboardEvent) => {
+      isKeyboardInput = FOCUS_MOVING_KEYS.has(event.key);
     };
     const notePointer = () => {
       isKeyboardInput = false;

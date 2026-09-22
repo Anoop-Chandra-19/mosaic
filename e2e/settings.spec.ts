@@ -264,14 +264,27 @@ test('without the live preview, the editor takes the whole width', async () => {
   expect(errors).toEqual([]);
 });
 
-test('Settings lists every keyboard shortcut', async () => {
+test('Settings lists every keyboard shortcut, in its own section', async () => {
   const { page, errors } = mosaic();
-  const settings = await openSettings(page, 'About');
-  await settings.getByRole('button', { name: 'View all' }).click();
+  const settings = await openSettings(page, 'Keyboard shortcuts');
 
-  const editing = settings.getByRole('region', { name: 'Editing' });
-  await expect(editing.getByText('Name a version')).toBeVisible();
-  await expect(editing.getByText('Ctrl+S', { exact: true })).toBeVisible();
+  const documentGroup = settings.getByRole('region', { name: 'Document' });
+  await expect(documentGroup.getByText('Name version')).toBeVisible();
+  await expect(settings.getByText('Keys are shown for Linux')).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
+test('compact density tightens the sidebar, and only the sidebar', async () => {
+  const { page, errors } = mosaic();
+  await page.getByRole('button', { name: /Blank resume/ }).click();
+  const section = page.getByRole('complementary').getByText('Experience', { exact: true });
+  const comfortable = (await section.locator('..').boundingBox())!.height;
+
+  const settings = await openSettings(page, 'Appearance');
+  await settings.getByRole('radio', { name: 'Compact' }).click();
+  await expect(page.locator('html')).toHaveClass(/dense/);
+  await page.keyboard.press('Escape');
+  expect((await section.locator('..').boundingBox())!.height).toBeLessThan(comfortable);
   expect(errors).toEqual([]);
 });
 

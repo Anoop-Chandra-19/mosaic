@@ -1,14 +1,10 @@
-import { useState } from 'react';
 import { ExternalLink } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
 import { SettingRow } from '../SettingRow';
-import { KeyboardShortcutList } from './KeyboardShortcutList';
 
 const SOURCE_URL = 'https://github.com/Anoop-Chandra-19/mosaic';
 
 export function AboutSection() {
-  const [shouldShowShortcuts, setShouldShowShortcuts] = useState(false);
-
   return (
     <>
       <div className="mt-1 mb-2 flex items-center gap-3">
@@ -36,17 +32,6 @@ export function AboutSection() {
           </a>
         </AppButton>
       </SettingRow>
-      <SettingRow label="Keyboard shortcuts">
-        <AppButton
-          variant="outline"
-          size="sm"
-          aria-expanded={shouldShowShortcuts}
-          onClick={() => setShouldShowShortcuts(!shouldShowShortcuts)}
-        >
-          {shouldShowShortcuts ? 'Hide' : 'View all'}
-        </AppButton>
-      </SettingRow>
-      {shouldShowShortcuts && <KeyboardShortcutList />}
     </>
   );
 }

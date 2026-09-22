@@ -8,6 +8,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { BUILT_IN_KINDS, SECTION_PRESETS } from '@shared/resume/sectionPresets';
 import type { ResumeSection } from '@shared/types/resume';
+import { useOverlayStore } from '@/stores/overlayStore';
 import { useResumeStore } from '@/stores/resumeStore';
 import { SectionItem } from './SectionItem';
 import { CustomMenuItems, PresetMenuItems } from './SectionMenuItems';
@@ -33,6 +34,8 @@ export function SectionList({
   const addSection = useResumeStore((s) => s.addSection);
   const reorderSections = useResumeStore((s) => s.reorderSections);
   const custom = useAddCustomSection(onCustomAdded);
+  const isAddSectionMenuOpen = useOverlayStore((s) => s.addSectionMenuOpen);
+  const setAddSectionMenuOpen = useOverlayStore((s) => s.setAddSectionMenuOpen);
 
   const sorted = [...sections].sort((a, b) => a.order - b.order);
   const sectionIds = sorted.map((section) => section.id);
@@ -65,7 +68,7 @@ export function SectionList({
       />
 
       {showAddSection && (
-        <DropdownMenu>
+        <DropdownMenu open={isAddSectionMenuOpen} onOpenChange={setAddSectionMenuOpen}>
           <DropdownMenuTrigger asChild>
             <AppButton variant="outline" size="xs" className="mt-3 ml-1.5">
               <Plus />

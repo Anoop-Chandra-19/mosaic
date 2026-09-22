@@ -44,6 +44,10 @@ interface OverlayState {
   /** The import can only become a new template (nothing is open, or it came from Start). */
   importAsNewOnly: boolean;
   nameVersionOpen: boolean;
+  /** The keyboard shortcut sheet, opened on its own with Ctrl/⌘+/. */
+  shortcutsOpen: boolean;
+  /** The sidebar's Add section menu, which Ctrl/⌘+Shift+N opens too. */
+  addSectionMenuOpen: boolean;
   exportOpen: boolean;
   /** What the Export dialog exports: this version, or the open draft when null. */
   exportVersion: ExportVersion | null;
@@ -64,6 +68,8 @@ interface OverlayState {
   openImport: (asNewOnly: boolean) => void;
   closeImport: () => void;
   setNameVersionOpen: (open: boolean) => void;
+  setShortcutsOpen: (open: boolean) => void;
+  setAddSectionMenuOpen: (open: boolean) => void;
   /** Opens Export for the open draft, or for `version`. */
   openExport: (version?: ExportVersion) => void;
   closeExport: () => void;
@@ -79,6 +85,8 @@ export const useOverlayStore = create<OverlayState>()((set) => ({
   importOpen: false,
   importAsNewOnly: false,
   nameVersionOpen: false,
+  shortcutsOpen: false,
+  addSectionMenuOpen: false,
   exportOpen: false,
   exportVersion: null,
   pendingRestore: null,
@@ -91,6 +99,8 @@ export const useOverlayStore = create<OverlayState>()((set) => ({
   openImport: (importAsNewOnly) => set({ importOpen: true, importAsNewOnly }),
   closeImport: () => set({ importOpen: false }),
   setNameVersionOpen: (nameVersionOpen) => set({ nameVersionOpen }),
+  setShortcutsOpen: (shortcutsOpen) => set({ shortcutsOpen }),
+  setAddSectionMenuOpen: (addSectionMenuOpen) => set({ addSectionMenuOpen }),
   openExport: (version) => set({ exportOpen: true, exportVersion: version ?? null }),
   // The target stays until the next opening, so the closing dialog does not change.
   closeExport: () => set({ exportOpen: false }),
