@@ -45,6 +45,13 @@ describe('chooseVisibleVersions', () => {
     expect(chooseVisibleVersions(dense, { total: 500, now: NOW }).shown).toHaveLength(140);
   });
 
+  it('shows only the newest dozen of a template that is not open', () => {
+    const versions = history(30, 1);
+    const view = chooseVisibleVersions(versions, { total: 30, isCompact: true, now: NOW });
+    expect(view).toMatchObject({ hiddenCount: 18, mode: 'compact' });
+    expect(view.shown[0].id).toBe('v30');
+  });
+
   it('caps a filter’s matches by count, however long the history', () => {
     const matches = history(FOUND_CAP + 5, 72);
     expect(

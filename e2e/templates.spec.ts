@@ -33,7 +33,7 @@ test('a version can be read in the sheet, then restored', async () => {
   ).toBeAttached();
   await page.keyboard.press('Escape');
   const named = page.getByRole('listitem').filter({ hasText: 'Sent to Striped' });
-  await expect(named).toContainText('named');
+  await expect(named).toContainText('v2');
 
   // Row actions show on hover, as they do for a pointer.
   await named.hover();
@@ -81,7 +81,7 @@ test('editing alone is kept in history when another template takes the editor', 
   const kept = page
     .getByRole('listitem')
     .filter({ hasText: 'Where you left it before switching templates' });
-  await expect(kept).toContainText('auto');
+  await expect(kept).toContainText('left off');
   await expect(kept).toContainText('current');
   await expect(page.getByRole('contentinfo').getByText('Matches v2')).toBeVisible();
   await page.getByRole('tab', { name: 'Content' }).click();
@@ -102,7 +102,7 @@ test('editing alone is kept in history when the window closes', async () => {
       await second.page.getByRole('tab', { name: 'Templates' }).click();
       await expect(
         second.page.getByRole('listitem').filter({ hasText: /^Where you left it/ })
-      ).toContainText('auto');
+      ).toContainText('left off');
       expect(second.errors).toEqual([]);
     } finally {
       await second.app.close();

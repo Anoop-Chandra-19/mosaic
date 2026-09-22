@@ -4,6 +4,8 @@ import type { VersionMeta } from '@shared/types/db';
 export const BROWSE_CAP = 400;
 /** A filtered list shows this many matches; the rest are for the full history view. */
 export const FOUND_CAP = 150;
+/** A template that is not open shows only this much of its history: a peek, not a browser. */
+export const COMPACT_ROWS = 12;
 const RECENT_DAYS = 30;
 const RECENT_MIN_ROWS = 40;
 const RECENT_MAX_ROWS = 140;
@@ -14,8 +16,11 @@ export interface VisibleVersions {
   shown: VersionMeta[];
   /** Matches older than the last one shown. */
   hiddenCount: number;
-  /** `recent`: a long history cut to its last month. `found`: a filter's matches. */
-  mode: 'whole' | 'recent' | 'found';
+  /**
+   * `recent`: a long history cut to its last month. `found`: a filter's matches.
+   * `compact`: the newest few of a template that is not open.
+   */
+  mode: 'whole' | 'recent' | 'found' | 'compact';
 }
 
 /**
@@ -29,9 +34,17 @@ export function chooseVisibleVersions(
   {
     total,
     isFiltering = false,
+    isCompact = false,
     now = Date.now(),
-  }: { total: number; isFiltering?: boolean; now?: number }
+  }: { total: number; isFiltering?: boolean; isCompact?: boolean; now?: number }
 ): VisibleVersions {
+  if (isCompact) {
+    return {
+      shown: matched.slice(0, COMPACT_ROWS),
+      hiddenCount: Math.max(0, matched.length - COMPACT_ROWS),
+      mode: 'compact',
+    };
+  }
   if (isFiltering || total <= BROWSE_CAP) {
     const cap = isFiltering ? FOUND_CAP : BROWSE_CAP;
     return {

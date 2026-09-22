@@ -300,6 +300,7 @@ export function TemplateCard({ template, active, expanded, onToggle }: TemplateC
           {versions ? (
             <VersionList
               versions={versions}
+              isCompact={!active}
               canPreview={active}
               previewId={previewId}
               onPreview={(version, label) => void togglePreview(version, label)}

@@ -1,8 +1,23 @@
 import { useRef, useState, type ReactNode } from 'react';
-import { ChevronDown, ChevronRight, Copy, ExternalLink, Eye, History, Save } from 'lucide-react';
+import {
+  ChevronDown,
+  ChevronRight,
+  Copy,
+  ExternalLink,
+  Eye,
+  History,
+  MoreHorizontal,
+  Save,
+} from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
-import type { VersionMeta } from '@shared/types/db';
+import type { VersionMeta, VersionSource } from '@shared/types/db';
 import { chooseVisibleVersions } from './chooseVisibleVersions';
 import {
   filterVersionHistory,
@@ -29,9 +44,27 @@ interface VersionListProps {
   onPreview: (version: VersionMeta, label: string) => void;
   onRestore: (version: VersionMeta) => void;
   onDuplicate: (version: VersionMeta) => void;
+  /**
+   * A template that is not open: its newest dozen and no filter bar, so two sticky strips
+   * never share the sidebar.
+   */
+  isCompact?: boolean;
   /** Until the full history view exists, the versions past the sidebar's are only counted. */
   onOpenFullHistory?: () => void;
 }
+
+/**
+ * Tags only where the source is news. Named versions and plain edits need none: the dot
+ * and the weight of the summary already say which they are.
+ */
+const SOURCE_TAGS: Partial<Record<VersionSource, string>> = {
+  import: 'import',
+  restore: 'restore',
+  create: 'created',
+  duplicate: 'copy',
+  switched: 'left off',
+  closed: 'left off',
+};
 
 /** A template's history until the count line is worth its row. */
 const SHORT_HISTORY = 8;
@@ -42,21 +75,29 @@ const END_LINE_ROWS = 60;
  * One history, two layers: auto versions Mosaic takes on its own (import, restore) sit
  * quiet; named versions are the user's own bookmarks — bold, with the amber mark.
  */
-export function VersionList({ versions, onOpenFullHistory, ...rowProps }: VersionListProps) {
+export function VersionList({
+  versions,
+  isCompact = false,
+  onOpenFullHistory,
+  ...rowProps
+}: VersionListProps) {
   const [filter, setFilter] = useState(NO_HISTORY_FILTER);
   const [isSearching, setIsSearching] = useState(false);
   // Keyed by a run's oldest version, which stays the same as newer edits join the run.
   const [openRuns, setOpenRuns] = useState<ReadonlySet<string>>(new Set());
   const rootRef = useRef<HTMLDivElement>(null);
 
-  const isFiltering = isHistoryFiltered(filter);
+  // A peek has no filter bar, so a filter left from when the template was open must not apply.
+  const isFiltering = !isCompact && isHistoryFiltered(filter);
   const matched = isFiltering ? filterVersionHistory(versions, filter) : versions;
   const { shown, hiddenCount, mode } = chooseVisibleVersions(matched, {
     total: versions.length,
     isFiltering,
+    isCompact,
   });
   const groups = groupVersionHistory(shown, { byMonth: isFiltering });
-  const hasFilterBar = versions.length > SHORT_HISTORY;
+  const isLong = versions.length > SHORT_HISTORY;
+  const hasFilterBar = isLong && !isCompact;
   const positions = new Map(versions.map((version, index) => [version.id, index]));
   const labelOf = (version: VersionMeta) => versionLabel(versions, positions.get(version.id)!);
 
@@ -89,21 +130,25 @@ export function VersionList({ versions, onOpenFullHistory, ...rowProps }: Versio
   );
   return (
     <div ref={rootRef} className="@container/history">
+      {isLong && (
+        <HistoryCount
+          versions={versions}
+          isCompact={isCompact}
+          onOpenFullHistory={onOpenFullHistory}
+        />
+      )}
       {hasFilterBar && (
-        <>
-          <HistoryCount versions={versions} onOpenFullHistory={onOpenFullHistory} />
-          <HistoryFilterBar
-            filter={filter}
-            onFilterChange={setFilter}
-            sections={listHistorySections(versions)}
-            total={versions.length}
-            months={months}
-            onJumpToNewest={() => rootRef.current?.scrollIntoView({ block: 'start' })}
-            onJumpToMonth={jumpToMonth}
-            isSearching={isSearching}
-            onSearchingChange={setIsSearching}
-          />
-        </>
+        <HistoryFilterBar
+          filter={filter}
+          onFilterChange={setFilter}
+          sections={listHistorySections(versions)}
+          total={versions.length}
+          months={months}
+          onJumpToNewest={() => rootRef.current?.scrollIntoView({ block: 'start' })}
+          onJumpToMonth={jumpToMonth}
+          isSearching={isSearching}
+          onSearchingChange={setIsSearching}
+        />
       )}
       <div className="relative mt-1.5">
         {groups.length > 0 && (
@@ -167,6 +212,7 @@ export function VersionList({ versions, onOpenFullHistory, ...rowProps }: Versio
           }
           hiddenCount={hiddenCount}
           oldestMonth={formatHistoryMonth(matched.at(-1)!.createdAt)}
+          isCompact={isCompact}
           onOpenFullHistory={onOpenFullHistory}
         />
       ) : (
@@ -183,14 +229,20 @@ export function VersionList({ versions, onOpenFullHistory, ...rowProps }: Versio
 
 interface HistoryCountProps {
   versions: VersionMeta[];
+  isCompact: boolean;
   onOpenFullHistory?: () => void;
 }
 
 /** "2,041 versions · 12 named · since Oct 2025", once a history is long enough to need it. */
-function HistoryCount({ versions, onOpenFullHistory }: HistoryCountProps) {
+function HistoryCount({ versions, isCompact, onOpenFullHistory }: HistoryCountProps) {
   const namedCount = versions.filter((version) => version.kind === 'named').length;
   return (
-    <p className="mt-2.25 mb-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 font-mono text-[0.7rem] text-ink-faint">
+    <p
+      className={cn(
+        'mb-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 font-mono text-[0.7rem] text-ink-faint',
+        isCompact ? 'mt-1.5' : 'mt-2.25'
+      )}
+    >
       <span>
         <b className="font-semibold text-ink-muted">{versions.length.toLocaleString()}</b> versions
       </span>
@@ -220,6 +272,7 @@ interface HistoryHandoffProps {
   label: string;
   hiddenCount: number;
   oldestMonth: string;
+  isCompact: boolean;
   onOpenFullHistory?: () => void;
 }
 
@@ -228,24 +281,33 @@ function HistoryHandoff({
   label,
   hiddenCount,
   oldestMonth,
+  isCompact,
   onOpenFullHistory,
 }: HistoryHandoffProps) {
-  const rest = `${hiddenCount.toLocaleString()} earlier ${hiddenCount === 1 ? 'version' : 'versions'}, back to ${oldestMonth}. All kept.`;
+  const rest = `${hiddenCount.toLocaleString()} earlier ${hiddenCount === 1 ? 'version' : 'versions'}, back to ${oldestMonth}.`;
   if (!onOpenFullHistory) {
-    return <p className="mt-2.5 mb-0.5 ml-5.5 font-mono text-[0.675rem] text-ink-faint">{rest}</p>;
+    // Nothing to hand off to yet, so a peek says where the rest can be read.
+    return (
+      <p className="mt-2.5 mb-0.5 ml-5.5 font-mono text-[0.675rem] text-ink-faint">
+        {rest} {isCompact ? 'Open the template to see them.' : 'All kept.'}
+      </p>
+    );
   }
   return (
     <AppButton
       variant="dashed"
       size="xs"
       onClick={onOpenFullHistory}
-      className="mt-2 h-auto w-full flex-col items-start gap-0.5 rounded-sm border-line-strong px-2.5 py-2 text-ink-soft hover:border-line-heavy"
+      className={cn(
+        'h-auto w-full flex-col items-start gap-0.5 rounded-sm border-line-strong px-2.5 py-2 text-ink-soft hover:border-line-heavy',
+        isCompact ? 'mt-1.5' : 'mt-2'
+      )}
     >
       <span className="flex items-center gap-1.5">
         <ExternalLink className="size-3" />
         {label}
       </span>
-      <span className="font-mono text-[0.675rem] font-normal text-ink-faint">{rest}</span>
+      <span className="font-mono text-[0.675rem] font-normal text-ink-faint">{rest} All kept.</span>
     </AppButton>
   );
 }
@@ -278,7 +340,7 @@ function RunRow({ run, labelOf, isOpen, onToggle, children }: RunRowProps) {
           className="relative mt-1 ml-px size-2.75 shrink-0 rounded-full shadow-[inset_0_0_0_1.5px_var(--line-heavy)] before:absolute before:-top-1.25 before:left-0.5 before:h-0.5 before:w-1.5 before:rounded-full before:bg-line-heavy after:absolute after:-bottom-1.25 after:left-0.5 after:h-0.5 after:w-1.5 after:rounded-full after:bg-line-heavy"
         />
         <span className="min-w-0 flex-1">
-          <span className="block text-xs leading-snug font-medium text-ink-soft">
+          <span className="block text-[0.8rem] leading-[1.4] font-medium text-ink-soft">
             {run.length} snapshots while you worked
           </span>
           <span className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 font-mono text-[0.7rem] text-ink-faint">
@@ -306,7 +368,10 @@ function RunRow({ run, labelOf, isOpen, onToggle, children }: RunRowProps) {
   );
 }
 
-interface VersionRowProps extends Omit<VersionListProps, 'versions' | 'onOpenFullHistory'> {
+interface VersionRowProps extends Omit<
+  VersionListProps,
+  'versions' | 'isCompact' | 'onOpenFullHistory'
+> {
   version: VersionMeta;
   isHead: boolean;
   /** Inside an open run: no dot of its own, a tick to the run's line instead. */
@@ -327,56 +392,71 @@ function VersionRow({
   onRestore,
   onDuplicate,
 }: VersionRowProps) {
-  const auto = version.kind === 'auto';
+  const isNamed = version.kind === 'named';
+  const isStop = version.source === 'switched' || version.source === 'closed';
+  const tag = SOURCE_TAGS[version.source];
   const previewing = previewId === version.id;
+  const previewHint = canPreview
+    ? previewing
+      ? 'Stop previewing and go back to your draft'
+      : 'Read this version in the sheet. Nothing is changed.'
+    : 'Open this template to preview its versions';
   return (
     <li
       className={cn(
-        'group relative flex items-start gap-2.5',
+        'group relative flex items-start gap-2.5 rounded-md hover:bg-pane',
         isNested
           ? 'py-0.75 before:absolute before:top-2.75 before:-left-3 before:h-px before:w-1.75 before:bg-line'
-          : 'py-1.5',
-        previewing && 'rounded-sm bg-amber-soft ring-4 ring-amber-soft'
+          : 'py-1.25',
+        previewing && 'bg-amber-soft ring-4 ring-amber-soft hover:bg-amber-soft'
       )}
     >
       {!isNested && (
         <span
           aria-hidden
           className={cn(
-            'relative mt-0.5 size-3 shrink-0 rounded-full border-2 border-white dark:border-zinc-950',
+            'relative z-1 shrink-0 rounded-full border-2 border-white dark:border-zinc-950',
+            isNamed ? 'mt-[0.21875rem] size-3' : 'mt-1.25 ml-[0.09375rem] size-2.25',
             head
               ? 'bg-amber-500 ring-3 ring-amber-soft'
-              : auto
-                ? 'bg-zinc-300 dark:bg-zinc-700'
-                : 'bg-zinc-500'
+              : isNamed
+                ? 'bg-ink-muted'
+                : isStop
+                  ? 'bg-ink-muted shadow-[0_0_0_1px_var(--line-heavy)]'
+                  : version.source === 'edit'
+                    ? 'bg-line-heavy'
+                    : 'bg-ink-faint'
           )}
         />
       )}
       <div className="min-w-0 flex-1">
         <p
           className={cn(
-            'text-xs leading-snug',
-            auto
-              ? 'text-zinc-600 dark:text-zinc-400'
-              : 'font-semibold text-zinc-900 dark:text-zinc-100'
+            'leading-[1.4]',
+            isNested ? 'text-[0.775rem]' : 'text-[0.8rem]',
+            isNamed ? 'font-semibold text-foreground' : 'text-ink-muted'
           )}
         >
-          {!auto && (
-            <Save className="mr-1 inline size-2.5 align-baseline text-amber-600 dark:text-amber-400" />
+          {isNamed && (
+            <Save className="mr-1.25 inline size-2.5 align-baseline text-amber-600 dark:text-amber-400" />
           )}
           {version.summary}
         </p>
-        <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 font-mono text-[0.7rem] text-zinc-500">
-          <span
-            className={cn(
-              'rounded border px-1 font-sans text-[0.6rem] font-bold tracking-wide uppercase',
-              auto
-                ? 'border-zinc-300 text-zinc-500 dark:border-zinc-700'
-                : 'border-amber-300 text-amber-700 dark:border-amber-800 dark:text-amber-400'
-            )}
-          >
-            {auto ? 'auto' : 'named'}
-          </span>
+        <p className="mt-0.75 flex flex-wrap items-center gap-x-1.75 gap-y-1 font-mono text-[0.70625rem] text-ink-faint *:whitespace-nowrap">
+          {tag && (
+            <span
+              className={cn(
+                'inline-flex h-4 items-center rounded-[0.25rem] border px-1.25 font-sans text-[0.625rem] font-bold tracking-[0.04em] uppercase',
+                version.source === 'restore'
+                  ? 'border-info-line text-info'
+                  : isStop
+                    ? 'border-line-heavy text-ink-soft'
+                    : 'border-line-strong text-ink-muted'
+              )}
+            >
+              {tag}
+            </span>
+          )}
           <span>{label}</span>
           <span>{time}</span>
           {head && <span className="text-amber-600 dark:text-amber-400">current</span>}
@@ -384,51 +464,77 @@ function VersionRow({
       </div>
       <span
         className={cn(
-          'flex shrink-0 gap-0.5',
+          'flex shrink-0 gap-0.5 @max-[18.75rem]/history:visible',
           !previewing && 'invisible group-focus-within:visible group-hover:visible'
         )}
       >
-        <AppButton
-          variant="ghost"
-          size="xs"
-          shape="square"
-          disabled={!canPreview}
-          aria-pressed={previewing}
-          aria-label={`Preview ${label}`}
-          title={
-            canPreview
-              ? previewing
-                ? 'Stop previewing and go back to your draft'
-                : 'Read this version in the sheet. Nothing is changed.'
-              : 'Open this template to preview its versions'
-          }
-          onClick={() => onPreview(version, label)}
-          className={cn(previewing && 'bg-line-strong text-foreground')}
-        >
-          <Eye className="size-3" />
-        </AppButton>
-        {!head && (
+        {/* A narrow panel has no room for three buttons, so they fold into one menu. */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <AppButton
+              variant="ghost"
+              size="xs"
+              shape="square"
+              aria-label={`Actions for ${label}`}
+              className="hidden @max-[18.75rem]/history:inline-flex"
+            >
+              <MoreHorizontal className="size-3" />
+            </AppButton>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuItem disabled={!canPreview} onClick={() => onPreview(version, label)}>
+              <Eye />
+              {previewing ? 'Stop reading it' : 'Read this version'}
+            </DropdownMenuItem>
+            {!head && (
+              <DropdownMenuItem onClick={() => onRestore(version)}>
+                <History />
+                Restore
+              </DropdownMenuItem>
+            )}
+            <DropdownMenuItem onClick={() => onDuplicate(version)}>
+              <Copy />
+              Duplicate as a new template
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+        <span className="flex gap-0.5 @max-[18.75rem]/history:hidden">
           <AppButton
             variant="ghost"
             size="xs"
             shape="square"
-            aria-label={`Restore ${label}`}
-            title="Restore. What you have now is kept in history first."
-            onClick={() => onRestore(version)}
+            disabled={!canPreview}
+            aria-pressed={previewing}
+            aria-label={`Preview ${label}`}
+            title={previewHint}
+            onClick={() => onPreview(version, label)}
+            className={cn(previewing && 'bg-line-strong text-foreground')}
           >
-            <History className="size-3" />
+            <Eye className="size-3" />
           </AppButton>
-        )}
-        <AppButton
-          variant="ghost"
-          size="xs"
-          shape="square"
-          aria-label={`Duplicate ${label} as a new template`}
-          title="Duplicate as a new template"
-          onClick={() => onDuplicate(version)}
-        >
-          <Copy className="size-3" />
-        </AppButton>
+          {!head && (
+            <AppButton
+              variant="ghost"
+              size="xs"
+              shape="square"
+              aria-label={`Restore ${label}`}
+              title="Restore. What you have now is kept in history first."
+              onClick={() => onRestore(version)}
+            >
+              <History className="size-3" />
+            </AppButton>
+          )}
+          <AppButton
+            variant="ghost"
+            size="xs"
+            shape="square"
+            aria-label={`Duplicate ${label} as a new template`}
+            title="Duplicate as a new template"
+            onClick={() => onDuplicate(version)}
+          >
+            <Copy className="size-3" />
+          </AppButton>
+        </span>
       </span>
     </li>
   );

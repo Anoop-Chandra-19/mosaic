@@ -105,6 +105,8 @@
   --color-ink-muted: var(--ink-muted);
   --color-ink-faint: var(--ink-faint);
   --color-amber-soft: var(--amber-soft);
+  --color-info: var(--info);
+  --color-info-line: var(--info-line);
 }
 
 :root {
@@ -157,6 +159,8 @@
   --ink-muted: oklch(0.48 0.013 286);
   --ink-faint: oklch(0.57 0.013 286);
   --amber-soft: oklch(0.948 0.02 69);
+  --info: oklch(0.52 0.13 240);
+  --info-line: oklch(0.86 0.04 240);
 }
 
 .dark {
@@ -206,6 +210,8 @@
   --ink-muted: oklch(0.67 0.012 286);
   --ink-faint: oklch(0.56 0.012 286);
   --amber-soft: oklch(0.26 0.019 66);
+  --info: oklch(0.74 0.11 235);
+  --info-line: oklch(0.36 0.045 235);
 }
 
 /* Interface density: the chrome's spacing steps, never the page's. */
