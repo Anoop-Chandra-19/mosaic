@@ -36,7 +36,7 @@ function shape(groups: HistoryGroup[]) {
   return groups.map((group) => [
     group.label,
     group.items.map((item) =>
-      item.kind === 'run' ? item.versions.map((entry) => entry.version.id) : item.version.id
+      item.kind === 'run' ? item.versions.map((version) => version.id) : item.version.id
     ),
   ]);
 }
@@ -86,14 +86,6 @@ describe('groupVersionHistory', () => {
         ['v13', ['v12', 'v11', 'v10', 'v9'], 'v8', 'v7', 'v6', 'v5', ['v4', 'v3', 'v2', 'v1']],
       ],
     ]);
-  });
-
-  it('keeps each version’s place in the whole history, for its label', () => {
-    seq = 0;
-    const versions = newestFirst([version(at(21, 9)), version(at(22, 9))]);
-    const [today, yesterday] = groupVersionHistory(versions, { now: NOW });
-    expect(today.items[0]).toMatchObject({ kind: 'version', index: 0 });
-    expect(yesterday.items[0]).toMatchObject({ kind: 'version', index: 1 });
   });
 
   it('groups a filtered list by month, with no runs', () => {

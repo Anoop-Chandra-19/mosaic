@@ -6,15 +6,9 @@ export const SESSION_GAP_MS = 45 * MINUTE;
 /** Fewer rows than this and collapsing a run hides more than it saves. */
 export const SESSION_MIN_ROWS = 4;
 
-/** A version and its place in the whole history, which its label is counted from. */
-export interface IndexedVersion {
-  version: VersionMeta;
-  index: number;
-}
-
 export type HistoryItem =
-  | ({ kind: 'version' } & IndexedVersion)
-  | { kind: 'run'; versions: IndexedVersion[] };
+  | { kind: 'version'; version: VersionMeta }
+  | { kind: 'run'; versions: VersionMeta[] };
 
 export interface HistoryGroup {
   /** The day's (or month's) first moment. */
@@ -97,7 +91,7 @@ export function groupVersionHistory(
   { now = Date.now(), byMonth = false }: { now?: number; byMonth?: boolean } = {}
 ): HistoryGroup[] {
   const groups: HistoryGroup[] = [];
-  versions.forEach((version, index) => {
+  for (const version of versions) {
     const at = version.createdAt;
     const key = byMonth ? startOfMonth(at) : startOfDay(at);
     let group = groups.at(-1);
@@ -115,21 +109,18 @@ export function groupVersionHistory(
 
     const last = group.items.at(-1);
     if (byMonth || !isPlainEdit(version)) {
-      group.items.push({ kind: 'version', version, index });
-    } else if (
-      last?.kind === 'run' &&
-      last.versions.at(-1)!.version.createdAt - at < SESSION_GAP_MS
-    ) {
-      last.versions.push({ version, index });
+      group.items.push({ kind: 'version', version });
+    } else if (last?.kind === 'run' && last.versions.at(-1)!.createdAt - at < SESSION_GAP_MS) {
+      last.versions.push(version);
     } else {
-      group.items.push({ kind: 'run', versions: [{ version, index }] });
+      group.items.push({ kind: 'run', versions: [version] });
     }
-  });
+  }
 
   for (const group of groups) {
     group.items = group.items.flatMap((item) =>
       item.kind === 'run' && item.versions.length < SESSION_MIN_ROWS
-        ? item.versions.map((entry): HistoryItem => ({ kind: 'version', ...entry }))
+        ? item.versions.map((version): HistoryItem => ({ kind: 'version', version }))
         : [item]
     );
   }

@@ -112,6 +112,47 @@ test('editing alone is kept in history when the window closes', async () => {
   }
 });
 
+test('a long history can be narrowed to named versions, or searched', async () => {
+  const { page } = mosaic();
+  await page.getByRole('button', { name: /Blank resume/ }).click();
+  // Past eight versions the history grows its filter bar.
+  const companies = [
+    'Northwind',
+    'Kestrel',
+    'Vela',
+    'Atlas',
+    'Corvid',
+    'Marlowe',
+    'Quarry',
+    'Fernbank',
+  ];
+  let current = 'Your name';
+  for (const company of companies) {
+    await setName(page, current, `Ada at ${company}`);
+    current = `Ada at ${company}`;
+    await nameVersion(page, `Sent to ${company}`);
+  }
+
+  await page.getByRole('tab', { name: 'Templates' }).click();
+  await expect(page.getByText('Created', { exact: true })).toBeVisible();
+  await page.getByRole('radio', { name: 'Named' }).click();
+  await expect(page.getByText('Created', { exact: true })).toBeHidden();
+  await expect(page.getByRole('listitem')).toHaveCount(8);
+
+  await page.getByRole('radio', { name: 'All' }).click();
+  await page.getByRole('button', { name: 'Find a version by name' }).click();
+  await page.keyboard.type('NORTH');
+  await expect(page.getByRole('listitem')).toHaveCount(1);
+  await expect(page.getByRole('listitem')).toContainText('Sent to Northwind');
+  await page.keyboard.type('zzz');
+  await expect(page.getByText('Nothing matches “NORTHzzz”.', { exact: false })).toBeVisible();
+
+  // Escape closes the search and brings every version back.
+  await page.keyboard.press('Escape');
+  await expect(page.getByLabel('Find a version', { exact: true })).toBeHidden();
+  await expect(page.getByText('Created', { exact: true })).toBeVisible();
+});
+
 test('templates can be found by name', async () => {
   const { page } = mosaic();
   await page.getByRole('button', { name: /Blank resume/ }).click();

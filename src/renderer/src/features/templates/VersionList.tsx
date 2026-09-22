@@ -1,17 +1,23 @@
-import { useState, type ReactNode } from 'react';
+import { useRef, useState, type ReactNode } from 'react';
 import { ChevronDown, ChevronRight, Copy, ExternalLink, Eye, History, Save } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
 import { cn } from '@/lib/utils';
 import type { VersionMeta } from '@shared/types/db';
 import { chooseVisibleVersions } from './chooseVisibleVersions';
 import {
+  filterVersionHistory,
+  isHistoryFiltered,
+  listHistorySections,
+  NO_HISTORY_FILTER,
+} from './filterVersionHistory';
+import {
   describeRunSections,
   formatHistoryMonth,
   formatTimeInDay,
   formatTimeOfDay,
   groupVersionHistory,
-  type IndexedVersion,
 } from './groupVersionHistory';
+import { HistoryFilterBar, type HistoryMonth } from './HistoryFilterBar';
 import { versionLabel } from './useTemplateVersions';
 
 interface VersionListProps {
@@ -37,43 +43,86 @@ const END_LINE_ROWS = 60;
  * quiet; named versions are the user's own bookmarks — bold, with the amber mark.
  */
 export function VersionList({ versions, onOpenFullHistory, ...rowProps }: VersionListProps) {
-  const { shown, hiddenCount } = chooseVisibleVersions(versions, { total: versions.length });
-  const groups = groupVersionHistory(shown);
-  const oldestMonth = formatHistoryMonth(versions.at(-1)!.createdAt);
+  const [filter, setFilter] = useState(NO_HISTORY_FILTER);
+  const [isSearching, setIsSearching] = useState(false);
   // Keyed by a run's oldest version, which stays the same as newer edits join the run.
   const [openRuns, setOpenRuns] = useState<ReadonlySet<string>>(new Set());
+  const rootRef = useRef<HTMLDivElement>(null);
+
+  const isFiltering = isHistoryFiltered(filter);
+  const matched = isFiltering ? filterVersionHistory(versions, filter) : versions;
+  const { shown, hiddenCount, mode } = chooseVisibleVersions(matched, {
+    total: versions.length,
+    isFiltering,
+  });
+  const groups = groupVersionHistory(shown, { byMonth: isFiltering });
+  const hasFilterBar = versions.length > SHORT_HISTORY;
+  const positions = new Map(versions.map((version, index) => [version.id, index]));
+  const labelOf = (version: VersionMeta) => versionLabel(versions, positions.get(version.id)!);
+
+  const months: HistoryMonth[] = [];
+  for (const group of groups) {
+    const label = formatHistoryMonth(group.key);
+    if (months.at(-1)?.label !== label) months.push({ label, key: group.key });
+  }
+  // The strip is sticky, so a scrolled-to heading stops below it rather than under it.
+  const scrollMargin = isSearching ? 'scroll-mt-[5.125rem]' : 'scroll-mt-10.5';
+  const jumpToMonth = (key: number) =>
+    rootRef.current?.querySelector(`[data-group="${key}"]`)?.scrollIntoView({ block: 'start' });
+
   const toggleRun = (key: string) =>
     setOpenRuns((open) => {
       const next = new Set(open);
       if (!next.delete(key)) next.add(key);
       return next;
     });
-  const renderRow = ({ version, index }: IndexedVersion, isNested = false) => (
+  const renderRow = (version: VersionMeta, isNested = false) => (
     <VersionRow
       key={version.id}
       version={version}
-      isHead={index === 0}
+      isHead={version.id === versions[0].id}
       isNested={isNested}
-      label={versionLabel(versions, index)}
+      label={labelOf(version)}
       time={formatTimeInDay(version.createdAt)}
       {...rowProps}
     />
   );
   return (
-    <>
-      {versions.length > SHORT_HISTORY && (
-        <HistoryCount versions={versions} onOpenFullHistory={onOpenFullHistory} />
+    <div ref={rootRef} className="@container/history">
+      {hasFilterBar && (
+        <>
+          <HistoryCount versions={versions} onOpenFullHistory={onOpenFullHistory} />
+          <HistoryFilterBar
+            filter={filter}
+            onFilterChange={setFilter}
+            sections={listHistorySections(versions)}
+            total={versions.length}
+            months={months}
+            onJumpToNewest={() => rootRef.current?.scrollIntoView({ block: 'start' })}
+            onJumpToMonth={jumpToMonth}
+            isSearching={isSearching}
+            onSearchingChange={setIsSearching}
+          />
+        </>
       )}
       <div className="relative mt-1.5">
-        <span
-          aria-hidden
-          className="absolute top-2 bottom-2.5 left-[0.34rem] w-px bg-zinc-300 dark:bg-zinc-700"
-        />
+        {groups.length > 0 && (
+          <span
+            aria-hidden
+            className="absolute top-2 bottom-2.5 left-[0.34rem] w-px bg-zinc-300 dark:bg-zinc-700"
+          />
+        )}
         {groups.map((group) => (
-          <section key={group.key} aria-label={group.label}>
+          <section
+            key={group.key}
+            data-group={group.key}
+            aria-label={group.label}
+            className={scrollMargin}
+          >
             <h4
               className={cn(
-                'sticky top-0 z-3 flex items-center gap-2 bg-white pt-2.75 pb-1.25 pl-5.5 text-[0.65625rem] font-semibold tracking-[0.08em] uppercase dark:bg-zinc-950',
+                'sticky z-3 flex items-center gap-2 bg-white pt-2.75 pb-1.25 pl-5.5 text-[0.65625rem] font-semibold tracking-[0.08em] uppercase dark:bg-zinc-950',
+                !hasFilterBar ? 'top-0' : isSearching ? 'top-[5.125rem]' : 'top-10.5',
                 group.isToday ? 'text-ink-soft' : 'text-ink-muted'
               )}
             >
@@ -85,17 +134,17 @@ export function VersionList({ versions, onOpenFullHistory, ...rowProps }: Versio
             </h4>
             <ol>
               {group.items.map((item) => {
-                if (item.kind === 'version') return renderRow(item);
-                const key = item.versions.at(-1)!.version.id;
+                if (item.kind === 'version') return renderRow(item.version);
+                const key = item.versions.at(-1)!.id;
                 return (
                   <RunRow
                     key={key}
                     run={item.versions}
-                    versions={versions}
+                    labelOf={labelOf}
                     isOpen={openRuns.has(key)}
                     onToggle={() => toggleRun(key)}
                   >
-                    {item.versions.map((entry) => renderRow(entry, true))}
+                    {item.versions.map((version) => renderRow(version, true))}
                   </RunRow>
                 );
               })}
@@ -103,20 +152,32 @@ export function VersionList({ versions, onOpenFullHistory, ...rowProps }: Versio
           </section>
         ))}
       </div>
+      {groups.length === 0 && (
+        <p className="mt-3.5 mb-1.5 ml-5.5 text-[0.775rem] leading-normal text-ink-muted">
+          Nothing matches {filter.query.trim() ? `“${filter.query.trim()}”` : 'that filter'}.
+          Everything is still here. Clear the filter to see it.
+        </p>
+      )}
       {hiddenCount > 0 ? (
         <HistoryHandoff
+          label={
+            mode === 'found'
+              ? `See all ${matched.length.toLocaleString()} matches`
+              : 'Open the full history'
+          }
           hiddenCount={hiddenCount}
-          oldestMonth={oldestMonth}
+          oldestMonth={formatHistoryMonth(matched.at(-1)!.createdAt)}
           onOpenFullHistory={onOpenFullHistory}
         />
       ) : (
         shown.length > END_LINE_ROWS && (
           <p className="mt-2.5 mb-0.5 ml-5.5 font-mono text-[0.675rem] text-ink-faint">
-            That is all {shown.length.toLocaleString()} of them, back to {oldestMonth}.
+            That is all {shown.length.toLocaleString()} of them, back to{' '}
+            {formatHistoryMonth(shown.at(-1)!.createdAt)}.
           </p>
         )
       )}
-    </>
+    </div>
   );
 }
 
@@ -156,13 +217,19 @@ function HistoryCount({ versions, onOpenFullHistory }: HistoryCountProps) {
 }
 
 interface HistoryHandoffProps {
+  label: string;
   hiddenCount: number;
   oldestMonth: string;
   onOpenFullHistory?: () => void;
 }
 
 /** The one row that stands for every version the sidebar leaves out. */
-function HistoryHandoff({ hiddenCount, oldestMonth, onOpenFullHistory }: HistoryHandoffProps) {
+function HistoryHandoff({
+  label,
+  hiddenCount,
+  oldestMonth,
+  onOpenFullHistory,
+}: HistoryHandoffProps) {
   const rest = `${hiddenCount.toLocaleString()} earlier ${hiddenCount === 1 ? 'version' : 'versions'}, back to ${oldestMonth}. All kept.`;
   if (!onOpenFullHistory) {
     return <p className="mt-2.5 mb-0.5 ml-5.5 font-mono text-[0.675rem] text-ink-faint">{rest}</p>;
@@ -176,7 +243,7 @@ function HistoryHandoff({ hiddenCount, oldestMonth, onOpenFullHistory }: History
     >
       <span className="flex items-center gap-1.5">
         <ExternalLink className="size-3" />
-        Open the full history
+        {label}
       </span>
       <span className="font-mono text-[0.675rem] font-normal text-ink-faint">{rest}</span>
     </AppButton>
@@ -184,16 +251,16 @@ function HistoryHandoff({ hiddenCount, oldestMonth, onOpenFullHistory }: History
 }
 
 interface RunRowProps {
-  /** Newest first, with each version's place in the whole history. */
-  run: IndexedVersion[];
-  versions: VersionMeta[];
+  /** Newest first. */
+  run: VersionMeta[];
+  labelOf: (version: VersionMeta) => string;
   isOpen: boolean;
   onToggle: () => void;
   children: ReactNode;
 }
 
 /** A run of plain editing held as one row on a bead-stack dot; it opens in place. */
-function RunRow({ run, versions, isOpen, onToggle, children }: RunRowProps) {
+function RunRow({ run, labelOf, isOpen, onToggle, children }: RunRowProps) {
   const newest = run[0];
   const oldest = run.at(-1)!;
   const Chevron = isOpen ? ChevronDown : ChevronRight;
@@ -216,15 +283,12 @@ function RunRow({ run, versions, isOpen, onToggle, children }: RunRowProps) {
           </span>
           <span className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 font-mono text-[0.7rem] text-ink-faint">
             <span className="whitespace-nowrap">
-              {formatTimeOfDay(oldest.version.createdAt)} to{' '}
-              {formatTimeOfDay(newest.version.createdAt)}
+              {formatTimeOfDay(oldest.createdAt)} to {formatTimeOfDay(newest.createdAt)}
             </span>
             <span className="whitespace-nowrap">
-              {versionLabel(versions, oldest.index)} to {versionLabel(versions, newest.index)}
+              {labelOf(oldest)} to {labelOf(newest)}
             </span>
-            <span className="text-ink-muted">
-              {describeRunSections(run.map((entry) => entry.version))}
-            </span>
+            <span className="text-ink-muted">{describeRunSections(run)}</span>
           </span>
         </span>
         <span
