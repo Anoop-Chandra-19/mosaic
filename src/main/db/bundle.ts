@@ -26,12 +26,13 @@ function exportTemplate(db: Database, id: string): BundleTemplate {
     draft: readDraft(db, id).doc,
     versions: listVersions(db, id)
       .reverse()
-      .map(({ id: versionId, parentId, kind, source, summary, rev, createdAt }) => ({
+      .map(({ id: versionId, parentId, kind, source, summary, section, rev, createdAt }) => ({
         id: versionId,
         parentId,
         kind,
         source,
         summary,
+        section,
         rev,
         createdAt: iso(createdAt),
         doc: getVersion(db, versionId).doc,
@@ -78,6 +79,7 @@ function importTemplate(db: Database, entry: BundleTemplate, mode: ImportMode): 
       kind: version.kind,
       source: version.source,
       summary: version.summary,
+      section: version.section,
       doc: version.doc,
       rev: version.rev,
       createdAt: Date.parse(version.createdAt),

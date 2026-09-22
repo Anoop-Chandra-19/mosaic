@@ -17,7 +17,11 @@ export type VersionSource =
   | 'name' // the user named the draft
   | 'import' // a resume import (pasted text, later PDF/DOCX), or the draft it replaced
   | 'restore' // taken before, or produced by, restoring an older version
-  | 'edit'; // editing alone, kept for the user as they go
+  | 'edit' // editing alone, kept for the user as they go
+  | 'switched' // where the draft stood when another template took the editor
+  | 'closed'; // where the draft stood when the window closed
+
+export type SnapshotOccasion = Extract<VersionSource, 'edit' | 'switched' | 'closed'>;
 
 export interface VersionMeta {
   id: string;
@@ -27,6 +31,8 @@ export interface VersionMeta {
   source: VersionSource;
   /** The user's name for a named version, or a description of an auto one. */
   summary: string;
+  /** The one section an edit snapshot touched, by the label it had then. */
+  section: string | null;
   /** The template rev the snapshot was taken at. The draft is clean iff its rev matches the head's. */
   rev: number;
   createdAt: number;
@@ -102,11 +108,8 @@ export interface MosaicDb {
     get(versionId: string): Promise<Version>;
     /** Renames the newest version if the draft matches it, otherwise adds a named one. */
     name(templateId: string, name: string): Promise<VersionMeta>;
-    /**
-     * Keeps the draft as an auto version summarizing what changed since the newest one.
-     * A draft that is already that version writes nothing and returns it.
-     */
-    snapshot(templateId: string): Promise<VersionMeta>;
+    /** Keeps the draft as an auto version, unless the newest version already holds it. */
+    snapshot(templateId: string, occasion: SnapshotOccasion): Promise<VersionMeta>;
     /**
      * Puts a version back as its template's draft. Template-scoped: the version must be
      * one of that template's own, so each template's history stays self-contained.

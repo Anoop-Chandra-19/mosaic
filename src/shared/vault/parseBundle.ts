@@ -29,6 +29,8 @@ const VERSION_SOURCES: ReadonlySet<string> = new Set<VersionSource>([
   'import',
   'restore',
   'edit',
+  'switched',
+  'closed',
 ]);
 
 class BundleError extends Error {
@@ -99,6 +101,7 @@ function parseVersions(value: unknown, templateName: string, ids: Set<string>): 
       kind: raw.kind as VersionKind,
       source: raw.source as VersionSource,
       summary: requireString(raw.summary, `${what}'s summary`),
+      section: typeof raw.section === 'string' ? raw.section : null,
       rev: requireRev(raw.rev, `${what}'s rev`),
       createdAt: requireTimestamp(raw.createdAt, `${what}'s date`),
       doc: requireDoc(raw.doc, what),

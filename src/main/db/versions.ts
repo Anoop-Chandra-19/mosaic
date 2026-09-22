@@ -3,6 +3,7 @@ import type { Database } from 'better-sqlite3';
 import type {
   AutoSnapshot,
   Draft,
+  SnapshotOccasion,
   Version,
   VersionKind,
   VersionMeta,
@@ -21,11 +22,12 @@ interface VersionRow {
   kind: VersionKind;
   source: VersionSource;
   summary: string;
+  section: string | null;
   rev: number;
   created_at: number;
 }
 
-const META_COLUMNS = 'id, template_id, parent_id, kind, source, summary, rev, created_at';
+const META_COLUMNS = 'id, template_id, parent_id, kind, source, summary, section, rev, created_at';
 
 function toMeta(row: VersionRow): VersionMeta {
   return {
@@ -35,6 +37,7 @@ function toMeta(row: VersionRow): VersionMeta {
     kind: row.kind,
     source: row.source,
     summary: row.summary,
+    section: row.section,
     rev: row.rev,
     createdAt: row.created_at,
   };
@@ -85,6 +88,7 @@ export interface NewVersion {
   kind: VersionKind;
   source: VersionSource;
   summary: string;
+  section?: string | null;
   doc: ResumeData;
   rev: number;
   /** Set only when importing a bundle, which keeps its ids and dates. */
@@ -101,12 +105,13 @@ export function insertVersion(db: Database, version: NewVersion): VersionMeta {
     kind: version.kind,
     source: version.source,
     summary: version.summary,
+    section: version.section ?? null,
     rev: version.rev,
     createdAt: version.createdAt ?? Date.now(),
   };
   db.prepare(
-    `insert into versions (id, template_id, seq, parent_id, kind, source, summary, doc, rev, created_at)
-     values (?, ?, (select coalesce(max(seq), 0) + 1 from versions where template_id = ?), ?, ?, ?, ?, ?, ?, ?)`
+    `insert into versions (id, template_id, seq, parent_id, kind, source, summary, section, doc, rev, created_at)
+     values (?, ?, (select coalesce(max(seq), 0) + 1 from versions where template_id = ?), ?, ?, ?, ?, ?, ?, ?, ?)`
   ).run(
     meta.id,
     meta.templateId,
@@ -115,6 +120,7 @@ export function insertVersion(db: Database, version: NewVersion): VersionMeta {
     meta.kind,
     meta.source,
     meta.summary,
+    meta.section,
     encodeStoredResume(version.doc),
     meta.rev,
     meta.createdAt
@@ -164,26 +170,37 @@ export function snapshotDraft(db: Database, input: AutoSnapshot): VersionMeta {
   })();
 }
 
+const STOP_SUMMARIES: Record<Exclude<SnapshotOccasion, 'edit'>, string> = {
+  switched: 'Where you left it before switching templates',
+  closed: 'Where you left it',
+};
+
 /**
- * Keep the draft as an auto version of editing itself, summarizing what changed since the
- * newest one ("Edited 3 bullets in Experience"). Undo is a session; this is what survives
- * quitting. The renderer decides when: past so many changes, on a template switch, and on
- * the way out.
+ * Keep the draft as an auto version of editing itself. Only `edit` snapshots diff against
+ * the newest version; where editing stopped gets a fixed summary, which keeps closing cheap.
  */
-export function snapshotEditedDraft(db: Database, templateId: string): VersionMeta {
+export function snapshotEditedDraft(
+  db: Database,
+  templateId: string,
+  occasion: SnapshotOccasion
+): VersionMeta {
   return db.transaction(() => {
     const draft = readDraft(db, templateId);
     const head = headVersion(db, templateId);
     const kept = headHoldingDraft(db, head, draft);
     if (kept) return kept;
+    const changes =
+      occasion !== 'edit'
+        ? { summary: STOP_SUMMARIES[occasion], section: null }
+        : head
+          ? describeDraftChanges(getVersion(db, head.id).doc, draft.doc)
+          : { summary: 'Edited the resume', section: null };
     return insertVersion(db, {
       templateId,
       parentId: head?.id ?? null,
       kind: 'auto',
-      source: 'edit',
-      summary: head
-        ? describeDraftChanges(getVersion(db, head.id).doc, draft.doc)
-        : 'Edited the resume',
+      source: occasion,
+      ...changes,
       doc: draft.doc,
       rev: draft.rev,
     });

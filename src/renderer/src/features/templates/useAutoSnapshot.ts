@@ -38,7 +38,7 @@ export function useAutoSnapshot(): void {
     // The wait runs from the last version, not from the last keystroke, so editing on
     // cannot put the snapshot off forever — those edits just land in it too.
     const timer = setTimeout(
-      () => void useTemplateStore.getState().snapshotOpenDraft(),
+      () => void useTemplateStore.getState().snapshotOpenDraft('edit'),
       msUntilAutoSnapshot(lastVersionAt, Date.now())
     );
     return () => clearTimeout(timer);

@@ -241,7 +241,7 @@ describe('auto snapshots', () => {
     await templates().createTemplate('Backend', createDefaultResume());
     resume().setName('Ada Lovelace');
 
-    await templates().snapshotOpenDraft();
+    await templates().snapshotOpenDraft('edit');
 
     const [head] = await history();
     expect(head).toMatchObject({
@@ -258,7 +258,7 @@ describe('auto snapshots', () => {
   it('leaves the undo stack alone: the version stands and the edit still comes back', async () => {
     await templates().createTemplate('Backend', createDefaultResume());
     resume().setName('Ada Lovelace');
-    await templates().snapshotOpenDraft();
+    await templates().snapshotOpenDraft('edit');
 
     expect(resume().undoLabel).toBe('edit the name');
     resume().undo();
@@ -271,9 +271,9 @@ describe('auto snapshots', () => {
   it('writes nothing when there is nothing new to keep', async () => {
     await templates().createTemplate('Backend', createDefaultResume());
     resume().setName('Ada Lovelace');
-    await templates().snapshotOpenDraft();
+    await templates().snapshotOpenDraft('edit');
 
-    await templates().snapshotOpenDraft();
+    await templates().snapshotOpenDraft('edit');
 
     expect(await history()).toHaveLength(2);
   });
@@ -287,11 +287,14 @@ describe('auto snapshots', () => {
 
     await templates().openTemplate(templates().templates.find((t) => t.name === 'Frontend')!.id);
 
-    const kept = await db.current!.versions.list(backend);
-    expect(kept.map((v) => v.summary)).toEqual(['Changed the name', 'Created']);
+    const [kept] = await db.current!.versions.list(backend);
+    expect(kept).toMatchObject({
+      source: 'switched',
+      summary: 'Where you left it before switching templates',
+    });
   });
 
   it('does nothing at all with no template open', async () => {
-    await expect(templates().snapshotOpenDraft()).resolves.toBeUndefined();
+    await expect(templates().snapshotOpenDraft('closed')).resolves.toBeUndefined();
   });
 });

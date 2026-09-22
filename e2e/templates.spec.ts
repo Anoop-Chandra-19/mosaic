@@ -74,7 +74,9 @@ test('editing alone is kept in history when another template takes the editor', 
 
   await page.getByRole('tab', { name: 'Templates' }).click();
   await page.getByRole('button', { name: 'Open', exact: true }).click();
-  const kept = page.getByRole('listitem').filter({ hasText: 'Changed the name' });
+  const kept = page
+    .getByRole('listitem')
+    .filter({ hasText: 'Where you left it before switching templates' });
   await expect(kept).toContainText('auto');
   await expect(kept).toContainText('current');
   await expect(page.getByRole('contentinfo').getByText('Matches v2')).toBeVisible();
@@ -95,7 +97,7 @@ test('editing alone is kept in history when the window closes', async () => {
     try {
       await second.page.getByRole('tab', { name: 'Templates' }).click();
       await expect(
-        second.page.getByRole('listitem').filter({ hasText: 'Changed the name' })
+        second.page.getByRole('listitem').filter({ hasText: /^Where you left it/ })
       ).toContainText('auto');
       expect(second.errors).toEqual([]);
     } finally {

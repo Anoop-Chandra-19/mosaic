@@ -4,7 +4,7 @@ import { getDb } from '@/lib/storage/mosaicDb';
 import { useOverlayStore } from '@/stores/overlayStore';
 import { flushDraft, useResumeStore } from '@/stores/resumeStore';
 import type { ImportMode, MosaicBundle } from '@shared/types/bundle';
-import type { Draft, TemplateSummary, VersionMeta } from '@shared/types/db';
+import type { Draft, SnapshotOccasion, TemplateSummary, VersionMeta } from '@shared/types/db';
 import type { PendingTextAiChange, ResumeData } from '@shared/types/resume';
 
 /** A deleted template, kept in memory as a backup of just itself so it can be put back. */
@@ -56,7 +56,7 @@ interface TemplateState {
    * while editing (`useAutoSnapshot`), when another template opens, and on the way out.
    * The undo stack stays as it is. Nothing to keep, or no template open, does nothing.
    */
-  snapshotOpenDraft: () => Promise<void>;
+  snapshotOpenDraft: (occasion: SnapshotOccasion) => Promise<void>;
   /** Replaces the open draft, keeping unsaved edits in history first. */
   importIntoDraft: (doc: ResumeData, from: string) => Promise<void>;
   /**
@@ -127,7 +127,7 @@ export const useTemplateStore = create<TemplateState>()(
 
       createTemplate: async (name, doc, importedFrom) => {
         // The new one takes the editor, so the draft it displaces is kept first.
-        await get().snapshotOpenDraft();
+        await get().snapshotOpenDraft('switched');
         const db = getDb();
         const created = await db.templates.create(name, doc, importedFrom);
         showDraft(await db.templates.open(created.id));
@@ -137,7 +137,7 @@ export const useTemplateStore = create<TemplateState>()(
       openTemplate: async (id) => {
         if (id === openTemplateId()) return;
         // Undo does not survive the switch, so what it could have taken back is kept.
-        await get().snapshotOpenDraft();
+        await get().snapshotOpenDraft('switched');
         showDraft(await getDb().templates.open(id));
         // The template left behind may have just saved; its summary is out of date.
         await get().refresh();
@@ -209,12 +209,12 @@ export const useTemplateStore = create<TemplateState>()(
         return version;
       },
 
-      snapshotOpenDraft: async () => {
+      snapshotOpenDraft: async (occasion) => {
         await flushDraft();
         const templateId = openTemplateId();
         if (templateId === null) return;
         try {
-          const version = await getDb().versions.snapshot(templateId);
+          const version = await getDb().versions.snapshot(templateId, occasion);
           // Still the same draft? An open that overtook this one has its own baseline.
           if (openTemplateId() === templateId) {
             useResumeStore.getState().markVersionSaved(version.rev);

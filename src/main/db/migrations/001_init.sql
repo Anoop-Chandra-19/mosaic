@@ -30,8 +30,9 @@ create table versions (
   seq         integer not null,             -- order within the template; head = max(seq)
   parent_id   text references versions(id) on delete set null,
   kind        text not null check (kind in ('auto', 'named')),
-  source      text not null,                -- create | duplicate | name | import | restore | edit
+  source      text not null,                -- create | duplicate | name | import | restore | edit | switched | closed
   summary     text not null,                -- the user's name, or "Before restoring …"
+  section     text,                         -- the one section an edit snapshot touched, by its label then
   doc         text not null check (json_valid(doc)),
   rev         integer not null,             -- template rev at snapshot
   created_at  integer not null,
