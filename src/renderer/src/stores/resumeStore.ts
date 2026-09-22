@@ -140,7 +140,8 @@ interface ResumeState extends ResumeData {
   /** A copy right below it, bullets included, all with new ids. */
   duplicateEntry: (sectionId: string, entryId: string) => void;
 
-  addBullet: (sectionId: string, entryId: string, text: string) => void;
+  /** Adds it last, or right below `afterBulletId`; gives the new bullet's id. */
+  addBullet: (sectionId: string, entryId: string, text: string, afterBulletId?: string) => string;
   updateBullet: (sectionId: string, entryId: string, bulletId: string, text: string) => void;
   removeBullet: (sectionId: string, entryId: string, bulletId: string) => void;
   toggleBullet: (sectionId: string, entryId: string, bulletId: string) => void;
@@ -484,13 +485,19 @@ export const useResumeStore = create<ResumeState>()(
 
       // Bullet CRUD
 
-      addBullet: (sectionId, entryId, text) =>
+      addBullet: (sectionId, entryId, text, afterBulletId) => {
+        const id = crypto.randomUUID();
         edit('add a bullet', (state) => {
           const section = state.sections.find((s) => s.id === sectionId);
           if (!section) return;
           const entry = section.items.find((e) => e.id === entryId);
-          if (entry) entry.bullets.push({ id: crypto.randomUUID(), text, selected: true });
-        }),
+          if (!entry) return;
+          const after = entry.bullets.findIndex((b) => b.id === afterBulletId);
+          const index = after < 0 ? entry.bullets.length : after + 1;
+          entry.bullets.splice(index, 0, { id, text, selected: true });
+        });
+        return id;
+      },
 
       updateBullet: (sectionId, entryId, bulletId, text) =>
         edit('edit a bullet', (state) => {

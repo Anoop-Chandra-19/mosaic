@@ -1,7 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildBackupFileName, buildExportName, toFileName } from '../fileNames';
-
-const fixedDate = new Date(2026, 3, 23);
+import { buildExportName, toFileName } from '../fileNames';
 
 describe('buildExportName', () => {
   it('names the person and the template', () => {
@@ -35,11 +33,5 @@ describe('toFileName', () => {
 
   it('never leaves the name empty', () => {
     expect(toFileName(' / ', 'txt')).toBe('Resume.txt');
-  });
-});
-
-describe('buildBackupFileName', () => {
-  it('uses a dashed date with the mosaic-backup prefix', () => {
-    expect(buildBackupFileName(fixedDate)).toBe('mosaic-backup-2026-04-23.json');
   });
 });

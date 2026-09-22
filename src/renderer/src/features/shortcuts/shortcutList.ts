@@ -15,13 +15,17 @@ export const SHORTCUTS = {
   redo: 'mod+shift+Z',
   moveBulletUp: 'alt+up',
   moveBulletDown: 'alt+down',
-  deleteBullet: 'mod+del',
+  newBulletBelow: 'alt+enter',
+  // Not Ctrl/⌘+Backspace: in a field that deletes a word, and this works while typing.
+  deleteBullet: 'mod+shift+K',
   duplicateEntry: 'mod+D',
   newSection: 'mod+shift+N',
   keepEdit: 'enter',
   dropEdit: 'esc',
   toggleSidebar: 'mod+B',
-  toggleAssistant: 'mod+\\',
+  // J is in the same place on every layout; \ takes AltGr on many.
+  toggleAssistant: 'mod+J',
+  toggleAssistantBackslash: 'mod+\\',
   zoomIn: 'mod+plus',
   zoomOut: 'mod+minus',
   fitPage: 'mod+0',
@@ -67,7 +71,7 @@ export function listShortcutGroups({
   const redo = row('redo', 'Redo');
   if (platform !== 'darwin') redo.alt = 'mod+Y';
   const assistant: ShortcutRow = {
-    ...row('toggleAssistant', 'Toggle assistant pane'),
+    ...row('toggleAssistant', 'Toggle assistant pane', 'toggleAssistantBackslash'),
     isUnavailable: !isAiEnabled,
     unavailableNote: 'AI is off',
   };
@@ -93,6 +97,7 @@ export function listShortcutGroups({
         row('keepEdit', 'Keep an edit'),
         row('dropEdit', 'Drop an edit'),
         row('moveBulletUp', 'Move bullet up / down', 'moveBulletDown'),
+        row('newBulletBelow', 'New bullet below'),
         row('deleteBullet', 'Delete bullet'),
         row('duplicateEntry', 'Duplicate entry'),
         row('newSection', 'New section'),

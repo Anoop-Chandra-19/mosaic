@@ -1,10 +1,12 @@
 import { contextBridge, ipcRenderer } from 'electron';
 import type { MosaicAI } from '@shared/types/ai';
+import type { MosaicBackup } from '@shared/types/backup';
 import type { MosaicDbBridge } from '@shared/types/db';
 import type { MosaicFiles } from '@shared/types/files';
 import type { MosaicSecrets } from '@shared/types/secrets';
 import {
   AI_OLLAMA_MODELS,
+  BACKUP_CHANNELS,
   ERASE_ALL,
   FILES_OPEN,
   FILES_SAVE,
@@ -40,6 +42,13 @@ const files: MosaicFiles = {
   open: (type) => ipcRenderer.invoke(FILES_OPEN, type),
 };
 
+const backup: MosaicBackup = {
+  status: () => ipcRenderer.invoke(BACKUP_CHANNELS.status),
+  backUpNow: () => ipcRenderer.invoke(BACKUP_CHANNELS.backUpNow),
+  setFrequency: (frequency) => ipcRenderer.invoke(BACKUP_CHANNELS.setFrequency, frequency),
+  chooseFolder: () => ipcRenderer.invoke(BACKUP_CHANNELS.chooseFolder),
+};
+
 /** Keys go in; nothing here can bring one back out. */
 const secrets: MosaicSecrets = {
   status: () => ipcRenderer.invoke(SECRETS_CHANNELS.status),
@@ -58,6 +67,7 @@ contextBridge.exposeInMainWorld('mosaic', {
   platform: process.platform,
   db: dbBridge(),
   files,
+  backup,
   secrets,
   ai,
   app: {

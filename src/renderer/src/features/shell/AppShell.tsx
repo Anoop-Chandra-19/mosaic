@@ -91,7 +91,7 @@ const GLOBAL_SHORTCUTS: { combos: string[]; run: () => void }[] = [
     },
   },
   {
-    combos: [SHORTCUTS.toggleAssistant],
+    combos: [SHORTCUTS.toggleAssistant, SHORTCUTS.toggleAssistantBackslash],
     run: () => {
       if (useAiStore.getState().enabled) useUiStore.getState().toggleAgentPane();
     },
@@ -130,11 +130,7 @@ const GLOBAL_SHORTCUTS: { combos: string[]; run: () => void }[] = [
       if (!isEmpty) useOverlayStore.getState().setAddSectionMenuOpen(true);
     },
   },
-  // Ctrl/⌘+= and, with Shift, Ctrl/⌘++: both are the key marked +.
-  {
-    combos: [SHORTCUTS.zoomIn, `shift+${SHORTCUTS.zoomIn}`],
-    run: () => useUiStore.getState().zoomPreviewIn(),
-  },
+  { combos: [SHORTCUTS.zoomIn], run: () => useUiStore.getState().zoomPreviewIn() },
   { combos: [SHORTCUTS.zoomOut], run: () => useUiStore.getState().zoomPreviewOut() },
   {
     combos: [SHORTCUTS.fitPage],

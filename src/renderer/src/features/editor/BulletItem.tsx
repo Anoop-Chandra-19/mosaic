@@ -27,6 +27,8 @@ interface BulletItemProps {
   isLast: boolean;
   onMoveUp: () => void;
   onMoveDown: () => void;
+  /** Opens an empty bullet editor right below it. */
+  onAddBelow: () => void;
   /** Its place in the entry's list, so it can be dragged. */
   grip: SortGrip;
 }
@@ -44,6 +46,7 @@ export function BulletItem({
   isLast,
   onMoveUp,
   onMoveDown,
+  onAddBelow,
   grip,
 }: BulletItemProps) {
   const toggleBullet = useResumeStore((s) => s.toggleBullet);
@@ -56,16 +59,27 @@ export function BulletItem({
   const editAfterMenu = useRef(false);
 
   const toggle = () => toggleBullet(sectionId, entryId, bullet.id);
+  const remove = () => removeBullet(sectionId, entryId, bullet.id);
+  const saveText = (text: string) => {
+    setEditing(false);
+    if (text !== bullet.text) updateBullet(sectionId, entryId, bullet.id, text);
+  };
 
   if (editing) {
     return (
       <BulletEditor
         initial={bullet.text}
-        onSave={(text) => {
-          setEditing(false);
-          if (text !== bullet.text) updateBullet(sectionId, entryId, bullet.id, text);
-        }}
+        onSave={saveText}
         onCancel={() => setEditing(false)}
+        onAddBelow={(text) => {
+          saveText(text);
+          onAddBelow();
+        }}
+        onMove={(direction) => {
+          if (direction < 0 && !isFirst) onMoveUp();
+          if (direction > 0 && !isLast) onMoveDown();
+        }}
+        onDelete={remove}
       />
     );
   }
@@ -76,9 +90,8 @@ export function BulletItem({
     let run: (() => void) | undefined;
     if (matchesShortcut(keys, SHORTCUTS.moveBulletUp) && !isFirst) run = onMoveUp;
     else if (matchesShortcut(keys, SHORTCUTS.moveBulletDown) && !isLast) run = onMoveDown;
-    else if (matchesShortcut(keys, SHORTCUTS.deleteBullet)) {
-      run = () => removeBullet(sectionId, entryId, bullet.id);
-    }
+    else if (matchesShortcut(keys, SHORTCUTS.newBulletBelow)) run = onAddBelow;
+    else if (matchesShortcut(keys, SHORTCUTS.deleteBullet)) run = remove;
     if (!run) return;
     event.preventDefault();
     event.stopPropagation();
@@ -161,7 +174,7 @@ export function BulletItem({
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
-                onSelect={() => removeBullet(sectionId, entryId, bullet.id)}
+                onSelect={remove}
                 className="text-destructive focus:text-destructive"
               >
                 <Trash2 />

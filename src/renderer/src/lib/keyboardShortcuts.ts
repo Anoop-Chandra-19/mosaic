@@ -91,7 +91,16 @@ const EVENT_KEY_NAMES: Record<string, string> = {
   '-': 'minus',
 };
 
-/** The shortcut a key press makes, or null while only modifiers are down. */
+/** A typed character that is not a letter: a digit or a symbol, such as "/" or "+". */
+function isSymbolKey(key: string): boolean {
+  return key.length === 1 && key !== ' ' && key.toLowerCase() === key.toUpperCase();
+}
+
+/**
+ * The shortcut a key press makes, or null while only modifiers are down. A digit or symbol
+ * is read as the character typed, without Shift: on a German keyboard "/" is Shift+7, so
+ * Ctrl+/ arrives as Ctrl+Shift+/, and it is still Ctrl+/.
+ */
 export function readShortcutCombo(event: KeyboardEvent): string | null {
   if (['Meta', 'Control', 'Shift', 'Alt'].includes(event.key)) return null;
   const isMac = window.mosaic.platform === 'darwin';
@@ -99,7 +108,7 @@ export function readShortcutCombo(event: KeyboardEvent): string | null {
   if (isMac ? event.metaKey : event.ctrlKey) parts.push('mod');
   if (isMac && event.ctrlKey) parts.push('ctrl');
   if (event.altKey) parts.push('alt');
-  if (event.shiftKey) parts.push('shift');
+  if (event.shiftKey && !isSymbolKey(event.key)) parts.push('shift');
   const key =
     EVENT_KEY_NAMES[event.key] ?? (event.key.length === 1 ? event.key.toUpperCase() : event.key);
   return [...parts, key].join('+');

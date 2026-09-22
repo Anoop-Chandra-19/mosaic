@@ -16,6 +16,7 @@ import { formatEntryHeading } from '@shared/resume/entryHeading';
 import type { ResumeEntry, SectionLayout } from '@shared/types/resume';
 import { useResumeStore } from '@/stores/resumeStore';
 import { AddBulletButton } from './AddBulletButton';
+import { BulletEditor } from './BulletEditor';
 import { BulletItem } from './BulletItem';
 import { EditorCheckbox } from './EditorCheckbox';
 import { InlineEditField } from './InlineEditField';
@@ -63,6 +64,8 @@ export function EntryCard({
   const reorderBullets = useResumeStore((s) => s.reorderBullets);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [actionsOpen, setActionsOpen] = useState(false);
+  // Alt+Enter on a bullet: an empty editor under it, which adds a bullet there once saved.
+  const [addingAfterId, setAddingAfterId] = useState<string | null>(null);
   const isTextOnly = layout === 'lines';
   // The design fades a left-off entry; the repo's rule is tones, not opacity, so every
   // ink in it drops to the faintest.
@@ -174,7 +177,7 @@ export function EntryCard({
                 onReorder={(ids) => reorderBullets(sectionId, entry.id, ids)}
                 renderRow={(id, grip) => {
                   const index = entry.bullets.findIndex((bullet) => bullet.id === id);
-                  return (
+                  const row = (
                     <BulletItem
                       bullet={entry.bullets[index]}
                       sectionId={sectionId}
@@ -185,7 +188,32 @@ export function EntryCard({
                       isLast={index === entry.bullets.length - 1}
                       onMoveUp={() => moveBullet(index, -1)}
                       onMoveDown={() => moveBullet(index, 1)}
+                      onAddBelow={() => setAddingAfterId(id)}
                     />
+                  );
+                  if (addingAfterId !== id) return row;
+                  return (
+                    <div className="flex flex-col gap-(--density-row)">
+                      {row}
+                      <BulletEditor
+                        initial=""
+                        onSave={(text) => {
+                          if (text) addBullet(sectionId, entry.id, text, id);
+                          setAddingAfterId(null);
+                        }}
+                        onCancel={() => setAddingAfterId(null)}
+                        onAddBelow={(text) => {
+                          setAddingAfterId(text ? addBullet(sectionId, entry.id, text, id) : null);
+                        }}
+                        onPasteLines={(lines) => {
+                          lines.reduce(
+                            (after, line) => addBullet(sectionId, entry.id, line, after),
+                            id
+                          );
+                          setAddingAfterId(null);
+                        }}
+                      />
+                    </div>
                   );
                 }}
               />

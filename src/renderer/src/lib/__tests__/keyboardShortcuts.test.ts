@@ -29,7 +29,8 @@ describe('formatShortcutKeys', () => {
   it('names the keys as Windows and Linux do, in the order written', () => {
     onPlatform('linux');
     expect(formatShortcutKeys('mod+shift+T')).toEqual(['Ctrl', 'Shift', 'T']);
-    expect(formatShortcutKeys('mod+del')).toEqual(['Ctrl', 'Backspace']);
+    expect(formatShortcutKeys('mod+shift+K')).toEqual(['Ctrl', 'Shift', 'K']);
+    expect(formatShortcutKeys('alt+enter')).toEqual(['Alt', 'Enter']);
     expect(formatShortcutKeys('alt+up')).toEqual(['Alt', '↑']);
   });
 
@@ -63,5 +64,14 @@ describe('reading and matching a key press', () => {
     expect(matchesShortcut(press('t', { ctrlKey: true }), 'mod+shift+T')).toBe(false);
     expect(matchesShortcut(press('=', { ctrlKey: true }), 'mod+plus')).toBe(true);
     expect(matchesShortcut(press('ArrowUp', { altKey: true }), 'alt+up')).toBe(true);
+  });
+
+  it('reads a symbol as the character typed, whatever Shift it took to type', () => {
+    onPlatform('linux');
+    // German layouts: "/" is Shift+7, and "+" is its own key on the US one's Shift+=.
+    expect(matchesShortcut(press('/', { ctrlKey: true, shiftKey: true }), 'mod+/')).toBe(true);
+    expect(matchesShortcut(press('+', { ctrlKey: true, shiftKey: true }), 'mod+plus')).toBe(true);
+    expect(readShortcutCombo(press('K', { ctrlKey: true, shiftKey: true }))).toBe('mod+shift+K');
+    expect(readShortcutCombo(press('Enter', { shiftKey: true }))).toBe('shift+enter');
   });
 });

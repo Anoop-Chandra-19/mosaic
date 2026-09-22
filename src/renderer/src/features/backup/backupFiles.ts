@@ -1,9 +1,6 @@
-import { buildBackupFileName } from '@/lib/files/fileNames';
-import { readSetting, writeSetting } from '@/lib/storage/settingsStorage';
-import { getDb } from '@/lib/storage/mosaicDb';
-import { isRecord } from '@shared/resume/validateResume';
 import { parseBundle, type BundleParseResult } from '@shared/vault/parseBundle';
 import { flushDraft } from '@/stores/resumeStore';
+import type { BackupStatus } from '@shared/types/backup';
 import type { MosaicBundle, OpenedBackup } from '@shared/types/bundle';
 import { decodeText } from '@shared/types/files';
 
@@ -20,47 +17,14 @@ export function countBundle(bundle: MosaicBundle): BundleCounts {
   };
 }
 
-/** The most recent backup made on this machine, for Settings to report. */
-export interface BackupRecord extends BundleCounts {
-  at: number;
-  bytes: number;
-}
-
-const LAST_BACKUP_KEY = 'mosaic-last-backup';
-
-export function readLastBackup(): BackupRecord | null {
-  try {
-    const stored: unknown = JSON.parse(readSetting(LAST_BACKUP_KEY) ?? 'null');
-    if (!isRecord(stored)) return null;
-    const { at, templates, versions, bytes } = stored;
-    return [at, templates, versions, bytes].every(Number.isFinite)
-      ? ({ at, templates, versions, bytes } as BackupRecord)
-      : null;
-  } catch {
-    return null;
-  }
-}
-
 /**
- * Write every template, with its history, to a file the user picks. Resolves with what was
- * written and the file's name, or null if they cancelled the Save dialog.
+ * Write every template, with its history, to a file the user picks. Resolves with the
+ * backup status and the file's name, or null if they cancelled the Save dialog.
  */
-export async function backUpNow(): Promise<{ record: BackupRecord; fileName: string } | null> {
+export async function backUpNow(): Promise<{ status: BackupStatus; fileName: string } | null> {
   // The backup should hold the edits still waiting to be saved.
   await flushDraft();
-  const bundle = await getDb().bundle.export();
-  // Indented, so the file reads as well as it restores.
-  const text = JSON.stringify(bundle, null, 2);
-  const fileName = await window.mosaic.files.save('json', buildBackupFileName(), text);
-  if (fileName === null) return null;
-
-  const record: BackupRecord = {
-    at: Date.now(),
-    ...countBundle(bundle),
-    bytes: new TextEncoder().encode(text).byteLength,
-  };
-  writeSetting(LAST_BACKUP_KEY, JSON.stringify(record));
-  return { record, fileName };
+  return window.mosaic.backup.backUpNow();
 }
 
 /** A chosen file Mosaic cannot restore; the message says why, for the user. */
