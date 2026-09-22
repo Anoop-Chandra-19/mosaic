@@ -400,3 +400,39 @@ describe('templates', () => {
     expect(getSetting(db, ACTIVE_TEMPLATE_KEY)).toBe(id);
   });
 });
+
+describe('documents, stored once by hash', () => {
+  const countDocs = () => db.prepare('select count(*) from docs').pluck().get() as number;
+
+  it('a restore adds a version row but no document it already has', () => {
+    const { id, head: created } = createTemplate(db, 'CV', resumeFor('A'));
+    saveDraft(db, id, resumeFor('B'), 1);
+    nameDraft(db, id, 'B');
+    expect(countDocs()).toBe(2);
+
+    restoreVersion(db, id, created.id);
+    expect(listVersions(db, id)).toHaveLength(3);
+    expect(countDocs()).toBe(2);
+    expect(getVersion(db, listVersions(db, id)[0].id).doc).toEqual(resumeFor('A'));
+  });
+
+  it('is the same document whatever order its keys were written in', () => {
+    const { id } = createTemplate(db, 'CV', resumeFor('A'));
+    const reordered = Object.fromEntries(Object.entries(resumeFor('A')).reverse()) as ResumeData;
+    saveDraft(db, id, reordered, 1);
+    nameDraft(db, id, 'Same again');
+    expect(countDocs()).toBe(1);
+  });
+
+  it('keeps a document while any template points at it, and drops it after', () => {
+    const { id } = createTemplate(db, 'CV', resumeFor('A'));
+    const copy = duplicateTemplate(db, id);
+    expect(countDocs()).toBe(1);
+
+    removeTemplate(db, id);
+    expect(countDocs()).toBe(1);
+    expect(getVersion(db, copy.head.id).doc).toEqual(resumeFor('A'));
+    removeTemplate(db, copy.id);
+    expect(countDocs()).toBe(0);
+  });
+});
