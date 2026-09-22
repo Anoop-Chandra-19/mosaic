@@ -29,6 +29,7 @@ export interface BundleVersion {
   kind: VersionKind;
   source: VersionSource;
   summary: string;
+  section: string | null;
   rev: number;
   createdAt: string;
   doc: ResumeData;

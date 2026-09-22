@@ -201,7 +201,7 @@ describe('versions', () => {
     const { id, head } = createTemplate(db, 'CV', resumeFor('A'));
     saveDraft(db, id, resumeFor('A'), 4); // four steps out and back
 
-    expect(snapshotEditedDraft(db, id)).toMatchObject({ id: head.id, rev: 4 });
+    expect(snapshotEditedDraft(db, id, 'edit')).toMatchObject({ id: head.id, rev: 4 });
     expect(listVersions(db, id)).toHaveLength(1);
     expect(isClean(id)).toBe(true);
   });
@@ -213,16 +213,34 @@ describe('versions', () => {
     experience.items[0].bullets[0].text = 'Shipped the thing, twice';
 
     saveDraft(db, id, edited, 1);
-    const snap = snapshotEditedDraft(db, id);
+    const snap = snapshotEditedDraft(db, id, 'edit');
 
     expect(snap).toMatchObject({
       kind: 'auto',
       source: 'edit',
       rev: 1,
       summary: `Edited a bullet in ${experience.label}`,
+      section: experience.label,
     });
     expect(getVersion(db, snap.id).doc).toEqual(edited);
+    expect(listVersions(db, id)[0].section).toBe(experience.label);
     expect(isClean(id)).toBe(true);
+  });
+
+  it('a snapshot where editing stopped says so, rather than what changed', () => {
+    const { id } = createTemplate(db, 'CV', resumeFor('A'));
+    saveDraft(db, id, resumeFor('B'), 1);
+    expect(snapshotEditedDraft(db, id, 'switched')).toMatchObject({
+      source: 'switched',
+      summary: 'Where you left it before switching templates',
+      section: null,
+    });
+
+    saveDraft(db, id, resumeFor('C'), 2);
+    expect(snapshotEditedDraft(db, id, 'closed')).toMatchObject({
+      source: 'closed',
+      summary: 'Where you left it',
+    });
   });
 
   it('restore keeps unsaved edits, writes the draft, records the restore, and moves the rev', () => {
@@ -380,5 +398,41 @@ describe('templates', () => {
     removeSetting(db, ACTIVE_TEMPLATE_KEY);
     expect(openTemplate(db, id).doc).toEqual(resumeFor('A'));
     expect(getSetting(db, ACTIVE_TEMPLATE_KEY)).toBe(id);
+  });
+});
+
+describe('documents, stored once by hash', () => {
+  const countDocs = () => db.prepare('select count(*) from docs').pluck().get() as number;
+
+  it('a restore adds a version row but no document it already has', () => {
+    const { id, head: created } = createTemplate(db, 'CV', resumeFor('A'));
+    saveDraft(db, id, resumeFor('B'), 1);
+    nameDraft(db, id, 'B');
+    expect(countDocs()).toBe(2);
+
+    restoreVersion(db, id, created.id);
+    expect(listVersions(db, id)).toHaveLength(3);
+    expect(countDocs()).toBe(2);
+    expect(getVersion(db, listVersions(db, id)[0].id).doc).toEqual(resumeFor('A'));
+  });
+
+  it('is the same document whatever order its keys were written in', () => {
+    const { id } = createTemplate(db, 'CV', resumeFor('A'));
+    const reordered = Object.fromEntries(Object.entries(resumeFor('A')).reverse()) as ResumeData;
+    saveDraft(db, id, reordered, 1);
+    nameDraft(db, id, 'Same again');
+    expect(countDocs()).toBe(1);
+  });
+
+  it('keeps a document while any template points at it, and drops it after', () => {
+    const { id } = createTemplate(db, 'CV', resumeFor('A'));
+    const copy = duplicateTemplate(db, id);
+    expect(countDocs()).toBe(1);
+
+    removeTemplate(db, id);
+    expect(countDocs()).toBe(1);
+    expect(getVersion(db, copy.head.id).doc).toEqual(resumeFor('A'));
+    removeTemplate(db, copy.id);
+    expect(countDocs()).toBe(0);
   });
 });

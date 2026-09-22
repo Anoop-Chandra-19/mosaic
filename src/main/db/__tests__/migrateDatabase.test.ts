@@ -44,6 +44,7 @@ describe('migrateDatabase', () => {
     db = openDatabase(':memory:');
     expect(db.pragma('user_version', { simple: true })).toBe(bundledMigrations().length);
     expect(tableNames(db)).toEqual([
+      'docs',
       'drafts',
       'schema_migrations',
       'settings',

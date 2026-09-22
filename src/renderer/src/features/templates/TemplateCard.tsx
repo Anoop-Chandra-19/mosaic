@@ -151,7 +151,9 @@ export function TemplateCard({ template, active, expanded, onToggle }: TemplateC
   return (
     <div
       className={cn(
-        '@container overflow-hidden rounded-lg border bg-zinc-50 transition-colors dark:bg-zinc-900',
+        // Clip, not hidden: a card that could scroll would pin the history's day headers
+        // inside itself instead of to the sidebar.
+        '@container overflow-clip rounded-lg border bg-zinc-50 transition-colors dark:bg-zinc-900',
         active
           ? 'border-amber-300 dark:border-amber-800'
           : 'border-zinc-200 hover:border-zinc-300 dark:border-zinc-800 dark:hover:border-zinc-700'
@@ -271,24 +273,34 @@ export function TemplateCard({ template, active, expanded, onToggle }: TemplateC
       {expanded && (
         <div className="border-t border-zinc-200 bg-white px-3 pt-2.5 pb-3 dark:border-zinc-800 dark:bg-zinc-950">
           <div className="flex items-center justify-between">
-            <span className="inline-flex items-center gap-1.5 text-[0.7rem] font-semibold tracking-wider text-zinc-500 uppercase">
-              <Clock className="size-3" />
-              History
+            <span className="inline-flex items-center gap-0.5">
+              <span className="inline-flex items-center gap-1.5 text-[0.7rem] font-semibold tracking-wider text-zinc-500 uppercase">
+                <Clock className="size-3" />
+                History
+              </span>
+              {active && versions && (
+                <AppButton
+                  variant="ghost"
+                  size="xs"
+                  shape="square"
+                  aria-label="What the working draft is doing"
+                  title={
+                    dirty
+                      ? 'Working draft · saved as you type. It gets snapshotted on its own. Name it to make it easy to find.'
+                      : `Working draft matches ${versionLabel(versions, 0)}.`
+                  }
+                >
+                  <Info className="size-3" />
+                </AppButton>
+              )}
             </span>
             <span className="font-mono text-[0.7rem] text-zinc-500">newest first</span>
           </div>
 
-          {active && versions && (
-            <Note icon={Info}>
-              {dirty
-                ? 'Working draft · saved as you type. Name it to make it easy to find.'
-                : `Working draft matches ${versionLabel(versions, 0)}.`}
-            </Note>
-          )}
-
           {versions ? (
             <VersionList
               versions={versions}
+              isCompact={!active}
               canPreview={active}
               previewId={previewId}
               onPreview={(version, label) => void togglePreview(version, label)}

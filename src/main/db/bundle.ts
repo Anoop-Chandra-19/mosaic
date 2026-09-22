@@ -7,6 +7,7 @@ import {
   type ImportResult,
   type MosaicBundle,
 } from '@shared/types/bundle';
+import { deleteUnusedDocs } from './docs';
 import { readDraft } from './drafts';
 import { getTemplate, insertTemplateRow, listTemplates } from './templates';
 import { getVersion, insertVersion, listVersions } from './versions';
@@ -26,12 +27,13 @@ function exportTemplate(db: Database, id: string): BundleTemplate {
     draft: readDraft(db, id).doc,
     versions: listVersions(db, id)
       .reverse()
-      .map(({ id: versionId, parentId, kind, source, summary, rev, createdAt }) => ({
+      .map(({ id: versionId, parentId, kind, source, summary, section, rev, createdAt }) => ({
         id: versionId,
         parentId,
         kind,
         source,
         summary,
+        section,
         rev,
         createdAt: iso(createdAt),
         doc: getVersion(db, versionId).doc,
@@ -78,6 +80,7 @@ function importTemplate(db: Database, entry: BundleTemplate, mode: ImportMode): 
       kind: version.kind,
       source: version.source,
       summary: version.summary,
+      section: version.section,
       doc: version.doc,
       rev: version.rev,
       createdAt: Date.parse(version.createdAt),
@@ -93,6 +96,9 @@ function importTemplate(db: Database, entry: BundleTemplate, mode: ImportMode): 
 export function importBundle(db: Database, bundle: MosaicBundle, mode: ImportMode): ImportResult {
   return db.transaction(() => {
     if (mode === 'restore-all') db.prepare('delete from templates').run();
-    return { templateIds: bundle.templates.map((entry) => importTemplate(db, entry, mode)) };
+    const templateIds = bundle.templates.map((entry) => importTemplate(db, entry, mode));
+    // After the import, so a document the backup brings back again is kept, not rewritten.
+    deleteUnusedDocs(db);
+    return { templateIds };
   })();
 }

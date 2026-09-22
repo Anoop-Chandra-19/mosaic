@@ -2,7 +2,7 @@ import type { Database } from 'better-sqlite3';
 import { isResumeData } from '@shared/resume/validateResume';
 import { parseBundle } from '@shared/vault/parseBundle';
 import type { ImportMode, MosaicBundle } from '@shared/types/bundle';
-import type { DbResult, MosaicDb } from '@shared/types/db';
+import type { DbResult, MosaicDb, SnapshotOccasion } from '@shared/types/db';
 import { MAX_FILE_BYTES } from '@shared/types/files';
 import type { ResumeData } from '@shared/types/resume';
 import type { DbMethod } from '@shared/ipc/dbMethods';
@@ -96,6 +96,17 @@ function importMode(value: unknown): ImportMode {
   return value as ImportMode;
 }
 
+const SNAPSHOT_OCCASIONS: ReadonlySet<unknown> = new Set<SnapshotOccasion>([
+  'edit',
+  'switched',
+  'closed',
+]);
+
+function snapshotOccasion(value: unknown): SnapshotOccasion {
+  if (!SNAPSHOT_OCCASIONS.has(value)) throw new InvalidArgumentError('occasion is not known');
+  return value as SnapshotOccasion;
+}
+
 /** A backup file's text, checked the same way whoever sent it already should have. */
 function bundle(value: unknown): MosaicBundle {
   if (typeof value !== 'string' || value.length > MAX_FILE_BYTES) {
@@ -135,7 +146,8 @@ export function createDbHandlers(db: Database): Handlers<MosaicDb> {
       list: (templateId) => listVersions(db, text(templateId, 'templateId')),
       get: (versionId) => getVersion(db, text(versionId, 'versionId')),
       name: (templateId, name) => nameDraft(db, text(templateId, 'templateId'), text(name, 'name')),
-      snapshot: (templateId) => snapshotEditedDraft(db, text(templateId, 'templateId')),
+      snapshot: (templateId, occasion) =>
+        snapshotEditedDraft(db, text(templateId, 'templateId'), snapshotOccasion(occasion)),
       restore: (templateId, versionId) =>
         restoreVersion(db, text(templateId, 'templateId'), text(versionId, 'versionId')),
       duplicate: (versionId) => duplicateVersion(db, text(versionId, 'versionId')),

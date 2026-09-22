@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import type { Database } from 'better-sqlite3';
 import type { Draft, TemplateSummary, VersionSource } from '@shared/types/db';
 import type { ResumeData } from '@shared/types/resume';
+import { deleteUnusedDocs } from './docs';
 import { readDraft } from './drafts';
 import { ACTIVE_TEMPLATE_KEY, getSetting, removeSetting, setSetting } from './settings';
 import { StorageError } from './storageError';
@@ -154,6 +155,7 @@ export function removeTemplate(db: Database, id: string): void {
   db.transaction(() => {
     const { changes } = db.prepare('delete from templates where id = ?').run(id);
     if (changes === 0) throw new StorageError('not-found', `No template with id ${id}`);
+    deleteUnusedDocs(db);
     if (getSetting(db, ACTIVE_TEMPLATE_KEY) === id) removeSetting(db, ACTIVE_TEMPLATE_KEY);
   })();
 }

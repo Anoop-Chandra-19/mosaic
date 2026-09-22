@@ -22,6 +22,12 @@ create table drafts (
   updated_at  integer not null
 ) strict;
 
+-- Version documents, each stored once, keyed by the sha-256 of its key-sorted JSON.
+create table docs (
+  hash text primary key,
+  doc  text not null check (json_valid(doc))
+) strict;
+
 -- Snapshots of a template's document. The head (highest seq) is the version the
 -- draft was last in sync with: the draft is clean iff templates.rev = head.rev.
 create table versions (
@@ -30,15 +36,17 @@ create table versions (
   seq         integer not null,             -- order within the template; head = max(seq)
   parent_id   text references versions(id) on delete set null,
   kind        text not null check (kind in ('auto', 'named')),
-  source      text not null,                -- create | duplicate | name | import | restore | edit
+  source      text not null,                -- create | duplicate | name | import | restore | edit | switched | closed
   summary     text not null,                -- the user's name, or "Before restoring …"
-  doc         text not null check (json_valid(doc)),
+  section     text,                         -- label of the one section an edit touched
   rev         integer not null,             -- template rev at snapshot
   created_at  integer not null,
+  doc_hash    text not null references docs(hash),
   unique (template_id, seq)
 ) strict;
 -- Deleting a version nulls its children's parent_id; without this, that scans the table.
 create index versions_by_parent on versions (parent_id);
+create index versions_by_doc on versions (doc_hash);
 
 -- Blob-shaped app state: zustand persist keys (mosaic-ui, mosaic-ai) and app keys
 -- (app.activeTemplateId). Never document content.

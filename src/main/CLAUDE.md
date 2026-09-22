@@ -22,6 +22,9 @@ Read with the root `CLAUDE.md`. This covers `src/main/` and its contract with pr
   into rows — the whole document is always loaded, nothing queries across bullets, and the
   DDL would duplicate `src/shared/types/resume.ts`. SQL indexes the _history_: `templates`,
   `drafts` (one row per template), `versions` (`auto` | `named`), `settings`.
+- Version documents live once each in `docs`, keyed by the sha-256 of their key-sorted
+  JSON; `versions.doc_hash` points at them. Deleting or replacing templates ends with
+  `deleteUnusedDocs`. Drafts keep their own copy.
 - `templates.rev` bumps in the same transaction as every draft write. The draft is clean
   when its rev matches the newest version's; naming a clean draft renames that version
   rather than adding one. A version the draft still holds word for word is never

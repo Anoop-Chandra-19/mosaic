@@ -3,6 +3,7 @@ import type { Database } from 'better-sqlite3';
 import type {
   AutoSnapshot,
   Draft,
+  SnapshotOccasion,
   Version,
   VersionKind,
   VersionMeta,
@@ -10,9 +11,9 @@ import type {
 } from '@shared/types/db';
 import { describeDraftChanges } from '@shared/resume/describeDraftChanges';
 import type { ResumeData } from '@shared/types/resume';
+import { hashDoc, readDoc, storeDoc } from './docs';
 import { readDraft, writeDraft } from './drafts';
 import { StorageError } from './storageError';
-import { encodeStoredResume, parseAndMigrateStoredResume } from './storedResume';
 
 interface VersionRow {
   id: string;
@@ -21,11 +22,12 @@ interface VersionRow {
   kind: VersionKind;
   source: VersionSource;
   summary: string;
+  section: string | null;
   rev: number;
   created_at: number;
 }
 
-const META_COLUMNS = 'id, template_id, parent_id, kind, source, summary, rev, created_at';
+const META_COLUMNS = 'id, template_id, parent_id, kind, source, summary, section, rev, created_at';
 
 function toMeta(row: VersionRow): VersionMeta {
   return {
@@ -35,6 +37,7 @@ function toMeta(row: VersionRow): VersionMeta {
     kind: row.kind,
     source: row.source,
     summary: row.summary,
+    section: row.section,
     rev: row.rev,
     createdAt: row.created_at,
   };
@@ -68,15 +71,23 @@ export function listVersions(db: Database, templateId: string): VersionMeta[] {
     .map(toMeta);
 }
 
+function readDocHash(db: Database, versionId: string): string {
+  const row = db
+    .prepare<[string], { doc_hash: string }>('select doc_hash from versions where id = ?')
+    .get(versionId);
+  if (!row) throw new StorageError('not-found', `No version with id ${versionId}`);
+  return row.doc_hash;
+}
+
 export function getVersion(db: Database, versionId: string): Version {
   const row = db
     .prepare<
       [string],
-      VersionRow & { doc: string }
-    >(`select ${META_COLUMNS}, doc from versions where id = ?`)
+      VersionRow & { doc_hash: string }
+    >(`select ${META_COLUMNS}, doc_hash from versions where id = ?`)
     .get(versionId);
   if (!row) throw new StorageError('not-found', `No version with id ${versionId}`);
-  return { ...toMeta(row), doc: parseAndMigrateStoredResume(row.doc) };
+  return { ...toMeta(row), doc: readDoc(db, row.doc_hash) };
 }
 
 export interface NewVersion {
@@ -85,6 +96,7 @@ export interface NewVersion {
   kind: VersionKind;
   source: VersionSource;
   summary: string;
+  section?: string | null;
   doc: ResumeData;
   rev: number;
   /** Set only when importing a bundle, which keeps its ids and dates. */
@@ -101,12 +113,13 @@ export function insertVersion(db: Database, version: NewVersion): VersionMeta {
     kind: version.kind,
     source: version.source,
     summary: version.summary,
+    section: version.section ?? null,
     rev: version.rev,
     createdAt: version.createdAt ?? Date.now(),
   };
   db.prepare(
-    `insert into versions (id, template_id, seq, parent_id, kind, source, summary, doc, rev, created_at)
-     values (?, ?, (select coalesce(max(seq), 0) + 1 from versions where template_id = ?), ?, ?, ?, ?, ?, ?, ?)`
+    `insert into versions (id, template_id, seq, parent_id, kind, source, summary, section, rev, created_at, doc_hash)
+     values (?, ?, (select coalesce(max(seq), 0) + 1 from versions where template_id = ?), ?, ?, ?, ?, ?, ?, ?, ?)`
   ).run(
     meta.id,
     meta.templateId,
@@ -115,9 +128,10 @@ export function insertVersion(db: Database, version: NewVersion): VersionMeta {
     meta.kind,
     meta.source,
     meta.summary,
-    encodeStoredResume(version.doc),
+    meta.section,
     meta.rev,
-    meta.createdAt
+    meta.createdAt,
+    storeDoc(db, version.doc)
   );
   return meta;
 }
@@ -125,8 +139,8 @@ export function insertVersion(db: Database, version: NewVersion): VersionMeta {
 /**
  * The newest version, when the draft is still that version and there is nothing to keep:
  * either the revs match, or edit-then-undo left the rev bumped over identical content, so
- * the documents are compared as a tie-breaker. In that second case the head adopts the
- * draft's rev, which makes the draft clean again and saves a row that says nothing.
+ * the document hashes are compared as a tie-breaker. In that second case the head adopts
+ * the draft's rev, which makes the draft clean again and saves a row that says nothing.
  */
 function headHoldingDraft(
   db: Database,
@@ -135,9 +149,7 @@ function headHoldingDraft(
 ): VersionMeta | undefined {
   if (!head) return undefined;
   if (head.rev === draft.rev) return head;
-  if (encodeStoredResume(getVersion(db, head.id).doc) !== encodeStoredResume(draft.doc)) {
-    return undefined;
-  }
+  if (readDocHash(db, head.id) !== hashDoc(draft.doc)) return undefined;
   db.prepare('update versions set rev = ? where id = ?').run(draft.rev, head.id);
   return { ...head, rev: draft.rev };
 }
@@ -164,26 +176,37 @@ export function snapshotDraft(db: Database, input: AutoSnapshot): VersionMeta {
   })();
 }
 
+const STOP_SUMMARIES: Record<Exclude<SnapshotOccasion, 'edit'>, string> = {
+  switched: 'Where you left it before switching templates',
+  closed: 'Where you left it',
+};
+
 /**
- * Keep the draft as an auto version of editing itself, summarizing what changed since the
- * newest one ("Edited 3 bullets in Experience"). Undo is a session; this is what survives
- * quitting. The renderer decides when: past so many changes, on a template switch, and on
- * the way out.
+ * Keep the draft as an auto version of editing itself. Only `edit` snapshots diff against
+ * the newest version; where editing stopped gets a fixed summary, which keeps closing cheap.
  */
-export function snapshotEditedDraft(db: Database, templateId: string): VersionMeta {
+export function snapshotEditedDraft(
+  db: Database,
+  templateId: string,
+  occasion: SnapshotOccasion
+): VersionMeta {
   return db.transaction(() => {
     const draft = readDraft(db, templateId);
     const head = headVersion(db, templateId);
     const kept = headHoldingDraft(db, head, draft);
     if (kept) return kept;
+    const changes =
+      occasion !== 'edit'
+        ? { summary: STOP_SUMMARIES[occasion], section: null }
+        : head
+          ? describeDraftChanges(getVersion(db, head.id).doc, draft.doc)
+          : { summary: 'Edited the resume', section: null };
     return insertVersion(db, {
       templateId,
       parentId: head?.id ?? null,
       kind: 'auto',
-      source: 'edit',
-      summary: head
-        ? describeDraftChanges(getVersion(db, head.id).doc, draft.doc)
-        : 'Edited the resume',
+      source: occasion,
+      ...changes,
       doc: draft.doc,
       rev: draft.rev,
     });

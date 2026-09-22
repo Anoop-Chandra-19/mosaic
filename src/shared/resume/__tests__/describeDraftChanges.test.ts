@@ -71,7 +71,7 @@ const experience = (doc: ResumeData) => doc.sections[0];
 const millEntry = (doc: ResumeData) => experience(doc).items[0];
 
 const describeChange = (change: (doc: ResumeData) => void) =>
-  describeDraftChanges(resume(), edited(change));
+  describeDraftChanges(resume(), edited(change)).summary;
 
 describe('describeDraftChanges', () => {
   it('names the section when everything happened in one', () => {
@@ -105,7 +105,7 @@ describe('describeDraftChanges', () => {
     const before = edited((doc) => {
       millEntry(doc).bullets[0].selected = false;
     });
-    expect(describeDraftChanges(before, resume())).toBe('Put a bullet back in Experience');
+    expect(describeDraftChanges(before, resume()).summary).toBe('Put a bullet back in Experience');
   });
 
   it('reads a removed bullet as removed', () => {
@@ -187,6 +187,28 @@ describe('describeDraftChanges', () => {
   });
 
   it('says something rather than nothing when it cannot tell what changed', () => {
-    expect(describeDraftChanges(resume(), resume())).toBe('Edited the resume');
+    expect(describeDraftChanges(resume(), resume())).toEqual({
+      summary: 'Edited the resume',
+      section: null,
+    });
+  });
+
+  it('gives the section it named, by its label, for the history to filter on', () => {
+    const inOne = describeDraftChanges(
+      resume(),
+      edited((doc) => {
+        millEntry(doc).bullets[0].text = 'Built the mill, twice';
+      })
+    );
+    expect(inOne.section).toBe('Experience');
+
+    const header = describeDraftChanges(
+      resume(),
+      edited((doc) => {
+        doc.contact.name = 'Ada King';
+        millEntry(doc).bullets[0].text = 'Built the mill, twice';
+      })
+    );
+    expect(header.section).toBeNull();
   });
 });

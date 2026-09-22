@@ -115,12 +115,17 @@ function tallyPhrases(tally: Tally, singular: string, plural: string): Phrase[] 
   ].filter((phrase) => phrase.weight > 0);
 }
 
+export interface DraftChanges {
+  summary: string;
+  section: string | null;
+}
+
 /**
  * A summary for an auto version: the two largest changes, and the section they happened
  * in when they all happened in one. Nothing recognizable changed reads as "Edited the
  * resume" rather than nothing at all, because the documents did differ.
  */
-export function describeDraftChanges(before: ResumeData, after: ResumeData): string {
+export function describeDraftChanges(before: ResumeData, after: ResumeData): DraftChanges {
   const was = indexDocument(before);
   const now = indexDocument(after);
   const sections = emptyTally();
@@ -230,14 +235,15 @@ export function describeDraftChanges(before: ResumeData, after: ResumeData): str
     ...tallyPhrases(bullets, 'a bullet', 'bullets'),
     ...(bulletsReordered ? [{ weight: 1, text: 'reordered bullets' }] : []),
   ];
-  if (phrases.length === 0) return 'Edited the resume';
+  if (phrases.length === 0) return { summary: 'Edited the resume', section: null };
 
   const [label] = touched;
-  const scope = !structural && touched.size === 1 && label !== '' ? ` in ${label}` : '';
+  const section = !structural && touched.size === 1 && label !== '' ? label : null;
   const said = phrases
     .sort((a, b) => b.weight - a.weight)
     .slice(0, 2)
     .map((phrase) => phrase.text)
     .join(', ');
-  return `${said[0].toUpperCase()}${said.slice(1)}${scope}`;
+  const scope = section === null ? '' : ` in ${section}`;
+  return { summary: `${said[0].toUpperCase()}${said.slice(1)}${scope}`, section };
 }

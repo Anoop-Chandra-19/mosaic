@@ -25,6 +25,7 @@ function createBundle(): Record<string, unknown> {
             kind: 'auto',
             source: 'create',
             summary: 'Created',
+            section: null,
             rev: 0,
             createdAt: '2026-09-01T10:00:00.000Z',
             doc,
@@ -35,6 +36,7 @@ function createBundle(): Record<string, unknown> {
             kind: 'named',
             source: 'name',
             summary: 'Sent to Fastly',
+            section: null,
             rev: 2,
             createdAt: '2026-09-12T11:00:00.000Z',
             doc,
@@ -56,6 +58,20 @@ describe('parseBundle', () => {
   it('accepts a well-formed bundle', () => {
     const result = parse(createBundle());
     expect(result).toEqual({ ok: true, bundle: createBundle() });
+  });
+
+  it('keeps a snapshot’s section and where it was taken, and reads a missing section as none', () => {
+    const bundle = createBundle() as unknown as Record<string, unknown>;
+    const [v1, v2] = templatesOf(bundle)[0].versions;
+    Object.assign(v1, { source: 'edit', section: 'Experience' });
+    Object.assign(v2, { kind: 'auto', source: 'closed' });
+    delete v2.section;
+
+    const result = parse(bundle);
+    if (!result.ok) throw new Error(result.code);
+    const [first, second] = result.bundle.templates[0].versions;
+    expect(first).toMatchObject({ source: 'edit', section: 'Experience' });
+    expect(second).toMatchObject({ source: 'closed', section: null });
   });
 
   it('rejects files that are not JSON or not a bundle', () => {
