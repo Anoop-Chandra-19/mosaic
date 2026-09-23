@@ -251,7 +251,7 @@ export function VersionList({
           oldestMonth={formatHistoryMonth(matched.at(-1)!.createdAt)}
           onShow={() => setListWindow(showEarlierInHistoryWindow)}
         />
-      ) : hiddenCount > 0 ? (
+      ) : hiddenCount > 0 && onOpenFullHistory ? (
         <HistoryHandoff
           label={
             mode === 'found'
@@ -261,7 +261,8 @@ export function VersionList({
           hiddenCount={hiddenCount}
           oldestMonth={formatHistoryMonth(matched.at(-1)!.createdAt)}
           isCompact={isCompact}
-          onOpenFullHistory={onOpenFullHistory && (() => onOpenFullHistory(filter))}
+          // The view opens on the matches the sidebar was showing.
+          onOpenFullHistory={() => onOpenFullHistory(isFiltering ? filter : NO_HISTORY_FILTER)}
         />
       ) : (
         shown.length > END_LINE_ROWS && (

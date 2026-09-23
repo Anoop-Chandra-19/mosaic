@@ -316,6 +316,7 @@ export function TemplateCard({ template, active, expanded, onToggle }: TemplateC
               onPreview={(version, label) => void togglePreview(version, label)}
               onRestore={(version) => void restore(version)}
               onDuplicate={(version) => void duplicate(version)}
+              onOpenFullHistory={openFullHistory}
             />
           ) : (
             <p className="mt-2 text-xs text-zinc-500">Loading history…</p>

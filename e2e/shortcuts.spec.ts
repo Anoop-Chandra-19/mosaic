@@ -94,6 +94,18 @@ test('over the Start panel, keys that act on the editor wait until it closes', a
   expect(errors).toEqual([]);
 });
 
+test('Ctrl+Shift+H opens the open template’s full history, and closes it again', async () => {
+  const { page, errors } = mosaic();
+  await importResume(page);
+  const view = page.getByRole('region', { name: /^History of / });
+
+  await page.keyboard.press('Control+Shift+H');
+  await expect(view).toBeVisible();
+  await page.keyboard.press('Control+Shift+H');
+  await expect(view).toHaveCount(0);
+  expect(errors).toEqual([]);
+});
+
 test('a bullet moves with Alt+arrows and goes with Ctrl+Shift+K', async () => {
   const { page, errors } = mosaic();
   await importResume(page);

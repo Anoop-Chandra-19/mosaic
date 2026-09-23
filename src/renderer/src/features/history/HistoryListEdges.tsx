@@ -81,7 +81,7 @@ export function HistoryWindowEdge({
         <Chevron className="size-3" />
         {isNewer ? 'Show newer' : 'Show earlier'}
       </span>
-      <span className="font-mono text-[0.675rem] font-normal text-ink-faint">
+      <span className="text-left font-mono text-[0.675rem] font-normal whitespace-normal text-ink-faint">
         {isNewer
           ? `${count.toLocaleString()} newer ${count === 1 ? 'version' : 'versions'}, up to today.`
           : `${count.toLocaleString()} more, back to ${oldestMonth}`}
@@ -95,7 +95,7 @@ interface HistoryHandoffProps {
   hiddenCount: number;
   oldestMonth: string;
   isCompact: boolean;
-  onOpenFullHistory?: () => void;
+  onOpenFullHistory: () => void;
 }
 
 /** The one row that stands for every version the sidebar leaves out. */
@@ -107,14 +107,6 @@ export function HistoryHandoff({
   onOpenFullHistory,
 }: HistoryHandoffProps) {
   const rest = `${hiddenCount.toLocaleString()} earlier ${hiddenCount === 1 ? 'version' : 'versions'}, back to ${oldestMonth}.`;
-  if (!onOpenFullHistory) {
-    // Nothing to hand off to yet, so a peek says where the rest can be read.
-    return (
-      <p className="mt-2.5 mb-0.5 ml-5.5 font-mono text-[0.675rem] text-ink-faint">
-        {rest} {isCompact ? 'Open the template to see them.' : 'All kept.'}
-      </p>
-    );
-  }
   return (
     <AppButton
       variant="dashed"
@@ -129,7 +121,9 @@ export function HistoryHandoff({
         <ExternalLink className="size-3" />
         {label}
       </span>
-      <span className="font-mono text-[0.675rem] font-normal text-ink-faint">{rest} All kept.</span>
+      <span className="text-left font-mono text-[0.675rem] font-normal whitespace-normal text-ink-faint">
+        {rest} All kept.
+      </span>
     </AppButton>
   );
 }

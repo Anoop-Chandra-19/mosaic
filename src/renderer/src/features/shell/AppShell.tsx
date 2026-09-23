@@ -119,6 +119,19 @@ const GLOBAL_SHORTCUTS: { combos: string[]; run: () => void; worksOverSurface?: 
       else useOverlayStore.getState().setNameVersionOpen(true);
     },
   },
+  // Opens the open template's history, and closes it again: a view you toggle, like a pane.
+  {
+    combos: [SHORTCUTS.showHistory],
+    run: () => {
+      const overlay = useOverlayStore.getState();
+      if (overlay.surface?.kind === 'history') return overlay.closeSurface('history');
+      if (overlay.surface) return;
+      const templateId = useResumeStore.getState().templateId;
+      if (templateId === null) showToast(NOTHING_OPEN);
+      else overlay.openSurface({ kind: 'history', templateId });
+    },
+    worksOverSurface: true,
+  },
   // On the Start panel the same keys make a blank resume; the panel listens for that.
   {
     combos: [SHORTCUTS.newTemplate],

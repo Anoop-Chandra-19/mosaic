@@ -7,6 +7,8 @@ export const SHORTCUTS = {
   newTemplate: 'mod+N',
   switchTemplate: 'mod+shift+T',
   nameVersion: 'mod+S',
+  // Not the design's Ctrl/⌘+Y: Windows and Linux redo with that.
+  showHistory: 'mod+shift+H',
   exportResume: 'mod+E',
   // Not the design's Ctrl/⌘+Shift+I: development keeps that for DevTools.
   importResume: 'mod+O',
@@ -83,6 +85,7 @@ export function listShortcutGroups({
         row('newTemplate', 'New template'),
         row('switchTemplate', 'Switch template'),
         row('nameVersion', 'Name version'),
+        row('showHistory', 'Version history'),
         row('exportResume', 'Export…'),
         row('importResume', 'Import…'),
         row('openSettings', 'Settings'),
