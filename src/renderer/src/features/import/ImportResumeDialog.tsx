@@ -287,7 +287,7 @@ function ReviewStep({
   onDone: () => void;
 }) {
   const asNewOnly = useOverlayStore((s) => s.importAsNewOnly);
-  const setStartOpen = useOverlayStore((s) => s.setStartOpen);
+  const closeSurface = useOverlayStore((s) => s.closeSurface);
   const createTemplate = useTemplateStore((s) => s.createTemplate);
   const importIntoDraft = useTemplateStore((s) => s.importIntoDraft);
   const setActiveSidebarTab = useUiStore((s) => s.setActiveSidebarTab);
@@ -336,7 +336,7 @@ function ReviewStep({
     setImporting(false);
     if (!imported) return;
     onDone();
-    setStartOpen(false);
+    closeSurface('start');
     setActiveSidebarTab('content');
     showToast('Imported. Check the sections in the sidebar.');
   };

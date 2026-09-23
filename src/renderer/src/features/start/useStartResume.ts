@@ -10,7 +10,7 @@ import type { ResumeData } from '@shared/types/resume';
  */
 export function useStartResume() {
   const createTemplate = useTemplateStore((s) => s.createTemplate);
-  const setStartOpen = useOverlayStore((s) => s.setStartOpen);
+  const closeSurface = useOverlayStore((s) => s.closeSurface);
   const setActiveSidebarTab = useUiStore((s) => s.setActiveSidebarTab);
   const busy = useRef(false);
 
@@ -20,7 +20,7 @@ export function useStartResume() {
     const created = await attempt(createTemplate(name, doc), 'Could not create the resume');
     busy.current = false;
     if (!created) return;
-    setStartOpen(false);
+    closeSurface('start');
     setActiveSidebarTab('content');
     showToast(toast);
   };

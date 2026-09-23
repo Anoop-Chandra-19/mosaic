@@ -11,7 +11,7 @@ import { useOverlayStore } from '@/stores/overlayStore';
  * the last one included — and starting a resume from here opens a fresh template.
  */
 export function NoTemplates() {
-  const firstRun = useOverlayStore((s) => s.startOpen);
+  const firstRun = useOverlayStore((s) => s.surface?.kind === 'start');
   const start = useStartResume();
 
   const startResume = () =>

@@ -11,7 +11,7 @@ import { TemplateCard } from './TemplateCard';
 export function TemplatesTab() {
   const templates = useTemplateStore((s) => s.templates);
   const activeId = useResumeStore((s) => s.templateId);
-  const setStartOpen = useOverlayStore((s) => s.setStartOpen);
+  const openSurface = useOverlayStore((s) => s.openSurface);
   const [query, setQuery] = useState('');
   // Cards the user opened or closed; the open template's history shows until closed.
   const [toggled, setToggled] = useState<Record<string, boolean>>({});
@@ -40,7 +40,7 @@ export function TemplatesTab() {
           size="sm"
           className="h-8"
           title="Start a new resume as its own template"
-          onClick={() => setStartOpen(true)}
+          onClick={() => openSurface({ kind: 'start' })}
         >
           <Plus />
           New

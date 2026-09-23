@@ -7,7 +7,7 @@ import { usePreviewCanvas } from '@/features/preview/usePreviewCanvas';
 import { cn } from '@/lib/utils';
 import { shortcutLabel } from '@/lib/keyboardShortcuts';
 import type { PaperSize } from '@/types/paper';
-import { VersionPreviewBanner } from '@/features/templates/VersionPreviewBanner';
+import { VersionPreviewBanner } from '@/features/history/VersionPreviewBanner';
 import { useOverlayStore } from '@/stores/overlayStore';
 import { PREVIEW_ZOOM_RANGE, useUiStore } from '@/stores/uiStore';
 

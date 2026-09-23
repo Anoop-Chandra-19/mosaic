@@ -29,7 +29,7 @@ export function AppShell() {
   useShortcuts();
   useAutoSnapshot();
   const hasTemplates = useTemplateStore((s) => s.templates.length > 0);
-  const showStart = useOverlayStore((s) => s.startOpen);
+  const surface = useOverlayStore((s) => s.surface);
   const aiEnabled = useAiStore((s) => s.enabled);
   const agentPaneOpen = useUiStore((s) => s.agentPaneOpen);
   const showAgentPane = aiEnabled && agentPaneOpen;
@@ -41,16 +41,16 @@ export function AppShell() {
     <div className="flex h-screen flex-col">
       <TopBar />
       <div className="relative flex flex-1 overflow-hidden">
-        {/* Behind the Start panel the workspace is visible but out of reach. */}
+        {/* Under a surface the workspace stays mounted, as it was, but out of reach. */}
         <div
           className="relative flex flex-1 overflow-hidden @container/workspace"
-          inert={showStart}
+          inert={surface !== null}
         >
           <Sidebar />
           {shouldShowPreview && <PreviewPanel />}
           {showAgentPane && <AgentPane />}
         </div>
-        {showStart && <StartPanel closable={hasTemplates} />}
+        {surface?.kind === 'start' && <StartPanel closable={hasTemplates} />}
         <Toast />
       </div>
       <StatusBar />
@@ -77,12 +77,20 @@ function showSidebarTab(tab: SidebarTab) {
  * The shortcuts that work anywhere in the window (`SHORTCUTS`). Undo and redo leave a field
  * that is being typed in alone: the browser's own undo belongs to it. Ctrl/⌘+S names a
  * version; the draft itself is always saved already.
+ *
+ * While a surface covers the workspace, only those marked `worksOverSurface` run: the
+ * rest act on the editor, and would change what is out of sight.
  */
-const GLOBAL_SHORTCUTS: { combos: string[]; run: () => void }[] = [
-  { combos: [SHORTCUTS.openSettings], run: () => useOverlayStore.getState().openSettings() },
+const GLOBAL_SHORTCUTS: { combos: string[]; run: () => void; worksOverSurface?: true }[] = [
+  {
+    combos: [SHORTCUTS.openSettings],
+    run: () => useOverlayStore.getState().openSettings(),
+    worksOverSurface: true,
+  },
   {
     combos: [SHORTCUTS.showShortcuts],
     run: () => useOverlayStore.getState().setShortcutsOpen(true),
+    worksOverSurface: true,
   },
   {
     combos: [SHORTCUTS.toggleSidebar],
@@ -104,7 +112,11 @@ const GLOBAL_SHORTCUTS: { combos: string[]; run: () => void }[] = [
     },
   },
   // On the Start panel the same keys make a blank resume; the panel listens for that.
-  { combos: [SHORTCUTS.newTemplate], run: () => useOverlayStore.getState().setStartOpen(true) },
+  {
+    combos: [SHORTCUTS.newTemplate],
+    run: () => useOverlayStore.getState().openSurface({ kind: 'start' }),
+    worksOverSurface: true,
+  },
   { combos: [SHORTCUTS.switchTemplate], run: () => showSidebarTab('templates') },
   {
     combos: [SHORTCUTS.exportResume],
@@ -116,6 +128,7 @@ const GLOBAL_SHORTCUTS: { combos: string[]; run: () => void }[] = [
   {
     combos: [SHORTCUTS.importResume],
     run: () => useOverlayStore.getState().openImport(useResumeStore.getState().templateId === null),
+    worksOverSurface: true,
   },
   {
     combos: [SHORTCUTS.newSection],
@@ -142,14 +155,16 @@ const GLOBAL_SHORTCUTS: { combos: string[]; run: () => void }[] = [
       const isDark = document.documentElement.classList.contains('dark');
       useUiStore.getState().setTheme(isDark ? 'light' : 'dark');
     },
+    worksOverSurface: true,
   },
 ];
 
 function useShortcuts() {
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
+      const isSurfaceUp = useOverlayStore.getState().surface !== null;
       if (isUndoKey(event) || isRedoKey(event)) {
-        if (isTypingField(event.target)) return;
+        if (isTypingField(event.target) || isSurfaceUp) return;
         event.preventDefault();
         // Reading an older version changes nothing, least of all out of sight.
         if (useOverlayStore.getState().preview) {
@@ -164,7 +179,7 @@ function useShortcuts() {
       const shortcut = GLOBAL_SHORTCUTS.find(({ combos }) =>
         combos.some((combo) => matchesShortcut(event, combo))
       );
-      if (!shortcut) return;
+      if (!shortcut || (isSurfaceUp && !shortcut.worksOverSurface)) return;
       event.preventDefault();
       shortcut.run();
     };

@@ -30,8 +30,8 @@ import { useTemplateStore } from '@/stores/templateStore';
 import type { TemplateSummary, VersionMeta } from '@shared/types/db';
 import { DeleteTemplateDialog } from './DeleteTemplateDialog';
 import { formatRelativeTime } from './formatRelativeTime';
-import { useTemplateVersions, versionLabel } from './useTemplateVersions';
-import { VersionList } from './VersionList';
+import { useTemplateVersions, versionLabel } from '@/features/history/useTemplateVersions';
+import { VersionList } from '@/features/history/VersionList';
 
 interface TemplateCardProps {
   template: TemplateSummary;

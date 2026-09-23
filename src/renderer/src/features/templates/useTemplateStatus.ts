@@ -1,5 +1,5 @@
 import { useActiveTemplate } from './useActiveTemplate';
-import { useVersionDistance } from './useVersionDistance';
+import { useVersionDistance } from '@/features/history/useVersionDistance';
 
 /**
  * - `none`: no template is open.

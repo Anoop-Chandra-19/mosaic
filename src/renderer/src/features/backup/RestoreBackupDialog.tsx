@@ -48,7 +48,7 @@ export function RestoreBackupDialog() {
 function RestoreForm({ backup, onDone }: { backup: OpenedBackup; onDone: () => void }) {
   const localCount = useTemplateStore((s) => s.templates.length);
   const importBundle = useTemplateStore((s) => s.importBundle);
-  const setStartOpen = useOverlayStore((s) => s.setStartOpen);
+  const closeSurface = useOverlayStore((s) => s.closeSurface);
   const [mode, setMode] = useState<ImportMode>('as-new-template');
   const [restoring, setRestoring] = useState(false);
 
@@ -67,7 +67,7 @@ function RestoreForm({ backup, onDone }: { backup: OpenedBackup; onDone: () => v
     setRestoring(false);
     if (!restored) return;
     // Chosen from the Start panel: there is a template open now.
-    setStartOpen(false);
+    closeSurface('start');
     showToast(
       effectiveMode === 'restore-all'
         ? `Restored ${count(templates, 'template')} from the backup`
