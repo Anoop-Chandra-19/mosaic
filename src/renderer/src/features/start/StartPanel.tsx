@@ -30,7 +30,8 @@ interface StartPanelProps {
 export function StartPanel({ closable }: StartPanelProps) {
   const [view, setView] = useState<'routes' | 'samples'>('routes');
   const first = useTemplateStore((s) => s.templates.length === 0);
-  const setStartOpen = useOverlayStore((s) => s.setStartOpen);
+  const closeSurface = useOverlayStore((s) => s.closeSurface);
+  const close = () => closeSurface('start');
   const openImport = useOverlayStore((s) => s.openImport);
   const start = useStartResume();
 
@@ -52,7 +53,7 @@ export function StartPanel({ closable }: StartPanelProps) {
         event.preventDefault();
         void startBlank();
       }
-      if (event.key === 'Escape' && closable) setStartOpen(false);
+      if (event.key === 'Escape' && closable) close();
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
@@ -71,7 +72,7 @@ export function StartPanel({ closable }: StartPanelProps) {
               mark={<MosaicMark />}
               title={first ? 'Start your first resume' : 'Start a new resume'}
               subtitle="Mosaic keeps everything on this machine. Your drafts, history and exports never leave it."
-              onClose={closable ? () => setStartOpen(false) : undefined}
+              onClose={closable ? close : undefined}
             />
             <div className="flex flex-col gap-2" onKeyDown={moveFocusWithArrows}>
               <StartRoute
@@ -105,7 +106,7 @@ export function StartPanel({ closable }: StartPanelProps) {
               mark={<RouteIcon icon={Sparkles} />}
               title="Samples"
               subtitle="Pick one and it opens as a new template, fully editable."
-              onClose={closable ? () => setStartOpen(false) : undefined}
+              onClose={closable ? close : undefined}
             />
             <div className="grid grid-cols-2 gap-2.5" onKeyDown={moveFocusWithArrows}>
               <button

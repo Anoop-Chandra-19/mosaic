@@ -72,6 +72,40 @@ test('the app’s own keys reach it: export, import, zoom and a new section', as
   expect(errors).toEqual([]);
 });
 
+test('over the Start panel, keys that act on the editor wait until it closes', async () => {
+  const { page, errors } = mosaic();
+  await importResume(page);
+  await page.keyboard.press('Control+n');
+  const start = page.getByRole('button', { name: /Blank resume/ });
+  await expect(start).toBeVisible();
+
+  // Export would act on the resume behind the panel; Settings is about the app.
+  await page.keyboard.press('Control+e');
+  await expect(page.getByRole('dialog', { name: /^Export/ })).toHaveCount(0);
+  await page.keyboard.press('Control+,');
+  await expect(page.getByRole('dialog', { name: 'Settings' })).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('dialog', { name: 'Settings' })).toHaveCount(0);
+
+  await page.keyboard.press('Escape');
+  await expect(start).toHaveCount(0);
+  await page.keyboard.press('Control+e');
+  await expect(page.getByRole('dialog', { name: /^Export/ })).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
+test('Ctrl+Shift+H opens the open template’s full history, and closes it again', async () => {
+  const { page, errors } = mosaic();
+  await importResume(page);
+  const view = page.getByRole('region', { name: /^History of / });
+
+  await page.keyboard.press('Control+Shift+H');
+  await expect(view).toBeVisible();
+  await page.keyboard.press('Control+Shift+H');
+  await expect(view).toHaveCount(0);
+  expect(errors).toEqual([]);
+});
+
 test('a bullet moves with Alt+arrows and goes with Ctrl+Shift+K', async () => {
   const { page, errors } = mosaic();
   await importResume(page);

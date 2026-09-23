@@ -60,6 +60,26 @@ describe('db handlers', () => {
     });
   });
 
+  it('read a draft without opening its template', () => {
+    const { value: first } = call('templates.create', 'Backend', createDefaultResume()) as {
+      value: TemplateSummary;
+    };
+    const { value: second } = call('templates.create', 'Frontend', createDefaultResume()) as {
+      value: TemplateSummary;
+    };
+    call('templates.open', second.id);
+    const remembered = () =>
+      db.prepare("select value from settings where key = 'app.activeTemplateId'").pluck().get();
+    const before = remembered();
+
+    expect(call('drafts.get', first.id)).toMatchObject({
+      ok: true,
+      value: { templateId: first.id },
+    });
+    expect(remembered()).toBe(before);
+    expect(call('drafts.get', 'missing')).toMatchObject({ ok: false, code: 'not-found' });
+  });
+
   it('check every argument before touching the database', () => {
     const doc = createDefaultResume();
     const refusals: [(typeof DB_METHODS)[number], ...unknown[]][] = [
@@ -69,6 +89,7 @@ describe('db handlers', () => {
       ['templates.create', 'Backend', { ...doc, sections: 'none' }],
       ['templates.create', 'Backend', doc, 42],
       ['templates.rename', 7, 'Backend'],
+      ['drafts.get', 7],
       ['drafts.save', 'id', doc, -1],
       ['drafts.save', 'id', doc, 1.5],
       ['drafts.save', 'id', doc, '2'],

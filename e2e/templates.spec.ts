@@ -153,6 +153,61 @@ test('a long history can be narrowed to named versions, or searched', async () =
   await expect(page.getByText('Created', { exact: true })).toBeVisible();
 });
 
+test('the full history reads a version beside the list, and restoring closes it', async () => {
+  const { page, errors } = mosaic();
+  await page.getByRole('button', { name: /Blank resume/ }).click();
+  await setName(page, 'Your name', 'Ada Lovelace');
+  await nameVersion(page, 'Sent to Northwind');
+  await setName(page, 'Ada Lovelace', 'Grace Hopper');
+  await nameVersion(page, 'Sent to Kestrel');
+
+  await page.getByRole('tab', { name: 'Templates' }).click();
+  await page.getByRole('button', { name: 'Options for Untitled resume' }).click();
+  await page.getByRole('menuitem', { name: 'Open full history…' }).click();
+  const view = page.getByRole('region', { name: 'History of Untitled resume' });
+  await expect(view).toBeVisible();
+
+  // The newest version reads first; it is the draft, so there is nothing to restore.
+  const reading = view.getByRole('complementary');
+  await expect(reading).toContainText('identical to your draft');
+  await expect(reading.getByRole('button', { name: 'Restore' })).toBeDisabled();
+
+  // The index goes to a named version, and the pane reads it.
+  await view
+    .getByRole('navigation', { name: 'History index' })
+    .getByRole('button', { name: /Sent to Northwind/ })
+    .click();
+  await expect(reading.getByRole('heading', { name: 'Sent to Northwind' })).toBeVisible();
+  await expect(reading).toContainText('1 printed line differs from your draft');
+  await expect(reading).toContainText('Ada Lovelace');
+
+  await reading.getByRole('button', { name: 'Restore' }).click();
+  await expect(view).toHaveCount(0);
+  await expect(page.getByText('Restored “Sent to Northwind”')).toBeVisible();
+  await page.getByRole('tab', { name: 'Content' }).click();
+  await expect(page.getByRole('complementary').getByText('Ada Lovelace')).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
+test('the full history takes focus, holds back the editor’s keys, and closes on Escape', async () => {
+  const { page } = mosaic();
+  await page.getByRole('button', { name: /Blank resume/ }).click();
+  await page.getByRole('tab', { name: 'Templates' }).click();
+  await page.getByRole('button', { name: 'Options for Untitled resume' }).click();
+  await page.getByRole('menuitem', { name: 'Open full history…' }).click();
+  const view = page.getByRole('region', { name: 'History of Untitled resume' });
+  await expect(view).toBeVisible();
+
+  await expect(page.getByRole('menu')).toHaveCount(0);
+  await expect(view).toBeFocused();
+
+  // Under the view the editor's keys are off, so the sidebar stays put.
+  await page.keyboard.press('Control+b');
+  await page.keyboard.press('Escape');
+  await expect(view).toHaveCount(0);
+  await expect(page.getByRole('tab', { name: 'Templates' })).toBeVisible();
+});
+
 test('templates can be found by name', async () => {
   const { page } = mosaic();
   await page.getByRole('button', { name: /Blank resume/ }).click();

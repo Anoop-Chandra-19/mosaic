@@ -7,7 +7,7 @@ import { MAX_FILE_BYTES } from '@shared/types/files';
 import type { ResumeData } from '@shared/types/resume';
 import type { DbMethod } from '@shared/ipc/dbMethods';
 import { exportBundle, importBundle } from '../db/bundle';
-import { saveDraft } from '../db/drafts';
+import { readDraft, saveDraft } from '../db/drafts';
 import { readBootState } from '../db/readBootState';
 import { MAIN_SETTINGS_PREFIX, removeSetting, setSetting } from '../db/settings';
 import { StorageError } from '../db/storageError';
@@ -137,6 +137,7 @@ export function createDbHandlers(db: Database): Handlers<MosaicDb> {
       open: (id) => openTemplate(db, text(id, 'id')),
     },
     drafts: {
+      get: (templateId) => readDraft(db, text(templateId, 'templateId')),
       save: (templateId, doc, rev) =>
         saveDraft(db, text(templateId, 'templateId'), resume(doc), revision(rev)),
       importInto: (templateId, doc, from) =>

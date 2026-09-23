@@ -97,6 +97,8 @@ export interface MosaicDb {
     open(id: string): Promise<Draft>;
   };
   drafts: {
+    /** A template's draft, read without opening the template or remembering it. */
+    get(templateId: string): Promise<Draft>;
     /** Refused with `stale-rev` when `rev` is older than the stored one. */
     save(templateId: string, doc: ResumeData, rev: number): Promise<void>;
     /** Replaces the draft, keeping unsaved edits as a "Before importing …" version. */

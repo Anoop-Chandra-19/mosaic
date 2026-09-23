@@ -4,7 +4,7 @@ import { AppButton } from '@/components/AppButton';
 import { AppTooltip } from '@/components/AppTooltip';
 import { formatRelativeTime } from '@/features/templates/formatRelativeTime';
 import { useActiveTemplate } from '@/features/templates/useActiveTemplate';
-import { useVersionDistance, type VersionDistance } from '@/features/templates/useVersionDistance';
+import { useVersionDistance, type VersionDistance } from '@/features/history/useVersionDistance';
 import { shortcutLabel } from '@/lib/keyboardShortcuts';
 import { cn } from '@/lib/utils';
 import { useAiStore } from '@/stores/aiStore';

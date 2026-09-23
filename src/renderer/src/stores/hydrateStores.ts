@@ -21,7 +21,11 @@ export function hydrateStores(boot: BootState): void {
   const { openOnLaunch, theme, interfaceDensity } = useUiStore.getState();
   // Nothing to open starts on the Start panel, and so does a launch set to show it.
   const hasTemplates = boot.templates.length > 0;
-  useOverlayStore.getState().setStartOpen(!hasTemplates || openOnLaunch === 'start');
+  if (!hasTemplates || openOnLaunch === 'start') {
+    useOverlayStore.getState().openSurface({ kind: 'start' });
+  } else {
+    useOverlayStore.getState().closeSurface('start');
+  }
   if (hasTemplates && openOnLaunch === 'templates') {
     useUiStore.getState().setActiveSidebarTab('templates');
     if (useUiStore.getState().sidebarCollapsed) useUiStore.getState().toggleSidebarCollapsed();

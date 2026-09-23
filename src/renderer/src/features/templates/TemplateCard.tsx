@@ -5,6 +5,7 @@ import {
   Clock,
   Copy,
   Download,
+  ExternalLink,
   Eye,
   Info,
   LayoutTemplate,
@@ -30,8 +31,9 @@ import { useTemplateStore } from '@/stores/templateStore';
 import type { TemplateSummary, VersionMeta } from '@shared/types/db';
 import { DeleteTemplateDialog } from './DeleteTemplateDialog';
 import { formatRelativeTime } from './formatRelativeTime';
-import { useTemplateVersions, versionLabel } from './useTemplateVersions';
-import { VersionList } from './VersionList';
+import type { HistoryFilter } from '@/features/history/filterVersionHistory';
+import { useTemplateVersions, versionLabel } from '@/features/history/useTemplateVersions';
+import { VersionList } from '@/features/history/VersionList';
 
 interface TemplateCardProps {
   template: TemplateSummary;
@@ -53,6 +55,7 @@ export function TemplateCard({ template, active, expanded, onToggle }: TemplateC
   const openExport = useOverlayStore((s) => s.openExport);
   const preview = useOverlayStore((s) => s.preview);
   const setPreview = useOverlayStore((s) => s.setPreview);
+  const openSurface = useOverlayStore((s) => s.openSurface);
   // The draft has moved on from the newest version.
   const dirty = useResumeStore((s) => active && s.rev !== template.head.rev);
   const versions = useTemplateVersions(template, expanded);
@@ -121,6 +124,9 @@ export function TemplateCard({ template, active, expanded, onToggle }: TemplateC
       showToast('Could not read that version', 'error');
     }
   };
+
+  const openFullHistory = (filter?: HistoryFilter) =>
+    openSurface({ kind: 'history', templateId: template.id, filter });
 
   const restore = async (version: VersionMeta) => {
     if (await attempt(restoreVersion(template.id, version.id), 'Could not restore that version')) {
@@ -260,6 +266,10 @@ export function TemplateCard({ template, active, expanded, onToggle }: TemplateC
                 <Clock />
                 {expanded ? 'Hide history' : 'Show history'}
               </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => openFullHistory()}>
+                <ExternalLink />
+                Open full history…
+              </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem variant="destructive" onClick={() => setPendingDelete(true)}>
                 <Trash2 />
@@ -306,6 +316,7 @@ export function TemplateCard({ template, active, expanded, onToggle }: TemplateC
               onPreview={(version, label) => void togglePreview(version, label)}
               onRestore={(version) => void restore(version)}
               onDuplicate={(version) => void duplicate(version)}
+              onOpenFullHistory={openFullHistory}
             />
           ) : (
             <p className="mt-2 text-xs text-zinc-500">Loading history…</p>

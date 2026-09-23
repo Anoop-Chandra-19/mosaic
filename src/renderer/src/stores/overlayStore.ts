@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import type { HistoryFilter } from '@/features/history/filterVersionHistory';
 import type { ResumePreviewMeta } from '@/features/preview/ResumePreview';
 import type { SettingsSectionId } from '@/features/settings/settingsNav';
 import type { OpenedBackup } from '@shared/types/bundle';
@@ -31,13 +32,24 @@ export interface ExportVersion extends VersionPreview {
   templateName: string;
 }
 
+/**
+ * A screen that covers the workspace, between the top bar and the status bar. One at a
+ * time: opening one replaces another. The workspace stays mounted and inert underneath,
+ * so closing a surface returns to the editor exactly as it was.
+ *
+ * `start`: shown at a launch with no templates (see `hydrateStores`), and from New
+ * template. Deleting the last template during a session does not bring it back; the app
+ * then simply has nothing open.
+ *
+ * `history`: one template's full history, opened on `filter` when the sidebar's was
+ * carried over, and on `versionId` when one was asked for.
+ */
+export type WorkspaceSurface =
+  | { kind: 'start' }
+  | { kind: 'history'; templateId: string; filter?: HistoryFilter; versionId?: string };
+
 interface OverlayState {
-  /**
-   * The Start panel: shown at a launch with no templates (see `hydrateStores`), and from
-   * New template. Deleting the last template during a session does not bring it back —
-   * the app then simply has nothing open.
-   */
-  startOpen: boolean;
+  surface: WorkspaceSurface | null;
   /** The Settings section showing, or null while Settings is closed. */
   settingsSection: SettingsSectionId | null;
   importOpen: boolean;
@@ -61,7 +73,9 @@ interface OverlayState {
   /** How the sheet paginated, as the preview measured it; the status bar repeats it. */
   previewMeta: ResumePreviewMeta;
   toast: Toast | null;
-  setStartOpen: (open: boolean) => void;
+  openSurface: (surface: WorkspaceSurface) => void;
+  /** Closes the surface showing, if it is a `kind` one; any other is left alone. */
+  closeSurface: (kind: WorkspaceSurface['kind']) => void;
   /** Opens Settings at `section`, General unless told otherwise. */
   openSettings: (section?: SettingsSectionId) => void;
   closeSettings: () => void;
@@ -80,7 +94,7 @@ interface OverlayState {
 }
 
 export const useOverlayStore = create<OverlayState>()((set) => ({
-  startOpen: false,
+  surface: null,
   settingsSection: null,
   importOpen: false,
   importAsNewOnly: false,
@@ -93,7 +107,9 @@ export const useOverlayStore = create<OverlayState>()((set) => ({
   preview: null,
   previewMeta: { totalPages: 1, hasMorePages: false },
   toast: null,
-  setStartOpen: (startOpen) => set({ startOpen }),
+  openSurface: (surface) => set({ surface }),
+  closeSurface: (kind) =>
+    set((state) => (state.surface?.kind === kind ? { surface: null } : state)),
   openSettings: (section = 'general') => set({ settingsSection: section }),
   closeSettings: () => set({ settingsSection: null }),
   openImport: (importAsNewOnly) => set({ importOpen: true, importAsNewOnly }),

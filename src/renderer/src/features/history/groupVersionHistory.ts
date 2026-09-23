@@ -34,7 +34,7 @@ function startOfMonth(ms: number): number {
   return date.setHours(0, 0, 0, 0);
 }
 
-export function formatHistoryDay(ms: number, now: number): string {
+export function formatHistoryDay(ms: number, now: number = Date.now()): string {
   const today = startOfDay(now);
   const day = startOfDay(ms);
   if (day === today) return 'Today';
@@ -66,6 +66,24 @@ export function formatTimeInDay(ms: number, now: number = Date.now()): string {
       : `${Math.floor(ago / (60 * MINUTE))}h ago`;
   }
   return formatTimeOfDay(ms);
+}
+
+export interface HistoryMonthSummary {
+  label: string;
+  newest: VersionMeta;
+  count: number;
+}
+
+/** Each month the history reaches, newest first, with its count and its newest version. */
+export function listHistoryMonths(versions: VersionMeta[]): HistoryMonthSummary[] {
+  const months: HistoryMonthSummary[] = [];
+  for (const version of versions) {
+    const label = formatHistoryMonth(version.createdAt);
+    const last = months.at(-1);
+    if (last?.label === label) last.count += 1;
+    else months.push({ label, newest: version, count: 1 });
+  }
+  return months;
 }
 
 /** Where a run's edits happened: "mostly Experience and Projects", or "across the document". */
