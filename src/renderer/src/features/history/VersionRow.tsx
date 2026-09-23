@@ -37,16 +37,21 @@ interface VersionRowProps extends VersionRowActions {
   isHead: boolean;
   /** Inside an open run: no dot of its own, a tick to the run's line instead. */
   isNested: boolean;
+  /** In the full view, reading shows the version beside the list, not in the sheet. */
+  isWide: boolean;
   label: string;
   time: string;
+  onSelect?: (version: VersionMeta) => void;
 }
 
 export function VersionRow({
   version,
   isHead: head,
   isNested,
+  isWide,
   label,
   time,
+  onSelect,
   canPreview,
   previewId,
   onPreview,
@@ -57,15 +62,26 @@ export function VersionRow({
   const isStop = version.source === 'switched' || version.source === 'closed';
   const tag = SOURCE_TAGS[version.source];
   const previewing = previewId === version.id;
-  const previewHint = canPreview
-    ? previewing
-      ? 'Stop previewing and go back to your draft'
-      : 'Read this version in the sheet. Nothing is changed.'
-    : 'Open this template to preview its versions';
+  const previewHint = isWide
+    ? 'Read this version beside the list'
+    : canPreview
+      ? previewing
+        ? 'Stop previewing and go back to your draft'
+        : 'Read this version in the sheet. Nothing is changed.'
+      : 'Open this template to preview its versions';
   return (
     <li
+      data-version-id={version.id}
+      // A pointer shortcut for the Read button, which is what the keyboard reaches.
+      onClick={
+        onSelect &&
+        ((event) => {
+          if (!(event.target as Element).closest('button')) onSelect(version);
+        })
+      }
       className={cn(
         'group relative flex items-start gap-2.5 rounded-md hover:bg-pane',
+        onSelect && 'cursor-pointer',
         isNested
           ? 'py-0.75 before:absolute before:top-2.75 before:-left-3 before:h-px before:w-1.75 before:bg-line'
           : 'py-1.25',
@@ -145,7 +161,7 @@ export function VersionRow({
           <DropdownMenuContent align="end" className="w-56">
             <DropdownMenuItem disabled={!canPreview} onClick={() => onPreview(version, label)}>
               <Eye />
-              {previewing ? 'Stop reading it' : 'Read this version'}
+              {previewing && !isWide ? 'Stop reading it' : 'Read this version'}
             </DropdownMenuItem>
             {!head && (
               <DropdownMenuItem onClick={() => onRestore(version)}>
@@ -166,7 +182,7 @@ export function VersionRow({
             shape="square"
             disabled={!canPreview}
             aria-pressed={previewing}
-            aria-label={`Preview ${label}`}
+            aria-label={`${isWide ? 'Read' : 'Preview'} ${label}`}
             title={previewHint}
             onClick={() => onPreview(version, label)}
             className={cn(previewing && 'bg-line-strong text-foreground')}

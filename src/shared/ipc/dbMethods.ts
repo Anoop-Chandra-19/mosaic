@@ -21,6 +21,7 @@ export const DB_METHODS = [
   'templates.duplicate',
   'templates.remove',
   'templates.open',
+  'drafts.get',
   'drafts.save',
   'drafts.importInto',
   'versions.list',

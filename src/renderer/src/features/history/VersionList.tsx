@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useLayoutEffect, useRef, useState } from 'react';
 import { cn } from '@/lib/utils';
 import type { VersionMeta } from '@shared/types/db';
 import { chooseVisibleVersions } from './chooseVisibleVersions';
@@ -7,13 +7,26 @@ import {
   isHistoryFiltered,
   listHistorySections,
   NO_HISTORY_FILTER,
+  type HistoryFilter,
 } from './filterVersionHistory';
 import { formatHistoryMonth, formatTimeInDay, groupVersionHistory } from './groupVersionHistory';
 import { HistoryFilterBar, type HistoryMonth } from './HistoryFilterBar';
-import { HistoryCount, HistoryHandoff } from './HistoryListEdges';
+import { HistoryCount, HistoryHandoff, HistoryWindowEdge } from './HistoryListEdges';
+import {
+  clampHistoryWindow,
+  NEWEST_WINDOW,
+  revealInHistoryWindow,
+  showEarlierInHistoryWindow,
+  showNewerInHistoryWindow,
+} from './moveHistoryWindow';
 import { RunRow } from './RunRow';
 import { versionLabel } from './useTemplateVersions';
 import { VersionRow, type VersionRowActions } from './VersionRow';
+
+/** A request to bring a version into view. A new object asks again, even for the same one. */
+export interface HistoryReveal {
+  versionId: string;
+}
 
 interface VersionListProps extends VersionRowActions {
   /** Newest first. */
@@ -23,8 +36,17 @@ interface VersionListProps extends VersionRowActions {
    * never share the sidebar.
    */
   isCompact?: boolean;
-  /** Until the full history view exists, the versions past the sidebar's are only counted. */
-  onOpenFullHistory?: () => void;
+  /**
+   * The full view's list: a window over the history that grows at either end, rows that
+   * select on click, and day groups even while filtered, since there is room for them.
+   */
+  isWide?: boolean;
+  initialFilter?: HistoryFilter;
+  reveal?: HistoryReveal | null;
+  /** Wide only: a click anywhere on a row selects it, as its Read button does. */
+  onSelect?: (version: VersionMeta) => void;
+  /** Tells the opener which filter is on, so the full view can start from it. */
+  onOpenFullHistory?: (filter: HistoryFilter) => void;
 }
 
 /** A template's history until the count line is worth its row. */
@@ -39,24 +61,66 @@ const END_LINE_ROWS = 60;
 export function VersionList({
   versions,
   isCompact = false,
+  isWide = false,
+  initialFilter = NO_HISTORY_FILTER,
+  reveal = null,
+  onSelect,
   onOpenFullHistory,
   ...rowProps
 }: VersionListProps) {
-  const [filter, setFilter] = useState(NO_HISTORY_FILTER);
-  const [isSearching, setIsSearching] = useState(false);
+  const [filter, setFilterOnly] = useState(initialFilter);
+  const [isSearching, setIsSearching] = useState(initialFilter.query !== '');
   // Keyed by a run's oldest version, which stays the same as newer edits join the run.
   const [openRuns, setOpenRuns] = useState<ReadonlySet<string>>(new Set());
+  const [listWindow, setListWindow] = useState(NEWEST_WINDOW);
+  const [handledReveal, setHandledReveal] = useState<HistoryReveal | null>(null);
   const rootRef = useRef<HTMLDivElement>(null);
+
+  // A different filter is a different list, so the window starts again at its newest.
+  const setFilter = (next: HistoryFilter) => {
+    setFilterOnly(next);
+    setListWindow(NEWEST_WINDOW);
+  };
 
   // A peek has no filter bar, so a filter left from when the template was open must not apply.
   const isFiltering = !isCompact && isHistoryFiltered(filter);
   const matched = isFiltering ? filterVersionHistory(versions, filter) : versions;
-  const { shown, hiddenCount, mode } = chooseVisibleVersions(matched, {
-    total: versions.length,
-    isFiltering,
-    isCompact,
-  });
-  const groups = groupVersionHistory(shown, { byMonth: isFiltering });
+
+  if (reveal !== handledReveal) {
+    setHandledReveal(reveal);
+    if (reveal) {
+      let index = matched.findIndex((version) => version.id === reveal.versionId);
+      // Asked for a version the filter hides: the filter gives way, not the request.
+      if (index < 0) {
+        setFilterOnly(NO_HISTORY_FILTER);
+        setIsSearching(false);
+        index = versions.findIndex((version) => version.id === reveal.versionId);
+      }
+      if (index >= 0) setListWindow((current) => revealInHistoryWindow(current, index));
+    }
+  }
+
+  const clampedWindow = clampHistoryWindow(listWindow, matched.length);
+  const { shown, hiddenCount, mode } = isWide
+    ? {
+        shown: matched.slice(clampedWindow.from, clampedWindow.to),
+        hiddenCount: matched.length - clampedWindow.to,
+        mode: 'window' as const,
+      }
+    : chooseVisibleVersions(matched, { total: versions.length, isFiltering, isCompact });
+  const newerCount = isWide ? clampedWindow.from : 0;
+  const groups = groupVersionHistory(shown, { byMonth: isFiltering && !isWide });
+
+  // Scroll once the revealed version is really in the tree. One held in a run scrolls to
+  // the run.
+  useLayoutEffect(() => {
+    if (!reveal) return;
+    const root = rootRef.current;
+    const target =
+      root?.querySelector(`[data-version-id="${reveal.versionId}"]`) ??
+      root?.querySelector(`[data-version-ids~="${reveal.versionId}"]`);
+    target?.scrollIntoView({ block: 'center' });
+  }, [reveal]);
   const isLong = versions.length > SHORT_HISTORY;
   const hasFilterBar = isLong && !isCompact;
   const positions = new Map(versions.map((version, index) => [version.id, index]));
@@ -84,18 +148,27 @@ export function VersionList({
       version={version}
       isHead={version.id === versions[0].id}
       isNested={isNested}
+      isWide={isWide}
       label={labelOf(version)}
       time={formatTimeInDay(version.createdAt)}
+      onSelect={onSelect}
       {...rowProps}
     />
   );
+  const jumpToNewest = () => {
+    setListWindow(NEWEST_WINDOW);
+    // The newest rows may only now be rendering, so the scroll waits for them.
+    requestAnimationFrame(() => rootRef.current?.scrollIntoView({ block: 'start' }));
+  };
   return (
     <div ref={rootRef} className="@container/history">
       {isLong && (
         <HistoryCount
           versions={versions}
           isCompact={isCompact}
-          onOpenFullHistory={onOpenFullHistory}
+          onOpenFullHistory={
+            onOpenFullHistory && !isWide ? () => onOpenFullHistory(NO_HISTORY_FILTER) : undefined
+          }
         />
       )}
       {hasFilterBar && (
@@ -105,10 +178,17 @@ export function VersionList({
           sections={listHistorySections(versions)}
           total={versions.length}
           months={months}
-          onJumpToNewest={() => rootRef.current?.scrollIntoView({ block: 'start' })}
+          onJumpToNewest={jumpToNewest}
           onJumpToMonth={jumpToMonth}
           isSearching={isSearching}
           onSearchingChange={setIsSearching}
+        />
+      )}
+      {newerCount > 0 && (
+        <HistoryWindowEdge
+          direction="newer"
+          count={newerCount}
+          onShow={() => setListWindow(showNewerInHistoryWindow)}
         />
       )}
       <div className="relative mt-1.5">
@@ -164,7 +244,14 @@ export function VersionList({
           Everything is still here. Clear the filter to see it.
         </p>
       )}
-      {hiddenCount > 0 ? (
+      {hiddenCount > 0 && isWide ? (
+        <HistoryWindowEdge
+          direction="earlier"
+          count={hiddenCount}
+          oldestMonth={formatHistoryMonth(matched.at(-1)!.createdAt)}
+          onShow={() => setListWindow(showEarlierInHistoryWindow)}
+        />
+      ) : hiddenCount > 0 ? (
         <HistoryHandoff
           label={
             mode === 'found'
@@ -174,7 +261,7 @@ export function VersionList({
           hiddenCount={hiddenCount}
           oldestMonth={formatHistoryMonth(matched.at(-1)!.createdAt)}
           isCompact={isCompact}
-          onOpenFullHistory={onOpenFullHistory}
+          onOpenFullHistory={onOpenFullHistory && (() => onOpenFullHistory(filter))}
         />
       ) : (
         shown.length > END_LINE_ROWS && (

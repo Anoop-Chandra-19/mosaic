@@ -4,6 +4,7 @@ import {
   describeRunSections,
   formatTimeInDay,
   groupVersionHistory,
+  listHistoryMonths,
   type HistoryGroup,
 } from '../groupVersionHistory';
 
@@ -100,6 +101,22 @@ describe('groupVersionHistory', () => {
       [1, true],
     ]);
     expect(groups[0].isToday).toBe(false);
+  });
+});
+
+describe('listHistoryMonths', () => {
+  it('counts each month, newest first, and keeps its newest version to go to', () => {
+    seq = 0;
+    const versions = newestFirst([
+      version(new Date(2026, 6, 1).getTime()),
+      version(new Date(2026, 6, 30).getTime()),
+      version(at(2, 9)),
+      version(at(20, 9)),
+    ]);
+    expect(listHistoryMonths(versions).map((m) => [m.count, m.newest.id])).toEqual([
+      [2, 'v4'],
+      [2, 'v2'],
+    ]);
   });
 });
 

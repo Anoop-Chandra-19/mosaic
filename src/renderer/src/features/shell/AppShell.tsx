@@ -7,6 +7,7 @@ import { Toast } from './Toast';
 import { AgentPane } from '@/features/agent/AgentPane';
 import { RestoreBackupDialog } from '@/features/backup/RestoreBackupDialog';
 import { ExportDialog } from '@/features/export/ExportDialog';
+import { HistoryWindow } from '@/features/history/HistoryWindow';
 import { ImportResumeDialog } from '@/features/import/ImportResumeDialog';
 import { SettingsDialog } from '@/features/settings/SettingsDialog';
 import { StartPanel } from '@/features/start/StartPanel';
@@ -51,6 +52,13 @@ export function AppShell() {
           {showAgentPane && <AgentPane />}
         </div>
         {surface?.kind === 'start' && <StartPanel closable={hasTemplates} />}
+        {surface?.kind === 'history' && (
+          <HistoryWindow
+            templateId={surface.templateId}
+            filter={surface.filter}
+            versionId={surface.versionId}
+          />
+        )}
         <Toast />
       </div>
       <StatusBar />

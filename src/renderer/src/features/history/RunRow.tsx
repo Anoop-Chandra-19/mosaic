@@ -20,7 +20,8 @@ export function RunRow({ run, labelOf, isOpen, onToggle, children }: RunRowProps
   const oldest = run.at(-1)!;
   const Chevron = isOpen ? ChevronDown : ChevronRight;
   return (
-    <li>
+    // Lets a reveal find the run that holds a version.
+    <li data-version-ids={run.map((version) => version.id).join(' ')}>
       <AppButton
         variant="ghost"
         shape="text"

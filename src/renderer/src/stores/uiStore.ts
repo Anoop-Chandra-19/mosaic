@@ -57,6 +57,14 @@ export const AGENT_PANE_WIDTH: PaneWidthLimits = {
   maxShare: 0.38,
 };
 
+/** The full history view's read pane: wide enough for an A4 page at full size by default. */
+export const HISTORY_READ_WIDTH: PaneWidthLimits = {
+  defaultPx: 660,
+  minPx: 300,
+  maxPx: 1100,
+  maxShare: 0.76,
+};
+
 /** A width within the pane's limits, in whole pixels; anything unreadable is the default. */
 export function clampPaneWidth(px: number, limits: PaneWidthLimits): number {
   if (!Number.isFinite(px)) return limits.defaultPx;
@@ -95,6 +103,7 @@ export const DEFAULT_UI_STATE = {
   /** Only drawn while AI is on; this remembers whether it was closed. */
   agentPaneOpen: true,
   agentPaneWidthPx: AGENT_PANE_WIDTH.defaultPx,
+  historyReadWidthPx: HISTORY_READ_WIDTH.defaultPx,
   /** Icons beside the header's items in the editor; the page never has them. */
   shouldShowHeaderIcons: true,
 };
@@ -113,6 +122,7 @@ interface UiState {
   sidebarCollapsed: boolean;
   agentPaneOpen: boolean;
   agentPaneWidthPx: number;
+  historyReadWidthPx: number;
   shouldShowHeaderIcons: boolean;
   setTheme: (theme: ThemeChoice) => void;
   setInterfaceDensity: (density: InterfaceDensity) => void;
@@ -129,6 +139,7 @@ interface UiState {
   toggleSidebarCollapsed: () => void;
   toggleAgentPane: () => void;
   setAgentPaneWidthPx: (px: number) => void;
+  setHistoryReadWidthPx: (px: number) => void;
   toggleHeaderIcons: () => void;
   resetUiState: () => void;
 }
@@ -197,6 +208,10 @@ export const useUiStore = create<UiState>()(
         set((state) => {
           state.agentPaneWidthPx = clampPaneWidth(px, AGENT_PANE_WIDTH);
         }),
+      setHistoryReadWidthPx: (px) =>
+        set((state) => {
+          state.historyReadWidthPx = clampPaneWidth(px, HISTORY_READ_WIDTH);
+        }),
       toggleHeaderIcons: () =>
         set((state) => {
           state.shouldShowHeaderIcons = !state.shouldShowHeaderIcons;
@@ -245,6 +260,10 @@ export const useUiStore = create<UiState>()(
           agentPaneWidthPx: clampPaneWidth(
             stored.agentPaneWidthPx ?? AGENT_PANE_WIDTH.defaultPx,
             AGENT_PANE_WIDTH
+          ),
+          historyReadWidthPx: clampPaneWidth(
+            stored.historyReadWidthPx ?? HISTORY_READ_WIDTH.defaultPx,
+            HISTORY_READ_WIDTH
           ),
         };
       },

@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import type { HistoryFilter } from '@/features/history/filterVersionHistory';
 import type { ResumePreviewMeta } from '@/features/preview/ResumePreview';
 import type { SettingsSectionId } from '@/features/settings/settingsNav';
 import type { OpenedBackup } from '@shared/types/bundle';
@@ -39,8 +40,13 @@ export interface ExportVersion extends VersionPreview {
  * `start`: shown at a launch with no templates (see `hydrateStores`), and from New
  * template. Deleting the last template during a session does not bring it back; the app
  * then simply has nothing open.
+ *
+ * `history`: one template's full history, opened on `filter` when the sidebar's was
+ * carried over, and on `versionId` when one was asked for.
  */
-export type WorkspaceSurface = { kind: 'start' };
+export type WorkspaceSurface =
+  | { kind: 'start' }
+  | { kind: 'history'; templateId: string; filter?: HistoryFilter; versionId?: string };
 
 interface OverlayState {
   surface: WorkspaceSurface | null;

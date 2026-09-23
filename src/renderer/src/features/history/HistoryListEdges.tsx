@@ -1,4 +1,4 @@
-import { ExternalLink } from 'lucide-react';
+import { ChevronDown, ChevronUp, ExternalLink } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
 import { cn } from '@/lib/utils';
 import type { VersionMeta } from '@shared/types/db';
@@ -47,6 +47,46 @@ export function HistoryCount({ versions, isCompact, onOpenFullHistory }: History
         </>
       )}
     </p>
+  );
+}
+
+interface HistoryWindowEdgeProps {
+  direction: 'newer' | 'earlier';
+  count: number;
+  /** Earlier only: how far back the rest goes. */
+  oldestMonth?: string;
+  onShow: () => void;
+}
+
+/** The full view's list is a window; each end says what lies past it, and reaches it. */
+export function HistoryWindowEdge({
+  direction,
+  count,
+  oldestMonth,
+  onShow,
+}: HistoryWindowEdgeProps) {
+  const isNewer = direction === 'newer';
+  const Chevron = isNewer ? ChevronUp : ChevronDown;
+  return (
+    <AppButton
+      variant="dashed"
+      size="xs"
+      onClick={onShow}
+      className={cn(
+        'h-auto w-full flex-col items-start gap-0.5 rounded-sm border-line-strong px-2.5 py-2 text-ink-soft hover:border-line-heavy',
+        isNewer ? 'mt-0.5 mb-2.5' : 'mt-2'
+      )}
+    >
+      <span className="flex items-center gap-1.5">
+        <Chevron className="size-3" />
+        {isNewer ? 'Show newer' : 'Show earlier'}
+      </span>
+      <span className="font-mono text-[0.675rem] font-normal text-ink-faint">
+        {isNewer
+          ? `${count.toLocaleString()} newer ${count === 1 ? 'version' : 'versions'}, up to today.`
+          : `${count.toLocaleString()} more, back to ${oldestMonth}`}
+      </span>
+    </AppButton>
   );
 }
 
