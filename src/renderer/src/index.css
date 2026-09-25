@@ -133,8 +133,8 @@
   --accent: oklch(0.967 0.001 286.375);
   --accent-foreground: oklch(0.21 0.006 285.885);
   --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.92 0.004 286.32);
-  --input: oklch(0.92 0.004 286.32);
+  --border: var(--line);
+  --input: var(--line-strong);
   --ring: oklch(0.705 0.015 286.067);
   --chart-1: oklch(0.646 0.222 41.116);
   --chart-2: oklch(0.6 0.118 184.704);
@@ -147,14 +147,16 @@
   --sidebar-primary-foreground: oklch(0.985 0 0);
   --sidebar-accent: oklch(0.967 0.001 286.375);
   --sidebar-accent-foreground: oklch(0.21 0.006 285.885);
-  --sidebar-border: oklch(0.92 0.004 286.32);
+  --sidebar-border: var(--line);
   --sidebar-ring: oklch(0.705 0.015 286.067);
   --pane: oklch(0.975 0.002 286);
   --pane-raised: oklch(1 0 0);
   --pane-sunken: oklch(0.925 0.003 286);
-  --line: oklch(0.866 0.004 286);
-  --line-strong: oklch(0.805 0.005 286);
-  --line-heavy: oklch(0.727 0.007 286);
+  /* Translucent on purpose: a line keeps the same step above whatever surface it sits on,
+     where a flat grey fades into a raised one. */
+  --line: oklch(0.2 0.01 286 / 14%);
+  --line-strong: oklch(0.2 0.01 286 / 22%);
+  --line-heavy: oklch(0.2 0.01 286 / 32%);
   --ink-soft: oklch(0.36 0.01 286);
   --ink-muted: oklch(0.48 0.013 286);
   --ink-faint: oklch(0.57 0.013 286);
@@ -184,8 +186,8 @@
   --accent: oklch(0.274 0.006 286.033);
   --accent-foreground: oklch(0.985 0 0);
   --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
+  --border: var(--line);
+  --input: var(--line-strong);
   --ring: oklch(0.552 0.016 285.938);
   --chart-1: oklch(0.488 0.243 264.376);
   --chart-2: oklch(0.696 0.17 162.48);
@@ -198,14 +200,14 @@
   --sidebar-primary-foreground: oklch(0.985 0 0);
   --sidebar-accent: oklch(0.274 0.006 286.033);
   --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-border: var(--line);
   --sidebar-ring: oklch(0.552 0.016 285.938);
   --pane: oklch(0.175 0.004 286);
   --pane-raised: oklch(0.205 0.005 286);
   --pane-sunken: oklch(0.125 0.004 286);
-  --line: oklch(0.274 0.004 286);
-  --line-strong: oklch(0.34 0.004 286);
-  --line-heavy: oklch(0.423 0.004 286);
+  --line: oklch(1 0 0 / 12%);
+  --line-strong: oklch(1 0 0 / 20%);
+  --line-heavy: oklch(1 0 0 / 30%);
   --ink-soft: oklch(0.82 0.008 286);
   --ink-muted: oklch(0.67 0.012 286);
   --ink-faint: oklch(0.56 0.012 286);
@@ -232,6 +234,15 @@
 @layer base {
   * {
     @apply border-border outline-ring/50;
+  }
+
+  /* What floats over the window takes the stronger line, as in the design. */
+  [data-slot='dialog-content'],
+  [data-slot='dropdown-menu-content'],
+  [data-slot='dropdown-menu-sub-content'],
+  [data-slot='select-content'],
+  [data-slot='tooltip-content'] {
+    border-color: var(--line-strong);
   }
 
   @supports (scrollbar-width: auto) and (not selector(::-webkit-scrollbar)) {

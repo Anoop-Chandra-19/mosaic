@@ -25,7 +25,7 @@ export function DialogFrameHeader({
   onClose: () => void;
 }) {
   return (
-    <header className="flex items-center justify-between gap-3 border-b border-zinc-200 px-4 py-3 dark:border-zinc-800">
+    <header className="flex items-center justify-between gap-3 border-b border-line px-4 py-3">
       <DialogTitle className="flex min-w-0 items-center gap-2 text-sm font-semibold text-zinc-900 dark:text-zinc-100">
         <Icon className="size-4 shrink-0 text-zinc-500" />
         {title}
@@ -51,7 +51,7 @@ export function DialogFrameFooter({
   return (
     <footer
       className={cn(
-        'flex flex-wrap items-center justify-end gap-2 border-t border-zinc-200 px-4 py-3 dark:border-zinc-800',
+        'flex flex-wrap items-center justify-end gap-2 border-t border-line px-4 py-3',
         className
       )}
     >

@@ -103,7 +103,7 @@ export function ImportResumeDialog() {
     <Dialog open={open} onOpenChange={(next) => !next && closeImport()}>
       <DialogContent
         showCloseButton={false}
-        className="flex max-h-[90vh] w-[min(38rem,96vw)] max-w-none flex-col gap-0 overflow-hidden rounded-xl border-zinc-200 bg-white p-0 sm:max-w-none dark:border-zinc-800 dark:bg-zinc-950"
+        className="flex max-h-[90vh] w-[min(38rem,96vw)] max-w-none flex-col gap-0 overflow-hidden rounded-xl border-line-strong bg-white p-0 sm:max-w-none dark:bg-zinc-950"
       >
         {/* Mounted per opening, so each import starts from the file picker. */}
         {open && <ImportFlow onDone={closeImport} />}
@@ -213,10 +213,10 @@ function PickStep({
             'flex flex-col items-center rounded-lg border border-dashed px-4 py-6 text-center transition-colors',
             dragging
               ? 'border-amber-500 bg-amber-50 dark:border-amber-600 dark:bg-amber-950'
-              : 'border-zinc-300 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900'
+              : 'border-line-heavy bg-zinc-50 dark:bg-zinc-900'
           )}
         >
-          <span className="mb-2.5 grid size-9 place-items-center rounded-full border border-zinc-200 bg-white text-zinc-500 dark:border-zinc-700 dark:bg-zinc-950">
+          <span className="mb-2.5 grid size-9 place-items-center rounded-full border border-line-strong bg-white text-zinc-500 dark:bg-zinc-950">
             <Upload className="size-4" />
           </span>
           <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
@@ -257,7 +257,7 @@ function PickStep({
           className="h-36 resize-none font-mono text-xs leading-5 placeholder:text-zinc-400 dark:placeholder:text-zinc-600"
         />
 
-        <p className="mt-3 flex gap-2 rounded-lg border border-zinc-200 bg-zinc-50 p-2.5 text-xs leading-relaxed text-zinc-600 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400">
+        <p className="mt-3 flex gap-2 rounded-lg border border-line bg-zinc-50 p-2.5 text-xs leading-relaxed text-zinc-600 dark:bg-zinc-900 dark:text-zinc-400">
           <Info className="mt-0.5 size-3.5 shrink-0 text-zinc-500" />
           Everything is read on this machine. Import is a quick start, not an exact copy, and a
           PDF’s layout is the hardest to read back: you’ll see what Mosaic found and what it left
@@ -365,7 +365,7 @@ function ReviewStep({
           </AppButton>
         </div>
 
-        <ul className="divide-y divide-zinc-200 rounded-lg border border-zinc-200 text-sm dark:divide-zinc-800 dark:border-zinc-800">
+        <ul className="divide-y divide-line rounded-lg border border-line text-sm">
           <li className="px-3 py-2">
             <div className="flex items-baseline gap-2.5">
               <span className="size-4 shrink-0 self-center" />

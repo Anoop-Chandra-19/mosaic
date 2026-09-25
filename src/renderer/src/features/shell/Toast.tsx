@@ -16,7 +16,7 @@ export function Toast() {
       {toast && (
         <div
           key={toast.id}
-          className="pointer-events-auto flex max-w-full items-center gap-2.5 rounded-full border border-zinc-300 bg-white py-2 pr-2 pl-3.5 text-sm text-zinc-800 shadow-2xl duration-200 animate-in fade-in-0 slide-in-from-bottom-1 motion-reduce:animate-none dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200"
+          className="pointer-events-auto flex max-w-full items-center gap-2.5 rounded-full border border-line-strong bg-white py-2 pr-2 pl-3.5 text-sm text-zinc-800 shadow-2xl duration-200 animate-in fade-in-0 slide-in-from-bottom-1 motion-reduce:animate-none dark:bg-zinc-900 dark:text-zinc-200"
         >
           {toast.tone === 'success' ? (
             <Check className="size-3.5 shrink-0 text-emerald-600 dark:text-emerald-400" />

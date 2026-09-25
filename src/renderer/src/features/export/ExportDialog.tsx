@@ -51,7 +51,7 @@ export function ExportDialog() {
     <Dialog open={open} onOpenChange={(next) => !next && closeExport()}>
       <DialogContent
         showCloseButton={false}
-        className="flex max-h-[90vh] w-[min(40rem,96vw)] max-w-none flex-col gap-0 overflow-hidden rounded-xl border-zinc-200 bg-white p-0 sm:max-w-none dark:border-zinc-800 dark:bg-zinc-950"
+        className="flex max-h-[90vh] w-[min(40rem,96vw)] max-w-none flex-col gap-0 overflow-hidden rounded-xl border-line-strong bg-white p-0 sm:max-w-none dark:bg-zinc-950"
       >
         {/* Mounted per opening, so the format and file name start fresh each time. */}
         {open && <ExportForm version={version} onDone={closeExport} />}
@@ -212,7 +212,7 @@ function ExportForm({ version, onDone }: { version: ExportVersion | null; onDone
                 aria-label="File name"
                 className="h-8 rounded-r-none font-mono text-xs"
               />
-              <span className="grid h-8 shrink-0 place-items-center rounded-r-md border border-l-0 border-zinc-200 bg-zinc-100 px-2 font-mono text-xs text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900">
+              <span className="grid h-8 shrink-0 place-items-center rounded-r-md border border-l-0 border-input bg-zinc-100 px-2 font-mono text-xs text-zinc-500 dark:bg-zinc-900">
                 .{format.extension}
               </span>
             </div>
@@ -254,7 +254,7 @@ function FormatOption({ format, selected }: { format: ExportFormatInfo; selected
         'flex cursor-pointer items-start gap-2.5 rounded-lg border p-2.5 transition-colors',
         selected
           ? 'border-amber-500 bg-zinc-50 dark:border-amber-600 dark:bg-zinc-900'
-          : 'border-zinc-200 hover:bg-zinc-50 dark:border-zinc-800 dark:hover:bg-zinc-900'
+          : 'border-line hover:bg-zinc-50 dark:hover:bg-zinc-900'
       )}
     >
       <span
@@ -262,7 +262,7 @@ function FormatOption({ format, selected }: { format: ExportFormatInfo; selected
           'grid size-7 shrink-0 place-items-center rounded-md border',
           selected
             ? 'border-amber-300 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-400'
-            : 'border-zinc-200 bg-zinc-100 text-zinc-500 dark:border-zinc-700 dark:bg-zinc-800'
+            : 'border-line-strong bg-zinc-100 text-zinc-500 dark:bg-zinc-800'
         )}
       >
         <Icon className="size-3.5" />
@@ -271,7 +271,7 @@ function FormatOption({ format, selected }: { format: ExportFormatInfo; selected
         <span className="flex items-center gap-1.5 text-sm font-medium text-zinc-900 dark:text-zinc-100">
           {format.name}
           {format.id === 'pdf' && (
-            <span className="rounded border border-zinc-200 px-1 text-[0.65rem] leading-4 font-medium text-zinc-500 dark:border-zinc-700">
+            <span className="rounded border border-line-strong px-1 text-[0.65rem] leading-4 font-medium text-zinc-500">
               default
             </span>
           )}
@@ -295,7 +295,7 @@ function Row({
   children?: ReactNode;
 }) {
   return (
-    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-zinc-200 py-2.5 last:border-b-0 dark:border-zinc-800">
+    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line py-2.5 last:border-b-0">
       <span className="min-w-0 flex-1 basis-60">
         <span className="block text-sm font-medium text-zinc-900 dark:text-zinc-100">{label}</span>
         {description && (

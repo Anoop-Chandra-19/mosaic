@@ -9,13 +9,12 @@ const BADGES: Partial<Record<TemplateStatus, { label: string; title: string; cla
     edited: {
       label: 'edited',
       title: 'Saved as you type. Name a version when you want to find this state again.',
-      className:
-        'border-zinc-300 bg-zinc-200 text-zinc-700 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300',
+      className: 'border-line-strong bg-zinc-200 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300',
     },
     clean: {
       label: 'up to date',
       title: "The draft matches the newest version in this template's history.",
-      className: 'border-zinc-300 text-zinc-500 dark:border-zinc-700 dark:text-zinc-500',
+      className: 'border-line-strong text-zinc-500 dark:text-zinc-500',
     },
   };
 

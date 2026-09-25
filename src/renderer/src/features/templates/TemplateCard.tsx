@@ -160,9 +160,7 @@ export function TemplateCard({ template, active, expanded, onToggle }: TemplateC
         // Clip, not hidden: a card that could scroll would pin the history's day headers
         // inside itself instead of to the sidebar.
         '@container overflow-clip rounded-lg border bg-zinc-50 transition-colors dark:bg-zinc-900',
-        active
-          ? 'border-amber-300 dark:border-amber-800'
-          : 'border-zinc-200 hover:border-zinc-300 dark:border-zinc-800 dark:hover:border-zinc-700'
+        active ? 'border-amber-300 dark:border-amber-800' : 'border-line hover:border-line-strong'
       )}
     >
       <div className="flex items-start gap-2 px-3 py-2.5">
@@ -281,7 +279,7 @@ export function TemplateCard({ template, active, expanded, onToggle }: TemplateC
       </div>
 
       {expanded && (
-        <div className="border-t border-zinc-200 bg-white px-3 pt-2.5 pb-3 dark:border-zinc-800 dark:bg-zinc-950">
+        <div className="border-t border-line bg-white px-3 pt-2.5 pb-3 dark:bg-zinc-950">
           <div className="flex items-center justify-between">
             <span className="inline-flex items-center gap-0.5">
               <span className="inline-flex items-center gap-1.5 text-[0.7rem] font-semibold tracking-wider text-zinc-500 uppercase">
@@ -375,7 +373,7 @@ function Note({
   children: React.ReactNode;
 }) {
   return (
-    <div className="mt-2 flex items-start gap-2 rounded-md border border-zinc-200 bg-zinc-50 px-2.5 py-2 text-xs leading-relaxed text-zinc-600 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400">
+    <div className="mt-2 flex items-start gap-2 rounded-md border border-line bg-zinc-50 px-2.5 py-2 text-xs leading-relaxed text-zinc-600 dark:bg-zinc-900 dark:text-zinc-400">
       <Icon
         className={cn(
           'mt-0.5 size-3.5 shrink-0',
