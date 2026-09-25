@@ -3,6 +3,7 @@ import { Minus, Plus, TriangleAlert } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { ResumePreview } from '@/features/preview/ResumePreview';
+import { useFitPreviewUnderSurface } from '@/features/preview/useFitPreviewUnderSurface';
 import { usePreviewCanvas } from '@/features/preview/usePreviewCanvas';
 import { cn } from '@/lib/utils';
 import { shortcutLabel } from '@/lib/keyboardShortcuts';
@@ -20,6 +21,7 @@ export function PreviewPanel() {
   const preview = useOverlayStore((s) => s.preview);
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const canvas = usePreviewCanvas(scrollRef);
+  const shown = useFitPreviewUnderSurface(scrollRef);
 
   useEffect(() => {
     // Expose paper size to global CSS for page-specific print/preview styling.
@@ -111,6 +113,7 @@ export function PreviewPanel() {
 
       <div
         ref={scrollRef}
+        data-page-viewport
         onPointerDown={canvas.onPointerDown}
         className={cn(
           'flex-1 overflow-auto overscroll-contain px-3 py-4 md:px-6 md:py-6',
@@ -119,7 +122,8 @@ export function PreviewPanel() {
       >
         <ResumePreview
           paperSize={paperSize}
-          previewZoom={previewZoom}
+          previewZoom={shown.zoom}
+          isZoomEased={shown.isZoomEased}
           onMetaChange={setMeta}
           doc={preview?.version.doc}
         />

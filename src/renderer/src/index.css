@@ -333,6 +333,84 @@
   }
 }
 
+/* View transitions: only the named part moves; the rest of the window doesn't cross-fade. */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+}
+
+/*
+ * The page moves between the live preview and the history view, carried by the box that
+ * shows it on each side: a named element is drawn unclipped while it moves, and the page
+ * alone is taller than either box. The name sits on one side at a time, or the browser
+ * skips the transition.
+ */
+[data-workspace]:not([data-covered]) [data-page-viewport],
+[data-history-read] [data-page-viewport] {
+  view-transition-name: paper;
+}
+
+/* Under a view the preview can't be seen anyway; hidden, it can't show a second page
+   through the view as it fades in. */
+[data-workspace][data-covered] [data-page-viewport] {
+  visibility: hidden;
+}
+
+::view-transition-group(paper) {
+  /* Groups stack in the old page's order, which puts the preview's under the history
+     view coming in over it. */
+  z-index: 1;
+  overflow: clip;
+  animation-duration: 340ms;
+  animation-timing-function: cubic-bezier(0.2, 0.7, 0.3, 1);
+}
+
+/*
+ * The two pages swap early, while they still line up, so the text doesn't double. Their
+ * fades stay in step: the blend only adds up to a whole page when one's opacity is the
+ * other's complement, and anything else dims the page mid-swap.
+ */
+::view-transition-old(paper),
+::view-transition-new(paper) {
+  animation-duration: 160ms;
+  /* At their own size, centered: the box around the page reshapes, the page doesn't
+     stretch with it. By default each snapshot is scaled to the box's width. */
+  inline-size: auto;
+  block-size: auto;
+  inset-inline-start: 50%;
+  translate: -50% 0;
+}
+
+::view-transition-new(.surface-in) {
+  animation: surface-in 180ms cubic-bezier(0.2, 0.7, 0.3, 1);
+}
+
+::view-transition-old(.surface-out) {
+  animation: surface-out 140ms ease-in forwards;
+}
+
+@keyframes surface-in {
+  from {
+    opacity: 0;
+    transform: translateY(0.375rem) scale(0.99);
+  }
+}
+
+@keyframes surface-out {
+  to {
+    opacity: 0;
+    transform: translateY(0.25rem);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+}
+
 @media print {
   @page a4 {
     size: A4 portrait;

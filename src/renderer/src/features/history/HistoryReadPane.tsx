@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Copy, Download, History } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
 import { AppTooltip } from '@/components/AppTooltip';
@@ -30,6 +30,8 @@ interface HistoryReadPaneProps {
   onRestore: (version: VersionMeta) => void;
   onDuplicate: (version: VersionMeta) => void;
   onExport: (version: Version, label: string) => void;
+  /** Loaded before the view opened, so its page is there from the first frame. */
+  initialVersion: Version | null;
 }
 
 const ignorePreviewMeta = () => {};
@@ -48,6 +50,7 @@ export function HistoryReadPane({
   onRestore,
   onDuplicate,
   onExport,
+  initialVersion,
 }: HistoryReadPaneProps) {
   const widthPx = useUiStore((s) => s.historyReadWidthPx);
   const setWidthPx = useUiStore((s) => s.setHistoryReadWidthPx);
@@ -55,10 +58,12 @@ export function HistoryReadPane({
   const paneRef = useRef<HTMLElement>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
   const [bodyWidth, setBodyWidth] = useState(0);
-  const loaded = useLoadedVersion(version.id);
+  const loaded = useLoadedVersion(version.id, initialVersion);
   const draft = useComparedDraft(templateId);
 
-  useEffect(() => {
+  // Before paint, so the view transition that opens the pane captures the right choice
+  // of page or text.
+  useLayoutEffect(() => {
     const body = bodyRef.current;
     if (!body) return;
     const sync = () => setBodyWidth(body.clientWidth);
@@ -71,11 +76,11 @@ export function HistoryReadPane({
   const changedLines = loaded && draft ? countChangedLines(loaded.doc, draft) : null;
   const pageScale = (bodyWidth - PAGE_GUTTER_PX * 2) / PAPER_DIMENSIONS_PT[paperSize].width;
   const isLegible = bodyWidth === 0 || pageScale >= LEGIBLE_PAGE_SCALE;
-
   return (
     <aside
       ref={paneRef}
       aria-label={`Reading ${label}`}
+      data-history-read
       className="relative flex min-h-0 shrink-0 flex-col border-l border-line bg-background"
       style={{ width: `max(${HISTORY_READ_WIDTH.minPx}px, min(${widthPx}px, ${maxWidthCss}))` }}
     >
@@ -115,7 +120,7 @@ export function HistoryReadPane({
         </p>
       </header>
 
-      <div ref={bodyRef} className="min-h-0 flex-1 overflow-auto pt-3.5 pb-5">
+      <div ref={bodyRef} data-page-viewport className="min-h-0 flex-1 overflow-auto pt-3.5 pb-5">
         {loaded &&
           (isLegible ? (
             <div style={{ paddingInline: PAGE_GUTTER_PX }}>
@@ -175,8 +180,8 @@ export function HistoryReadPane({
 }
 
 /** The version's document, once it has loaded; null while another is still showing. */
-function useLoadedVersion(versionId: string): Version | null {
-  const [loaded, setLoaded] = useState<Version | null>(null);
+function useLoadedVersion(versionId: string, initial: Version | null): Version | null {
+  const [loaded, setLoaded] = useState<Version | null>(initial);
   useEffect(() => {
     let isCurrent = true;
     getDb()

@@ -13,9 +13,10 @@ export function versionLabel(versions: VersionMeta[], index: number): string {
  */
 export function useTemplateVersions(
   template: TemplateSummary,
-  enabled: boolean
+  enabled: boolean,
+  initial: VersionMeta[] | null = null
 ): VersionMeta[] | null {
-  const [versions, setVersions] = useState<VersionMeta[] | null>(null);
+  const [versions, setVersions] = useState<VersionMeta[] | null>(initial);
   const { id, versionCount, head } = template;
   const changed = `${versionCount}:${head.id}:${head.kind}:${head.summary}:${head.rev}`;
 
