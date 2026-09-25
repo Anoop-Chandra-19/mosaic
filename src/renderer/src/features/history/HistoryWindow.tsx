@@ -1,4 +1,4 @@
-import { use, useEffect, useRef, useState } from 'react';
+import { addTransitionType, startTransition, use, useEffect, useRef, useState } from 'react';
 import { Clock, List, X } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
 import { PAPER_DIMENSIONS_PT } from '@/features/preview/pageGeometry';
@@ -12,6 +12,7 @@ import { HistoryIndex } from './HistoryIndex';
 import { HistoryReadPane, LEGIBLE_PAGE_SCALE } from './HistoryReadPane';
 import { prepareHistoryOpening, type PreparedHistory } from './prepareHistoryOpening';
 import { useTemplateVersions, versionLabel } from './useTemplateVersions';
+import { loadVersion } from './versionCache';
 import { VersionList, type HistoryReveal } from './VersionList';
 
 /** The index is the first thing to give up its width; below this it starts folded. */
@@ -107,11 +108,24 @@ function HistoryWindowFrame({ template, filter, versionId, prepared }: HistoryWi
   const selected = versions?.find((version) => version.id === selectedId) ?? versions?.[0];
   const labelOf = (version: VersionMeta) =>
     versions ? versionLabel(versions, versions.indexOf(version)) : '';
-  const select = (version: VersionMeta) => setSelectedId(version.id);
-  const goTo = (version: VersionMeta) => {
-    setSelectedId(version.id);
-    setReveal({ versionId: version.id });
+  // A step through time: the page slides the way the history runs, older to the left. The
+  // version is read first, so the slide lands on its page rather than an empty pane.
+  const step = (version: VersionMeta, shouldReveal: boolean) => {
+    const from = versions && selected ? versions.indexOf(selected) : -1;
+    const to = versions ? versions.indexOf(version) : -1;
+    const show = () =>
+      startTransition(() => {
+        if (from >= 0 && to >= 0 && from !== to) {
+          addTransitionType(to > from ? 'to-older' : 'to-newer');
+        }
+        setSelectedId(version.id);
+        if (shouldReveal) setReveal({ versionId: version.id });
+      });
+    // A version that can't be read still gets selected; the pane says so.
+    loadVersion(version.id).then(show, show);
   };
+  const select = (version: VersionMeta) => step(version, false);
+  const goTo = (version: VersionMeta) => step(version, true);
 
   const indexWidth = isIndexOpen ? INDEX_WIDTH_PX : 0;
   const maxReadWidth = windowWidth - indexWidth - LIST_MIN_WIDTH_PX;
@@ -231,7 +245,6 @@ function HistoryWindowFrame({ template, filter, versionId, prepared }: HistoryWi
             onRestore={(version) => void restore(version)}
             onDuplicate={(version) => void duplicate(version)}
             onExport={exportVersion}
-            initialVersion={prepared?.version ?? null}
           />
         )}
       </div>

@@ -7,6 +7,7 @@ import { ResumePreview } from '@/features/preview/ResumePreview';
 import { startPaneResize } from '@/features/shell/paneResize';
 import { getDb } from '@/lib/storage/mosaicDb';
 import { showToast } from '@/stores/overlayStore';
+import { loadVersion, peekVersion } from './versionCache';
 import { useResumeStore } from '@/stores/resumeStore';
 import { HISTORY_READ_WIDTH, useUiStore } from '@/stores/uiStore';
 import type { Draft, Version, VersionMeta } from '@shared/types/db';
@@ -30,8 +31,6 @@ interface HistoryReadPaneProps {
   onRestore: (version: VersionMeta) => void;
   onDuplicate: (version: VersionMeta) => void;
   onExport: (version: Version, label: string) => void;
-  /** Loaded before the view opened, so its page is there from the first frame. */
-  initialVersion: Version | null;
 }
 
 const ignorePreviewMeta = () => {};
@@ -50,7 +49,6 @@ export function HistoryReadPane({
   onRestore,
   onDuplicate,
   onExport,
-  initialVersion,
 }: HistoryReadPaneProps) {
   const widthPx = useUiStore((s) => s.historyReadWidthPx);
   const setWidthPx = useUiStore((s) => s.setHistoryReadWidthPx);
@@ -58,7 +56,7 @@ export function HistoryReadPane({
   const paneRef = useRef<HTMLElement>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
   const [bodyWidth, setBodyWidth] = useState(0);
-  const loaded = useLoadedVersion(version.id, initialVersion);
+  const loaded = useLoadedVersion(version.id);
   const draft = useComparedDraft(templateId);
 
   // Before paint, so the view transition that opens the pane captures the right choice
@@ -179,25 +177,28 @@ export function HistoryReadPane({
   );
 }
 
-/** The version's document, once it has loaded; null while another is still showing. */
-function useLoadedVersion(versionId: string, initial: Version | null): Version | null {
-  const [loaded, setLoaded] = useState<Version | null>(initial);
+/**
+ * The version's document: at once when it was read before (opening the view and stepping
+ * between versions read it first), otherwise once it has loaded.
+ */
+function useLoadedVersion(versionId: string): Version | null {
+  const [loaded, setLoaded] = useState<Version | null>(null);
+  const cached = peekVersion(versionId);
   useEffect(() => {
+    if (cached) return;
     let isCurrent = true;
-    getDb()
-      .versions.get(versionId)
-      .then(
-        (version) => isCurrent && setLoaded(version),
-        (error: unknown) => {
-          console.error('Could not read that version', error);
-          showToast('Could not read that version', 'error');
-        }
-      );
+    loadVersion(versionId).then(
+      (version) => isCurrent && setLoaded(version),
+      (error: unknown) => {
+        console.error('Could not read that version', error);
+        showToast('Could not read that version', 'error');
+      }
+    );
     return () => {
       isCurrent = false;
     };
-  }, [versionId]);
-  return loaded?.id === versionId ? loaded : null;
+  }, [versionId, cached]);
+  return cached ?? (loaded?.id === versionId ? loaded : null);
 }
 
 /**
