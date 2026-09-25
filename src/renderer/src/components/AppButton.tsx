@@ -29,6 +29,8 @@ const appButtonVariants = cva(
           'text-ink-soft hover:bg-line hover:text-foreground aria-[haspopup=menu]:data-[state=open]:bg-line-strong aria-[haspopup=menu]:data-[state=open]:text-foreground',
         quiet:
           'text-ink-faint hover:bg-line hover:text-ink-soft aria-[haspopup=menu]:data-[state=open]:bg-line aria-[haspopup=menu]:data-[state=open]:text-ink-soft',
+        // A row's name that opens it: no fill, even on hover.
+        plain: 'text-foreground',
         destructive:
           'bg-destructive text-white hover:bg-red-700 dark:bg-red-900 dark:hover:bg-red-800',
         link: 'text-foreground underline-offset-4 hover:underline',

@@ -12,20 +12,25 @@ export interface ImportSummary {
   sectionCount: number;
   entryCount: number;
   bulletCount: number;
+  lineCount: number;
   contactName: string;
 }
 
 export function describeImport(parsed: ParsedResume): ImportSummary {
   const { sections, contact } = parsed.resume;
-  const entryCount = sections.reduce((sum, section) => sum + section.items.length, 0);
+  const count = (layout: ResumeSection['layout']) =>
+    sections
+      .filter((section) => section.layout === layout)
+      .reduce((sum, section) => sum + section.items.length, 0);
   const bulletCount = sections.reduce(
     (sum, section) => sum + section.items.reduce((n, item) => n + item.bullets.length, 0),
     0
   );
   return {
     sectionCount: sections.length,
-    entryCount,
+    entryCount: count('entries'),
     bulletCount,
+    lineCount: count('lines'),
     contactName: contact.name,
   };
 }

@@ -35,6 +35,7 @@ function parsed(sections: ResumeSection[], incoming: ContactInfo = contact()): P
     resume: { schemaVersion: 1, contact: incoming, sections },
     warnings: [],
     leftOut: [],
+    review: { sections: {}, items: {} },
   };
 }
 
@@ -67,11 +68,13 @@ describe('describeImport', () => {
       },
       warnings: [],
       leftOut: [],
+      review: { sections: {}, items: {} },
     };
     expect(describeImport(result)).toEqual({
       sectionCount: 1,
       entryCount: 1,
       bulletCount: 2,
+      lineCount: 0,
       contactName: 'Ada',
     });
   });

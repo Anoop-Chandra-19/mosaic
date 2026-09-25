@@ -115,8 +115,10 @@ describe('docxLines', () => {
     it('title-cases a heading typed in capitals, and leaves one set in capitals as written', () => {
       const typed = linesOf([p('Ada'), p('WORK HISTORY'), p('Analyst')]).lines;
       expect(typed[1]).toMatchObject({ text: 'Work History', role: 'heading' });
+      expect(typed[1].source).toEqual([{ text: 'WORK HISTORY' }]);
       const set = linesOf([p('Ada'), p('Work History', { caps: true }), p('Analyst')]).lines;
       expect(set[1]).toMatchObject({ text: 'Work History', role: 'heading' });
+      expect(set[1].source).toBeUndefined();
     });
   });
 
@@ -456,7 +458,7 @@ describe('docxLines', () => {
       ]);
     });
 
-    it('drops a header line the body already says, and page numbers', () => {
+    it('leaves out a header line the body already says, and page numbers, and lists them', () => {
       const { lines, leftOut } = linesOf([
         headerLine('Ada Lovelace'),
         headerLine('Page 1 of 2'),
@@ -464,7 +466,10 @@ describe('docxLines', () => {
         heading('Work History'),
       ]);
       expect(lines.map((l) => l.text)).toEqual(['Ada Lovelace', 'Work History']);
-      expect(leftOut).toEqual([]);
+      expect(leftOut).toEqual([
+        { text: 'Ada Lovelace', reason: 'repeated', canPlace: false },
+        { text: 'Page 1 of 2', reason: 'page-number', canPlace: false },
+      ]);
     });
 
     it('leaves a footer’s text out of the resume, but shows it as left out', () => {
@@ -475,7 +480,10 @@ describe('docxLines', () => {
         footerLine('2'),
       ]);
       expect(lines.map((l) => l.text)).toEqual(['Ada Lovelace', 'Work History']);
-      expect(leftOut).toEqual(['References available on request']);
+      expect(leftOut).toEqual([
+        { text: 'References available on request', reason: 'repeated', canPlace: false },
+        { text: '2', reason: 'page-number', canPlace: false },
+      ]);
     });
   });
 
@@ -487,6 +495,13 @@ describe('docxLines', () => {
     expect(notes).toContainEqual(
       expect.objectContaining({ kind: 'uncertain', message: expect.stringContaining('text box') })
     );
+  });
+
+  it('puts a text box’s doubt on its lines, and says nothing more when they fall in sections', () => {
+    const boxed = { source: source('body/p[3]/txbx[1]/p[1]', { floating: true }) };
+    const { lines, notes } = linesOf([p('Ada Lovelace'), heading('Skills'), p('Go', boxed)]);
+    expect(lines.at(-1)!.doubts).toEqual(['Read from a text box. Check it sits where it should.']);
+    expect(notes).toEqual([]);
   });
 
   it('passes on what the reading of the file already noted', () => {

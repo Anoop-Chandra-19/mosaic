@@ -30,19 +30,34 @@ import {
   findMarkedLinkUrl,
   removeLinkMarks,
   replaceMarkedLinksWithText,
+  sourceOf,
   textToLines,
   type ImportLine,
+  type LeftOutLine,
+  type SourceLine,
 } from './importLines';
 import { matchSectionHeader } from './sectionHeaders';
 
+export interface ReadFrom {
+  source: SourceLine[];
+  doubts: string[];
+}
+
 export interface ParsedResume {
   resume: ResumeData;
+  /** Doubts about the file as a whole. */
   warnings: string[];
-  /**
-   * Lines Mosaic read but found no place for — a heading with nothing under it — as they
-   * were in the file. The review step lists them, so nothing is dropped without saying so.
-   */
-  leftOut: string[];
+  /** Nothing is dropped without saying so: the review lists these. */
+  leftOut: LeftOutLine[];
+  /** By section and item id. Empty for JSON Resume, which was never lines. */
+  review: { sections: Record<string, ReadFrom>; items: Record<string, ReadFrom> };
+}
+
+function readFrom(lines: ImportLine[], sources: Map<ImportLine, SourceLine[]>): ReadFrom {
+  return {
+    source: lines.flatMap((line) => sources.get(line) ?? sourceOf(line)),
+    doubts: [...new Set(lines.flatMap((line) => line.doubts ?? []))],
+  };
 }
 
 const EMAIL_RE = /[\w.+-]+@[\w-]+\.[\w.-]+/;
@@ -79,6 +94,8 @@ const textsOf = (line: ImportLine) => (line.aside ? [line.text, line.aside] : [l
 function newBullet(text: string): Bullet {
   return { id: crypto.randomUUID(), text: text.trim(), selected: true };
 }
+
+type TrackItem = (id: string, lines: ImportLine[]) => void;
 
 /**
  * A section body split where an entry starts: at a line marked as one, or at a gap — in a
@@ -205,17 +222,24 @@ function parseContact(
   marked: boolean,
   linkStyle: LinkStyle,
   linkColor: LinkColor
-): ContactInfo {
+): { contact: ContactInfo; underNoHeading: string[] } {
   const shown = preamble.map((line) => removeLinkMarks(line.text));
-  const nameAt = shown.findIndex(
-    (line) =>
-      fieldsOf(line).length === 1 &&
-      !isReach(line) &&
-      !STATUS_RE.test(line) &&
-      !LOCATION_RE.test(line)
-  );
+  const isOneField = (line: string) =>
+    fieldsOf(line).length === 1 &&
+    !isReach(line) &&
+    !STATUS_RE.test(line) &&
+    !LOCATION_RE.test(line);
+  const nameAt = shown.findIndex(isOneField);
+  // Only a single field can be a stray sentence: a line of several stays a header line, so
+  // Mosaic's own custom items come back.
+  const isStray = (index: number) =>
+    index !== nameAt &&
+    isOneField(shown[index]) &&
+    !findMarkedLinkUrl(preamble[index].text) &&
+    isSentence(shown[index].trim());
+  const underNoHeading = shown.filter((line, index) => line.trim() && isStray(index));
   const lines = preamble
-    .filter((line, index) => index !== nameAt && line.text.trim())
+    .filter((line, index) => index !== nameAt && line.text.trim() && !isStray(index))
     .map((line) => createHeaderLineFromContactLine(line, marked));
 
   // With no contact block, the address and number can be anywhere.
@@ -231,10 +255,28 @@ function parseContact(
   }
 
   return {
-    name: nameAt < 0 ? '' : shown[nameAt].trim(),
-    header: { linkStyle, ...(linkColor === 'blue' && { linkColor }), lines },
+    contact: {
+      name: nameAt < 0 ? '' : shown[nameAt].trim(),
+      header: { linkStyle, ...(linkColor === 'blue' && { linkColor }), lines },
+    },
+    underNoHeading: underNoHeading.map((line) => line.trim()),
   };
 }
+
+/** "Python ●●●●○". A symbol font's marks sit in the Private Use Area. */
+const RATING_MARKS = /(?:[●○◉◯⬤◐★☆■□◆◇-]\s?){3,}/u;
+const hasRatingMarks = (text: string) => RATING_MARKS.test(text);
+
+/** "Python ●●●●○ Go ●●●●●" → "Python, Go". */
+export const removeRatingMarks = (text: string) =>
+  text
+    .split(new RegExp(RATING_MARKS.source, 'gu'))
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .join(', ');
+
+const isSentence = (text: string) =>
+  text.split(/\s+/).length >= 6 || /\p{L}[.!?]["')\]]?$/u.test(text);
 
 function textEntry(text: string): ResumeEntry {
   return { id: crypto.randomUUID(), selected: true, text, bullets: [] };
@@ -244,28 +286,38 @@ function textEntry(text: string): ResumeEntry {
  * A lines section: one item per line. A wrapped summary's lines join until one ends a
  * sentence or a gap comes.
  */
-function parseLineSection(body: ImportLine[], joinWrapped: boolean): ResumeEntry[] {
-  const texts: string[] = [];
+function parseLineSection(
+  body: ImportLine[],
+  joinWrapped: boolean,
+  track: TrackItem
+): ResumeEntry[] {
+  const groups: { text: string; lines: ImportLine[] }[] = [];
   let open = false;
-  for (const { text, gapBefore } of body) {
+  for (const line of body) {
+    const { text, gapBefore } = line;
     if (!text) continue;
-    if (joinWrapped && open && !gapBefore) texts[texts.length - 1] += ` ${text}`;
-    else texts.push(text);
+    const last = groups.at(-1);
+    if (joinWrapped && open && !gapBefore && last) {
+      last.text += ` ${text}`;
+      last.lines.push(line);
+    } else {
+      groups.push({ text, lines: [line] });
+    }
     open = !/[.!?]["')\]]?$/.test(text);
   }
-  return texts.map(textEntry);
+  return groups.map(({ text, lines }) => {
+    const entry = textEntry(text);
+    track(entry.id, lines);
+    return entry;
+  });
 }
 
 function titledEntry(
   { title, organization, location }: EntryHeadingFields,
   dates: string,
-  bullets: string[] = []
+  bullets: Bullet[] = []
 ): ResumeEntry {
-  const entry: ResumeEntry = {
-    id: crypto.randomUUID(),
-    selected: true,
-    bullets: bullets.map(newBullet),
-  };
+  const entry: ResumeEntry = { id: crypto.randomUUID(), selected: true, bullets };
   if (title) entry.title = title;
   if (organization) entry.organization = organization;
   if (location) entry.location = location;
@@ -309,22 +361,28 @@ function lineEntry(line: ImportLine, marked: boolean): ResumeEntry {
  * bullets. A line under the first is more of the left side ("Acme Corp, Detroit" under a
  * job title), and anything on its right more of the dates.
  */
-function parseEntrySection(body: ImportLine[], marked: boolean): ResumeEntry[] {
+function parseEntrySection(body: ImportLine[], marked: boolean, track: TrackItem): ResumeEntry[] {
   const entries: ResumeEntry[] = [];
 
   for (const block of splitBlocks(body, marked)) {
     const headerLines = block.filter((line) => line.role !== 'bullet');
     const bullets = block
-      .filter((line) => line.role === 'bullet')
-      .map((line) => line.text)
-      .filter(Boolean);
+      .filter((line) => line.role === 'bullet' && line.text)
+      .map((line) => {
+        const bullet = newBullet(line.text);
+        track(bullet.id, [line]);
+        return bullet;
+      });
 
     // A block of only unmarked lines with no bullets is a list (e.g. certifications):
     // an entry per line.
     const plainList = headerLines.every((line) => line.role === undefined);
     if (bullets.length === 0 && headerLines.length > 1 && plainList) {
       for (const line of headerLines) {
-        if (line.text || line.aside) entries.push(lineEntry(line, marked));
+        if (!line.text && !line.aside) continue;
+        const entry = lineEntry(line, marked);
+        track(entry.id, [line]);
+        entries.push(entry);
       }
       continue;
     }
@@ -346,7 +404,9 @@ function parseEntrySection(body: ImportLine[], marked: boolean): ResumeEntry[] {
       first?.fields && rest.length === 0
         ? first.fields
         : splitEntryHeading(left.join(ENTRY_HEADING_SEPARATOR));
-    entries.push(titledEntry(fields, dates, bullets));
+    const entry = titledEntry(fields, dates, bullets);
+    track(entry.id, headerLines);
+    entries.push(entry);
   }
 
   return entries;
@@ -383,46 +443,78 @@ export function parseResumeLines(
   const preamble = lines
     .slice(0, contactEnd)
     .flatMap((line) => textsOf(line).map((text) => ({ text, align: line.align })));
-  lines = lines.map((line, index) =>
-    index < contactEnd
-      ? line
-      : {
-          ...line,
-          text: replaceMarkedLinksWithText(line.text),
-          ...(line.aside !== undefined && { aside: replaceMarkedLinksWithText(line.aside) }),
-          ...(line.fields && {
-            fields: {
-              title: replaceMarkedLinksWithText(line.fields.title),
-              organization: replaceMarkedLinksWithText(line.fields.organization),
-              location: replaceMarkedLinksWithText(line.fields.location),
-            },
-          }),
-        }
-  );
+  // Taken before links are written out, so the review shows a link's words as the file did.
+  const sources = new Map<ImportLine, SourceLine[]>();
+  lines = lines.map((line, index) => {
+    if (index < contactEnd) return line;
+    const written: ImportLine = {
+      ...line,
+      text: replaceMarkedLinksWithText(line.text),
+      ...(line.aside !== undefined && { aside: replaceMarkedLinksWithText(line.aside) }),
+      ...(line.fields && {
+        fields: {
+          title: replaceMarkedLinksWithText(line.fields.title),
+          organization: replaceMarkedLinksWithText(line.fields.organization),
+          location: replaceMarkedLinksWithText(line.fields.location),
+        },
+      }),
+    };
+    sources.set(written, sourceOf(line));
+    return written;
+  });
   const fullText = lines.flatMap(textsOf).map(replaceMarkedLinksWithText).join('\n');
-  const contact = parseContact(preamble, fullText, marked, linkStyle, linkColor);
-  const leftOut: string[] = [];
+  const { contact, underNoHeading } = parseContact(
+    preamble,
+    fullText,
+    marked,
+    linkStyle,
+    linkColor
+  );
+  const leftOut: LeftOutLine[] = underNoHeading.map((text) => ({
+    text,
+    reason: 'no-heading',
+    canPlace: true,
+  }));
+  const review: ParsedResume['review'] = { sections: {}, items: {} };
+  const track: TrackItem = (id, from) => {
+    review.items[id] = readFrom(from, sources);
+  };
 
   const sections: ResumeSection[] = [];
   headings.forEach((index, i) => {
-    const body = lines.slice(index + 1, headings[i + 1] ?? lines.length);
-    const known = matchSectionHeader(lines[index].text);
+    const heading = lines[index];
+    const body: ImportLine[] = [];
+    for (const line of lines.slice(index + 1, headings[i + 1] ?? lines.length)) {
+      if (!textsOf(line).some(hasRatingMarks)) {
+        body.push(line);
+        continue;
+      }
+      leftOut.push({
+        text: textsOf(line).join('   '),
+        reason: 'rating-marks',
+        canPlace: true,
+        under: heading.text,
+      });
+    }
+    const known = matchSectionHeader(heading.text);
     const kind: SectionKind = known ?? 'custom';
     const layout = known && !marked ? SECTION_PRESETS[known].layout : layoutOf(body, marked);
     const items =
       layout === 'lines'
-        ? parseLineSection(body, !marked && kind === 'summary')
-        : parseEntrySection(body, marked);
+        ? parseLineSection(body, !marked && kind === 'summary', track)
+        : parseEntrySection(body, marked, track);
     if (items.length === 0) {
-      leftOut.push(lines[index].text);
+      leftOut.push({ text: heading.text, reason: 'empty-heading', canPlace: false });
       return;
     }
+    const id = crypto.randomUUID();
+    review.sections[id] = readFrom([heading], sources);
     sections.push({
-      id: crypto.randomUUID(),
+      id,
       kind,
       layout,
       // The heading as written, so a resume keeps its own names ("Work History").
-      label: lines[index].text,
+      label: heading.text,
       order: sections.length,
       items,
     });
@@ -441,6 +533,7 @@ export function parseResumeLines(
     resume: { schemaVersion: 1, contact, sections },
     warnings,
     leftOut,
+    review,
   };
 }
 

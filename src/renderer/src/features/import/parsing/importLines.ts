@@ -36,6 +36,39 @@ export interface ImportLine {
    * line back to the file it was read from.
    */
   origin?: string;
+  /**
+   * The file's own lines, set only by a reader that joined or changed them (a wrap, a page
+   * break, a heading's capitals); otherwise `sourceOf` derives them.
+   */
+  source?: SourceLine[];
+  doubts?: string[];
+}
+
+export type SourceLine = { text: string; bullet?: boolean } | { pageBreak: true };
+
+export function sourceOf(line: ImportLine): SourceLine[] {
+  if (line.source) return line.source;
+  const text = removeLinkMarks(line.text);
+  const shown = line.aside ? `${text}   ${removeLinkMarks(line.aside)}` : text;
+  return [line.role === 'bullet' ? { text: shown, bullet: true } : { text: shown }];
+}
+
+/** `not-held`: a JSON Resume field Mosaic has no place for. */
+export type LeftOutReason =
+  | 'empty-heading'
+  | 'repeated'
+  | 'page-number'
+  | 'sideways'
+  | 'not-held'
+  | 'no-heading'
+  | 'rating-marks';
+
+export interface LeftOutLine {
+  text: string;
+  reason: LeftOutReason;
+  canPlace: boolean;
+  /** The heading it sat under: the name of a new section made for it. */
+  under?: string;
 }
 
 /** A leading list marker: a bullet glyph, a dash, or a number. */
@@ -174,7 +207,10 @@ export function textToLines(text: string): ImportLine[] {
       line.text = raw.replace(BULLET_MARKER, '').trim();
     } else if (matchSectionHeader(raw) || capitalHeading) {
       line.role = 'heading';
-      if (isCapitals(line.text)) line.text = titleCase(line.text);
+      if (isCapitals(line.text)) {
+        line.source = [{ text: line.text }];
+        line.text = titleCase(line.text);
+      }
     }
     if (gap) line.gapBefore = true;
     gap = false;

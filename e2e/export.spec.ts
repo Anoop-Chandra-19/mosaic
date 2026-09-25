@@ -213,6 +213,7 @@ test('Save PDF writes the resume as a real PDF, which reads back in through Impo
   }
   await expect(importing.getByRole('button', { name: /^Left out/ })).toHaveCount(0);
   // The blue underlines are read off the page, and the review says so.
+  await importing.getByRole('button', { name: 'Contact' }).click();
   await expect(importing.getByRole('listitem').filter({ hasText: 'Contact' })).toContainText(
     'Links underlined and blue, as in the file.'
   );
@@ -255,6 +256,7 @@ test('Save DOCX writes a Word file, which reads back in through Import', async (
     await expect(importing.getByRole('listitem').filter({ hasText: heading })).toContainText(holds);
   }
   await expect(importing.getByRole('button', { name: /^Left out/ })).toHaveCount(0);
+  await importing.getByRole('button', { name: 'Contact' }).click();
   await expect(importing.getByRole('listitem').filter({ hasText: 'Contact' })).toContainText(
     'Links underlined, as in the file.'
   );

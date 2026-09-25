@@ -162,8 +162,8 @@ export function entryFields(data: ResumeData) {
 /**
  * A header using what a header can: a left-aligned line with its own separator, a link
  * whose words and address hold characters Markdown and plain text write specially, an
- * address left unlinked, a status holding its line's separator, spaces between items, and
- * underlined links.
+ * address left unlinked, a status holding its line's separator, spaces between items,
+ * custom items, and underlined links.
  */
 export function createStyledHeaderResume(): ResumeData {
   const data = resume([section('skills', 'lines', 'Skills', lines('Mathematics'))]);
@@ -192,6 +192,15 @@ export function createStyledHeaderResume(): ResumeData {
           createHeaderItem('site', { text: 'Portfolio', url: 'https://ada.dev' }),
         ],
         { separator: '    ' }
+      ),
+      // Neither may come back as a line under no heading.
+      createHeaderLine([createHeaderItem('custom', { text: 'Open to relocation' })]),
+      createHeaderLine(
+        [
+          createHeaderItem('custom', { text: 'Happy to talk about engines, looms, and poetry.' }),
+          createHeaderItem('custom', { text: 'Weekdays' }),
+        ],
+        { separator: ' | ' }
       ),
     ],
   };
