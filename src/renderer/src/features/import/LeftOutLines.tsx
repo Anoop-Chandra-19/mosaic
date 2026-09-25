@@ -25,7 +25,7 @@ export function LeftOutLines({ lines }: { lines: string[] }) {
   };
 
   return (
-    <Collapsible className="mt-3 rounded-lg border border-zinc-200 dark:border-zinc-800">
+    <Collapsible className="mt-3 rounded-lg border border-line">
       <div className="flex items-center justify-between gap-2 p-1">
         <CollapsibleTrigger asChild>
           <AppButton variant="ghost" size="sm" className="group h-7 gap-1.5 px-2">
@@ -47,7 +47,7 @@ export function LeftOutLines({ lines }: { lines: string[] }) {
         </AppButton>
       </div>
       <CollapsibleContent>
-        <div className="border-t border-zinc-200 px-3 py-2 dark:border-zinc-800">
+        <div className="border-t border-line px-3 py-2">
           <p className="mb-1.5 text-xs leading-relaxed text-zinc-600 dark:text-zinc-400">
             Mosaic found no place for these. Copy what you need into the editor after importing.
           </p>

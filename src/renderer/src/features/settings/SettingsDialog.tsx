@@ -31,9 +31,9 @@ export function SettingsDialog() {
     <Dialog open={showing !== null} onOpenChange={(open) => !open && close()}>
       <DialogContent
         showCloseButton={false}
-        className="flex h-[min(37.5rem,90vh)] w-[min(54rem,96vw)] max-w-none flex-col gap-0 overflow-hidden rounded-xl border-zinc-200 bg-white p-0 sm:max-w-none dark:border-zinc-800 dark:bg-zinc-950"
+        className="flex h-[min(37.5rem,90vh)] w-[min(54rem,96vw)] max-w-none flex-col gap-0 overflow-hidden rounded-xl border-line-strong bg-white p-0 sm:max-w-none dark:bg-zinc-950"
       >
-        <header className="flex items-center justify-between border-b border-zinc-200 px-3.5 py-3 dark:border-zinc-800">
+        <header className="flex items-center justify-between border-b border-line px-3.5 py-3">
           <DialogTitle className="flex items-center gap-2 text-sm font-semibold text-zinc-900 dark:text-zinc-100">
             <Settings className="size-4 text-zinc-500" />
             Settings
@@ -55,7 +55,7 @@ export function SettingsDialog() {
         <div className="flex min-h-0 flex-1 flex-col md:flex-row">
           <nav
             aria-label="Settings sections"
-            className="flex shrink-0 gap-1 overflow-x-auto border-b border-zinc-200 bg-zinc-50 px-2 py-2 md:w-49 md:flex-col md:overflow-y-auto md:border-r md:border-b-0 md:py-2.5 dark:border-zinc-800 dark:bg-zinc-900"
+            className="flex shrink-0 gap-1 overflow-x-auto border-b border-line bg-zinc-50 px-2 py-2 md:w-49 md:flex-col md:overflow-y-auto md:border-r md:border-b-0 md:py-2.5 dark:bg-zinc-900"
           >
             {SETTINGS_GROUPS.map((group, index) => (
               <div key={group.label ?? index} className="flex gap-1 md:flex-col">
@@ -77,7 +77,7 @@ export function SettingsDialog() {
                       className={cn(
                         'justify-start gap-2 px-2 font-normal',
                         isActive
-                          ? 'bg-white font-medium text-zinc-900 ring-1 ring-zinc-200 ring-inset hover:bg-white dark:bg-zinc-800 dark:text-zinc-100 dark:ring-zinc-700 dark:hover:bg-zinc-800'
+                          ? 'bg-white font-medium text-zinc-900 ring-1 ring-line-strong ring-inset hover:bg-white dark:bg-zinc-800 dark:text-zinc-100 dark:hover:bg-zinc-800'
                           : 'text-zinc-700 dark:text-zinc-300'
                       )}
                     >
@@ -89,7 +89,7 @@ export function SettingsDialog() {
                       />
                       {item.label}
                       {item.id === 'ai' && !aiEnabled && (
-                        <span className="ml-auto rounded border border-zinc-200 bg-zinc-100 px-1 text-[0.65rem] leading-4 font-medium text-zinc-600 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-400">
+                        <span className="ml-auto rounded border border-line-strong bg-zinc-100 px-1 text-[0.65rem] leading-4 font-medium text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400">
                           off
                         </span>
                       )}

@@ -35,7 +35,7 @@ export function EmptyContentHint({
   const add = (kind: BuiltInSectionKind) => addSection({ kind, ...SECTION_PRESETS[kind] });
 
   return (
-    <div className="rounded-lg border border-dashed border-zinc-300 bg-zinc-50 p-3.5 dark:border-zinc-700 dark:bg-zinc-900">
+    <div className="rounded-lg border border-dashed border-line-heavy bg-zinc-50 p-3.5 dark:bg-zinc-900">
       <p className="mb-2.5 text-xs font-semibold tracking-wider text-zinc-500 uppercase">
         Add a section
       </p>

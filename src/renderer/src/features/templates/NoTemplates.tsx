@@ -29,7 +29,7 @@ export function NoTemplates() {
 
   return (
     <div className="mx-auto max-w-sm px-2.5 py-8 text-center">
-      <div className="mx-auto mb-3 grid size-11 place-items-center rounded-xl border border-zinc-300 bg-zinc-100 text-zinc-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-400">
+      <div className="mx-auto mb-3 grid size-11 place-items-center rounded-xl border border-line-strong bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400">
         <LayoutTemplate className="size-4.5" />
       </div>
       <p className="mb-1 text-sm font-semibold text-zinc-900 dark:text-zinc-100">

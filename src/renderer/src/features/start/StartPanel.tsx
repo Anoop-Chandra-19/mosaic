@@ -64,7 +64,7 @@ export function StartPanel({ closable }: StartPanelProps) {
     <div className="absolute inset-0 z-30 flex items-center justify-center overflow-auto bg-[color-mix(in_srgb,var(--background)_78%,transparent)] p-5 backdrop-blur-[3px]">
       <section
         aria-labelledby="start-title"
-        className="max-h-full w-full max-w-140 overflow-auto rounded-xl border border-zinc-300 bg-white px-6 pt-6 pb-3.5 shadow-2xl dark:border-zinc-800 dark:bg-zinc-950"
+        className="max-h-full w-full max-w-140 overflow-auto rounded-xl border border-line-strong bg-white px-6 pt-6 pb-3.5 shadow-2xl dark:bg-zinc-950"
       >
         {view === 'routes' ? (
           <>
@@ -115,7 +115,7 @@ export function StartPanel({ closable }: StartPanelProps) {
                 onClick={() => void startFromSample()}
                 onPointerEnter={focusOnPointer}
                 className={cn(
-                  'flex flex-col items-center gap-2 rounded-lg border border-zinc-300 bg-zinc-50 p-3 text-xs font-medium text-zinc-700 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300',
+                  'flex flex-col items-center gap-2 rounded-lg border border-line-strong bg-zinc-50 p-3 text-xs font-medium text-zinc-700 dark:bg-zinc-900 dark:text-zinc-300',
                   OPTION_HIGHLIGHT
                 )}
                 autoFocus
@@ -123,7 +123,7 @@ export function StartPanel({ closable }: StartPanelProps) {
                 <SlotPaper />
                 Example resume
               </button>
-              <div className="flex flex-col items-center gap-2 rounded-lg border border-dashed border-zinc-300 p-3 text-xs text-zinc-500 dark:border-zinc-700">
+              <div className="flex flex-col items-center gap-2 rounded-lg border border-dashed border-line-heavy p-3 text-xs text-zinc-500">
                 <SlotPaper />
                 More coming
               </div>
@@ -182,7 +182,7 @@ function PanelHead({
 
 function PanelFoot({ icon: Icon, children }: { icon: typeof Lock; children: ReactNode }) {
   return (
-    <div className="mt-4 flex items-center gap-2 border-t border-zinc-200 pt-3 text-xs text-zinc-500 dark:border-zinc-800">
+    <div className="mt-4 flex items-center gap-2 border-t border-line pt-3 text-xs text-zinc-500">
       <Icon className="size-3 shrink-0" />
       {children}
     </div>
@@ -203,7 +203,7 @@ function RouteIcon({ icon: Icon }: { icon: typeof Lock }) {
   return (
     <span
       className={cn(
-        'grid size-8 shrink-0 place-items-center rounded-lg border border-zinc-300 bg-zinc-100 text-zinc-600 transition-colors dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300',
+        'grid size-8 shrink-0 place-items-center rounded-lg border border-line-strong bg-zinc-100 text-zinc-600 transition-colors dark:bg-zinc-800 dark:text-zinc-300',
         'group-focus/route:border-amber-300 group-focus/route:bg-amber-50 group-focus/route:text-amber-600 dark:group-focus/route:border-amber-800 dark:group-focus/route:bg-amber-950 dark:group-focus/route:text-amber-400'
       )}
     >
@@ -258,7 +258,7 @@ function StartRoute({ icon, title, description, hint, autoFocus, onClick }: Star
       onPointerEnter={focusOnPointer}
       autoFocus={autoFocus}
       className={cn(
-        'group/route flex w-full items-center gap-3 rounded-lg border border-zinc-300 bg-zinc-50 p-3 text-left text-zinc-900 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100',
+        'group/route flex w-full items-center gap-3 rounded-lg border border-line-strong bg-zinc-50 p-3 text-left text-zinc-900 dark:bg-zinc-900 dark:text-zinc-100',
         OPTION_HIGHLIGHT
       )}
     >
@@ -268,7 +268,7 @@ function StartRoute({ icon, title, description, hint, autoFocus, onClick }: Star
         <span className="text-xs leading-snug text-zinc-600 dark:text-zinc-400">{description}</span>
       </span>
       {hint && (
-        <kbd className="shrink-0 rounded border border-zinc-300 px-1.5 py-0.5 font-sans text-[0.65rem] text-zinc-500 dark:border-zinc-700">
+        <kbd className="shrink-0 rounded border border-line-strong px-1.5 py-0.5 font-sans text-[0.65rem] text-zinc-500">
           {hint}
         </kbd>
       )}
@@ -282,7 +282,7 @@ function SlotPaper() {
   return (
     <span
       aria-hidden
-      className="block h-26 w-full rounded-sm border border-zinc-300 bg-[repeating-linear-gradient(var(--color-zinc-200)_0_0.45rem,transparent_0.45rem_0.6rem)] dark:border-zinc-700 dark:bg-[repeating-linear-gradient(var(--color-zinc-800)_0_0.45rem,transparent_0.45rem_0.6rem)]"
+      className="block h-26 w-full rounded-sm border border-line-strong bg-[repeating-linear-gradient(var(--color-zinc-200)_0_0.45rem,transparent_0.45rem_0.6rem)] dark:bg-[repeating-linear-gradient(var(--color-zinc-800)_0_0.45rem,transparent_0.45rem_0.6rem)]"
     />
   );
 }

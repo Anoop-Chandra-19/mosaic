@@ -90,7 +90,7 @@ function RestoreForm({ backup, onDone }: { backup: OpenedBackup; onDone: () => v
         </DialogDescription>
       </DialogHeader>
 
-      <div className="flex items-start gap-3 rounded-lg border border-zinc-200 bg-zinc-50 p-3 dark:border-zinc-800 dark:bg-zinc-900">
+      <div className="flex items-start gap-3 rounded-lg border border-line bg-zinc-50 p-3 dark:bg-zinc-900">
         <FileJson2 className="mt-0.5 size-4 shrink-0 text-zinc-500" />
         <div className="min-w-0 text-xs leading-relaxed">
           <p className="truncate font-mono text-zinc-900 dark:text-zinc-100">{backup.fileName}</p>
@@ -172,7 +172,7 @@ function ModeOption({
         'flex cursor-pointer items-start gap-3 rounded-lg border p-3 transition-colors',
         value === selected
           ? 'border-amber-500 bg-zinc-50 dark:border-amber-600 dark:bg-zinc-900'
-          : 'border-zinc-200 hover:bg-zinc-50 dark:border-zinc-800 dark:hover:bg-zinc-900'
+          : 'border-line hover:bg-zinc-50 dark:hover:bg-zinc-900'
       )}
     >
       <RadioGroupItem id={id} value={value} className="mt-0.5" />

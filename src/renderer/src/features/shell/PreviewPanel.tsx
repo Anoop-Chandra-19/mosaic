@@ -42,7 +42,7 @@ export function PreviewPanel() {
               'inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-xs font-semibold',
               runsLong
                 ? 'border-amber-300 bg-amber-100 text-amber-900 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-300'
-                : 'border-zinc-300 bg-zinc-100 text-zinc-700 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300'
+                : 'border-line-strong bg-zinc-100 text-zinc-700 dark:bg-zinc-900 dark:text-zinc-300'
             )}
           >
             {runsLong && <TriangleAlert className="size-3" />}

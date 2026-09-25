@@ -48,7 +48,7 @@ export function DeleteTemplateDialog({
             {versions} {versions === 1 ? 'version' : 'versions'}?
           </DialogDescription>
         </DialogHeader>
-        <p className="flex gap-2 rounded-lg border border-zinc-300 bg-zinc-100 p-3 text-xs leading-relaxed text-zinc-600 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-400">
+        <p className="flex gap-2 rounded-lg border border-line-strong bg-zinc-100 p-3 text-xs leading-relaxed text-zinc-600 dark:bg-zinc-900 dark:text-zinc-400">
           <Info className="mt-0.5 size-3.5 shrink-0 text-zinc-500" />
           <span>
             {active &&
