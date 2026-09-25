@@ -147,8 +147,54 @@ describe('pdfLines', () => {
     ]);
   });
 
-  it('reads bullets drawn as shapes by their indent', () => {
+  it('keeps the lines a joined line was read from, and where a page broke between them', () => {
     const { lines } = read(
+      page([
+        bold('EXPERIENCE', 72, 80),
+        italic('Tutor', 72, 94),
+        run('•', 90, 108),
+        full('Wrote notes on the engine that ran', 108, 108),
+        run('to three times its length.', 108, 122),
+        run('•', 90, 760),
+        full('Kept a ledger of every result the engine', 108, 760),
+      ]),
+      page([run('printed, by hand.', 108, 40)])
+    );
+    const [heading, , first, second] = lines;
+    expect(heading.source).toEqual([{ text: 'EXPERIENCE' }]);
+    expect(first.source).toEqual([
+      { text: 'Wrote notes on the engine that ran', bullet: true },
+      { text: 'to three times its length.' },
+    ]);
+    expect(second.text).toBe('Kept a ledger of every result the engine printed, by hand.');
+    expect(second.source).toEqual([
+      { text: 'Kept a ledger of every result the engine', bullet: true },
+      { pageBreak: true },
+      { text: 'printed, by hand.' },
+    ]);
+    expect(first.doubts).toBeUndefined();
+    expect(second.doubts).toEqual(['Ran across the page break. Check the join.']);
+  });
+
+  it('keeps a marker left at the foot of a page as the bullet of the text that tops the next', () => {
+    const { lines } = read(
+      page([
+        bold('Projects', 72, 80),
+        italic('Note G', 72, 94),
+        run('•', 72, 108),
+        run('Computed Bernoulli numbers', 108, 108),
+        run('•', 72, 760),
+      ]),
+      page([run('Ran on paper', 108, 40)])
+    );
+    expect(lines.at(-1)!.source).toEqual([
+      { pageBreak: true },
+      { text: 'Ran on paper', bullet: true },
+    ]);
+  });
+
+  it('reads bullets drawn as shapes by their indent, and says so', () => {
+    const { lines, notes } = read(
       page([
         bold('Experience', 72, 80),
         italic('Analyst at Babbage & Co', 72, 94),
@@ -161,6 +207,13 @@ describe('pdfLines', () => {
       ['entry', 'Analyst at Babbage & Co'],
       ['bullet', 'Wrote the first program'],
       ['bullet', 'Corrected the tables'],
+    ]);
+    expect(notes).toEqual([
+      {
+        kind: 'uncertain',
+        message:
+          'This PDF draws its bullets as shapes, so Mosaic found them by their indent. Check the bullets.',
+      },
     ]);
   });
 
@@ -213,10 +266,10 @@ describe('pdfLines', () => {
     );
   });
 
-  it('drops page numbers and a header repeated on every page, keeping the header once', () => {
+  it('leaves out page numbers and a header repeated on every page, keeping the header once', () => {
     const onEachPage = (n: number, body: PdfRun[]) =>
       page([run('Ada Lovelace — Resume', 72, 30), ...body, run(`Page ${n} of 2`, 280, 770)]);
-    const { lines } = read(
+    const { lines, leftOut } = read(
       onEachPage(1, [bold('Experience', 72, 80), italic('Analyst', 72, 94)]),
       onEachPage(2, [bold('Education', 72, 80), italic('Tutored', 72, 94)])
     );
@@ -226,6 +279,11 @@ describe('pdfLines', () => {
       'Analyst',
       'Education',
       'Tutored',
+    ]);
+    expect(leftOut).toEqual([
+      { text: 'Page 1 of 2', reason: 'page-number', canPlace: false },
+      { text: 'Ada Lovelace — Resume', reason: 'repeated', canPlace: false },
+      { text: 'Page 2 of 2', reason: 'page-number', canPlace: false },
     ]);
   });
 
@@ -309,7 +367,7 @@ describe('pdfLines', () => {
       page([bold('Ada Lovelace', 250, 40), run('DRAFT', 20, 400, { upright: false })])
     );
     expect(lines.map((line) => line.text)).toEqual(['Ada Lovelace']);
-    expect(leftOut).toEqual(['DRAFT']);
+    expect(leftOut).toEqual([{ text: 'DRAFT', reason: 'sideways', canPlace: true }]);
     expect(notes.map((note) => note.kind)).toEqual(['excluded']);
   });
 });

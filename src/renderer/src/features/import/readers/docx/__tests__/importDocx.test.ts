@@ -251,13 +251,11 @@ describe('what a strange document still gives up', () => {
     ].join('');
     const parsed = await readDocx(await docx(body));
     expect(parsed.resume.sections[0].items[0].title).toBe('Analyst');
-    expect(parsed.warnings).toEqual([
-      expect.stringContaining('a picture'),
-      expect.stringContaining('text box'),
-    ]);
-    expect(
-      parsed.resume.sections.flatMap((s) => s.items.map((i) => i.text ?? i.title ?? ''))
-    ).toContain('A note in a box');
+    expect(parsed.warnings).toEqual([expect.stringContaining('a picture')]);
+    const boxed = parsed.resume.sections
+      .flatMap((s) => s.items)
+      .find((i) => (i.text ?? i.title) === 'A note in a box');
+    expect(parsed.review.items[boxed!.id].doubts).toEqual([expect.stringContaining('text box')]);
   });
 
   it('reads a table whose cells claim more columns than any table has', async () => {

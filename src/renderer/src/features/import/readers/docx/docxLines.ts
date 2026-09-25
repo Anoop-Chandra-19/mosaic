@@ -16,8 +16,12 @@ import {
   decideLinkStyle,
   isCapitals,
   PAGE_NUMBER,
+  removeLinkMarks,
+  sourceOf,
   titleCase,
   type ImportLine,
+  type LeftOutLine,
+  type LeftOutReason,
 } from '../../parsing/importLines';
 import {
   isHeadingLength,
@@ -59,12 +63,14 @@ export interface DocxReading {
   lines: ImportLine[];
   notes: DocxNote[];
   /** Text read but deliberately not made into lines, so the review step can still show it. */
-  leftOut: string[];
+  leftOut: LeftOutLine[];
   /** How the document draws its links; undefined when it has none to go by. */
   linkStyle?: LinkStyle;
   /** The ink its links print in; undefined when it has none. */
   linkColor?: LinkColor;
 }
+
+const TEXT_BOX_DOUBT = 'Read from a text box. Check it sits where it should.';
 
 const cellIsEmpty = (cell: DocxCell) =>
   cell.continued || !paragraphsOf(cell.blocks).some((p) => p.text.trim());
@@ -300,23 +306,19 @@ function bodySizeOf(pieces: Piece[]): number {
 /**
  * The page header and footer. A header's lines are read as the document's own — many
  * resumes keep the name and contact details there — except where they repeat what the body
- * already says. A footer is page furniture: its text is left out, and shown as left out
- * unless it is only a page number.
+ * already says. A footer is page furniture.
  */
-function pageFurniture(pieces: Piece[]): { lines: Piece[]; leftOut: string[] } {
+function pageFurniture(pieces: Piece[]): { lines: Piece[]; leftOut: LeftOutLine[] } {
   const body = new Set<string>();
   for (const piece of pieces) {
     if (piece.paragraph.source.part !== 'body') continue;
     body.add(piece.line.text.trim());
     if (piece.line.aside) body.add(piece.line.aside.trim());
   }
-  // Text and aside apart, so a repeated name can't take a new address out with it.
-  const newPartsOf = ({ line }: Piece) =>
-    [line.text, line.aside ?? '']
-      .map((part) => part.trim())
-      .filter((part) => part && !PAGE_NUMBER.test(part) && !body.has(part));
 
-  const leftOut: string[] = [];
+  const leftOut: LeftOutLine[] = [];
+  const leaveOut = (text: string, reason: LeftOutReason) =>
+    leftOut.push({ text: removeLinkMarks(text), reason, canPlace: false });
   const lines: Piece[] = [];
   for (const piece of pieces) {
     const { part } = piece.paragraph.source;
@@ -324,10 +326,17 @@ function pageFurniture(pieces: Piece[]): { lines: Piece[]; leftOut: string[] } {
       lines.push(piece);
       continue;
     }
-    const parts = newPartsOf(piece);
+    // Text and aside apart, so a repeated name can't take a new address out with it.
+    const parts: string[] = [];
+    for (const text of [piece.line.text, piece.line.aside ?? ''].map((t) => t.trim())) {
+      if (!text) continue;
+      if (PAGE_NUMBER.test(text)) leaveOut(text, 'page-number');
+      else if (body.has(text)) leaveOut(text, 'repeated');
+      else parts.push(text);
+    }
     if (parts.length === 0) continue;
     if (part === 'footer') {
-      leftOut.push(parts.join(' '));
+      leaveOut(parts.join(' '), 'repeated');
       continue;
     }
     piece.line.text = parts[0];
@@ -402,7 +411,10 @@ export function docxLines(document: DocxDocument): DocxReading {
       isKnown(piece) || (couldHead(piece) && (headingLook(piece.look) || atSectionOutline(piece)));
     if (!heading) continue;
     piece.line.role = 'heading';
-    if (isCapitals(piece.line.text)) piece.line.text = titleCase(piece.line.text);
+    if (isCapitals(piece.line.text)) {
+      piece.line.source = sourceOf(piece.line);
+      piece.line.text = titleCase(piece.line.text);
+    }
   }
 
   // Entries, inside sections.
@@ -430,8 +442,12 @@ export function docxLines(document: DocxDocument): DocxReading {
     });
   }
 
+  // The contact block has no items to show a doubt on, so there it stays a file-wide note.
   const floating = pieces.filter((piece) => piece.paragraph.source.floating);
-  if (floating.length) {
+  for (const piece of floating) {
+    piece.line.doubts = [...(piece.line.doubts ?? []), TEXT_BOX_DOUBT];
+  }
+  if (floating.some((piece) => first < 0 || at.get(piece)! < first)) {
     notes.push({
       kind: 'uncertain',
       message: `${floating.length === 1 ? 'A text box holds' : 'Text boxes hold'} some of this file. Mosaic read ${floating.length === 1 ? 'it' : 'them'} where ${floating.length === 1 ? 'it is' : 'they are'} anchored, so check the order.`,

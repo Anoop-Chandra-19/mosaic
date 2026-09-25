@@ -175,4 +175,26 @@ describe('readMarkdown', () => {
       ['Skills', ['Mathematics']],
     ]);
   });
+
+  it('lists a sentence under no heading and a rated skill as left out, to place', () => {
+    const { resume: read, leftOut } = readMarkdown(
+      [
+        '# Ada Lovelace',
+        '',
+        'ada@example.com',
+        '',
+        'Wrote the first program for an engine that was never built.',
+        '',
+        '## Skills',
+        '',
+        '- Mathematics',
+        '- Poetry ★★★★☆',
+      ].join('\n')
+    );
+    expect(read.sections[0].items.map((i) => i.text)).toEqual(['Mathematics']);
+    expect(leftOut.map(({ text, reason }) => [text, reason])).toEqual([
+      ['Wrote the first program for an engine that was never built.', 'no-heading'],
+      ['Poetry ★★★★☆', 'rating-marks'],
+    ]);
+  });
 });

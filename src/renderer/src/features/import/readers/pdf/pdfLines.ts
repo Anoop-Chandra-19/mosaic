@@ -7,8 +7,12 @@ import {
   isCapitals,
   markLink,
   PAGE_NUMBER,
+  removeLinkMarks,
+  sourceOf,
   titleCase,
   type ImportLine,
+  type LeftOutLine,
+  type SourceLine,
 } from '../../parsing/importLines';
 import {
   isHeadingLength,
@@ -109,7 +113,7 @@ export interface PdfReading {
   lines: ImportLine[];
   notes: PdfNote[];
   /** Text read but deliberately not made into lines, so the review step can still show it. */
-  leftOut: string[];
+  leftOut: LeftOutLine[];
   /** How the file draws its links; undefined when it has none to go by. */
   linkStyle?: LinkStyle;
   /**
@@ -549,7 +553,10 @@ function piecesOfPage(page: PdfPage, number: number, notes: PdfNote[]): Piece[] 
  * number goes wherever it is; other recurring text is kept where it first appears. Only
  * every page counts — two wrapped lines ending alike can meet at one height on two pages.
  */
-function withoutFurniture(pieces: Piece[], pageCount: number): Piece[] {
+function withoutFurniture(
+  pieces: Piece[],
+  pageCount: number
+): { kept: Piece[]; leftOut: LeftOutLine[] } {
   const byPage = new Map<number, Piece[]>();
   for (const piece of pieces) {
     const onPage = byPage.get(piece.page);
@@ -565,12 +572,18 @@ function withoutFurniture(pieces: Piece[], pageCount: number): Piece[] {
   }
   const key = (piece: Piece) => `${piece.line.text}|${piece.line.aside ?? ''}`.replace(/\d+/g, '#');
   const seen = new Set<string>();
-  return pieces.filter((piece) => {
+  const leftOut: LeftOutLine[] = [];
+  const shown = ({ line }: Piece) =>
+    removeLinkMarks(line.aside ? `${line.text}   ${line.aside}` : line.text).trim();
+  const kept = pieces.filter((piece) => {
     if (!nearEdge.has(piece)) return true;
     const { text, aside } = piece.line;
     const alone = (text || aside || '').trim();
     // A year beside a title is not a page number, however alone it stands.
-    if (PAGE_NUMBER.test(alone) && !/\d{4}/.test(alone) && !(text && aside)) return false;
+    if (PAGE_NUMBER.test(alone) && !/\d{4}/.test(alone) && !(text && aside)) {
+      leftOut.push({ text: alone, reason: 'page-number', canPlace: false });
+      return false;
+    }
     if (pageCount < 2) return true;
     const pages = new Set(
       [...nearEdge]
@@ -581,10 +594,16 @@ function withoutFurniture(pieces: Piece[], pageCount: number): Piece[] {
         .map((other) => other.page)
     );
     if (pages.size < pageCount) return true;
-    if (seen.has(key(piece))) return false;
-    seen.add(key(piece));
-    return true;
+    if (!seen.has(key(piece))) {
+      seen.add(key(piece));
+      return true;
+    }
+    if (!leftOut.some((line) => line.reason === 'repeated' && line.text === shown(piece))) {
+      leftOut.push({ text: shown(piece), reason: 'repeated', canPlace: false });
+    }
+    return false;
   });
+  return { kept, leftOut };
 }
 
 /** The distance between lines most of each column keeps. */
@@ -621,6 +640,19 @@ function continues(above: Piece, below: Piece, pitch: number | undefined): boole
   return wanted > above.margin - WIDTH_SLACK * below.size;
 }
 
+const PAGE_BREAK_JOIN = 'Ran across the page break. Check the join.';
+const INDENT_BULLETS =
+  'This PDF draws its bullets as shapes, so Mosaic found them by their indent. Check the bullets.';
+
+const addDoubt = (line: ImportLine, doubt: string) => {
+  line.doubts = [...new Set([...(line.doubts ?? []), doubt])];
+};
+
+function joinSources(above: Piece, below: Piece): SourceLine[] {
+  const between: SourceLine[] = below.page === above.page ? [] : [{ pageBreak: true }];
+  return [...sourceOf(above.line), ...between, ...sourceOf(below.line)];
+}
+
 /** Wrapped lines joined back into the lines the author wrote, and the space between them. */
 function joinWraps(pieces: Piece[]): Piece[] {
   const pitches = pitchesOf(pieces);
@@ -631,15 +663,19 @@ function joinWraps(pieces: Piece[]): Piece[] {
     // A marker left at the foot of a page, its text carried to the next: they are one bullet.
     if (above?.markerOnly) {
       const { gapBefore } = above.line;
+      const between: SourceLine[] = piece.page === above.page ? [] : [{ pageBreak: true }];
       Object.assign(above, piece, { markerOnly: false });
       if (piece.line.aside === undefined) above.line.role = 'bullet';
       if (gapBefore) above.line.gapBefore = true;
+      above.line.source = [...between, ...sourceOf(above.line)];
       continue;
     }
     const pitch = pitches.get(stackOf(piece));
     if (above && continues(above, piece, pitch)) {
       // A hyphen at the end of a line is kept, and nothing put after it: "self-" "taught".
       const hyphenated = /\p{L}-$/u.test(above.line.text);
+      above.line.source = joinSources(above, piece);
+      if (piece.page !== above.page) addDoubt(above.line, PAGE_BREAK_JOIN);
       above.line.text += (hyphenated ? '' : ' ') + piece.line.text;
       Object.assign(above, { right: piece.right, y: piece.y, page: piece.page });
       continue;
@@ -676,12 +712,15 @@ function bodySizeOf(pieces: Piece[]): number {
  * Headings, entries, and bullets drawn as shapes. As for a Word file, how a line is set is
  * evidence, not the answer: a heading is a line naming a section Mosaic knows, or one set
  * the way those are; an entry's line has an aside, or bullets beside it, or is set like
- * such a line.
+ * such a line. True when it found bullets by their indent alone.
  */
-function markRoles(pieces: Piece[]): void {
+function markRoles(pieces: Piece[]): boolean {
   for (const piece of pieces) {
     const text = unspaced(piece.line.text);
-    if (text !== piece.line.text && matchSectionHeader(text)) piece.line.text = text;
+    if (text !== piece.line.text && matchSectionHeader(text)) {
+      piece.line.source = sourceOf(piece.line);
+      piece.line.text = text;
+    }
   }
   const bodySize = bodySizeOf(pieces);
   const standsOut = (piece: Piece) =>
@@ -714,14 +753,18 @@ function markRoles(pieces: Piece[]): void {
   for (const piece of pieces) {
     if (!isKnown(piece) && !(couldHead(piece) && headingLook(piece.look))) continue;
     piece.line.role = 'heading';
-    if (isCapitals(piece.line.text)) piece.line.text = titleCase(piece.line.text);
+    if (isCapitals(piece.line.text)) {
+      piece.line.source = sourceOf(piece.line);
+      piece.line.text = titleCase(piece.line.text);
+    }
   }
 
   const first = pieces.findIndex((piece) => piece.line.role === 'heading');
-  if (first < 0) return;
+  if (first < 0) return false;
   const body = pieces.slice(first + 1);
 
   // Bullets drawn as shapes leave no marker, only an indent under the line they belong to.
+  let foundByIndent = false;
   if (!pieces.some((piece) => piece.line.role === 'bullet')) {
     const margins = new Map<string, number>();
     for (const piece of body) {
@@ -733,6 +776,7 @@ function markRoles(pieces: Piece[]): void {
       if (!above || above.line.role === 'heading' || !indented) return;
       if (piece.line.role === undefined && piece.line.aside === undefined) {
         piece.line.role = 'bullet';
+        foundByIndent = true;
       }
     });
   }
@@ -761,6 +805,7 @@ function markRoles(pieces: Piece[]): void {
       piece.line.aside === undefined;
     if (!follows) piece.line.role = 'entry';
   });
+  return foundByIndent;
 }
 
 /**
@@ -771,7 +816,7 @@ function markRoles(pieces: Piece[]): void {
  */
 export function pdfLines(document: PdfDocument): PdfReading {
   const notes = [...document.notes];
-  const leftOut: string[] = [];
+  const leftOut: LeftOutLine[] = [];
 
   const sideways = document.pages.flatMap((page) =>
     page.runs.filter((run) => !run.upright && run.text.trim()).map((run) => clean(run.text).trim())
@@ -781,12 +826,16 @@ export function pdfLines(document: PdfDocument): PdfReading {
       kind: 'excluded',
       message: 'Some text in this PDF runs sideways. Mosaic left it out.',
     });
-    leftOut.push(sideways.join(' '));
+    leftOut.push({ text: sideways.join(' '), reason: 'sideways', canPlace: true });
   }
 
   const pieces = document.pages.flatMap((page, index) => piecesOfPage(page, index + 1, notes));
-  const kept = joinWraps(withoutFurniture(pieces, document.pages.length));
-  markRoles(kept);
+  const furniture = withoutFurniture(pieces, document.pages.length);
+  leftOut.push(...furniture.leftOut);
+  const kept = joinWraps(furniture.kept);
+  if (markRoles(kept)) {
+    notes.push({ kind: 'uncertain', message: INDENT_BULLETS });
+  }
   return {
     lines: kept.map((piece) => piece.line),
     notes,

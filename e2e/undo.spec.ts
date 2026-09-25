@@ -151,7 +151,8 @@ test('an import is one step, and taking it back leaves the history standing', as
     );
   await importing.getByRole('button', { name: 'Read pasted text' }).click();
   // Over the open resume, rather than as a template of its own.
-  await importing.getByRole('radio', { name: 'Replace' }).click();
+  await importing.getByRole('button', { name: 'How to import' }).click();
+  await page.getByRole('menuitemradio', { name: /^Replace/ }).click();
   await importing.getByRole('button', { name: 'Replace resume' }).click();
   await expect(page.getByText('Imported. Check the sections in the sidebar.')).toBeVisible();
   await expect(name(page, 'Grace Hopper')).toBeVisible();

@@ -3,8 +3,8 @@ import { normalizeResumeForExport } from '@/features/export/normalizeResumeExpor
 import { createPlaintextExport } from '@/features/export/plaintextExport';
 import { createDefaultResume } from '@shared/resume/defaultResume';
 import type { ResumeData, ResumeSection } from '@shared/types/resume';
-import { textToLines, type ImportLine } from '../importLines';
-import { parseResumeLines, parseResumeText } from '../parseResume';
+import { markLink, textToLines, type ImportLine } from '../importLines';
+import { parseResumeLines, parseResumeText, removeRatingMarks } from '../parseResume';
 import {
   everything,
   shown,
@@ -286,7 +286,125 @@ describe('parseResumeLines', () => {
       { text: 'Go' },
     ]);
     expect(resume.sections.map((s) => s.label)).toEqual(['Skills']);
-    expect(leftOut).toEqual(['Awards']);
+    expect(leftOut).toEqual([{ text: 'Awards', reason: 'empty-heading', canPlace: false }]);
+  });
+});
+
+describe('lines under no heading', () => {
+  it('leaves out a sentence above the first heading, and keeps the contact lines', () => {
+    const { resume, leftOut } = parseResumeText(
+      [
+        'Ada Lovelace',
+        'ada@example.com | London, UK',
+        'Speaker at the Royal Society on engines that compose music.',
+        'Open to relocation',
+        '',
+        'Skills',
+        'Mathematics',
+      ].join('\n')
+    );
+    expect(resume.contact.name).toBe('Ada Lovelace');
+    expect(resume.contact.header.lines.map((line) => line.items.map((item) => item.text))).toEqual([
+      ['ada@example.com', 'London, UK'],
+      ['Open to relocation'],
+    ]);
+    expect(leftOut).toEqual([
+      {
+        text: 'Speaker at the Royal Society on engines that compose music.',
+        reason: 'no-heading',
+        canPlace: true,
+      },
+    ]);
+  });
+});
+
+describe('rating marks', () => {
+  it('leaves out a rated line, keeping the heading it was under', () => {
+    const { resume, leftOut } = parseResumeText(
+      ['Ada Lovelace', '', 'Skills', 'Mathematics, Poetry', 'Python ●●●●○   Go ● ● ● ● ●'].join(
+        '\n'
+      )
+    );
+    expect(resume.sections[0].items.map((item) => item.text)).toEqual(['Mathematics, Poetry']);
+    expect(leftOut).toEqual([
+      {
+        text: 'Python ●●●●○   Go ● ● ● ● ●',
+        reason: 'rating-marks',
+        canPlace: true,
+        under: 'Skills',
+      },
+    ]);
+  });
+
+  it('leaves the heading out too when every line under it was rated', () => {
+    const { resume, leftOut } = parseResumeLines([
+      { text: 'Ada Lovelace' },
+      { text: 'Languages', role: 'heading' },
+      { text: 'French', aside: '★★★☆☆' },
+    ]);
+    expect(resume.sections).toEqual([]);
+    expect(leftOut.map(({ text, reason, under }) => [text, reason, under])).toEqual([
+      ['French   ★★★☆☆', 'rating-marks', 'Languages'],
+      ['Languages', 'empty-heading', undefined],
+    ]);
+  });
+
+  it('gives a rated line’s words without the marks', () => {
+    expect(removeRatingMarks('Python ●●●●○   Go ●●●●●   Rust ●●○○○')).toBe('Python, Go, Rust');
+    expect(removeRatingMarks('French   ★★★☆☆')).toBe('French');
+  });
+});
+
+describe('the review of a parse', () => {
+  it('keeps the lines each section and item was read from, as the file had them', () => {
+    const { resume, review } = parseResumeText(
+      [
+        'Ada Lovelace',
+        'ada@example.com',
+        '',
+        'SUMMARY',
+        'Writes programs for engines that do not',
+        'exist yet, and notes on them.',
+        '',
+        'EXPERIENCE',
+        'Analyst | 1842',
+        '- Wrote the first program',
+      ].join('\n')
+    );
+    const [summary, experience] = resume.sections;
+    const [entry] = experience.items;
+
+    expect(review.sections[summary.id].source).toEqual([{ text: 'SUMMARY' }]);
+    expect(review.items[summary.items[0].id].source).toEqual([
+      { text: 'Writes programs for engines that do not' },
+      { text: 'exist yet, and notes on them.' },
+    ]);
+    expect(review.items[entry.id].source).toEqual([{ text: 'Analyst | 1842' }]);
+    expect(review.items[entry.bullets[0].id].source).toEqual([
+      { text: 'Wrote the first program', bullet: true },
+    ]);
+  });
+
+  it('shows a link as its words, and carries a reader’s doubt to the item', () => {
+    const { resume, review } = parseResumeLines([
+      { text: 'Ada Lovelace' },
+      { text: 'Projects', role: 'heading' },
+      { text: 'Engine', role: 'entry', aside: '1843' },
+      {
+        text: markLink('Note G', 'https://example.com/g'),
+        role: 'bullet',
+        doubts: ['Ran across the page break. Check the join.'],
+      },
+    ]);
+    const [entry] = resume.sections[0].items;
+    const [bullet] = entry.bullets;
+
+    expect(bullet.text).toBe('Note G https://example.com/g');
+    expect(review.items[bullet.id]).toEqual({
+      source: [{ text: 'Note G', bullet: true }],
+      doubts: ['Ran across the page break. Check the join.'],
+    });
+    expect(review.items[entry.id]).toEqual({ source: [{ text: 'Engine   1843' }], doubts: [] });
   });
 });
 

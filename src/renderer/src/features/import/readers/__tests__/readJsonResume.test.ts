@@ -253,7 +253,10 @@ describe('readJsonResume', () => {
       ],
       ['custom', 'lines', 'Talk', ['Nanosecond wire']],
     ]);
-    expect(parsed.leftOut).toEqual(['Computer scientist', 'Howard Aiken: A fine programmer.']);
+    expect(parsed.leftOut).toEqual([
+      { text: 'Computer scientist', reason: 'not-held', canPlace: true },
+      { text: 'Howard Aiken: A fine programmer.', reason: 'not-held', canPlace: true },
+    ]);
     expect(parsed.warnings).toEqual([]);
   });
 });

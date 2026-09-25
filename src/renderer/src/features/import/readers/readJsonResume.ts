@@ -38,6 +38,7 @@ import type {
   SectionKind,
   SectionLayout,
 } from '@shared/types/resume';
+import type { LeftOutLine } from '../parsing/importLines';
 import type { ParsedResume } from '../parsing/parseResume';
 
 type Json = Record<string, unknown>;
@@ -470,12 +471,14 @@ function standardSections(resume: Json): ResumeSection[] {
 }
 
 /** What a JSON Resume has that Mosaic has no place for: a headline, references. */
-function leftOutOf(resume: Json): string[] {
+function leftOutOf(resume: Json): LeftOutLine[] {
   const basics = isRecord(resume.basics) ? resume.basics : {};
   const references = items(resume.references).map((item) =>
     [text(item.name), text(item.reference)].filter(Boolean).join(': ')
   );
-  return [text(basics.label), ...references].filter(Boolean);
+  return [text(basics.label), ...references]
+    .filter(Boolean)
+    .map((line) => ({ text: line, reason: 'not-held', canPlace: true }));
 }
 
 /**
@@ -516,5 +519,6 @@ export function readJsonResume(resume: Json): ParsedResume {
     resume: { schemaVersion: 1, contact, sections },
     warnings,
     leftOut: leftOutOf(resume),
+    review: { sections: {}, items: {} },
   };
 }

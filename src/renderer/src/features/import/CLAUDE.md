@@ -16,7 +16,12 @@ Read with the root and renderer `CLAUDE.md` files, plus `docs/resume-format.md`
   `parseResumeLines` interprets them: header items with text/link in the contact block;
   "words address" elsewhere.
 - Nothing is written before review, and nothing is silently dropped: unplaced text goes
-  into `leftOut`, doubts into `warnings`; the dialog shows both.
+  into `leftOut` with a reason (page numbers and running heads too), and file-wide doubts
+  into `warnings`. A reader that joins or changes a line keeps the file's own lines in
+  `ImportLine.source` and puts doubts about it in `doubts`; `parseResumeLines` carries both
+  to `ParsedResume.review` by section and item id, for the review's Source view.
+- The review's keep/drop and "Add to" choices go through `applyImportChoices` before
+  `buildImportedResume`, so every import mode writes the same resume.
 - In `readers/pdf/` and `readers/docx/`, `readPdf` / `readDocx` report what a file holds; `pdfLines` /
   `docxLines` decide what it means. Keep semantic guesses out of readers.
 - Files are untrusted. Our zip/XML readers validate strictly and stop at documented limits
