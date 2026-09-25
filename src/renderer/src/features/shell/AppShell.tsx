@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { Suspense, useDeferredValue, useEffect, ViewTransition } from 'react';
 import { READING_A_VERSION, TopBar } from './TopBar';
 import { Sidebar } from './Sidebar';
 import { StatusBar } from './StatusBar';
@@ -31,6 +31,9 @@ export function AppShell() {
   useAutoSnapshot();
   const hasTemplates = useTemplateStore((s) => s.templates.length > 0);
   const surface = useOverlayStore((s) => s.surface);
+  // Zustand updates render at once, and only a transition's render gets a view transition:
+  // rendering the surface from a deferred copy makes its change one.
+  const shownSurface = useDeferredValue(surface);
   const aiEnabled = useAiStore((s) => s.enabled);
   const agentPaneOpen = useUiStore((s) => s.agentPaneOpen);
   const showAgentPane = aiEnabled && agentPaneOpen;
@@ -46,19 +49,27 @@ export function AppShell() {
         <div
           className="relative flex flex-1 overflow-hidden @container/workspace"
           inert={surface !== null}
+          data-workspace
+          data-covered={shownSurface !== null || undefined}
         >
           <Sidebar />
           {shouldShowPreview && <PreviewPanel />}
           {showAgentPane && <AgentPane />}
         </div>
         {surface?.kind === 'start' && <StartPanel closable={hasTemplates} />}
-        {surface?.kind === 'history' && (
-          <HistoryWindow
-            templateId={surface.templateId}
-            filter={surface.filter}
-            versionId={surface.versionId}
-          />
-        )}
+        {/* Mounted from the start, so a surface still loading keeps the one before on screen. */}
+        <Suspense fallback={null}>
+          {shownSurface?.kind === 'history' && (
+            <ViewTransition enter="surface-in" exit="surface-out">
+              <HistoryWindow
+                opening={shownSurface}
+                templateId={shownSurface.templateId}
+                filter={shownSurface.filter}
+                versionId={shownSurface.versionId}
+              />
+            </ViewTransition>
+          )}
+        </Suspense>
         <Toast />
       </div>
       <StatusBar />

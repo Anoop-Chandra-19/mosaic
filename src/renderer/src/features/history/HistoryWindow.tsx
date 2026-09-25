@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { use, useEffect, useRef, useState } from 'react';
 import { Clock, List, X } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
 import { PAPER_DIMENSIONS_PT } from '@/features/preview/pageGeometry';
@@ -10,6 +10,7 @@ import type { TemplateSummary, Version, VersionMeta } from '@shared/types/db';
 import type { HistoryFilter } from './filterVersionHistory';
 import { HistoryIndex } from './HistoryIndex';
 import { HistoryReadPane, LEGIBLE_PAGE_SCALE } from './HistoryReadPane';
+import { prepareHistoryOpening, type PreparedHistory } from './prepareHistoryOpening';
 import { useTemplateVersions, versionLabel } from './useTemplateVersions';
 import { VersionList, type HistoryReveal } from './VersionList';
 
@@ -20,6 +21,8 @@ const INDEX_WIDTH_PX = 204;
 const LIST_MIN_WIDTH_PX = 320;
 
 interface HistoryWindowProps {
+  /** The surface that opened it: what it first shows is loaded once per opening. */
+  opening: object;
   templateId: string;
   filter?: HistoryFilter;
   versionId?: string;
@@ -28,9 +31,11 @@ interface HistoryWindowProps {
 /**
  * One template's whole history over the workspace: the named versions and months as a
  * table of contents, the list, and the version being read beside it. It reads any
- * template's history, not only the open one's.
+ * template's history, not only the open one's. It suspends until its first page is
+ * loaded, so it opens whole, inside the view transition that brings it in.
  */
-export function HistoryWindow({ templateId, filter, versionId }: HistoryWindowProps) {
+export function HistoryWindow({ opening, templateId, filter, versionId }: HistoryWindowProps) {
+  const prepared = use(prepareHistoryOpening(opening, templateId, versionId));
   const template = useTemplateStore((s) => s.templates.find((t) => t.id === templateId));
   const closeSurface = useOverlayStore((s) => s.closeSurface);
 
@@ -46,6 +51,7 @@ export function HistoryWindow({ templateId, filter, versionId }: HistoryWindowPr
       template={template}
       filter={filter}
       versionId={versionId}
+      prepared={prepared}
     />
   );
 }
@@ -54,10 +60,11 @@ interface HistoryWindowFrameProps {
   template: TemplateSummary;
   filter?: HistoryFilter;
   versionId?: string;
+  prepared: PreparedHistory | null;
 }
 
-function HistoryWindowFrame({ template, filter, versionId }: HistoryWindowFrameProps) {
-  const versions = useTemplateVersions(template, true);
+function HistoryWindowFrame({ template, filter, versionId, prepared }: HistoryWindowFrameProps) {
+  const versions = useTemplateVersions(template, true, prepared?.versions);
   const closeSurface = useOverlayStore((s) => s.closeSurface);
   const restoreVersion = useTemplateStore((s) => s.restoreVersion);
   const duplicateVersion = useTemplateStore((s) => s.duplicateVersion);
@@ -224,6 +231,7 @@ function HistoryWindowFrame({ template, filter, versionId }: HistoryWindowFrameP
             onRestore={(version) => void restore(version)}
             onDuplicate={(version) => void duplicate(version)}
             onExport={exportVersion}
+            initialVersion={prepared?.version ?? null}
           />
         )}
       </div>
