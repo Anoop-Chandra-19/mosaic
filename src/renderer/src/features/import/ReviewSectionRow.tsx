@@ -170,6 +170,7 @@ export function ReviewSectionRow({
               variant="ghost"
               size="xs"
               aria-pressed={isShowingSource}
+              title="The lines in your file this section came from"
               onClick={() => setShowingSource(!isShowingSource)}
               className="-ml-0.5 text-ink-muted aria-pressed:bg-line aria-pressed:text-foreground"
             >
