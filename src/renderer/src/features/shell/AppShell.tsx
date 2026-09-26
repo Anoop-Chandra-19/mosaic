@@ -13,8 +13,12 @@ import { SettingsDialog } from '@/features/settings/SettingsDialog';
 import { StartPanel } from '@/features/start/StartPanel';
 import { NameVersionDialog } from '@/features/templates/NameVersionDialog';
 import { useAutoSnapshot } from '@/features/templates/useAutoSnapshot';
-import { useShownSurface } from '@/features/view-transitions/useShownSurface';
-import { TRANSITION_CLASS, workspaceMarks } from '@/features/view-transitions/viewTransitionNames';
+import { SURFACE_MOTION, transitionClasses } from '@/features/view-transitions/transitionClasses';
+import { cn } from '@/lib/utils';
+import {
+  useIsWorkspaceReplaced,
+  useShownSurface,
+} from '@/features/view-transitions/useShownSurface';
 import { ShortcutsDialog } from '@/features/shortcuts/ShortcutsDialog';
 import { SHORTCUTS } from '@/features/shortcuts/shortcutList';
 import { isRedoKey, isTypingField, isUndoKey, matchesShortcut } from '@/lib/keyboardShortcuts';
@@ -34,6 +38,7 @@ export function AppShell() {
   const hasTemplates = useTemplateStore((s) => s.templates.length > 0);
   const surface = useOverlayStore((s) => s.surface);
   const shownSurface = useShownSurface();
+  const isWorkspaceReplaced = useIsWorkspaceReplaced();
   const aiEnabled = useAiStore((s) => s.enabled);
   const agentPaneOpen = useUiStore((s) => s.agentPaneOpen);
   const showAgentPane = aiEnabled && agentPaneOpen;
@@ -47,9 +52,14 @@ export function AppShell() {
       <div className="relative flex flex-1 overflow-hidden">
         {/* Under a surface the workspace stays mounted, as it was, but out of reach. */}
         <div
-          className="relative flex flex-1 overflow-hidden @container/workspace"
+          // Hidden once replaced, or it shows through the view fading in over it.
+          className={cn(
+            'relative flex flex-1 overflow-hidden @container/workspace',
+            isWorkspaceReplaced
+              ? 'invisible'
+              : transitionClasses({ name: 'workspace', motion: 'recede' })
+          )}
           inert={surface !== null}
-          {...workspaceMarks(shownSurface?.kind)}
         >
           <Sidebar />
           {shouldShowPreview && <PreviewPanel />}
@@ -59,7 +69,7 @@ export function AppShell() {
         {/* Mounted from the start, so a surface still loading keeps the one before on screen. */}
         <Suspense fallback={null}>
           {shownSurface?.kind === 'history' && (
-            <ViewTransition enter={TRANSITION_CLASS.surfaceIn} exit={TRANSITION_CLASS.surfaceOut}>
+            <ViewTransition enter={SURFACE_MOTION.in} exit={SURFACE_MOTION.out}>
               <HistoryWindow
                 opening={shownSurface}
                 templateId={shownSurface.templateId}

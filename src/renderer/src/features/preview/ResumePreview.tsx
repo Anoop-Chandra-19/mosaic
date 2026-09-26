@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { cn } from '@/lib/utils';
 import { useResumeStore } from '@/stores/resumeStore';
 import type { ResumeData } from '@shared/types/resume';
 import type { PaperSize } from '@/types/paper';
@@ -20,12 +21,13 @@ interface ResumePreviewProps {
   onMetaChange: (meta: ResumePreviewMeta) => void;
   /** A document to show instead of the draft — a version being read before a restore. */
   doc?: ResumeData;
-  /**
-   * Eases a change of zoom ("160ms ease-out") rather than jumping. Unset while the user
-   * zooms, which must track the pointer.
-   */
-  zoomTransition?: string;
+  /** Ease a change of zoom rather than jump; off while the user zooms, which must track. */
+  isZoomEased?: boolean;
 }
+
+/** How long an eased change of zoom takes: the `duration-160` of the classes below. */
+export const PREVIEW_ZOOM_EASE_MS = 160;
+const ZOOM_EASE = 'duration-160 ease-[cubic-bezier(.2,.7,.3,1)] motion-reduce:transition-none';
 
 export interface ResumePreviewMeta {
   /** Pages laid out, which is every page unless the resume runs past the limit. */
@@ -42,7 +44,7 @@ export function ResumePreview({
   previewZoom = 1,
   onMetaChange,
   doc,
-  zoomTransition,
+  isZoomEased = false,
 }: ResumePreviewProps) {
   const draftContact = useResumeStore((s) => s.contact);
   const draftSections = useResumeStore((s) => s.sections);
@@ -188,17 +190,15 @@ export function ResumePreview({
             (auto margins resolve to zero) once it is wider than the panel. */}
         <div
           data-preview-stack
-          className="mx-auto"
-          style={{
-            width: `${paper.width * scale}px`,
-            height: `${scaledHeight}px`,
-            transition: zoomTransition && `width ${zoomTransition}, height ${zoomTransition}`,
-          }}
+          className={cn('mx-auto', isZoomEased && `transition-[width,height] ${ZOOM_EASE}`)}
+          style={{ width: `${paper.width * scale}px`, height: `${scaledHeight}px` }}
         >
           <div
-            className="flex flex-col items-start"
+            className={cn(
+              'flex flex-col items-start',
+              isZoomEased && `transition-transform ${ZOOM_EASE}`
+            )}
             style={{
-              transition: zoomTransition && `transform ${zoomTransition}`,
               gap: `${PAGE_GAP_PX}px`,
               transform: `scale(${scale})`,
               transformOrigin: 'top left',

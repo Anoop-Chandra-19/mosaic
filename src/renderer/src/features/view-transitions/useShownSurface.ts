@@ -1,14 +1,19 @@
 import { useDeferredValue } from 'react';
-import { useOverlayStore } from '@/stores/overlayStore';
+import { useOverlayStore, type WorkspaceSurface } from '@/stores/overlayStore';
 
 /**
- * The surface covering the workspace, as it is drawn. Zustand updates render at once, and
- * only a transition's render gets a view transition: a deferred copy of the store's
- * surface makes its coming and going one. Anything that moves with a surface (the history
- * view, the workspace marks) reads this, not the store; anything that must act at once
- * (the workspace going inert) reads the store.
+ * The surface as drawn. Zustand updates render at once, and only a transition's render gets
+ * a view transition, so this is a deferred copy of the store's.
  */
 export function useShownSurface() {
   const surface = useOverlayStore((s) => s.surface);
   return useDeferredValue(surface);
+}
+
+// Not the Start panel: it shows the workspace blurred behind it.
+const REPLACES_THE_WORKSPACE: ReadonlySet<WorkspaceSurface['kind']> = new Set(['history']);
+
+export function useIsWorkspaceReplaced(): boolean {
+  const shown = useShownSurface();
+  return shown !== null && REPLACES_THE_WORKSPACE.has(shown.kind);
 }

@@ -26,6 +26,9 @@ For resume content, preview, or exports, also read `docs/resume-format.md` (repo
   queries. No `tailwind.config.js` or legacy plugins. One exception:
   `features/view-transitions/viewTransitions.css`, since `::view-transition-*`
   pseudo-elements and their keyframes can't be utilities.
+- `className` for anything chosen from a known set, animations and transitions included;
+  `style` (or `element.animate()`) only for values computed at runtime, like a dragged
+  width or a scroll offset.
 - No opacity utilities for hierarchy in app-owned components (`text-*/..`, `bg-*/..`,
   `border-*/..`, `ring-*/..`, `opacity-*`). Use explicit tone steps or semantic tokens:
   stronger titles/actions get higher contrast, metadata/secondary copy lower.
@@ -46,21 +49,28 @@ For resume content, preview, or exports, also read `docs/resume-format.md` (repo
 
 ## View transitions
 
-`features/view-transitions/` is the layer: names, types and data attributes
-(`viewTransitionNames.ts`), the CSS (`viewTransitions.css`), the page handoff between the
-preview and a surface (`pageHandoff.ts`), and the deferred surface (`useShownSurface`).
-Features import from it; it imports no feature. Spread its data attributes and use its
-constants rather than spelling a name: a typo skips the transition without an error.
+`features/view-transitions/` is the layer; features import from it, and it imports no
+feature. An element joins with `className={cn(…, transitionClasses({ name, motion,
+isActive }))}`:
 
+- **name**: which element it is, on one element at a time;
+- **motion**: how it moves (a `view-transition-class`), styled in `viewTransitions.css`,
+  which names motions and directions only, never an element or a feature;
+- **isActive**: which of two elements sharing a name holds it now, decided by the component;
+- a **direction** (`TRANSITION_TYPE`, via `addTransitionType`) varies a motion.
+
+A new name or motion is one entry in `transitionClasses.ts`, written out whole (Tailwind
+only generates classes it finds spelled out). `useShownSurface` and `pageHandoff` list the
+surfaces that replace the workspace and take the page; a new surface joins by being added.
 Use a motion that exists before inventing one:
 
-| Motion       | For                                                                 |
-| ------------ | ------------------------------------------------------------------- |
-| Surface fade | A view fading in over the workspace, and out                        |
-| Recede       | The workspace stepping back behind a view, unchanged, and returning |
-| Page handoff | The same page moving between two boxes that show it                 |
-| Version step | The page sliding the way time runs, older to the left               |
-| Slide-away   | Something leaving whose space is reclaimed (the sidebar toggle)     |
+| Motion                              | For                                                 | Used by                     |
+| ----------------------------------- | --------------------------------------------------- | --------------------------- |
+| `surface-in`, `surface-out`         | A view fading in over the workspace, and out        | The history view            |
+| `recede`                            | Stepping back behind a view, unchanged, returning   | The workspace               |
+| `handoff`                           | The same thing moving between two boxes showing it  | The page: preview ↔ history |
+| `step` + `step-back`/`step-forward` | Sliding the way a sequence runs, back from the left | The page between versions   |
+| `slide-away` (to build)             | Leaving, with the space reclaimed                   | The sidebar toggle          |
 
 - A view transition blocks input while it runs: use one for whole-view changes and moves
   between boxes; keep frequent or interruptible changes (zoom, folds, hovers) CSS.

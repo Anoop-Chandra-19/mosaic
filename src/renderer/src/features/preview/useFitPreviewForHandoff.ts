@@ -4,9 +4,8 @@ import {
   useIsHandingOffPage,
 } from '@/features/view-transitions/pageHandoff';
 import { PREVIEW_DEFAULT_ZOOM, useUiStore } from '@/stores/uiStore';
+import { PREVIEW_ZOOM_EASE_MS } from './ResumePreview';
 
-/** How long the preview takes to ease to fit, and back. */
-const PREVIEW_ZOOM_EASE_MS = 160;
 /** Long enough for the page to land back in the preview before it zooms. */
 const LANDING_MS = 380;
 
@@ -76,9 +75,8 @@ export function useFitPreviewForHandoff(scrollRef: RefObject<HTMLDivElement | nu
   }, [phase, scrollRef]);
 
   const isFit = phase === 'fit' || phase === 'landing';
-  const isEased = phase !== 'live' && !prefersReducedMotion();
   return {
     zoom: isFit ? PREVIEW_DEFAULT_ZOOM : previewZoom,
-    zoomTransition: isEased ? `${PREVIEW_ZOOM_EASE_MS}ms ${EASE}` : undefined,
+    isZoomEased: phase !== 'live',
   };
 }

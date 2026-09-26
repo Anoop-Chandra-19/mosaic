@@ -9,7 +9,8 @@ import { cn } from '@/lib/utils';
 import { shortcutLabel } from '@/lib/keyboardShortcuts';
 import type { PaperSize } from '@/types/paper';
 import { VersionPreviewBanner } from '@/features/history/VersionPreviewBanner';
-import { PAGE_VIEWPORT } from '@/features/view-transitions/viewTransitionNames';
+import { useIsPageHandedOff } from '@/features/view-transitions/pageHandoff';
+import { transitionClasses } from '@/features/view-transitions/transitionClasses';
 import { useOverlayStore } from '@/stores/overlayStore';
 import { PREVIEW_ZOOM_RANGE, useUiStore } from '@/stores/uiStore';
 
@@ -23,6 +24,7 @@ export function PreviewPanel() {
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const canvas = usePreviewCanvas(scrollRef);
   const shown = useFitPreviewForHandoff(scrollRef);
+  const isPageHandedOff = useIsPageHandedOff();
 
   useEffect(() => {
     // Expose paper size to global CSS for page-specific print/preview styling.
@@ -114,17 +116,17 @@ export function PreviewPanel() {
 
       <div
         ref={scrollRef}
-        {...PAGE_VIEWPORT}
         onPointerDown={canvas.onPointerDown}
         className={cn(
           'flex-1 overflow-auto overscroll-contain px-3 py-4 md:px-6 md:py-6',
-          canvas.panning ? 'cursor-grabbing select-none' : canvas.readyToPan && 'cursor-grab'
+          canvas.panning ? 'cursor-grabbing select-none' : canvas.readyToPan && 'cursor-grab',
+          transitionClasses({ name: 'page', motion: 'handoff', isActive: !isPageHandedOff })
         )}
       >
         <ResumePreview
           paperSize={paperSize}
           previewZoom={shown.zoom}
-          zoomTransition={shown.zoomTransition}
+          isZoomEased={shown.isZoomEased}
           onMetaChange={setMeta}
           doc={preview?.version.doc}
         />

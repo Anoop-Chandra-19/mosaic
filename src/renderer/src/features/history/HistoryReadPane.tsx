@@ -5,7 +5,8 @@ import { AppTooltip } from '@/components/AppTooltip';
 import { PAPER_DIMENSIONS_PT } from '@/features/preview/pageGeometry';
 import { ResumePreview } from '@/features/preview/ResumePreview';
 import { startPaneResize } from '@/features/shell/paneResize';
-import { HISTORY_READ, PAGE_VIEWPORT } from '@/features/view-transitions/viewTransitionNames';
+import { transitionClasses } from '@/features/view-transitions/transitionClasses';
+import { cn } from '@/lib/utils';
 import { getDb } from '@/lib/storage/mosaicDb';
 import { useResumeStore } from '@/stores/resumeStore';
 import { HISTORY_READ_WIDTH, useUiStore } from '@/stores/uiStore';
@@ -80,7 +81,6 @@ export function HistoryReadPane({
     <aside
       ref={paneRef}
       aria-label={`Reading ${label}`}
-      {...HISTORY_READ}
       className="relative flex min-h-0 shrink-0 flex-col border-l border-line bg-background"
       style={{ width: `max(${HISTORY_READ_WIDTH.minPx}px, min(${widthPx}px, ${maxWidthCss}))` }}
     >
@@ -120,7 +120,13 @@ export function HistoryReadPane({
         </p>
       </header>
 
-      <div ref={bodyRef} {...PAGE_VIEWPORT} className="min-h-0 flex-1 overflow-auto pt-3.5 pb-5">
+      <div
+        ref={bodyRef}
+        className={cn(
+          'min-h-0 flex-1 overflow-auto pt-3.5 pb-5',
+          transitionClasses({ name: 'page', motion: 'handoff step' })
+        )}
+      >
         {loaded &&
           (isLegible ? (
             <div style={{ paddingInline: PAGE_GUTTER_PX }}>
