@@ -1,4 +1,4 @@
-import { Suspense, useEffect, ViewTransition } from 'react';
+import { Suspense, useDeferredValue, useEffect, ViewTransition } from 'react';
 import { READING_A_VERSION, TopBar } from './TopBar';
 import { Sidebar } from './Sidebar';
 import { StatusBar } from './StatusBar';
@@ -13,7 +13,11 @@ import { SettingsDialog } from '@/features/settings/SettingsDialog';
 import { StartPanel } from '@/features/start/StartPanel';
 import { NameVersionDialog } from '@/features/templates/NameVersionDialog';
 import { useAutoSnapshot } from '@/features/templates/useAutoSnapshot';
-import { SURFACE_MOTION, transitionClasses } from '@/features/view-transitions/transitionClasses';
+import {
+  SLIDE_AWAY_MOTION,
+  SURFACE_MOTION,
+  transitionClasses,
+} from '@/features/view-transitions/transitionClasses';
 import { cn } from '@/lib/utils';
 import {
   useIsWorkspaceReplaced,
@@ -43,6 +47,8 @@ export function AppShell() {
   const agentPaneOpen = useUiStore((s) => s.agentPaneOpen);
   const showAgentPane = aiEnabled && agentPaneOpen;
   const shouldShowPreview = useUiStore((s) => s.shouldShowPreview);
+  // Deferred, like the surface, so hiding and showing it is a view transition.
+  const isSidebarCollapsed = useDeferredValue(useUiStore((s) => s.sidebarCollapsed));
 
   return (
     // Editor and preview side by side, at every window size; the assistant joins them on
@@ -61,7 +67,12 @@ export function AppShell() {
           )}
           inert={surface !== null}
         >
-          <Sidebar />
+          {/* Without the preview beside it, the sidebar is the editor and never hides. */}
+          {!(isSidebarCollapsed && shouldShowPreview) && (
+            <ViewTransition enter={SLIDE_AWAY_MOTION.in} exit={SLIDE_AWAY_MOTION.out} update="none">
+              <Sidebar />
+            </ViewTransition>
+          )}
           {shouldShowPreview && <PreviewPanel />}
           {showAgentPane && <AgentPane />}
         </div>

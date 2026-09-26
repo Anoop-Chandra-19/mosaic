@@ -115,3 +115,26 @@ test('with reduced motion the transitions still run, only without moving', async
   expect(started.map((s) => s.ran)).toEqual([true, true, true]);
   expect(errors).toEqual([]);
 });
+
+test('hiding and showing the sidebar each run one transition, and history still opens', async () => {
+  const { page, errors } = mosaic();
+  await startWithVersions(page);
+  const transitions = await watchTransitions(page);
+  const contentTab = page.getByRole('tab', { name: 'Content' });
+
+  await page.keyboard.press('Control+b');
+  await expect(contentTab).toBeHidden();
+  expect(await transitions.take(1)).toEqual([{ types: [], ran: true }]);
+
+  // With the sidebar gone, the page still moves into the history view and back.
+  await page.keyboard.press('Control+Shift+H');
+  await expect(page.getByRole('region', { name: /^History of/ })).toBeVisible();
+  await page.keyboard.press('Control+Shift+H');
+  await expect(page.getByRole('region', { name: /^History of/ })).toBeHidden();
+  expect((await transitions.take(2)).map((s) => s.ran)).toEqual([true, true]);
+
+  await page.keyboard.press('Control+b');
+  await expect(contentTab).toBeVisible();
+  expect(await transitions.take(1)).toEqual([{ types: [], ran: true }]);
+  expect(errors).toEqual([]);
+});

@@ -70,7 +70,7 @@ Use a motion that exists before inventing one:
 | `recede`                            | Stepping back behind a view, unchanged, returning   | The workspace               |
 | `handoff`                           | The same thing moving between two boxes showing it  | The page: preview ↔ history |
 | `step` + `step-back`/`step-forward` | Sliding the way a sequence runs, back from the left | The page between versions   |
-| `slide-away` (to build)             | Leaving, with the space reclaimed                   | The sidebar toggle          |
+| `slide-in`, `slide-away`            | Leaving to the edge, the space reclaimed, and back  | The sidebar toggle          |
 
 - A view transition blocks input while it runs: use one for whole-view changes and moves
   between boxes; keep frequent or interruptible changes (zoom, folds, hovers) CSS.
@@ -84,6 +84,11 @@ Use a motion that exists before inventing one:
   inside `startTransition`.
 - Load what the new state shows before it commits (`use()` or read first), or the
   transition lands on an empty frame.
+- An element named in every state animates on unrelated transitions too. Give its motion
+  only to leaving and arriving with `:only-child` (the image has no pair); `:not()` isn't
+  allowed after these pseudo-elements, so set the in-place default first and override it.
+  For something that mounts and unmounts, React's `<ViewTransition enter exit>` names it
+  only when it comes or goes.
 - Reduced motion turns off every animation; the transition still happens.
 
 Check one in two ways. `e2e/view-transitions.spec.ts` counts transitions, their types, and

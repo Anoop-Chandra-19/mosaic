@@ -13,8 +13,9 @@ const MOTION_CLASS = {
   'handoff step': '[view-transition-class:handoff_step]',
 } as const;
 
-/** Classes React's <ViewTransition> gives a view as it comes and goes. */
+// Classes for React's <ViewTransition enter exit>, for things that come and go.
 export const SURFACE_MOTION = { in: 'surface-in', out: 'surface-out' } as const;
+export const SLIDE_AWAY_MOTION = { in: 'slide-in', out: 'slide-away' } as const;
 
 /** Directions for `addTransitionType`. */
 export const TRANSITION_TYPE = { stepBack: 'step-back', stepForward: 'step-forward' } as const;

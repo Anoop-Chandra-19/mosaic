@@ -35,23 +35,25 @@ const tabs: { id: SidebarTab; label: string; caption: string; icon: React.ReactN
   },
 ];
 
-/** The design's segmented tabs (`.panetab`): the chosen one is a raised panel. */
+/** The design's segmented tabs (`.panetab`): the chosen one sits on a raised panel. */
 const TAB_TRIGGER =
-  'h-[1.9375rem] flex-1 gap-[0.4375rem] rounded-md border border-transparent text-[0.84375rem] font-medium text-ink-muted hover:bg-line hover:text-ink-soft data-[state=active]:border-line data-[state=active]:bg-pane-raised data-[state=active]:text-foreground data-[state=active]:shadow-[0_1px_2px_oklch(0_0_0/22%)] dark:text-ink-muted dark:hover:text-ink-soft dark:data-[state=active]:border-line dark:data-[state=active]:bg-pane-raised dark:data-[state=active]:text-foreground';
+  'h-[1.9375rem] flex-1 gap-[0.4375rem] rounded-md border border-transparent text-[0.84375rem] font-medium text-ink-muted hover:bg-line hover:text-ink-soft data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none! data-[state=active]:hover:bg-transparent dark:text-ink-muted dark:hover:text-ink-soft dark:data-[state=active]:border-transparent dark:data-[state=active]:bg-transparent dark:data-[state=active]:text-foreground';
+
+/**
+ * The raised panel, one for both tabs, so it slides to the chosen one. No `top`: the list
+ * centers it as it centers the tabs.
+ */
+const TAB_PANEL =
+  'pointer-events-none absolute left-2.25 h-[1.9375rem] w-[calc((100%-1.3125rem)/2)] rounded-md border border-line bg-pane-raised shadow-[0_1px_2px_oklch(0_0_0/22%)] transition-transform duration-200 ease-[cubic-bezier(.2,.7,.3,1)] motion-reduce:transition-none';
 
 export function Sidebar() {
   const activeSidebarTab = useUiStore((s) => s.activeSidebarTab);
   const setActiveSidebarTab = useUiStore((s) => s.setActiveSidebarTab);
   const widthPx = useUiStore((s) => s.sidebarWidthPx);
   const setWidthPx = useUiStore((s) => s.setSidebarWidthPx);
-  const sidebarCollapsed = useUiStore((s) => s.sidebarCollapsed);
   const shouldShowPreview = useUiStore((s) => s.shouldShowPreview);
   const preview = useOverlayStore((s) => s.preview);
   const sidebarRef = useRef<HTMLElement>(null);
-
-  // Hidden and shown from the status bar, or with Ctrl/⌘+B. Without the preview beside it,
-  // the sidebar is the editor: it takes the whole width and never hides.
-  if (sidebarCollapsed && shouldShowPreview) return null;
 
   const active = tabs.find((tab) => tab.id === activeSidebarTab) ?? tabs[0];
 
@@ -69,7 +71,14 @@ export function Sidebar() {
         onValueChange={(value) => setActiveSidebarTab(value as SidebarTab)}
         className="min-h-0 flex-1 gap-0"
       >
-        <TabsList className="h-auto w-full shrink-0 gap-0.75 rounded-none bg-transparent px-2.25 pt-2.25 pb-1.75">
+        <TabsList className="relative h-auto w-full shrink-0 gap-0.75 rounded-none bg-transparent px-2.25 pt-2.25 pb-1.75">
+          <span
+            aria-hidden
+            className={cn(
+              TAB_PANEL,
+              active.id === 'templates' && 'translate-x-[calc(100%+0.1875rem)]'
+            )}
+          />
           {tabs.map((tab) => (
             <TabsTrigger key={tab.id} value={tab.id} className={TAB_TRIGGER}>
               {tab.icon}
