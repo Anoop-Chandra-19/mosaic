@@ -87,16 +87,17 @@ export function nextPreviewZoomStep(zoom: number, direction: 1 | -1): number | u
   return steps.find((step) => (direction === 1 ? step > zoom + 0.001 : step < zoom - 0.001));
 }
 
-export const DEFAULT_UI_STATE = {
+/**
+ * How the app looks and where its panes were left. Reset interface puts these back; a new
+ * setting that only changes the chrome belongs here.
+ */
+export const DEFAULT_INTERFACE = {
   theme: 'dark' as ThemeChoice,
   interfaceDensity: 'comfortable' as InterfaceDensity,
-  openOnLaunch: 'last' as LaunchView,
-  undoHistorySteps: 200 as UndoHistorySteps,
   /** Off gives the editor the whole width, for a small screen. */
   shouldShowPreview: true,
   activeSidebarTab: 'content' as SidebarTab,
   currentPreviewPage: 1,
-  paperSize: 'a4' as PaperSize,
   previewZoom: PREVIEW_DEFAULT_ZOOM,
   sidebarWidthPx: SIDEBAR_WIDTH.defaultPx,
   sidebarCollapsed: false,
@@ -106,6 +107,17 @@ export const DEFAULT_UI_STATE = {
   historyReadWidthPx: HISTORY_READ_WIDTH.defaultPx,
   /** Icons beside the header's items in the editor; the page never has them. */
   shouldShowHeaderIcons: true,
+};
+
+/**
+ * What the app does and what it has already shown, which Reset interface keeps: paper size
+ * changes the resume's layout, and a reset tour would run again.
+ */
+export const DEFAULT_PREFERENCES = {
+  openOnLaunch: 'last' as LaunchView,
+  undoHistorySteps: 200 as UndoHistorySteps,
+  paperSize: 'a4' as PaperSize,
+  hasSeenTour: false,
 };
 
 interface UiState {
@@ -124,6 +136,7 @@ interface UiState {
   agentPaneWidthPx: number;
   historyReadWidthPx: number;
   shouldShowHeaderIcons: boolean;
+  hasSeenTour: boolean;
   setTheme: (theme: ThemeChoice) => void;
   setInterfaceDensity: (density: InterfaceDensity) => void;
   setOpenOnLaunch: (view: LaunchView) => void;
@@ -141,13 +154,15 @@ interface UiState {
   setAgentPaneWidthPx: (px: number) => void;
   setHistoryReadWidthPx: (px: number) => void;
   toggleHeaderIcons: () => void;
-  resetUiState: () => void;
+  markTourSeen: () => void;
+  resetInterface: () => void;
 }
 
 export const useUiStore = create<UiState>()(
   persist(
     immer((set) => ({
-      ...DEFAULT_UI_STATE,
+      ...DEFAULT_INTERFACE,
+      ...DEFAULT_PREFERENCES,
       setTheme: (theme) =>
         set((state) => {
           state.theme = theme;
@@ -216,9 +231,13 @@ export const useUiStore = create<UiState>()(
         set((state) => {
           state.shouldShowHeaderIcons = !state.shouldShowHeaderIcons;
         }),
-      resetUiState: () =>
+      markTourSeen: () =>
         set((state) => {
-          Object.assign(state, DEFAULT_UI_STATE);
+          state.hasSeenTour = true;
+        }),
+      resetInterface: () =>
+        set((state) => {
+          Object.assign(state, DEFAULT_INTERFACE);
         }),
     })),
     {
@@ -237,22 +256,23 @@ export const useUiStore = create<UiState>()(
           ...current,
           ...stored,
           activeSidebarTab: tab,
-          theme: pickChoice(stored.theme, THEME_CHOICES, DEFAULT_UI_STATE.theme),
+          theme: pickChoice(stored.theme, THEME_CHOICES, DEFAULT_INTERFACE.theme),
           interfaceDensity: pickChoice(
             stored.interfaceDensity,
             INTERFACE_DENSITIES,
-            DEFAULT_UI_STATE.interfaceDensity
+            DEFAULT_INTERFACE.interfaceDensity
           ),
           openOnLaunch: pickChoice(
             stored.openOnLaunch,
             LAUNCH_VIEWS,
-            DEFAULT_UI_STATE.openOnLaunch
+            DEFAULT_PREFERENCES.openOnLaunch
           ),
           undoHistorySteps: pickChoice(
             stored.undoHistorySteps,
             UNDO_HISTORY_STEP_OPTIONS,
-            DEFAULT_UI_STATE.undoHistorySteps
+            DEFAULT_PREFERENCES.undoHistorySteps
           ),
+          hasSeenTour: stored.hasSeenTour === true,
           sidebarWidthPx: clampPaneWidth(
             stored.sidebarWidthPx ?? SIDEBAR_WIDTH.defaultPx,
             SIDEBAR_WIDTH
