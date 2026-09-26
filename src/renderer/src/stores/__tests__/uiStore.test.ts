@@ -1,10 +1,45 @@
 import { describe, expect, it, vi } from 'vitest';
 
-// The store's settings storage is the window's; only the pure helper is under test here.
-vi.mock('@/lib/storage/settingsStorage', () => ({ settingsStorage: {} }));
+// The store's settings storage is the window's; here it keeps nothing.
+vi.mock('@/lib/storage/settingsStorage', () => ({
+  settingsStorage: { getItem: () => null, setItem: () => {}, removeItem: () => {} },
+}));
 
-const { AGENT_PANE_WIDTH, clampPaneWidth, nextPreviewZoomStep, PREVIEW_ZOOM_STEPS, SIDEBAR_WIDTH } =
-  await import('../uiStore');
+const {
+  AGENT_PANE_WIDTH,
+  clampPaneWidth,
+  DEFAULT_INTERFACE,
+  nextPreviewZoomStep,
+  PREVIEW_ZOOM_STEPS,
+  SIDEBAR_WIDTH,
+  useUiStore,
+} = await import('../uiStore');
+
+describe('resetting the interface', () => {
+  it('puts the chrome back and keeps the preferences', () => {
+    const ui = useUiStore.getState();
+    ui.setTheme('light');
+    ui.setSidebarWidthPx(500);
+    ui.toggleSidebarCollapsed();
+    ui.setPaperSize('letter');
+    ui.setOpenOnLaunch('start');
+    ui.setUndoHistorySteps(500);
+    ui.markTourSeen();
+
+    useUiStore.getState().resetInterface();
+
+    const after = useUiStore.getState();
+    expect(after.theme).toBe(DEFAULT_INTERFACE.theme);
+    expect(after.sidebarWidthPx).toBe(DEFAULT_INTERFACE.sidebarWidthPx);
+    expect(after.sidebarCollapsed).toBe(false);
+    expect(after).toMatchObject({
+      paperSize: 'letter',
+      openOnLaunch: 'start',
+      undoHistorySteps: 500,
+      hasSeenTour: true,
+    });
+  });
+});
 
 describe('pane widths', () => {
   it('keeps a width within the pane’s limits, in whole pixels', () => {

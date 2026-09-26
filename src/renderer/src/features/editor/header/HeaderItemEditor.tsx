@@ -7,7 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 import { resolveHeaderItemHref, getHeaderKindInfo } from '@shared/resume/resumeHeader';
 import type { HeaderItem } from '@shared/types/resume';
-import { EDITOR_INPUT_CLASS } from '../editorInputStyles';
+import { EDITOR_INPUT_CLASS } from '../editorClasses';
 import { HEADER_ICONS } from './headerIcons';
 
 export type HeaderItemField = 'text' | 'url';

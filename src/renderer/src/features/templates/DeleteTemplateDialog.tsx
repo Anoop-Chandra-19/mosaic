@@ -51,8 +51,7 @@ export function DeleteTemplateDialog({
         <p className="flex gap-2 rounded-lg border border-line-strong bg-zinc-100 p-3 text-xs leading-relaxed text-zinc-600 dark:bg-zinc-900 dark:text-zinc-400">
           <Info className="mt-0.5 size-3.5 shrink-0 text-zinc-500" />
           <span>
-            {active &&
-              'This is the template you have open, so the draft in the editor goes with it. '}
+            {active && 'This is the template you have open, so your draft goes with it. '}
             {last
               ? 'It is your last one, so Mosaic will be left with nothing open. Export it first if you might want it back.'
               : 'Your other templates are untouched. Export it first if you might want it back.'}

@@ -11,6 +11,8 @@ import type { ResumeSection } from '@shared/types/resume';
 import { useOverlayStore } from '@/stores/overlayStore';
 import { useResumeStore } from '@/stores/resumeStore';
 import { SectionItem } from './SectionItem';
+import { cn } from '@/lib/utils';
+import { HIDDEN_WHILE_READING } from './editorClasses';
 import { CustomMenuItems, PresetMenuItems } from './SectionMenuItems';
 import { swapNeighbours } from './listOrder';
 import { SortList } from './SortList';
@@ -70,7 +72,11 @@ export function SectionList({
       {showAddSection && (
         <DropdownMenu open={isAddSectionMenuOpen} onOpenChange={setAddSectionMenuOpen}>
           <DropdownMenuTrigger asChild>
-            <AppButton variant="outline" size="xs" className="mt-3 ml-1.5">
+            <AppButton
+              variant="outline"
+              size="xs"
+              className={cn('mt-3 ml-1.5', HIDDEN_WHILE_READING)}
+            >
               <Plus />
               Add section
             </AppButton>

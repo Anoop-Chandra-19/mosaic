@@ -113,6 +113,9 @@ test('a backup opened on the Start panel rebuilds the app', async () => {
 
   await expect(page.getByText('Restored 1 template from the backup')).toBeVisible();
   await expect(page.getByRole('button', { name: /Blank resume/ })).toHaveCount(0);
+  // Erasing forgot the tour along with every setting, so it greets the restored resume.
+  await expect(page.getByRole('dialog', { name: 'Welcome to Mosaic' })).toBeVisible();
+  await page.keyboard.press('Escape');
   await page.getByRole('tab', { name: 'Content' }).click();
   await expect(page.getByRole('complementary').getByText('Ada Lovelace')).toBeVisible();
 });

@@ -110,6 +110,21 @@
   --color-info-line: var(--info-line);
 }
 
+@theme {
+  /* One amber ring spreading off an element and fading: look here, once. It never repeats,
+     so it doesn't read as asking for a click. */
+  --animate-attention-ping: attention-ping 560ms cubic-bezier(0.2, 0.7, 0.3, 1) both;
+
+  @keyframes attention-ping {
+    from {
+      box-shadow: 0 0 0 0 oklch(0.78 0.155 72 / 55%);
+    }
+    to {
+      box-shadow: 0 0 0 0.75rem oklch(0.78 0.155 72 / 0%);
+    }
+  }
+}
+
 :root {
   color-scheme: light;
   --radius: 0.625rem;

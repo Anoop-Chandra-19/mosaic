@@ -3,7 +3,9 @@ import { NoTemplates } from '@/features/templates/NoTemplates';
 import { useResumeStore } from '@/stores/resumeStore';
 import type { ResumeData } from '@shared/types/resume';
 import { ResumeHeaderCard } from './header/ResumeHeaderCard';
+import { cn } from '@/lib/utils';
 import { EmptyContentHint } from './EmptyContentHint';
+import { HIDDEN_WHILE_READING } from './editorClasses';
 import { SectionList } from './SectionList';
 
 /**
@@ -33,7 +35,7 @@ export function ContentTab({ doc }: { doc?: ResumeData }) {
         onCustomAdded={setNamingId}
       />
       {empty && (
-        <div className="mt-3">
+        <div className={cn('mt-3', HIDDEN_WHILE_READING)}>
           <EmptyContentHint onCustomAdded={setNamingId} />
         </div>
       )}

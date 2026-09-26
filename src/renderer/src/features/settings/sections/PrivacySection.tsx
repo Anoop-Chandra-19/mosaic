@@ -16,7 +16,7 @@ import { useSecretsStatus } from '../useSecretsStatus';
 
 export function PrivacySection() {
   const { status, apply } = useSecretsStatus();
-  const resetUiState = useUiStore((s) => s.resetUiState);
+  const resetInterface = useUiStore((s) => s.resetInterface);
   const [confirmingErase, setConfirmingErase] = useState(false);
   const [erasing, setErasing] = useState(false);
   const hasKeys = Object.keys(status?.saved ?? {}).length > 0;
@@ -59,13 +59,13 @@ export function PrivacySection() {
 
       <SettingRow
         label="Reset interface"
-        description="Panel sizes, theme, and zoom go back to defaults. Content untouched."
+        description="Panel sizes, theme, and zoom go back to defaults. Content, paper size, and General settings stay."
       >
         <AppButton
           variant="outline"
           size="sm"
           onClick={() => {
-            resetUiState();
+            resetInterface();
             showToast('Interface reset');
           }}
         >

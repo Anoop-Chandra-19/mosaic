@@ -34,6 +34,8 @@ const appButtonVariants = cva(
         destructive:
           'bg-destructive text-white hover:bg-red-700 dark:bg-red-900 dark:hover:bg-red-800',
         link: 'text-foreground underline-offset-4 hover:underline',
+        // One step of a sequence; the current one (`aria-current="step"`) stretches, amber.
+        dot: 'bg-line-heavy transition-[background-color,width] duration-120 hover:bg-ink-faint aria-[current=step]:w-4 aria-[current=step]:rounded-[0.1875rem] aria-[current=step]:bg-[oklch(0.66_0.15_58)] motion-reduce:transition-none dark:aria-[current=step]:bg-[oklch(0.78_0.155_72)]',
       },
       size: {
         '2xs': "h-[1.375rem] gap-1 px-1.5 text-[0.6875rem] [&_svg:not([class*='size-'])]:size-2.5",
@@ -41,6 +43,7 @@ const appButtonVariants = cva(
         sm: "h-8 gap-1.5 px-3 text-sm [&_svg:not([class*='size-'])]:size-3.5",
         md: "h-9 gap-2 px-4 text-sm [&_svg:not([class*='size-'])]:size-4",
         lg: "h-10 gap-2 px-6 text-sm [&_svg:not([class*='size-'])]:size-4",
+        dot: 'size-1.5 px-0',
       },
       shape: {
         rect: 'rounded-md',

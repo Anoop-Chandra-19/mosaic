@@ -15,6 +15,7 @@ import { useResumeStore } from '@/stores/resumeStore';
 import type { Bullet } from '@shared/types/resume';
 import { BulletEditor } from './BulletEditor';
 import { EditorCheckbox } from './EditorCheckbox';
+import { HIDDEN_WHILE_READING } from './editorClasses';
 import { SortGripHandle, type SortGrip } from './SortList';
 
 interface BulletItemProps {
@@ -134,7 +135,13 @@ export function BulletItem({
         >
           <DropdownMenu open={actionsOpen} onOpenChange={setActionsOpen}>
             <DropdownMenuTrigger asChild>
-              <AppButton variant="ghost" size="xs" shape="square" aria-label="Bullet actions">
+              <AppButton
+                variant="ghost"
+                size="xs"
+                shape="square"
+                aria-label="Bullet actions"
+                className={HIDDEN_WHILE_READING}
+              >
                 <Ellipsis />
               </AppButton>
             </DropdownMenuTrigger>

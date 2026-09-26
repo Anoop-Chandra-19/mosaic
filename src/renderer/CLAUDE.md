@@ -36,6 +36,13 @@ For resume content, preview, or exports, also read `docs/resume-format.md` (repo
   of React; don't add manual memoization by default or remove existing memoization blindly.
   Compiler optimization does not replace effect dependencies or Zustand subscriptions.
 
+## First-run tour
+
+`features/onboarding/` holds the tour, which points at live elements marked with `tourTargetProps(...)` from
+`tourSteps.ts`. Moving, renaming, or removing a marked element changes the tour: keep its
+step's copy true and run `e2e/tour.spec.ts`. e2e launches store the tour as seen; a spec
+that wants it passes `withApp({ showTour: true })`.
+
 ## Responsive layout
 
 - Use relative units (%, vw, rem, fr), `clamp()`, `min()`, `max()`, and container queries.

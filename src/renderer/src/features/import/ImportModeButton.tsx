@@ -17,12 +17,12 @@ const MODES: { id: ImportMode; label: string; hint: string }[] = [
   {
     id: 'replace',
     label: 'Replace',
-    hint: 'Replaces what’s in the editor. The current draft is kept in history first, so you can restore it.',
+    hint: 'Replaces what’s in the editor. Your draft is kept in history first, so you can restore it.',
   },
   {
     id: 'merge',
-    label: 'Add to current',
-    hint: 'Adds these sections to the open resume. The current draft is kept in history first.',
+    label: 'Add to this resume',
+    hint: 'Adds these sections to the open resume. Your draft is kept in history first.',
   },
 ];
 

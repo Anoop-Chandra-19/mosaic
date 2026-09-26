@@ -34,6 +34,7 @@ import { formatRelativeTime } from './formatRelativeTime';
 import type { HistoryFilter } from '@/features/history/filterVersionHistory';
 import { useTemplateVersions, versionLabel } from '@/features/history/useTemplateVersions';
 import { VersionList } from '@/features/history/version-list/VersionList';
+import { tourTargetProps } from '@/features/onboarding/tourSteps';
 
 interface TemplateCardProps {
   template: TemplateSummary;
@@ -279,7 +280,10 @@ export function TemplateCard({ template, active, expanded, onToggle }: TemplateC
       </div>
 
       {expanded && (
-        <div className="border-t border-line bg-white px-3 pt-2.5 pb-3 dark:bg-zinc-950">
+        <div
+          className="border-t border-line bg-white px-3 pt-2.5 pb-3 dark:bg-zinc-950"
+          {...(active && tourTargetProps('history'))}
+        >
           <div className="flex items-center justify-between">
             <span className="inline-flex items-center gap-0.5">
               <span className="inline-flex items-center gap-1.5 text-[0.7rem] font-semibold tracking-wider text-zinc-500 uppercase">
@@ -291,11 +295,11 @@ export function TemplateCard({ template, active, expanded, onToggle }: TemplateC
                   variant="ghost"
                   size="xs"
                   shape="square"
-                  aria-label="What the working draft is doing"
+                  aria-label="What your draft is doing"
                   title={
                     dirty
-                      ? 'Working draft · saved as you type. It gets snapshotted on its own. Name it to make it easy to find.'
-                      : `Working draft matches ${versionLabel(versions, 0)}.`
+                      ? 'Your draft saves as you type, and Mosaic keeps versions of it as you go. Name one to find it again easily.'
+                      : `Your draft matches ${versionLabel(versions, 0)}.`
                   }
                 >
                   <Info className="size-3" />

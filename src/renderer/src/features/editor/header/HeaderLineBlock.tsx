@@ -16,6 +16,7 @@ import {
   HEADER_SEPARATORS,
   getHeaderKindInfo,
 } from '@shared/resume/resumeHeader';
+import { cn } from '@/lib/utils';
 import { useResumeStore } from '@/stores/resumeStore';
 import type {
   HeaderAlign,
@@ -23,6 +24,7 @@ import type {
   HeaderLine,
   HeaderSeparator,
 } from '@shared/types/resume';
+import { HIDDEN_WHILE_READING } from '../editorClasses';
 import { HEADER_ICONS } from './headerIcons';
 import { HeaderItemRow } from './HeaderItemRow';
 
@@ -120,6 +122,7 @@ export function HeaderLineBlock({ line, lines }: HeaderLineBlockProps) {
               size="xs"
               shape="square"
               aria-label={`Line ${number} actions`}
+              className={HIDDEN_WHILE_READING}
             >
               <Ellipsis />
             </AppButton>
@@ -163,7 +166,10 @@ export function HeaderLineBlock({ line, lines }: HeaderLineBlockProps) {
           <AppButton
             variant="quiet"
             size="xs"
-            className="mt-0.5 mb-1.5 justify-start pr-[0.5625rem] pl-[0.4375rem] text-[0.775rem] font-normal"
+            className={cn(
+              'mt-0.5 mb-1.5 justify-start pr-[0.5625rem] pl-[0.4375rem] text-[0.775rem] font-normal',
+              HIDDEN_WHILE_READING
+            )}
           >
             <Plus />
             Add to line {number}
