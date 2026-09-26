@@ -50,7 +50,7 @@ export function AppShell() {
           className="relative flex flex-1 overflow-hidden @container/workspace"
           inert={surface !== null}
           data-workspace
-          data-covered={shownSurface !== null || undefined}
+          data-covered-by={shownSurface?.kind}
         >
           <Sidebar />
           {shouldShowPreview && <PreviewPanel />}

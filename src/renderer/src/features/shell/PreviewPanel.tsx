@@ -123,7 +123,7 @@ export function PreviewPanel() {
         <ResumePreview
           paperSize={paperSize}
           previewZoom={shown.zoom}
-          isZoomEased={shown.isZoomEased}
+          zoomTransition={shown.zoomTransition}
           onMetaChange={setMeta}
           doc={preview?.version.doc}
         />

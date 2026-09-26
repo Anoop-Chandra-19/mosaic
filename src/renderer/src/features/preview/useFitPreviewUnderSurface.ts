@@ -1,8 +1,9 @@
 import { useLayoutEffect, useRef, useState, type RefObject } from 'react';
 import { useOverlayStore } from '@/stores/overlayStore';
 import { PREVIEW_DEFAULT_ZOOM, useUiStore } from '@/stores/uiStore';
-import { PREVIEW_ZOOM_EASE_MS } from './ResumePreview';
 
+/** How long the preview takes to ease to fit, and back. */
+const PREVIEW_ZOOM_EASE_MS = 160;
 /** Long enough for the page to land back in the preview before it zooms. */
 const LANDING_MS = 380;
 /** The longest a view waits for the preview to settle before it opens anyway. */
@@ -16,8 +17,10 @@ const SETTLE_LIMIT_MS = 700;
  */
 type Phase = 'live' | 'fit' | 'landing' | 'restoring';
 
-const scrollBehavior = (): ScrollBehavior =>
-  window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth';
+const EASE = 'cubic-bezier(.2, .7, .3, 1)';
+
+const prefersReducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const scrollBehavior = (): ScrollBehavior => (prefersReducedMotion() ? 'auto' : 'smooth');
 
 /**
  * The zoom the preview draws at, which is the user's own except around a view that covers
@@ -40,8 +43,17 @@ export function useFitPreviewUnderSurface(scrollRef: RefObject<HTMLDivElement | 
     const scroller = scrollRef.current;
     if (!scroller) return;
     if (phase === 'fit') {
-      setAside.current ??= { top: scroller.scrollTop, left: scroller.scrollLeft };
-      scroller.scrollTo({ top: 0, left: 0, behavior: scrollBehavior() });
+      const { scrollTop: top, scrollLeft: left } = scroller;
+      setAside.current ??= { top, left };
+      // Jump to the top, and ease the jump away with the zoom: a smooth scroll runs its own
+      // clock, longer than the zoom's, and the view waits on both.
+      scroller.scrollTo({ top: 0, left: 0 });
+      if ((top || left) && !prefersReducedMotion()) {
+        scroller.firstElementChild?.animate(
+          [{ transform: `translate(${-left}px, ${-top}px)` }, { transform: 'none' }],
+          { duration: PREVIEW_ZOOM_EASE_MS, easing: EASE }
+        );
+      }
       return;
     }
     if (phase === 'landing') {
@@ -60,7 +72,11 @@ export function useFitPreviewUnderSurface(scrollRef: RefObject<HTMLDivElement | 
   }, [phase, scrollRef]);
 
   const isFit = phase === 'fit' || phase === 'landing';
-  return { zoom: isFit ? PREVIEW_DEFAULT_ZOOM : previewZoom, isZoomEased: phase !== 'live' };
+  const isEased = phase !== 'live' && !prefersReducedMotion();
+  return {
+    zoom: isFit ? PREVIEW_DEFAULT_ZOOM : previewZoom,
+    zoomTransition: isEased ? `${PREVIEW_ZOOM_EASE_MS}ms ${EASE}` : undefined,
+  };
 }
 
 const wait = (ms: number) => new Promise<void>((resolve) => window.setTimeout(resolve, ms));

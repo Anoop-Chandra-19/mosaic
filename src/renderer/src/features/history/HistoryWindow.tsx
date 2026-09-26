@@ -1,7 +1,8 @@
-import { use, useEffect, useRef, useState } from 'react';
+import { addTransitionType, startTransition, use, useEffect, useRef, useState } from 'react';
 import { Clock, List, X } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
 import { PAPER_DIMENSIONS_PT } from '@/features/preview/pageGeometry';
+import { getDb } from '@/lib/storage/mosaicDb';
 import { cn } from '@/lib/utils';
 import { attempt, showToast, useOverlayStore } from '@/stores/overlayStore';
 import { useTemplateStore } from '@/stores/templateStore';
@@ -105,13 +106,59 @@ function HistoryWindowFrame({ template, filter, versionId, prepared }: HistoryWi
   const onClose = () => closeSurface('history');
 
   const selected = versions?.find((version) => version.id === selectedId) ?? versions?.[0];
+  // The document of the version being read: the one the view opened on, then each read
+  // before its step lands. Only ever the one, so nothing piles up while the view is open.
+  const [doc, setDoc] = useState(prepared?.version ?? null);
+  const latestStep = useRef(0);
+  const shownId = useRef(selected?.id);
+
+  // When the view couldn't read its first version ahead of opening, or the history list
+  // changed under it, read the selected one now.
+  useEffect(() => {
+    if (!selected || doc?.id === selected.id) return;
+    let isCurrent = true;
+    getDb()
+      .versions.get(selected.id)
+      .then(
+        (read) => isCurrent && setDoc(read),
+        (error: unknown) => console.error('Could not read that version', error)
+      );
+    return () => {
+      isCurrent = false;
+    };
+  }, [selected, doc]);
   const labelOf = (version: VersionMeta) =>
     versions ? versionLabel(versions, versions.indexOf(version)) : '';
-  const select = (version: VersionMeta) => setSelectedId(version.id);
-  const goTo = (version: VersionMeta) => {
-    setSelectedId(version.id);
-    setReveal({ versionId: version.id });
+  // A step through time: the page slides the way the history runs, older to the left. The
+  // version is read first, so the slide lands on its page rather than an empty pane. Only
+  // the latest step lands: reads can finish out of order, and a slower one must not win.
+  const step = (version: VersionMeta, shouldReveal: boolean) => {
+    const ticket = ++latestStep.current;
+    const show = (read: Version | null) => {
+      if (ticket !== latestStep.current || !versions) return;
+      const from = versions.findIndex(({ id }) => id === shownId.current);
+      const to = versions.indexOf(version);
+      shownId.current = version.id;
+      startTransition(() => {
+        if (from >= 0 && to >= 0 && from !== to) {
+          addTransitionType(to > from ? 'to-older' : 'to-newer');
+        }
+        setSelectedId(version.id);
+        setDoc(read);
+        if (shouldReveal) setReveal({ versionId: version.id });
+      });
+    };
+    getDb()
+      .versions.get(version.id)
+      .then(show, (error: unknown) => {
+        // Still selected, so the list and the pane agree on which version this is.
+        console.error('Could not read that version', error);
+        showToast('Could not read that version', 'error');
+        show(null);
+      });
   };
+  const select = (version: VersionMeta) => step(version, false);
+  const goTo = (version: VersionMeta) => step(version, true);
 
   const indexWidth = isIndexOpen ? INDEX_WIDTH_PX : 0;
   const maxReadWidth = windowWidth - indexWidth - LIST_MIN_WIDTH_PX;
@@ -231,7 +278,7 @@ function HistoryWindowFrame({ template, filter, versionId, prepared }: HistoryWi
             onRestore={(version) => void restore(version)}
             onDuplicate={(version) => void duplicate(version)}
             onExport={exportVersion}
-            initialVersion={prepared?.version ?? null}
+            doc={doc}
           />
         )}
       </div>
