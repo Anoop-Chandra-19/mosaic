@@ -9,12 +9,12 @@ import { attempt, showToast, useOverlayStore } from '@/stores/overlayStore';
 import { useTemplateStore } from '@/stores/templateStore';
 import { useUiStore } from '@/stores/uiStore';
 import type { TemplateSummary, Version, VersionMeta } from '@shared/types/db';
-import type { HistoryFilter } from './filterVersionHistory';
+import type { HistoryFilter } from '../filterVersionHistory';
+import { VersionList, type HistoryReveal } from '../version-list/VersionList';
+import { useTemplateVersions, versionLabel } from '../useTemplateVersions';
 import { HistoryIndex } from './HistoryIndex';
 import { HistoryReadPane, LEGIBLE_PAGE_SCALE } from './HistoryReadPane';
 import { prepareHistoryOpening, type PreparedHistory } from './prepareHistoryOpening';
-import { useTemplateVersions, versionLabel } from './useTemplateVersions';
-import { VersionList, type HistoryReveal } from './VersionList';
 
 /** The index is the first thing to give up its width; below this it starts folded. */
 const INDEX_OPEN_MIN_WINDOW_PX = 1180;
@@ -22,7 +22,7 @@ const INDEX_WIDTH_PX = 204;
 /** The list never gets narrower than this. */
 const LIST_MIN_WIDTH_PX = 320;
 
-interface HistoryWindowProps {
+interface FullHistoryProps {
   /** The surface that opened it: what it first shows is loaded once per opening. */
   opening: object;
   templateId: string;
@@ -36,7 +36,7 @@ interface HistoryWindowProps {
  * template's history, not only the open one's. It suspends until its first page is
  * loaded, so it opens whole, inside the view transition that brings it in.
  */
-export function HistoryWindow({ opening, templateId, filter, versionId }: HistoryWindowProps) {
+export function FullHistory({ opening, templateId, filter, versionId }: FullHistoryProps) {
   const prepared = use(prepareHistoryOpening(opening, templateId, versionId));
   const template = useTemplateStore((s) => s.templates.find((t) => t.id === templateId));
   const closeSurface = useOverlayStore((s) => s.closeSurface);
@@ -48,7 +48,7 @@ export function HistoryWindow({ opening, templateId, filter, versionId }: Histor
 
   if (!template) return null;
   return (
-    <HistoryWindowFrame
+    <FullHistoryFrame
       key={templateId}
       template={template}
       filter={filter}
@@ -58,14 +58,14 @@ export function HistoryWindow({ opening, templateId, filter, versionId }: Histor
   );
 }
 
-interface HistoryWindowFrameProps {
+interface FullHistoryFrameProps {
   template: TemplateSummary;
   filter?: HistoryFilter;
   versionId?: string;
   prepared: PreparedHistory | null;
 }
 
-function HistoryWindowFrame({ template, filter, versionId, prepared }: HistoryWindowFrameProps) {
+function FullHistoryFrame({ template, filter, versionId, prepared }: FullHistoryFrameProps) {
   const versions = useTemplateVersions(template, true, prepared?.versions);
   const closeSurface = useOverlayStore((s) => s.closeSurface);
   const restoreVersion = useTemplateStore((s) => s.restoreVersion);
@@ -195,7 +195,7 @@ function HistoryWindowFrame({ template, filter, versionId, prepared }: HistoryWi
       tabIndex={-1}
       role="region"
       aria-label={`History of ${template.name}`}
-      className="absolute inset-0 z-30 flex flex-col bg-background outline-none @container/history-window"
+      className="absolute inset-0 z-30 flex flex-col bg-background outline-none @container/full-history"
     >
       <header className="flex h-11.5 shrink-0 items-center gap-2.5 border-b border-line bg-card pr-2.5 pl-3.5">
         <Clock aria-hidden className="size-3.75 text-ink-muted" />
@@ -205,7 +205,7 @@ function HistoryWindowFrame({ template, filter, versionId, prepared }: HistoryWi
         </span>
         <span className="min-w-0 truncate text-[0.8125rem] text-ink-soft">{template.name}</span>
         {versions && (
-          <span className="ml-1 hidden font-mono text-[0.71875rem] whitespace-nowrap text-ink-faint @min-[56rem]/history-window:inline">
+          <span className="ml-1 hidden font-mono text-[0.71875rem] whitespace-nowrap text-ink-faint @min-[56rem]/full-history:inline">
             {versions.length.toLocaleString()} versions · {namedCount} named · nothing is ever
             removed
           </span>

@@ -7,7 +7,7 @@ import { Toast } from './Toast';
 import { AgentPane } from '@/features/agent/AgentPane';
 import { RestoreBackupDialog } from '@/features/backup/RestoreBackupDialog';
 import { ExportDialog } from '@/features/export/ExportDialog';
-import { HistoryWindow } from '@/features/history/HistoryWindow';
+import { FullHistory } from '@/features/history/full-history/FullHistory';
 import { ImportResumeDialog } from '@/features/import/ImportResumeDialog';
 import { SettingsDialog } from '@/features/settings/SettingsDialog';
 import { StartPanel } from '@/features/start/StartPanel';
@@ -81,7 +81,7 @@ export function AppShell() {
         <Suspense fallback={null}>
           {shownSurface?.kind === 'history' && (
             <ViewTransition enter={SURFACE_MOTION.in} exit={SURFACE_MOTION.out}>
-              <HistoryWindow
+              <FullHistory
                 opening={shownSurface}
                 templateId={shownSurface.templateId}
                 filter={shownSurface.filter}
