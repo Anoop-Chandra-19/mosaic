@@ -1,0 +1,142 @@
+/* Motions (view-transition-class) and directions (types) only; elements join through
+   transitionClasses.ts. Guide: src/renderer/CLAUDE.md. */
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+}
+
+/* ---- surface-in, surface-out: a view fading in over the workspace, and out ---- */
+
+::view-transition-new(.surface-in) {
+  animation: surface-in 180ms cubic-bezier(0.2, 0.7, 0.3, 1);
+}
+
+::view-transition-old(.surface-out) {
+  animation: surface-out 140ms ease-in forwards;
+}
+
+@keyframes surface-in {
+  from {
+    opacity: 0;
+    transform: translateY(0.375rem) scale(0.99);
+  }
+}
+
+@keyframes surface-out {
+  to {
+    opacity: 0;
+    transform: translateY(0.25rem);
+  }
+}
+
+/* ---- recede: stepping back behind a view, unchanged, and returning ---- */
+
+::view-transition-old(.recede) {
+  animation: recede 180ms ease-in both;
+}
+
+::view-transition-new(.recede) {
+  animation: return-from-recede 240ms cubic-bezier(0.2, 0.7, 0.3, 1) both;
+}
+
+@keyframes recede {
+  to {
+    opacity: 0;
+    transform: scale(0.985);
+  }
+}
+
+@keyframes return-from-recede {
+  from {
+    opacity: 0;
+    transform: scale(0.985);
+  }
+}
+
+/* ---- handoff: the same thing moving between two boxes that show it ---- */
+
+/* Name the clipping boxes, not the page: a named element draws unclipped while it moves. */
+::view-transition-group(.handoff) {
+  /* Groups stack in the old DOM order, which puts this under the view coming in. */
+  z-index: 1;
+  overflow: clip;
+  animation-duration: 340ms;
+  animation-timing-function: cubic-bezier(0.2, 0.7, 0.3, 1);
+}
+
+/* A short swap, in lockstep: the images add their light, so any other timing dims mid-way. */
+::view-transition-old(.handoff),
+::view-transition-new(.handoff) {
+  animation-duration: 160ms;
+  /* Natural size, centered; by default an image stretches to the box's width. */
+  inline-size: auto;
+  block-size: auto;
+  inset-inline-start: 50%;
+  translate: -50% 0;
+}
+
+/* ---- step: sliding the way a sequence runs; step-back comes in from the left ---- */
+
+/* Offset images wash each other out in the default additive blend. */
+:root:active-view-transition-type(step-back, step-forward) {
+  &::view-transition-old(.step),
+  &::view-transition-new(.step) {
+    mix-blend-mode: normal;
+  }
+}
+
+:root:active-view-transition-type(step-back) {
+  &::view-transition-old(.step) {
+    animation: leave-right 200ms ease-in both;
+  }
+  &::view-transition-new(.step) {
+    animation: enter-from-left 260ms cubic-bezier(0.2, 0.7, 0.3, 1) both;
+  }
+}
+
+:root:active-view-transition-type(step-forward) {
+  &::view-transition-old(.step) {
+    animation: leave-left 200ms ease-in both;
+  }
+  &::view-transition-new(.step) {
+    animation: enter-from-right 260ms cubic-bezier(0.2, 0.7, 0.3, 1) both;
+  }
+}
+
+/* The incoming image is solid and covers the outgoing one, so their content never doubles. */
+@keyframes leave-right {
+  to {
+    opacity: 0;
+    transform: translateX(8%);
+  }
+}
+
+@keyframes leave-left {
+  to {
+    opacity: 0;
+    transform: translateX(-8%);
+  }
+}
+
+@keyframes enter-from-left {
+  from {
+    transform: translateX(-35%);
+  }
+}
+
+@keyframes enter-from-right {
+  from {
+    transform: translateX(35%);
+  }
+}
+
+/* ---- Reduced motion: every transition still happens, none of it moves ---- */
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+}
