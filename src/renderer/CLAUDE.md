@@ -81,6 +81,10 @@ Use a motion that exists before inventing one:
 
 - A view transition blocks input while it runs: use one for whole-view changes and moves
   between boxes; keep frequent or interruptible changes (zoom, folds, hovers) CSS.
+- Inside a box, `lib/motion/` instead: `easeHeightChanges` (a ref callback) eases a box
+  whose height follows its content when it jumps, such as a dialog changing step;
+  `recordPlaces` then `slideFromRecordedPlaces` slide items to where a layout switch put
+  them. Both stay inside the box's clipping and never block input.
 - A name sits on one element at a time, or the browser skips the transition.
 - A named element draws unclipped while it moves: name the clipped box that shows a thing,
   not a thing taller than its box.

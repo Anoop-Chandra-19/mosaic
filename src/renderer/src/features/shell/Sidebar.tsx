@@ -45,7 +45,7 @@ const TAB_TRIGGER =
  * centers it as it centers the tabs.
  */
 const TAB_PANEL =
-  'pointer-events-none absolute left-2.25 h-[1.9375rem] w-[calc((100%-1.3125rem)/2)] rounded-md border border-line bg-pane-raised shadow-[0_1px_2px_oklch(0_0_0/22%)] transition-transform duration-200 ease-[cubic-bezier(.2,.7,.3,1)] motion-reduce:transition-none';
+  'pointer-events-none absolute left-2.25 h-[1.9375rem] w-[calc((100%-1.3125rem)/2)] rounded-md border border-line bg-pane-raised shadow-[0_1px_2px_oklch(0_0_0/22%)] transition-transform duration-200 ease-settle motion-reduce:transition-none';
 
 export function Sidebar() {
   const activeSidebarTab = useUiStore((s) => s.activeSidebarTab);

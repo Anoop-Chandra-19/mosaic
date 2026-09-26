@@ -1,7 +1,8 @@
-import { useState, type ReactNode } from 'react';
+import { useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { AlertTriangle } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
 import { Collapsible, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { recordPlaces, slideFromRecordedPlaces } from '@/lib/motion/slideToNewPlaces';
 import { cn } from '@/lib/utils';
 import type { ResumeEntry, ResumeSection } from '@shared/types/resume';
 import { formatCount as count } from './formatCount';
@@ -28,9 +29,19 @@ const idsWithin = (section: ResumeSection) =>
 const entryMeta = ({ organization, location, dates }: ResumeEntry) =>
   [organization, location, dates].filter(Boolean).join(' · ');
 
+/** Marks each line with its item's id, so a layout switch can slide it to its new place. */
+const PLACE_KEY = 'data-review-item';
+/** The file's own lines arrive as the reading slides over to make room. */
+const ARRIVES = 'animate-in fade-in-0 duration-220 motion-reduce:animate-none';
+
 function SourceLines({ lines }: { lines: SourceLine[] }) {
   return (
-    <div className="py-1 font-mono text-[0.6875rem] leading-[1.55] wrap-break-word whitespace-pre-wrap text-ink-muted">
+    <div
+      className={cn(
+        'py-1 font-mono text-[0.6875rem] leading-[1.55] wrap-break-word whitespace-pre-wrap text-ink-muted',
+        ARRIVES
+      )}
+    >
       {lines.map((line, index) =>
         'pageBreak' in line ? (
           <div
@@ -76,6 +87,8 @@ export function ReviewSectionRow({
   onKeepAll: (ids: string[]) => void;
 }) {
   const [isShowingSource, setShowingSource] = useState(false);
+  const rowRef = useRef<HTMLLIElement>(null);
+  const placesBeforeSource = useRef<Map<string, DOMRect> | null>(null);
   const isOn = !dropped.has(section.id);
   const within = idsWithin(section);
   const isMixed = isOn && within.some((id) => dropped.has(id));
@@ -86,6 +99,17 @@ export function ReviewSectionRow({
     section.layout === 'lines'
       ? count(section.items.length, 'line')
       : count(section.items.length, 'entry', 'entries');
+
+  // Turning Source on or off moves every line to the other column; they slide there.
+  const toggleSource = () => {
+    if (rowRef.current) placesBeforeSource.current = recordPlaces(rowRef.current, PLACE_KEY);
+    setShowingSource(!isShowingSource);
+  };
+  useLayoutEffect(() => {
+    const places = placesBeforeSource.current;
+    placesBeforeSource.current = null;
+    if (places && rowRef.current) slideFromRecordedPlaces(rowRef.current, PLACE_KEY, places);
+  }, [withSource]);
 
   const sourceOf = (id: string, fallback: string) =>
     review.items[id]?.source ?? [{ text: fallback }];
@@ -111,6 +135,7 @@ export function ReviewSectionRow({
     options: { isBullet?: boolean; isMixed?: boolean; onClick?: () => void } = {}
   ) => (
     <div
+      {...{ [PLACE_KEY]: id }}
       className={cn(
         'flex items-start gap-2 py-0.75 text-[0.78125rem] leading-normal text-ink-soft',
         options.isBullet && 'pl-4.75'
@@ -136,7 +161,7 @@ export function ReviewSectionRow({
 
   return (
     <Collapsible asChild open={isOpen} onOpenChange={onOpenChange}>
-      <li className="group/row">
+      <li ref={rowRef} className="group/row">
         <div className="flex min-w-0 items-center gap-2.25 px-2.75 py-1.75">
           <ReviewCheckbox
             className="mt-0"
@@ -171,7 +196,7 @@ export function ReviewSectionRow({
               size="xs"
               aria-pressed={isShowingSource}
               title="The lines in your file this section came from"
-              onClick={() => setShowingSource(!isShowingSource)}
+              onClick={toggleSource}
               className="-ml-0.5 text-ink-muted aria-pressed:bg-line aria-pressed:text-foreground"
             >
               Source
@@ -195,7 +220,12 @@ export function ReviewSectionRow({
         <ReviewFold>
           <div className="mt-0.5 border-t border-dashed border-line bg-pane pt-0.5 pr-2.75 pb-2.25 pl-6.5">
             {withSource && (
-              <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)] gap-4 border-b border-line pt-1.25 pb-0.75 text-[0.6875rem] text-ink-faint">
+              <div
+                className={cn(
+                  'grid grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)] gap-4 border-b border-line pt-1.25 pb-0.75 text-[0.6875rem] text-ink-faint',
+                  ARRIVES
+                )}
+              >
                 <span>In the file</span>
                 <span>In Mosaic</span>
               </div>
