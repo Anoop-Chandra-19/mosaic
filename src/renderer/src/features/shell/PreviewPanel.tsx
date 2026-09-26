@@ -3,12 +3,13 @@ import { Minus, Plus, TriangleAlert } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { ResumePreview } from '@/features/preview/ResumePreview';
-import { useFitPreviewUnderSurface } from '@/features/preview/useFitPreviewUnderSurface';
+import { useFitPreviewForHandoff } from '@/features/preview/useFitPreviewForHandoff';
 import { usePreviewCanvas } from '@/features/preview/usePreviewCanvas';
 import { cn } from '@/lib/utils';
 import { shortcutLabel } from '@/lib/keyboardShortcuts';
 import type { PaperSize } from '@/types/paper';
 import { VersionPreviewBanner } from '@/features/history/VersionPreviewBanner';
+import { PAGE_VIEWPORT } from '@/features/view-transitions/viewTransitionNames';
 import { useOverlayStore } from '@/stores/overlayStore';
 import { PREVIEW_ZOOM_RANGE, useUiStore } from '@/stores/uiStore';
 
@@ -21,7 +22,7 @@ export function PreviewPanel() {
   const preview = useOverlayStore((s) => s.preview);
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const canvas = usePreviewCanvas(scrollRef);
-  const shown = useFitPreviewUnderSurface(scrollRef);
+  const shown = useFitPreviewForHandoff(scrollRef);
 
   useEffect(() => {
     // Expose paper size to global CSS for page-specific print/preview styling.
@@ -113,7 +114,7 @@ export function PreviewPanel() {
 
       <div
         ref={scrollRef}
-        data-page-viewport
+        {...PAGE_VIEWPORT}
         onPointerDown={canvas.onPointerDown}
         className={cn(
           'flex-1 overflow-auto overscroll-contain px-3 py-4 md:px-6 md:py-6',

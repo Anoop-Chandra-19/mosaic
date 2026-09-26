@@ -2,6 +2,7 @@ import { addTransitionType, startTransition, use, useEffect, useRef, useState } 
 import { Clock, List, X } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
 import { PAPER_DIMENSIONS_PT } from '@/features/preview/pageGeometry';
+import { TRANSITION_TYPE } from '@/features/view-transitions/viewTransitionNames';
 import { getDb } from '@/lib/storage/mosaicDb';
 import { cn } from '@/lib/utils';
 import { attempt, showToast, useOverlayStore } from '@/stores/overlayStore';
@@ -141,7 +142,7 @@ function HistoryWindowFrame({ template, filter, versionId, prepared }: HistoryWi
       shownId.current = version.id;
       startTransition(() => {
         if (from >= 0 && to >= 0 && from !== to) {
-          addTransitionType(to > from ? 'to-older' : 'to-newer');
+          addTransitionType(to > from ? TRANSITION_TYPE.toOlder : TRANSITION_TYPE.toNewer);
         }
         setSelectedId(version.id);
         setDoc(read);

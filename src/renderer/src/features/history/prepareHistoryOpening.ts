@@ -1,4 +1,4 @@
-import { waitForPreviewToFit } from '@/features/preview/useFitPreviewUnderSurface';
+import { whenPreviewSettled } from '@/features/view-transitions/pageHandoff';
 import { getDb } from '@/lib/storage/mosaicDb';
 import type { Version, VersionMeta } from '@shared/types/db';
 
@@ -23,7 +23,7 @@ export function prepareHistoryOpening(
 ): Promise<PreparedHistory | null> {
   let prepared = openings.get(opening);
   if (!prepared) {
-    const settled = waitForPreviewToFit();
+    const settled = whenPreviewSettled();
     prepared = (async () => {
       const db = getDb();
       const versions = await db.versions.list(templateId);

@@ -1,0 +1,176 @@
+/*
+ * The view-transition layer's CSS. The names, types, classes and data attributes here are
+ * written once in viewTransitionNames.ts; change one side, change the other. Which motion
+ * to use for what, and the rules these follow, are in src/renderer/CLAUDE.md.
+ */
+
+/* Only the named parts move; the rest of the window changes at once, not by a cross-fade. */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+}
+
+/* ---- Surface fade: a view fading in over the workspace, and out ---- */
+
+::view-transition-new(.surface-in) {
+  animation: surface-in 180ms cubic-bezier(0.2, 0.7, 0.3, 1);
+}
+
+::view-transition-old(.surface-out) {
+  animation: surface-out 140ms ease-in forwards;
+}
+
+@keyframes surface-in {
+  from {
+    opacity: 0;
+    transform: translateY(0.375rem) scale(0.99);
+  }
+}
+
+@keyframes surface-out {
+  to {
+    opacity: 0;
+    transform: translateY(0.25rem);
+  }
+}
+
+/* ---- Recede: the workspace stepping back behind a view, and returning ---- */
+
+/*
+ * Everything in the workspace but the page recedes as the history view comes forward, and
+ * comes back as it goes. Under the view it is hidden: out of reach and out of sight anyway,
+ * and it would otherwise show through the view while that fades in. (The Start panel shows
+ * the workspace blurred behind it, so this is the history view's alone.)
+ */
+[data-workspace]:not([data-covered-by='history']) {
+  view-transition-name: workspace;
+}
+
+[data-workspace][data-covered-by='history'] {
+  visibility: hidden;
+}
+
+::view-transition-old(workspace) {
+  animation: workspace-recede 180ms ease-in both;
+}
+
+::view-transition-new(workspace) {
+  animation: workspace-return 240ms cubic-bezier(0.2, 0.7, 0.3, 1) both;
+}
+
+@keyframes workspace-recede {
+  to {
+    opacity: 0;
+    transform: scale(0.985);
+  }
+}
+
+@keyframes workspace-return {
+  from {
+    opacity: 0;
+    transform: scale(0.985);
+  }
+}
+
+/* ---- Page handoff: the page moving between the preview and the history view ---- */
+
+/*
+ * Carried by the box that shows the page on each side: a named element is drawn unclipped
+ * while it moves, and the page alone is taller than either box. The name sits on one side
+ * at a time, or the browser skips the transition.
+ */
+[data-workspace]:not([data-covered-by='history']) [data-page-viewport],
+[data-history-read] [data-page-viewport] {
+  view-transition-name: paper;
+}
+
+::view-transition-group(paper) {
+  /* Groups stack in the old page's order, which puts the preview's under the history
+     view coming in over it. */
+  z-index: 1;
+  overflow: clip;
+  animation-duration: 340ms;
+  animation-timing-function: cubic-bezier(0.2, 0.7, 0.3, 1);
+}
+
+/*
+ * The two pages swap early, while they still line up, so the text doesn't double. Their
+ * fades stay in step: the blend only adds up to a whole page when one's opacity is the
+ * other's complement, and anything else dims the page mid-swap.
+ */
+::view-transition-old(paper),
+::view-transition-new(paper) {
+  animation-duration: 160ms;
+  /* At their own size, centered: the box around the page reshapes, the page doesn't
+     stretch with it. By default each snapshot is scaled to the box's width. */
+  inline-size: auto;
+  block-size: auto;
+  inset-inline-start: 50%;
+  translate: -50% 0;
+}
+
+/* ---- Version step: the page sliding the way time runs, older to the left ---- */
+
+/* Offset pages would wash each other out in the default blend, which adds their light,
+   so they stack plainly instead. */
+:root:active-view-transition-type(to-older, to-newer) {
+  &::view-transition-old(paper),
+  &::view-transition-new(paper) {
+    mix-blend-mode: normal;
+  }
+}
+
+:root:active-view-transition-type(to-older) {
+  &::view-transition-old(paper) {
+    animation: page-leave-right 200ms ease-in both;
+  }
+  &::view-transition-new(paper) {
+    animation: page-enter-from-left 260ms cubic-bezier(0.2, 0.7, 0.3, 1) both;
+  }
+}
+
+:root:active-view-transition-type(to-newer) {
+  &::view-transition-old(paper) {
+    animation: page-leave-left 200ms ease-in both;
+  }
+  &::view-transition-new(paper) {
+    animation: page-enter-from-right 260ms cubic-bezier(0.2, 0.7, 0.3, 1) both;
+  }
+}
+
+/* The page coming in is solid and slides over the one going, so no two texts show at once. */
+@keyframes page-leave-right {
+  to {
+    opacity: 0;
+    transform: translateX(8%);
+  }
+}
+
+@keyframes page-leave-left {
+  to {
+    opacity: 0;
+    transform: translateX(-8%);
+  }
+}
+
+@keyframes page-enter-from-left {
+  from {
+    transform: translateX(-35%);
+  }
+}
+
+@keyframes page-enter-from-right {
+  from {
+    transform: translateX(35%);
+  }
+}
+
+/* ---- Reduced motion: every transition still happens, none of it moves ---- */
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+}
