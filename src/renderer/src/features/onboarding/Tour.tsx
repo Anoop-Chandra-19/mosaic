@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { ChevronRight, X } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
 import { isTypingField, shortcutLabel } from '@/lib/keyboardShortcuts';
+import { prefersReducedMotion } from '@/lib/motion/motionTiming';
 import { cn } from '@/lib/utils';
 import { showToast, useOverlayStore } from '@/stores/overlayStore';
 import { useResumeStore } from '@/stores/resumeStore';
@@ -29,7 +30,7 @@ const SETTLE_MS = 260;
 
 /** With reduced motion nothing moves, so there is nothing to wait for. */
 function pace(ms: number): number {
-  return window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : ms;
+  return prefersReducedMotion() ? 0 : ms;
 }
 
 /** Starts the tour once the first resume is in the editor, until it has been seen. */

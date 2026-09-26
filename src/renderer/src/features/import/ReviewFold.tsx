@@ -14,7 +14,7 @@ export function ReviewFold({ className, ...props }: ComponentProps<typeof Collap
   return (
     <CollapsibleContent
       className={cn(
-        'overflow-hidden duration-180 ease-[cubic-bezier(.2,.7,.3,1)] data-[state=closed]:animate-collapsible-up data-[state=open]:animate-collapsible-down motion-reduce:animate-none',
+        'overflow-hidden duration-180 ease-settle data-[state=closed]:animate-collapsible-up data-[state=open]:animate-collapsible-down motion-reduce:animate-none',
         className
       )}
       {...props}

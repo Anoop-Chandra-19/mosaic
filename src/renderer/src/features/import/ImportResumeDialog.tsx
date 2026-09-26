@@ -5,6 +5,7 @@ import { AppButton } from '@/components/AppButton';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { fileFailure } from '@/features/backup/backupFiles';
+import { easeHeightChanges } from '@/lib/motion/easeHeightChanges';
 import { cn } from '@/lib/utils';
 import { useOverlayStore } from '@/stores/overlayStore';
 import { MAX_FILE_BYTES } from '@shared/types/files';
@@ -34,8 +35,9 @@ export function ImportResumeDialog() {
   return (
     <Dialog open={open} onOpenChange={(next) => !next && closeImport()}>
       <DialogContent
+        ref={easeHeightChanges}
         showCloseButton={false}
-        className="flex max-h-[90vh] w-[min(38.75rem,96vw)] max-w-none flex-col gap-0 overflow-hidden rounded-xl bg-white p-0 transition-[width] duration-160 sm:max-w-none motion-reduce:transition-none has-[[data-import-step=review]]:w-[min(50rem,96vw)] dark:bg-zinc-950"
+        className="flex max-h-[90vh] w-[min(38.75rem,96vw)] max-w-none flex-col gap-0 overflow-hidden rounded-xl bg-white p-0 transition-[width] duration-160 sm:max-w-none motion-reduce:transition-none has-data-[import-step=review]:w-[min(50rem,96vw)] dark:bg-zinc-950"
       >
         {/* Mounted per opening, so each import starts from the file picker. */}
         {open && <ImportFlow onDone={closeImport} />}

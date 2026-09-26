@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { AlertTriangle, FileText, Upload } from 'lucide-react';
+import { AlertTriangle, FileText, Info, Upload } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
 import { DialogFrameFooter, DialogFrameHeader } from '@/components/DialogFrame';
 import { getPrintableHeaderLines } from '@shared/resume/resumeHeader';
@@ -173,6 +173,12 @@ export function ImportReview({
           </AppButton>
         </div>
 
+        <p className="mb-2.25 flex gap-2.5 rounded-[0.5625rem] border border-line-strong bg-pane px-3 py-2.75 text-[0.8rem] leading-relaxed text-ink-soft">
+          <Info className="mt-0.5 size-3.5 shrink-0 text-ink-muted" />
+          This is what Mosaic read. Untick anything you don’t want, and open a row to check it;
+          Source shows the lines it came from. Nothing is written until you import.
+        </p>
+
         {parsed.warnings.map((warning) => (
           <p
             key={warning}
@@ -221,7 +227,7 @@ export function ImportReview({
         )}
       </div>
 
-      <DialogFrameFooter note={sections.length > 0 ? footerCounts : undefined}>
+      <DialogFrameFooter note={sections.length > 0 ? `Keeping ${footerCounts}` : undefined}>
         <AppButton variant="outline" size="sm" onClick={onDone}>
           Cancel
         </AppButton>

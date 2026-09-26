@@ -63,7 +63,12 @@ export function ImportModeButton({
       {importButton}
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <AppButton size="sm" aria-label="How to import" className="ml-px rounded-l-none px-1.75">
+          <AppButton
+            size="sm"
+            aria-label="How to import"
+            title="Import as a new template, replace this resume, or add to it"
+            className="ml-px rounded-l-none px-1.75"
+          >
             <ChevronDown className="size-3" />
           </AppButton>
         </DropdownMenuTrigger>

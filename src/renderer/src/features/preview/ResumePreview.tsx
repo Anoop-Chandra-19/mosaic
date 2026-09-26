@@ -27,7 +27,7 @@ interface ResumePreviewProps {
 
 /** How long an eased change of zoom takes: the `duration-160` of the classes below. */
 export const PREVIEW_ZOOM_EASE_MS = 160;
-const ZOOM_EASE = 'duration-160 ease-[cubic-bezier(.2,.7,.3,1)] motion-reduce:transition-none';
+const ZOOM_EASE = 'duration-160 ease-settle motion-reduce:transition-none';
 
 export interface ResumePreviewMeta {
   /** Pages laid out, which is every page unless the resume runs past the limit. */

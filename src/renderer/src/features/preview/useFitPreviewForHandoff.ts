@@ -3,6 +3,7 @@ import {
   reportPreviewSettling,
   useIsHandingOffPage,
 } from '@/features/view-transitions/pageHandoff';
+import { MOTION_EASE, prefersReducedMotion } from '@/lib/motion/motionTiming';
 import { PREVIEW_DEFAULT_ZOOM, useUiStore } from '@/stores/uiStore';
 import { PREVIEW_ZOOM_EASE_MS } from './ResumePreview';
 
@@ -17,9 +18,6 @@ const LANDING_MS = 380;
  */
 type Phase = 'live' | 'fit' | 'landing' | 'restoring';
 
-const EASE = 'cubic-bezier(.2, .7, .3, 1)';
-
-const prefersReducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const scrollBehavior = (): ScrollBehavior => (prefersReducedMotion() ? 'auto' : 'smooth');
 const wait = (ms: number) => new Promise<void>((resolve) => window.setTimeout(resolve, ms));
 
@@ -53,7 +51,7 @@ export function useFitPreviewForHandoff(scrollRef: RefObject<HTMLDivElement | nu
       if (isEased && (top || left)) {
         scroller.firstElementChild?.animate(
           [{ transform: `translate(${-left}px, ${-top}px)` }, { transform: 'none' }],
-          { duration: PREVIEW_ZOOM_EASE_MS, easing: EASE }
+          { duration: PREVIEW_ZOOM_EASE_MS, easing: MOTION_EASE }
         );
       }
       reportPreviewSettling(isEased ? wait(PREVIEW_ZOOM_EASE_MS) : Promise.resolve());
