@@ -74,7 +74,7 @@ export function OllamaAddressRow({
       description={
         <>
           {isLocalOllamaAddress(address)
-            ? 'Ollama on this machine, so your resume text never leaves it.'
+            ? 'Ollama on your computer, so your resume text never leaves it.'
             : `Ollama at ${ollamaHost(address)}, so your resume text goes there, on your network, when you ask for something.`}
           {invalid && (
             <Note tone="error">
@@ -108,7 +108,7 @@ export function OllamaAddressRow({
             onChange(DEFAULT_OLLAMA_ADDRESS);
           }}
         >
-          Use this machine
+          Use this computer
         </AppButton>
       )}
     </SettingRow>

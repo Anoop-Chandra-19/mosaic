@@ -193,7 +193,7 @@ function PickStep({
 
         <p className="mt-3 flex gap-2.5 rounded-[0.5625rem] border border-line-strong bg-pane px-3 py-2.75 text-[0.8rem] leading-relaxed text-ink-soft">
           <Info className="mt-0.5 size-3.5 shrink-0 text-ink-muted" />
-          Everything is read on this machine. Import is a quick start, not an exact copy, and a
+          Everything is read on your computer. Import is a quick start, not an exact copy, and a
           PDF’s layout is the hardest to read back. You’ll see what Mosaic found and what it left
           out, and choose what to keep, before anything is written.
         </p>

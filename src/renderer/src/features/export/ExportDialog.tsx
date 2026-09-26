@@ -220,7 +220,7 @@ function ExportForm({ version, onDone }: { version: ExportVersion | null; onDone
         </div>
       </div>
 
-      <DialogFrameFooter note="Exports never leave this machine.">
+      <DialogFrameFooter note="Files are made on your computer; nothing is uploaded.">
         <AppButton variant="ghost" size="sm" onClick={onDone}>
           Cancel
         </AppButton>

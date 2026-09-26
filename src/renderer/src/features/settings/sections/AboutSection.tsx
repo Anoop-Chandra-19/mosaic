@@ -21,7 +21,7 @@ export function AboutSection() {
             Mosaic {__APP_VERSION__}
           </p>
           <p className="text-xs text-zinc-600 dark:text-zinc-400">
-            Everything stays on this machine. No account, no server.
+            Everything stays on your computer. No account, no server.
           </p>
         </div>
       </div>

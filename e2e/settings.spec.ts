@@ -140,7 +140,7 @@ test('Ollama can live elsewhere on the network, and Settings says where text goe
   await expect(settings.getByText('That isn’t an address.')).toBeVisible();
   expect(await asked()).toHaveLength(before);
 
-  await settings.getByRole('button', { name: 'Use this machine' }).click();
+  await settings.getByRole('button', { name: 'Use this computer' }).click();
   await expect(field).toHaveValue('http://127.0.0.1:11434');
   const stored = await page.evaluate(async () => {
     const boot = await window.mosaic.db.boot();

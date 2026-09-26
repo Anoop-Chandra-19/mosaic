@@ -120,7 +120,7 @@ export function StatusBar() {
     );
   } else {
     saveState = (
-      <AppTooltip side="top" content="Every change is written to this machine as you type.">
+      <AppTooltip side="top" content="Every change is written to your computer as you type.">
         <span className="flex items-center gap-1.5">
           <span className="size-1.5 rounded-full bg-emerald-500" />
           Autosaved · {formatRelativeTime(savedAt ?? template.updatedAt, now)}

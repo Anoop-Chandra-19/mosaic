@@ -41,7 +41,7 @@ export const SETTINGS_GROUPS: SettingsGroup[] = [
       {
         id: 'general',
         label: 'General',
-        description: 'How Mosaic behaves on this machine.',
+        description: 'How Mosaic behaves on this computer.',
         icon: Settings,
       },
       {

@@ -63,7 +63,7 @@ export function AiSection() {
           description={
             provider === 'ollama' && !isLocalOllamaAddress(ollamaAddress)
               ? 'Bring your own key. Ollama runs on your own hardware, here on your network.'
-              : 'Bring your own key. Ollama runs entirely on this machine, so nothing leaves it.'
+              : 'Bring your own key. Ollama runs entirely on your computer, so nothing leaves it.'
           }
         >
           <Select value={provider} onValueChange={(value) => setProvider(value as AiProvider)}>
