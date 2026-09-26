@@ -39,7 +39,7 @@ export function SettingsDialog() {
             Settings
           </DialogTitle>
           <DialogDescription className="sr-only">
-            How Mosaic behaves, looks, and handles your data on this machine.
+            How Mosaic behaves, looks, and handles your data on this computer.
           </DialogDescription>
           <AppButton
             variant="ghost"

@@ -48,7 +48,7 @@ export const TOUR_STEPS: readonly TourStep[] = [
   {
     id: 'welcome',
     title: 'Welcome to Mosaic',
-    body: 'A resume editor that keeps every file on this machine. A short pass through editing, history and export, about a minute.',
+    body: 'A resume editor that keeps every file on your computer. A short pass through editing, history and export, about a minute.',
   },
   {
     id: 'content',

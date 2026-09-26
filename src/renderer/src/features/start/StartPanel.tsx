@@ -71,7 +71,7 @@ export function StartPanel({ closable }: StartPanelProps) {
             <PanelHead
               mark={<MosaicMark />}
               title={first ? 'Start your first resume' : 'Start a new resume'}
-              subtitle="Mosaic keeps everything on this machine. Your drafts, history and exports never leave it."
+              subtitle="Mosaic keeps everything on your computer. Your drafts and history never leave it."
               onClose={closable ? close : undefined}
             />
             <div className="flex flex-col gap-2" onKeyDown={moveFocusWithArrows}>

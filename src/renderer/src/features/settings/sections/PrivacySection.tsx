@@ -39,7 +39,7 @@ export function PrivacySection() {
   return (
     <>
       <SettingsNote icon={ShieldCheck} tone="safe" className="mb-4">
-        Local storage on this machine is the only copy of your resume. Network access happens only
+        Local storage on your computer is the only copy of your resume. Network access happens only
         when you ask the AI assistant for something.
       </SettingsNote>
 
