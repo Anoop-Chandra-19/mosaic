@@ -44,14 +44,9 @@ export function Sidebar() {
   const setActiveSidebarTab = useUiStore((s) => s.setActiveSidebarTab);
   const widthPx = useUiStore((s) => s.sidebarWidthPx);
   const setWidthPx = useUiStore((s) => s.setSidebarWidthPx);
-  const sidebarCollapsed = useUiStore((s) => s.sidebarCollapsed);
   const shouldShowPreview = useUiStore((s) => s.shouldShowPreview);
   const preview = useOverlayStore((s) => s.preview);
   const sidebarRef = useRef<HTMLElement>(null);
-
-  // Hidden and shown from the status bar, or with Ctrl/⌘+B. Without the preview beside it,
-  // the sidebar is the editor: it takes the whole width and never hides.
-  if (sidebarCollapsed && shouldShowPreview) return null;
 
   const active = tabs.find((tab) => tab.id === activeSidebarTab) ?? tabs[0];
 
