@@ -345,15 +345,45 @@
  * alone is taller than either box. The name sits on one side at a time, or the browser
  * skips the transition.
  */
-[data-workspace]:not([data-covered]) [data-page-viewport],
+[data-workspace]:not([data-covered-by='history']) [data-page-viewport],
 [data-history-read] [data-page-viewport] {
   view-transition-name: paper;
 }
 
-/* Under a view the preview can't be seen anyway; hidden, it can't show a second page
-   through the view as it fades in. */
-[data-workspace][data-covered] [data-page-viewport] {
+/*
+ * Everything else in the workspace recedes as the history view comes forward, and comes
+ * back as it goes. Under the view it is hidden: out of reach and out of sight anyway, and
+ * it would otherwise show through the view while that fades in. (The Start panel shows
+ * the workspace blurred behind it, so this is the history view's alone.)
+ */
+[data-workspace]:not([data-covered-by='history']) {
+  view-transition-name: workspace;
+}
+
+[data-workspace][data-covered-by='history'] {
   visibility: hidden;
+}
+
+::view-transition-old(workspace) {
+  animation: workspace-recede 180ms ease-in both;
+}
+
+::view-transition-new(workspace) {
+  animation: workspace-return 240ms cubic-bezier(0.2, 0.7, 0.3, 1) both;
+}
+
+@keyframes workspace-recede {
+  to {
+    opacity: 0;
+    transform: scale(0.985);
+  }
+}
+
+@keyframes workspace-return {
+  from {
+    opacity: 0;
+    transform: scale(0.985);
+  }
 }
 
 ::view-transition-group(paper) {
