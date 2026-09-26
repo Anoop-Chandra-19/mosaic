@@ -115,6 +115,12 @@ The compiler does not replace effect dependencies or Zustand subscriptions.
 Vitest runs source code without this transform. The Electron end-to-end tests exercise
 the compiled production renderer, including preview and PDF export.
 
+E2E launches explicitly enable Chromium's sandbox, use throwaway profiles, and disconnect
+from the desktop's D-Bus session on Linux. The security specs check renderer sandboxing
+(including Linux seccomp/no-new-privileges), preload isolation, and enforced CSP violations.
+Linux runners must support Chromium's sandbox; do not work around launch failures with
+`--no-sandbox`, which defeats these checks. The CSP is build-only, not active in Vite dev.
+
 ## Scripts
 
 | Command             | Description                                         |

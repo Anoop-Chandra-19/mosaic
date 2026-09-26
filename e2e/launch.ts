@@ -46,7 +46,11 @@ export async function launchApp(
     env.DBUS_SESSION_BUS_ADDRESS = `unix:path=${path.join(userDataDir, 'no-session-bus')}`;
   }
 
-  const app = await electron.launch({ args, env });
+  // Playwright otherwise adds --no-sandbox on Linux, masking sandbox regressions.
+  const app = await electron.launch({ args, env, chromiumSandbox: true }).catch((error) => {
+    if (!existingUserDataDir) fs.rmSync(userDataDir, { recursive: true, force: true });
+    throw error;
+  });
   const page = await app.firstWindow();
   const errors: string[] = [];
   page.on('console', (message) => {
