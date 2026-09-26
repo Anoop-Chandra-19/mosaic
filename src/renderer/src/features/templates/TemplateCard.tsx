@@ -34,6 +34,7 @@ import { formatRelativeTime } from './formatRelativeTime';
 import type { HistoryFilter } from '@/features/history/filterVersionHistory';
 import { useTemplateVersions, versionLabel } from '@/features/history/useTemplateVersions';
 import { VersionList } from '@/features/history/version-list/VersionList';
+import { tourTargetProps } from '@/features/onboarding/tourSteps';
 
 interface TemplateCardProps {
   template: TemplateSummary;
@@ -279,7 +280,10 @@ export function TemplateCard({ template, active, expanded, onToggle }: TemplateC
       </div>
 
       {expanded && (
-        <div className="border-t border-line bg-white px-3 pt-2.5 pb-3 dark:bg-zinc-950">
+        <div
+          className="border-t border-line bg-white px-3 pt-2.5 pb-3 dark:bg-zinc-950"
+          {...(active && tourTargetProps('history'))}
+        >
           <div className="flex items-center justify-between">
             <span className="inline-flex items-center gap-0.5">
               <span className="inline-flex items-center gap-1.5 text-[0.7rem] font-semibold tracking-wider text-zinc-500 uppercase">

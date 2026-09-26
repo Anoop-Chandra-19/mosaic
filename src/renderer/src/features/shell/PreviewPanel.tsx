@@ -10,6 +10,7 @@ import { shortcutLabel } from '@/lib/keyboardShortcuts';
 import type { PaperSize } from '@/types/paper';
 import { VersionPreviewBanner } from '@/features/history/VersionPreviewBanner';
 import { useIsPageHandedOff } from '@/features/view-transitions/pageHandoff';
+import { tourTargetProps } from '@/features/onboarding/tourSteps';
 import { transitionClasses } from '@/features/view-transitions/transitionClasses';
 import { useOverlayStore } from '@/stores/overlayStore';
 import { PREVIEW_ZOOM_RANGE, useUiStore } from '@/stores/uiStore';
@@ -35,7 +36,10 @@ export function PreviewPanel() {
   const runsLong = meta.totalPages > 1;
 
   return (
-    <main className="@container/preview flex flex-1 flex-col overflow-hidden bg-background">
+    <main
+      className="@container/preview flex flex-1 flex-col overflow-hidden bg-background"
+      {...tourTargetProps('preview')}
+    >
       {preview && <VersionPreviewBanner preview={preview} />}
       <div className="flex items-center justify-between border-b border-border bg-card px-4 py-2.5 md:px-6">
         <div className="flex items-center gap-2">

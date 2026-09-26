@@ -5,6 +5,8 @@ import { Input } from '@/components/ui/input';
 import { useOverlayStore } from '@/stores/overlayStore';
 import { useResumeStore } from '@/stores/resumeStore';
 import { useTemplateStore } from '@/stores/templateStore';
+import { useIsTourShowingOpenHistory } from '@/features/onboarding/useIsTourShowingOpenHistory';
+import { tourTargetProps } from '@/features/onboarding/tourSteps';
 import { NoTemplates } from './NoTemplates';
 import { TemplateCard } from './TemplateCard';
 
@@ -15,15 +17,17 @@ export function TemplatesTab() {
   const [query, setQuery] = useState('');
   // Cards the user opened or closed; the open template's history shows until closed.
   const [toggled, setToggled] = useState<Record<string, boolean>>({});
+  const isTourShowingOpenHistory = useIsTourShowingOpenHistory();
 
   if (templates.length === 0) return <NoTemplates />;
 
   const needle = query.trim().toLowerCase();
   const shown = templates.filter((t) => t.name.toLowerCase().includes(needle));
-  const isExpanded = (id: string) => toggled[id] ?? id === activeId;
+  const isExpanded = (id: string) =>
+    (isTourShowingOpenHistory && id === activeId) || (toggled[id] ?? id === activeId);
 
   return (
-    <div>
+    <div {...tourTargetProps('templates')}>
       <div className="mb-2 flex gap-1.5">
         <div className="relative flex-1">
           <Search className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-zinc-500" />

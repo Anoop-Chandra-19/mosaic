@@ -1,10 +1,15 @@
 import { ExternalLink } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
+import { useOverlayStore } from '@/stores/overlayStore';
+import { useResumeStore } from '@/stores/resumeStore';
 import { SettingRow } from '../SettingRow';
 
 const SOURCE_URL = 'https://github.com/Anoop-Chandra-19/mosaic';
 
 export function AboutSection() {
+  const hasResume = useResumeStore((s) => s.templateId !== null);
+  const closeSettings = useOverlayStore((s) => s.closeSettings);
+  const setTourStep = useOverlayStore((s) => s.setTourStep);
   return (
     <>
       <div className="mt-1 mb-2 flex items-center gap-3">
@@ -30,6 +35,33 @@ export function AboutSection() {
             <ExternalLink />
             GitHub
           </a>
+        </AppButton>
+      </SettingRow>
+
+      <h3 className="mt-5 text-base font-semibold tracking-tight text-zinc-900 dark:text-zinc-100">
+        Guided tours
+      </h3>
+      <p className="mt-1 mb-1.5 text-xs leading-relaxed text-zinc-600 dark:text-zinc-400">
+        Each one runs over the real interface. Replay any of them whenever you like.
+      </p>
+      <SettingRow
+        label="The basics"
+        description={
+          hasResume
+            ? 'Content, the live page, history and named versions, templates, export.'
+            : 'Runs once a resume is open.'
+        }
+      >
+        <AppButton
+          variant="outline"
+          size="sm"
+          disabled={!hasResume}
+          onClick={() => {
+            closeSettings();
+            setTourStep(0);
+          }}
+        >
+          Replay
         </AppButton>
       </SettingRow>
     </>

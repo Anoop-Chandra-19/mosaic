@@ -18,6 +18,7 @@ import { useTemplateStore } from '@/stores/templateStore';
 import { useUiStore, type SidebarTab, SIDEBAR_WIDTH } from '@/stores/uiStore';
 import { ContentTab } from '@/features/editor/ContentTab';
 import { TemplatesTab } from '@/features/templates/TemplatesTab';
+import { SIDEBAR_TAB_TARGET, tourTargetProps } from '@/features/onboarding/tourSteps';
 import { formatPaneWidth, startPaneResize } from './paneResize';
 
 const tabs: { id: SidebarTab; label: string; caption: string; icon: React.ReactNode }[] = [
@@ -80,7 +81,12 @@ export function Sidebar() {
             )}
           />
           {tabs.map((tab) => (
-            <TabsTrigger key={tab.id} value={tab.id} className={TAB_TRIGGER}>
+            <TabsTrigger
+              key={tab.id}
+              value={tab.id}
+              className={TAB_TRIGGER}
+              {...tourTargetProps(SIDEBAR_TAB_TARGET[tab.id])}
+            >
               {tab.icon}
               {tab.label}
             </TabsTrigger>
@@ -94,7 +100,11 @@ export function Sidebar() {
           {active.id === 'content' && <CollapseAllButton />}
         </div>
 
-        <TabsContent value="content" className="overflow-y-auto px-2.5 pb-3.5 @container/pane">
+        <TabsContent
+          value="content"
+          className="overflow-y-auto px-2.5 pb-3.5 @container/pane"
+          {...tourTargetProps('content')}
+        >
           {preview && <ReadingVersionNote preview={preview} />}
           {/* Reading a version is a read mode, and both panes read the same document: the
               editor lays out the version itself, and nothing here can reach the draft. */}

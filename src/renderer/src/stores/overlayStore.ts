@@ -73,6 +73,11 @@ interface OverlayState {
   /** How the sheet paginated, as the preview measured it; the status bar repeats it. */
   previewMeta: ResumePreviewMeta;
   toast: Toast | null;
+  /**
+   * The first-run tour's step while it runs, else null. A dialog or surface over the app
+   * hides the tour without ending it; it comes back on this step.
+   */
+  tourStep: number | null;
   openSurface: (surface: WorkspaceSurface) => void;
   /** Closes the surface showing, if it is a `kind` one; any other is left alone. */
   closeSurface: (kind: WorkspaceSurface['kind']) => void;
@@ -91,6 +96,7 @@ interface OverlayState {
   setPreview: (preview: VersionPreview | null) => void;
   setPreviewMeta: (meta: ResumePreviewMeta) => void;
   dismissToast: () => void;
+  setTourStep: (step: number | null) => void;
 }
 
 export const useOverlayStore = create<OverlayState>()((set) => ({
@@ -107,6 +113,7 @@ export const useOverlayStore = create<OverlayState>()((set) => ({
   preview: null,
   previewMeta: { totalPages: 1, hasMorePages: false },
   toast: null,
+  tourStep: null,
   openSurface: (surface) => set({ surface }),
   closeSurface: (kind) =>
     set((state) => (state.surface?.kind === kind ? { surface: null } : state)),
@@ -132,6 +139,7 @@ export const useOverlayStore = create<OverlayState>()((set) => ({
         : { previewMeta: meta }
     ),
   dismissToast: () => set({ toast: null }),
+  setTourStep: (tourStep) => set({ tourStep }),
 }));
 
 const TOAST_MS = 5000;

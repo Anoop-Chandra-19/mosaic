@@ -1,5 +1,6 @@
+import fs from 'node:fs';
 import { expect, test } from '@playwright/test';
-import { withApp } from './launch';
+import { launchApp, withApp } from './launch';
 
 const mosaic = withApp();
 
@@ -67,14 +68,19 @@ test('the renderer is sandboxed and cannot reach the network', async () => {
 });
 
 test('the bridge reaches the database, and main checks what it is sent', async () => {
-  const { page } = mosaic();
+  // Launched as it ships, without the launcher storing the tour as seen.
+  const { app, page, userDataDir } = await launchApp(undefined, { showTour: true });
+  try {
+    const calls = await page.evaluate(async () => ({
+      boot: await window.mosaic.db.boot(),
+      refused: await window.mosaic.db.templates.rename('missing', ''),
+    }));
 
-  const calls = await page.evaluate(async () => ({
-    boot: await window.mosaic.db.boot(),
-    refused: await window.mosaic.db.templates.rename('missing', ''),
-  }));
-
-  // A new install: nothing stored yet.
-  expect(calls.boot).toEqual({ ok: true, value: { settings: {}, templates: [], draft: null } });
-  expect(calls.refused).toMatchObject({ ok: false, code: 'invalid-argument' });
+    // A new install: nothing stored yet.
+    expect(calls.boot).toEqual({ ok: true, value: { settings: {}, templates: [], draft: null } });
+    expect(calls.refused).toMatchObject({ ok: false, code: 'invalid-argument' });
+  } finally {
+    await app.close();
+    fs.rmSync(userDataDir, { recursive: true, force: true });
+  }
 });

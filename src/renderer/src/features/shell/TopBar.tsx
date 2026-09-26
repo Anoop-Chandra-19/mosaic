@@ -8,6 +8,7 @@ import { useUiStore } from '@/stores/uiStore';
 import { useActiveTemplate } from '@/features/templates/useActiveTemplate';
 import { useTemplateStatus } from '@/features/templates/useTemplateStatus';
 import { TemplateStatusBadge } from '@/features/templates/TemplateStatusBadge';
+import { tourTargetProps } from '@/features/onboarding/tourSteps';
 
 /** Reading an older version is a read mode: the draft is left where it is. */
 export const READING_A_VERSION = 'Go back to your draft to edit it.';
@@ -47,6 +48,7 @@ export function TopBar() {
               variant="outline"
               size="xs"
               onClick={() => setNameVersionOpen(true)}
+              {...tourTargetProps('nameVersion')}
               title={`${
                 templateStatus === 'edited'
                   ? 'Give this state a name so you can find it in history'
@@ -132,6 +134,7 @@ export function TopBar() {
           size="sm"
           onClick={() => (activeTemplate ? openExport() : showToast('Nothing to export yet'))}
           aria-label="Open export dialog"
+          {...tourTargetProps('export')}
         >
           <Download className="h-4 w-4" />
           Export
