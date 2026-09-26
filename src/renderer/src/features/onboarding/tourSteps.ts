@@ -74,7 +74,7 @@ export const TOUR_STEPS: readonly TourStep[] = [
     sidebarTab: 'templates',
     showsOpenTemplateHistory: true,
     title: 'History keeps itself',
-    body: 'Your draft saves as you type, and Mosaic keeps versions on its own as you edit. Read any of them before you restore it. Restoring adds a row, so nothing is overwritten.',
+    body: 'Your draft is the resume you’re editing, and it saves as you type. Versions are snapshots of it that Mosaic keeps as you go. Read any of them, and restore one to make it your draft again; nothing is overwritten.',
   },
   {
     id: 'name',

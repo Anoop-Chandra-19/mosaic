@@ -295,11 +295,11 @@ export function TemplateCard({ template, active, expanded, onToggle }: TemplateC
                   variant="ghost"
                   size="xs"
                   shape="square"
-                  aria-label="What the working draft is doing"
+                  aria-label="What your draft is doing"
                   title={
                     dirty
-                      ? 'Working draft · saved as you type. It gets snapshotted on its own. Name it to make it easy to find.'
-                      : `Working draft matches ${versionLabel(versions, 0)}.`
+                      ? 'Your draft saves as you type, and Mosaic keeps versions of it as you go. Name one to find it again easily.'
+                      : `Your draft matches ${versionLabel(versions, 0)}.`
                   }
                 >
                   <Info className="size-3" />

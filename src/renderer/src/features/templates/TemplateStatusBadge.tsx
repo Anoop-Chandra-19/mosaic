@@ -13,7 +13,7 @@ const BADGES: Partial<Record<TemplateStatus, { label: string; title: string; cla
     },
     clean: {
       label: 'up to date',
-      title: "The draft matches the newest version in this template's history.",
+      title: "Your draft matches the newest version in this template's history.",
       className: 'border-line-strong text-zinc-500 dark:text-zinc-500',
     },
   };

@@ -183,7 +183,7 @@ test('reading an older version stops the editor and undo until you come back', a
   await page.getByRole('tab', { name: 'Templates' }).click();
   const named = page.getByRole('listitem').filter({ hasText: 'Sent to Striped' });
   await named.hover();
-  await named.getByRole('button', { name: 'Preview v2' }).click();
+  await named.getByRole('button', { name: 'Read v2' }).click();
   await page.getByRole('tab', { name: 'Content' }).click();
 
   // The editor says what it is showing and takes nothing in the meantime.

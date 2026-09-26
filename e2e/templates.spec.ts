@@ -27,19 +27,17 @@ test('a version can be read in the sheet, then restored', async () => {
 
   await page.getByRole('tab', { name: 'Templates' }).click();
   // The open template's history is showing: its creation, and the named version on top.
-  await page.getByRole('button', { name: 'What the working draft is doing' }).hover();
-  await expect(
-    page.getByRole('tooltip', { name: /^Working draft · saved as you type\./ })
-  ).toBeAttached();
+  await page.getByRole('button', { name: 'What your draft is doing' }).hover();
+  await expect(page.getByRole('tooltip', { name: /^Your draft saves as you type/ })).toBeAttached();
   await page.keyboard.press('Escape');
   const named = page.getByRole('listitem').filter({ hasText: 'Sent to Striped' });
   await expect(named).toContainText('v2');
 
   // Row actions show on hover, as they do for a pointer.
   await named.hover();
-  await named.getByRole('button', { name: 'Preview v2' }).click();
+  await named.getByRole('button', { name: 'Read v2' }).click();
   const sheet = page.getByRole('main');
-  await expect(sheet.getByText('Previewing v2')).toBeVisible();
+  await expect(sheet.getByText('Reading v2')).toBeVisible();
   await expect(sheet.getByText('1 line differs from your draft')).toBeVisible();
   await expect(sheet.getByText('Ada Lovelace').first()).toBeVisible();
 
@@ -82,7 +80,7 @@ test('editing alone is kept in history when another template takes the editor', 
     .getByRole('listitem')
     .filter({ hasText: 'Where you left it before switching templates' });
   await expect(kept).toContainText('left off');
-  await expect(kept).toContainText('current');
+  await expect(kept).toContainText('newest');
   await expect(page.getByRole('contentinfo').getByText('Matches v2')).toBeVisible();
   await page.getByRole('tab', { name: 'Content' }).click();
   await expect(page.getByRole('complementary').getByText('Ada Lovelace')).toBeVisible();

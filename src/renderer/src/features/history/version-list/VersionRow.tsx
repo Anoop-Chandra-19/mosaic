@@ -66,7 +66,7 @@ export function VersionRow({
     ? 'Read this version beside the list'
     : canPreview
       ? previewing
-        ? 'Stop previewing and go back to your draft'
+        ? 'Stop reading it and go back to your draft'
         : 'Read this version in the sheet. Nothing is changed.'
       : 'Open this template to preview its versions';
   return (
@@ -136,7 +136,7 @@ export function VersionRow({
           )}
           <span>{label}</span>
           <span>{time}</span>
-          {head && <span className="text-amber-600 dark:text-amber-400">current</span>}
+          {head && <span className="text-amber-600 dark:text-amber-400">newest</span>}
         </p>
       </div>
       <span
@@ -182,7 +182,7 @@ export function VersionRow({
             shape="square"
             disabled={!canPreview}
             aria-pressed={previewing}
-            aria-label={`${isWide ? 'Read' : 'Preview'} ${label}`}
+            aria-label={`Read ${label}`}
             title={previewHint}
             onClick={() => onPreview(version, label)}
             className={cn(previewing && 'bg-line-strong text-foreground')}
