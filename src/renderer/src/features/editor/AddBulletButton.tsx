@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { Plus } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
+import { cn } from '@/lib/utils';
 import { BulletEditor } from './BulletEditor';
+import { HIDDEN_WHILE_READING } from './editorClasses';
 
 /** "Add bullet", which opens the bullet editor empty. Pasting several lines adds each. */
 export function AddBulletButton({ onAdd }: { onAdd: (text: string) => void }) {
@@ -37,7 +39,10 @@ export function AddBulletButton({ onAdd }: { onAdd: (text: string) => void }) {
       variant="quiet"
       size="xs"
       onClick={() => setOpen(true)}
-      className="mt-0.75 h-7 justify-start gap-2 self-start px-1.5 font-normal"
+      className={cn(
+        'mt-0.75 h-7 justify-start gap-2 self-start px-1.5 font-normal',
+        HIDDEN_WHILE_READING
+      )}
     >
       <Plus />
       Add bullet

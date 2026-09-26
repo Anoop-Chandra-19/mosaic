@@ -8,6 +8,7 @@ import {
 import { GripVertical } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
 import { cn } from '@/lib/utils';
+import { HIDDEN_WHILE_READING } from './editorClasses';
 import { moveToSlot } from './listOrder';
 
 /*
@@ -202,6 +203,7 @@ export function SortGripHandle({
       onClick={(event) => event.stopPropagation()}
       className={cn(
         'h-5 w-3.25 cursor-grab touch-none rounded-[0.25rem] px-0 text-ink-soft',
+        HIDDEN_WHILE_READING,
         'hover:bg-amber-soft hover:text-amber-600 active:cursor-grabbing dark:hover:text-amber-400',
         grip.lifted && 'cursor-grabbing',
         className

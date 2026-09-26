@@ -19,6 +19,7 @@ import { AddBulletButton } from './AddBulletButton';
 import { BulletEditor } from './BulletEditor';
 import { BulletItem } from './BulletItem';
 import { EditorCheckbox } from './EditorCheckbox';
+import { HIDDEN_WHILE_READING } from './editorClasses';
 import { InlineEditField } from './InlineEditField';
 import { swapNeighbours } from './listOrder';
 import { SortGripHandle, SortList, type SortGrip } from './SortList';
@@ -233,7 +234,13 @@ export function EntryCard({
         >
           <DropdownMenu open={actionsOpen} onOpenChange={setActionsOpen}>
             <DropdownMenuTrigger asChild>
-              <AppButton variant="ghost" size="xs" shape="square" aria-label="Entry actions">
+              <AppButton
+                variant="ghost"
+                size="xs"
+                shape="square"
+                aria-label="Entry actions"
+                className={HIDDEN_WHILE_READING}
+              >
                 <Ellipsis />
               </AppButton>
             </DropdownMenuTrigger>

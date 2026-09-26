@@ -20,6 +20,7 @@ import { HEADER_OUTLINE_ID, useOutlineStore } from '@/stores/outlineStore';
 import { useResumeStore } from '@/stores/resumeStore';
 import { useUiStore } from '@/stores/uiStore';
 import type { ContactInfo, LinkColor, LinkStyle } from '@shared/types/resume';
+import { HIDDEN_WHILE_READING } from '../editorClasses';
 import { InlineEditField } from '../InlineEditField';
 import { HeaderLineBlock } from './HeaderLineBlock';
 
@@ -59,7 +60,13 @@ export function ResumeHeaderCard({ contact: shown }: { contact?: ContactInfo }) 
         <div className="flex shrink-0 items-center gap-0.5">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <AppButton variant="ghost" size="xs" shape="square" aria-label="Header options">
+              <AppButton
+                variant="ghost"
+                size="xs"
+                shape="square"
+                aria-label="Header options"
+                className={HIDDEN_WHILE_READING}
+              >
                 <Ellipsis />
               </AppButton>
             </DropdownMenuTrigger>
@@ -155,7 +162,10 @@ export function ResumeHeaderCard({ contact: shown }: { contact?: ContactInfo }) 
             variant="dashed"
             size="sm"
             onClick={() => addLine()}
-            className="mt-2.5 w-full text-[0.7875rem] font-semibold tracking-[0.01em]"
+            className={cn(
+              'mt-2.5 w-full text-[0.7875rem] font-semibold tracking-[0.01em]',
+              HIDDEN_WHILE_READING
+            )}
           >
             <Plus />
             New header line

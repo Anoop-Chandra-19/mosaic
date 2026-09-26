@@ -26,6 +26,7 @@ import { cn } from '@/lib/utils';
 import { useResumeStore } from '@/stores/resumeStore';
 import { useUiStore } from '@/stores/uiStore';
 import type { HeaderItem, HeaderLine } from '@shared/types/resume';
+import { HIDDEN_WHILE_READING } from '../editorClasses';
 import { HEADER_ICONS } from './headerIcons';
 import { HeaderItemEditor, type HeaderItemField } from './HeaderItemEditor';
 
@@ -143,7 +144,7 @@ export function HeaderItemRow({
           shape="pill"
           onClick={() => setEditing('url')}
           title="Add a link"
-          className="border-line-strong font-normal text-ink-faint"
+          className={cn('border-line-strong font-normal text-ink-faint', HIDDEN_WHILE_READING)}
         >
           <Plus className="size-2.5" />
           <span>link</span>
@@ -174,7 +175,13 @@ export function HeaderItemRow({
       </AppButton>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <AppButton variant="ghost" size="xs" shape="square" aria-label={`${label} actions`}>
+          <AppButton
+            variant="ghost"
+            size="xs"
+            shape="square"
+            aria-label={`${label} actions`}
+            className={HIDDEN_WHILE_READING}
+          >
             <Ellipsis />
           </AppButton>
         </DropdownMenuTrigger>

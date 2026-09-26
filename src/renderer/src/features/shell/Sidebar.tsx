@@ -108,7 +108,7 @@ export function Sidebar() {
           {preview && <ReadingVersionNote preview={preview} />}
           {/* Reading a version is a read mode, and both panes read the same document: the
               editor lays out the version itself, and nothing here can reach the draft. */}
-          <div inert={preview !== null}>
+          <div inert={preview !== null} data-reading={preview !== null || undefined}>
             <ContentTab doc={preview?.version.doc} />
           </div>
         </TabsContent>

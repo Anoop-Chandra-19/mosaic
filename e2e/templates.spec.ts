@@ -41,12 +41,21 @@ test('a version can be read in the sheet, then restored', async () => {
   await expect(sheet.getByText('1 line differs from your draft')).toBeVisible();
   await expect(sheet.getByText('Ada Lovelace').first()).toBeVisible();
 
+  // The editor reads the version too, without the controls it can't use there.
+  const editor = page.getByRole('complementary');
+  await page.getByRole('tab', { name: 'Content' }).click();
+  await expect(editor.getByText('Ada Lovelace')).toBeVisible();
+  await expect(editor.getByRole('button', { name: 'New header line' })).toBeHidden();
+  await expect(editor.getByRole('button', { name: 'Header options' })).toBeHidden();
+
   await sheet.getByRole('button', { name: 'Restore this version' }).click();
   await expect(page.getByText('Restored “Sent to Striped”')).toBeVisible();
   await expect(sheet.getByText('Live Preview')).toBeVisible();
+  await page.getByRole('tab', { name: 'Templates' }).click();
   await expect(page.getByText('Restored "Sent to Striped"', { exact: true })).toBeVisible();
   await page.getByRole('tab', { name: 'Content' }).click();
-  await expect(page.getByRole('complementary').getByText('Ada Lovelace')).toBeVisible();
+  await expect(editor.getByText('Ada Lovelace')).toBeVisible();
+  await expect(editor.getByRole('button', { name: 'New header line' })).toBeVisible();
 });
 
 test('a version can be duplicated as its own template', async () => {

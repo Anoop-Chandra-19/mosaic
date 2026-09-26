@@ -29,6 +29,7 @@ import type { ResumeSection } from '@shared/types/resume';
 import { InlineEditField } from './InlineEditField';
 import { CUSTOM_ICONS, PRESET_ICONS } from './sectionIcons';
 import { EntryCard } from './EntryCard';
+import { HIDDEN_WHILE_READING } from './editorClasses';
 import { swapNeighbours } from './listOrder';
 import { SortGripHandle, SortList, type SortGrip } from './SortList';
 
@@ -181,6 +182,7 @@ export function SectionItem({
             onClick={handleAddEntry}
             aria-label={`Add entry to ${section.label}`}
             title="Add entry"
+            className={HIDDEN_WHILE_READING}
           >
             <Plus className="size-3" />
           </AppButton>
@@ -191,6 +193,7 @@ export function SectionItem({
                 size="xs"
                 shape="square"
                 aria-label={`${section.label} actions`}
+                className={HIDDEN_WHILE_READING}
               >
                 <Ellipsis />
               </AppButton>
