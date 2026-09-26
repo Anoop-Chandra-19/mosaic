@@ -2,7 +2,7 @@ import { Save } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
 import { cn } from '@/lib/utils';
 import type { VersionMeta } from '@shared/types/db';
-import { formatHistoryDay, listHistoryMonths } from './groupVersionHistory';
+import { formatHistoryDay, listHistoryMonths } from '../groupVersionHistory';
 
 interface HistoryIndexProps {
   /** Newest first. */

@@ -11,9 +11,9 @@ import { getDb } from '@/lib/storage/mosaicDb';
 import { useResumeStore } from '@/stores/resumeStore';
 import { HISTORY_READ_WIDTH, useUiStore } from '@/stores/uiStore';
 import type { Draft, Version, VersionMeta } from '@shared/types/db';
-import { formatHistoryDay, formatTimeOfDay } from './groupVersionHistory';
+import { formatHistoryDay, formatTimeOfDay } from '../groupVersionHistory';
+import { countChangedLines } from '../versionDiff';
 import { VersionAsText } from './VersionAsText';
-import { countChangedLines } from './versionDiff';
 
 /** Below this the page is a thumbnail, not something to read, so the pane shows text. */
 export const LEGIBLE_PAGE_SCALE = 0.66;

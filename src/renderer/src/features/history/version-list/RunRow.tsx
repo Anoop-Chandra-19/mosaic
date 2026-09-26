@@ -3,7 +3,7 @@ import { ChevronDown, ChevronRight } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
 import { cn } from '@/lib/utils';
 import type { VersionMeta } from '@shared/types/db';
-import { describeRunSections, formatTimeOfDay } from './groupVersionHistory';
+import { describeRunSections, formatTimeOfDay } from '../groupVersionHistory';
 
 interface RunRowProps {
   /** Newest first. */

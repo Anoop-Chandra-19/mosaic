@@ -8,19 +8,19 @@ import {
   listHistorySections,
   NO_HISTORY_FILTER,
   type HistoryFilter,
-} from './filterVersionHistory';
-import { formatHistoryMonth, formatTimeInDay, groupVersionHistory } from './groupVersionHistory';
+} from '../filterVersionHistory';
+import { formatHistoryMonth, formatTimeInDay, groupVersionHistory } from '../groupVersionHistory';
+import { versionLabel } from '../useTemplateVersions';
 import { HistoryFilterBar, type HistoryMonth } from './HistoryFilterBar';
-import { HistoryCount, HistoryHandoff, HistoryWindowEdge } from './HistoryListEdges';
+import { HistoryCount, HistoryHandoff, HistoryRangeEdge } from './HistoryListEdges';
 import {
-  clampHistoryWindow,
-  NEWEST_WINDOW,
-  revealInHistoryWindow,
-  showEarlierInHistoryWindow,
-  showNewerInHistoryWindow,
-} from './moveHistoryWindow';
+  clampVisibleRange,
+  NEWEST_RANGE,
+  revealInVisibleRange,
+  showEarlierInVisibleRange,
+  showNewerInVisibleRange,
+} from './moveVisibleRange';
 import { RunRow } from './RunRow';
-import { versionLabel } from './useTemplateVersions';
 import { VersionRow, type VersionRowActions } from './VersionRow';
 
 /** A request to bring a version into view. A new object asks again, even for the same one. */
@@ -37,7 +37,7 @@ interface VersionListProps extends VersionRowActions {
    */
   isCompact?: boolean;
   /**
-   * The full view's list: a window over the history that grows at either end, rows that
+   * The full view's list: a range of the history that grows at either end, rows that
    * select on click, and day groups even while filtered, since there is room for them.
    */
   isWide?: boolean;
@@ -72,14 +72,14 @@ export function VersionList({
   const [isSearching, setIsSearching] = useState(initialFilter.query !== '');
   // Keyed by a run's oldest version, which stays the same as newer edits join the run.
   const [openRuns, setOpenRuns] = useState<ReadonlySet<string>>(new Set());
-  const [listWindow, setListWindow] = useState(NEWEST_WINDOW);
+  const [range, setRange] = useState(NEWEST_RANGE);
   const [handledReveal, setHandledReveal] = useState<HistoryReveal | null>(null);
   const rootRef = useRef<HTMLDivElement>(null);
 
-  // A different filter is a different list, so the window starts again at its newest.
+  // A different filter is a different list, so the range starts again at its newest.
   const setFilter = (next: HistoryFilter) => {
     setFilterOnly(next);
-    setListWindow(NEWEST_WINDOW);
+    setRange(NEWEST_RANGE);
   };
 
   // A peek has no filter bar, so a filter left from when the template was open must not apply.
@@ -96,19 +96,19 @@ export function VersionList({
         setIsSearching(false);
         index = versions.findIndex((version) => version.id === reveal.versionId);
       }
-      if (index >= 0) setListWindow((current) => revealInHistoryWindow(current, index));
+      if (index >= 0) setRange((current) => revealInVisibleRange(current, index));
     }
   }
 
-  const clampedWindow = clampHistoryWindow(listWindow, matched.length);
+  const clampedRange = clampVisibleRange(range, matched.length);
   const { shown, hiddenCount, mode } = isWide
     ? {
-        shown: matched.slice(clampedWindow.from, clampedWindow.to),
-        hiddenCount: matched.length - clampedWindow.to,
-        mode: 'window' as const,
+        shown: matched.slice(clampedRange.from, clampedRange.to),
+        hiddenCount: matched.length - clampedRange.to,
+        mode: 'range' as const,
       }
     : chooseVisibleVersions(matched, { total: versions.length, isFiltering, isCompact });
-  const newerCount = isWide ? clampedWindow.from : 0;
+  const newerCount = isWide ? clampedRange.from : 0;
   const groups = groupVersionHistory(shown, { byMonth: isFiltering && !isWide });
 
   // Scroll once the revealed version is really in the tree. One held in a run scrolls to
@@ -156,7 +156,7 @@ export function VersionList({
     />
   );
   const jumpToNewest = () => {
-    setListWindow(NEWEST_WINDOW);
+    setRange(NEWEST_RANGE);
     // The newest rows may only now be rendering, so the scroll waits for them.
     requestAnimationFrame(() => rootRef.current?.scrollIntoView({ block: 'start' }));
   };
@@ -185,10 +185,10 @@ export function VersionList({
         />
       )}
       {newerCount > 0 && (
-        <HistoryWindowEdge
+        <HistoryRangeEdge
           direction="newer"
           count={newerCount}
-          onShow={() => setListWindow(showNewerInHistoryWindow)}
+          onShow={() => setRange(showNewerInVisibleRange)}
         />
       )}
       <div className="relative mt-1.5">
@@ -245,11 +245,11 @@ export function VersionList({
         </p>
       )}
       {hiddenCount > 0 && isWide ? (
-        <HistoryWindowEdge
+        <HistoryRangeEdge
           direction="earlier"
           count={hiddenCount}
           oldestMonth={formatHistoryMonth(matched.at(-1)!.createdAt)}
-          onShow={() => setListWindow(showEarlierInHistoryWindow)}
+          onShow={() => setRange(showEarlierInVisibleRange)}
         />
       ) : hiddenCount > 0 && onOpenFullHistory ? (
         <HistoryHandoff

@@ -14,7 +14,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { cn } from '@/lib/utils';
-import type { HistoryFilter, HistoryKindFilter } from './filterVersionHistory';
+import type { HistoryFilter, HistoryKindFilter } from '../filterVersionHistory';
 
 const KIND_FILTERS: {
   value: HistoryKindFilter;

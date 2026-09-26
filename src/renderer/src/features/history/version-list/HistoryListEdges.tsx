@@ -2,7 +2,7 @@ import { ChevronDown, ChevronUp, ExternalLink } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
 import { cn } from '@/lib/utils';
 import type { VersionMeta } from '@shared/types/db';
-import { formatHistoryMonth } from './groupVersionHistory';
+import { formatHistoryMonth } from '../groupVersionHistory';
 
 /*
  * The lines at either end of a history list: how much there is above it, and what it
@@ -50,7 +50,7 @@ export function HistoryCount({ versions, isCompact, onOpenFullHistory }: History
   );
 }
 
-interface HistoryWindowEdgeProps {
+interface HistoryRangeEdgeProps {
   direction: 'newer' | 'earlier';
   count: number;
   /** Earlier only: how far back the rest goes. */
@@ -58,13 +58,8 @@ interface HistoryWindowEdgeProps {
   onShow: () => void;
 }
 
-/** The full view's list is a window; each end says what lies past it, and reaches it. */
-export function HistoryWindowEdge({
-  direction,
-  count,
-  oldestMonth,
-  onShow,
-}: HistoryWindowEdgeProps) {
+/** The full view's list is a range; each end says what lies past it, and reaches it. */
+export function HistoryRangeEdge({ direction, count, oldestMonth, onShow }: HistoryRangeEdgeProps) {
   const isNewer = direction === 'newer';
   const Chevron = isNewer ? ChevronUp : ChevronDown;
   return (

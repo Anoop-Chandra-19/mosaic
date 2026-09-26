@@ -33,7 +33,7 @@ import { DeleteTemplateDialog } from './DeleteTemplateDialog';
 import { formatRelativeTime } from './formatRelativeTime';
 import type { HistoryFilter } from '@/features/history/filterVersionHistory';
 import { useTemplateVersions, versionLabel } from '@/features/history/useTemplateVersions';
-import { VersionList } from '@/features/history/VersionList';
+import { VersionList } from '@/features/history/version-list/VersionList';
 
 interface TemplateCardProps {
   template: TemplateSummary;
