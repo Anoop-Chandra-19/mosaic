@@ -82,11 +82,14 @@ describe('pdfLines', () => {
         run('•', 90, 108),
         full('Taught a course that was entirely self-', 108, 108),
         run('taught.', 108, 122),
+        run('•', 90, 140),
+        full('Ran the course for three terms and wrote its 3-', 108, 140),
+        run('year plan.', 108, 154),
       ])
     );
-    expect(shape(lines).at(-1)).toEqual([
-      'bullet',
-      'Taught a course that was entirely self-taught.',
+    expect(shape(lines).slice(-2)).toEqual([
+      ['bullet', 'Taught a course that was entirely self-taught.'],
+      ['bullet', 'Ran the course for three terms and wrote its 3-year plan.'],
     ]);
   });
 

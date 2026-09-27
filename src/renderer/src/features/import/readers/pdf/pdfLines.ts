@@ -672,8 +672,9 @@ function joinWraps(pieces: Piece[]): Piece[] {
     }
     const pitch = pitches.get(stackOf(piece));
     if (above && continues(above, piece, pitch)) {
-      // A hyphen at the end of a line is kept, and nothing put after it: "self-" "taught".
-      const hyphenated = /\p{L}-$/u.test(above.line.text);
+      // A hyphen at the end of a line is kept, and nothing put after it: "self-" "taught",
+      // "3-" "year".
+      const hyphenated = /[\p{L}\p{N}]-$/u.test(above.line.text);
       above.line.source = joinSources(above, piece);
       if (piece.page !== above.page) addDoubt(above.line, PAGE_BREAK_JOIN);
       above.line.text += (hyphenated ? '' : ' ') + piece.line.text;

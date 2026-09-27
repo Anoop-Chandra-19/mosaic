@@ -26,13 +26,14 @@ const toTwips = (points: number) => Math.round(points * 20);
 const toHalfPoints = (points: number) => Math.round(points * 2);
 
 /**
- * Word's line spacing in 240ths of a single line. The body is "1.5 lines" (18pt at
- * 10.5pt); the name is single-spaced and the contact lines "1.15 lines", as the template
- * sets them.
+ * Line heights as exact points, the ones the PDF and preview use. The template says "1.5
+ * lines" for the body, but Word turns that into 17.97 to 18.27pt a line, rounding each one
+ * its own way, and no other program lays text out the same; an exact 18pt keeps every page
+ * breaking on the same line in Word, the PDF, and the preview.
  */
-const LINE_SINGLE = 240;
-const LINE_ONE_AND_HALF = 360;
-const LINE_HEADER = 276;
+const LINE_NAME = toTwips(LYT.nameFontSize * LYT.nameLineHeight);
+const LINE_BODY = toTwips(LYT.bodyLeading);
+const LINE_HEADER = toTwips(LYT.contactFontSize * LYT.contactLineHeight);
 
 /** Characters XML 1.0 can't hold at all; they can't be typed into a resume either. */
 // eslint-disable-next-line no-control-regex
@@ -73,21 +74,21 @@ function writeStyles(data: NormalizedResumeExport, rightTabTwips: number): strin
   const linkUnderline = data.contact.linkStyle === 'underline' ? 'single' : 'none';
   const font = '<w:rFonts w:ascii="Arial" w:hAnsi="Arial" w:eastAsia="Arial" w:cs="Arial"/>';
   const spacing = (before: number, after: number, line: number) =>
-    `<w:spacing w:before="${before}" w:after="${after}" w:line="${line}" w:lineRule="auto"/>`;
+    `<w:spacing w:before="${before}" w:after="${after}" w:line="${line}" w:lineRule="exact"/>`;
   return `${XML_DECLARATION}<w:styles xmlns:w="${W_NS}">
 <w:docDefaults>
 <w:rPrDefault><w:rPr>${font}<w:color w:val="000000"/><w:sz w:val="${toHalfPoints(LYT.bodyFontSize)}"/><w:szCs w:val="${toHalfPoints(LYT.bodyFontSize)}"/><w:lang w:val="en-US"/></w:rPr></w:rPrDefault>
-<w:pPrDefault><w:pPr><w:widowControl/>${spacing(0, 0, LINE_ONE_AND_HALF)}</w:pPr></w:pPrDefault>
+<w:pPrDefault><w:pPr><w:widowControl/>${spacing(0, 0, LINE_BODY)}</w:pPr></w:pPrDefault>
 </w:docDefaults>
 <w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/><w:qFormat/></w:style>
 <w:style w:type="paragraph" w:styleId="Title"><w:name w:val="Title"/><w:basedOn w:val="Normal"/><w:next w:val="Contact"/><w:qFormat/>
-<w:pPr><w:keepNext/>${spacing(toTwips(LYT.nameMarginTop), toTwips(LYT.nameMarginBottom), LINE_SINGLE)}<w:jc w:val="center"/></w:pPr>
+<w:pPr><w:keepNext/>${spacing(toTwips(LYT.nameMarginTop), toTwips(LYT.nameMarginBottom), LINE_NAME)}<w:jc w:val="center"/></w:pPr>
 <w:rPr><w:b/><w:bCs/><w:sz w:val="${toHalfPoints(LYT.nameFontSize)}"/><w:szCs w:val="${toHalfPoints(LYT.nameFontSize)}"/></w:rPr></w:style>
 <w:style w:type="paragraph" w:customStyle="1" w:styleId="Contact"><w:name w:val="Contact"/><w:basedOn w:val="Normal"/><w:qFormat/>
 <w:pPr>${spacing(0, 0, LINE_HEADER)}<w:jc w:val="center"/></w:pPr>
 <w:rPr><w:sz w:val="${toHalfPoints(LYT.contactFontSize)}"/><w:szCs w:val="${toHalfPoints(LYT.contactFontSize)}"/></w:rPr></w:style>
 <w:style w:type="paragraph" w:styleId="Heading1"><w:name w:val="heading 1"/><w:basedOn w:val="Normal"/><w:next w:val="Normal"/><w:qFormat/>
-<w:pPr><w:keepNext/>${spacing(toTwips(LYT.bodyLeading), 0, LINE_ONE_AND_HALF)}<w:outlineLvl w:val="0"/></w:pPr>
+<w:pPr><w:keepNext/>${spacing(toTwips(LYT.bodyLeading), 0, LINE_BODY)}<w:outlineLvl w:val="0"/></w:pPr>
 <w:rPr><w:b/><w:bCs/></w:rPr></w:style>
 <w:style w:type="paragraph" w:customStyle="1" w:styleId="EntryHeading"><w:name w:val="Entry Heading"/><w:basedOn w:val="Normal"/><w:next w:val="ListBullet"/><w:qFormat/>
 <w:pPr><w:keepNext/><w:tabs><w:tab w:val="right" w:pos="${rightTabTwips}"/></w:tabs></w:pPr>

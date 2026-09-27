@@ -17,10 +17,11 @@
  * Shared by the PDF export and the on-screen preview so the two cannot drift.
  *
  * The preview renders these point values as CSS pixels at 1:1 and scales the
- * whole page visually, the way Chrome's PDF viewer does. Because the preview's
- * font stack (Arial / Liberation Sans / Helvetica) is metrically identical to
- * the PDF's Helvetica, the browser breaks lines at the same words the PDF does.
- * Reflowing the preview instead of scaling it is what breaks that guarantee.
+ * whole page visually, the way Chrome's PDF viewer does. The PDF export breaks
+ * its lines by measuring text in the preview's font stack (Arial / Liberation
+ * Sans / Helvetica, which all set text at the same widths), so both break lines
+ * at the same words, as Word does. Reflowing the preview instead of scaling it
+ * is what breaks that guarantee.
  */
 
 const BODY_FONT_SIZE = 10.5;

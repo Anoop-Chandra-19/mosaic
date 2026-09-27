@@ -259,7 +259,7 @@ export function ResumePreview({
         {/* flow-root keeps margins inside, as the page's padding does. */}
         <div
           ref={measureRootRef}
-          className="flow-root"
+          className="flow-root [font-kerning:none]"
           style={{ width: `${pageContentSize.width}px` }}
         >
           <PreviewHeader contact={contact} />
