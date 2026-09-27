@@ -77,7 +77,7 @@ function writeStyles(data: NormalizedResumeExport, rightTabTwips: number): strin
   return `${XML_DECLARATION}<w:styles xmlns:w="${W_NS}">
 <w:docDefaults>
 <w:rPrDefault><w:rPr>${font}<w:color w:val="000000"/><w:sz w:val="${toHalfPoints(LYT.bodyFontSize)}"/><w:szCs w:val="${toHalfPoints(LYT.bodyFontSize)}"/><w:lang w:val="en-US"/></w:rPr></w:rPrDefault>
-<w:pPrDefault><w:pPr>${spacing(0, 0, LINE_ONE_AND_HALF)}</w:pPr></w:pPrDefault>
+<w:pPrDefault><w:pPr><w:widowControl/>${spacing(0, 0, LINE_ONE_AND_HALF)}</w:pPr></w:pPrDefault>
 </w:docDefaults>
 <w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/><w:qFormat/></w:style>
 <w:style w:type="paragraph" w:styleId="Title"><w:name w:val="Title"/><w:basedOn w:val="Normal"/><w:next w:val="Contact"/><w:qFormat/>
@@ -93,7 +93,7 @@ function writeStyles(data: NormalizedResumeExport, rightTabTwips: number): strin
 <w:pPr><w:keepNext/><w:tabs><w:tab w:val="right" w:pos="${rightTabTwips}"/></w:tabs></w:pPr>
 <w:rPr><w:i/><w:iCs/></w:rPr></w:style>
 <w:style w:type="paragraph" w:styleId="ListBullet"><w:name w:val="List Bullet"/><w:basedOn w:val="Normal"/><w:qFormat/>
-<w:pPr><w:numPr><w:numId w:val="1"/></w:numPr><w:ind w:left="${toTwips(LYT.bulletTextIndent)}" w:hanging="${toTwips(LYT.bulletTextIndent - LYT.bulletMarkerIndent)}"/></w:pPr></w:style>
+<w:pPr><w:keepLines/><w:numPr><w:numId w:val="1"/></w:numPr><w:ind w:left="${toTwips(LYT.bulletTextIndent)}" w:hanging="${toTwips(LYT.bulletTextIndent - LYT.bulletMarkerIndent)}"/></w:pPr></w:style>
 <w:style w:type="character" w:styleId="Hyperlink"><w:name w:val="Hyperlink"/><w:rPr><w:color w:val="${linkColor}"/><w:u w:val="${linkUnderline}"/></w:rPr></w:style>
 </w:styles>`;
 }
@@ -140,12 +140,13 @@ function writeBody(data: NormalizedResumeExport): DocxBody {
       }
       if (entry.heading || entry.dates) {
         const text = entry.dates ? `${entry.heading}\t${entry.dates}` : entry.heading;
-        // Only a heading with bullets under it has the small gap the PDF leaves there.
-        const gap =
+        // Only a heading with bullets under it has the small gap the PDF leaves there, and
+        // only it stays with what follows; a run of bare rows would otherwise move as one.
+        const props =
           entry.bullets.length > 0
             ? `<w:spacing w:after="${toTwips(LYT.entryHeadingMarginBottom)}"/>`
-            : '';
-        paragraphs.push(writeParagraph('EntryHeading', writeRun(text), gap));
+            : '<w:keepNext w:val="0"/>';
+        paragraphs.push(writeParagraph('EntryHeading', writeRun(text), props));
       }
       for (const bullet of entry.bullets) {
         paragraphs.push(writeParagraph('ListBullet', writeRun(bullet)));

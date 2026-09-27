@@ -31,11 +31,14 @@ const NO_BREAK_SPACE = String.fromCharCode(0xa0);
  * (`pagination.ts`), which is what makes the two agree — and Word's, so a resume breaks the
  * same wherever it is opened:
  * - a bullet moves to the next page whole (`wrap={false}` on its row);
- * - an entry's italic line never ends a page on its own: it needs a line of its bullets
- *   under it (`minPresenceAhead`) or the whole entry moves.
+ * - a section title or an entry's italic line never ends a page on its own: it sits in one
+ *   unbreakable block with the first bullet. `minPresenceAhead` can't do this, since it is
+ *   satisfied by room for part of a bullet that then can't split;
+ * - a paragraph section's title needs two lines of it below (`minPresenceAhead` works there,
+ *   since a paragraph splits by line, keeping two on each side as Word does).
  */
 const BULLET_SPLITS_ACROSS_PAGES = false;
-const LINE_NEEDED_UNDER_ENTRY_HEADING = LYT.bodyLeading;
+const LINES_NEEDED_UNDER_TITLE = LYT.bodyLeading * 2;
 
 /**
  * A run of spaces as it is typed: react-pdf collapses ordinary ones into one, so they go in
@@ -83,9 +86,6 @@ const styles = StyleSheet.create({
     fontSize: LYT.bodyFontSize,
     lineHeight: LYT.bodyLineHeight,
   },
-  sectionBody: {
-    marginTop: 0,
-  },
   textOnlySectionBody: {
     marginTop: 0,
   },
@@ -94,11 +94,6 @@ const styles = StyleSheet.create({
     lineHeight: LYT.bodyLineHeight,
   },
   lastTextOnlyEntry: {
-    marginBottom: 0,
-  },
-  // No margin between entries: the blank line the format wants comes from the
-  // 18pt grid, and anything extra accumulates into visible drift.
-  entry: {
     marginBottom: 0,
   },
   // Job and project lines are italic, never bold.
@@ -186,64 +181,75 @@ export function PdfResumeDocument({ data, paperSize }: PdfResumeDocumentProps) {
         </View>
 
         {data.sections.map((section, sectionIndex) => {
-          const isTextOnly = section.layout === 'lines';
+          const sectionStyle =
+            sectionIndex === 0 ? [styles.section, styles.firstSection] : styles.section;
+          const title = <Text style={styles.sectionTitle}>{section.label}</Text>;
+          // Always stays behind, so a section that starts a page is split rather than moved
+          // whole, and the split drops its blank line there, as Word does.
+          const staysBehind = <View />;
 
+          if (section.layout === 'lines') {
+            return (
+              <View key={section.id} style={sectionStyle}>
+                {staysBehind}
+                <Text style={styles.sectionTitle} minPresenceAhead={LINES_NEEDED_UNDER_TITLE}>
+                  {section.label}
+                </Text>
+                <View style={styles.textOnlySectionBody}>
+                  {section.entries.map((entry, entryIndex) => (
+                    <Text
+                      key={entry.id}
+                      style={
+                        entryIndex === section.entries.length - 1
+                          ? [styles.textOnlyEntry, styles.lastTextOnlyEntry]
+                          : styles.textOnlyEntry
+                      }
+                    >
+                      {entry.text}
+                    </Text>
+                  ))}
+                </View>
+              </View>
+            );
+          }
+
+          // One flat list, with no wrapper per entry: nested in wrappers, an unbreakable block
+          // that doesn't fit stays at the page foot, drawn over itself.
           return (
-            <View
-              key={section.id}
-              style={sectionIndex === 0 ? [styles.section, styles.firstSection] : styles.section}
-            >
-              <Text style={styles.sectionTitle}>{section.label}</Text>
-              <View style={isTextOnly ? styles.textOnlySectionBody : styles.sectionBody}>
-                {section.entries.map((entry, entryIndex) => {
-                  if (isTextOnly) {
-                    const isLastTextEntry = entryIndex === section.entries.length - 1;
-                    return (
-                      <Text
-                        key={entry.id}
+            <View key={section.id} style={sectionStyle}>
+              {staysBehind}
+              {section.entries.length === 0 && title}
+              {section.entries.flatMap((entry, entryIndex) => {
+                const bulletRows = entry.bullets.map((bullet, index) => (
+                  <View
+                    key={`${entry.id}-${index}`}
+                    wrap={BULLET_SPLITS_ACROSS_PAGES}
+                    style={styles.bulletRow}
+                  >
+                    <Text style={styles.bulletMarker}>{'\u2022'}</Text>
+                    <Text style={styles.bulletText}>{bullet}</Text>
+                  </View>
+                ));
+                return [
+                  <View key={entry.id} wrap={false}>
+                    {entryIndex === 0 && title}
+                    {entry.heading || entry.dates ? (
+                      <View
                         style={
-                          isLastTextEntry
-                            ? [styles.textOnlyEntry, styles.lastTextOnlyEntry]
-                            : styles.textOnlyEntry
+                          entry.bullets.length > 0
+                            ? [styles.entryHeading, styles.entryHeadingWithBullets]
+                            : styles.entryHeading
                         }
                       >
-                        {entry.text}
-                      </Text>
-                    );
-                  }
-
-                  return (
-                    <View key={entry.id} style={styles.entry}>
-                      {entry.heading || entry.dates ? (
-                        <View
-                          minPresenceAhead={
-                            entry.bullets.length > 0 ? LINE_NEEDED_UNDER_ENTRY_HEADING : 0
-                          }
-                          style={
-                            entry.bullets.length > 0
-                              ? [styles.entryHeading, styles.entryHeadingWithBullets]
-                              : styles.entryHeading
-                          }
-                        >
-                          <Text style={styles.entryTitle}>{entry.heading}</Text>
-                          <Text style={styles.entryDates}>{entry.dates}</Text>
-                        </View>
-                      ) : null}
-
-                      {entry.bullets.map((bullet, index) => (
-                        <View
-                          key={`${entry.id}-${index}`}
-                          wrap={BULLET_SPLITS_ACROSS_PAGES}
-                          style={styles.bulletRow}
-                        >
-                          <Text style={styles.bulletMarker}>{'\u2022'}</Text>
-                          <Text style={styles.bulletText}>{bullet}</Text>
-                        </View>
-                      ))}
-                    </View>
-                  );
-                })}
-              </View>
+                        <Text style={styles.entryTitle}>{entry.heading}</Text>
+                        <Text style={styles.entryDates}>{entry.dates}</Text>
+                      </View>
+                    ) : null}
+                    {bulletRows[0]}
+                  </View>,
+                  ...bulletRows.slice(1),
+                ];
+              })}
             </View>
           );
         })}

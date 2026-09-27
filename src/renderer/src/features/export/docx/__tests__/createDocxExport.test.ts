@@ -80,6 +80,25 @@ describe('createDocxExport', () => {
     expect(await partOf(a4, 'word/styles.xml')).toContain('<w:tab w:val="right" w:pos="9026"/>');
   });
 
+  it('breaks pages as the PDF does: bullets whole, headings with what follows', async () => {
+    const data = resume([
+      section('experience', 'entries', 'Work History', [
+        entry({ title: 'Analyst', bullets: ['Wrote it'] }),
+        entry({ title: 'Fellow' }),
+      ]),
+    ]);
+    const bytes = await exportedDocx(data);
+    const styles = await partOf(bytes, 'word/styles.xml');
+    const document = await partOf(bytes, 'word/document.xml');
+
+    expect(styles).toContain('<w:pPrDefault><w:pPr><w:widowControl/>');
+    expect(styles).toMatch(/w:styleId="ListBullet">.*?<w:pPr><w:keepLines\/>/s);
+    expect(styles).toMatch(/w:styleId="EntryHeading">.*?<w:pPr><w:keepNext\/>/s);
+    // A heading with nothing under it lets the page break after it.
+    expect(document).toContain('<w:pStyle w:val="EntryHeading"/><w:keepNext w:val="0"/>');
+    expect(document.match(/<w:keepNext w:val="0"\/>/g)).toHaveLength(1);
+  });
+
   it('writes any text as text, never as markup', async () => {
     const data = resume([
       section('skills', 'lines', 'Tools & <Tricks>', [
