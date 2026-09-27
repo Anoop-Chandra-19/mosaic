@@ -16,7 +16,7 @@
     "lint": "eslint .",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:e2e": "electron-vite build && xvfb-run -a -s \"-screen 0 1920x1080x24\" playwright test",
+    "test:e2e": "electron-vite build && playwright test",
     "prepare": "husky"
   },
   "dependencies": {

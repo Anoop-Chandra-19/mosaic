@@ -1,6 +1,6 @@
 import fs from 'node:fs';
-import { expect, test, type Page } from '@playwright/test';
-import { launchApp, withApp } from './launch';
+import { expect, type Page } from '@playwright/test';
+import { test, withApp } from './launch';
 
 async function openSettings(page: Page, section: string) {
   await page.getByRole('button', { name: 'Open settings' }).click();
@@ -194,7 +194,7 @@ test('erasing local data starts Mosaic over, settings included', async () => {
   expect(boot.settings.ui).toBeUndefined();
 });
 
-test('settings survive quitting and relaunching', async () => {
+test('settings survive quitting and relaunching', async ({ launchApp }) => {
   const first = await launchApp();
   const { userDataDir } = first;
   try {
@@ -288,7 +288,9 @@ test('compact density tightens the sidebar, and only the sidebar', async () => {
   expect(errors).toEqual([]);
 });
 
-test('a launch opens what Settings says: the Start panel, or the template picker', async () => {
+test('a launch opens what Settings says: the Start panel, or the template picker', async ({
+  launchApp,
+}) => {
   const first = await launchApp();
   const { userDataDir } = first;
   try {

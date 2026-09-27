@@ -1,6 +1,6 @@
 import fs from 'node:fs';
-import { expect, test, type Page } from '@playwright/test';
-import { launchApp, withApp } from './launch';
+import { expect, type Page } from '@playwright/test';
+import { test, withApp } from './launch';
 
 const mosaic = withApp();
 
@@ -95,7 +95,7 @@ test('editing alone is kept in history when another template takes the editor', 
   await expect(page.getByRole('complementary').getByText('Ada Lovelace')).toBeVisible();
 });
 
-test('editing alone is kept in history when the window closes', async () => {
+test('editing alone is kept in history when the window closes', async ({ launchApp }) => {
   const first = await launchApp();
   const { userDataDir } = first;
   try {

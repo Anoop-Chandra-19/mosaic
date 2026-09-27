@@ -39,9 +39,11 @@ Bun and npm both work (Node ≥ 22.18): `bun run <script>` = `npm run <script>`;
 
 - `bun run build` — type-check and build all three processes.
 - `bun run test` — Vitest. `bun run lint` — ESLint.
-- `bun run test:e2e` — build + Playwright under `xvfb-run` on Linux. Each launch must use
-  a throwaway `--user-data-dir` and no D-Bus session: never the real profile or keychain.
-  On macOS/Windows, build then `bunx playwright test`.
+- `bun run test:e2e` — build + Playwright. Linux needs `Xvfb`; each worker owns a separate
+  virtual X11 desktop (no outer `xvfb-run`). Linux defaults to 4 workers, other platforms to 1;
+  override with `--workers=N`. Each launch must use a throwaway `--user-data-dir` and no
+  D-Bus session on Linux: never the real profile or keychain. Import `test` from
+  `e2e/launch.ts`; manual launches use the `launchApp` fixture, not a standalone function.
 - `bun run dev` uses the gitignored `.dev-data/`, never installed Mosaic's profile.
   Quit the app before `bun run dev:reset`, which deletes that development data.
 - `bun run db:freeze` is a release step, not validation; see `src/main/CLAUDE.md`.

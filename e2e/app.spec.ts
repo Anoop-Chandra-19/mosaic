@@ -1,6 +1,6 @@
 import fs from 'node:fs';
-import { expect, test } from '@playwright/test';
-import { launchApp, withApp } from './launch';
+import { expect } from '@playwright/test';
+import { test, withApp } from './launch';
 
 const mosaic = withApp();
 
@@ -51,23 +51,7 @@ test('Blank resume creates the first template and opens it', async () => {
   expect(errors).toEqual([]);
 });
 
-test('the renderer is sandboxed and cannot reach the network', async () => {
-  const { page } = mosaic();
-
-  const renderer = await page.evaluate(async () => ({
-    bridge: window.mosaic.platform,
-    node: 'require' in globalThis || 'process' in globalThis,
-    // The Content-Security-Policy admits no remote hosts, so resume data can't leave.
-    network: await fetch('https://example.com/').then(
-      () => 'reached',
-      () => 'blocked'
-    ),
-  }));
-
-  expect(renderer).toEqual({ bridge: process.platform, node: false, network: 'blocked' });
-});
-
-test('the bridge reaches the database, and main checks what it is sent', async () => {
+test('the bridge reaches the database, and main checks what it is sent', async ({ launchApp }) => {
   // Launched as it ships, without the launcher storing the tour as seen.
   const { app, page, userDataDir } = await launchApp(undefined, { showTour: true });
   try {

@@ -1,10 +1,10 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import Database from 'better-sqlite3';
-import { expect, test } from '@playwright/test';
-import { launchApp } from './launch';
+import { expect } from '@playwright/test';
+import { test } from './launch';
 
-test('opens its database in the profile and closes it cleanly on quit', async () => {
+test('opens its database in the profile and closes it cleanly on quit', async ({ launchApp }) => {
   const { app, userDataDir } = await launchApp();
   try {
     const file = path.join(userDataDir, 'mosaic.db');

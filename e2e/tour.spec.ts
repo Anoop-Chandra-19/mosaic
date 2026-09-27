@@ -1,5 +1,5 @@
-import { expect, test, type Page } from '@playwright/test';
-import { launchApp, withApp } from './launch';
+import { expect, type Page } from '@playwright/test';
+import { test, withApp } from './launch';
 
 const mosaic = withApp({ showTour: true });
 
@@ -92,7 +92,7 @@ test('pressing on while it leads to another tab skips the way there, not the ste
   expect(errors).toEqual([]);
 });
 
-test('Esc ends it for good, and About replays it', async () => {
+test('Esc ends it for good, and About replays it', async ({ launchApp }) => {
   const { app, page, userDataDir, errors } = mosaic();
   await startSample(page);
   await expect(card(page, TITLES[0])).toBeVisible();

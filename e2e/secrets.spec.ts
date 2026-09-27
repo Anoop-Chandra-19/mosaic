@@ -1,6 +1,6 @@
 import fs from 'node:fs';
-import { expect, test, type ElectronApplication, type Page } from '@playwright/test';
-import { launchApp } from './launch';
+import { expect, type ElectronApplication, type Page } from '@playwright/test';
+import { test } from './launch';
 
 // Every launch runs without a session bus (see launch.ts), so there is no Secret Service:
 // these tests walk the no-keychain fallback. The keychain itself is covered by unit tests
@@ -36,7 +36,9 @@ function kernelKeyringEntries(): string[] {
     );
 }
 
-test('with no keychain, a key is tested, kept for the session, and forgotten', async () => {
+test('with no keychain, a key is tested, kept for the session, and forgotten', async ({
+  launchApp,
+}) => {
   const first = await launchApp();
   const { app, page, userDataDir, errors } = first;
   try {
@@ -115,7 +117,7 @@ test('with no keychain, a key is tested, kept for the session, and forgotten', a
   }
 });
 
-test('a pasted key with spaces is caught before anything is sent', async () => {
+test('a pasted key with spaces is caught before anything is sent', async ({ launchApp }) => {
   const { app, page, userDataDir } = await launchApp();
   try {
     await page.getByRole('button', { name: /Blank resume/ }).click();
