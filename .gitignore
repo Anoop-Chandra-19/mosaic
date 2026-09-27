@@ -30,6 +30,10 @@ playwright-report
 *.sw?
 .codex
 
+# Agent evals: provider keys and run output stay on this computer
+scripts/agent-evals/.env
+scripts/agent-evals/results/
+
 # Planning docs
 plans/
 wireframe.jsx
