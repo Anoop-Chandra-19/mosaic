@@ -21,6 +21,10 @@ function createMeasurements(
   };
 }
 
+function createBullets(...texts: string[]) {
+  return texts.map((text) => ({ id: text, text }));
+}
+
 function createExperienceSection(
   entries: PreviewRenderableSection['entries']
 ): PreviewRenderableSection {
@@ -92,7 +96,7 @@ describe('normalizeSections', () => {
             id: 'job-1',
             heading: 'Engineer, Mosaic',
             dates: '2024',
-            bullets: ['Built export flow'],
+            bullets: [{ id: 'b1', text: 'Built export flow' }],
             _sourceKey: 'job-1',
           },
         ],
@@ -110,8 +114,8 @@ describe('paginateSections', () => {
     const pages = paginateSections(
       [
         createExperienceSection([
-          { id: 'job-1', heading: 'Engineer 1', bullets: ['A'] },
-          { id: 'job-2', heading: 'Engineer 2', bullets: ['B'] },
+          { id: 'job-1', heading: 'Engineer 1', bullets: createBullets('A') },
+          { id: 'job-2', heading: 'Engineer 2', bullets: createBullets('B') },
         ]),
       ],
       createMeasurements({
@@ -132,8 +136,8 @@ describe('paginateSections', () => {
     const pages = paginateSections(
       [
         createExperienceSection([
-          { id: 'job-1', heading: 'Engineer 1', bullets: ['A'] },
-          { id: 'job-2', heading: 'Engineer 2', bullets: ['B'] },
+          { id: 'job-1', heading: 'Engineer 1', bullets: createBullets('A') },
+          { id: 'job-2', heading: 'Engineer 2', bullets: createBullets('B') },
         ]),
       ],
       createMeasurements({
@@ -179,7 +183,11 @@ describe('paginateSections', () => {
   it('reserves room for the header on the first page only', () => {
     const jobs = ['job-1', 'job-2', 'job-3', 'job-4'];
     const pages = paginateSections(
-      [createExperienceSection(jobs.map((id) => ({ id, heading: id, bullets: ['A'] })))],
+      [
+        createExperienceSection(
+          jobs.map((id) => ({ id, heading: id, bullets: createBullets('A') }))
+        ),
+      ],
       createMeasurements({
         headerHeight: 70,
         sectionTitleHeights: { experience: 10 },
@@ -219,29 +227,63 @@ describe('paginateSections', () => {
   });
 
   it('splits a long bullet when no complete bullet fits the available height', () => {
-    const bullet = Array.from({ length: 40 }, (_, index) => `detail${index}`).join(' ');
+    const text = Array.from({ length: 40 }, (_, index) => `detail${index}`).join(' ');
     const pages = paginateSections(
-      [createExperienceSection([{ id: 'job-1', heading: 'Engineer', bullets: [bullet] }])],
+      [
+        createExperienceSection([
+          { id: 'job-1', heading: 'Engineer', bullets: [{ id: 'b1', text }] },
+        ]),
+      ],
       createMeasurements({
         sectionTitleHeights: { experience: 10 },
         entryHeights: { 'experience::job-1': 120 },
-        bulletHeights: { 'experience::job-1': [80] },
+        bulletHeights: { b1: 80 },
       }),
       60
     );
 
     expect(pages.length).toBeGreaterThan(1);
     expect(pages.length).toBeLessThanOrEqual(3);
+    const [firstHalf] = pages[0][0].entries[0].bullets;
+    const [restHalf] = pages[1][0].entries[0].bullets;
     expect(pages[0][0].entries[0].id).toBe('job-1-cont-0');
-    expect(pages[0][0].entries[0].bullets[0].length).toBeLessThan(bullet.length);
-    expect(pages[1][0].entries[0].bullets.join(' ')).toContain('detail');
+    expect(firstHalf.text.length).toBeLessThan(text.length);
+    expect(restHalf.text).toContain('detail');
+    expect([firstHalf, restHalf].map((bullet) => [bullet.id, bullet.part])).toEqual([
+      ['b1', 'first'],
+      ['b1', 'rest'],
+    ]);
+  });
+
+  it('measures a continued entry by its own bullets, not the whole entry', () => {
+    const pages = paginateSections(
+      [
+        createExperienceSection([
+          { id: 'job-1', heading: 'Engineer', bullets: createBullets('A', 'B', 'C', 'D') },
+        ]),
+      ],
+      createMeasurements({
+        sectionTitleHeights: { experience: 10 },
+        entryHeights: { 'experience::job-1': 130 },
+        entryHeadingHeights: { 'experience::job-1': 18 },
+        bulletHeights: { A: 18, B: 18, C: 54, D: 18 },
+      }),
+      110
+    );
+
+    // Page 2 fits C alone (28 + 22 + 54), not C and D.
+    expect(pages.map((page) => page[0].entries[0].bullets.map((bullet) => bullet.text))).toEqual([
+      ['A', 'B'],
+      ['C'],
+      ['D'],
+    ]);
   });
 
   it('lays out every page a long resume runs to, up to the limit it is given', () => {
     const entries = Array.from({ length: 30 }, (_, index) => ({
       id: `job-${index}`,
       heading: `Engineer ${index}`,
-      bullets: [`Detail ${index}`],
+      bullets: createBullets(`Detail ${index}`),
     }));
     const measurements = createMeasurements({
       sectionTitleHeights: { experience: 10 },

@@ -149,6 +149,16 @@ interface ResumeState extends ResumeData {
   duplicateBullet: (sectionId: string, entryId: string, bulletId: string) => void;
   /** The whole order, as `reorderSections` and `reorderEntries` take it. */
   reorderBullets: (sectionId: string, entryId: string, orderedIds: string[]) => void;
+  /** Gives the new bullet's id, or null when either half would be empty. */
+  splitBullet: (sectionId: string, entryId: string, bulletId: string, at: number) => string | null;
+  /** The first keeps its id and takes `text`; false unless the two are adjacent. */
+  mergeBullets: (
+    sectionId: string,
+    entryId: string,
+    firstId: string,
+    secondId: string,
+    text: string
+  ) => boolean;
 }
 
 /** Moves `list[index]` one place up or down; nothing past either end. */
@@ -552,6 +562,44 @@ export const useResumeStore = create<ResumeState>()(
             .map((id) => byId.get(id))
             .filter((b): b is (typeof entry.bullets)[number] => b !== undefined);
         }),
+
+      splitBullet: (sectionId, entryId, bulletId, at) => {
+        const text = findEntry(sectionId, entryId)?.bullets.find((b) => b.id === bulletId)?.text;
+        if (text === undefined || !Number.isInteger(at)) return null;
+        const head = text.slice(0, at).trim();
+        const tail = text.slice(at).trim();
+        if (!head || !tail) return null;
+
+        const id = crypto.randomUUID();
+        edit('split a bullet', (state) => {
+          const entry = state.sections
+            .find((s) => s.id === sectionId)
+            ?.items.find((e) => e.id === entryId);
+          if (!entry) return;
+          const index = entry.bullets.findIndex((b) => b.id === bulletId);
+          const bullet = entry.bullets[index];
+          bullet.text = head;
+          entry.bullets.splice(index + 1, 0, { id, text: tail, selected: bullet.selected });
+        });
+        return id;
+      },
+
+      mergeBullets: (sectionId, entryId, firstId, secondId, text) => {
+        const bullets = findEntry(sectionId, entryId)?.bullets ?? [];
+        const index = bullets.findIndex((b) => b.id === firstId);
+        const merged = text.trim();
+        if (index < 0 || bullets[index + 1]?.id !== secondId || !merged) return false;
+
+        edit('merge two bullets', (state) => {
+          const entry = state.sections
+            .find((s) => s.id === sectionId)
+            ?.items.find((e) => e.id === entryId);
+          if (!entry) return;
+          entry.bullets[index].text = merged;
+          entry.bullets.splice(index + 1, 1);
+        });
+        return true;
+      },
     };
   })
 );

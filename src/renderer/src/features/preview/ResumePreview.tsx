@@ -83,7 +83,7 @@ export function ResumePreview({
       const sectionTitleHeights: Record<string, number> = {};
       const entryHeights: Record<string, number> = {};
       const entryHeadingHeights: Record<string, number> = {};
-      const bulletHeights: Record<string, number[]> = {};
+      const bulletHeights: Record<string, number> = {};
 
       const headerNode = root.querySelector<HTMLElement>('[data-preview-header]');
       const headerHeight = headerNode?.getBoundingClientRect().height ?? 110;
@@ -106,15 +106,10 @@ export function ResumePreview({
         entryHeadingHeights[entryKey] = node.getBoundingClientRect().height;
       });
 
-      root.querySelectorAll<HTMLElement>('[data-preview-bullet-key]').forEach((node) => {
-        const entryKey = node.dataset.previewBulletKey;
-        if (!entryKey) return;
-
-        if (!bulletHeights[entryKey]) {
-          bulletHeights[entryKey] = [];
-        }
-
-        bulletHeights[entryKey].push(node.getBoundingClientRect().height);
+      root.querySelectorAll<HTMLElement>('[data-preview-bullet-id]').forEach((node) => {
+        const bulletId = node.dataset.previewBulletId;
+        if (!bulletId) return;
+        bulletHeights[bulletId] = node.getBoundingClientRect().height;
       });
 
       setMeasurements({
