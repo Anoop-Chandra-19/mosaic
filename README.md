@@ -121,6 +121,19 @@ from the desktop's D-Bus session on Linux. The security specs check renderer san
 Linux runners must support Chromium's sandbox; do not work around launch failures with
 `--no-sandbox`, which defeats these checks. The CSP is build-only, not active in Vite dev.
 
+On Linux, install `Xvfb`: each Playwright worker starts its own virtual X11 desktop, so
+parallel tests do not share window focus, pointer state, or the clipboard. This works
+on Wayland hosts too, but tests Electron's X11 backend. No outer `xvfb-run` is needed.
+Linux defaults to four workers; use `bun run test:e2e --workers=2` to reduce parallelism, or
+`--workers=1` to run serially. macOS and Windows default to one worker because their
+desktops are not isolated. After building, `bunx playwright test` uses the same fixtures.
+
+E2E specs import `test` from `e2e/launch.ts`, not directly from Playwright. `withApp()`
+uses the worker's display automatically; tests that launch or relaunch manually take
+`launchApp` from their fixture argument: `async ({ launchApp }) => { … }`.
+Xvfb chooses free display numbers, signals readiness before launch, and is stopped at
+worker teardown.
+
 ## Scripts
 
 | Command             | Description                                         |

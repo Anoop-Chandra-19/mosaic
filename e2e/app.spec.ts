@@ -1,6 +1,6 @@
 import fs from 'node:fs';
-import { expect, test } from '@playwright/test';
-import { launchApp, withApp } from './launch';
+import { expect } from '@playwright/test';
+import { test, withApp } from './launch';
 
 const mosaic = withApp();
 
@@ -51,7 +51,7 @@ test('Blank resume creates the first template and opens it', async () => {
   expect(errors).toEqual([]);
 });
 
-test('the bridge reaches the database, and main checks what it is sent', async () => {
+test('the bridge reaches the database, and main checks what it is sent', async ({ launchApp }) => {
   // Launched as it ships, without the launcher storing the tour as seen.
   const { app, page, userDataDir } = await launchApp(undefined, { showTour: true });
   try {

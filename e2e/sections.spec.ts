@@ -1,5 +1,5 @@
-import { expect, test, type Page } from '@playwright/test';
-import { withApp } from './launch';
+import { expect, type Page } from '@playwright/test';
+import { test, withApp } from './launch';
 
 const mosaic = withApp();
 

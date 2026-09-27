@@ -1,6 +1,6 @@
 import fs from 'node:fs';
-import { expect, test } from '@playwright/test';
-import { withApp } from './launch';
+import { expect } from '@playwright/test';
+import { test, withApp } from './launch';
 
 const mosaic = withApp();
 

@@ -1,6 +1,6 @@
 import fs from 'node:fs';
-import { expect, test, type Page } from '@playwright/test';
-import { launchApp, withApp } from './launch';
+import { expect, type Page } from '@playwright/test';
+import { test, withApp } from './launch';
 
 async function startBlank(page: Page) {
   await page.getByRole('button', { name: /Blank resume/ }).click();
@@ -13,7 +13,7 @@ async function typeName(page: Page, name: string) {
   await page.getByPlaceholder('Your name').press('Enter');
 }
 
-test('a draft survives quitting and relaunching', async () => {
+test('a draft survives quitting and relaunching', async ({ launchApp }) => {
   const first = await launchApp();
   const { userDataDir } = first;
   try {

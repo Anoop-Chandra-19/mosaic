@@ -1,8 +1,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { expect, test, type Page } from '@playwright/test';
+import { expect, type Page } from '@playwright/test';
 import { openWith, saveInto } from './dialogs';
-import { withApp } from './launch';
+import { test, withApp } from './launch';
 import { extractPdfText } from './pdfText';
 
 const mosaic = withApp();
