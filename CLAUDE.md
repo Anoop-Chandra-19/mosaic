@@ -12,7 +12,8 @@ Paths below are relative to the repository root. Read the relevant files before 
 - Renderer UI, state, or styling: `src/renderer/CLAUDE.md`.
 - Import readers, parsing, or review: `src/renderer/src/features/import/CLAUDE.md`.
 - Resume schema, header, sections, preview, import, or export: `docs/resume-format.md`.
-- Setup, full source tree, scripts, and React Compiler background: `README.md`.
+- Setup, full source tree, and scripts: `README.md`.
+- Development data, React Compiler background, and e2e details: `docs/development.md`.
 
 ## Architecture and boundaries
 
