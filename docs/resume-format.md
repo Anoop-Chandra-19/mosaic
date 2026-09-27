@@ -45,6 +45,24 @@ See root `CLAUDE.md` for schema-version and data-safety rules.
 - Preview pages use exact point dimensions as pixels, with `transform: scale()` on the
   container. Never CSS `zoom`: re-layout can change wrapping versus the exported PDF.
 
+## Page breaks
+
+The preview (`features/preview/pagination.ts`), the PDF, and the Word file break pages by
+the same rules, so a page ends on the same line in all three:
+
+- A bullet never splits; it moves to the next page whole (Word: `keepLines`).
+- A section title or entry line never ends a page: it moves with the first bullet under it
+  (Word: `keepNext` on both; PDF: one unbreakable block). An entry line with no bullets
+  lets the page break after it.
+- A paragraph splits between lines, keeping at least two on each side (Word:
+  `widowControl`), and its section title stays with its first two lines.
+- On a continued page, a section carries on with no title and an entry with no repeated
+  line. A section that starts a page has no blank line above it.
+
+`e2e/pageBreaks.spec.ts` checks the preview against the PDF. The PDF sets text with
+Helvetica metrics and Word with Arial's, so a long paragraph can wrap a word differently in
+the PDF, though it breaks after the same number of lines.
+
 ## Exports and round trips
 
 - PDF embeds links on printed text, underlined only when the header requests it.

@@ -4,8 +4,6 @@ import { HEADLESS_LAYOUT as LYT } from '@/lib/resume/headlessLayout';
 export interface PreviewBullet {
   id: string;
   text: string;
-  /** Set only on the two halves of one bullet too long for its page. */
-  part?: 'first' | 'rest';
 }
 
 export interface PreviewEntry {
@@ -22,6 +20,8 @@ export interface PreviewRenderableSection {
   layout: SectionLayout;
   label: string;
   entries: PreviewEntry[];
+  /** Carried over from the page before, so it has no title. */
+  isContinued?: boolean;
 }
 
 interface PreviewSectionProps {
@@ -52,9 +52,11 @@ export function PreviewSection({ section }: PreviewSectionProps) {
         deliberately not uppercased or letter-spaced: both mangle the text
         extraction that ATS parsers rely on.
       */}
-      <h2 className="font-bold" style={bodyText} data-preview-section-title-id={section.id}>
-        {section.label}
-      </h2>
+      {!section.isContinued && (
+        <h2 className="font-bold" style={bodyText} data-preview-section-title-id={section.id}>
+          {section.label}
+        </h2>
+      )}
 
       <div>
         {section.entries.map((entry) =>
@@ -104,11 +106,7 @@ export function PreviewSection({ section }: PreviewSectionProps) {
                   }}
                 >
                   {entry.bullets.map((bullet) => (
-                    <li
-                      key={bullet.id}
-                      data-preview-bullet-id={bullet.id}
-                      data-preview-bullet-part={bullet.part}
-                    >
+                    <li key={bullet.id} data-preview-bullet-id={bullet.id}>
                       {bullet.text}
                     </li>
                   ))}

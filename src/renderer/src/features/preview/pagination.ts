@@ -9,6 +9,8 @@ export interface PaginationMeasurements {
   entryHeights: Record<string, number>;
   entryHeadingHeights: Record<string, number>;
   bulletHeights: Record<string, number>;
+  /** Where each drawn line of a text-only entry starts, as offsets into its text. */
+  lineStarts: Record<string, number[]>;
 }
 
 interface PageLayout {
@@ -19,6 +21,8 @@ interface PageLayout {
 type PaginatedEntry = PreviewEntry & {
   _height?: number;
   _sourceKey?: string;
+  /** The line starts of what is left of a text-only entry carried onto a new page. */
+  _lineStarts?: number[];
 };
 
 // The Headless format puts everything on a single 18pt leading grid: one blank
@@ -40,6 +44,8 @@ const TEXT_CHARS_PER_LINE = 89;
 const BULLET_CHARS_PER_LINE = 82;
 const BODY_LINE_HEIGHT_PX = HEADLESS_LAYOUT.bodyLeading;
 const HEADING_LINE_HEIGHT_PX = HEADLESS_LAYOUT.bodyLeading;
+/** Lines a paragraph keeps on each side of a page break: react-pdf's and Word's default. */
+const MIN_LINES_AT_BREAK = 2;
 
 function estimateTextHeight(
   text: string,
@@ -106,10 +112,8 @@ function estimateBulletHeight(text: string) {
   return estimateTextHeight(text, BODY_LINE_HEIGHT_PX, BULLET_CHARS_PER_LINE);
 }
 
-// Only whole bullets were drawn offscreen, so half of a split bullet has no measurement.
 function getBulletHeight(bullet: PreviewBullet, measurements: PaginationMeasurements) {
-  const measured = bullet.part ? undefined : measurements.bulletHeights[bullet.id];
-  return measured ?? estimateBulletHeight(bullet.text);
+  return measurements.bulletHeights[bullet.id] ?? estimateBulletHeight(bullet.text);
 }
 
 function getEntryHeight(
@@ -154,6 +158,46 @@ function splitEntryByAvailableHeight(
 
   if (section.layout === 'lines') {
     const text = entry.text ?? '';
+    const lineStarts =
+      entry._lineStarts ??
+      measurements.lineStarts[`${section.id}::${entry._sourceKey ?? entry.id}`];
+
+    if (lineStarts) {
+      if (lineStarts.length * BODY_LINE_HEIGHT_PX <= availableHeight) {
+        return {
+          first: {
+            ...entry,
+            id: `${entry.id}-cont-${continuationIndex}`,
+            _height: lineStarts.length * BODY_LINE_HEIGHT_PX,
+          },
+          rest: null,
+        };
+      }
+      const kept = Math.min(
+        Math.floor(availableHeight / BODY_LINE_HEIGHT_PX),
+        lineStarts.length - MIN_LINES_AT_BREAK
+      );
+      if (kept < MIN_LINES_AT_BREAK) return null;
+
+      const at = lineStarts[kept];
+      return {
+        first: {
+          ...entry,
+          id: `${entry.id}-cont-${continuationIndex}`,
+          text: text.slice(0, at).trimEnd(),
+          _height: kept * BODY_LINE_HEIGHT_PX,
+          _lineStarts: undefined,
+        },
+        rest: {
+          ...entry,
+          id: `${entry.id}-cont-${continuationIndex + 1}`,
+          text: text.slice(at),
+          _height: (lineStarts.length - kept) * BODY_LINE_HEIGHT_PX,
+          _lineStarts: lineStarts.slice(kept).map((start) => start - at),
+        },
+      };
+    }
+
     const fullHeight = getEntryHeight(section, entry, measurements);
     const ratio = Math.max(0.25, Math.min(0.9, availableHeight / Math.max(fullHeight, 1)));
     const maxChars = Math.max(100, Math.floor(text.length * ratio));
@@ -181,8 +225,9 @@ function splitEntryByAvailableHeight(
 
   const entryKey = `${section.id}::${entry._sourceKey ?? entry.id}`;
   const headingHeight =
-    measurements.entryHeadingHeights[entryKey] ??
-    (entry.heading || entry.dates ? HEADING_LINE_HEIGHT_PX : 0);
+    entry.heading || entry.dates
+      ? (measurements.entryHeadingHeights[entryKey] ?? HEADING_LINE_HEIGHT_PX)
+      : 0;
   const bulletHeights = entry.bullets.map((bullet) => getBulletHeight(bullet, measurements));
 
   const requiresHeadingGap = headingHeight > 0 && bulletHeights.length > 0;
@@ -202,38 +247,8 @@ function splitEntryByAvailableHeight(
     keptBullets.push(entry.bullets[i]);
   }
 
-  if (keptBullets.length === 0) {
-    // Split a single oversized bullet instead of dropping the whole entry from the page.
-    const firstBullet = entry.bullets[0];
-    if (!firstBullet) return null;
-
-    const targetChars = Math.max(80, Math.floor(firstBullet.text.length * 0.55));
-    const [firstText, restText] = splitTextByChars(firstBullet.text, targetChars);
-    if (!firstText) return null;
-
-    const firstPart: PreviewBullet = restText
-      ? { ...firstBullet, text: firstText, part: firstBullet.part ?? 'first' }
-      : firstBullet;
-    const restBullets: PreviewBullet[] = restText
-      ? [{ id: firstBullet.id, text: restText, part: 'rest' }, ...entry.bullets.slice(1)]
-      : entry.bullets.slice(1);
-
-    return {
-      first: {
-        ...entry,
-        id: `${entry.id}-cont-${continuationIndex}`,
-        bullets: [firstPart],
-        _height: headingHeight + ENTRY_INTERNAL_GAP_PX + estimateBulletHeight(firstText),
-      },
-      rest: restBullets.length
-        ? {
-            ...entry,
-            id: `${entry.id}-cont-${continuationIndex + 1}`,
-            bullets: restBullets,
-          }
-        : null,
-    };
-  }
+  // As in both exports: a bullet never splits, and a heading never ends a page without one.
+  if (keptBullets.length === 0) return null;
 
   const restBullets = entry.bullets.slice(keptBullets.length);
 
@@ -247,6 +262,9 @@ function splitEntryByAvailableHeight(
     rest: restBullets.length
       ? {
           ...entry,
+          // The exports carry on with the next bullet, not the heading again.
+          heading: undefined,
+          dates: undefined,
           id: `${entry.id}-cont-${continuationIndex + 1}`,
           bullets: restBullets,
         }
@@ -276,7 +294,11 @@ export function paginateSections(
   const pages: PageLayout[] = [createEmptyPage(0, measurements)];
   let continuationIndex = 0;
 
-  const ensureSection = (page: PageLayout, section: PreviewRenderableSection) => {
+  const ensureSection = (
+    page: PageLayout,
+    section: PreviewRenderableSection,
+    isContinued: boolean
+  ) => {
     const existing = page.sections.find((item) => item.id === section.id);
     if (existing) return existing;
 
@@ -285,6 +307,7 @@ export function paginateSections(
       layout: section.layout,
       label: section.label,
       entries: [],
+      ...(isContinued && { isContinued }),
     };
     page.sections.push(next);
     return next;
@@ -292,6 +315,7 @@ export function paginateSections(
 
   for (const section of sections) {
     const queue = [...(section.entries as PaginatedEntry[])];
+    let isStarted = false;
 
     while (queue.length > 0) {
       const candidate = queue.shift();
@@ -305,17 +329,23 @@ export function paginateSections(
         section.layout === 'lines'
           ? TEXT_ONLY_SECTION_CONTENT_TOP_PADDING_PX
           : SECTION_CONTENT_TOP_PADDING_PX;
-      const sectionOpenCost = pageSection
-        ? 0
-        : SECTION_TOP_PADDING_PX + sectionTitleHeight + sectionBodyTopPadding;
+      // A section carried onto a new page picks up there with no title, and one that opens a
+      // page has no blank line above it: the page's top margin is enough, as in Word.
+      const openCostAt = (target: PageLayout) =>
+        isStarted
+          ? 0
+          : (target === pages[0] || target.usedHeight > 0 ? SECTION_TOP_PADDING_PX : 0) +
+            sectionTitleHeight +
+            sectionBodyTopPadding;
+      const sectionOpenCost = pageSection ? 0 : openCostAt(page);
       const entryGapPx = section.layout === 'lines' ? TEXT_ONLY_ENTRY_GAP_PX : ENTRY_GAP_PX;
       const entryGap = pageSection && pageSection.entries.length > 0 ? entryGapPx : 0;
       const candidateHeight = getEntryHeight(section, candidate, measurements);
       const candidateCost = sectionOpenCost + entryGap + candidateHeight;
 
       if (page.usedHeight + candidateCost <= pageContentHeight) {
-        const ensuredSection = ensureSection(page, section);
-        ensuredSection.entries.push(candidate);
+        ensureSection(page, section, isStarted).entries.push(candidate);
+        isStarted = true;
         page.usedHeight += candidateCost;
         continue;
       }
@@ -331,9 +361,9 @@ export function paginateSections(
 
       if (split?.first) {
         continuationIndex += 2;
-        const ensuredSection = ensureSection(page, section);
+        ensureSection(page, section, isStarted).entries.push(split.first);
+        isStarted = true;
         const splitHeight = getEntryHeight(section, split.first, measurements);
-        ensuredSection.entries.push(split.first);
         page.usedHeight += sectionOpenCost + entryGap + splitHeight;
 
         if (split.rest) {
@@ -347,7 +377,7 @@ export function paginateSections(
       pages.push(createEmptyPage(pages.length, measurements));
       page = pages[pages.length - 1];
 
-      const freshSectionCost = SECTION_TOP_PADDING_PX + sectionTitleHeight + sectionBodyTopPadding;
+      const freshSectionCost = openCostAt(page);
       const freshAvailable = pageContentHeight - page.usedHeight - freshSectionCost;
       const forcedSplit = splitEntryByAvailableHeight(
         section,
@@ -359,15 +389,16 @@ export function paginateSections(
 
       // Nothing to split it at — an entry with no bullets — so it goes on the new page whole.
       if (!forcedSplit?.first) {
-        ensureSection(page, section).entries.push(candidate);
+        ensureSection(page, section, isStarted).entries.push(candidate);
+        isStarted = true;
         page.usedHeight += freshSectionCost + candidateHeight;
         continue;
       }
 
       continuationIndex += 2;
-      const ensuredSection = ensureSection(page, section);
+      ensureSection(page, section, isStarted).entries.push(forcedSplit.first);
+      isStarted = true;
       const forcedHeight = getEntryHeight(section, forcedSplit.first, measurements);
-      ensuredSection.entries.push(forcedSplit.first);
       page.usedHeight += freshSectionCost + forcedHeight;
 
       if (forcedSplit.rest) {
@@ -416,5 +447,6 @@ export function createFallbackMeasurements(
     entryHeights,
     entryHeadingHeights: {},
     bulletHeights: {},
+    lineStarts: {},
   };
 }

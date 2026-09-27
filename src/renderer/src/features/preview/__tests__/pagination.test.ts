@@ -17,6 +17,7 @@ function createMeasurements(
     entryHeights: {},
     entryHeadingHeights: {},
     bulletHeights: {},
+    lineStarts: {},
     ...overrides,
   };
 }
@@ -226,33 +227,30 @@ describe('paginateSections', () => {
     expect(pages[0][0].entries[0].text?.length).toBeLessThan(text.length);
   });
 
-  it('splits a long bullet when no complete bullet fits the available height', () => {
+  it('never splits a bullet: a heading and its first bullet move on together', () => {
     const text = Array.from({ length: 40 }, (_, index) => `detail${index}`).join(' ');
     const pages = paginateSections(
       [
         createExperienceSection([
-          { id: 'job-1', heading: 'Engineer', bullets: [{ id: 'b1', text }] },
+          { id: 'job-1', heading: 'Engineer 1', bullets: createBullets('A') },
+          { id: 'job-2', heading: 'Engineer 2', bullets: [{ id: 'b1', text }] },
         ]),
       ],
       createMeasurements({
         sectionTitleHeights: { experience: 10 },
-        entryHeights: { 'experience::job-1': 120 },
+        entryHeights: { 'experience::job-1': 40, 'experience::job-2': 102 },
+        entryHeadingHeights: { 'experience::job-2': 18 },
         bulletHeights: { b1: 80 },
       }),
-      60
+      110
     );
 
-    expect(pages.length).toBeGreaterThan(1);
-    expect(pages.length).toBeLessThanOrEqual(3);
-    const [firstHalf] = pages[0][0].entries[0].bullets;
-    const [restHalf] = pages[1][0].entries[0].bullets;
-    expect(pages[0][0].entries[0].id).toBe('job-1-cont-0');
-    expect(firstHalf.text.length).toBeLessThan(text.length);
-    expect(restHalf.text).toContain('detail');
-    expect([firstHalf, restHalf].map((bullet) => [bullet.id, bullet.part])).toEqual([
-      ['b1', 'first'],
-      ['b1', 'rest'],
+    // Page 1 has room for job 2's heading (22) but not its bullet (80).
+    expect(pages.map((page) => page[0].entries.map((entry) => entry.heading))).toEqual([
+      ['Engineer 1'],
+      ['Engineer 2'],
     ]);
+    expect(pages[1][0].entries[0].bullets).toEqual([{ id: 'b1', text }]);
   });
 
   it('measures a continued entry by its own bullets, not the whole entry', () => {
@@ -271,11 +269,96 @@ describe('paginateSections', () => {
       110
     );
 
-    // Page 2 fits C alone (28 + 22 + 54), not C and D.
+    // C and D (72) fit page 2; the whole entry (130) would not.
     expect(pages.map((page) => page[0].entries[0].bullets.map((bullet) => bullet.text))).toEqual([
       ['A', 'B'],
-      ['C'],
-      ['D'],
+      ['C', 'D'],
+    ]);
+  });
+
+  it('carries a section onto the next page without its title or the entry heading', () => {
+    const pages = paginateSections(
+      [
+        createExperienceSection([
+          { id: 'job-1', heading: 'Engineer', bullets: createBullets('A', 'B', 'C') },
+        ]),
+      ],
+      createMeasurements({
+        sectionTitleHeights: { experience: 18 },
+        entryHeadingHeights: { 'experience::job-1': 18 },
+        bulletHeights: { A: 18, B: 18, C: 18 },
+      }),
+      // Blank line, title, heading and gap, two bullets.
+      94
+    );
+
+    const [first, second] = pages.map((page) => page[0]);
+    expect([first.isContinued, second.isContinued]).toEqual([undefined, true]);
+    expect(first.entries[0].heading).toBe('Engineer');
+    expect(second.entries[0].heading).toBeUndefined();
+    expect(second.entries[0].bullets.map((bullet) => bullet.text)).toEqual(['C']);
+  });
+
+  it('splits a paragraph at a measured line, two lines at least on each side', () => {
+    // Six drawn lines of "lineN words", each starting where the measurement says.
+    const lineTexts = Array.from({ length: 6 }, (_, index) => `line${index} words `);
+    const text = lineTexts.join('').trimEnd();
+    const lineStarts = lineTexts.map((_, index) => lineTexts.slice(0, index).join('').length);
+    const paginate = (pageHeight: number, headerHeight = 0) =>
+      paginateSections(
+        [
+          {
+            id: 'summary',
+            layout: 'lines',
+            label: 'Summary',
+            entries: [{ id: 'summary-1', text, bullets: [] }],
+          },
+        ],
+        createMeasurements({
+          headerHeight,
+          sectionTitleHeights: { summary: 18 },
+          entryHeights: { 'summary::summary-1': 108 },
+          lineStarts: { 'summary::summary-1': lineStarts },
+        }),
+        pageHeight
+      ).map((page) => page[0].entries.map((entry) => entry.text));
+
+    // Blank line and title (36), then room for three lines.
+    expect(paginate(90)).toEqual([
+      ['line0 words line1 words line2 words'],
+      ['line3 words line4 words line5 words'],
+    ]);
+    // Room for five: one would be left alone, so only four stay.
+    expect(paginate(126)[1]).toEqual(['line4 words line5 words']);
+    // Under a header, room for one: it can't stay alone, so the paragraph moves on, title and
+    // all, to a page where it fits whole.
+    expect(paginate(126, 72)).toEqual([[text]]);
+    expect(paginate(126, 72)).toHaveLength(1);
+  });
+
+  it('opens a section at the top of a later page without the blank line above it', () => {
+    const jobs = ['job-1', 'job-2'];
+    const pages = paginateSections(
+      [
+        createExperienceSection(jobs.slice(0, 1).map((id) => ({ id, heading: id, bullets: [] }))),
+        {
+          id: 'projects',
+          layout: 'entries',
+          label: 'Projects',
+          entries: [{ id: 'job-2', heading: 'job-2', bullets: [] }],
+        },
+      ],
+      createMeasurements({
+        sectionTitleHeights: { experience: 18, projects: 18 },
+        entryHeights: { 'experience::job-1': 36, 'projects::job-2': 54 },
+      }),
+      // Page 1 holds Experience (72). Projects then needs 90 with its blank line, 72 without.
+      80
+    );
+
+    expect(pages.map((page) => page.map((section) => section.id))).toEqual([
+      ['experience'],
+      ['projects'],
     ]);
   });
 

@@ -37,6 +37,25 @@ export interface ResumePreviewMeta {
 }
 
 const MEASUREMENT_THROTTLE_MS = 100;
+
+/** Offsets into a paragraph's text where each drawn line begins, found by word. */
+function measureLineStarts(paragraph: HTMLElement): number[] {
+  const text = paragraph.firstChild;
+  if (!(text instanceof Text)) return [0];
+  const range = document.createRange();
+  const starts: number[] = [];
+  let lineTop = -Infinity;
+  for (const word of text.data.matchAll(/\S+/g)) {
+    range.setStart(text, word.index);
+    range.setEnd(text, word.index + 1);
+    const top = range.getBoundingClientRect().top;
+    if (top > lineTop + 1) {
+      starts.push(starts.length === 0 ? 0 : word.index);
+      lineTop = top;
+    }
+  }
+  return starts.length > 0 ? starts : [0];
+}
 const PAGE_GAP_PX = 16;
 
 export function ResumePreview({
@@ -84,9 +103,14 @@ export function ResumePreview({
       const entryHeights: Record<string, number> = {};
       const entryHeadingHeights: Record<string, number> = {};
       const bulletHeights: Record<string, number> = {};
+      const lineStarts: Record<string, number[]> = {};
 
+      // From the root's top, so the name's top margin, which collapses out of the header's
+      // own box, is counted as the page counts it.
       const headerNode = root.querySelector<HTMLElement>('[data-preview-header]');
-      const headerHeight = headerNode?.getBoundingClientRect().height ?? 110;
+      const headerHeight = headerNode
+        ? headerNode.getBoundingClientRect().bottom - root.getBoundingClientRect().top
+        : 110;
 
       root.querySelectorAll<HTMLElement>('[data-preview-section-title-id]').forEach((node) => {
         const sectionId = node.dataset.previewSectionTitleId;
@@ -98,6 +122,11 @@ export function ResumePreview({
         const entryKey = node.dataset.previewEntryKey;
         if (!entryKey) return;
         entryHeights[entryKey] = node.getBoundingClientRect().height;
+      });
+
+      root.querySelectorAll<HTMLElement>('p[data-preview-entry-key]').forEach((node) => {
+        const entryKey = node.dataset.previewEntryKey;
+        if (entryKey) lineStarts[entryKey] = measureLineStarts(node);
       });
 
       root.querySelectorAll<HTMLElement>('[data-preview-entry-heading-key]').forEach((node) => {
@@ -118,6 +147,7 @@ export function ResumePreview({
         entryHeights,
         entryHeadingHeights,
         bulletHeights,
+        lineStarts,
       });
     });
 
@@ -226,7 +256,12 @@ export function ResumePreview({
 
       {/* Offscreen, unpaginated, unscaled render that page splitting measures. */}
       <div className="pointer-events-none fixed top-0 -left-24999.75" aria-hidden>
-        <div ref={measureRootRef} style={{ width: `${pageContentSize.width}px` }}>
+        {/* flow-root keeps margins inside, as the page's padding does. */}
+        <div
+          ref={measureRootRef}
+          className="flow-root"
+          style={{ width: `${pageContentSize.width}px` }}
+        >
           <PreviewHeader contact={contact} />
           {activeSections.map((section) => (
             <PreviewSection key={`measure-${section.id}`} section={section} />
