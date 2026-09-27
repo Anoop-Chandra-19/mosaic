@@ -1,31 +1,57 @@
 # Mosaic
 
-Mosaic is a local-first, modular resume builder with a live print-style preview.
+**A resume builder that keeps your data on your computer and lets you take it anywhere.**
 
-It is a desktop app (Electron) built for fast editing, precise content selection, and clean
-exports. Everything stays on your machine: there is no account, no sync, and no server.
+Mosaic is a free, open-source desktop app for writing and tailoring your resume. There is
+no account, no server, and no subscription. You open it and start writing.
 
-## Features
+## Why Mosaic
 
-- Content editing for sections, entries, and bullets, and a header under your name built
-  from lines of items — each with its own text and link, carried as real links into every
-  export
-- Include/exclude toggles for entries and bullets
-- Live multi-page preview with measured pagination, A4 and US Letter
-- Templates with version history: autosaved drafts, named versions, preview before restore,
-  duplicate any version as a new template
-- Export to PDF, Markdown, plain text, JSON Resume, and Mosaic JSON
-- Import from PDF, Word (.docx), Markdown, plain text, JSON Resume, or pasted text, read on
-  your machine, with a review step that shows what was found and what was left out before
-  anything is written
-- Full backups as readable JSON (every template and its history), restore by replacing
-  everything or adding alongside
-- Privacy controls: forget API keys, reset the interface, erase all local data
-- AI configuration foundation (optional; off by default)
+### Your data stays yours
+
+- Everything is stored on your computer. Nothing is uploaded or synced.
+- Backups are readable JSON with every template and its full history. Restore by replacing
+  everything or adding alongside what you have.
+- Export to PDF, Word (.docx), Markdown, plain text, JSON Resume, and Mosaic JSON. Your
+  resume is never stuck in one place.
+- Privacy controls let you forget API keys, reset the interface, or erase all local data.
+
+### Built for tailoring
+
+Most people keep one master resume and shape it for each job. Mosaic is built around that.
+
+- Switch individual entries and bullets on or off without deleting them.
+- Every template has version history: autosaved drafts, named versions, a preview before
+  you restore one, and any version can become a new template.
+- One source of truth, and as many tailored versions as you need.
+
+### Import you can trust
+
+Bring in a resume from PDF, Word (.docx), Markdown, plain text, JSON Resume, or pasted text.
+It is read on your computer, and a review step shows what was found and what was left out
+before anything is saved.
+
+### What you see is what you export
+
+- A live multi-page preview measures real page breaks, for A4 and US Letter.
+- The header under your name is built from lines of items, each with its own text and link.
+  Links stay clickable in every export, including real hyperlinks in Word.
+- Word exports use real Word paragraph styles, so the document stays easy to edit.
+
+### AI when you want it
+
+AI is optional and off by default. The resume builder is complete without it. Configuration
+for local models through Ollama is in place, and AI features are in progress.
+
+### Who it's for
+
+- People who want a good resume without paying for one.
+- People applying to many jobs who need tailored versions quickly.
+- Anyone who wants their work history to stay on their own computer.
 
 ## Tech Stack
 
-- Electron 44 via electron-vite — main process, sandboxed preload, React renderer
+- Electron 44 via electron-vite: main process, sandboxed preload, React renderer
 - SQLite (better-sqlite3) in the main process for all data
 - React 19 + React Compiler, TypeScript, Tailwind CSS v4 (CSS-first)
 - Radix UI / shadcn primitives, Lucide icons
@@ -97,42 +123,9 @@ npm ci
 npm run dev
 ```
 
-Every script below works with either (`npm run <script>`). Development runs keep their data in the repo's gitignored `.dev-data/`; `bun run dev:reset`
-deletes it.
-
-### React Compiler
-
-The renderer uses stable React Compiler through `@vitejs/plugin-react` in
-`electron.vite.config.ts`, in both development and production. React 19 supplies its
-runtime; main and preload are not compiled with it.
-
-Write ordinary components and hooks: the compiler automatically memoizes eligible
-calculations, callbacks, and JSX. Keep rendering pure and follow the Rules of React;
-`bun run lint` includes compiler diagnostics. Keep existing `useMemo` / `useCallback`
-calls when adopting the compiler; new code generally does not need them just for performance.
-The compiler does not replace effect dependencies or Zustand subscriptions.
-
-Vitest runs source code without this transform. The Electron end-to-end tests exercise
-the compiled production renderer, including preview and PDF export.
-
-E2E launches explicitly enable Chromium's sandbox, use throwaway profiles, and disconnect
-from the desktop's D-Bus session on Linux. The security specs check renderer sandboxing
-(including Linux seccomp/no-new-privileges), preload isolation, and enforced CSP violations.
-Linux runners must support Chromium's sandbox; do not work around launch failures with
-`--no-sandbox`, which defeats these checks. The CSP is build-only, not active in Vite dev.
-
-On Linux, install `Xvfb`: each Playwright worker starts its own virtual X11 desktop, so
-parallel tests do not share window focus, pointer state, or the clipboard. This works
-on Wayland hosts too, but tests Electron's X11 backend. No outer `xvfb-run` is needed.
-Linux defaults to four workers; use `bun run test:e2e --workers=2` to reduce parallelism, or
-`--workers=1` to run serially. macOS and Windows default to one worker because their
-desktops are not isolated. After building, `bunx playwright test` uses the same fixtures.
-
-E2E specs import `test` from `e2e/launch.ts`, not directly from Playwright. `withApp()`
-uses the worker's display automatically; tests that launch or relaunch manually take
-`launchApp` from their fixture argument: `async ({ launchApp }) => { … }`.
-Xvfb chooses free display numbers, signals readiness before launch, and is stopped at
-worker teardown.
+Every script below works with either (`npm run <script>`). See
+[docs/development.md](docs/development.md) for development data, the React Compiler, and
+end-to-end tests.
 
 ## Scripts
 
@@ -157,3 +150,7 @@ docs: align roadmap with implemented features
 ```
 
 `pre-commit` runs ESLint and Prettier through `lint-staged`.
+
+## License
+
+[MIT](LICENSE)
