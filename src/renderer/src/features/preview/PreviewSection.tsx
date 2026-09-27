@@ -1,13 +1,20 @@
 import type { SectionLayout } from '@shared/types/resume';
 import { HEADLESS_LAYOUT as LYT } from '@/lib/resume/headlessLayout';
 
+export interface PreviewBullet {
+  id: string;
+  text: string;
+  /** Set only on the two halves of one bullet too long for its page. */
+  part?: 'first' | 'rest';
+}
+
 export interface PreviewEntry {
   id: string;
   /** The printed left side: title, organization, and location (`formatEntryHeading`). */
   heading?: string;
   dates?: string;
   text?: string;
-  bullets: string[];
+  bullets: PreviewBullet[];
 }
 
 export interface PreviewRenderableSection {
@@ -96,13 +103,13 @@ export function PreviewSection({ section }: PreviewSectionProps) {
                     paddingLeft: `${LYT.bulletTextIndent}px`,
                   }}
                 >
-                  {entry.bullets.map((bullet, idx) => (
+                  {entry.bullets.map((bullet) => (
                     <li
-                      key={`${entry.id}-${idx}`}
-                      data-preview-bullet-key={`${section.id}::${entry.id}`}
-                      data-preview-bullet-index={idx}
+                      key={bullet.id}
+                      data-preview-bullet-id={bullet.id}
+                      data-preview-bullet-part={bullet.part}
                     >
-                      {bullet}
+                      {bullet.text}
                     </li>
                   ))}
                 </ul>

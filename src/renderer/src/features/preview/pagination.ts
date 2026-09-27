@@ -1,14 +1,14 @@
 import { formatEntryHeading } from '@shared/resume/entryHeading';
 import type { ResumeEntry, ResumeSection, SectionLayout } from '@shared/types/resume';
 import { HEADLESS_LAYOUT } from '@/lib/resume/headlessLayout';
-import type { PreviewEntry, PreviewRenderableSection } from './PreviewSection';
+import type { PreviewBullet, PreviewEntry, PreviewRenderableSection } from './PreviewSection';
 
 export interface PaginationMeasurements {
   headerHeight: number;
   sectionTitleHeights: Record<string, number>;
   entryHeights: Record<string, number>;
   entryHeadingHeights: Record<string, number>;
-  bulletHeights: Record<string, number[]>;
+  bulletHeights: Record<string, number>;
 }
 
 interface PageLayout {
@@ -63,8 +63,8 @@ function normalizeEntry(entry: ResumeEntry, layout: SectionLayout): PaginatedEnt
   const dates = (entry.dates ?? '').trim();
   const bullets = entry.bullets
     .filter((bullet) => bullet.selected)
-    .map((bullet) => bullet.text.trim())
-    .filter(Boolean);
+    .map((bullet) => ({ id: bullet.id, text: bullet.text.trim() }))
+    .filter((bullet) => bullet.text);
 
   if (!heading && !dates && bullets.length === 0) return null;
 
@@ -102,6 +102,16 @@ function splitTextByChars(text: string, maxChars: number) {
   return [normalized.slice(0, splitAt).trim(), normalized.slice(splitAt).trim()] as const;
 }
 
+function estimateBulletHeight(text: string) {
+  return estimateTextHeight(text, BODY_LINE_HEIGHT_PX, BULLET_CHARS_PER_LINE);
+}
+
+// Only whole bullets were drawn offscreen, so half of a split bullet has no measurement.
+function getBulletHeight(bullet: PreviewBullet, measurements: PaginationMeasurements) {
+  const measured = bullet.part ? undefined : measurements.bulletHeights[bullet.id];
+  return measured ?? estimateBulletHeight(bullet.text);
+}
+
 function getEntryHeight(
   section: PreviewRenderableSection,
   entry: PaginatedEntry,
@@ -109,17 +119,23 @@ function getEntryHeight(
 ) {
   if (entry._height) return entry._height;
 
-  const entryKey = `${section.id}::${entry._sourceKey ?? entry.id}`;
-  const measuredHeight = measurements.entryHeights[entryKey];
+  const sourceKey = entry._sourceKey ?? entry.id;
+  const entryKey = `${section.id}::${sourceKey}`;
+  // A continued entry holds only some of the bullets the measured entry did.
+  const isWholeEntry = sourceKey === entry.id;
+  const measuredHeight = isWholeEntry ? measurements.entryHeights[entryKey] : undefined;
   if (measuredHeight) return measuredHeight;
 
   if (section.layout === 'lines') {
     return estimateTextHeight(entry.text ?? '', BODY_LINE_HEIGHT_PX, TEXT_CHARS_PER_LINE);
   }
 
-  const headingHeight = entry.heading || entry.dates ? HEADING_LINE_HEIGHT_PX : 0;
+  const headingHeight =
+    entry.heading || entry.dates
+      ? (measurements.entryHeadingHeights[entryKey] ?? HEADING_LINE_HEIGHT_PX)
+      : 0;
   const bulletsHeight = entry.bullets.reduce(
-    (sum, bullet) => sum + estimateTextHeight(bullet, BODY_LINE_HEIGHT_PX, BULLET_CHARS_PER_LINE),
+    (sum, bullet) => sum + getBulletHeight(bullet, measurements),
     0
   );
   const bulletGaps = Math.max(0, entry.bullets.length - 1) * BULLET_GAP_PX;
@@ -167,18 +183,14 @@ function splitEntryByAvailableHeight(
   const headingHeight =
     measurements.entryHeadingHeights[entryKey] ??
     (entry.heading || entry.dates ? HEADING_LINE_HEIGHT_PX : 0);
-  const bulletHeights =
-    measurements.bulletHeights[entryKey] ??
-    entry.bullets.map((bullet) =>
-      estimateTextHeight(bullet, BODY_LINE_HEIGHT_PX, BULLET_CHARS_PER_LINE)
-    );
+  const bulletHeights = entry.bullets.map((bullet) => getBulletHeight(bullet, measurements));
 
   const requiresHeadingGap = headingHeight > 0 && bulletHeights.length > 0;
   let used = headingHeight + (requiresHeadingGap ? ENTRY_INTERNAL_GAP_PX : 0);
 
   if (availableHeight <= used + 8) return null;
 
-  const keptBullets: string[] = [];
+  const keptBullets: PreviewBullet[] = [];
 
   for (let i = 0; i < bulletHeights.length; i += 1) {
     const bulletGap = keptBullets.length > 0 ? BULLET_GAP_PX : 0;
@@ -195,21 +207,23 @@ function splitEntryByAvailableHeight(
     const firstBullet = entry.bullets[0];
     if (!firstBullet) return null;
 
-    const targetChars = Math.max(80, Math.floor(firstBullet.length * 0.55));
-    const [firstBulletPart, restBulletPart] = splitTextByChars(firstBullet, targetChars);
-    if (!firstBulletPart) return null;
+    const targetChars = Math.max(80, Math.floor(firstBullet.text.length * 0.55));
+    const [firstText, restText] = splitTextByChars(firstBullet.text, targetChars);
+    if (!firstText) return null;
 
-    const restBullets = [restBulletPart, ...entry.bullets.slice(1)].filter(Boolean) as string[];
+    const firstPart: PreviewBullet = restText
+      ? { ...firstBullet, text: firstText, part: firstBullet.part ?? 'first' }
+      : firstBullet;
+    const restBullets: PreviewBullet[] = restText
+      ? [{ id: firstBullet.id, text: restText, part: 'rest' }, ...entry.bullets.slice(1)]
+      : entry.bullets.slice(1);
 
     return {
       first: {
         ...entry,
         id: `${entry.id}-cont-${continuationIndex}`,
-        bullets: [firstBulletPart],
-        _height:
-          headingHeight +
-          ENTRY_INTERNAL_GAP_PX +
-          estimateTextHeight(firstBulletPart, BODY_LINE_HEIGHT_PX, BULLET_CHARS_PER_LINE),
+        bullets: [firstPart],
+        _height: headingHeight + ENTRY_INTERNAL_GAP_PX + estimateBulletHeight(firstText),
       },
       rest: restBullets.length
         ? {
@@ -391,11 +405,7 @@ export function createFallbackMeasurements(
         section.layout === 'lines'
           ? estimateTextHeight(entry.text ?? '', BODY_LINE_HEIGHT_PX)
           : HEADING_LINE_HEIGHT_PX +
-            entry.bullets.reduce(
-              (sum, bullet) =>
-                sum + estimateTextHeight(bullet, BODY_LINE_HEIGHT_PX, BULLET_CHARS_PER_LINE),
-              0
-            );
+            entry.bullets.reduce((sum, bullet) => sum + estimateBulletHeight(bullet.text), 0);
     }
   }
 
