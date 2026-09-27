@@ -33,6 +33,7 @@ playwright-report
 # Agent evals: provider keys and run output stay on this computer
 scripts/agent-evals/.env
 scripts/agent-evals/results/
+scripts/page-break-sweep/results/
 
 # Planning docs
 plans/

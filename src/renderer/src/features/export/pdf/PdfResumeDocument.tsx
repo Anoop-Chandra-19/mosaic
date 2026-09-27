@@ -2,12 +2,21 @@ import { Fragment } from 'react';
 import { Document, Font, Link, Page, StyleSheet, Text, View } from '@react-pdf/renderer';
 import type { PaperSize } from '@/types/paper';
 import type { NormalizedResumeExport } from '../normalizeResumeExport';
-import { HEADLESS_LAYOUT } from '@/lib/resume/headlessLayout';
+import { HEADLESS_LAYOUT, getPageContentSizePt } from '@/lib/resume/headlessLayout';
+import { breakLinesLikeWord, breakRunsLikeWord, type MeasureTextWidth } from './breakLinesLikeWord';
 import { LINK_BLUE } from '@shared/resume/resumeHeader';
+
+/** Text widths at the body's and the header lines' sizes. */
+export interface PdfTextMeasurers {
+  body: MeasureTextWidth;
+  contact: MeasureTextWidth;
+}
 
 interface PdfResumeDocumentProps {
   data: NormalizedResumeExport;
   paperSize: PaperSize;
+  /** Breaks text into lines as Word does; without them, react-pdf breaks lines itself. */
+  measurers?: PdfTextMeasurers | null;
 }
 
 const LYT = HEADLESS_LAYOUT;
@@ -34,11 +43,12 @@ const NO_BREAK_SPACE = String.fromCharCode(0xa0);
  * - a section title or an entry's italic line never ends a page on its own: it sits in one
  *   unbreakable block with the first bullet. `minPresenceAhead` can't do this, since it is
  *   satisfied by room for part of a bullet that then can't split;
- * - a paragraph section's title needs two lines of it below (`minPresenceAhead` works there,
- *   since a paragraph splits by line, keeping two on each side as Word does).
+ * - a paragraph section's title needs its first paragraph's opening lines below it, two at
+ *   most, since a paragraph splits by line keeping two on each side as Word does
+ *   (`minPresenceAhead` works there).
  */
 const BULLET_SPLITS_ACROSS_PAGES = false;
-const LINES_NEEDED_UNDER_TITLE = LYT.bodyLeading * 2;
+const MIN_LINES_AT_BREAK = 2;
 
 /**
  * A run of spaces as it is typed: react-pdf collapses ordinary ones into one, so they go in
@@ -146,8 +156,23 @@ const styles = StyleSheet.create({
   },
 });
 
-export function PdfResumeDocument({ data, paperSize }: PdfResumeDocumentProps) {
+export function PdfResumeDocument({ data, paperSize, measurers }: PdfResumeDocumentProps) {
   const size = paperSize === 'a4' ? 'A4' : 'LETTER';
+  const textWidth = getPageContentSizePt(paperSize).width;
+  const bulletWidth = textWidth - LYT.bulletTextIndent;
+  const breakLines = (text: string, width: number) =>
+    measurers ? breakLinesLikeWord(text, width, measurers.body) : text;
+  const breakHeaderLine = (line: NormalizedResumeExport['contact']['lines'][number]) => {
+    const runs = line.items.flatMap((item, index) => [
+      ...(index > 0
+        ? [{ text: line.separator, href: undefined, key: `${item.id}-before`, isSeparator: true }]
+        : []),
+      { text: item.text, href: item.href, key: item.id, isSeparator: false },
+    ]);
+    return measurers
+      ? breakRunsLikeWord(runs, textWidth, measurers.contact)
+      : runs.map((run) => ({ ...run, startsLine: false }));
+  };
   const name = data.contact.name || 'Mosaic Resume';
   const linkStyle = {
     color: data.contact.linkColor === 'blue' ? LINK_BLUE : LYT.color,
@@ -162,17 +187,19 @@ export function PdfResumeDocument({ data, paperSize }: PdfResumeDocumentProps) {
           <Text style={styles.name}>{name}</Text>
           {data.contact.lines.map((line) => (
             <Text key={line.id} style={[styles.contactLine, { textAlign: line.align }]}>
-              {line.items.map((item, index) => (
-                <Fragment key={item.id}>
-                  {index > 0 && preserveSpaceRuns(line.separator)}
+              {breakHeaderLine(line).map((run, index) => (
+                <Fragment key={`${run.key}-${index}`}>
+                  {run.startsLine && '\n'}
                   {/* The printed text carries the link; it looks like the text around it
                       unless the header asks for underlined or blue links. */}
-                  {item.href ? (
-                    <Link src={item.href} style={linkStyle}>
-                      {item.text}
+                  {run.href ? (
+                    <Link src={run.href} style={linkStyle}>
+                      {run.text}
                     </Link>
+                  ) : run.isSeparator ? (
+                    preserveSpaceRuns(run.text)
                   ) : (
-                    item.text
+                    run.text
                   )}
                 </Fragment>
               ))}
@@ -189,10 +216,20 @@ export function PdfResumeDocument({ data, paperSize }: PdfResumeDocumentProps) {
           const staysBehind = <View />;
 
           if (section.layout === 'lines') {
+            const firstParagraphLines = section.entries[0]
+              ? breakLines(section.entries[0].text, textWidth).split('\n').length
+              : 0;
+            // Without measurements a paragraph's length is unknown, so it asks for the most.
+            const linesUnderTitle = measurers
+              ? Math.min(MIN_LINES_AT_BREAK, firstParagraphLines)
+              : MIN_LINES_AT_BREAK;
             return (
               <View key={section.id} style={sectionStyle}>
                 {staysBehind}
-                <Text style={styles.sectionTitle} minPresenceAhead={LINES_NEEDED_UNDER_TITLE}>
+                <Text
+                  style={styles.sectionTitle}
+                  minPresenceAhead={LYT.bodyLeading * linesUnderTitle}
+                >
                   {section.label}
                 </Text>
                 <View style={styles.textOnlySectionBody}>
@@ -205,7 +242,7 @@ export function PdfResumeDocument({ data, paperSize }: PdfResumeDocumentProps) {
                           : styles.textOnlyEntry
                       }
                     >
-                      {entry.text}
+                      {breakLines(entry.text, textWidth)}
                     </Text>
                   ))}
                 </View>
@@ -227,7 +264,7 @@ export function PdfResumeDocument({ data, paperSize }: PdfResumeDocumentProps) {
                     style={styles.bulletRow}
                   >
                     <Text style={styles.bulletMarker}>{'\u2022'}</Text>
-                    <Text style={styles.bulletText}>{bullet}</Text>
+                    <Text style={styles.bulletText}>{breakLines(bullet, bulletWidth)}</Text>
                   </View>
                 ));
                 return [

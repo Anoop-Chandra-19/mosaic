@@ -55,13 +55,20 @@ the same rules, so a page ends on the same line in all three:
   (Word: `keepNext` on both; PDF: one unbreakable block). An entry line with no bullets
   lets the page break after it.
 - A paragraph splits between lines, keeping at least two on each side (Word:
-  `widowControl`), and its section title stays with its first two lines.
+  `widowControl`), and its section title stays with the first paragraph's opening lines
+  (two, or one for a one-line paragraph).
 - On a continued page, a section carries on with no title and an entry with no repeated
   line. A section that starts a page has no blank line above it.
 
-`e2e/pageBreaks.spec.ts` checks the preview against the PDF. The PDF sets text with
-Helvetica metrics and Word with Arial's, so a long paragraph can wrap a word differently in
-the PDF, though it breaks after the same number of lines.
+Lines break as Word breaks them: each line takes whole words at their natural spacing,
+may also end after a hyphen inside a word ("on-" / "call", but not before a digit), and
+nothing is kerned. The PDF export measures text in the preview's font and passes react-pdf
+its lines already broken, header lines included, since react-pdf would squeeze spaces to
+fit more on a line. Line heights are exact points everywhere (the Word file says "Exactly
+18 pt", not "1.5 lines", which Word rounds line by line).
+
+`e2e/pageBreaks.spec.ts` checks the preview against the PDF.
+`scripts/page-break-sweep/` compares all three across a few hundred generated resumes.
 
 ## Exports and round trips
 

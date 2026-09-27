@@ -9,7 +9,8 @@ export default defineConfig({
     },
   },
   test: {
-    // e2e/ holds Playwright specs that drive the built Electron app (`bun run test:e2e`).
-    exclude: [...configDefaults.exclude, 'e2e/**'],
+    // Playwright specs that drive the built Electron app: `bun run test:e2e`, and the
+    // page-break sweep, run by hand.
+    exclude: [...configDefaults.exclude, 'e2e/**', 'scripts/page-break-sweep/**'],
   },
 });
