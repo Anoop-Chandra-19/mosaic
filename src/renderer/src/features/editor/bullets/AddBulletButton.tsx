@@ -3,7 +3,7 @@ import { Plus } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
 import { cn } from '@/lib/utils';
 import { BulletEditor } from './BulletEditor';
-import { HIDDEN_WHILE_READING } from './editorClasses';
+import { HIDDEN_WHILE_READING } from '../editorClasses';
 
 /** "Add bullet", which opens the bullet editor empty. Pasting several lines adds each. */
 export function AddBulletButton({ onAdd }: { onAdd: (text: string) => void }) {

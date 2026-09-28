@@ -26,12 +26,12 @@ import { cn } from '@/lib/utils';
 import { useOutlineStore } from '@/stores/outlineStore';
 import { useResumeStore } from '@/stores/resumeStore';
 import type { ResumeSection } from '@shared/types/resume';
-import { InlineEditField } from './InlineEditField';
+import { HIDDEN_WHILE_READING } from '../editorClasses';
+import { InlineEditField } from '../InlineEditField';
+import { swapNeighbours } from '../sort-list/listOrder';
+import { SortGripHandle, SortList, type SortGrip } from '../sort-list/SortList';
 import { CUSTOM_ICONS, PRESET_ICONS } from './sectionIcons';
 import { EntryCard } from './EntryCard';
-import { HIDDEN_WHILE_READING } from './editorClasses';
-import { swapNeighbours } from './listOrder';
-import { SortGripHandle, SortList, type SortGrip } from './SortList';
 
 interface SectionItemProps {
   section: ResumeSection;

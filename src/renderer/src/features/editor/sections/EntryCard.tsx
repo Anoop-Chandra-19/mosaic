@@ -15,15 +15,15 @@ import { cn } from '@/lib/utils';
 import { formatEntryHeading } from '@shared/resume/entryHeading';
 import type { ResumeEntry, SectionLayout } from '@shared/types/resume';
 import { useResumeStore } from '@/stores/resumeStore';
-import { AddBulletButton } from './AddBulletButton';
-import { BulletEditor } from './BulletEditor';
-import { BulletItem } from './BulletItem';
-import { EditorCheckbox } from './EditorCheckbox';
-import { HIDDEN_WHILE_READING } from './editorClasses';
-import { InlineEditField } from './InlineEditField';
-import { swapNeighbours } from './listOrder';
-import { SortGripHandle, SortList, type SortGrip } from './SortList';
-import { useSplitAndMergeBullets } from './useSplitAndMergeBullets';
+import { AddBulletButton } from '../bullets/AddBulletButton';
+import { BulletEditor } from '../bullets/BulletEditor';
+import { BulletItem } from '../bullets/BulletItem';
+import { useSplitAndMergeBullets } from '../bullets/useSplitAndMergeBullets';
+import { EditorCheckbox } from '../EditorCheckbox';
+import { HIDDEN_WHILE_READING } from '../editorClasses';
+import { InlineEditField } from '../InlineEditField';
+import { swapNeighbours } from '../sort-list/listOrder';
+import { SortGripHandle, SortList, type SortGrip } from '../sort-list/SortList';
 
 interface EntryCardProps {
   entry: ResumeEntry;

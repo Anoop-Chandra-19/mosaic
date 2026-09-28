@@ -26,10 +26,10 @@ import { cn } from '@/lib/utils';
 import { useResumeStore } from '@/stores/resumeStore';
 import type { Bullet } from '@shared/types/resume';
 import { BulletEditor, type BulletMerge } from './BulletEditor';
-import { EditorCheckbox } from './EditorCheckbox';
-import { HIDDEN_WHILE_READING } from './editorClasses';
+import { EditorCheckbox } from '../EditorCheckbox';
+import { HIDDEN_WHILE_READING } from '../editorClasses';
+import { SortGripHandle, type SortGrip } from '../sort-list/SortList';
 import { canSplitText } from './splitAndMergeBullets';
-import { SortGripHandle, type SortGrip } from './SortList';
 import type { BulletTint } from './useSplitAndMergeBullets';
 
 interface EditorOpening {
