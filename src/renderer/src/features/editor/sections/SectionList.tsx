@@ -10,6 +10,7 @@ import { BUILT_IN_KINDS, SECTION_PRESETS } from '@shared/resume/sectionPresets';
 import type { ResumeSection } from '@shared/types/resume';
 import { useOverlayStore } from '@/stores/overlayStore';
 import { useResumeStore } from '@/stores/resumeStore';
+import { useListMotion } from '@/lib/motion/useListMotion';
 import { SectionItem } from './SectionItem';
 import { cn } from '@/lib/utils';
 import { HIDDEN_WHILE_READING } from '../editorClasses';
@@ -41,6 +42,7 @@ export function SectionList({
 
   const sorted = [...sections].sort((a, b) => a.order - b.order);
   const sectionIds = sorted.map((section) => section.id);
+  const [listRef] = useListMotion(sectionIds.join(' '));
 
   const moveSection = (index: number, direction: -1 | 1) => {
     const next = swapNeighbours(sectionIds, index, direction);
@@ -48,7 +50,7 @@ export function SectionList({
   };
 
   return (
-    <div>
+    <div ref={listRef} className="relative">
       <SortList
         ids={sectionIds}
         kind="section"
@@ -70,26 +72,29 @@ export function SectionList({
       />
 
       {showAddSection && (
-        <DropdownMenu open={isAddSectionMenuOpen} onOpenChange={setAddSectionMenuOpen}>
-          <DropdownMenuTrigger asChild>
-            <AppButton
-              variant="outline"
-              size="xs"
-              className={cn('mt-3 ml-1.5', HIDDEN_WHILE_READING)}
-            >
-              <Plus />
-              Add section
-            </AppButton>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" onCloseAutoFocus={custom.onCloseAutoFocus}>
-            <PresetMenuItems
-              kinds={BUILT_IN_KINDS}
-              onAdd={(kind) => addSection({ kind, ...SECTION_PRESETS[kind] })}
-            />
-            <DropdownMenuSeparator />
-            <CustomMenuItems onChoose={custom.choose} />
-          </DropdownMenuContent>
-        </DropdownMenu>
+        // Marked like a row, so it slides with them.
+        <div data-sort-id="add-section">
+          <DropdownMenu open={isAddSectionMenuOpen} onOpenChange={setAddSectionMenuOpen}>
+            <DropdownMenuTrigger asChild>
+              <AppButton
+                variant="outline"
+                size="xs"
+                className={cn('mt-3 ml-1.5', HIDDEN_WHILE_READING)}
+              >
+                <Plus />
+                Add section
+              </AppButton>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" onCloseAutoFocus={custom.onCloseAutoFocus}>
+              <PresetMenuItems
+                kinds={BUILT_IN_KINDS}
+                onAdd={(kind) => addSection({ kind, ...SECTION_PRESETS[kind] })}
+              />
+              <DropdownMenuSeparator />
+              <CustomMenuItems onChoose={custom.choose} />
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       )}
     </div>
   );

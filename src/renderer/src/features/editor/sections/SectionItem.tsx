@@ -1,19 +1,9 @@
 import { useRef, useState } from 'react';
-import {
-  ArrowDown,
-  ArrowUp,
-  ChevronDown,
-  ChevronRight,
-  Ellipsis,
-  Eye,
-  EyeOff,
-  Pencil,
-  Plus,
-  Trash2,
-} from 'lucide-react';
+import { ArrowDown, ArrowUp, Ellipsis, Eye, EyeOff, Pencil, Plus, Trash2 } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
 import { AppTooltip } from '@/components/AppTooltip';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Collapsible, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { useListMotion } from '@/lib/motion/useListMotion';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -27,6 +17,7 @@ import { useOutlineStore } from '@/stores/outlineStore';
 import { useResumeStore } from '@/stores/resumeStore';
 import type { ResumeSection } from '@shared/types/resume';
 import { HIDDEN_WHILE_READING } from '../editorClasses';
+import { EditorFold, FoldChevron } from '../EditorFold';
 import { InlineEditField } from '../InlineEditField';
 import { swapNeighbours } from '../sort-list/listOrder';
 import { SortGripHandle, SortList, type SortGrip } from '../sort-list/SortList';
@@ -87,6 +78,7 @@ export function SectionItem({
   };
 
   const entryIds = section.items.map((entry) => entry.id);
+  const [entriesRef] = useListMotion(entryIds.join(' '));
   const moveEntry = (index: number, direction: -1 | 1) => {
     const next = swapNeighbours(entryIds, index, direction);
     if (next) reorderEntries(section.id, next);
@@ -115,7 +107,7 @@ export function SectionItem({
             aria-label={open ? `Collapse ${section.label}` : `Expand ${section.label}`}
             className="-mx-1.5 size-6 text-ink-faint hover:bg-transparent"
           >
-            {open ? <ChevronDown className="size-3" /> : <ChevronRight className="size-3" />}
+            <FoldChevron isOpen={open} />
           </AppButton>
         </CollapsibleTrigger>
         <Icon className="-ml-1 size-3.5 shrink-0 text-ink-muted" />
@@ -134,8 +126,10 @@ export function SectionItem({
         ) : (
           <span
             className={cn(
-              'min-w-0 truncate text-[0.96875rem] font-semibold tracking-[-0.012em]',
-              isHidden ? 'text-ink-faint line-through decoration-line-heavy' : 'text-foreground'
+              'min-w-0 truncate text-[0.96875rem] font-semibold tracking-[-0.012em] line-through transition-[color,text-decoration-color] duration-200',
+              isHidden
+                ? 'text-ink-faint decoration-line-heavy'
+                : 'text-foreground decoration-transparent'
             )}
           >
             {section.label || <span className="text-ink-faint">Untitled section</span>}
@@ -245,35 +239,37 @@ export function SectionItem({
         </div>
       </div>
 
-      <CollapsibleContent>
-        {section.items.length === 0 ? (
-          <p className="ml-3.5 border-l border-line py-1.5 pl-2.25 text-[0.775rem] text-ink-faint">
-            No entries yet. Add one with +.
-          </p>
-        ) : (
-          <SortList
-            ids={entryIds}
-            kind="entry"
-            onReorder={(ids) => reorderEntries(section.id, ids)}
-            renderRow={(id, grip) => {
-              const i = section.items.findIndex((entry) => entry.id === id);
-              return (
-                <EntryCard
-                  entry={section.items[i]}
-                  sectionId={section.id}
-                  layout={section.layout}
-                  isSectionHidden={isHidden}
-                  grip={grip}
-                  isFirst={i === 0}
-                  isLast={i === section.items.length - 1}
-                  onMoveUp={() => moveEntry(i, -1)}
-                  onMoveDown={() => moveEntry(i, 1)}
-                />
-              );
-            }}
-          />
-        )}
-      </CollapsibleContent>
+      <EditorFold>
+        <div ref={entriesRef} className="relative">
+          {section.items.length === 0 ? (
+            <p className="ml-3.5 border-l border-line py-1.5 pl-2.25 text-[0.775rem] text-ink-faint">
+              No entries yet. Add one with +.
+            </p>
+          ) : (
+            <SortList
+              ids={entryIds}
+              kind="entry"
+              onReorder={(ids) => reorderEntries(section.id, ids)}
+              renderRow={(id, grip) => {
+                const i = section.items.findIndex((entry) => entry.id === id);
+                return (
+                  <EntryCard
+                    entry={section.items[i]}
+                    sectionId={section.id}
+                    layout={section.layout}
+                    isSectionHidden={isHidden}
+                    grip={grip}
+                    isFirst={i === 0}
+                    isLast={i === section.items.length - 1}
+                    onMoveUp={() => moveEntry(i, -1)}
+                    onMoveDown={() => moveEntry(i, 1)}
+                  />
+                );
+              }}
+            />
+          )}
+        </div>
+      </EditorFold>
 
       <ConfirmDeleteDialog
         open={confirmOpen}

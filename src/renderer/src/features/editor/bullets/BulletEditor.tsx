@@ -251,7 +251,8 @@ export function BulletEditor({
   };
 
   const canSplitHere = canSplitAt(draft, cursor);
-  const isLong = lineCount >= 3;
+  // Three lines read fine on the page; four start to look like a paragraph.
+  const isLong = lineCount >= 4;
   const shouldNudgeSplit =
     mode === 'edit' && onSplit !== undefined && isLong && findSentenceBreakNearMiddle(draft) > 0;
   const isNoteShown = mode === 'split' || refusal !== null;
@@ -318,7 +319,7 @@ export function BulletEditor({
   return (
     <div
       ref={rootRef}
-      className="my-0.5 overflow-hidden rounded-md border border-amber-300 bg-pane-raised ring-[3px] ring-amber-100 @container dark:border-amber-800 dark:ring-amber-950"
+      className="my-0.5 animate-ring-in overflow-hidden rounded-md border border-amber-line bg-pane-raised ring-[3px] ring-amber-soft @container motion-reduce:animate-none"
     >
       {mode === 'merge' && (
         <div className="flex items-center gap-1.5 px-2.5 pt-1.75 text-[0.71875rem] text-ink-muted">

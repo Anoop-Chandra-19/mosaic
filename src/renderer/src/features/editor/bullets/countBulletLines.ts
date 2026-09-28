@@ -6,8 +6,8 @@ import {
 import { getPageContentSizePt, HEADLESS_LAYOUT } from '@/lib/resume/headlessLayout';
 import type { PaperSize } from '@/types/paper';
 
-/** Where text can't be measured (unit tests). */
-const THIRD_LINE_CHARS = 190;
+/** About how many characters fill a line, where text can't be measured (unit tests). */
+const LINE_CHARS = 95;
 
 let measure: MeasureTextWidth | null | undefined;
 
@@ -16,7 +16,7 @@ export function countBulletLines(text: string, paper: PaperSize): number {
   const trimmed = text.trim();
   if (!trimmed) return 0;
   measure ??= createTextMeasurer(HEADLESS_LAYOUT.bodyFontSize);
-  if (!measure) return trimmed.length > THIRD_LINE_CHARS ? 3 : 1;
+  if (!measure) return Math.ceil(trimmed.length / LINE_CHARS);
   const width = getPageContentSizePt(paper).width - HEADLESS_LAYOUT.bulletTextIndent;
   return findLineStarts(trimmed, width, measure).length;
 }

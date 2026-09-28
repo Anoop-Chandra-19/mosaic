@@ -1,6 +1,4 @@
-import { MOTION_EASE, prefersReducedMotion } from './motionTiming';
-
-const EASE_MS = 200;
+import { MOTION_EASE, MOTION_MS, prefersReducedMotion } from './motionTiming';
 
 /** Something inside is already animating its height, such as a fold opening. */
 function isGrowingOnItsOwn(box: HTMLElement): boolean {
@@ -40,7 +38,7 @@ function watchHeight(box: HTMLElement): Watch {
       return;
     }
     const easing = box.animate([{ height: `${fromPx}px` }, { height: `${toPx}px` }], {
-      duration: EASE_MS,
+      duration: MOTION_MS.height,
       easing: MOTION_EASE,
     });
     watch.easing = easing;

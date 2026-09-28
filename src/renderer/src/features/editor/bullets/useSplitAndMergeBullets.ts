@@ -1,11 +1,6 @@
-import { useLayoutEffect, useRef, useState } from 'react';
-import {
-  easeHeightFrom,
-  findFirstLineTop,
-  foldInto,
-  travelFrom,
-} from '@/lib/motion/moveTextBetweenRows';
-import { recordPlaces, slideFromRecordedPlaces } from '@/lib/motion/slideToNewPlaces';
+import { useRef, useState } from 'react';
+import { findFirstLineTop, foldOnto, leaveInPlace, travelFrom } from '@/lib/motion/rowMotions';
+import { useListMotion, useSwapMotion } from '@/lib/motion/useListMotion';
 import { showToast } from '@/stores/overlayStore';
 import { useResumeStore } from '@/stores/resumeStore';
 import type { Bullet, ResumeEntry } from '@shared/types/resume';
@@ -25,7 +20,6 @@ interface Merging {
 }
 
 const TINT_MS = 1150;
-const ROW = 'data-sort-id';
 const TAIL = '[data-split-tail]';
 
 /** Undo only while the step is still the last one, so it never takes back another. */
@@ -40,22 +34,21 @@ function offerUndo(message: string) {
   });
 }
 
-/** An entry's splits and merges, and how its rows move through them. */
+/**
+ * An entry's bullet list as it moves: every change to it through `useListMotion`, and
+ * splits and merges, whose rows move out of and into the editor's tinted text.
+ */
 export function useSplitAndMergeBullets(sectionId: string, entry: ResumeEntry) {
   const splitBullet = useResumeStore((s) => s.splitBullet);
   const mergeBullets = useResumeStore((s) => s.mergeBullets);
-  const listRef = useRef<HTMLDivElement>(null);
   const [merging, setMerging] = useState<Merging | null>(null);
   const [openAfterSplitId, setOpenAfterSplitId] = useState<string | null>(null);
   const [tints, setTints] = useState<Record<string, BulletTint>>({});
   const tintTimer = useRef(0);
-  const playAfterRender = useRef<(() => void) | null>(null);
-
-  useLayoutEffect(() => {
-    const play = playAfterRender.current;
-    playAfterRender.current = null;
-    play?.();
-  });
+  // The bullet folded into a merge is off the list until it ends.
+  const shownIds = entry.bullets.map((b) => b.id).filter((id) => id !== merging?.secondId);
+  const [listRef, motion] = useListMotion(shownIds.join(' '));
+  const beginMergeSwap = useSwapMotion(merging, motion);
 
   const tint = (next: Record<string, BulletTint>) => {
     setTints(next);
@@ -63,36 +56,19 @@ export function useSplitAndMergeBullets(sectionId: string, entry: ResumeEntry) {
     tintTimer.current = window.setTimeout(() => setTints({}), TINT_MS);
   };
 
-  /**
-   * Measures the list now and moves its rows once the change has rendered. Motion still
-   * running finishes first, so the measure is of where things really are.
-   */
-  const moveRowsAfterRender = (then?: (list: HTMLElement, tailTop: number | null) => void) => {
-    const list = listRef.current;
-    if (!list) return;
-    for (const animation of list.getAnimations({ subtree: true })) animation.finish();
-    const heightPx = list.offsetHeight;
-    const places = recordPlaces(list, ROW);
-    const tailTop = findFirstLineTop(list.querySelector(TAIL));
-    playAfterRender.current = () => {
-      easeHeightFrom(list, heightPx);
-      slideFromRecordedPlaces(list, ROW, places);
-      then?.(list, tailTop);
-    };
+  const findTailTop = () => findFirstLineTop(motion.getBox()?.querySelector(TAIL) ?? null);
+
+  /** The next arrival travels out of the tinted text, from where it is now. */
+  const expectArrivalFromTail = () => {
+    const tailTop = findTailTop();
+    motion.expect({ arrive: (row) => tailTop !== null && travelFrom(row, tailTop) });
   };
 
-  const findRow = (list: HTMLElement, id: string) =>
-    list.querySelector<HTMLElement>(`[${ROW}="${CSS.escape(id)}"]`);
-
   const split = (bullet: Bullet, text: string, at: number) => {
-    let newId: string | null = null;
-    moveRowsAfterRender((list, tailTop) => {
-      const row = newId && findRow(list, newId);
-      if (row && tailTop !== null) travelFrom(row, tailTop);
-    });
-    newId = splitBullet(sectionId, entry.id, bullet.id, text, at);
+    expectArrivalFromTail();
+    const newId = splitBullet(sectionId, entry.id, bullet.id, text, at);
     if (!newId) {
-      playAfterRender.current = null;
+      motion.expect({});
       return;
     }
     setOpenAfterSplitId(newId);
@@ -107,12 +83,12 @@ export function useSplitAndMergeBullets(sectionId: string, entry: ResumeEntry) {
   const startMerge = (first: Bullet, firstText: string) => {
     const second = entry.bullets[entry.bullets.findIndex((b) => b.id === first.id) + 1];
     if (!second) return;
-    const list = listRef.current;
-    const secondRow = list && findRow(list, second.id);
-    const secondRect = secondRow?.getBoundingClientRect();
-    moveRowsAfterRender((list) => {
-      const toTop = findFirstLineTop(list.querySelector(TAIL));
-      if (secondRow && secondRect && toTop !== null) foldInto(list, secondRow, secondRect, toTop);
+    motion.expect({
+      leave: (box, place) => {
+        const toTop = findTailTop();
+        if (toTop === null) leaveInPlace(box, place);
+        else foldOnto(box, place, toTop);
+      },
     });
     const { text, seam } = joinBulletTexts(firstText, second.text);
     setMerging({
@@ -127,18 +103,15 @@ export function useSplitAndMergeBullets(sectionId: string, entry: ResumeEntry) {
 
   const cancelMerge = () => {
     if (!merging) return;
-    const { secondId } = merging;
-    moveRowsAfterRender((list, tailTop) => {
-      const row = findRow(list, secondId);
-      if (row && tailTop !== null) travelFrom(row, tailTop);
-    });
+    expectArrivalFromTail();
     setMerging(null);
-    tint({ [secondId]: 'carried' });
+    tint({ [merging.secondId]: 'carried' });
   };
 
   const confirmMerge = (text: string, selected: boolean) => {
     if (!merging) return;
-    moveRowsAfterRender();
+    // The list keeps its rows (the second already left it); only the editor becomes a row.
+    beginMergeSwap();
     const isMerged = mergeBullets(
       sectionId,
       entry.id,
@@ -179,9 +152,10 @@ export function useSplitAndMergeBullets(sectionId: string, entry: ResumeEntry) {
   };
 
   return {
+    motion,
     listRef,
-    /** The bullet folded into a merge, off the list until it ends. */
-    hiddenBulletId: merging?.secondId ?? null,
+    shownIds,
+    isMerging: merging !== null,
     bulletRowProps,
   };
 }
