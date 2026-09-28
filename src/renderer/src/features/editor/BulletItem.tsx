@@ -1,5 +1,16 @@
 import { useRef, useState, type KeyboardEvent } from 'react';
-import { ArrowDown, ArrowUp, Copy, Ellipsis, Eye, EyeOff, Pencil, Trash2 } from 'lucide-react';
+import {
+  ArrowDown,
+  ArrowUp,
+  Copy,
+  Ellipsis,
+  Eye,
+  EyeOff,
+  Merge,
+  Pencil,
+  Split,
+  Trash2,
+} from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
 import { AppTooltip } from '@/components/AppTooltip';
 import {
@@ -14,10 +25,17 @@ import { matchesShortcut } from '@/lib/keyboardShortcuts';
 import { cn } from '@/lib/utils';
 import { useResumeStore } from '@/stores/resumeStore';
 import type { Bullet } from '@shared/types/resume';
-import { BulletEditor } from './BulletEditor';
+import { BulletEditor, type BulletMerge } from './BulletEditor';
 import { EditorCheckbox } from './EditorCheckbox';
 import { HIDDEN_WHILE_READING } from './editorClasses';
+import { canSplitText } from './splitAndMergeBullets';
 import { SortGripHandle, type SortGrip } from './SortList';
+import type { BulletTint } from './useSplitAndMergeBullets';
+
+interface EditorOpening {
+  startsSplitting?: boolean;
+  cursorAt?: 'start' | 'end';
+}
 
 interface BulletItemProps {
   bullet: Bullet;
@@ -33,6 +51,14 @@ interface BulletItemProps {
   onAddBelow: () => void;
   /** Its place in the entry's list, so it can be dragged. */
   grip: SortGrip;
+  onSplit: (text: string, at: number) => void;
+  onStartMerge: (text: string) => void;
+  /** Merging with the bullet below: the editor shows both, joined. */
+  merge?: BulletMerge & { text: string; onCancel: () => void };
+  /** Just came from a split: opens in the editor, the cursor at its start. */
+  opensAfterSplit?: boolean;
+  onEditorClose?: () => void;
+  tint?: BulletTint;
 }
 
 /**
@@ -50,29 +76,57 @@ export function BulletItem({
   onMoveDown,
   onAddBelow,
   grip,
+  onSplit,
+  onStartMerge,
+  merge,
+  opensAfterSplit = false,
+  onEditorClose,
+  tint,
 }: BulletItemProps) {
   const toggleBullet = useResumeStore((s) => s.toggleBullet);
   const updateBullet = useResumeStore((s) => s.updateBullet);
   const removeBullet = useResumeStore((s) => s.removeBullet);
   const duplicateBullet = useResumeStore((s) => s.duplicateBullet);
-  const [editing, setEditing] = useState(false);
+  const [editing, setEditing] = useState<EditorOpening | null>(
+    opensAfterSplit ? { cursorAt: 'start' } : null
+  );
   const [actionsOpen, setActionsOpen] = useState(false);
-  // "Edit text" opens the editor once the menu has closed, so the editor keeps focus.
-  const editAfterMenu = useRef(false);
+  // Runs once the menu has closed, so the closing menu can't take focus from an editor.
+  const afterMenu = useRef<(() => void) | null>(null);
 
   const toggle = () => toggleBullet(sectionId, entryId, bullet.id);
   const remove = () => removeBullet(sectionId, entryId, bullet.id);
+  const closeEditor = () => {
+    setEditing(null);
+    onEditorClose?.();
+  };
   const saveText = (text: string) => {
-    setEditing(false);
+    closeEditor();
     if (text !== bullet.text) updateBullet(sectionId, entryId, bullet.id, text);
   };
+  const startMerge = isLast ? undefined : onStartMerge;
+
+  if (merge) {
+    return (
+      <BulletEditor
+        initial={merge.text}
+        merge={merge}
+        onSave={() => {}}
+        onCancel={merge.onCancel}
+      />
+    );
+  }
 
   if (editing) {
     return (
       <BulletEditor
         initial={bullet.text}
+        startsSplitting={editing.startsSplitting}
+        cursorAt={editing.cursorAt}
+        isOff={!bullet.selected}
+        startsTinted={tint === 'carried'}
         onSave={saveText}
-        onCancel={() => setEditing(false)}
+        onCancel={closeEditor}
         onAddBelow={(text) => {
           saveText(text);
           onAddBelow();
@@ -82,6 +136,17 @@ export function BulletItem({
           if (direction > 0 && !isLast) onMoveDown();
         }}
         onDelete={remove}
+        onSplit={(text, at) => {
+          closeEditor();
+          onSplit(text, at);
+        }}
+        onMergeBelow={
+          startMerge &&
+          ((text) => {
+            closeEditor();
+            startMerge(text);
+          })
+        }
       />
     );
   }
@@ -94,6 +159,9 @@ export function BulletItem({
     else if (matchesShortcut(keys, SHORTCUTS.moveBulletDown) && !isLast) run = onMoveDown;
     else if (matchesShortcut(keys, SHORTCUTS.newBulletBelow)) run = onAddBelow;
     else if (matchesShortcut(keys, SHORTCUTS.deleteBullet)) run = remove;
+    else if (matchesShortcut(keys, SHORTCUTS.mergeBullets) && startMerge) {
+      run = () => startMerge(bullet.text);
+    }
     if (!run) return;
     event.preventDefault();
     event.stopPropagation();
@@ -123,8 +191,12 @@ export function BulletItem({
       />
       <AppTooltip content={bullet.text ? 'Click to edit' : undefined} shouldFollowPointer>
         <div
-          onClick={() => setEditing(true)}
-          className="-mx-1 -my-px min-w-0 flex-1 cursor-text rounded-[0.3125rem] px-1 py-px hover:bg-line"
+          onClick={() => setEditing({})}
+          className={cn(
+            '-mx-1 -my-px min-w-0 flex-1 cursor-text rounded-[0.3125rem] px-1 py-px hover:bg-line',
+            tint === 'fresh' && 'animate-fresh-wash',
+            tint === 'carried' && 'animate-carry-tint'
+          )}
         >
           <span
             onClick={(event) => event.stopPropagation()}
@@ -150,10 +222,11 @@ export function BulletItem({
               <DropdownMenuContent
                 align="end"
                 onCloseAutoFocus={(event) => {
-                  if (!editAfterMenu.current) return;
-                  editAfterMenu.current = false;
+                  const open = afterMenu.current;
+                  if (!open) return;
+                  afterMenu.current = null;
                   event.preventDefault();
-                  setEditing(true);
+                  open();
                 }}
               >
                 <DropdownMenuItem onSelect={toggle}>
@@ -162,7 +235,7 @@ export function BulletItem({
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onSelect={() => {
-                    editAfterMenu.current = true;
+                    afterMenu.current = () => setEditing({});
                   }}
                 >
                   <Pencil />
@@ -171,6 +244,25 @@ export function BulletItem({
                 <DropdownMenuItem onSelect={() => duplicateBullet(sectionId, entryId, bullet.id)}>
                   <Copy />
                   Duplicate
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  disabled={!canSplitText(bullet.text)}
+                  onSelect={() => {
+                    afterMenu.current = () => setEditing({ startsSplitting: true });
+                  }}
+                >
+                  <Split />
+                  Split bullet
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  disabled={!startMerge}
+                  onSelect={() => {
+                    afterMenu.current = () => startMerge?.(bullet.text);
+                  }}
+                >
+                  <Merge />
+                  Merge with bullet below
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem disabled={isFirst} onSelect={onMoveUp}>

@@ -149,15 +149,25 @@ interface ResumeState extends ResumeData {
   duplicateBullet: (sectionId: string, entryId: string, bulletId: string) => void;
   /** The whole order, as `reorderSections` and `reorderEntries` take it. */
   reorderBullets: (sectionId: string, entryId: string, orderedIds: string[]) => void;
-  /** Gives the new bullet's id, or null when either half would be empty. */
-  splitBullet: (sectionId: string, entryId: string, bulletId: string, at: number) => string | null;
+  /**
+   * Splits `text`, the bullet's text as edited, at `at`, so an edit and its split are one
+   * undo step. Gives the new bullet's id, or null when either half would be empty.
+   */
+  splitBullet: (
+    sectionId: string,
+    entryId: string,
+    bulletId: string,
+    text: string,
+    at: number
+  ) => string | null;
   /** The first keeps its id and takes `text`; false unless the two are adjacent. */
   mergeBullets: (
     sectionId: string,
     entryId: string,
     firstId: string,
     secondId: string,
-    text: string
+    text: string,
+    selected: boolean
   ) => boolean;
 }
 
@@ -563,9 +573,9 @@ export const useResumeStore = create<ResumeState>()(
             .filter((b): b is (typeof entry.bullets)[number] => b !== undefined);
         }),
 
-      splitBullet: (sectionId, entryId, bulletId, at) => {
-        const text = findEntry(sectionId, entryId)?.bullets.find((b) => b.id === bulletId)?.text;
-        if (text === undefined || !Number.isInteger(at)) return null;
+      splitBullet: (sectionId, entryId, bulletId, text, at) => {
+        const isFound = findEntry(sectionId, entryId)?.bullets.some((b) => b.id === bulletId);
+        if (!isFound || !Number.isInteger(at)) return null;
         const head = text.slice(0, at).trim();
         const tail = text.slice(at).trim();
         if (!head || !tail) return null;
@@ -584,7 +594,7 @@ export const useResumeStore = create<ResumeState>()(
         return id;
       },
 
-      mergeBullets: (sectionId, entryId, firstId, secondId, text) => {
+      mergeBullets: (sectionId, entryId, firstId, secondId, text, selected) => {
         const bullets = findEntry(sectionId, entryId)?.bullets ?? [];
         const index = bullets.findIndex((b) => b.id === firstId);
         const merged = text.trim();
@@ -596,6 +606,7 @@ export const useResumeStore = create<ResumeState>()(
             ?.items.find((e) => e.id === entryId);
           if (!entry) return;
           entry.bullets[index].text = merged;
+          entry.bullets[index].selected = selected;
           entry.bullets.splice(index + 1, 1);
         });
         return true;

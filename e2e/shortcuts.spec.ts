@@ -42,7 +42,7 @@ test('Ctrl+/ opens the sheet, and keys pressed in its search say what they do', 
   const answer = sheet.getByRole('region', { name: 'You pressed' });
   await expect(answer).toContainText('is Export…');
   await expect(page.getByRole('dialog', { name: /^Export/ })).toHaveCount(0);
-  await search.press('Control+Shift+j');
+  await search.press('Control+Shift+u');
   await expect(answer).toContainText('isn’t bound to anything');
   expect(errors).toEqual([]);
 });

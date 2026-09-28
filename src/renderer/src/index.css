@@ -108,6 +108,7 @@
   --color-amber-soft: var(--amber-soft);
   --color-info: var(--info);
   --color-info-line: var(--info-line);
+  --color-info-soft: var(--info-soft);
 }
 
 @theme {
@@ -126,6 +127,50 @@
     }
     to {
       box-shadow: 0 0 0 0.75rem oklch(0.78 0.155 72 / 0%);
+    }
+  }
+
+  /* Splitting and merging a bullet. */
+  --animate-seam-in: seam-in 180ms var(--ease-settle) both;
+  --animate-seam-dot: seam-dot 220ms var(--ease-settle) 60ms both;
+  --animate-tint-in: tint-in 180ms ease-out both;
+  --animate-note-in: note-in 160ms var(--ease-settle) both;
+  --animate-carry-tint: carry-tint 900ms ease-out 140ms both;
+  --animate-fresh-wash: fresh-wash 1100ms ease-out;
+
+  @keyframes seam-in {
+    from {
+      transform: scaleY(0);
+    }
+  }
+  @keyframes seam-dot {
+    from {
+      transform: scale(0);
+    }
+  }
+  @keyframes tint-in {
+    from {
+      background-color: transparent;
+    }
+  }
+  @keyframes note-in {
+    from {
+      opacity: 0;
+      translate: 0 -0.1875rem;
+    }
+  }
+  @keyframes carry-tint {
+    from {
+      background-color: var(--info-soft);
+    }
+  }
+  @keyframes fresh-wash {
+    0%,
+    30% {
+      background-color: var(--info-soft);
+    }
+    100% {
+      background-color: transparent;
     }
   }
 }
@@ -184,6 +229,8 @@
   --amber-soft: oklch(0.948 0.02 69);
   --info: oklch(0.52 0.13 240);
   --info-line: oklch(0.86 0.04 240);
+  /* Translucent, like the lines: it tints a bullet on the pane and in the raised editor. */
+  --info-soft: oklch(0.52 0.13 240 / 11%);
 }
 
 .dark {
@@ -235,6 +282,7 @@
   --amber-soft: oklch(0.26 0.019 66);
   --info: oklch(0.74 0.11 235);
   --info-line: oklch(0.36 0.045 235);
+  --info-soft: oklch(0.74 0.11 235 / 13%);
 }
 
 /* Interface density: the chrome's spacing steps, never the page's. */

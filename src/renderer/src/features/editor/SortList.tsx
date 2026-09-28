@@ -167,6 +167,7 @@ export function SortList({ ids, kind, onReorder, className, renderRow }: SortLis
           ref={(el) => {
             slots.current[i] = el;
           }}
+          data-sort-id={id}
           className="relative"
         >
           {dropAt === i && <DropLine kind={kind} />}

@@ -202,38 +202,55 @@ describe('resumeStore sections, entries, and bullets', () => {
     expect(job().bullets.map((x) => x.id)).toEqual([b.id, a.id]);
   });
 
-  it('splits a bullet in two, the rest right below it with its own id', () => {
+  it('splits the edited text in two, the rest right below it with its own id', () => {
     const [a, b] = job().bullets;
-    store().updateBullet('sec-experience', job().id, a.id, 'Planned the move.  Ran the cutover.');
     store().toggleBullet('sec-experience', job().id, a.id);
 
-    const newId = store().splitBullet('sec-experience', job().id, a.id, 'Planned the move.'.length);
+    const edited = 'Planned the move.  Ran the cutover.';
+    const newId = store().splitBullet(
+      'sec-experience',
+      job().id,
+      a.id,
+      edited,
+      'Planned the move.'.length
+    );
 
     const [first, second, third] = job().bullets;
     expect(first).toEqual({ id: a.id, text: 'Planned the move.', selected: false });
     expect(second).toEqual({ id: newId, text: 'Ran the cutover.', selected: false });
     expect(third.id).toBe(b.id);
     expect(store().undoLabel).toBe('split a bullet');
+
+    // The edit and the split are one step: undo puts back the text from before the edit.
+    store().undo();
+    expect(
+      job()
+        .bullets.slice(0, 2)
+        .map((x) => x.text)
+    ).toEqual([a.text, b.text]);
   });
 
   it('refuses a split that leaves either half empty, without an undo step', () => {
     const [a] = job().bullets;
     const before = job().bullets;
     for (const at of [0, a.text.length, 2.5]) {
-      expect(store().splitBullet('sec-experience', job().id, a.id, at)).toBeNull();
+      expect(store().splitBullet('sec-experience', job().id, a.id, a.text, at)).toBeNull();
     }
-    expect(store().splitBullet('sec-experience', job().id, 'not-a-bullet', 3)).toBeNull();
+    expect(store().splitBullet('sec-experience', job().id, 'not-a-bullet', 'a b', 1)).toBeNull();
     expect(job().bullets).toEqual(before);
     expect(store().undoLabel).toBeNull();
   });
 
   it('merges two bullets next to each other into the first', () => {
     const [a, b, c] = job().bullets;
-    expect(store().mergeBullets('sec-experience', job().id, a.id, b.id, ' Both, as one. ')).toBe(
-      true
-    );
+    expect(
+      store().mergeBullets('sec-experience', job().id, a.id, b.id, ' Both, as one. ', false)
+    ).toBe(true);
 
-    expect(job().bullets.slice(0, 2)).toEqual([{ ...a, text: 'Both, as one.' }, c]);
+    expect(job().bullets.slice(0, 2)).toEqual([
+      { ...a, text: 'Both, as one.', selected: false },
+      c,
+    ]);
     expect(store().undoLabel).toBe('merge two bullets');
 
     store().undo();
@@ -243,7 +260,7 @@ describe('resumeStore sections, entries, and bullets', () => {
   it('refuses to merge bullets that are apart, out of order, or into nothing', () => {
     const [a, b, c] = job().bullets;
     const merge = (first: string, second: string, text = 'x') =>
-      store().mergeBullets('sec-experience', job().id, first, second, text);
+      store().mergeBullets('sec-experience', job().id, first, second, text, true);
 
     expect([merge(a.id, c.id), merge(b.id, a.id), merge(a.id, b.id, '  ')]).toEqual([
       false,
