@@ -1,6 +1,7 @@
 import { useRef, useState, type KeyboardEvent } from 'react';
 import { ArrowDown, ArrowUp, Copy, Ellipsis, Eye, EyeOff, Pencil, Trash2 } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
+import { AppTooltip } from '@/components/AppTooltip';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -120,78 +121,80 @@ export function BulletItem({
         className="mt-[0.21875rem]"
         aria-label="Toggle bullet visibility"
       />
-      <div
-        onClick={() => setEditing(true)}
-        className="-mx-1 -my-px min-w-0 flex-1 cursor-text rounded-[0.3125rem] px-1 py-px hover:bg-line"
-      >
-        <span
-          onClick={(event) => event.stopPropagation()}
-          className={cn(
-            'relative z-10 float-right -mt-0.5 -mr-0.5 ml-2 flex rounded-[0.4375rem] border border-line-strong bg-pane-raised p-0.5 shadow-md',
-            actionsOpen
-              ? 'visible'
-              : 'invisible group-focus-within/bullet:visible group-hover/bullet:visible'
-          )}
+      <AppTooltip content={bullet.text ? 'Click to edit' : undefined} shouldFollowPointer>
+        <div
+          onClick={() => setEditing(true)}
+          className="-mx-1 -my-px min-w-0 flex-1 cursor-text rounded-[0.3125rem] px-1 py-px hover:bg-line"
         >
-          <DropdownMenu open={actionsOpen} onOpenChange={setActionsOpen}>
-            <DropdownMenuTrigger asChild>
-              <AppButton
-                variant="ghost"
-                size="xs"
-                shape="square"
-                aria-label="Bullet actions"
-                className={HIDDEN_WHILE_READING}
-              >
-                <Ellipsis />
-              </AppButton>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent
-              align="end"
-              onCloseAutoFocus={(event) => {
-                if (!editAfterMenu.current) return;
-                editAfterMenu.current = false;
-                event.preventDefault();
-                setEditing(true);
-              }}
-            >
-              <DropdownMenuItem onSelect={toggle}>
-                {bullet.selected ? <EyeOff /> : <Eye />}
-                {bullet.selected ? 'Leave off the resume' : 'Put on the resume'}
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onSelect={() => {
-                  editAfterMenu.current = true;
+          <span
+            onClick={(event) => event.stopPropagation()}
+            className={cn(
+              'relative z-10 float-right -mt-0.5 -mr-0.5 ml-2 flex rounded-[0.4375rem] border border-line-strong bg-pane-raised p-0.5 shadow-md',
+              actionsOpen
+                ? 'visible'
+                : 'invisible group-focus-within/bullet:visible group-hover/bullet:visible'
+            )}
+          >
+            <DropdownMenu open={actionsOpen} onOpenChange={setActionsOpen}>
+              <DropdownMenuTrigger asChild>
+                <AppButton
+                  variant="ghost"
+                  size="xs"
+                  shape="square"
+                  aria-label="Bullet actions"
+                  className={HIDDEN_WHILE_READING}
+                >
+                  <Ellipsis />
+                </AppButton>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align="end"
+                onCloseAutoFocus={(event) => {
+                  if (!editAfterMenu.current) return;
+                  editAfterMenu.current = false;
+                  event.preventDefault();
+                  setEditing(true);
                 }}
               >
-                <Pencil />
-                Edit text
-              </DropdownMenuItem>
-              <DropdownMenuItem onSelect={() => duplicateBullet(sectionId, entryId, bullet.id)}>
-                <Copy />
-                Duplicate
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem disabled={isFirst} onSelect={onMoveUp}>
-                <ArrowUp />
-                Move up
-              </DropdownMenuItem>
-              <DropdownMenuItem disabled={isLast} onSelect={onMoveDown}>
-                <ArrowDown />
-                Move down
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                onSelect={remove}
-                className="text-destructive focus:text-destructive"
-              >
-                <Trash2 />
-                Delete bullet
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </span>
-        {bullet.text || <span className="text-ink-faint no-underline">Empty bullet</span>}
-      </div>
+                <DropdownMenuItem onSelect={toggle}>
+                  {bullet.selected ? <EyeOff /> : <Eye />}
+                  {bullet.selected ? 'Leave off the resume' : 'Put on the resume'}
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onSelect={() => {
+                    editAfterMenu.current = true;
+                  }}
+                >
+                  <Pencil />
+                  Edit text
+                </DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => duplicateBullet(sectionId, entryId, bullet.id)}>
+                  <Copy />
+                  Duplicate
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem disabled={isFirst} onSelect={onMoveUp}>
+                  <ArrowUp />
+                  Move up
+                </DropdownMenuItem>
+                <DropdownMenuItem disabled={isLast} onSelect={onMoveDown}>
+                  <ArrowDown />
+                  Move down
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onSelect={remove}
+                  className="text-destructive focus:text-destructive"
+                >
+                  <Trash2 />
+                  Delete bullet
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </span>
+          {bullet.text || <span className="text-ink-faint no-underline">Empty bullet</span>}
+        </div>
+      </AppTooltip>
     </div>
   );
 }

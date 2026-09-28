@@ -118,7 +118,11 @@ export function Sidebar() {
       </Tabs>
 
       {shouldShowPreview && (
-        <AppTooltip side="right" content="Drag to resize · double-click to reset">
+        <AppTooltip
+          side="right"
+          content="Drag to resize · double-click to reset"
+          shouldFollowPointer
+        >
           <div
             // Thin resize handle keeps the sidebar adjustable without adding visual weight.
             onPointerDown={(event) =>

@@ -1,3 +1,4 @@
+import { AppTooltip } from '@/components/AppTooltip';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { useInlineEdit } from '@/lib/hooks/useInlineEdit';
@@ -60,15 +61,18 @@ export function InlineEditField({
     );
   }
 
+  // Empty, the placeholder already says it.
   return (
-    <Tag
-      onClick={startEditing}
-      className={cn(
-        '-mx-1.5 min-w-0 flex-1 cursor-text rounded-[0.3125rem] px-1.5 py-[0.1875rem] text-[0.8875rem] leading-[1.45] text-pretty wrap-anywhere text-ink-soft hover:bg-line hover:text-foreground',
-        className
-      )}
-    >
-      {value || <span className="text-ink-faint">{placeholder}</span>}
-    </Tag>
+    <AppTooltip content={value ? 'Click to edit' : undefined}>
+      <Tag
+        onClick={startEditing}
+        className={cn(
+          '-mx-1.5 min-w-0 flex-1 cursor-text rounded-[0.3125rem] px-1.5 py-[0.1875rem] text-[0.8875rem] leading-[1.45] text-pretty wrap-anywhere text-ink-soft hover:bg-line hover:text-foreground',
+          className
+        )}
+      >
+        {value || <span className="text-ink-faint">{placeholder}</span>}
+      </Tag>
+    </AppTooltip>
   );
 }
