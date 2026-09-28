@@ -38,7 +38,7 @@ export function AgentPane() {
       className="relative flex shrink-0 flex-col border-l border-border bg-card @max-5xl/workspace:absolute @max-5xl/workspace:inset-y-0 @max-5xl/workspace:right-0 @max-5xl/workspace:z-20 @max-5xl/workspace:shadow-xl"
       style={{ width: formatPaneWidth(widthPx, AGENT_PANE_WIDTH) }}
     >
-      <AppTooltip side="left" content="Drag to resize · double-click to reset">
+      <AppTooltip side="left" content="Drag to resize · double-click to reset" shouldFollowPointer>
         <div
           onPointerDown={(event) =>
             startPaneResize(event, {

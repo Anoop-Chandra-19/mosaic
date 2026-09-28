@@ -84,7 +84,7 @@ export function HistoryReadPane({
       className="relative flex min-h-0 shrink-0 flex-col border-l border-line bg-background"
       style={{ width: `max(${HISTORY_READ_WIDTH.minPx}px, min(${widthPx}px, ${maxWidthCss}))` }}
     >
-      <AppTooltip side="left" content="Drag to resize · double-click to reset">
+      <AppTooltip side="left" content="Drag to resize · double-click to reset" shouldFollowPointer>
         <div
           onPointerDown={(event) =>
             startPaneResize(event, {
