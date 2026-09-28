@@ -12,10 +12,10 @@ import { useOverlayStore } from '@/stores/overlayStore';
 import { useResumeStore } from '@/stores/resumeStore';
 import { SectionItem } from './SectionItem';
 import { cn } from '@/lib/utils';
-import { HIDDEN_WHILE_READING } from './editorClasses';
+import { HIDDEN_WHILE_READING } from '../editorClasses';
+import { swapNeighbours } from '../sort-list/listOrder';
+import { SortList } from '../sort-list/SortList';
 import { CustomMenuItems, PresetMenuItems } from './SectionMenuItems';
-import { swapNeighbours } from './listOrder';
-import { SortList } from './SortList';
 import { useAddCustomSection } from './useAddCustomSection';
 
 export function SectionList({

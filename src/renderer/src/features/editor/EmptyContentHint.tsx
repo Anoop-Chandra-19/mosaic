@@ -10,9 +10,9 @@ import { STARTER_KINDS } from '@/features/start/blankResume';
 import { BUILT_IN_KINDS, SECTION_PRESETS } from '@shared/resume/sectionPresets';
 import { useResumeStore } from '@/stores/resumeStore';
 import type { BuiltInSectionKind } from '@shared/types/resume';
-import { PRESET_ICONS } from './sectionIcons';
-import { CustomMenuItems, PresetMenuItems } from './SectionMenuItems';
-import { useAddCustomSection } from './useAddCustomSection';
+import { PRESET_ICONS } from './sections/sectionIcons';
+import { CustomMenuItems, PresetMenuItems } from './sections/SectionMenuItems';
+import { useAddCustomSection } from './sections/useAddCustomSection';
 
 /**
  * While the resume is still empty, the sections people usually add, one click each —

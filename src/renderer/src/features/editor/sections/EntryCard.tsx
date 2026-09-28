@@ -15,14 +15,15 @@ import { cn } from '@/lib/utils';
 import { formatEntryHeading } from '@shared/resume/entryHeading';
 import type { ResumeEntry, SectionLayout } from '@shared/types/resume';
 import { useResumeStore } from '@/stores/resumeStore';
-import { AddBulletButton } from './AddBulletButton';
-import { BulletEditor } from './BulletEditor';
-import { BulletItem } from './BulletItem';
-import { EditorCheckbox } from './EditorCheckbox';
-import { HIDDEN_WHILE_READING } from './editorClasses';
-import { InlineEditField } from './InlineEditField';
-import { swapNeighbours } from './listOrder';
-import { SortGripHandle, SortList, type SortGrip } from './SortList';
+import { AddBulletButton } from '../bullets/AddBulletButton';
+import { BulletEditor } from '../bullets/BulletEditor';
+import { BulletItem } from '../bullets/BulletItem';
+import { useSplitAndMergeBullets } from '../bullets/useSplitAndMergeBullets';
+import { EditorCheckbox } from '../EditorCheckbox';
+import { HIDDEN_WHILE_READING } from '../editorClasses';
+import { InlineEditField } from '../InlineEditField';
+import { swapNeighbours } from '../sort-list/listOrder';
+import { SortGripHandle, SortList, type SortGrip } from '../sort-list/SortList';
 
 interface EntryCardProps {
   entry: ResumeEntry;
@@ -72,6 +73,8 @@ export function EntryCard({
   // ink in it drops to the faintest.
   const isDimmed = !entry.selected || isSectionHidden;
   const update = (patch: Partial<ResumeEntry>) => updateEntry(sectionId, entry.id, patch);
+
+  const { listRef, hiddenBulletId, bulletRowProps } = useSplitAndMergeBullets(sectionId, entry);
 
   const bulletIds = entry.bullets.map((bullet) => bullet.id);
   const moveBullet = (index: number, direction: -1 | 1) => {
@@ -170,12 +173,16 @@ export function EntryCard({
 
           {/* A left-off entry keeps its bullets, but out of the way until it is back on. */}
           {!isTextOnly && entry.selected && (
-            <div className="mt-(--density-gap) flex flex-col gap-(--density-row)">
+            <div
+              ref={listRef}
+              className="relative mt-(--density-gap) flex flex-col gap-(--density-row)"
+            >
               <SortList
-                ids={bulletIds}
+                ids={bulletIds.filter((id) => id !== hiddenBulletId)}
                 kind="bullet"
                 className="flex flex-col gap-(--density-row)"
-                onReorder={(ids) => reorderBullets(sectionId, entry.id, ids)}
+                // Mid-merge the list lacks the folded-in bullet, which an order would drop.
+                onReorder={(ids) => hiddenBulletId || reorderBullets(sectionId, entry.id, ids)}
                 renderRow={(id, grip) => {
                   const index = entry.bullets.findIndex((bullet) => bullet.id === id);
                   const row = (
@@ -190,6 +197,7 @@ export function EntryCard({
                       onMoveUp={() => moveBullet(index, -1)}
                       onMoveDown={() => moveBullet(index, 1)}
                       onAddBelow={() => setAddingAfterId(id)}
+                      {...bulletRowProps(entry.bullets[index])}
                     />
                   );
                   if (addingAfterId !== id) return row;
@@ -218,7 +226,10 @@ export function EntryCard({
                   );
                 }}
               />
-              <AddBulletButton onAdd={(text) => addBullet(sectionId, entry.id, text)} />
+              {/* Marked like a row, so it slides with them. */}
+              <div data-sort-id="add-bullet" className="flex flex-col">
+                <AddBulletButton onAdd={(text) => addBullet(sectionId, entry.id, text)} />
+              </div>
             </div>
           )}
         </div>

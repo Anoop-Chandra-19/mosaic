@@ -20,6 +20,10 @@ export const SHORTCUTS = {
   newBulletBelow: 'alt+enter',
   // Not Ctrl/⌘+Backspace: in a field that deletes a word, and this works while typing.
   deleteBullet: 'mod+shift+K',
+  // A bullet is one paragraph, so Shift+Enter has no line break to add: it splits instead.
+  splitBullet: 'shift+enter',
+  // The usual "join lines" key. It opens the merge in the editor, never joins on its own.
+  mergeBullets: 'mod+shift+J',
   duplicateEntry: 'mod+D',
   newSection: 'mod+shift+N',
   keepEdit: 'enter',
@@ -102,6 +106,8 @@ export function listShortcutGroups({
         row('moveBulletUp', 'Move bullet up / down', 'moveBulletDown'),
         row('newBulletBelow', 'New bullet below'),
         row('deleteBullet', 'Delete bullet'),
+        row('splitBullet', 'Split bullet at the cursor'),
+        row('mergeBullets', 'Merge with bullet below'),
         row('duplicateEntry', 'Duplicate entry'),
         row('newSection', 'New section'),
       ],

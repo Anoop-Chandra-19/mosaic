@@ -8,7 +8,7 @@ import {
 import { GripVertical } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
 import { cn } from '@/lib/utils';
-import { HIDDEN_WHILE_READING } from './editorClasses';
+import { HIDDEN_WHILE_READING } from '../editorClasses';
 import { moveToSlot } from './listOrder';
 
 /*
@@ -167,6 +167,7 @@ export function SortList({ ids, kind, onReorder, className, renderRow }: SortLis
           ref={(el) => {
             slots.current[i] = el;
           }}
+          data-sort-id={id}
           className="relative"
         >
           {dropAt === i && <DropLine kind={kind} />}

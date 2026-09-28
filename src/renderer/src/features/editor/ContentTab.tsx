@@ -6,7 +6,7 @@ import { ResumeHeaderCard } from './header/ResumeHeaderCard';
 import { cn } from '@/lib/utils';
 import { EmptyContentHint } from './EmptyContentHint';
 import { HIDDEN_WHILE_READING } from './editorClasses';
-import { SectionList } from './SectionList';
+import { SectionList } from './sections/SectionList';
 
 /**
  * The draft, laid out to be worked on. `doc` shows another document instead — an older
