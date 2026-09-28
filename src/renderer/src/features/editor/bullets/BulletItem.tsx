@@ -1,4 +1,4 @@
-import { useRef, useState, type KeyboardEvent } from 'react';
+import { useContext, useRef, useState, type KeyboardEvent } from 'react';
 import {
   ArrowDown,
   ArrowUp,
@@ -22,6 +22,8 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { SHORTCUTS } from '@/features/shortcuts/shortcutList';
 import { matchesShortcut } from '@/lib/keyboardShortcuts';
+import { carryTint, travelFrom } from '@/lib/motion/rowMotions';
+import { ListMotionContext, useSwapMotion } from '@/lib/motion/useListMotion';
 import { cn } from '@/lib/utils';
 import { useResumeStore } from '@/stores/resumeStore';
 import type { Bullet } from '@shared/types/resume';
@@ -87,14 +89,33 @@ export function BulletItem({
   const updateBullet = useResumeStore((s) => s.updateBullet);
   const removeBullet = useResumeStore((s) => s.removeBullet);
   const duplicateBullet = useResumeStore((s) => s.duplicateBullet);
-  const [editing, setEditing] = useState<EditorOpening | null>(
+  const [editing, setEditingNow] = useState<EditorOpening | null>(
     opensAfterSplit ? { cursorAt: 'start' } : null
   );
   const [actionsOpen, setActionsOpen] = useState(false);
   // Runs once the menu has closed, so the closing menu can't take focus from an editor.
   const afterMenu = useRef<(() => void) | null>(null);
+  const motion = useContext(ListMotionContext);
+  const beginSwap = useSwapMotion(editing !== null);
 
+  const setEditing = (next: EditorOpening | null) => {
+    if ((next === null) !== (editing === null)) beginSwap();
+    setEditingNow(next);
+  };
   const toggle = () => toggleBullet(sectionId, entryId, bullet.id);
+  // The copy slides out from under the original.
+  const duplicate = () => {
+    const box = motion?.getBox();
+    const original = box?.querySelector(`[data-sort-id="${CSS.escape(bullet.id)}"]`);
+    const fromTop = original?.getBoundingClientRect().top;
+    motion?.expect({
+      arrive: (row) => {
+        if (fromTop !== undefined) travelFrom(row, fromTop);
+        carryTint(row.querySelector('[data-bullet-text]') ?? row);
+      },
+    });
+    duplicateBullet(sectionId, entryId, bullet.id);
+  };
   const remove = () => removeBullet(sectionId, entryId, bullet.id);
   const closeEditor = () => {
     setEditing(null);
@@ -173,7 +194,11 @@ export function BulletItem({
       onKeyDown={handleKeyDown}
       className={cn(
         'group/bullet relative flex items-start gap-2 py-(--density-bullet) text-sm leading-[1.58] text-pretty',
-        bullet.selected ? 'text-ink-soft' : 'text-ink-faint line-through decoration-line-heavy'
+        // Struck through either way, so the line fades in and out with the colour.
+        'line-through transition-[color,text-decoration-color] duration-200',
+        bullet.selected
+          ? 'text-ink-soft decoration-transparent'
+          : 'text-ink-faint decoration-line-heavy'
       )}
     >
       <SortGripHandle
@@ -192,6 +217,7 @@ export function BulletItem({
       <AppTooltip content={bullet.text ? 'Click to edit' : undefined} shouldFollowPointer>
         <div
           onClick={() => setEditing({})}
+          data-bullet-text=""
           className={cn(
             '-mx-1 -my-px min-w-0 flex-1 cursor-text rounded-[0.3125rem] px-1 py-px hover:bg-line',
             tint === 'fresh' && 'animate-fresh-wash',
@@ -241,7 +267,7 @@ export function BulletItem({
                   <Pencil />
                   Edit text
                 </DropdownMenuItem>
-                <DropdownMenuItem onSelect={() => duplicateBullet(sectionId, entryId, bullet.id)}>
+                <DropdownMenuItem onSelect={duplicate}>
                   <Copy />
                   Duplicate
                 </DropdownMenuItem>

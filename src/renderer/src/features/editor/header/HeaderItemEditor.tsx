@@ -56,7 +56,7 @@ export function HeaderItemEditor({
   return (
     // It replaces the row in place, so it says which item it is: the row's own text is in
     // a field by now, and the kind is the only handle left.
-    <div className="-mx-[0.5625rem] mt-1 mb-2 rounded-md border border-line-heavy bg-pane-sunken px-2.5 py-2">
+    <div className="-mx-[0.5625rem] mt-1 mb-2 animate-ring-in rounded-md border border-line-heavy bg-pane-sunken px-2.5 py-2 motion-reduce:animate-none">
       <div
         className={cn(
           'mb-[0.4375rem] flex items-center gap-[0.4375rem] text-[0.625rem] tracking-[0.07em] uppercase',

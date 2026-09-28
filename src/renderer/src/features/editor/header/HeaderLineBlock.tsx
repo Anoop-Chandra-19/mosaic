@@ -54,6 +54,7 @@ export function HeaderLineBlock({ line, lines }: HeaderLineBlockProps) {
   return (
     <section
       aria-label={`Line ${number}`}
+      data-motion-id={line.id}
       className="border-t border-line pt-1.5 pb-0.5 first:border-t-0"
     >
       <div className="flex items-center gap-1 pt-0.5 pb-[0.1875rem]">

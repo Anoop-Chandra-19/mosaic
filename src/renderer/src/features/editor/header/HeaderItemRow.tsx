@@ -22,6 +22,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { resolveHeaderItemHref, getHeaderKindInfo } from '@shared/resume/resumeHeader';
+import { useSwapMotion } from '@/lib/motion/useListMotion';
 import { cn } from '@/lib/utils';
 import { useResumeStore } from '@/stores/resumeStore';
 import { useUiStore } from '@/stores/uiStore';
@@ -61,25 +62,32 @@ export function HeaderItemRow({
   const moveToLine = useResumeStore((s) => s.moveHeaderItemToLine);
   const duplicate = useResumeStore((s) => s.duplicateHeaderItem);
   const remove = useResumeStore((s) => s.removeHeaderItem);
-  const [editing, setEditing] = useState<HeaderItemField | null>(
+  const [editing, setEditingNow] = useState<HeaderItemField | null>(
     shouldStartEditing ? 'text' : null
   );
   const editAfterMenu = useRef(false);
+  const beginSwap = useSwapMotion(editing !== null);
 
+  const setEditing = (next: HeaderItemField | null) => {
+    if ((next === null) !== (editing === null)) beginSwap();
+    setEditingNow(next);
+  };
   const toggleShown = () => update(item.id, { shown: !item.shown });
 
   if (editing) {
     return (
-      <HeaderItemEditor
-        item={item}
-        focus={editing}
-        onToggleShown={toggleShown}
-        onCancel={() => setEditing(null)}
-        onSave={(patch) => {
-          setEditing(null);
-          update(item.id, patch);
-        }}
-      />
+      <div data-motion-id={item.id}>
+        <HeaderItemEditor
+          item={item}
+          focus={editing}
+          onToggleShown={toggleShown}
+          onCancel={() => setEditing(null)}
+          onSave={(patch) => {
+            setEditing(null);
+            update(item.id, patch);
+          }}
+        />
+      </div>
     );
   }
 
@@ -92,6 +100,7 @@ export function HeaderItemRow({
 
   return (
     <div
+      data-motion-id={item.id}
       className={cn(
         'flex min-h-[2.125rem] items-center gap-[0.4375rem] py-px',
         // The text's hover fill bleeds left, so its words line up with the caption above.
@@ -109,8 +118,9 @@ export function HeaderItemRow({
         title="Click to edit text and link"
         className={cn(
           // Sized by its words, so a short item keeps them whole beside a long link.
-          'flex-auto text-[0.8875rem] leading-[1.45]',
-          !item.shown && 'text-ink-faint line-through decoration-line-heavy',
+          // Struck through either way, so the line fades in and out with the colour.
+          'flex-auto text-[0.8875rem] leading-[1.45] line-through transition-[color,background-color,text-decoration-color] duration-200',
+          item.shown ? 'decoration-transparent' : 'text-ink-faint decoration-line-heavy',
           isUnprinted && 'text-ink-faint'
         )}
       >

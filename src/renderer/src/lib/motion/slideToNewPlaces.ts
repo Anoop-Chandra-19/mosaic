@@ -1,6 +1,4 @@
-import { MOTION_EASE, prefersReducedMotion } from './motionTiming';
-
-const SLIDE_MS = 220;
+import { MOTION_EASE, MOTION_MS, prefersReducedMotion } from './motionTiming';
 
 /**
  * Where each element marked with `attribute` inside `container` is now, by the attribute's
@@ -35,7 +33,7 @@ export function slideFromRecordedPlaces(
     if (Math.abs(dx) < 1 && Math.abs(dy) < 1) continue;
     element.animate(
       [{ transform: `translate(${dx}px, ${dy}px)` }, { transform: 'translate(0, 0)' }],
-      { duration: SLIDE_MS, easing: MOTION_EASE }
+      { duration: MOTION_MS.slide, easing: MOTION_EASE }
     );
   }
 }

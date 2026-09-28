@@ -1,5 +1,5 @@
 import { AppTooltip } from '@/components/AppTooltip';
-import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 import { useInlineEdit } from '@/lib/hooks/useInlineEdit';
 import { EDITOR_INPUT_CLASS } from './editorClasses';
@@ -41,11 +41,14 @@ export function InlineEditField({
     onClose
   );
 
+  // It wraps as the text does at rest, so a long title stays readable while it is edited.
+  // Enter still saves, and a line break pasted in becomes a space.
   if (editing) {
     return (
-      <Input
+      <Textarea
         value={draft}
-        onChange={(e) => setDraft(e.target.value)}
+        rows={1}
+        onChange={(e) => setDraft(e.target.value.replace(/\s*\n\s*/g, ' '))}
         onBlur={handleBlur}
         onKeyDown={handleKeyDown}
         onFocus={openAtStart ? (e) => e.target.select() : undefined}
@@ -54,7 +57,8 @@ export function InlineEditField({
         aria-label={label}
         className={cn(
           EDITOR_INPUT_CLASS,
-          'h-[1.625rem] min-w-0 flex-1 px-1.5 py-0 text-[0.8875rem]',
+          // As wide as its text, up to the row; past that it wraps.
+          'min-h-[1.625rem] w-auto max-w-full min-w-12 flex-none resize-none px-1.5 py-[0.1875rem] text-[0.8875rem] leading-[1.45] wrap-anywhere',
           inputClassName
         )}
       />
