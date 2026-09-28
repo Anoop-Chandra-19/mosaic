@@ -13,7 +13,7 @@ import { Info, Merge, Split } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { SHORTCUTS } from '@/features/shortcuts/shortcutList';
-import { matchesShortcut } from '@/lib/keyboardShortcuts';
+import { formatShortcutKeys, matchesShortcut } from '@/lib/keyboardShortcuts';
 import { cn } from '@/lib/utils';
 import { useUiStore } from '@/stores/uiStore';
 import { countBulletLines } from './countBulletLines';
@@ -269,10 +269,13 @@ export function BulletEditor({
     </span>
   );
 
-  let hint: string;
+  let hints: KeyHint[];
   let actions: ReactNode;
   if (mode === 'split') {
-    hint = '↵ split · esc back';
+    hints = [
+      { combo: 'enter', label: 'split' },
+      { combo: 'esc', label: 'back' },
+    ];
     actions = (
       <>
         <AppButton variant="ghost" size="xs" onClick={stopSplitting}>
@@ -290,7 +293,10 @@ export function BulletEditor({
       </>
     );
   } else if (mode === 'merge') {
-    hint = '↵ merge · esc cancel';
+    hints = [
+      { combo: 'enter', label: 'merge' },
+      { combo: 'esc', label: 'cancel' },
+    ];
     actions = (
       <>
         <AppButton variant="ghost" size="xs" onClick={cancel}>
@@ -308,7 +314,13 @@ export function BulletEditor({
       </>
     );
   } else {
-    hint = onSplit ? '↵ save · ⇧↵ split · esc cancel' : '↵ save · esc cancel';
+    // Save and Escape are what any editor does; the split key is the one worth teaching.
+    const keep = onSplit ? 'low' : undefined;
+    hints = [
+      { combo: 'enter', label: 'save', keep },
+      ...(onSplit ? [{ combo: SHORTCUTS.splitBullet, label: 'split', keep: 'high' as const }] : []),
+      { combo: 'esc', label: 'cancel', keep },
+    ];
     actions = (
       <AppButton variant="accent" size="xs" className="font-semibold" onClick={save}>
         Save
@@ -450,11 +462,39 @@ export function BulletEditor({
         </span>
         {!shouldNudgeSplit && mode !== 'split' && longChip}
         <span className="flex-1" />
-        <span className="font-mono text-[0.59375rem] whitespace-nowrap text-ink-faint @max-[20.625rem]:hidden">
-          {hint}
-        </span>
+        <KeyHints hints={hints} />
         {actions}
       </div>
     </div>
+  );
+}
+
+interface KeyHint {
+  combo: string;
+  label: string;
+  /** How long it stays as the editor narrows: `low` goes first, `high` stays longest. */
+  keep?: 'low' | 'high';
+}
+
+const KEEP_UNTIL = {
+  low: '@max-[26rem]:hidden',
+  normal: '@max-[20.625rem]:hidden',
+  high: '@max-[16rem]:hidden',
+};
+
+/** The footer's keys, named as this platform names them: "Shift+Enter", or "⇧↵" on a Mac. */
+function KeyHints({ hints }: { hints: KeyHint[] }) {
+  const joiner = window.mosaic.platform === 'darwin' ? '' : '+';
+  return (
+    <span className="flex items-center gap-2 text-[0.6875rem] whitespace-nowrap text-ink-muted">
+      {hints.map(({ combo, label, keep }) => (
+        <span key={label} className={KEEP_UNTIL[keep ?? 'normal']}>
+          <span className="font-medium text-ink-soft">
+            {formatShortcutKeys(combo).join(joiner)}
+          </span>{' '}
+          {label}
+        </span>
+      ))}
+    </span>
   );
 }
