@@ -56,6 +56,61 @@ function measureLineStarts(paragraph: HTMLElement): number[] {
   }
   return starts.length > 0 ? starts : [0];
 }
+
+/** Measures the offscreen, unpaginated render that page splitting is driven by. */
+function measurePagination(root: HTMLElement): PaginationMeasurements {
+  const sectionTitleHeights: Record<string, number> = {};
+  const entryHeights: Record<string, number> = {};
+  const entryHeadingHeights: Record<string, number> = {};
+  const bulletHeights: Record<string, number> = {};
+  const lineStarts: Record<string, number[]> = {};
+
+  // From the root's top, so the name's top margin, which collapses out of the header's
+  // own box, is counted as the page counts it.
+  const headerNode = root.querySelector<HTMLElement>('[data-preview-header]');
+  const headerHeight = headerNode
+    ? headerNode.getBoundingClientRect().bottom - root.getBoundingClientRect().top
+    : 110;
+
+  root.querySelectorAll<HTMLElement>('[data-preview-section-title-id]').forEach((node) => {
+    const sectionId = node.dataset.previewSectionTitleId;
+    if (!sectionId) return;
+    sectionTitleHeights[sectionId] = node.getBoundingClientRect().height;
+  });
+
+  root.querySelectorAll<HTMLElement>('[data-preview-entry-key]').forEach((node) => {
+    const entryKey = node.dataset.previewEntryKey;
+    if (!entryKey) return;
+    entryHeights[entryKey] = node.getBoundingClientRect().height;
+  });
+
+  root.querySelectorAll<HTMLElement>('p[data-preview-entry-key]').forEach((node) => {
+    const entryKey = node.dataset.previewEntryKey;
+    if (entryKey) lineStarts[entryKey] = measureLineStarts(node);
+  });
+
+  root.querySelectorAll<HTMLElement>('[data-preview-entry-heading-key]').forEach((node) => {
+    const entryKey = node.dataset.previewEntryHeadingKey;
+    if (!entryKey) return;
+    entryHeadingHeights[entryKey] = node.getBoundingClientRect().height;
+  });
+
+  root.querySelectorAll<HTMLElement>('[data-preview-bullet-id]').forEach((node) => {
+    const bulletId = node.dataset.previewBulletId;
+    if (!bulletId) return;
+    bulletHeights[bulletId] = node.getBoundingClientRect().height;
+  });
+
+  return {
+    headerHeight,
+    sectionTitleHeights,
+    entryHeights,
+    entryHeadingHeights,
+    bulletHeights,
+    lineStarts,
+  };
+}
+
 const PAGE_GAP_PX = 16;
 
 export function ResumePreview({
@@ -81,78 +136,42 @@ export function ResumePreview({
 
   const normalizedSections = useMemo(() => normalizeSections(sections), [sections]);
 
+  // A stored version is never typed into, so it skips the throttle and is measured before
+  // it paints: stepping between versions then slides in a page already laid out, where the
+  // throttle showed the old version's text, then re-wrapped and re-paginated mid-slide.
+  const isStored = doc !== undefined;
+
   useEffect(() => {
+    if (isStored) return;
     // Avoid re-measuring the resume on every keystroke while the user is typing.
     const timer = window.setTimeout(() => {
       setThrottledSections(normalizedSections);
     }, MEASUREMENT_THROTTLE_MS);
 
     return () => window.clearTimeout(timer);
-  }, [normalizedSections]);
+  }, [normalizedSections, isStored]);
+
+  const activeSections = isStored
+    ? normalizedSections
+    : throttledSections.length > 0
+      ? throttledSections
+      : normalizedSections;
+
+  useLayoutEffect(() => {
+    const root = measureRootRef.current;
+    if (!isStored || !root) return;
+    setMeasurements(measurePagination(root));
+  }, [isStored, contact, activeSections, pageContentSize.width]);
 
   useEffect(() => {
-    if (!measureRootRef.current) return;
-
+    if (isStored) return;
     const frame = window.requestAnimationFrame(() => {
       const root = measureRootRef.current;
-      if (!root) return;
-
-      // Measure an offscreen, unpaginated render to drive page splitting accurately.
-
-      const sectionTitleHeights: Record<string, number> = {};
-      const entryHeights: Record<string, number> = {};
-      const entryHeadingHeights: Record<string, number> = {};
-      const bulletHeights: Record<string, number> = {};
-      const lineStarts: Record<string, number[]> = {};
-
-      // From the root's top, so the name's top margin, which collapses out of the header's
-      // own box, is counted as the page counts it.
-      const headerNode = root.querySelector<HTMLElement>('[data-preview-header]');
-      const headerHeight = headerNode
-        ? headerNode.getBoundingClientRect().bottom - root.getBoundingClientRect().top
-        : 110;
-
-      root.querySelectorAll<HTMLElement>('[data-preview-section-title-id]').forEach((node) => {
-        const sectionId = node.dataset.previewSectionTitleId;
-        if (!sectionId) return;
-        sectionTitleHeights[sectionId] = node.getBoundingClientRect().height;
-      });
-
-      root.querySelectorAll<HTMLElement>('[data-preview-entry-key]').forEach((node) => {
-        const entryKey = node.dataset.previewEntryKey;
-        if (!entryKey) return;
-        entryHeights[entryKey] = node.getBoundingClientRect().height;
-      });
-
-      root.querySelectorAll<HTMLElement>('p[data-preview-entry-key]').forEach((node) => {
-        const entryKey = node.dataset.previewEntryKey;
-        if (entryKey) lineStarts[entryKey] = measureLineStarts(node);
-      });
-
-      root.querySelectorAll<HTMLElement>('[data-preview-entry-heading-key]').forEach((node) => {
-        const entryKey = node.dataset.previewEntryHeadingKey;
-        if (!entryKey) return;
-        entryHeadingHeights[entryKey] = node.getBoundingClientRect().height;
-      });
-
-      root.querySelectorAll<HTMLElement>('[data-preview-bullet-id]').forEach((node) => {
-        const bulletId = node.dataset.previewBulletId;
-        if (!bulletId) return;
-        bulletHeights[bulletId] = node.getBoundingClientRect().height;
-      });
-
-      setMeasurements({
-        headerHeight,
-        sectionTitleHeights,
-        entryHeights,
-        entryHeadingHeights,
-        bulletHeights,
-        lineStarts,
-      });
+      if (root) setMeasurements(measurePagination(root));
     });
 
     return () => window.cancelAnimationFrame(frame);
-  }, [contact, throttledSections, pageContentSize.width]);
+  }, [isStored, contact, activeSections, pageContentSize.width]);
 
   // Track only how much room the panel gives us, so a page wider than the panel
   // can be scaled down to fit instead of overflowing. Measured before paint, so the first
@@ -170,7 +189,6 @@ export function ResumePreview({
     return () => observer.disconnect();
   }, []);
 
-  const activeSections = throttledSections.length > 0 ? throttledSections : normalizedSections;
   const paginationMeasurements = measurements ?? createFallbackMeasurements(activeSections);
 
   const paginated = useMemo(
