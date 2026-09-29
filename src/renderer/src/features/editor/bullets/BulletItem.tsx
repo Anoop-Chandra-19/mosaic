@@ -130,6 +130,8 @@ export function BulletItem({
   if (merge) {
     return (
       <BulletEditor
+        // Its own session: an editor already open on this bullet must not carry into it.
+        key="merge"
         initial={merge.text}
         merge={merge}
         onSave={() => {}}
@@ -141,6 +143,7 @@ export function BulletItem({
   if (editing) {
     return (
       <BulletEditor
+        key="edit"
         initial={bullet.text}
         startsSplitting={editing.startsSplitting}
         cursorAt={editing.cursorAt}

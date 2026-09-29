@@ -194,3 +194,44 @@ test('merging a bullet that is off the resume asks which the merged one is', asy
   ).toBeVisible();
   expect(errors).toEqual([]);
 });
+
+test('merging from an open editor starts from the text as edited', async () => {
+  const { page, errors } = mosaic();
+  await importResume(page);
+  const sidebar = page.getByRole('complementary');
+  const bullets = readBullets(page);
+
+  await sidebar.getByText(LONG).click();
+  const text = sidebar.getByRole('textbox', { name: 'Bullet text' });
+  await text.fill('Rebuilt the billing export.');
+  await text.press('Control+Shift+J');
+
+  const merged = sidebar.getByRole('textbox', { name: 'Merged text of two bullets' });
+  await expect(merged).toHaveValue(`Rebuilt the billing export. ${SHORT}`);
+  await merged.press('Enter');
+  await expect.poll(bullets).toEqual([`Rebuilt the billing export. ${SHORT}`]);
+  expect(errors).toEqual([]);
+});
+
+test('pasting several lines replaces the selection, joined into one line', async () => {
+  const { page, errors } = mosaic();
+  await importResume(page);
+  const sidebar = page.getByRole('complementary');
+
+  await sidebar.getByText(SHORT).click();
+  const text = sidebar.getByRole('textbox', { name: 'Bullet text' });
+  await text.evaluate((field: HTMLTextAreaElement) => {
+    field.setSelectionRange(field.value.indexOf('two'), field.value.indexOf(' new'));
+    const data = new DataTransfer();
+    data.setData('text', 'three\nsenior');
+    field.dispatchEvent(
+      new ClipboardEvent('paste', { clipboardData: data, bubbles: true, cancelable: true })
+    );
+  });
+
+  await expect(text).toHaveValue('Mentored three senior new engineers.');
+  expect(await text.evaluate((field: HTMLTextAreaElement) => field.selectionStart)).toBe(
+    'Mentored three senior'.length
+  );
+  expect(errors).toEqual([]);
+});

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createDefaultResume } from '@shared/resume/defaultResume';
-import { countChangedLines } from '../versionDiff';
+import { countChangedLines, isSamePage } from '../versionDiff';
 
 describe('countChangedLines', () => {
   it('finds nothing between identical documents', () => {
@@ -43,5 +43,27 @@ describe('countChangedLines', () => {
     draft.contact.header.lines[0].items[2].url = 'linkedin.com/in/ada';
 
     expect(countChangedLines(version, draft)).toBe(0);
+  });
+});
+
+describe('isSamePage', () => {
+  it('is the same page only with the same lines in the same order', () => {
+    const version = createDefaultResume();
+    expect(isSamePage(version, structuredClone(version))).toBe(true);
+
+    const bullets = structuredClone(version);
+    bullets.sections[1].items[0].bullets.reverse();
+    const entries = structuredClone(version);
+    entries.sections[0].items.reverse();
+    const sections = structuredClone(version);
+    [sections.sections[0].order, sections.sections[1].order] = [
+      sections.sections[1].order,
+      sections.sections[0].order,
+    ];
+
+    for (const moved of [bullets, entries, sections]) {
+      expect(countChangedLines(version, moved)).toBe(0);
+      expect(isSamePage(version, moved)).toBe(false);
+    }
   });
 });
