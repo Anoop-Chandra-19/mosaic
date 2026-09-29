@@ -6,6 +6,7 @@ import { flushDraft, useResumeStore } from '@/stores/resumeStore';
 import type { ImportMode, MosaicBundle } from '@shared/types/bundle';
 import type { Draft, SnapshotOccasion, TemplateSummary, VersionMeta } from '@shared/types/db';
 import type { PendingTextAiChange, ResumeData } from '@shared/types/resume';
+import { formatBundleText } from '@shared/vault/formatBundle';
 
 /** A deleted template, kept in memory as a backup of just itself so it can be put back. */
 export interface DeletedTemplate {
@@ -181,7 +182,7 @@ export const useTemplateStore = create<TemplateState>()(
       },
 
       restoreDeleted: async ({ bundle, wasOpen }) => {
-        const [id] = await get().importBundle(JSON.stringify(bundle), 'as-new-template');
+        const [id] = await get().importBundle(formatBundleText(bundle), 'as-new-template');
         if (wasOpen) await get().openTemplate(id);
       },
 

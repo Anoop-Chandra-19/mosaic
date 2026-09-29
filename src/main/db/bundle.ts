@@ -1,21 +1,26 @@
 import { randomUUID } from 'node:crypto';
 import type { Database } from 'better-sqlite3';
-import {
-  BUNDLE_VERSION,
-  type BundleTemplate,
-  type ImportMode,
-  type ImportResult,
-  type MosaicBundle,
-} from '@shared/types/bundle';
-import { deleteUnusedDocs } from './docs';
+import type { BundleTemplate, ImportMode, ImportResult, MosaicBundle } from '@shared/types/bundle';
+import type { ResumeData } from '@shared/types/resume';
+import { deleteUnusedDocs, readDoc, storeDoc } from './docs';
 import { readDraft } from './drafts';
 import { getTemplate, insertTemplateRow, listTemplates } from './templates';
-import { getVersion, insertVersion, listVersions } from './versions';
+import { insertVersion, listVersions, readDocHash } from './versions';
 
 const iso = (ms: number) => new Date(ms).toISOString();
 
-function exportTemplate(db: Database, id: string): BundleTemplate {
+/** Versions that hold the same document share one object, as the file shares one entry. */
+function exportTemplate(db: Database, id: string, docs: Map<string, ResumeData>): BundleTemplate {
   const template = getTemplate(db, id);
+  const docOf = (versionId: string) => {
+    const hash = readDocHash(db, versionId);
+    let doc = docs.get(hash);
+    if (!doc) {
+      doc = readDoc(db, hash);
+      docs.set(hash, doc);
+    }
+    return doc;
+  };
   return {
     template: {
       id: template.id,
@@ -36,23 +41,30 @@ function exportTemplate(db: Database, id: string): BundleTemplate {
         section,
         rev,
         createdAt: iso(createdAt),
-        doc: getVersion(db, versionId).doc,
+        doc: docOf(versionId),
       })),
   };
 }
 
 /** One template, some, or (by default) all of them, with drafts and full history. */
 export function exportBundle(db: Database, templateIds?: string[]): MosaicBundle {
-  return db.transaction(() => ({
-    bundleVersion: BUNDLE_VERSION,
-    exportedAt: new Date().toISOString(),
-    templates: (templateIds ?? listTemplates(db).map((t) => t.id)).map((id) =>
-      exportTemplate(db, id)
-    ),
-  }))();
+  return db.transaction(() => {
+    const docs = new Map<string, ResumeData>();
+    return {
+      exportedAt: new Date().toISOString(),
+      templates: (templateIds ?? listTemplates(db).map((t) => t.id)).map((id) =>
+        exportTemplate(db, id, docs)
+      ),
+    };
+  })();
 }
 
-function importTemplate(db: Database, entry: BundleTemplate, mode: ImportMode): string {
+function importTemplate(
+  db: Database,
+  entry: BundleTemplate,
+  mode: ImportMode,
+  hashes: WeakMap<ResumeData, string>
+): string {
   const fresh = mode === 'as-new-template';
   const id = fresh ? randomUUID() : entry.template.id;
   // A fresh copy is new to this app; a restore puts the template back as it was.
@@ -73,6 +85,12 @@ function importTemplate(db: Database, entry: BundleTemplate, mode: ImportMode): 
   for (const version of entry.versions) {
     const versionId = fresh ? randomUUID() : version.id;
     versionIds.set(version.id, versionId);
+    // Versions sharing a document share its object, so each is stored and hashed once.
+    let docHash = hashes.get(version.doc);
+    if (!docHash) {
+      docHash = storeDoc(db, version.doc);
+      hashes.set(version.doc, docHash);
+    }
     insertVersion(db, {
       id: versionId,
       templateId: id,
@@ -82,6 +100,7 @@ function importTemplate(db: Database, entry: BundleTemplate, mode: ImportMode): 
       summary: version.summary,
       section: version.section,
       doc: version.doc,
+      docHash,
       rev: version.rev,
       createdAt: Date.parse(version.createdAt),
     });
@@ -96,7 +115,8 @@ function importTemplate(db: Database, entry: BundleTemplate, mode: ImportMode): 
 export function importBundle(db: Database, bundle: MosaicBundle, mode: ImportMode): ImportResult {
   return db.transaction(() => {
     if (mode === 'restore-all') db.prepare('delete from templates').run();
-    const templateIds = bundle.templates.map((entry) => importTemplate(db, entry, mode));
+    const hashes = new WeakMap<ResumeData, string>();
+    const templateIds = bundle.templates.map((entry) => importTemplate(db, entry, mode, hashes));
     // After the import, so a document the backup brings back again is kept, not rewritten.
     deleteUnusedDocs(db);
     return { templateIds };

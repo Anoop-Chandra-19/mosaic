@@ -3,7 +3,8 @@ import path from 'node:path';
 import type { Database } from 'better-sqlite3';
 import type { BackupFrequency, BackupRecord, BackupStatus } from '@shared/types/backup';
 import { BACKUP_FREQUENCIES } from '@shared/types/backup';
-import { MAX_FILE_BYTES } from '@shared/types/files';
+import { MAX_TEXT_BYTES } from '@shared/types/files';
+import { formatBundle } from '@shared/vault/formatBundle';
 import { writeNewFileSafely } from '../replaceFileSafely';
 import { exportBundle } from '../db/bundle';
 import { getSetting, removeSetting, setSetting } from '../db/settings';
@@ -117,25 +118,38 @@ export function buildBackupFileName(now: Date = new Date()): string {
   return `mosaic-backup-${formatDateDashed(now)}.json`;
 }
 
-/** Every template with its history, as the text of a backup file, and what it holds. */
-export function writeBackupText(db: Database, now: number): { text: string; record: BackupRecord } {
+export class BackupTooLargeError extends Error {
+  constructor() {
+    super('The backup is larger than Mosaic can read back, so it was not written.');
+  }
+}
+
+/**
+ * Every template with its history, as a backup file's pieces, and what it holds. `bytes` is
+ * counted as the pieces are written; past `limit` they stop with a `BackupTooLargeError`,
+ * since a file Mosaic can't restore is not a backup.
+ */
+export function prepareBackup(
+  db: Database,
+  now: number,
+  limit = MAX_TEXT_BYTES
+): { pieces: () => Iterable<string>; record: BackupRecord } {
   const bundle = exportBundle(db);
-  // Indented, so the file reads as well as it restores.
-  const text = JSON.stringify(bundle, null, 2);
   const record: BackupRecord = {
     at: now,
     templates: bundle.templates.length,
     versions: bundle.templates.reduce((sum, entry) => sum + entry.versions.length, 0),
-    bytes: Buffer.byteLength(text),
+    bytes: 0,
   };
-  return { text, record };
-}
-
-export const BACKUP_TOO_LARGE =
-  'The backup is larger than 128 MB, more than Mosaic can restore, so it was not written.';
-
-export function isTooLargeToRestore(record: BackupRecord): boolean {
-  return record.bytes > MAX_FILE_BYTES;
+  function* pieces() {
+    record.bytes = 0;
+    for (const piece of formatBundle(bundle)) {
+      record.bytes += Buffer.byteLength(piece);
+      if (record.bytes > limit) throw new BackupTooLargeError();
+      yield piece;
+    }
+  }
+  return { pieces, record };
 }
 
 export function recordBackup(db: Database, record: BackupRecord): void {
@@ -167,13 +181,13 @@ export function isBackupDue(
   return daysBetween(schedule.lastRunAt, now) >= INTERVAL_DAYS[schedule.frequency];
 }
 
-/** Writes `text` under `fileName` in `folder`, or "-2", "-3"… beside a file already there. */
-function writeNewFile(folder: string, fileName: string, text: string): string {
+/** Writes under `fileName` in `folder`, or "-2", "-3"… beside a file already there. */
+function writeNewFile(folder: string, fileName: string, pieces: () => Iterable<string>): string {
   const { name, ext } = path.parse(fileName);
   for (let n = 1; ; n++) {
     const candidate = n === 1 ? fileName : `${name}-${n}${ext}`;
     try {
-      writeNewFileSafely(path.join(folder, candidate), text);
+      writeNewFileSafely(path.join(folder, candidate), pieces());
       return candidate;
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error;
@@ -182,6 +196,7 @@ function writeNewFile(folder: string, fileName: string, text: string): string {
 }
 
 function describeFailure(error: unknown): string {
+  if (error instanceof BackupTooLargeError) return error.message;
   switch ((error as NodeJS.ErrnoException).code) {
     case 'ENOENT':
       return 'The folder is gone. Choose another one.';
@@ -204,14 +219,10 @@ function describeFailure(error: unknown): string {
 export function runScheduledBackup(db: Database, now: number = Date.now()): void {
   const schedule = readSchedule(db);
   if (!isBackupDue(schedule, now) || schedule.folder === null) return;
-  const { text, record } = writeBackupText(db, now);
+  const { pieces, record } = prepareBackup(db, now);
   if (record.templates === 0) return;
-  if (isTooLargeToRestore(record)) {
-    setSetting(db, FAILURE_KEY, JSON.stringify({ at: now, message: BACKUP_TOO_LARGE }));
-    return;
-  }
   try {
-    writeNewFile(schedule.folder, buildBackupFileName(new Date(now)), text);
+    writeNewFile(schedule.folder, buildBackupFileName(new Date(now)), pieces);
   } catch (error) {
     setSetting(db, FAILURE_KEY, JSON.stringify({ at: now, message: describeFailure(error) }));
     return;

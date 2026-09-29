@@ -71,7 +71,7 @@ export function listVersions(db: Database, templateId: string): VersionMeta[] {
     .map(toMeta);
 }
 
-function readDocHash(db: Database, versionId: string): string {
+export function readDocHash(db: Database, versionId: string): string {
   const row = db
     .prepare<[string], { doc_hash: string }>('select doc_hash from versions where id = ?')
     .get(versionId);
@@ -98,6 +98,8 @@ export interface NewVersion {
   summary: string;
   section?: string | null;
   doc: ResumeData;
+  /** `doc`'s hash, when it is already stored. */
+  docHash?: string;
   rev: number;
   /** Set only when importing a bundle, which keeps its ids and dates. */
   id?: string;
@@ -131,7 +133,7 @@ export function insertVersion(db: Database, version: NewVersion): VersionMeta {
     meta.section,
     meta.rev,
     meta.createdAt,
-    storeDoc(db, version.doc)
+    version.docHash ?? storeDoc(db, version.doc)
   );
   return meta;
 }

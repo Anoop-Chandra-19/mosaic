@@ -8,7 +8,12 @@ import {
   type FileFilter,
   type IpcMainInvokeEvent,
 } from 'electron';
-import { MAX_FILE_BYTES, type FileType, type OpenedFile } from '@shared/types/files';
+import {
+  MAX_FILE_BYTES,
+  MAX_TEXT_BYTES,
+  type FileType,
+  type OpenedFile,
+} from '@shared/types/files';
 import { FILES_OPEN, FILES_SAVE } from '@shared/ipc/appChannels';
 import { replaceFileSafely } from '../replaceFileSafely';
 
@@ -33,7 +38,12 @@ function filtersFor(type: unknown): FileFilter[] {
   return FILTERS[type as FileType];
 }
 
-const tooLarge = (name: string) => new Error(`${name} is larger than 128 MB`);
+const tooLarge = (name: string, limit: number) =>
+  new Error(`${name} is larger than ${Math.floor(limit / 1024 / 1024)} MB`);
+
+/** PDF and Word files are binary; everything else is text that has to fit in one string. */
+const openLimitFor = (type: unknown) =>
+  type === 'pdf' || type === 'docx' ? MAX_FILE_BYTES : MAX_TEXT_BYTES;
 
 /**
  * `MosaicFiles` — the system Save and Open dialogs. The renderer names a file type and
@@ -59,7 +69,8 @@ export function registerFileHandlers(isAppFrame: (event: IpcMainInvokeEvent) => 
       }
       // Bytes as written: a string's length counts UTF-16 units, a third of some text's size.
       const bytes = typeof content === 'string' ? Buffer.byteLength(content) : content.byteLength;
-      if (bytes > MAX_FILE_BYTES) throw tooLarge(suggestedName);
+      // Anything larger couldn't be read back.
+      if (bytes > MAX_TEXT_BYTES) throw tooLarge(suggestedName, MAX_TEXT_BYTES);
 
       const { canceled, filePath } = await dialog.showSaveDialog(win, {
         // A name only: the renderer never chooses a folder.
@@ -82,7 +93,8 @@ export function registerFileHandlers(isAppFrame: (event: IpcMainInvokeEvent) => 
     if (canceled || !filePath) return null;
 
     const name = path.basename(filePath);
-    if ((await fs.stat(filePath)).size > MAX_FILE_BYTES) throw tooLarge(name);
+    const limit = openLimitFor(type);
+    if ((await fs.stat(filePath)).size > limit) throw tooLarge(name, limit);
     // Bytes, not text: main never interprets what it reads (a PDF isn't text at all).
     return { name, bytes: new Uint8Array(await fs.readFile(filePath)) };
   });

@@ -1,15 +1,10 @@
 import { createHash } from 'node:crypto';
+import { encodeResumeCanonically } from '@shared/resume/encodeResumeCanonically';
 import { migrateResume } from '@shared/resume/migrateResume';
 import type { ResumeData } from '@shared/types/resume';
 
-/** Keys sorted at every level, so the same resume is always the same text and hash. */
-export function encodeStoredResume(doc: ResumeData): string {
-  return JSON.stringify(doc, (_key, value: unknown) =>
-    value && typeof value === 'object' && !Array.isArray(value)
-      ? Object.fromEntries(Object.entries(value).sort(([a], [b]) => (a < b ? -1 : 1)))
-      : value
-  );
-}
+/** The same resume is always the same text, and so the same hash. */
+export const encodeStoredResume = encodeResumeCanonically;
 
 export function hashStoredResume(text: string): string {
   return createHash('sha256').update(text).digest('hex');

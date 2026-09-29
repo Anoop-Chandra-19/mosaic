@@ -73,7 +73,33 @@ function requireDoc(value: unknown, what: string): ResumeData {
   return migrateResume(value);
 }
 
-function parseVersions(value: unknown, templateName: string, ids: Set<string>): BundleVersion[] {
+/**
+ * The file's documents, each checked the first time something names it, and shared by
+ * everything that does.
+ */
+function createDocReader(docs: Record<string, unknown>) {
+  const read = new Map<string, ResumeData>();
+  return (id: unknown, what: string): ResumeData => {
+    if (typeof id !== 'string' || !Object.hasOwn(docs, id)) {
+      throw new BundleError('invalid-templates', `${what} names a document the file doesn't have`);
+    }
+    let doc = read.get(id);
+    if (!doc) {
+      doc = requireDoc(docs[id], `document ${id}`);
+      read.set(id, doc);
+    }
+    return doc;
+  };
+}
+
+type DocReader = ReturnType<typeof createDocReader>;
+
+function parseVersions(
+  value: unknown,
+  templateName: string,
+  ids: Set<string>,
+  readDoc: DocReader
+): BundleVersion[] {
   if (!Array.isArray(value) || value.length === 0) {
     throw new BundleError('invalid-templates', `template "${templateName}" has no versions`);
   }
@@ -104,7 +130,7 @@ function parseVersions(value: unknown, templateName: string, ids: Set<string>): 
       section: typeof raw.section === 'string' ? raw.section : null,
       rev: requireRev(raw.rev, `${what}'s rev`),
       createdAt: requireTimestamp(raw.createdAt, `${what}'s date`),
-      doc: requireDoc(raw.doc, what),
+      doc: readDoc(raw.docId, what),
     };
     earlier.add(id);
     return version;
@@ -114,7 +140,8 @@ function parseVersions(value: unknown, templateName: string, ids: Set<string>): 
 function parseTemplate(
   value: unknown,
   templateIds: Set<string>,
-  versionIds: Set<string>
+  versionIds: Set<string>,
+  readDoc: DocReader
 ): BundleTemplate {
   if (!isRecord(value) || !isRecord(value.template)) {
     throw new BundleError('invalid-templates', 'malformed template');
@@ -134,8 +161,8 @@ function parseTemplate(
       createdAt: requireTimestamp(raw.createdAt, `template "${name}"'s date`),
       updatedAt: requireTimestamp(raw.updatedAt, `template "${name}"'s date`),
     },
-    draft: requireDoc(value.draft, `the draft of "${name}"`),
-    versions: parseVersions(value.versions, name, versionIds),
+    draft: readDoc(value.draftDocId, `the draft of "${name}"`),
+    versions: parseVersions(value.versions, name, versionIds, readDoc),
   };
 }
 
@@ -160,16 +187,21 @@ export function parseBundle(raw: string): BundleParseResult {
   if (!Array.isArray(parsed.templates) || parsed.templates.length === 0) {
     return { ok: false, code: 'invalid-templates', detail: 'no templates' };
   }
+  if (!isRecord(parsed.docs)) {
+    return { ok: false, code: 'invalid-templates', detail: 'no documents' };
+  }
 
   try {
     const templateIds = new Set<string>();
     const versionIds = new Set<string>();
+    const readDoc = createDocReader(parsed.docs);
     return {
       ok: true,
       bundle: {
-        bundleVersion: BUNDLE_VERSION,
         exportedAt: typeof parsed.exportedAt === 'string' ? parsed.exportedAt : '',
-        templates: parsed.templates.map((t: unknown) => parseTemplate(t, templateIds, versionIds)),
+        templates: parsed.templates.map((t: unknown) =>
+          parseTemplate(t, templateIds, versionIds, readDoc)
+        ),
       },
     };
   } catch (error) {

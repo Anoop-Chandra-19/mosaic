@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createDefaultResume, createEmptyResume } from '@shared/resume/defaultResume';
 import type { MosaicDb, MosaicDbBridge } from '@shared/types/db';
+import { formatBundleText } from '@shared/vault/formatBundle';
 // The real main-process database code over SQLite in memory: these flows run against
 // what the app runs, minus the IPC hop.
 import { openDatabase, type Database } from '../../../../main/db/connection';
@@ -150,7 +151,7 @@ describe('templateStore', () => {
   it('restoring a backup of this app replaces everything and keeps the open template open', async () => {
     await templates().createTemplate('Backend', createDefaultResume());
     const backend = resume().templateId!;
-    const backup = JSON.stringify(await db.current!.bundle.export());
+    const backup = formatBundleText(await db.current!.bundle.export());
     resume().setName('After the backup');
     await templates().createTemplate('Frontend', createEmptyResume());
     await templates().openTemplate(backend);
@@ -164,7 +165,7 @@ describe('templateStore', () => {
 
   it('adding a backup’s templates opens one only when nothing is open', async () => {
     await templates().createTemplate('Backend', createDefaultResume());
-    const backup = JSON.stringify(await db.current!.bundle.export());
+    const backup = formatBundleText(await db.current!.bundle.export());
     const backend = resume().templateId!;
 
     await templates().importBundle(backup, 'as-new-template');

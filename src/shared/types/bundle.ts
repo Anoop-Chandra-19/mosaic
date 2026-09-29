@@ -1,16 +1,22 @@
 import type { ResumeData } from './resume';
 import type { VersionKind, VersionSource } from './db';
 
-export const BUNDLE_VERSION = 2 as const;
+/**
+ * The backup file's format. Each distinct document is written once, in `docs`; drafts and
+ * versions name theirs (`draftDocId`, `docId`).
+ */
+export const BUNDLE_VERSION = 3 as const;
 
 /**
  * The user-owned backup file: one template or all of them, with drafts and full
  * version history. Document data only — settings, AI configuration, keys, and
  * conversations never appear in a bundle. Timestamps are ISO strings so the file
  * stays readable.
+ *
+ * In memory each version holds its document; versions with the same document share one
+ * object. `formatBundle` writes it as a file, `parseBundle` reads one back.
  */
 export interface MosaicBundle {
-  bundleVersion: typeof BUNDLE_VERSION;
   exportedAt: string;
   templates: BundleTemplate[];
 }

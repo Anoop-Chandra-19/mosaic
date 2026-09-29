@@ -13,16 +13,20 @@ function temporarySibling(filePath: string): string {
   return path.join(path.dirname(filePath), `.${path.basename(filePath)}.${randomUUID()}.tmp`);
 }
 
+/** A whole file, or its pieces in order, so a large one is never held as one string. */
+export type FileContent = string | Uint8Array | Iterable<string>;
+
+const isWhole = (content: FileContent): content is string | Uint8Array =>
+  typeof content === 'string' || content instanceof Uint8Array;
+
 /** Replaces `filePath` with `content`, or leaves it as it was. */
-export async function replaceFileSafely(
-  filePath: string,
-  content: string | Uint8Array
-): Promise<void> {
+export async function replaceFileSafely(filePath: string, content: FileContent): Promise<void> {
   const temporary = temporarySibling(filePath);
   try {
     const handle = await fsp.open(temporary, 'wx');
     try {
-      await handle.writeFile(content);
+      if (isWhole(content)) await handle.writeFile(content);
+      else for (const piece of content) await handle.write(piece);
       await handle.sync();
     } finally {
       await handle.close();
@@ -35,12 +39,13 @@ export async function replaceFileSafely(
 }
 
 /** Writes a new file at `filePath`; fails with `EEXIST`, touching nothing, if one is there. */
-export function writeNewFileSafely(filePath: string, content: string): void {
+export function writeNewFileSafely(filePath: string, content: FileContent): void {
   const temporary = temporarySibling(filePath);
   try {
     const fd = fs.openSync(temporary, 'wx');
     try {
-      fs.writeFileSync(fd, content);
+      if (isWhole(content)) fs.writeFileSync(fd, content);
+      else for (const piece of content) fs.writeSync(fd, piece);
       fs.fsyncSync(fd);
     } finally {
       fs.closeSync(fd);

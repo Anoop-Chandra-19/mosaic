@@ -6,6 +6,7 @@ import { openDatabase, type Database } from '../../db/connection';
 import { createDbHandlers, handlerFor, settle, type Handlers } from '../dbHandlers';
 import type { MosaicDb } from '@shared/types/db';
 import type { MosaicBundle } from '@shared/types/bundle';
+import { formatBundleText } from '@shared/vault/formatBundle';
 
 let db: Database;
 let handlers: Handlers<MosaicDb>;
@@ -121,7 +122,7 @@ describe('db handlers', () => {
     const exported = call('bundle.export', [backend.id]) as { ok: true; value: MosaicBundle };
     expect(exported.value.templates.map((t) => t.template.name)).toEqual(['Backend']);
 
-    const text = JSON.stringify(exported.value);
+    const text = formatBundleText(exported.value);
     expect(call('bundle.import', text, 'as-new-template')).toMatchObject({ ok: true });
     expect(call('bundle.import', text, 'merge')).toMatchObject({
       ok: false,

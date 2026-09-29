@@ -3,7 +3,6 @@ import { isResumeData } from '@shared/resume/validateResume';
 import { parseBundle } from '@shared/vault/parseBundle';
 import type { ImportMode, MosaicBundle } from '@shared/types/bundle';
 import type { DbResult, MosaicDb, SnapshotOccasion } from '@shared/types/db';
-import { MAX_FILE_BYTES } from '@shared/types/files';
 import type { ResumeData } from '@shared/types/resume';
 import type { DbMethod } from '@shared/ipc/dbMethods';
 import { exportBundle, importBundle } from '../db/bundle';
@@ -109,9 +108,7 @@ function snapshotOccasion(value: unknown): SnapshotOccasion {
 
 /** A backup file's text, checked the same way whoever sent it already should have. */
 function bundle(value: unknown): MosaicBundle {
-  if (typeof value !== 'string' || Buffer.byteLength(value) > MAX_FILE_BYTES) {
-    throw new InvalidArgumentError('text must be a backup file under 128 MB');
-  }
+  if (typeof value !== 'string') throw new InvalidArgumentError('text must be a backup file');
   const parsed = parseBundle(value);
   if (!parsed.ok) {
     throw new InvalidArgumentError(`not a Mosaic backup: ${parsed.detail ?? parsed.code}`);

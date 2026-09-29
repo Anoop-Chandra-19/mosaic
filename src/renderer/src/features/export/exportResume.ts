@@ -2,6 +2,7 @@ import { getDb } from '@/lib/storage/mosaicDb';
 import { flushDraft } from '@/stores/resumeStore';
 import type { FileType } from '@shared/types/files';
 import type { ResumeData } from '@shared/types/resume';
+import { formatBundleText } from '@shared/vault/formatBundle';
 import type { PaperSize } from '@/types/paper';
 import { createDocxExport } from './docx/createDocxExport';
 import { createJsonResumeExport } from './jsonResumeExport';
@@ -129,7 +130,7 @@ export async function renderExport(
       if (templateId === null) throw new Error('Only a template exports as Mosaic JSON');
       // The file should hold the edits still waiting to be saved.
       await flushDraft();
-      return JSON.stringify(await getDb().bundle.export([templateId]), null, 2);
+      return formatBundleText(await getDb().bundle.export([templateId]));
     }
   }
 }

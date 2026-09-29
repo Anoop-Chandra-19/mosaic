@@ -39,7 +39,7 @@ test('a full backup restores every template with its history', async () => {
     fs.readdirSync(userDataDir).find((name) => name.startsWith('mosaic-backup-'))!
   );
   const backup = JSON.parse(fs.readFileSync(file, 'utf8'));
-  expect(backup.bundleVersion).toBe(2);
+  expect(backup.bundleVersion).toBe(3);
   expect(backup.templates[0].versions.map((v: { summary: string }) => v.summary)).toEqual([
     'Created',
     'Sent to Acme',
@@ -159,7 +159,7 @@ test('a scheduled backup asks for a folder once, and writes into it straight awa
   const [file] = fs.readdirSync(folder);
   expect(file).toMatch(/^mosaic-backup-\d{4}-\d\d-\d\d\.json$/);
   const backup = JSON.parse(fs.readFileSync(path.join(folder, file), 'utf8'));
-  expect(backup.templates[0].draft.contact.name).toBe('Ada Lovelace');
+  expect(backup.docs[backup.templates[0].draftDocId].contact.name).toBe('Ada Lovelace');
 
   // Off keeps the folder for next time, and the schedule stays as set across Settings.
   await settings.getByRole('combobox', { name: 'Scheduled backup' }).click();

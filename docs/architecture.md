@@ -57,7 +57,11 @@ and the renderer receives it through `loadDraft` without saving it back.
 | Exports, imports, backups             | files you pick in a system dialog     | you   |
 
 Backups and Mosaic JSON are readable bundles (`src/shared/types/bundle.ts`). They never
-include settings, AI configuration, keys, or conversations.
+include settings, AI configuration, keys, or conversations. Each distinct document is written
+once, in `docs`, and drafts and versions name theirs, so a backup stays about the size of the
+database however long the history. Main writes backups a template or a document at a time
+(`formatBundle`), through a temporary file it swaps in (`replaceFileSafely`). The only size
+limit is what can be read back: JavaScript's longest string, about 512 MB.
 
 ## Network
 
