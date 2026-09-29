@@ -5,17 +5,15 @@ import type { MosaicBackup } from '@shared/types/backup';
 import { BACKUP_CHANNELS } from '@shared/ipc/appChannels';
 import { replaceFileSafely } from '../replaceFileSafely';
 import {
-  BACKUP_TOO_LARGE,
   buildBackupFileName,
   hasBackupFolder,
-  isTooLargeToRestore,
   parseBackupFrequency,
+  prepareBackup,
   readBackupStatus,
   recordBackup,
   runScheduledBackup,
   setBackupFolder,
   setBackupFrequency,
-  writeBackupText,
 } from '../backup/backupSchedule';
 
 /** The first check waits for the app to settle; after that, once an hour. */
@@ -73,15 +71,14 @@ export function registerBackupHandlers(
 
     backUpNow: async (win) => {
       const db = openDb();
-      const { text, record } = writeBackupText(db, Date.now());
-      // Before asking where: a file Mosaic couldn't read back is not a backup.
-      if (isTooLargeToRestore(record)) throw new Error(BACKUP_TOO_LARGE);
+      // As it stands now, not after the user has picked where.
+      const { pieces, record } = prepareBackup(db, Date.now());
       const { canceled, filePath } = await dialog.showSaveDialog(win, {
         defaultPath: path.join(app.getPath('documents'), buildBackupFileName()),
         filters: [{ name: 'JSON', extensions: ['json'] }],
       });
       if (canceled || !filePath) return null;
-      await replaceFileSafely(filePath, text);
+      await replaceFileSafely(filePath, pieces());
       recordBackup(db, record);
       return { status: readBackupStatus(db), fileName: path.basename(filePath) };
     },

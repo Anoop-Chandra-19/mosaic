@@ -122,7 +122,7 @@ test('Mosaic JSON holds the template’s history and restores like a backup', as
   await expect(page.getByText('Saved Ada Lovelace - Example resume.json')).toBeVisible();
   const file = path.join(userDataDir, 'Ada Lovelace - Example resume.json');
   const bundle = JSON.parse(fs.readFileSync(file, 'utf8'));
-  expect(bundle.bundleVersion).toBe(2);
+  expect(bundle.bundleVersion).toBe(3);
   expect(bundle.templates[0].versions.map((v: { summary: string }) => v.summary)).toEqual([
     'Created',
     'Sent to Acme',

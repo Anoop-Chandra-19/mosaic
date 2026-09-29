@@ -3,14 +3,15 @@ import os from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { createDefaultResume } from '@shared/resume/defaultResume';
-import { MAX_FILE_BYTES } from '@shared/types/files';
+import { writeNewFileSafely } from '../../replaceFileSafely';
 import { openDatabase, type Database } from '../../db/connection';
 import { createTemplate } from '../../db/templates';
 import {
   buildBackupFileName,
+  BackupTooLargeError,
   isBackupDue,
-  isTooLargeToRestore,
   parseBackupFrequency,
+  prepareBackup,
   readBackupStatus,
   runScheduledBackup,
   setBackupFolder,
@@ -142,10 +143,21 @@ describe('buildBackupFileName', () => {
   });
 });
 
-describe('isTooLargeToRestore', () => {
-  it('holds a backup to the size a restore accepts', () => {
-    const record = { at: 0, templates: 1, versions: 1 };
-    expect(isTooLargeToRestore({ ...record, bytes: MAX_FILE_BYTES })).toBe(false);
-    expect(isTooLargeToRestore({ ...record, bytes: MAX_FILE_BYTES + 1 })).toBe(true);
+describe('prepareBackup', () => {
+  it('counts the bytes as it writes, each pass anew', () => {
+    createTemplate(db, 'Backend CV', createDefaultResume());
+    const { pieces, record } = prepareBackup(db, 0);
+    const text = [...pieces()].join('');
+    expect(record).toMatchObject({ templates: 1, versions: 1, bytes: Buffer.byteLength(text) });
+    expect([...pieces()].join('')).toBe(text);
+    expect(record.bytes).toBe(Buffer.byteLength(text));
+  });
+
+  it('stops, writing nothing, when the file would be too large to read back', () => {
+    createTemplate(db, 'Backend CV', createDefaultResume());
+    const { pieces } = prepareBackup(db, 0, 100);
+    const file = path.join(folder, 'mosaic-backup.json');
+    expect(() => writeNewFileSafely(file, pieces())).toThrow(BackupTooLargeError);
+    expect(fs.readdirSync(folder)).toEqual([]);
   });
 });

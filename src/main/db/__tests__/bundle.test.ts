@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { createDefaultResume } from '@shared/resume/defaultResume';
+import { formatBundleText } from '@shared/vault/formatBundle';
 import { parseBundle } from '@shared/vault/parseBundle';
 import type { MosaicBundle } from '@shared/types/bundle';
 import type { ResumeData } from '@shared/types/resume';
@@ -38,7 +39,7 @@ function seedHistory(): void {
 
 /** Through the file format and back, as a real export → import does. */
 function roundTrip(bundle: MosaicBundle): MosaicBundle {
-  const parsed = parseBundle(JSON.stringify(bundle, null, 2));
+  const parsed = parseBundle(formatBundleText(bundle));
   if (!parsed.ok) throw new Error(`bundle did not parse: ${parsed.code} ${parsed.detail ?? ''}`);
   return parsed.bundle;
 }

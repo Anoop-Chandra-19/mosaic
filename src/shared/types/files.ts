@@ -12,10 +12,16 @@ export type FileType =
   | 'import';
 
 /**
- * The most a file may hold. A backup of years of history is a few megabytes; this only
- * stops a runaway, or the wrong file, from being pulled into memory.
+ * The most a PDF or Word file may hold. It only stops the wrong file from being pulled into
+ * memory; no resume comes close.
  */
 export const MAX_FILE_BYTES = 128 * 1024 * 1024;
+
+/**
+ * The most a text file may hold and still be read: JavaScript's longest string, in UTF-16
+ * units, which UTF-8 bytes never undercount. The only limit on backups and JSON.
+ */
+export const MAX_TEXT_BYTES = 2 ** 29 - 24;
 
 export interface OpenedFile {
   /** The file's name, without its folder. */
