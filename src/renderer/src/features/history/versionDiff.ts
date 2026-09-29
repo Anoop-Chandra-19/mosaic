@@ -40,6 +40,19 @@ function pageLines(doc: ResumeData): Map<string, string> {
   return lines;
 }
 
+/**
+ * The same page, line for line and in the same order. `countChangedLines` can be zero when
+ * this is false: the lines only moved.
+ */
+export function isSamePage(version: ResumeData, draft: ResumeData): boolean {
+  const before = [...pageLines(version)];
+  const after = [...pageLines(draft)];
+  return (
+    before.length === after.length &&
+    before.every(([key, line], i) => after[i][0] === key && after[i][1] === line)
+  );
+}
+
 /** How many lines on the page differ between a version and the draft. */
 export function countChangedLines(version: ResumeData, draft: ResumeData): number {
   const before = pageLines(version);

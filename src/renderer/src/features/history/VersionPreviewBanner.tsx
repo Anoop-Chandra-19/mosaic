@@ -4,7 +4,7 @@ import { AppButton } from '@/components/AppButton';
 import { attempt, showToast, useOverlayStore, type VersionPreview } from '@/stores/overlayStore';
 import { useResumeStore } from '@/stores/resumeStore';
 import { useTemplateStore } from '@/stores/templateStore';
-import { countChangedLines } from './versionDiff';
+import { countChangedLines, isSamePage } from './versionDiff';
 
 /**
  * Over the sheet while a version is being read: which one, how far it is from the draft,
@@ -18,10 +18,13 @@ export function VersionPreviewBanner({ preview }: { preview: VersionPreview }) {
   const sections = useResumeStore((s) => s.sections);
   const { version, label } = preview;
 
-  const changed = useMemo(
-    () => countChangedLines(version.doc, { schemaVersion, contact, sections }),
-    [version.doc, schemaVersion, contact, sections]
-  );
+  const { changed, isSame } = useMemo(() => {
+    const draft = { schemaVersion, contact, sections };
+    return {
+      changed: countChangedLines(version.doc, draft),
+      isSame: isSamePage(version.doc, draft),
+    };
+  }, [version.doc, schemaVersion, contact, sections]);
 
   const restore = async () => {
     if (
@@ -42,9 +45,11 @@ export function VersionPreviewBanner({ preview }: { preview: VersionPreview }) {
         {' · '}
         {version.summary}
         <span className="text-zinc-500">
-          {changed === 0
+          {isSame
             ? ' · identical to your draft'
-            : ` · ${changed} ${changed === 1 ? 'line differs' : 'lines differ'} from your draft`}
+            : changed === 0
+              ? ' · the same lines as your draft, in another order'
+              : ` · ${changed} ${changed === 1 ? 'line differs' : 'lines differ'} from your draft`}
         </span>
       </span>
       <AppButton

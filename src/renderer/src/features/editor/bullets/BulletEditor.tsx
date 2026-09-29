@@ -3,7 +3,6 @@ import {
   useLayoutEffect,
   useRef,
   useState,
-  type ChangeEvent,
   type ClipboardEvent,
   type FocusEvent,
   type KeyboardEvent,
@@ -219,9 +218,9 @@ export function BulletEditor({
     }
   };
 
-  const handleChange = (event: ChangeEvent<HTMLTextAreaElement>) => {
-    const next = event.target.value.replace(/\n/g, ' ');
-    const at = event.target.selectionStart;
+  const takeText = (field: HTMLTextAreaElement) => {
+    const next = field.value.replace(/\n/g, ' ');
+    const at = field.selectionStart;
     if (mode === 'merge') setSeam(moveSeamWithEdit(seam, draft, next, at));
     setDraft(next);
     setCursor(at);
@@ -234,9 +233,13 @@ export function BulletEditor({
     event.preventDefault();
     if (onPasteLines && mode === 'edit') {
       onPasteLines(parseBulletLines(pasted));
-    } else {
-      setDraft((current) => current + pasted.replace(/\s*\n\s*/g, ' '));
+      return;
     }
+    // One paragraph: the lines join with spaces, over the selection, the caret after them.
+    const field = event.currentTarget;
+    const { selectionStart, selectionEnd } = field;
+    field.setRangeText(pasted.replace(/\s*\n\s*/g, ' '), selectionStart, selectionEnd, 'end');
+    takeText(field);
   };
 
   const handleBlur = (event: FocusEvent) => {
@@ -381,7 +384,7 @@ export function BulletEditor({
                 : 'Bullet text'
           }
           aria-describedby={isNoteShown ? noteId : undefined}
-          onChange={handleChange}
+          onChange={(event) => takeText(event.target)}
           onSelect={(event) => setCursor(event.currentTarget.selectionStart)}
           onKeyDown={handleKeyDown}
           onPaste={handlePaste}

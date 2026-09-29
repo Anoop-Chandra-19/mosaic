@@ -12,7 +12,7 @@ import { useResumeStore } from '@/stores/resumeStore';
 import { HISTORY_READ_WIDTH, useUiStore } from '@/stores/uiStore';
 import type { Draft, Version, VersionMeta } from '@shared/types/db';
 import { formatHistoryDay, formatTimeOfDay } from '../groupVersionHistory';
-import { countChangedLines } from '../versionDiff';
+import { countChangedLines, isSamePage } from '../versionDiff';
 import { VersionAsText } from './VersionAsText';
 
 /** Below this the page is a thumbnail, not something to read, so the pane shows text. */
@@ -75,6 +75,7 @@ export function HistoryReadPane({
   }, []);
 
   const changedLines = loaded && draft ? countChangedLines(loaded.doc, draft) : null;
+  const isSame = loaded !== null && draft !== null && isSamePage(loaded.doc, draft);
   const pageScale = (bodyWidth - PAGE_GUTTER_PX * 2) / PAPER_DIMENSIONS_PT[paperSize].width;
   const isLegible = bodyWidth === 0 || pageScale >= LEGIBLE_PAGE_SCALE;
   return (
@@ -110,10 +111,12 @@ export function HistoryReadPane({
           {changedLines !== null && (
             <>
               <span aria-hidden>·</span>
-              <span className={changedLines > 0 ? 'text-amber-600 dark:text-amber-400' : undefined}>
-                {changedLines === 0
+              <span className={isSame ? undefined : 'text-amber-600 dark:text-amber-400'}>
+                {isSame
                   ? 'identical to your draft'
-                  : `${changedLines} printed ${changedLines === 1 ? 'line differs' : 'lines differ'} from your draft`}
+                  : changedLines === 0
+                    ? 'the same lines as your draft, in another order'
+                    : `${changedLines} printed ${changedLines === 1 ? 'line differs' : 'lines differ'} from your draft`}
               </span>
             </>
           )}
@@ -153,11 +156,11 @@ export function HistoryReadPane({
           variant="outline"
           size="sm"
           className="flex-1"
-          disabled={isHead || changedLines === 0}
+          disabled={isHead || isSame}
           title={
             isHead
               ? 'This is the newest version'
-              : changedLines === 0
+              : isSame
                 ? 'Your draft already matches this version'
                 : 'Restore. What you have now is kept in history first.'
           }
