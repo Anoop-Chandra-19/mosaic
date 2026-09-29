@@ -162,6 +162,15 @@ export function showToast(
   );
 }
 
+/** A failure whose message is written for the user, so it is shown as it is. */
+export class ExplainedError extends Error {}
+
+/** What to tell the user about `error`: its own words if it has them, else `fallback`. */
+export function explainFailure(error: unknown, fallback: string): string {
+  console.error(fallback, error);
+  return error instanceof ExplainedError ? error.message : fallback;
+}
+
 /**
  * Run a store action the user started, and say so if it fails — main refused it or the
  * disk did, and either way nothing was written.
@@ -171,8 +180,7 @@ export async function attempt(action: Promise<unknown>, failure: string): Promis
     await action;
     return true;
   } catch (error) {
-    console.error(failure, error);
-    showToast(failure, 'error');
+    showToast(explainFailure(error, failure), 'error');
     return false;
   }
 }

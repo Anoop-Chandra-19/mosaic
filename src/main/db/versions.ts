@@ -139,19 +139,18 @@ export function insertVersion(db: Database, version: NewVersion): VersionMeta {
 }
 
 /**
- * The newest version, when the draft is still that version and there is nothing to keep:
- * either the revs match, or edit-then-undo left the rev bumped over identical content, so
- * the document hashes are compared as a tie-breaker. In that second case the head adopts
- * the draft's rev, which makes the draft clean again and saves a row that says nothing.
+ * The newest version, when it holds the draft's document and there is nothing to keep. The
+ * documents are compared, never the revs alone: a save or a backup can bring different
+ * content at the same rev. Edit-then-undo leaves the rev bumped over identical content;
+ * then the head adopts the draft's rev, which makes the draft clean again.
  */
 function headHoldingDraft(
   db: Database,
   head: VersionMeta | undefined,
   draft: Draft
 ): VersionMeta | undefined {
-  if (!head) return undefined;
+  if (!head || readDocHash(db, head.id) !== hashDoc(draft.doc)) return undefined;
   if (head.rev === draft.rev) return head;
-  if (readDocHash(db, head.id) !== hashDoc(draft.doc)) return undefined;
   db.prepare('update versions set rev = ? where id = ?').run(draft.rev, head.id);
   return { ...head, rev: draft.rev };
 }
@@ -298,7 +297,7 @@ export function restoreVersion(db: Database, templateId: string, versionId: stri
     const draft = readDraft(db, templateId);
     const head = headVersion(db, templateId);
     // Restoring the version the editor already matches changes nothing.
-    if (head?.id === versionId && head.rev === draft.rev) return draft;
+    if (head?.id === versionId && headHoldingDraft(db, head, draft)) return draft;
 
     return replaceDraft(db, templateId, version.doc, {
       source: 'restore',

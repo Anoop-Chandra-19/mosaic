@@ -20,8 +20,11 @@ declare global {
          * afterwards: the app then boots empty.
          */
         eraseAll(): Promise<void>;
-        /** Called when the window is closing; the close waits (up to 2 s) for it to settle. */
-        onFlushRequest(flush: () => Promise<void>): void;
+        /**
+         * Called when the window is closing; the close waits (up to 2 s) for it to settle,
+         * and asks first when it resolves false: the draft couldn't be saved.
+         */
+        onFlushRequest(flush: () => Promise<boolean>): void;
       };
     };
   }

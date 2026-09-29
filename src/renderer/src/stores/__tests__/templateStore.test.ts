@@ -13,8 +13,8 @@ vi.mock('@/lib/storage/mosaicDb', async (importOriginal) => ({
   getDb: () => db.current,
 }));
 
-const { unwrapBridge } = await import('@/lib/storage/mosaicDb');
-const { flushDraft, useResumeStore } = await import('../resumeStore');
+const { DbError, unwrapBridge } = await import('@/lib/storage/mosaicDb');
+const { flushDraft, UnsavedDraftError, useResumeStore } = await import('../resumeStore');
 const { useTemplateStore } = await import('../templateStore');
 
 let sqlite: Database;
@@ -44,7 +44,10 @@ beforeEach(() => {
   resume().loadDraft(null);
 });
 
-afterEach(() => {
+afterEach(async () => {
+  vi.restoreAllMocks();
+  // A failed save a test left behind is not the next test's.
+  await flushDraft();
   sqlite.close();
 });
 
@@ -66,6 +69,41 @@ describe('templateStore', () => {
     expect(resume().contact.name).toBe('');
 
     await templates().openTemplate(backend);
+    expect(resume().contact.name).toBe('Ada Lovelace');
+  });
+
+  it('keeps a failed save pending, and the next flush tries it again', async () => {
+    await templates().createTemplate('Backend', createDefaultResume());
+    const save = vi
+      .spyOn(db.current!.drafts, 'save')
+      .mockRejectedValueOnce(new DbError('internal', 'disk full'));
+    resume().setName('Ada Lovelace');
+
+    expect(await flushDraft()).toBe(false);
+    expect(resume().saveFailed).toBe(true);
+
+    expect(await flushDraft()).toBe(true);
+    expect(save).toHaveBeenCalledTimes(2);
+    expect(resume().saveFailed).toBe(false);
+    const { doc } = await db.current!.drafts.get(resume().templateId!);
+    expect(doc.contact.name).toBe('Ada Lovelace');
+  });
+
+  it('stays on a template whose edits could not be saved, and says why', async () => {
+    await templates().createTemplate('Backend', createDefaultResume());
+    const backend = resume().templateId!;
+    await templates().createTemplate('Frontend', createEmptyResume());
+    await templates().openTemplate(backend);
+    const frontend = templates().templates.find((t) => t.id !== backend)!.id;
+    vi.spyOn(db.current!.drafts, 'save').mockRejectedValue(new DbError('internal', 'disk full'));
+    resume().setName('Ada Lovelace');
+
+    await expect(templates().openTemplate(frontend)).rejects.toThrow(UnsavedDraftError);
+    await expect(
+      templates().restoreVersion(backend, templates().templates[0].head.id)
+    ).rejects.toThrow(UnsavedDraftError);
+
+    expect(resume().templateId).toBe(backend);
     expect(resume().contact.name).toBe('Ada Lovelace');
   });
 

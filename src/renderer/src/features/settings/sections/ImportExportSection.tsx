@@ -11,8 +11,8 @@ import {
 } from '@/components/ui/select';
 import { backUpNow, chooseBackup, fileFailure } from '@/features/backup/backupFiles';
 import { formatRelativeTime } from '@/features/templates/formatRelativeTime';
-import { showToast, useOverlayStore } from '@/stores/overlayStore';
-import { flushDraft, useResumeStore } from '@/stores/resumeStore';
+import { explainFailure, showToast, useOverlayStore } from '@/stores/overlayStore';
+import { saveDraftOrStop, useResumeStore } from '@/stores/resumeStore';
 import { useTemplateStore } from '@/stores/templateStore';
 import type { BackupFrequency, BackupStatus } from '@shared/types/backup';
 import { SettingRow, SettingsNote } from '../SettingRow';
@@ -63,8 +63,7 @@ export function ImportExportSection({ onCloseSettings }: { onCloseSettings: () =
       setBackup(saved.status);
       showToast(`Backed up to ${saved.fileName}`);
     } catch (error) {
-      console.error('Could not write the backup', error);
-      showToast('Could not write the backup', 'error');
+      showToast(explainFailure(error, 'Could not write the backup'), 'error');
     } finally {
       setBackingUp(false);
     }
@@ -73,11 +72,10 @@ export function ImportExportSection({ onCloseSettings }: { onCloseSettings: () =
   // Main may ask for a folder first, and writes a backup that is due straight away.
   const changeSchedule = async (change: () => Promise<BackupStatus>) => {
     try {
-      await flushDraft();
+      await saveDraftOrStop();
       setBackup(await change());
     } catch (error) {
-      console.error('Could not change the backup schedule', error);
-      showToast('Could not change the backup schedule', 'error');
+      showToast(explainFailure(error, 'Could not change the backup schedule'), 'error');
     }
   };
 

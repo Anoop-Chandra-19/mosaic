@@ -1,5 +1,5 @@
 import { parseBundle, type BundleParseResult } from '@shared/vault/parseBundle';
-import { flushDraft } from '@/stores/resumeStore';
+import { saveDraftOrStop } from '@/stores/resumeStore';
 import type { BackupStatus } from '@shared/types/backup';
 import type { MosaicBundle, OpenedBackup } from '@shared/types/bundle';
 import { decodeText } from '@shared/types/files';
@@ -23,7 +23,7 @@ export function countBundle(bundle: MosaicBundle): BundleCounts {
  */
 export async function backUpNow(): Promise<{ status: BackupStatus; fileName: string } | null> {
   // The backup should hold the edits still waiting to be saved.
-  await flushDraft();
+  await saveDraftOrStop();
   return window.mosaic.backup.backUpNow();
 }
 
