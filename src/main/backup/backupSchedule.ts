@@ -1,9 +1,10 @@
-import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import type { Database } from 'better-sqlite3';
 import type { BackupFrequency, BackupRecord, BackupStatus } from '@shared/types/backup';
 import { BACKUP_FREQUENCIES } from '@shared/types/backup';
+import { MAX_FILE_BYTES } from '@shared/types/files';
+import { writeNewFileSafely } from '../replaceFileSafely';
 import { exportBundle } from '../db/bundle';
 import { getSetting, removeSetting, setSetting } from '../db/settings';
 
@@ -130,6 +131,13 @@ export function writeBackupText(db: Database, now: number): { text: string; reco
   return { text, record };
 }
 
+export const BACKUP_TOO_LARGE =
+  'The backup is larger than 128 MB, more than Mosaic can restore, so it was not written.';
+
+export function isTooLargeToRestore(record: BackupRecord): boolean {
+  return record.bytes > MAX_FILE_BYTES;
+}
+
 export function recordBackup(db: Database, record: BackupRecord): void {
   setSetting(db, LAST_BACKUP_KEY, JSON.stringify(record));
 }
@@ -165,7 +173,7 @@ function writeNewFile(folder: string, fileName: string, text: string): string {
   for (let n = 1; ; n++) {
     const candidate = n === 1 ? fileName : `${name}-${n}${ext}`;
     try {
-      fs.writeFileSync(path.join(folder, candidate), text, { flag: 'wx' });
+      writeNewFileSafely(path.join(folder, candidate), text);
       return candidate;
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error;
@@ -198,6 +206,10 @@ export function runScheduledBackup(db: Database, now: number = Date.now()): void
   if (!isBackupDue(schedule, now) || schedule.folder === null) return;
   const { text, record } = writeBackupText(db, now);
   if (record.templates === 0) return;
+  if (isTooLargeToRestore(record)) {
+    setSetting(db, FAILURE_KEY, JSON.stringify({ at: now, message: BACKUP_TOO_LARGE }));
+    return;
+  }
   try {
     writeNewFile(schedule.folder, buildBackupFileName(new Date(now)), text);
   } catch (error) {

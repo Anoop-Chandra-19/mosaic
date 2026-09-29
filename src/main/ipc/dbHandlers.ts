@@ -109,7 +109,7 @@ function snapshotOccasion(value: unknown): SnapshotOccasion {
 
 /** A backup file's text, checked the same way whoever sent it already should have. */
 function bundle(value: unknown): MosaicBundle {
-  if (typeof value !== 'string' || value.length > MAX_FILE_BYTES) {
+  if (typeof value !== 'string' || Buffer.byteLength(value) > MAX_FILE_BYTES) {
     throw new InvalidArgumentError('text must be a backup file under 128 MB');
   }
   const parsed = parseBundle(value);

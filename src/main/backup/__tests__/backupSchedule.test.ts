@@ -3,11 +3,13 @@ import os from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { createDefaultResume } from '@shared/resume/defaultResume';
+import { MAX_FILE_BYTES } from '@shared/types/files';
 import { openDatabase, type Database } from '../../db/connection';
 import { createTemplate } from '../../db/templates';
 import {
   buildBackupFileName,
   isBackupDue,
+  isTooLargeToRestore,
   parseBackupFrequency,
   readBackupStatus,
   runScheduledBackup,
@@ -137,5 +139,13 @@ describe('parseBackupFrequency', () => {
 describe('buildBackupFileName', () => {
   it('uses a dashed date with the mosaic-backup prefix', () => {
     expect(buildBackupFileName(new Date(2026, 3, 23))).toBe('mosaic-backup-2026-04-23.json');
+  });
+});
+
+describe('isTooLargeToRestore', () => {
+  it('holds a backup to the size a restore accepts', () => {
+    const record = { at: 0, templates: 1, versions: 1 };
+    expect(isTooLargeToRestore({ ...record, bytes: MAX_FILE_BYTES })).toBe(false);
+    expect(isTooLargeToRestore({ ...record, bytes: MAX_FILE_BYTES + 1 })).toBe(true);
   });
 });
