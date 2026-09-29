@@ -20,7 +20,12 @@ import { buildExportName, toFileName } from '@/lib/files/fileNames';
 import { HeaderLinkToggles } from '@/features/editor/header/HeaderLinkToggles';
 import { describeLinkLook } from '@shared/resume/resumeHeader';
 import { cn } from '@/lib/utils';
-import { showToast, useOverlayStore, type ExportVersion } from '@/stores/overlayStore';
+import {
+  explainFailure,
+  showToast,
+  useOverlayStore,
+  type ExportVersion,
+} from '@/stores/overlayStore';
 import { getResumeSnapshot, useResumeStore } from '@/stores/resumeStore';
 import { useUiStore } from '@/stores/uiStore';
 import type { PaperSize } from '@/types/paper';
@@ -107,8 +112,7 @@ function ExportForm({ version, onDone }: { version: ExportVersion | null; onDone
       showToast(`Saved ${saved}`);
       onDone();
     } catch (error) {
-      console.error(error);
-      showToast(`Could not save ${fileName}`, 'error');
+      showToast(explainFailure(error, `Could not save ${fileName}`), 'error');
     } finally {
       setBusy(null);
     }

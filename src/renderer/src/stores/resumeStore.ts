@@ -5,6 +5,7 @@ import { DbError, getDb } from '@/lib/storage/mosaicDb';
 import { createEmptyResume } from '@shared/resume/defaultResume';
 import { createHeaderItem, createHeaderLine } from '@shared/resume/resumeHeader';
 import type { Draft } from '@shared/types/db';
+import { ExplainedError } from './overlayStore';
 import { useUiStore } from './uiStore';
 import type {
   HeaderItem,
@@ -658,18 +659,30 @@ async function save(templateId: string, doc: ResumeData, rev: number) {
 }
 
 /**
- * Save now whatever is waiting, and resolve once every save so far has landed. Called
- * before anything that reads the draft from main (switching or duplicating a template,
- * an import) and when the window closes.
+ * Save now whatever is waiting, a failed save included, and resolve with whether the draft
+ * is saved once every save so far has landed. Called before anything that reads the draft
+ * from main (switching or duplicating a template, an import) and when the window closes.
  */
-export function flushDraft(): Promise<void> {
-  if (pendingSince !== null) {
+export function flushDraft(): Promise<boolean> {
+  const { templateId, rev, saveFailed } = useResumeStore.getState();
+  if (pendingSince !== null || saveFailed) {
     cancelPendingSave();
-    const { templateId, rev } = useResumeStore.getState();
     if (templateId !== null) {
       const doc = getResumeSnapshot();
       saving = saving.then(() => save(templateId, doc, rev));
     }
   }
-  return saving;
+  // Read after the saves settle: a draft loaded since starts out saved.
+  return saving.then(() => !useResumeStore.getState().saveFailed);
+}
+
+export class UnsavedDraftError extends ExplainedError {
+  constructor() {
+    super('Your latest edits couldn’t be saved, so nothing else was changed. Try again.');
+  }
+}
+
+/** Saves the draft, or stops what was about to replace, copy or read it. */
+export async function saveDraftOrStop(): Promise<void> {
+  if (!(await flushDraft())) throw new UnsavedDraftError();
 }

@@ -25,10 +25,11 @@ Read with the root `CLAUDE.md`. This covers `src/main/` and its contract with pr
 - Version documents live once each in `docs`, keyed by the sha-256 of their key-sorted
   JSON; `versions.doc_hash` points at them. Deleting or replacing templates ends with
   `deleteUnusedDocs`. Drafts keep their own copy.
-- `templates.rev` bumps in the same transaction as every draft write. The draft is clean
-  when its rev matches the newest version's; naming a clean draft renames that version
-  rather than adding one. A version the draft still holds word for word is never
-  duplicated either: it adopts the draft's rev, which makes the draft clean again. Every
+- `templates.rev` bumps in the same transaction as every draft write. Whether the newest
+  version still holds the draft is decided by comparing documents, never revs alone: a
+  save or a backup can bring different content at the same rev. Naming a draft the newest
+  version holds renames that version rather than adding one; if only the rev moved, the
+  version adopts it, which makes the draft clean again. Every
   template has at least one version; zero templates is valid.
 - Versions are appended, never rewritten: undo moves the draft alone. The renderer decides
   when an auto version is taken (`useAutoSnapshot`, template switch, window close); main

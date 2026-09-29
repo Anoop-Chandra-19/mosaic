@@ -166,6 +166,22 @@ describe('versions', () => {
     expect(listVersions(db, id)).toEqual([named]);
   });
 
+  it('keeps a draft whose content differs from the head at the same rev', () => {
+    const { id, head } = createTemplate(db, 'CV', resumeFor('A'));
+    saveDraft(db, id, resumeFor('B'), 0);
+
+    const named = nameDraft(db, id, 'Sent to Fastly');
+    importIntoDraft(db, id, resumeFor('C'), 'pasted text');
+
+    expect(named.id).not.toBe(head.id);
+    expect(getVersion(db, named.id).doc).toEqual(resumeFor('B'));
+    expect(listVersions(db, id).map((v) => getVersion(db, v.id).doc.contact.name)).toEqual([
+      'C',
+      'B',
+      'A',
+    ]);
+  });
+
   it('treats edit-then-undo as clean when naming, and adopts the new rev', () => {
     const { id, head } = createTemplate(db, 'CV', resumeFor('A'));
     saveDraft(db, id, resumeFor('A'), 2); // rev moved, content did not

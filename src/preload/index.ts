@@ -73,13 +73,13 @@ contextBridge.exposeInMainWorld('mosaic', {
   app: {
     eraseAll: (): Promise<void> => ipcRenderer.invoke(ERASE_ALL),
     /** Main asks before the window closes; answer once pending saves have landed. */
-    onFlushRequest: (flush: () => Promise<void>) => {
+    onFlushRequest: (flush: () => Promise<boolean>) => {
       if (flushRegistered) return;
       flushRegistered = true;
       ipcRenderer.on(FLUSH_REQUEST, () => {
         void flush()
-          .catch(() => {})
-          .finally(() => ipcRenderer.send(FLUSH_DONE));
+          .catch(() => false)
+          .then((isSaved) => ipcRenderer.send(FLUSH_DONE, isSaved));
       });
     },
   },

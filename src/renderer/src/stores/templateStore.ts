@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
 import { getDb } from '@/lib/storage/mosaicDb';
 import { useOverlayStore } from '@/stores/overlayStore';
-import { flushDraft, useResumeStore } from '@/stores/resumeStore';
+import { flushDraft, saveDraftOrStop, useResumeStore } from '@/stores/resumeStore';
 import type { ImportMode, MosaicBundle } from '@shared/types/bundle';
 import type { Draft, SnapshotOccasion, TemplateSummary, VersionMeta } from '@shared/types/db';
 import type { PendingTextAiChange, ResumeData } from '@shared/types/resume';
@@ -128,6 +128,7 @@ export const useTemplateStore = create<TemplateState>()(
 
       createTemplate: async (name, doc, importedFrom) => {
         // The new one takes the editor, so the draft it displaces is kept first.
+        await saveDraftOrStop();
         await get().snapshotOpenDraft('switched');
         const db = getDb();
         const created = await db.templates.create(name, doc, importedFrom);
@@ -138,6 +139,7 @@ export const useTemplateStore = create<TemplateState>()(
       openTemplate: async (id) => {
         if (id === openTemplateId()) return;
         // Undo does not survive the switch, so what it could have taken back is kept.
+        await saveDraftOrStop();
         await get().snapshotOpenDraft('switched');
         showDraft(await getDb().templates.open(id));
         // The template left behind may have just saved; its summary is out of date.
@@ -151,7 +153,7 @@ export const useTemplateStore = create<TemplateState>()(
 
       duplicateTemplate: async (id) => {
         // The copy takes the draft as main has it, so send the latest edits first.
-        await flushDraft();
+        await saveDraftOrStop();
         const copy = await getDb().templates.duplicate(id);
         await get().refresh();
         return copy;
@@ -166,7 +168,7 @@ export const useTemplateStore = create<TemplateState>()(
       deleteTemplate: async (id) => {
         const wasOpen = id === openTemplateId();
         // The copy kept for Undo should have the latest edits.
-        if (wasOpen) await flushDraft();
+        if (wasOpen) await saveDraftOrStop();
         const db = getDb();
         const bundle = await db.bundle.export([id]);
         await db.templates.remove(id);
@@ -187,7 +189,7 @@ export const useTemplateStore = create<TemplateState>()(
       },
 
       importBundle: async (text, mode) => {
-        await flushDraft();
+        await saveDraftOrStop();
         const db = getDb();
         const { templateIds } = await db.bundle.import(text, mode);
         const open = openTemplateId();
@@ -202,7 +204,7 @@ export const useTemplateStore = create<TemplateState>()(
 
       nameVersion: async (name) => {
         const templateId = requireOpenTemplate();
-        await flushDraft();
+        await saveDraftOrStop();
         const version = await getDb().versions.name(templateId, name);
         // The draft is that version now, so the status bar counts changes from here.
         useResumeStore.getState().markVersionSaved(version.rev);
@@ -230,13 +232,13 @@ export const useTemplateStore = create<TemplateState>()(
 
       importIntoDraft: async (doc, from) => {
         const templateId = requireOpenTemplate();
-        await flushDraft();
+        await saveDraftOrStop();
         showDraft(await getDb().drafts.importInto(templateId, doc, from), 'import');
         await get().refresh();
       },
 
       restoreVersion: async (templateId, versionId) => {
-        await flushDraft();
+        await saveDraftOrStop();
         const db = getDb();
         const restored = await db.versions.restore(templateId, versionId);
         // Restoring into the open draft is a step of it; another template is a fresh start.
