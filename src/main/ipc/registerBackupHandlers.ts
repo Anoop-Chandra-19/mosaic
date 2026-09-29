@@ -1,12 +1,14 @@
-import fs from 'node:fs/promises';
 import path from 'node:path';
 import { app, BrowserWindow, dialog, ipcMain, type IpcMainInvokeEvent } from 'electron';
 import type { Database } from 'better-sqlite3';
 import type { MosaicBackup } from '@shared/types/backup';
 import { BACKUP_CHANNELS } from '@shared/ipc/appChannels';
+import { replaceFileSafely } from '../replaceFileSafely';
 import {
+  BACKUP_TOO_LARGE,
   buildBackupFileName,
   hasBackupFolder,
+  isTooLargeToRestore,
   parseBackupFrequency,
   readBackupStatus,
   recordBackup,
@@ -71,13 +73,15 @@ export function registerBackupHandlers(
 
     backUpNow: async (win) => {
       const db = openDb();
+      const { text, record } = writeBackupText(db, Date.now());
+      // Before asking where: a file Mosaic couldn't read back is not a backup.
+      if (isTooLargeToRestore(record)) throw new Error(BACKUP_TOO_LARGE);
       const { canceled, filePath } = await dialog.showSaveDialog(win, {
         defaultPath: path.join(app.getPath('documents'), buildBackupFileName()),
         filters: [{ name: 'JSON', extensions: ['json'] }],
       });
       if (canceled || !filePath) return null;
-      const { text, record } = writeBackupText(db, Date.now());
-      await fs.writeFile(filePath, text);
+      await replaceFileSafely(filePath, text);
       recordBackup(db, record);
       return { status: readBackupStatus(db), fileName: path.basename(filePath) };
     },

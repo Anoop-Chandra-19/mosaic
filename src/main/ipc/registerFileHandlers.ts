@@ -10,6 +10,7 @@ import {
 } from 'electron';
 import { MAX_FILE_BYTES, type FileType, type OpenedFile } from '@shared/types/files';
 import { FILES_OPEN, FILES_SAVE } from '@shared/ipc/appChannels';
+import { replaceFileSafely } from '../replaceFileSafely';
 
 const FILTERS: Record<FileType, FileFilter[]> = {
   json: [{ name: 'JSON', extensions: ['json'] }],
@@ -56,7 +57,9 @@ export function registerFileHandlers(isAppFrame: (event: IpcMainInvokeEvent) => 
       ) {
         throw new Error('A file needs a name and content');
       }
-      if (content.length > MAX_FILE_BYTES) throw tooLarge(suggestedName);
+      // Bytes as written: a string's length counts UTF-16 units, a third of some text's size.
+      const bytes = typeof content === 'string' ? Buffer.byteLength(content) : content.byteLength;
+      if (bytes > MAX_FILE_BYTES) throw tooLarge(suggestedName);
 
       const { canceled, filePath } = await dialog.showSaveDialog(win, {
         // A name only: the renderer never chooses a folder.
@@ -64,7 +67,7 @@ export function registerFileHandlers(isAppFrame: (event: IpcMainInvokeEvent) => 
         filters,
       });
       if (canceled || !filePath) return null;
-      await fs.writeFile(filePath, content);
+      await replaceFileSafely(filePath, content);
       return path.basename(filePath);
     }
   );
