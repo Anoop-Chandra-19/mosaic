@@ -138,6 +138,21 @@ describe('db handlers', () => {
     expect(call('bundle.export', ['missing'])).toMatchObject({ ok: false, code: 'not-found' });
   });
 
+  it('refuse a restore with an ID nothing could use, keeping the templates there', () => {
+    const { value: backend } = call('templates.create', 'Backend', createDefaultResume()) as {
+      value: TemplateSummary;
+    };
+    const exported = call('bundle.export', [backend.id]) as { ok: true; value: MosaicBundle };
+    const bundle = structuredClone(exported.value);
+    bundle.templates[0].template.id = '';
+
+    expect(call('bundle.import', formatBundleText(bundle), 'restore-all')).toMatchObject({
+      ok: false,
+      code: 'invalid-argument',
+    });
+    expect(db.prepare('select id from templates').pluck().all()).toEqual([backend.id]);
+  });
+
   it('leave an optional argument out', () => {
     expect(call('templates.create', 'Backend', createDefaultResume(), undefined)).toMatchObject({
       ok: true,

@@ -7,6 +7,16 @@ import type { ResumeData } from './resume';
  * Timestamps are epoch milliseconds.
  */
 
+export const MAX_DB_TEXT_LENGTH = 200;
+
+/**
+ * What main accepts as an ID or a name. A restore holds to it as well, or it could store
+ * a template nothing can save to or remove.
+ */
+export function isDbText(value: unknown): value is string {
+  return typeof value === 'string' && value.trim() !== '' && value.length <= MAX_DB_TEXT_LENGTH;
+}
+
 /** `named` versions are the user's checkpoints; `auto` ones are taken for them. */
 export type VersionKind = 'auto' | 'named';
 

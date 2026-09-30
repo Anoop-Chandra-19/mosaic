@@ -2,7 +2,13 @@ import type { Database } from 'better-sqlite3';
 import { isResumeData } from '@shared/resume/validateResume';
 import { parseBundle } from '@shared/vault/parseBundle';
 import type { ImportMode, MosaicBundle } from '@shared/types/bundle';
-import type { DbResult, MosaicDb, SnapshotOccasion } from '@shared/types/db';
+import {
+  isDbText,
+  MAX_DB_TEXT_LENGTH,
+  type DbResult,
+  type MosaicDb,
+  type SnapshotOccasion,
+} from '@shared/types/db';
 import type { ResumeData } from '@shared/types/resume';
 import type { DbMethod } from '@shared/ipc/dbMethods';
 import { exportBundle, importBundle } from '../db/bundle';
@@ -42,9 +48,9 @@ export type Handlers<T> = {
 
 class InvalidArgumentError extends Error {}
 
-function text(value: unknown, what: string, maxLength = 200): string {
-  if (typeof value !== 'string' || value.trim() === '' || value.length > maxLength) {
-    throw new InvalidArgumentError(`${what} must be text of 1–${maxLength} characters`);
+function text(value: unknown, what: string): string {
+  if (!isDbText(value)) {
+    throw new InvalidArgumentError(`${what} must be text of 1–${MAX_DB_TEXT_LENGTH} characters`);
   }
   return value;
 }
