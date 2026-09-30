@@ -26,6 +26,38 @@ async function nameNewSection(page: Page, placeholder: string, name: string) {
   await expect(field).toBeHidden();
 }
 
+test('an entry line that wraps on the page says so in the editor, as the preview wraps it', async () => {
+  const { page, errors } = mosaic();
+  await page.getByRole('button', { name: /Start from a sample/ }).click();
+  await page.getByRole('button', { name: 'Example resume' }).click();
+  const note = page.getByText(/The heading prints on \d lines/);
+  await expect(note).toHaveCount(0);
+
+  await editEntryField(
+    page,
+    'Company',
+    'Organization',
+    'Fictional Institute for Distributed Systems and Infrastructure'
+  );
+  await editEntryField(page, 'Month Year to Current', 'Dates', 'January 2020 to September 2026');
+
+  await expect(note).toHaveText(/The heading prints on 2 lines beside the dates/);
+  const previewLines = await page
+    .locator('[data-preview-entry-heading-key] h3', { hasText: 'Fictional Institute' })
+    .first()
+    .evaluate((h3) => h3.clientHeight / parseFloat(getComputedStyle(h3).lineHeight));
+  expect(previewLines).toBe(2);
+
+  await editEntryField(
+    page,
+    'Fictional Institute for Distributed Systems and Infrastructure',
+    'Organization',
+    'Babbage & Co'
+  );
+  await expect(note).toHaveCount(0);
+  expect(errors).toEqual([]);
+});
+
 test('custom sections and lists are named as they are added, as many as you like', async () => {
   const { page, errors } = mosaic();
   await page.getByRole('button', { name: /Blank resume/ }).click();

@@ -17,6 +17,7 @@ import { cn } from '@/lib/utils';
 import { formatEntryHeading } from '@shared/resume/entryHeading';
 import type { ResumeEntry, SectionLayout } from '@shared/types/resume';
 import { useResumeStore } from '@/stores/resumeStore';
+import { useUiStore } from '@/stores/uiStore';
 import { AddBulletButton } from '../bullets/AddBulletButton';
 import { BulletEditor } from '../bullets/BulletEditor';
 import { BulletItem } from '../bullets/BulletItem';
@@ -26,6 +27,7 @@ import { HIDDEN_WHILE_READING } from '../editorClasses';
 import { EditorFold } from '../EditorFold';
 import { InlineEditField } from '../InlineEditField';
 import { swapNeighbours } from '../sort-list/listOrder';
+import { countHeadingLines } from './countHeadingLines';
 import { SortGripHandle, SortList, type SortGrip } from '../sort-list/SortList';
 
 interface EntryCardProps {
@@ -76,6 +78,8 @@ export function EntryCard({
   // ink in it drops to the faintest.
   const isDimmed = !entry.selected || isSectionHidden;
   const update = (patch: Partial<ResumeEntry>) => updateEntry(sectionId, entry.id, patch);
+  const paperSize = useUiStore((s) => s.paperSize);
+  const headingLines = isTextOnly ? null : countHeadingLines(entry, paperSize);
 
   const { motion, listRef, shownIds, isMerging, bulletRowProps } = useSplitAndMergeBullets(
     sectionId,
@@ -179,6 +183,12 @@ export function EntryCard({
                   inputClassName="text-[0.775rem] md:text-[0.775rem]"
                 />
               </div>
+              {!isDimmed && headingLines !== null && headingLines > 1 && (
+                <p className="mt-1 text-[0.6875rem] leading-snug text-amber-700 dark:text-amber-400">
+                  The heading prints on {headingLines} lines beside the dates. Shorten the title,
+                  organization or location to keep it on one.
+                </p>
+              )}
             </div>
           )}
 

@@ -11,6 +11,7 @@ import {
   resume,
   section,
 } from '@/features/import/__tests__/resumeFixtures';
+import { HEADLESS_LAYOUT, PAPER_SIZE_PT } from '@/lib/resume/headlessLayout';
 import { normalizeResumeForExport } from '../../normalizeResumeExport';
 import { PdfResumeDocument } from '../PdfResumeDocument';
 
@@ -46,7 +47,46 @@ function manyEntriesResume(): ResumeData {
   ]);
 }
 
+const LONG_HEADING = {
+  title: 'Senior Software Engineer',
+  organization: 'Fictional Institute for Distributed Systems and Infrastructure',
+  location: 'Example City',
+  dates: 'January 2020 to September 2026',
+};
+
 describe('PdfResumeDocument', () => {
+  it.each(['a4', 'letter'] as const)(
+    'wraps a long entry heading beside its dates, inside the margin (%s)',
+    async (paperSize) => {
+      const data = resume([
+        section('experience', 'entries', 'Experience', [
+          entry({ ...LONG_HEADING, bullets: ['Kept the lights on.'] }),
+        ]),
+      ]);
+      const pdf = new Uint8Array(
+        await renderToBuffer(
+          createElement(PdfResumeDocument, {
+            data: normalizeResumeForExport(data),
+            paperSize,
+          }) as Parameters<typeof renderToBuffer>[0]
+        )
+      );
+      const [page] = (await readPdfContent(pdf)).pages;
+      const runs = page.runs.filter((run) => run.text.trim());
+      const dates = runs.find((run) => run.text.includes('January 2020'))!;
+      const rightMargin = PAPER_SIZE_PT[paperSize].width - HEADLESS_LAYOUT.marginSide;
+
+      expect(dates.x + dates.width).toBeLessThanOrEqual(rightMargin + 0.5);
+      const besideDates = runs.filter((run) => Math.abs(run.y - dates.y) < 1 && run !== dates);
+      for (const run of besideDates) expect(run.x + run.width).toBeLessThan(dates.x);
+      const heading = runs.filter((run) => run.italic && run !== dates);
+      expect(heading.length).toBeGreaterThan(1);
+      expect(heading.map((run) => run.text.trim()).join(' ')).toBe(
+        'Senior Software Engineer, Fictional Institute for Distributed Systems and Infrastructure, Example City'
+      );
+    }
+  );
+
   it('never splits a word across lines', async () => {
     const resume = createDefaultResume();
     // Long words that react-pdf's hyphenation would break at a syllable.
