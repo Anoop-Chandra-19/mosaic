@@ -204,6 +204,23 @@ describe('paginateSections', () => {
     expect(pages[1][0].entries).toHaveLength(3);
   });
 
+  it('keeps a first page holding only the header when the opening block moves on', () => {
+    const pages = paginateSections(
+      [createExperienceSection([{ id: 'job-1', heading: 'Analyst', bullets: createBullets('A') }])],
+      createMeasurements({
+        headerHeight: 87.1,
+        sectionTitleHeights: { experience: 18 },
+        entryHeadingHeights: { 'experience::job-1': 22 },
+        bulletHeights: { A: 630 },
+      }),
+      688.05
+    );
+
+    expect(pages).toHaveLength(2);
+    expect(pages[0]).toEqual([]);
+    expect(pages[1][0].entries[0].bullets.map((bullet) => bullet.text)).toEqual(['A']);
+  });
+
   it('splits long text-only entries into continuation entries', () => {
     const text = Array.from({ length: 80 }, (_, index) => `word${index}`).join(' ');
     const pages = paginateSections(
@@ -321,7 +338,7 @@ describe('paginateSections', () => {
           lineStarts: { 'summary::summary-1': lineStarts },
         }),
         pageHeight
-      ).map((page) => page[0].entries.map((entry) => entry.text));
+      ).map((page) => page.flatMap((section) => section.entries.map((entry) => entry.text)));
 
     // Blank line and title (36), then room for three lines.
     expect(paginate(90)).toEqual([
@@ -331,9 +348,8 @@ describe('paginateSections', () => {
     // Room for five: one would be left alone, so only four stay.
     expect(paginate(126)[1]).toEqual(['line4 words line5 words']);
     // Under a header, room for one: it can't stay alone, so the paragraph moves on, title and
-    // all, to a page where it fits whole.
-    expect(paginate(126, 72)).toEqual([[text]]);
-    expect(paginate(126, 72)).toHaveLength(1);
+    // all, to a page where it fits whole. The header keeps the first page.
+    expect(paginate(126, 72)).toEqual([[], [text]]);
   });
 
   it('opens a section at the top of a later page without the blank line above it', () => {

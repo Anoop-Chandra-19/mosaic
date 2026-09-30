@@ -28,6 +28,7 @@ const RESUMES: Record<string, string[]> = {
     'Fare dashboard',
     `- Built ${long('pr', 30)}.`,
   ],
+  'an opening bullet that fits a page but not under the header': [`- Opener ${long('op', 480)}.`],
   'a paragraph whose title lands at the foot': [
     ...shortBullets(31),
     '',
