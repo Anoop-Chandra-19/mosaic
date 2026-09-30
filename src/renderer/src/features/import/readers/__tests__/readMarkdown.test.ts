@@ -75,6 +75,29 @@ describe('readMarkdown', () => {
     );
   });
 
+  it('reads a link whole: parentheses in its address, bare or bracketed, and separators in its words', () => {
+    const { resume: read } = readMarkdown(
+      [
+        'Ada Lovelace',
+        '[Portfolio](https://example.test/project_(v2)) · [Notes](<https://example.test/a (b)>)',
+      ].join('\n')
+    );
+    expect(read.contact.header.lines[0].items.map((item) => [item.text, item.url])).toEqual([
+      ['Portfolio', 'https://example.test/project_(v2)'],
+      ['Notes', 'https://example.test/a (b)'],
+    ]);
+
+    const data = createStyledHeaderResume();
+    data.contact.header.lines[0].items[1].url = 'https://example.test/wiki/Ada_(programmer)';
+    data.contact.header.lines[0].items[1].text = 'Design | Engineering';
+    const { text, links } = shown(data).header[0];
+    expect(links).toContainEqual([
+      'Design | Engineering',
+      'https://example.test/wiki/Ada_(programmer)',
+    ]);
+    expect(shown(readMarkdown(markdownOf(data)).resume).header[0]).toMatchObject({ text, links });
+  });
+
   it('gives back text that looks like Markdown as it was typed', () => {
     const data = resume([
       section('custom', 'lines', 'C# & *Co* #', lines(...LOOKS_LIKE_MARKUP)),
