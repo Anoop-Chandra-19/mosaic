@@ -439,6 +439,27 @@ describe('contact block', () => {
     ]);
   });
 
+  it('splits a line only outside its links, whatever separator a link’s words hold', () => {
+    for (const inside of [' | ', ' · ', ' • ', ' — ', '  ']) {
+      const words = `Design${inside}Engineering`;
+      const { resume } = parseResumeLines([
+        { text: 'Ada Lovelace' },
+        {
+          text: `ada@example.com · ${markLink(words, 'https://example.test/portfolio')} · Boston, MA`,
+        },
+        { text: 'Skills', role: 'heading' },
+        { text: 'Go' },
+      ]);
+      const [line] = resume.contact.header.lines;
+      expect(line.separator).toBe(' · ');
+      expect(line.items.map((item) => [item.text, item.url])).toEqual([
+        ['ada@example.com', ''],
+        [words, 'https://example.test/portfolio'],
+        ['Boston, MA', ''],
+      ]);
+    }
+  });
+
   it('takes “U.S.” for a word, not a web address', () => {
     expect(lineOf('U.S. Citizen | Boston, MA')).toEqual([
       ['auth', 'U.S. Citizen'],

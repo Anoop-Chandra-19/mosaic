@@ -20,6 +20,16 @@ const protect = (text: string) =>
 const restore = (text: string) =>
   text.replace(PROTECTED, (char) => String.fromCharCode(char.charCodeAt(0) - 0xe000));
 
+/** A bare link address, which may hold balanced parentheses: `wiki/Ada_(programmer)`. */
+const BARE_ADDRESS = Array.from({ length: 3 }).reduce<string>(
+  (inner) => `(?:[^()\\s]|\\(${inner}*\\))`,
+  '[^()\\s]'
+);
+const INLINE_LINK = new RegExp(
+  `!?\\[([^\\]]*)\\]\\((?:<([^<>\\n]*)>|(${BARE_ADDRESS}+))[^)]*\\)`,
+  'g'
+);
+
 /** A line in italics and nothing else — how Mosaic writes an entry's dates. */
 const ITALIC_LINE = /^(?:_(?!_)(.*[^_\s])_|\*(?!\*)(.*[^*\s])\*)$/;
 
@@ -30,7 +40,7 @@ const ITALIC_LINE = /^(?:_(?!_)(.*[^_\s])_|\*(?!\*)(.*[^*\s])\*)$/;
 function unmark(text: string): string {
   return text
     .replace(
-      /!?\[([^\]]*)\]\((?:<([^<>\n]*)>|([^)\s]+))[^)]*\)/g,
+      INLINE_LINK,
       (_, words: string, bracketed: string | undefined, bare: string | undefined) => {
         const url = bracketed ?? bare ?? '';
         return words ? markLink(words, url) : url;

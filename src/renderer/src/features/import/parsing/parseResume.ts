@@ -26,6 +26,7 @@ import type {
   SectionLayout,
 } from '@shared/types/resume';
 import {
+  blankMarkedLinks,
   DATE_LIKE,
   findMarkedLinkUrl,
   removeLinkMarks,
@@ -72,6 +73,7 @@ const STATUS_RE =
   /\b(?:citizen(?:ship)?|resident|green card|visa|h-?1b|opt|cpt|ead|authori[sz](?:ed|ation)|sponsorship|clearance|permit)\b/i;
 /** Between a contact line's fields: "a | b", "a · b", "a • b", "a — b", or a run of spaces. */
 const FIELD_SEPARATOR = /\s+[|·•—]\s+|\s{2,}/;
+const FIELD_SEPARATORS = new RegExp(FIELD_SEPARATOR, 'g');
 
 interface ParseOptions {
   /**
@@ -131,11 +133,17 @@ function titleOf(line: ImportLine, marked: boolean): [string, string] {
     : [line.text.slice(0, at).trim(), line.text.slice(at + TITLE_SEPARATOR.length).trim()];
 }
 
-const fieldsOf = (line: string) =>
-  line
-    .split(FIELD_SEPARATOR)
-    .map((field) => field.trim())
-    .filter(Boolean);
+/** A line's fields, split only outside its links: `[Design | Build](…)` is one field. */
+function fieldsOf(line: string): string[] {
+  const fields: string[] = [];
+  let start = 0;
+  for (const separator of blankMarkedLinks(line).matchAll(FIELD_SEPARATORS)) {
+    fields.push(line.slice(start, separator.index));
+    start = separator.index + separator[0].length;
+  }
+  fields.push(line.slice(start));
+  return fields.map((field) => field.trim()).filter(Boolean);
+}
 
 /** A way to reach the person: an address, a number, a link. */
 const isReach = (text: string) =>
@@ -206,7 +214,7 @@ function createHeaderLineFromContactLine(
     else if (other && kinds.includes('location')) other.kind = 'auth';
   }
   return createHeaderLine(items, {
-    separator: detectHeaderSeparator(removeLinkMarks(text)),
+    separator: detectHeaderSeparator(blankMarkedLinks(text)),
     align,
   });
 }

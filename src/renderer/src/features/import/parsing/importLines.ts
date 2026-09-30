@@ -176,6 +176,10 @@ export const replaceMarkedLinksWithText = (text: string) =>
 /** A line's text without link marks: the words as they show, addresses dropped. */
 export const removeLinkMarks = (text: string) => text.replace(MARKED_LINK, '$1');
 
+/** The text with each marked link blanked out at its full length, so offsets still line up. */
+export const blankMarkedLinks = (text: string) =>
+  text.replace(MARKED_LINK, (link) => LINK_START.repeat(link.length));
+
 /** The first marked link's address in a piece of text, or ''. */
 export const findMarkedLinkUrl = (text: string) =>
   new RegExp(MARKED_LINK.source).exec(text)?.[2] ?? '';
