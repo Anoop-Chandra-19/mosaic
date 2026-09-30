@@ -6,6 +6,7 @@ import {
   Database,
   Download,
   FileText,
+  TriangleAlert,
   Type,
   type LucideIcon,
 } from 'lucide-react';
@@ -36,6 +37,8 @@ import {
   type ExportFormat,
   type ExportFormatInfo,
 } from './exportResume';
+import { normalizeResumeForExport } from './normalizeResumeExport';
+import { findCharactersPdfCannotDraw } from './pdf/findCharactersPdfCannotDraw';
 
 const FORMAT_ICONS: Record<ExportFormat, LucideIcon> = {
   pdf: FileText,
@@ -166,6 +169,13 @@ function ExportForm({ version, onDone }: { version: ExportVersion | null; onDone
             <FormatOption key={option.id} format={option} selected={option.id === formatId} />
           ))}
         </RadioGroup>
+        {format.id === 'pdf' && (
+          <PdfFontNote
+            characters={findCharactersPdfCannotDraw(
+              normalizeResumeForExport(source().doc, { includeHidden })
+            )}
+          />
+        )}
 
         <div className="mt-2">
           <Row
@@ -245,6 +255,28 @@ function ExportForm({ version, onDone }: { version: ExportVersion | null; onDone
         </AppButton>
       </DialogFrameFooter>
     </>
+  );
+}
+
+const LISTED_CHARACTERS = 8;
+
+/** The PDF's built-in font draws Western European text only; it says so before saving. */
+function PdfFontNote({ characters }: { characters: string[] }) {
+  if (characters.length === 0) return null;
+  const listed = characters.slice(0, LISTED_CHARACTERS).join(' ');
+  const more = characters.length - LISTED_CHARACTERS;
+  return (
+    <p
+      role="status"
+      className="mt-2 flex items-start gap-1.5 rounded-md border border-line-strong bg-pane-sunken px-2.5 py-2 text-xs leading-relaxed text-ink-soft"
+    >
+      <TriangleAlert className="mt-0.5 size-3.5 shrink-0 text-ink-muted" />
+      <span>
+        The PDF can’t show <span className="font-medium text-foreground">{listed}</span>
+        {more > 0 && ` and ${more} more`}. Its built-in font doesn’t have them, so they would print
+        as other characters. The Word export shows them.
+      </span>
+    </p>
   );
 }
 

@@ -37,7 +37,7 @@ export const EXPORT_FORMATS: ExportFormatInfo[] = [
   {
     id: 'pdf',
     name: 'PDF',
-    description: 'Print-exact. Fonts embedded, text selectable and ATS-readable.',
+    description: 'Print-exact. Text selectable and ATS-readable.',
     extension: 'pdf',
     fileType: 'pdf',
     copyable: false,

@@ -262,3 +262,21 @@ test('Save DOCX writes a Word file, which reads back in through Import', async (
   );
   expect(errors).toEqual([]);
 });
+
+test('a PDF export names the characters its font can’t draw, and a Word export doesn’t', async () => {
+  const { page, errors } = mosaic();
+  await startFromSample(page);
+  const dialog = await openExport(page, /^PDF/);
+  await expect(dialog.getByRole('status')).toHaveCount(0);
+  await dialog.getByRole('button', { name: 'Close export' }).click();
+
+  await page.getByRole('complementary').getByText('Your Name', { exact: true }).click();
+  await page.getByPlaceholder('Your name').fill('Łukasz Wójcik');
+  await page.getByPlaceholder('Your name').press('Enter');
+
+  const again = await openExport(page, /^PDF/);
+  await expect(again.getByRole('status')).toContainText('The PDF can’t show Ł.');
+  await again.getByRole('radio', { name: /^Word/ }).click();
+  await expect(again.getByRole('status')).toHaveCount(0);
+  expect(errors).toEqual([]);
+});
