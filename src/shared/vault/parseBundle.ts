@@ -6,7 +6,7 @@ import {
   type BundleVersion,
   type MosaicBundle,
 } from '../types/bundle';
-import type { VersionKind, VersionSource } from '../types/db';
+import { isDbText, MAX_DB_TEXT_LENGTH, type VersionKind, type VersionSource } from '../types/db';
 import type { ResumeData } from '../types/resume';
 
 export type BundleErrorCode =
@@ -46,6 +46,16 @@ class BundleError extends Error {
 
 function requireString(value: unknown, what: string): string {
   if (typeof value !== 'string') throw new BundleError('invalid-templates', `${what} is missing`);
+  return value;
+}
+
+function requireDbText(value: unknown, what: string): string {
+  if (!isDbText(value)) {
+    throw new BundleError(
+      'invalid-templates',
+      `${what} is not text of 1–${MAX_DB_TEXT_LENGTH} characters`
+    );
+  }
   return value;
 }
 
@@ -109,7 +119,7 @@ function parseVersions(
     const what = `version ${index + 1} of "${templateName}"`;
     if (!isRecord(raw)) throw new BundleError('invalid-templates', `${what} is malformed`);
 
-    const id = requireString(raw.id, `${what}'s id`);
+    const id = requireDbText(raw.id, `${what}'s id`);
     if (ids.has(id)) throw new BundleError('invalid-templates', `${what} repeats id ${id}`);
     ids.add(id);
 
@@ -148,8 +158,8 @@ function parseTemplate(
   }
 
   const raw = value.template;
-  const name = requireString(raw.name, "a template's name");
-  const id = requireString(raw.id, `template "${name}"'s id`);
+  const name = requireDbText(raw.name, "a template's name");
+  const id = requireDbText(raw.id, `template "${name}"'s id`);
   if (templateIds.has(id)) throw new BundleError('invalid-templates', `template id ${id} repeats`);
   templateIds.add(id);
 

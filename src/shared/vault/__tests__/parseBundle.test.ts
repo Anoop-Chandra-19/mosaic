@@ -165,6 +165,26 @@ describe('parseBundle', () => {
     });
   });
 
+  it('rejects IDs and names that main would refuse later', () => {
+    for (const bad of ['', '   ', 'x'.repeat(201)]) {
+      const cases: Array<(file: Record<string, unknown>) => void> = [
+        (f) => (templatesOf(f)[0].template.id = bad),
+        (f) => (templatesOf(f)[0].template.name = bad),
+        (f) => (templatesOf(f)[0].versions[1].id = bad),
+      ];
+      for (const breakIt of cases) {
+        const file = createFile();
+        breakIt(file);
+        expect(parse(file)).toMatchObject({ ok: false, code: 'invalid-templates' });
+      }
+    }
+  });
+
+  it('rejects a section order that can’t be written back out', () => {
+    const text = JSON.stringify(createFile()).replace('"order":0', '"order":1e999');
+    expect(parseBundle(text)).toMatchObject({ ok: false, code: 'invalid-resume' });
+  });
+
   it('rejects unknown version kinds, bad revs, and bad dates', () => {
     const cases: Array<(file: Record<string, unknown>) => void> = [
       (f) => (templatesOf(f)[0].versions[0].kind = 'draft'),

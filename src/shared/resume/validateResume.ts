@@ -54,7 +54,8 @@ function isResumeSection(value: unknown): boolean {
     SECTION_KINDS.has(value.kind) &&
     typeof value.layout === 'string' &&
     SECTION_LAYOUTS.has(value.layout) &&
-    typeof value.order === 'number' &&
+    // JSON's 1e999 reads as Infinity, which is written back out as null.
+    Number.isFinite(value.order) &&
     (value.hidden === undefined || typeof value.hidden === 'boolean') &&
     Array.isArray(value.items) &&
     value.items.every(isResumeEntry)
