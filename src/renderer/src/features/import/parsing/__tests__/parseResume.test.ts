@@ -460,6 +460,26 @@ describe('contact block', () => {
     }
   });
 
+  it('splits at the line’s own separator, and at another only between contact details', () => {
+    const textsOf = (line: string) => lineOf(line).map(([, text]) => text);
+    expect(textsOf('555-0100 · Design | Engineering (https://ada.dev) · ada@example.com')).toEqual([
+      '555-0100',
+      'Design | Engineering',
+      'ada@example.com',
+    ]);
+    expect(textsOf('555-0100 | ada@example.com · ada.dev')).toEqual([
+      '555-0100',
+      'ada@example.com',
+      'ada.dev',
+    ]);
+    expect(textsOf('F-1 OPT — authorized through 2028 — London, UK')).toEqual([
+      'F-1 OPT',
+      'authorized through 2028',
+      'London, UK',
+    ]);
+    expect(textsOf('ada.dev · GitHub | Portfolio')).toEqual(['ada.dev', 'GitHub | Portfolio']);
+  });
+
   it('takes “U.S.” for a word, not a web address', () => {
     expect(lineOf('U.S. Citizen | Boston, MA')).toEqual([
       ['auth', 'U.S. Citizen'],
@@ -506,6 +526,17 @@ describe('plain text round trip', () => {
         expected.header[0].links.push(['ada@example.com', 'mailto:ada@example.com']);
       })
     );
+  });
+
+  it('reads a header item back whole when it holds a separator other than its line’s', () => {
+    const data = createStyledHeaderResume();
+    data.contact.header.lines[0].items[1].text = 'Design | Engineering';
+    const [line] = parseResumeText(textOf(data)).resume.contact.header.lines;
+    expect(line.items[1]).toMatchObject({
+      text: 'Design | Engineering',
+      url: `https://${data.contact.header.lines[0].items[1].url}`,
+    });
+    expect(line.items).toHaveLength(data.contact.header.lines[0].items.length);
   });
 
   it('writes a link after its words, unless the words already are the address', () => {

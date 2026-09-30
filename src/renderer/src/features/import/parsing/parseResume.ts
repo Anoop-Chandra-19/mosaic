@@ -133,14 +133,37 @@ function titleOf(line: ImportLine, marked: boolean): [string, string] {
     : [line.text.slice(0, at).trim(), line.text.slice(at + TITLE_SEPARATOR.length).trim()];
 }
 
-/** A line's fields, split only outside its links: `[Design | Build](…)` is one field. */
-function fieldsOf(line: string): string[] {
+function findFieldSeparators(line: string) {
+  const found = [...blankMarkedLinks(line).matchAll(FIELD_SEPARATORS)];
+  const counts = new Map<string, number>();
+  for (const [text] of found) counts.set(text.trim(), (counts.get(text.trim()) ?? 0) + 1);
+  let main: string | undefined;
+  for (const [mark, count] of counts)
+    if (main === undefined || count > counts.get(main)!) main = mark;
+  return { found, main };
+}
+
+const isContactDetail = (field: string, marked: boolean) =>
+  createHeaderItemFromField(field, marked).kind !== 'custom';
+
+// A separator other than the line's own splits only between two contact details.
+function fieldsOf(line: string, marked: boolean): string[] {
+  const { found, main } = findFieldSeparators(line);
   const fields: string[] = [];
   let start = 0;
-  for (const separator of blankMarkedLinks(line).matchAll(FIELD_SEPARATORS)) {
-    fields.push(line.slice(start, separator.index));
-    start = separator.index + separator[0].length;
-  }
+  found.forEach((separator, index) => {
+    const end = separator.index + separator[0].length;
+    const isMain = separator[0].trim() === main;
+    const next = found[index + 1]?.index ?? line.length;
+    if (
+      isMain ||
+      (isContactDetail(line.slice(start, separator.index), marked) &&
+        isContactDetail(line.slice(end, next), marked))
+    ) {
+      fields.push(line.slice(start, separator.index));
+      start = end;
+    }
+  });
   fields.push(line.slice(start));
   return fields.map((field) => field.trim()).filter(Boolean);
 }
@@ -164,7 +187,7 @@ function guessHeaderItemKind(field: string): HeaderItemKind {
 
 /** The separator a line's fields are written apart with; Mosaic's own when it has none. */
 function detectHeaderSeparator(line: string): HeaderSeparator {
-  const mark = FIELD_SEPARATOR.exec(line)?.[0].trim();
+  const mark = findFieldSeparators(line).main;
   const known = HEADER_SEPARATORS.find(({ value }) => value.trim() === mark);
   return known?.value ?? HEADER_SEPARATORS[0].value;
 }
@@ -205,7 +228,7 @@ function createHeaderLineFromContactLine(
   { text, align = 'center' }: ContactLine,
   marked: boolean
 ): HeaderLine {
-  const items = fieldsOf(text).map((field) => createHeaderItemFromField(field, marked));
+  const items = fieldsOf(text, marked).map((field) => createHeaderItemFromField(field, marked));
   // Two fields and one of them a status or a place: the other is the other one.
   if (items.length === 2) {
     const kinds = items.map((item) => item.kind);
@@ -214,7 +237,7 @@ function createHeaderLineFromContactLine(
     else if (other && kinds.includes('location')) other.kind = 'auth';
   }
   return createHeaderLine(items, {
-    separator: detectHeaderSeparator(blankMarkedLinks(text)),
+    separator: detectHeaderSeparator(text),
     align,
   });
 }
@@ -233,7 +256,7 @@ function parseContact(
 ): { contact: ContactInfo; underNoHeading: string[] } {
   const shown = preamble.map((line) => removeLinkMarks(line.text));
   const isOneField = (line: string) =>
-    fieldsOf(line).length === 1 &&
+    fieldsOf(line, marked).length === 1 &&
     !isReach(line) &&
     !STATUS_RE.test(line) &&
     !LOCATION_RE.test(line);
