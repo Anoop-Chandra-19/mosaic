@@ -414,7 +414,9 @@ export function paginateSections(
       ...page,
       sections: page.sections.filter((section) => section.entries.length > 0),
     }))
-    .filter((page) => page.sections.length > 0)
+    // The first page stays, with only the header if its sections moved on: the header is
+    // drawn on the first page, and the rest were laid out without it.
+    .filter((page, index) => index === 0 || page.sections.length > 0)
     .slice(0, maxPages)
     .map((page) => page.sections);
 
