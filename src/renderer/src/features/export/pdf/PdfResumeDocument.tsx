@@ -5,6 +5,7 @@ import type { NormalizedResumeExport } from '../normalizeResumeExport';
 import { HEADLESS_LAYOUT, getPageContentSizePt } from '@/lib/resume/headlessLayout';
 import { breakLinesLikeWord, breakRunsLikeWord, type MeasureTextWidth } from './breakLinesLikeWord';
 import { LINK_BLUE } from '@shared/resume/resumeHeader';
+import { getEntryHeadingWidthPt } from './entryHeadingWidth';
 
 /** Text widths at the body's and the header lines' sizes. */
 export interface PdfTextMeasurers {
@@ -120,11 +121,15 @@ const styles = StyleSheet.create({
     marginBottom: LYT.entryHeadingMarginBottom,
   },
   entryTitle: {
+    flexGrow: 1,
+    flexShrink: 1,
+    flexBasis: 0,
     fontFamily: FONT_ITALIC,
     fontSize: LYT.bodyFontSize,
     lineHeight: LYT.bodyLineHeight,
   },
   entryDates: {
+    flexShrink: 0,
     fontFamily: FONT_ITALIC,
     fontSize: LYT.bodyFontSize,
     lineHeight: LYT.bodyLineHeight,
@@ -278,7 +283,15 @@ export function PdfResumeDocument({ data, paperSize, measurers }: PdfResumeDocum
                             : styles.entryHeading
                         }
                       >
-                        <Text style={styles.entryTitle}>{entry.heading}</Text>
+                        <Text style={styles.entryTitle}>
+                          {measurers
+                            ? breakLinesLikeWord(
+                                entry.heading,
+                                getEntryHeadingWidthPt(paperSize, entry.dates, measurers.body),
+                                measurers.body
+                              )
+                            : entry.heading}
+                        </Text>
                         <Text style={styles.entryDates}>{entry.dates}</Text>
                       </View>
                     ) : null}
