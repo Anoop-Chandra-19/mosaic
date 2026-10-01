@@ -61,10 +61,13 @@ function readFrom(lines: ImportLine[], sources: Map<ImportLine, SourceLine[]>): 
   };
 }
 
-const EMAIL_RE = /[\w.+-]+@[\w-]+\.[\w.-]+/;
+// The lookbehinds start a match only where a word starts. Otherwise a long run of letters is
+// rescanned from each of its positions, and parsing takes seconds; what matches is the same.
+const EMAIL_RE = /(?<![\w.+-])[\w.+-]+@[\w-]+\.[\w.-]+/;
 const PHONE_RE = /(\(?\+?\d[\d\s().-]{6,}\d)/;
 /** A web address: a name with a dot and a top-level domain of letters ("U.S." isn't one). */
-const WEB_RE = /(?:https?:\/\/)?(?:[\w-]+\.)+[a-z]{2,}(?:\/[\w#%&./=?~+-]*)?/i;
+const WEB_RE =
+  /(?<![\w-])(?<![\w-]\.)(?:https?:\/\/)?(?:[\w-]+\.)+[a-z]{2,}(?:\/[\w#%&./=?~+-]*)?/i;
 const LINKEDIN_RE = /(?:https?:\/\/)?(?:www\.)?linkedin\.com\/[\w#%&./=?~+-]+/i;
 const GITHUB_RE = /(?:https?:\/\/)?(?:www\.)?github\.com\/[\w#%&./=?~+-]+/i;
 const LOCATION_RE = /^[A-Za-z][\w.\s'-]+,\s*[A-Za-z][\w.\s'-]+$/;
