@@ -68,6 +68,14 @@ const SOURCES: ReadonlySet<string> = new Set<JsonResumeSource>([
   'certificates',
 ]);
 
+const NOT_EXPORTED: ReadonlySet<string> = new Set([
+  'volunteer',
+  'awards',
+  'publications',
+  'languages',
+  'interests',
+]);
+
 /** An object with `basics` or any of the standard section arrays is taken as a JSON Resume. */
 export function isJsonResume(value: unknown): value is Json {
   return (
@@ -388,8 +396,9 @@ const noteEntry = (item: Json, what: string, from: string, date: string) =>
   });
 
 /** The sections a standard field makes, in the order the file has them. */
-function standardSections(resume: Json): ResumeSection[] {
+function standardSections(resume: Json, only?: ReadonlySet<string>): ResumeSection[] {
   return Object.entries(resume).flatMap(([key, value]): ResumeSection[] => {
+    if (only && !only.has(key)) return [];
     switch (key) {
       case 'basics': {
         const summary = isRecord(value) ? text(value.summary) : '';
@@ -492,7 +501,8 @@ export function readJsonResume(resume: Json): ParsedResume {
   const own = meta ? ownSections(resume, meta) : null;
   const warnings: string[] = [];
 
-  const sections = (own ?? standardSections(resume))
+  const added = own ? standardSections(resume, NOT_EXPORTED) : [];
+  const sections = [...(own ?? standardSections(resume)), ...added]
     .map((section) => ({ ...section, items: section.items.filter((item) => !isEmpty(item)) }))
     .filter((section) => section.items.length > 0)
     .map((section, order) => ({ ...section, order }));

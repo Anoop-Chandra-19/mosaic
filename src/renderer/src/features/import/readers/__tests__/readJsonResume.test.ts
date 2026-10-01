@@ -123,6 +123,21 @@ describe('readJsonResume', () => {
     expect(experience?.items.at(-1)?.title).toBe('Added elsewhere');
   });
 
+  it('keeps sections another tool added that Mosaic’s export never writes', () => {
+    const data = everything();
+    const file = exported(data);
+    file.volunteer = [{ organization: 'Red Cross', position: 'Volunteer' }];
+    file.languages = [{ language: 'French', fluency: 'Fluent' }];
+
+    const parsed = readJsonResume(file);
+    expect(kinds(parsed.resume)).toEqual([...kinds(data), 'custom', 'custom']);
+    expect(parsed.resume.sections.slice(-2).map((s) => [s.label, s.items.length])).toEqual([
+      ['Volunteering', 1],
+      ['Languages', 1],
+    ]);
+    expect(parsed.warnings).toEqual([]);
+  });
+
   it('maps another tool’s file into sections, entries written the Headless way', () => {
     const parsed = readJsonResume({
       basics: {
