@@ -66,6 +66,18 @@ test('a full backup restores every template with its history', async () => {
   await expect(page.getByRole('button', { name: 'Options for Untitled resume' })).toHaveCount(2);
 });
 
+test('with no templates there is nothing to back up, and no file is written', async () => {
+  const { app, page, userDataDir } = mosaic();
+  await saveInto(app, userDataDir);
+  const settings = await openImportExport(page);
+  await settings.getByRole('button', { name: 'Back up now' }).click();
+  await expect(page.getByText('Nothing to back up yet')).toBeVisible();
+  expect(fs.readdirSync(userDataDir).filter((name) => name.startsWith('mosaic-backup-'))).toEqual(
+    []
+  );
+  await expect(settings.getByText(/Last backup/)).toHaveCount(0);
+});
+
 test('a file that is not a backup is refused and changes nothing', async () => {
   const { app, page, userDataDir } = mosaic();
   const file = path.join(userDataDir, 'notes.json');

@@ -13,7 +13,6 @@ import { backUpNow, chooseBackup, fileFailure } from '@/features/backup/backupFi
 import { formatRelativeTime } from '@/features/templates/formatRelativeTime';
 import { explainFailure, showToast, useOverlayStore } from '@/stores/overlayStore';
 import { saveDraftOrStop, useResumeStore } from '@/stores/resumeStore';
-import { useTemplateStore } from '@/stores/templateStore';
 import type { BackupFrequency, BackupStatus } from '@shared/types/backup';
 import { SettingRow, SettingsNote } from '../SettingRow';
 
@@ -34,7 +33,6 @@ function formatSize(bytes: number): string {
 /** Export and Import open their own dialogs, so Settings steps out of the way first. */
 export function ImportExportSection({ onCloseSettings }: { onCloseSettings: () => void }) {
   const hasOpenTemplate = useResumeStore((s) => s.templateId !== null);
-  const hasTemplates = useTemplateStore((s) => s.templates.length > 0);
   const openExport = useOverlayStore((s) => s.openExport);
   const openImport = useOverlayStore((s) => s.openImport);
   const setPendingRestore = useOverlayStore((s) => s.setPendingRestore);
@@ -52,14 +50,14 @@ export function ImportExportSection({ onCloseSettings }: { onCloseSettings: () =
   }, []);
 
   const backUp = async () => {
-    if (!hasTemplates) {
-      showToast('Nothing to back up yet');
-      return;
-    }
     setBackingUp(true);
     try {
       const saved = await backUpNow();
       if (!saved) return;
+      if (saved === 'empty') {
+        showToast('Nothing to back up yet');
+        return;
+      }
       setBackup(saved.status);
       showToast(`Backed up to ${saved.fileName}`);
     } catch (error) {
