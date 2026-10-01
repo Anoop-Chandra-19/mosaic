@@ -1,27 +1,18 @@
-import type {
-  LinkColor,
-  LinkStyle,
-  ResumeData,
-  SectionKind,
-  SectionLayout,
-} from '@shared/types/resume';
-import { formatEntryHeading, type EntryHeadingFields } from '@shared/resume/entryHeading';
+import type { LinkColor, LinkStyle, ResumeData } from '@shared/types/resume';
 import { getPrintableHeaderLines, type PrintedHeaderLine } from '@shared/resume/resumeHeader';
+import {
+  selectPrintableSections,
+  type PrintableContentOptions,
+  type PrintableEntry,
+  type PrintableSection,
+} from '@/lib/resume/selectPrintableSections';
 
-export interface ExportEntry extends EntryHeadingFields {
-  id: string;
-  dates: string;
-  /** The printed left side: title, organization, and location (`formatEntryHeading`). */
-  heading: string;
-  text: string;
+/** Bullets as their text alone: no format writes their ids. */
+export interface ExportEntry extends Omit<PrintableEntry, 'bullets'> {
   bullets: string[];
 }
 
-export interface ExportSection {
-  id: string;
-  kind: SectionKind;
-  layout: SectionLayout;
-  label: string;
+export interface ExportSection extends Omit<PrintableSection, 'entries'> {
   entries: ExportEntry[];
 }
 
@@ -38,94 +29,30 @@ export interface NormalizedResumeExport {
   sections: ExportSection[];
 }
 
-function trim(value: string | undefined) {
-  return (value ?? '').trim();
-}
-
-function normalizeTextOnlyEntry(id: string, text: string): ExportEntry | null {
-  const cleanText = trim(text);
-  if (!cleanText) {
-    return null;
-  }
-
-  return {
-    id,
-    title: '',
-    organization: '',
-    location: '',
-    dates: '',
-    heading: '',
-    text: cleanText,
-    bullets: [],
-  };
-}
-
 /**
- * What an export holds: what the page shows, or everything the resume holds. Hidden
- * sections, unpicked entries and bullets, and hidden header items are kept either way; this
- * only says whether they are written out.
+ * What an export holds: what the page shows, or everything the resume holds. Hidden header
+ * items, like hidden sections, entries, and bullets, are kept either way.
  */
-export interface ExportContentOptions {
-  includeHidden?: boolean;
-}
+export type ExportContentOptions = PrintableContentOptions;
 
 export function normalizeResumeForExport(
   resume: ResumeData,
   { includeHidden = false }: ExportContentOptions = {}
 ): NormalizedResumeExport {
-  // Export only selected, non-empty content so all output formats share the same rules.
-  const sections = resume.sections
-    .filter((section) => includeHidden || !section.hidden)
-    .sort((a, b) => a.order - b.order)
-    .map((section) => {
-      const entries = section.items
-        .filter((entry) => includeHidden || entry.selected)
-        .map((entry) => {
-          if (section.layout === 'lines') {
-            return normalizeTextOnlyEntry(entry.id, entry.text ?? '');
-          }
-
-          const fields = {
-            title: trim(entry.title),
-            organization: trim(entry.organization),
-            location: trim(entry.location),
-          };
-          const heading = formatEntryHeading(fields);
-          const dates = trim(entry.dates);
-          const bullets = entry.bullets
-            .filter((bullet) => includeHidden || bullet.selected)
-            .map((bullet) => trim(bullet.text))
-            .filter(Boolean);
-
-          if (!heading && !dates && bullets.length === 0) {
-            return null;
-          }
-
-          return {
-            id: entry.id,
-            ...fields,
-            dates,
-            heading,
-            text: '',
-            bullets,
-          } satisfies ExportEntry;
-        })
-        .filter((entry): entry is ExportEntry => entry !== null);
-
-      return {
-        id: section.id,
-        kind: section.kind,
-        layout: section.layout,
-        label: trim(section.label),
-        entries,
-      } satisfies ExportSection;
+  const sections = selectPrintableSections(resume.sections, { includeHidden }).map(
+    (section): ExportSection => ({
+      ...section,
+      entries: section.entries.map((entry) => ({
+        ...entry,
+        bullets: entry.bullets.map((bullet) => bullet.text),
+      })),
     })
-    .filter((section) => section.entries.length > 0);
+  );
 
   const { name, header } = resume.contact;
   return {
     contact: {
-      name: trim(name),
+      name: name.trim(),
       linkStyle: header.linkStyle,
       linkColor: header.linkColor ?? 'ink',
       lines: getPrintableHeaderLines(header, { includeHidden }),

@@ -70,7 +70,7 @@ describe('normalizeSections', () => {
         id: 'summary',
         kind: 'summary',
         layout: 'lines',
-        label: 'Summary',
+        label: ' Summary ',
         order: 1,
         items: [
           { id: 'summary-1', selected: true, text: '  Focused builder.  ', bullets: [] },
