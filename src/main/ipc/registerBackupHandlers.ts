@@ -73,6 +73,7 @@ export function registerBackupHandlers(
       const db = openDb();
       // As it stands now, not after the user has picked where.
       const { pieces, record } = prepareBackup(db, Date.now());
+      if (record.templates === 0) return 'empty';
       const { canceled, filePath } = await dialog.showSaveDialog(win, {
         defaultPath: path.join(app.getPath('documents'), buildBackupFileName()),
         filters: [{ name: 'JSON', extensions: ['json'] }],

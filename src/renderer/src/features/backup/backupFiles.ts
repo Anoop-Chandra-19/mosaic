@@ -19,9 +19,12 @@ export function countBundle(bundle: MosaicBundle): BundleCounts {
 
 /**
  * Write every template, with its history, to a file the user picks. Resolves with the
- * backup status and the file's name, or null if they cancelled the Save dialog.
+ * backup status and the file's name, 'empty' if there are no templates, or null if they
+ * cancelled the Save dialog.
  */
-export async function backUpNow(): Promise<{ status: BackupStatus; fileName: string } | null> {
+export async function backUpNow(): Promise<
+  { status: BackupStatus; fileName: string } | 'empty' | null
+> {
   // The backup should hold the edits still waiting to be saved.
   await saveDraftOrStop();
   return window.mosaic.backup.backUpNow();

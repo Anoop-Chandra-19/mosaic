@@ -26,8 +26,11 @@ export interface BackupStatus {
  */
 export interface MosaicBackup {
   status(): Promise<BackupStatus>;
-  /** Every template and its history, to a file the user picks. Null if they cancelled. */
-  backUpNow(): Promise<{ status: BackupStatus; fileName: string } | null>;
+  /**
+   * Every template and its history, to a file the user picks. Null if they cancelled;
+   * 'empty', with no dialog, if there are no templates, since restore refuses that file.
+   */
+  backUpNow(): Promise<{ status: BackupStatus; fileName: string } | 'empty' | null>;
   /**
    * Turning backups on with no folder yet asks for one first; cancelling that leaves the
    * schedule as it was. A backup that is due is written straight away.

@@ -23,3 +23,11 @@ node scripts/typing-check/runTypingCheck.ts --load 6
 ```
 
 Compare the page loop between runs to see how much slower a loaded run really was.
+
+## A known freeze under load
+
+With `--load`, a long blocking task forced into the page (a 0.4s loop, through Playwright)
+sometimes left the renderer spinning inside V8 for good: timers stopped and nothing
+answered, while the main process stayed fine. Builds from before the live preview froze
+the same way, and it was never seen without that forced task. That's why the check times
+its page loop after the typing. If someone reports the app locking up for real, start here.
