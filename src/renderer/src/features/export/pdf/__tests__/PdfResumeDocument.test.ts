@@ -104,6 +104,43 @@ describe('PdfResumeDocument', () => {
     expect(lines.filter((line) => /\p{L}-$/u.test(line))).toEqual([]);
   });
 
+  it('carries a bullet no page can hold onto the next, inside the margins and without a marker', async () => {
+    const words = Array.from({ length: 700 }, (_, i) => `w${i}`);
+    const data = resume([
+      section('experience', 'entries', 'Experience', [
+        entry({ ...LONG_HEADING, bullets: ['Kept the lights on.', words.join(' ')] }),
+      ]),
+    ]);
+    // Wider than Helvetica, so react-pdf keeps the lines as given.
+    const measure = (text: string) => text.length * 6.5;
+    const pdf = new Uint8Array(
+      await renderToBuffer(
+        createElement(PdfResumeDocument, {
+          data: normalizeResumeForExport(data),
+          paperSize: 'letter',
+          measurers: { body: measure, contact: measure },
+        }) as Parameters<typeof renderToBuffer>[0]
+      )
+    );
+    const pages = (await readPdfContent(pdf)).pages.map((page) =>
+      page.runs.filter((run) => run.text.trim())
+    );
+
+    expect(pages.length).toBeGreaterThan(1);
+    const bottom = PAPER_SIZE_PT.letter.height - HEADLESS_LAYOUT.marginBottom;
+    for (const runs of pages) {
+      expect(runs.length).toBeGreaterThan(0);
+      for (const run of runs) expect(run.y).toBeLessThan(bottom);
+    }
+    const printed = pages.flat().flatMap((run) => run.text.match(/\bw\d+\b/g) ?? []);
+    expect(printed).toEqual(words);
+    expect(pages.flat().filter((run) => run.text.trim() === '•')).toHaveLength(2);
+    const textLeft = HEADLESS_LAYOUT.marginSide + HEADLESS_LAYOUT.bulletTextIndent;
+    for (const runs of pages.slice(1)) {
+      for (const run of runs) expect(run.x).toBeCloseTo(textLeft, 0);
+    }
+  }, 30_000);
+
   it('breaks pages where the preview does: whole bullets, and no stranded entry line', async () => {
     // The sample resume broke a bullet over the page; the rest is long enough to break again.
     const sample = createDefaultResume();

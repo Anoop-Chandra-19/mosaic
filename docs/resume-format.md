@@ -50,7 +50,10 @@ See root `CLAUDE.md` for schema-version and data-safety rules.
 The preview (`features/preview/pagination.ts`), the PDF, and the Word file break pages by
 the same rules, so a page ends on the same line in all three:
 
-- A bullet never splits; it moves to the next page whole (Word: `keepLines`).
+- A bullet moves to the next page whole (Word: `keepLines`), unless it is taller than a
+  page. Then it splits between lines like a paragraph, and the rest carries on with no
+  marker (Word ignores `keepLines` there; PDF: the marker and first two lines are one
+  unbreakable block).
 - A section title or entry line never ends a page: it moves with the first bullet under it
   (Word: `keepNext` on both; PDF: one unbreakable block). An entry line with no bullets
   lets the page break after it.

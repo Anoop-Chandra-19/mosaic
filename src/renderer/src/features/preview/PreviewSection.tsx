@@ -4,6 +4,8 @@ import { HEADLESS_LAYOUT as LYT } from '@/lib/resume/headlessLayout';
 export interface PreviewBullet {
   id: string;
   text: string;
+  /** The rest of a bullet carried over from the page before, so it has no marker. */
+  isContinued?: boolean;
 }
 
 export interface PreviewEntry {
@@ -106,7 +108,11 @@ export function PreviewSection({ section }: PreviewSectionProps) {
                   }}
                 >
                   {entry.bullets.map((bullet) => (
-                    <li key={bullet.id} data-preview-bullet-id={bullet.id}>
+                    <li
+                      key={bullet.id}
+                      className={bullet.isContinued ? 'list-none' : undefined}
+                      data-preview-bullet-id={bullet.id}
+                    >
                       {bullet.text}
                     </li>
                   ))}
