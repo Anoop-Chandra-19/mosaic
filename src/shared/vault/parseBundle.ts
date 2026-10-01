@@ -75,11 +75,11 @@ function requireRev(value: unknown, what: string): number {
 }
 
 function requireDoc(value: unknown, what: string): ResumeData {
-  if (!isResumeData(value)) throw new BundleError('invalid-resume', `${what} is not a resume`);
-  // Refuse files written by a newer Mosaic rather than silently downgrading.
-  if (value.schemaVersion > CURRENT_SCHEMA_VERSION) {
+  // Checked first, so a newer Mosaic's file says so instead of reading as damaged.
+  if (isRecord(value) && (value.schemaVersion as number) > CURRENT_SCHEMA_VERSION) {
     throw new BundleError('unsupported-version', `${what} was written by a newer Mosaic`);
   }
+  if (!isResumeData(value)) throw new BundleError('invalid-resume', `${what} is not a resume`);
   return migrateResume(value);
 }
 

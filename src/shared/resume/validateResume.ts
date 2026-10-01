@@ -1,4 +1,5 @@
 import type { ResumeData, SectionKind, SectionLayout } from '../types/resume';
+import { CURRENT_SCHEMA_VERSION } from './migrateResume';
 import {
   BUILT_IN_HEADER_KINDS,
   HEADER_ALIGNS,
@@ -105,10 +106,15 @@ function isContact(value: unknown): boolean {
   );
 }
 
-/** Structural check for a ResumeData document read from outside the app (a file, IPC). */
+/**
+ * Structural check for a ResumeData document read from outside the app (a file, IPC). A
+ * schema newer than this build's is refused: it can't be read, only relabelled.
+ */
 export function isResumeData(value: unknown): value is ResumeData {
   if (!isRecord(value)) return false;
-  if (typeof value.schemaVersion !== 'number') return false;
+  const version = value.schemaVersion;
+  if (!Number.isSafeInteger(version) || (version as number) < 1) return false;
+  if ((version as number) > CURRENT_SCHEMA_VERSION) return false;
   if (!isContact(value.contact)) return false;
   return Array.isArray(value.sections) && value.sections.every(isResumeSection);
 }
