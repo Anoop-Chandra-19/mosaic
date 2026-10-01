@@ -1,6 +1,6 @@
-import { formatEntryHeading } from '@shared/resume/entryHeading';
-import type { ResumeEntry, ResumeSection, SectionLayout } from '@shared/types/resume';
+import type { ResumeSection } from '@shared/types/resume';
 import { HEADLESS_LAYOUT } from '@/lib/resume/headlessLayout';
+import { selectPrintableSections } from '@/lib/resume/selectPrintableSections';
 import type { PreviewBullet, PreviewEntry, PreviewRenderableSection } from './PreviewSection';
 
 export interface PaginationMeasurements {
@@ -58,46 +58,18 @@ function estimateTextHeight(
   return lines * lineHeight;
 }
 
-function normalizeEntry(entry: ResumeEntry, layout: SectionLayout): PaginatedEntry | null {
-  if (!entry.selected) return null;
-
-  if (layout === 'lines') {
-    const text = (entry.text ?? '').trim();
-    if (!text) return null;
-    return { id: entry.id, text, bullets: [], _sourceKey: entry.id };
-  }
-
-  const heading = formatEntryHeading(entry);
-  const dates = (entry.dates ?? '').trim();
-  const bullets = entry.bullets
-    .filter((bullet) => bullet.selected)
-    .map((bullet) => ({ id: bullet.id, text: bullet.text.trim() }))
-    .filter((bullet) => bullet.text);
-
-  if (!heading && !dates && bullets.length === 0) return null;
-
-  return {
-    id: entry.id,
-    heading,
-    dates,
-    bullets,
-    _sourceKey: entry.id,
-  };
-}
-
 export function normalizeSections(sections: ResumeSection[]): PreviewRenderableSection[] {
-  return sections
-    .filter((section) => !section.hidden)
-    .sort((a, b) => a.order - b.order)
-    .map((section) => ({
-      id: section.id,
-      layout: section.layout,
-      label: section.label,
-      entries: section.items
-        .map((entry) => normalizeEntry(entry, section.layout))
-        .filter((entry): entry is PaginatedEntry => entry !== null),
-    }))
-    .filter((section) => section.entries.length > 0);
+  return selectPrintableSections(sections).map(({ id, layout, label, entries }) => ({
+    id,
+    layout,
+    label,
+    entries: entries.map(
+      ({ id, text, heading, dates, bullets }): PaginatedEntry =>
+        layout === 'lines'
+          ? { id, text, bullets: [], _sourceKey: id }
+          : { id, heading, dates, bullets, _sourceKey: id }
+    ),
+  }));
 }
 
 function splitTextByChars(text: string, maxChars: number) {
