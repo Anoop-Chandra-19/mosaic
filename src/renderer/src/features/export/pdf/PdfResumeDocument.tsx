@@ -40,7 +40,9 @@ const NO_BREAK_SPACE = String.fromCharCode(0xa0);
  * the marker behind on the first one. Two rules stop that, and they are the preview's rules
  * (`pagination.ts`), which is what makes the two agree — and Word's, so a resume breaks the
  * same wherever it is opened:
- * - a bullet moves to the next page whole (`wrap={false}` on its row);
+ * - a bullet moves to the next page whole (`wrap={false}` on its row), unless no page can
+ *   hold it: then its marker and first two lines move together, and the rest of its lines
+ *   break as a paragraph's do;
  * - a section title or an entry's italic line never ends a page on its own: it sits in one
  *   unbreakable block with the first bullet. `minPresenceAhead` can't do this, since it is
  *   satisfied by room for part of a bullet that then can't split;
@@ -48,7 +50,6 @@ const NO_BREAK_SPACE = String.fromCharCode(0xa0);
  *   most, since a paragraph splits by line keeping two on each side as Word does
  *   (`minPresenceAhead` works there).
  */
-const BULLET_SPLITS_ACROSS_PAGES = false;
 const MIN_LINES_AT_BREAK = 2;
 
 /**
@@ -159,11 +160,16 @@ const styles = StyleSheet.create({
     fontSize: LYT.bodyFontSize,
     lineHeight: LYT.bodyLineHeight,
   },
+  bulletTextContinued: {
+    marginLeft: LYT.bulletTextIndent,
+    fontSize: LYT.bodyFontSize,
+    lineHeight: LYT.bodyLineHeight,
+  },
 });
 
 export function PdfResumeDocument({ data, paperSize, measurers }: PdfResumeDocumentProps) {
   const size = paperSize === 'a4' ? 'A4' : 'LETTER';
-  const textWidth = getPageContentSizePt(paperSize).width;
+  const { width: textWidth, height: pageContentHeight } = getPageContentSizePt(paperSize);
   const bulletWidth = textWidth - LYT.bulletTextIndent;
   const breakLines = (text: string, width: number) =>
     measurers ? breakLinesLikeWord(text, width, measurers.body) : text;
@@ -262,16 +268,30 @@ export function PdfResumeDocument({ data, paperSize, measurers }: PdfResumeDocum
               {staysBehind}
               {section.entries.length === 0 && title}
               {section.entries.flatMap((entry, entryIndex) => {
-                const bulletRows = entry.bullets.map((bullet, index) => (
-                  <View
-                    key={`${entry.id}-${index}`}
-                    wrap={BULLET_SPLITS_ACROSS_PAGES}
-                    style={styles.bulletRow}
-                  >
-                    <Text style={styles.bulletMarker}>{'\u2022'}</Text>
-                    <Text style={styles.bulletText}>{breakLines(bullet, bulletWidth)}</Text>
-                  </View>
-                ));
+                const bulletRows = entry.bullets.flatMap((bullet, index) => {
+                  const text = breakLines(bullet, bulletWidth);
+                  const lines = text.split('\n');
+                  const isTallerThanPage =
+                    measurers && lines.length * LYT.bodyLeading > pageContentHeight;
+                  const row = (shown: string) => (
+                    <View key={`${entry.id}-${index}`} wrap={false} style={styles.bulletRow}>
+                      <Text style={styles.bulletMarker}>{'\u2022'}</Text>
+                      <Text style={styles.bulletText}>{shown}</Text>
+                    </View>
+                  );
+                  if (!isTallerThanPage) return [row(text)];
+                  return [
+                    row(lines.slice(0, MIN_LINES_AT_BREAK).join('\n')),
+                    <Text
+                      key={`${entry.id}-${index}-rest`}
+                      orphans={1}
+                      widows={MIN_LINES_AT_BREAK}
+                      style={styles.bulletTextContinued}
+                    >
+                      {lines.slice(MIN_LINES_AT_BREAK).join('\n')}
+                    </Text>,
+                  ];
+                });
                 return [
                   <View key={entry.id} wrap={false}>
                     {entryIndex === 0 && title}

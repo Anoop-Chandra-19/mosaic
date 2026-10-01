@@ -9,7 +9,7 @@ export interface PaginationMeasurements {
   entryHeights: Record<string, number>;
   entryHeadingHeights: Record<string, number>;
   bulletHeights: Record<string, number>;
-  /** Where each drawn line of a text-only entry starts, as offsets into its text. */
+  /** Where each drawn line starts in a text-only entry (by entry key) or a bullet (by id). */
   lineStarts: Record<string, number[]>;
 }
 
@@ -17,6 +17,8 @@ interface PageLayout {
   sections: PreviewRenderableSection[];
   usedHeight: number;
 }
+
+type PaginatedBullet = PreviewBullet & { _lineStarts?: number[] };
 
 type PaginatedEntry = PreviewEntry & {
   _height?: number;
@@ -112,8 +114,45 @@ function estimateBulletHeight(text: string) {
   return estimateTextHeight(text, BODY_LINE_HEIGHT_PX, BULLET_CHARS_PER_LINE);
 }
 
-function getBulletHeight(bullet: PreviewBullet, measurements: PaginationMeasurements) {
+function getBulletHeight(bullet: PaginatedBullet, measurements: PaginationMeasurements) {
+  if (bullet._lineStarts) return bullet._lineStarts.length * BODY_LINE_HEIGHT_PX;
   return measurements.bulletHeights[bullet.id] ?? estimateBulletHeight(bullet.text);
+}
+
+function countLinesBeforeBreak(lineCount: number, availableHeight: number) {
+  const kept = Math.min(
+    Math.floor(availableHeight / BODY_LINE_HEIGHT_PX),
+    lineCount - MIN_LINES_AT_BREAK
+  );
+  return kept < MIN_LINES_AT_BREAK ? 0 : kept;
+}
+
+function splitBulletByLines(
+  bullet: PaginatedBullet,
+  availableHeight: number,
+  measurements: PaginationMeasurements,
+  continuationIndex: number
+): { first: PaginatedBullet; rest: PaginatedBullet } | null {
+  const lineStarts = bullet._lineStarts ?? measurements.lineStarts[bullet.id];
+  if (!lineStarts) return null;
+  const kept = countLinesBeforeBreak(lineStarts.length, availableHeight);
+  if (!kept) return null;
+
+  const at = lineStarts[kept];
+  return {
+    first: {
+      ...bullet,
+      text: bullet.text.slice(0, at).trimEnd(),
+      _lineStarts: lineStarts.slice(0, kept),
+    },
+    rest: {
+      ...bullet,
+      id: `${bullet.id}-cont-${continuationIndex}`,
+      text: bullet.text.slice(at),
+      isContinued: true,
+      _lineStarts: lineStarts.slice(kept).map((start) => start - at),
+    },
+  };
 }
 
 function getEntryHeight(
@@ -152,7 +191,8 @@ function splitEntryByAvailableHeight(
   entry: PaginatedEntry,
   availableHeight: number,
   measurements: PaginationMeasurements,
-  continuationIndex: number
+  continuationIndex: number,
+  pageContentHeight: number
 ): { first: PaginatedEntry; rest: PaginatedEntry | null } | null {
   if (availableHeight <= 18) return null;
 
@@ -173,11 +213,8 @@ function splitEntryByAvailableHeight(
           rest: null,
         };
       }
-      const kept = Math.min(
-        Math.floor(availableHeight / BODY_LINE_HEIGHT_PX),
-        lineStarts.length - MIN_LINES_AT_BREAK
-      );
-      if (kept < MIN_LINES_AT_BREAK) return null;
+      const kept = countLinesBeforeBreak(lineStarts.length, availableHeight);
+      if (!kept) return null;
 
       const at = lineStarts[kept];
       return {
@@ -235,22 +272,38 @@ function splitEntryByAvailableHeight(
 
   if (availableHeight <= used + 8) return null;
 
-  const keptBullets: PreviewBullet[] = [];
+  const keptBullets: PaginatedBullet[] = [];
+  let restBullets: PaginatedBullet[] = [];
 
   for (let i = 0; i < bulletHeights.length; i += 1) {
     const bulletGap = keptBullets.length > 0 ? BULLET_GAP_PX : 0;
     const next = used + bulletGap + bulletHeights[i];
-    if (next > availableHeight) {
-      break;
+    if (next <= availableHeight) {
+      used = next;
+      keptBullets.push(entry.bullets[i]);
+      continue;
     }
-    used = next;
-    keptBullets.push(entry.bullets[i]);
+    restBullets = entry.bullets.slice(i);
+    // A bullet moves on whole, as in both exports, unless no page could hold it.
+    const parts =
+      bulletHeights[i] > pageContentHeight
+        ? splitBulletByLines(
+            entry.bullets[i],
+            availableHeight - used - bulletGap,
+            measurements,
+            continuationIndex
+          )
+        : null;
+    if (parts) {
+      used += bulletGap + getBulletHeight(parts.first, measurements);
+      keptBullets.push(parts.first);
+      restBullets[0] = parts.rest;
+    }
+    break;
   }
 
-  // As in both exports: a bullet never splits, and a heading never ends a page without one.
+  // A heading never ends a page without a bullet, or a bullet's first lines, under it.
   if (keptBullets.length === 0) return null;
-
-  const restBullets = entry.bullets.slice(keptBullets.length);
 
   return {
     first: {
@@ -356,7 +409,8 @@ export function paginateSections(
         candidate,
         remainingHeight,
         measurements,
-        continuationIndex
+        continuationIndex,
+        pageContentHeight
       );
 
       if (split?.first) {
@@ -384,7 +438,8 @@ export function paginateSections(
         candidate,
         freshAvailable,
         measurements,
-        continuationIndex
+        continuationIndex,
+        pageContentHeight
       );
 
       // Nothing to split it at — an entry with no bullets — so it goes on the new page whole.

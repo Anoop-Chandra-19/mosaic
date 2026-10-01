@@ -58,7 +58,7 @@ function measureLineStarts(paragraph: HTMLElement): number[] {
 }
 
 /** Measures the offscreen, unpaginated render that page splitting is driven by. */
-function measurePagination(root: HTMLElement): PaginationMeasurements {
+function measurePagination(root: HTMLElement, pageContentHeight: number): PaginationMeasurements {
   const sectionTitleHeights: Record<string, number> = {};
   const entryHeights: Record<string, number> = {};
   const entryHeadingHeights: Record<string, number> = {};
@@ -99,6 +99,7 @@ function measurePagination(root: HTMLElement): PaginationMeasurements {
     const bulletId = node.dataset.previewBulletId;
     if (!bulletId) return;
     bulletHeights[bulletId] = node.getBoundingClientRect().height;
+    if (bulletHeights[bulletId] > pageContentHeight) lineStarts[bulletId] = measureLineStarts(node);
   });
 
   return {
@@ -160,18 +161,18 @@ export function ResumePreview({
   useLayoutEffect(() => {
     const root = measureRootRef.current;
     if (!isStored || !root) return;
-    setMeasurements(measurePagination(root));
-  }, [isStored, contact, activeSections, pageContentSize.width]);
+    setMeasurements(measurePagination(root, pageContentSize.height));
+  }, [isStored, contact, activeSections, pageContentSize.width, pageContentSize.height]);
 
   useEffect(() => {
     if (isStored) return;
     const frame = window.requestAnimationFrame(() => {
       const root = measureRootRef.current;
-      if (root) setMeasurements(measurePagination(root));
+      if (root) setMeasurements(measurePagination(root, pageContentSize.height));
     });
 
     return () => window.cancelAnimationFrame(frame);
-  }, [isStored, contact, activeSections, pageContentSize.width]);
+  }, [isStored, contact, activeSections, pageContentSize.width, pageContentSize.height]);
 
   // Track only how much room the panel gives us, so a page wider than the panel
   // can be scaled down to fit instead of overflowing. Measured before paint, so the first

@@ -352,6 +352,47 @@ describe('paginateSections', () => {
     expect(paginate(126, 72)).toEqual([[], [text]]);
   });
 
+  it('splits a bullet no page can hold by line, the rest carried on without a marker', () => {
+    const lineTexts = Array.from({ length: 8 }, (_, index) => `g${index} words `);
+    const giant = lineTexts.join('').trimEnd();
+    const lineStarts = lineTexts.map((_, index) => lineTexts.slice(0, index).join('').length);
+    const paginate = (...short: string[]) =>
+      paginateSections(
+        [
+          createExperienceSection([
+            { id: 'job-1', bullets: [...createBullets(...short), { id: 'giant', text: giant }] },
+          ]),
+        ],
+        createMeasurements({
+          sectionTitleHeights: { experience: 18 },
+          bulletHeights: { A: 18, B: 18, giant: 144 },
+          lineStarts: { giant: lineStarts },
+        }),
+        // Five lines to a page; the first loses two to the blank line and title.
+        90
+      ).map((page) =>
+        page[0].entries[0].bullets.map((bullet) => [bullet.text, bullet.isContinued ?? false])
+      );
+
+    expect(paginate('A')).toEqual([
+      [
+        ['A', false],
+        ['g0 words g1 words', false],
+      ],
+      [['g2 words g3 words g4 words g5 words', true]],
+      [['g6 words g7 words', true]],
+    ]);
+    // Room for one line: the bullet can't leave its first line alone, so it moves on.
+    expect(paginate('A', 'B')).toEqual([
+      [
+        ['A', false],
+        ['B', false],
+      ],
+      [['g0 words g1 words g2 words g3 words g4 words', false]],
+      [['g5 words g6 words g7 words', true]],
+    ]);
+  });
+
   it('opens a section at the top of a later page without the blank line above it', () => {
     const jobs = ['job-1', 'job-2'];
     const pages = paginateSections(

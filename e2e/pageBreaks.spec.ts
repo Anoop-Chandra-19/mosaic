@@ -6,6 +6,7 @@ import { saveInto } from './dialogs';
 import { test, withApp } from './launch';
 
 const mosaic = withApp();
+const MARGIN_BOTTOM_PT = 67.95;
 
 const words = (text: string) => text.replace(/•/g, ' ').split(/\s+/).filter(Boolean);
 const long = (seed: string, count: number) =>
@@ -29,6 +30,8 @@ const RESUMES: Record<string, string[]> = {
     `- Built ${long('pr', 30)}.`,
   ],
   'an opening bullet that fits a page but not under the header': [`- Opener ${long('op', 480)}.`],
+  'an opening bullet no page can hold': [`- Giant ${long('gi', 600)}.`],
+  'a bullet no page can hold, after others': [...shortBullets(12), `- Giant ${long('gi', 600)}.`],
   'a paragraph whose title lands at the foot': [
     ...shortBullets(31),
     '',
@@ -37,15 +40,21 @@ const RESUMES: Record<string, string[]> = {
   ],
 };
 
-async function readPdfPageWords(file: string): Promise<string[][]> {
+/** Each page's words, and the lowest baseline on it, in points up from the page's foot. */
+async function readPdfPages(file: string) {
   const pdf = await getDocument({
     data: new Uint8Array(fs.readFileSync(file)),
     standardFontDataUrl: `${path.resolve('node_modules/pdfjs-dist/standard_fonts')}/`,
   }).promise;
-  const pages: string[][] = [];
+  const pages: { words: string[]; lowest: number }[] = [];
   for (let number = 1; number <= pdf.numPages; number++) {
-    const content = await (await pdf.getPage(number)).getTextContent();
-    pages.push(words(content.items.map((item) => ('str' in item ? item.str : '')).join(' ')));
+    const items = (await (await pdf.getPage(number)).getTextContent()).items.filter(
+      (item) => 'str' in item && item.str.trim()
+    );
+    pages.push({
+      words: words(items.map((item) => ('str' in item ? item.str : '')).join(' ')),
+      lowest: Math.min(...items.map((item) => ('transform' in item ? item.transform[5] : 0))),
+    });
   }
   return pages;
 }
@@ -80,11 +89,20 @@ for (const [name, lines] of Object.entries(RESUMES)) {
       .click();
     await expect(page.getByText(/^Saved .*\.pdf$/)).toBeVisible({ timeout: 15_000 });
     const file = fs.readdirSync(userDataDir).find((f) => f.endsWith('.pdf'))!;
-    const pdfPages = await readPdfPageWords(path.join(userDataDir, file));
+    const pdfPages = (await readPdfPages(path.join(userDataDir, file))).map(
+      ({ words: pageWords, lowest }) => {
+        expect(lowest).toBeGreaterThan(MARGIN_BOTTOM_PT);
+        return pageWords;
+      }
+    );
 
     const previewPages = await sheets.evaluateAll((nodes) =>
       nodes.map((node) => (node as HTMLElement).innerText)
     );
+    const overflowing = await sheets.evaluateAll((nodes) =>
+      nodes.filter((node) => node.scrollHeight > node.clientHeight)
+    );
+    expect(overflowing).toHaveLength(0);
     expect(pdfPages.map((pageWords) => pageWords.slice(0, 3))).toEqual(
       previewPages.map((pageText) => words(pageText).slice(0, 3))
     );
