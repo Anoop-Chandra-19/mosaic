@@ -105,3 +105,38 @@ test('a resume past ten pages is drawn as far as the preview goes, and says so',
   await expect(page.getByRole('contentinfo').getByText('10+ pages · A4')).toBeVisible();
   expect(errors).toEqual([]);
 });
+
+test('the preview shows text as it is typed, and drops it on Escape', async () => {
+  const { page, errors } = mosaic();
+  const sidebar = page.getByRole('complementary');
+  const sheets = page.locator('[data-preview-page-content]');
+  const main = page.getByRole('main');
+  await page.getByRole('button', { name: /Blank resume/ }).click();
+  await importPastedResume(page, longResumeText(12));
+  await expect(main.getByText('1 page', { exact: true })).toBeVisible();
+
+  // A bullet's text, and the page breaks it moves, before it is saved.
+  await sidebar.getByText('Wrote program 3 for').click();
+  const bullet = sidebar.getByRole('textbox', { name: 'Bullet text' });
+  await bullet.fill(`Typed ${'and kept on typing '.repeat(120)}until the end.`);
+  await expect(sheets.first()).toContainText('Typed and kept on typing');
+  await expect(main.getByText('2 pages', { exact: true })).toBeVisible();
+  await bullet.press('Escape');
+  await expect(sheets.first()).toContainText('Wrote program 3 for');
+  await expect(sheets.first()).not.toContainText('Typed and kept');
+  await expect(main.getByText('1 page', { exact: true })).toBeVisible();
+
+  // A field of the entry's line, then saved: the preview keeps it.
+  await sidebar.getByText('Analyst', { exact: true }).click();
+  const title = sidebar.getByRole('textbox', { name: 'Title' });
+  await title.fill('Principal Analyst');
+  await expect(sheets.first().locator('h3')).toContainText('Principal Analyst');
+  await title.press('Enter');
+  await expect(sheets.first().locator('h3')).toContainText('Principal Analyst');
+
+  // A bullet still being added.
+  await sidebar.getByRole('button', { name: 'Add bullet' }).click();
+  await sidebar.getByRole('textbox', { name: 'Bullet text' }).fill('Brand new bullet');
+  await expect(sheets.last()).toContainText('Brand new bullet');
+  expect(errors).toEqual([]);
+});

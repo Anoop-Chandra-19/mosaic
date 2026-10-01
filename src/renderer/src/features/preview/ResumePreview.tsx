@@ -1,11 +1,12 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useDeferredValue, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { cn } from '@/lib/utils';
+import { useLiveEditStore } from '@/stores/liveEditStore';
 import { useResumeStore } from '@/stores/resumeStore';
 import type { ResumeData } from '@shared/types/resume';
 import type { PaperSize } from '@/types/paper';
 import { PreviewHeader } from './PreviewHeader';
 import { PreviewPage } from './PreviewPage';
-import { PreviewSection, type PreviewRenderableSection } from './PreviewSection';
+import { PreviewSection } from './PreviewSection';
 import {
   createFallbackMeasurements,
   MAX_PREVIEW_PAGES,
@@ -35,8 +36,6 @@ export interface ResumePreviewMeta {
   /** The resume runs past `MAX_PREVIEW_PAGES`, so the rest was not laid out. */
   hasMorePages: boolean;
 }
-
-const MEASUREMENT_THROTTLE_MS = 100;
 
 /** Offsets into a paragraph's text where each drawn line begins, found by word. */
 function measureLineStarts(paragraph: HTMLElement): number[] {
@@ -123,11 +122,16 @@ export function ResumePreview({
 }: ResumePreviewProps) {
   const draftContact = useResumeStore((s) => s.contact);
   const draftSections = useResumeStore((s) => s.sections);
-  const contact = doc?.contact ?? draftContact;
-  const sections = doc?.sections ?? draftSections;
+  // Deferred, so a keystroke paints in its field first and the page follows. Under load
+  // React skips to the newest text rather than queueing every one.
+  const liveEdit = useDeferredValue(useLiveEditStore((s) => s.edit));
+  const { contact, sections } = useMemo(() => {
+    if (doc) return doc;
+    const draft = { contact: draftContact, sections: draftSections };
+    return liveEdit ? liveEdit(draft) : draft;
+  }, [doc, draftContact, draftSections, liveEdit]);
   const measureRootRef = useRef<HTMLDivElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const [throttledSections, setThrottledSections] = useState<PreviewRenderableSection[]>([]);
   const [measurements, setMeasurements] = useState<PaginationMeasurements | null>(null);
   const [availableWidth, setAvailableWidth] = useState(0);
 
@@ -135,44 +139,14 @@ export function ResumePreview({
   const paper = PAPER_DIMENSIONS_PT[paperSize];
   const pageContentSize = getPageContentSize(paperSize);
 
-  const normalizedSections = useMemo(() => normalizeSections(sections), [sections]);
+  const activeSections = useMemo(() => normalizeSections(sections), [sections]);
 
-  // A stored version is never typed into, so it skips the throttle and is measured before
-  // it paints: stepping between versions then slides in a page already laid out, where the
-  // throttle showed the old version's text, then re-wrapped and re-paginated mid-slide.
-  const isStored = doc !== undefined;
-
-  useEffect(() => {
-    if (isStored) return;
-    // Avoid re-measuring the resume on every keystroke while the user is typing.
-    const timer = window.setTimeout(() => {
-      setThrottledSections(normalizedSections);
-    }, MEASUREMENT_THROTTLE_MS);
-
-    return () => window.clearTimeout(timer);
-  }, [normalizedSections, isStored]);
-
-  const activeSections = isStored
-    ? normalizedSections
-    : throttledSections.length > 0
-      ? throttledSections
-      : normalizedSections;
-
+  // Measured before paint, so a change shows once, already paginated: never first with
+  // the old heights and then again. Stepping between versions slides in a laid-out page.
   useLayoutEffect(() => {
     const root = measureRootRef.current;
-    if (!isStored || !root) return;
-    setMeasurements(measurePagination(root, pageContentSize.height));
-  }, [isStored, contact, activeSections, pageContentSize.width, pageContentSize.height]);
-
-  useEffect(() => {
-    if (isStored) return;
-    const frame = window.requestAnimationFrame(() => {
-      const root = measureRootRef.current;
-      if (root) setMeasurements(measurePagination(root, pageContentSize.height));
-    });
-
-    return () => window.cancelAnimationFrame(frame);
-  }, [isStored, contact, activeSections, pageContentSize.width, pageContentSize.height]);
+    if (root) setMeasurements(measurePagination(root, pageContentSize.height));
+  }, [contact, activeSections, pageContentSize.width, pageContentSize.height]);
 
   // Track only how much room the panel gives us, so a page wider than the panel
   // can be scaled down to fit instead of overflowing. Measured before paint, so the first
