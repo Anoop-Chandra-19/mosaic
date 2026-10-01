@@ -329,15 +329,25 @@ function readNumbering(root: XmlElement | null, styles: Styles): Numbering {
   const abstractOf = (num: XmlElement | undefined) =>
     abstracts.get(attribute(childNamed(num, W, 'abstractNumId'), W, 'val'));
   // A list may define no levels itself, only name a numbering style whose list has them.
-  const levelsThrough = (abstract: XmlElement, seen = new Set<string>()): Map<number, boolean> => {
-    const link = attribute(childNamed(abstract, W, 'numStyleLink'), W, 'val');
-    const linked = link && !seen.has(link) && abstractOf(nums.get(styles.lists.get(link)));
-    return linked ? levelsThrough(linked, seen.add(link)) : levelsOf(abstract);
+  const definedBy = new Map<XmlElement, XmlElement>();
+  const findLevelsDefinition = (abstract: XmlElement): XmlElement => {
+    const path = new Set<XmlElement>();
+    let at = abstract;
+    while (!definedBy.has(at)) {
+      path.add(at);
+      const link = attribute(childNamed(at, W, 'numStyleLink'), W, 'val');
+      const linked = link && abstractOf(nums.get(styles.lists.get(link)));
+      if (!linked || path.has(linked)) break;
+      at = linked;
+    }
+    const definition = definedBy.get(at) ?? at;
+    for (const step of path) definedBy.set(step, definition);
+    return definition;
   };
   for (const [id, num] of nums) {
     const abstract = abstractOf(num);
     if (!id || !abstract) continue;
-    const levels = levelsThrough(abstract);
+    const levels = levelsOf(findLevelsDefinition(abstract));
     for (const override of childrenNamed(num, W, 'lvlOverride')) levelsOf(override, levels);
     numbering.set(id, levels);
   }
