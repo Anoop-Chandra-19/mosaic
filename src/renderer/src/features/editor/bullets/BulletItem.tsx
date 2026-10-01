@@ -30,6 +30,7 @@ import type { Bullet } from '@shared/types/resume';
 import { BulletEditor, type BulletMerge } from './BulletEditor';
 import { EditorCheckbox } from '../EditorCheckbox';
 import { HIDDEN_WHILE_READING } from '../editorClasses';
+import { showBulletText } from '../liveEdits';
 import { SortGripHandle, type SortGrip } from '../sort-list/SortList';
 import { canSplitText } from './splitAndMergeBullets';
 import type { BulletTint } from './useSplitAndMergeBullets';
@@ -149,6 +150,7 @@ export function BulletItem({
         cursorAt={editing.cursorAt}
         isOff={!bullet.selected}
         startsTinted={tint === 'carried'}
+        livePreview={(text) => showBulletText(entryId, bullet.id, text)}
         onSave={saveText}
         onCancel={closeEditor}
         onAddBelow={(text) => {

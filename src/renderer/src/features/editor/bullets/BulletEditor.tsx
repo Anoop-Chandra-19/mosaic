@@ -14,7 +14,9 @@ import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { SHORTCUTS } from '@/features/shortcuts/shortcutList';
 import { formatShortcutKeys, matchesShortcut } from '@/lib/keyboardShortcuts';
 import { cn } from '@/lib/utils';
+import type { LiveEdit } from '@/stores/liveEditStore';
 import { useUiStore } from '@/stores/uiStore';
+import { useLiveEdit } from '../useLiveEdit';
 import { countBulletLines } from './countBulletLines';
 import { parseBulletLines } from './parseBulletLines';
 import {
@@ -58,6 +60,8 @@ interface BulletEditorProps {
   /** Holds a split's tail, so it keeps the tail's tint a moment. */
   startsTinted?: boolean;
   placeholder?: string;
+  /** How the preview shows the text while it is typed. */
+  livePreview?: (text: string) => LiveEdit;
 }
 
 type EditorMode = 'edit' | 'split' | 'merge';
@@ -91,9 +95,11 @@ export function BulletEditor({
   merge,
   startsTinted = false,
   placeholder = 'Describe the outcome, then the method. Start with a verb.',
+  livePreview,
 }: BulletEditorProps) {
   const paperSize = useUiStore((s) => s.paperSize);
   const [draft, setDraft] = useState(initial);
+  useLiveEdit(draft, livePreview);
   const [mode, setMode] = useState<EditorMode>(
     merge ? 'merge' : startsSplitting && onSplit ? 'split' : 'edit'
   );

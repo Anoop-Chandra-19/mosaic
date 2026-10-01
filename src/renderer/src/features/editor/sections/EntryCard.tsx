@@ -26,6 +26,7 @@ import { EditorCheckbox } from '../EditorCheckbox';
 import { HIDDEN_WHILE_READING } from '../editorClasses';
 import { EditorFold } from '../EditorFold';
 import { InlineEditField } from '../InlineEditField';
+import { showEntryFields, showNewBullet } from '../liveEdits';
 import { swapNeighbours } from '../sort-list/listOrder';
 import { countHeadingLines } from './countHeadingLines';
 import { SortGripHandle, SortList, type SortGrip } from '../sort-list/SortList';
@@ -136,6 +137,7 @@ export function EntryCard({
               <InlineEditField
                 value={entry.text ?? ''}
                 onSave={(v) => update({ text: v })}
+                livePreview={(text) => showEntryFields(entry.id, { text })}
                 placeholder="Click to edit..."
                 className="leading-normal"
               />
@@ -146,6 +148,7 @@ export function EntryCard({
                 <InlineEditField
                   value={entry.title ?? ''}
                   onSave={(v) => update({ title: v })}
+                  livePreview={(title) => showEntryFields(entry.id, { title })}
                   placeholder="Role or title"
                   label="Title"
                   className="text-[0.9375rem] leading-[1.35] font-semibold tracking-[-0.012em] text-foreground"
@@ -156,6 +159,7 @@ export function EntryCard({
                 <InlineEditField
                   value={entry.organization ?? ''}
                   onSave={(v) => update({ organization: v })}
+                  livePreview={(organization) => showEntryFields(entry.id, { organization })}
                   placeholder="Company or context"
                   label="Organization"
                   className="text-[0.8375rem]"
@@ -166,6 +170,7 @@ export function EntryCard({
                 <InlineEditField
                   value={entry.location ?? ''}
                   onSave={(v) => update({ location: v })}
+                  livePreview={(location) => showEntryFields(entry.id, { location })}
                   placeholder="Location or Remote"
                   label="Location"
                   className={META_FIELD}
@@ -177,6 +182,7 @@ export function EntryCard({
                 <InlineEditField
                   value={entry.dates ?? ''}
                   onSave={(v) => update({ dates: v })}
+                  livePreview={(dates) => showEntryFields(entry.id, { dates })}
                   placeholder="Dates"
                   label="Dates"
                   className={META_FIELD}
@@ -230,6 +236,7 @@ export function EntryCard({
                             {row}
                             <BulletEditor
                               initial=""
+                              livePreview={(text) => showNewBullet(entry.id, text, id)}
                               onSave={(text) => {
                                 if (text) addBullet(sectionId, entry.id, text, id);
                                 setAddingAfterId(null);
@@ -252,7 +259,10 @@ export function EntryCard({
                         );
                       }}
                     />
-                    <AddBulletButton onAdd={(text) => addBullet(sectionId, entry.id, text)} />
+                    <AddBulletButton
+                      onAdd={(text) => addBullet(sectionId, entry.id, text)}
+                      livePreview={(text) => showNewBullet(entry.id, text)}
+                    />
                   </div>
                 </ListMotionContext>
               </EditorFold>

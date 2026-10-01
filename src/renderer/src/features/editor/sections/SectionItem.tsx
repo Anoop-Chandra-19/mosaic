@@ -21,6 +21,7 @@ import { EditorFold, FoldChevron } from '../EditorFold';
 import { InlineEditField } from '../InlineEditField';
 import { swapNeighbours } from '../sort-list/listOrder';
 import { SortGripHandle, SortList, type SortGrip } from '../sort-list/SortList';
+import { showSectionLabel } from '../liveEdits';
 import { CUSTOM_ICONS, PRESET_ICONS } from './sectionIcons';
 import { EntryCard } from './EntryCard';
 
@@ -116,6 +117,7 @@ export function SectionItem({
             <InlineEditField
               value={section.label}
               onSave={(v) => updateSectionLabel(section.id, v)}
+              livePreview={(label) => showSectionLabel(section.id, label)}
               onClose={() => setIsRenaming(false)}
               openAtStart
               label="Section name"

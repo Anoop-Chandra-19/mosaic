@@ -4,11 +4,18 @@ import { AppButton } from '@/components/AppButton';
 import { carryTint, travelFrom } from '@/lib/motion/rowMotions';
 import { ListMotionContext, useSwapMotion } from '@/lib/motion/useListMotion';
 import { cn } from '@/lib/utils';
+import type { LiveEdit } from '@/stores/liveEditStore';
 import { BulletEditor } from './BulletEditor';
 import { HIDDEN_WHILE_READING } from '../editorClasses';
 
 /** "Add bullet", which opens the bullet editor empty. Pasting several lines adds each. */
-export function AddBulletButton({ onAdd }: { onAdd: (text: string) => void }) {
+export function AddBulletButton({
+  onAdd,
+  livePreview,
+}: {
+  onAdd: (text: string) => void;
+  livePreview?: (text: string) => LiveEdit;
+}) {
   const [open, setOpenNow] = useState(false);
   // Alt+Enter saves and starts over with an empty editor: a fresh one, under a new key.
   const [round, setRound] = useState(0);
@@ -40,6 +47,7 @@ export function AddBulletButton({ onAdd }: { onAdd: (text: string) => void }) {
         <BulletEditor
           key={round}
           initial=""
+          livePreview={livePreview}
           onAddBelow={(text) => {
             if (!text) return setOpen(false);
             add(text);

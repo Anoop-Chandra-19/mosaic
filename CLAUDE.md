@@ -19,9 +19,10 @@ Paths below are relative to the repository root. Read the relevant files before 
 
 - Electron 44 + electron-vite: `src/main/`, sandboxed `src/preload/`, and
   `src/renderer/index.html` + `src/renderer/src/`. Root `e2e/` tests the whole built app;
-  `scripts/` holds release helpers and two checks run by hand, never in CI: the agent evals
-  (`scripts/agent-evals/`, with your own keys) and the page-break sweep
-  (`scripts/page-break-sweep/`, needs LibreOffice). Build output is `out/`.
+  `scripts/` holds release helpers and three checks run by hand, never in CI: the agent evals
+  (`scripts/agent-evals/`, with your own keys), the page-break sweep
+  (`scripts/page-break-sweep/`, needs LibreOffice), and the typing check
+  (`scripts/typing-check/`, whether the live preview keeps up). Build output is `out/`.
 - React 19 + React Compiler, TypeScript, Tailwind v4, Zustand, Radix/shadcn, Lucide.
   `@/` maps to `src/renderer/src/`; `@shared/` maps to `src/shared/`.
 - Renderer has no Node, raw IPC, or network. Use only `window.mosaic`: `db`, `files`

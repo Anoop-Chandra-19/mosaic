@@ -24,6 +24,7 @@ import type { ContactInfo, LinkColor, LinkStyle } from '@shared/types/resume';
 import { HIDDEN_WHILE_READING } from '../editorClasses';
 import { EditorFold } from '../EditorFold';
 import { InlineEditField } from '../InlineEditField';
+import { showName } from '../liveEdits';
 import { HeaderLineBlock } from './HeaderLineBlock';
 
 /**
@@ -64,6 +65,7 @@ export function ResumeHeaderCard({ contact: shown }: { contact?: ContactInfo }) 
         <InlineEditField
           value={contact.name}
           onSave={setName}
+          livePreview={showName}
           placeholder="Your name"
           className="text-base font-semibold tracking-[-0.012em] text-foreground"
           inputClassName="text-base font-semibold tracking-[-0.012em] md:text-base"

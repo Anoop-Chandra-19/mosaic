@@ -8,6 +8,8 @@ import { cn } from '@/lib/utils';
 import { resolveHeaderItemHref, getHeaderKindInfo } from '@shared/resume/resumeHeader';
 import type { HeaderItem } from '@shared/types/resume';
 import { EDITOR_INPUT_CLASS } from '../editorClasses';
+import { showHeaderItemText } from '../liveEdits';
+import { useLiveEdit } from '../useLiveEdit';
 import { HEADER_ICONS } from './headerIcons';
 
 export type HeaderItemField = 'text' | 'url';
@@ -37,6 +39,7 @@ export function HeaderItemEditor({
 }: HeaderItemEditorProps) {
   const [text, setText] = useState(item.text);
   const [url, setUrl] = useState(item.url);
+  useLiveEdit(text, (typed) => showHeaderItemText(item.id, typed));
   const fieldId = useId();
   const { label, placeholder } = getHeaderKindInfo(item.kind);
   const Icon = HEADER_ICONS[item.kind];

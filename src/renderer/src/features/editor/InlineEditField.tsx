@@ -2,7 +2,9 @@ import { AppTooltip } from '@/components/AppTooltip';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 import { useInlineEdit } from '@/lib/hooks/useInlineEdit';
+import type { LiveEdit } from '@/stores/liveEditStore';
 import { EDITOR_INPUT_CLASS } from './editorClasses';
+import { useLiveEdit } from './useLiveEdit';
 
 interface InlineEditFieldProps {
   value: string;
@@ -17,6 +19,8 @@ interface InlineEditFieldProps {
   onClose?: () => void;
   /** The input's accessible name. */
   label?: string;
+  /** How the preview shows the text while it is typed. */
+  livePreview?: (text: string) => LiveEdit;
 }
 
 /**
@@ -33,6 +37,7 @@ export function InlineEditField({
   openAtStart = false,
   onClose,
   label,
+  livePreview,
 }: InlineEditFieldProps) {
   const { editing, draft, setDraft, startEditing, handleBlur, handleKeyDown } = useInlineEdit(
     value,
@@ -40,6 +45,7 @@ export function InlineEditField({
     openAtStart,
     onClose
   );
+  useLiveEdit(editing ? draft : null, livePreview);
 
   // It wraps as the text does at rest, so a long title stays readable while it is edited.
   // Enter still saves, and a line break pasted in becomes a space.
