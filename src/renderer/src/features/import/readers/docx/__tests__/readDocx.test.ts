@@ -361,6 +361,29 @@ describe('readDocxContent', () => {
     expect(paragraphsOf(blocks)[0].list).toMatchObject({ marker: false });
   });
 
+  it('follows a long chain of numbering styles, and a loop of them, without running away', async () => {
+    const style = (id: number) =>
+      `<w:style w:type="numbering" w:styleId="L${id}"><w:pPr><w:numPr><w:numId w:val="${id}"/></w:numPr></w:pPr></w:style>`;
+    const definition = (id: number, inner: string) =>
+      `<w:abstractNum w:abstractNumId="${id}">${inner}</w:abstractNum><w:num w:numId="${id}"><w:abstractNumId w:val="${id}"/></w:num>`;
+    const linkTo = (id: number) => `<w:numStyleLink w:val="L${id}"/>`;
+    const noMarker = `<w:lvl w:ilvl="0"><w:numFmt w:val="none"/><w:lvlText w:val=""/></w:lvl>`;
+
+    const chain = Array.from({ length: 6001 }, (_, i) => 100 + i);
+    const loop = [90, 91];
+    const { blocks } = await read(para('Chained', { list: 100 }) + para('Looped', { list: 90 }), {
+      styles: [...chain, ...loop].map(style).join(''),
+      numbering:
+        chain.map((id) => definition(id, id === 6100 ? noMarker : linkTo(id + 1))).join('') +
+        definition(90, linkTo(91)) +
+        definition(91, linkTo(90)),
+    });
+    expect(paragraphsOf(blocks).map((p) => [p.text, p.list?.marker])).toEqual([
+      ['Chained', false],
+      ['Looped', true],
+    ]);
+  });
+
   describe('what it leaves out, and says so', () => {
     it('text a tracked change took out, keeping what one added', async () => {
       const { blocks, notes } = await read(
