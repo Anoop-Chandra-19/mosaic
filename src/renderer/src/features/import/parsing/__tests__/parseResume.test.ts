@@ -573,3 +573,26 @@ describe('textToLines', () => {
     expect(headings('ADA\n\nWORK HISTORY\nACME CORP\nAnalyst')).toEqual(['Work History']);
   });
 });
+
+describe('parsing time', () => {
+  // A ratio, not a time, so a slow computer doesn't fail it: 4x the text should take about
+  // 4x as long, where rescanning each position would take 16x.
+  const slowestGrowth = (makeText: (length: number) => string) => {
+    const time = (length: number) => {
+      const text = makeText(length);
+      let fastest = Infinity;
+      for (let run = 0; run < 3; run++) {
+        const start = performance.now();
+        parseResumeText(text);
+        fastest = Math.min(fastest, performance.now() - start);
+      }
+      return fastest;
+    };
+    return time(32_000) / time(8_000);
+  };
+
+  it('grows with the text, not its square, on one long word', () => {
+    expect(slowestGrowth((n) => `${'a'.repeat(n)}\n\nSkills\nTypeScript`)).toBeLessThan(8);
+    expect(slowestGrowth((n) => `${'a.'.repeat(n / 2)}1\n\nSkills\nTypeScript`)).toBeLessThan(8);
+  });
+});
