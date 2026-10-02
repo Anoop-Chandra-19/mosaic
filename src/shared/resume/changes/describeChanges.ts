@@ -5,9 +5,10 @@ import {
   getChangeTone,
   isShortFieldChange,
   type Change,
-  type ChangeLine,
+  type ChangeTargetType,
   type ChangeTone,
   type EntryField,
+  type Placement,
 } from './resumeChange';
 
 const FIELD_NAMES: Record<EntryField, string> = {
@@ -34,54 +35,72 @@ export interface ChangeWording {
   detail: string | null;
 }
 
-function nameChangedThing(change: Change): string {
-  switch (change.line) {
+function nameChangedThing({ kind, target, number, displayName }: Change): string {
+  switch (target.type) {
     case 'bullet':
-      return `Bullet ${change.n ?? ''}`.trim();
+      return `Bullet ${number ?? ''}`.trim();
     case 'entry':
-    case 'text':
-      return change.label || 'Entry';
+    case 'textLine':
+      return displayName || 'Entry';
     case 'section':
-      return change.kind === 'rename' ? 'Section name' : (change.text ?? '');
-    case 'field':
-      return change.field ? FIELD_NAMES[change.field] : 'Field';
-    case 'item':
-      return change.itemKind ? ITEM_NAMES[change.itemKind] : 'Header item';
-    case 'summary':
+      return kind === 'edit' ? 'Section name' : (displayName ?? '');
+    case 'entryField':
+      return target.field ? FIELD_NAMES[target.field] : 'Field';
+    case 'headerItem':
+      return target.itemKind ? ITEM_NAMES[target.itemKind] : 'Header item';
+    case 'summaryLine':
       return 'Summary';
     case 'name':
       return 'Name';
   }
 }
 
+function describePlacement({ relation, name }: Placement): string {
+  return relation === 'in' ? `to ${name}` : `${relation} ${name}`;
+}
+
+const DESCRIBE_PLACEMENT_BEFORE: Record<Placement['relation'], (name: string) => string> = {
+  below: (name) => `was below ${name}`,
+  above: (name) => `was first, above ${name}`,
+  in: (name) => `was in ${name}`,
+  alone: () => 'was first',
+};
+
 function describeMove(change: Change): string {
-  const where = change.rel === 'to' ? `to ${change.other}` : `${change.rel} ${change.other}`;
-  return change.was ? `moved ${where} (${change.was})` : `moved ${where}`;
+  if (!change.move) return 'moved';
+  const { placement, placementBefore } = change.move;
+  const before = DESCRIBE_PLACEMENT_BEFORE[placementBefore.relation](placementBefore.name);
+  return `moved ${describePlacement(placement)} (${before})`;
 }
 
 /** An entry or section says what it is: "Analyst entry left off the page". */
-const KIND_WORDS: Partial<Record<ChangeLine, string>> = { entry: 'entry ', section: 'section ' };
+const KIND_WORDS: Partial<Record<ChangeTargetType, string>> = {
+  entry: 'entry ',
+  section: 'section ',
+};
 
 /** How the text changed: worded differently, or a short field filled, emptied, or replaced. */
-function describeEdit(change: Change): string {
-  if (change.phrases) return change.line === 'summary' ? 'reworded' : 'edited';
-  if (!change.from) return 'added';
-  if (!change.to) return 'cleared';
-  return change.line === 'section' || change.field === 'title' ? 'renamed' : 'changed';
+function describeEdit({ target, before, after, phrases }: Change): string {
+  if (phrases) return target.type === 'summaryLine' ? 'reworded' : 'edited';
+  if (!before) return 'added';
+  if (!after) return 'cleared';
+  return target.type === 'section' || target.field === 'title' ? 'renamed' : 'changed';
 }
 
 function describeVerb(change: Change): string {
-  const kindWord = KIND_WORDS[change.line] ?? '';
+  const kindWord = KIND_WORDS[change.target.type] ?? '';
   switch (change.kind) {
-    case 'reorder':
+    case 'move':
       return describeMove(change);
-    case 'toggle':
-      return kindWord + (change.isOnPage ? 'back on the page' : 'left off the page');
+    case 'show':
+      return `${kindWord}back on the page`;
+    case 'hide':
+      return `${kindWord}left off the page`;
     case 'add':
       return `${kindWord}added`;
     case 'remove':
       return `${kindWord}removed`;
-    default:
+    case 'edit':
       return describeEdit(change);
   }
 }
@@ -89,8 +108,8 @@ function describeVerb(change: Change): string {
 /** A short field's old → new, or whichever side it has. */
 function describeDetail(change: Change): string | null {
   if (!isShortFieldChange(change)) return null;
-  if (change.from && change.to) return `${change.from} → ${change.to}`;
-  return change.from || change.to || null;
+  if (change.before && change.after) return `${change.before} → ${change.after}`;
+  return change.before || change.after || null;
 }
 
 /** One wording for the change list, the unified view, and the banner. */
@@ -118,15 +137,15 @@ const plural = (n: number, one: string, many: string) => (n === 1 ? one : many);
 const count = (n: number, one: string, many: string) => `${n} ${plural(n, one, many)}`;
 
 /** What a line is called when counted. A summary or text line is just a line. */
-const THING_NAMES: Record<ChangeLine, [string, string]> = {
+const THING_NAMES: Record<ChangeTargetType, [string, string]> = {
   name: ['name', 'names'],
-  item: ['header item', 'header items'],
+  headerItem: ['header item', 'header items'],
   section: ['section', 'sections'],
   entry: ['entry', 'entries'],
-  field: ['field', 'fields'],
+  entryField: ['field', 'fields'],
   bullet: ['bullet', 'bullets'],
-  summary: ['line', 'lines'],
-  text: ['line', 'lines'],
+  summaryLine: ['line', 'lines'],
+  textLine: ['line', 'lines'],
 };
 
 const DIFFERENT_FIELDS: Record<EntryField, [string, string]> = {
@@ -136,13 +155,13 @@ const DIFFERENT_FIELDS: Record<EntryField, [string, string]> = {
   dates: ['different dates', 'different dates'],
 };
 
-const WORDED_DIFFERENTLY: Partial<Record<ChangeLine, (n: number) => string>> = {
+const WORDED_DIFFERENTLY: Partial<Record<ChangeTargetType, (n: number) => string>> = {
   name: () => 'a different name',
-  item: (n) => (n === 1 ? 'a different header item' : `${n} different header items`),
+  headerItem: (n) => (n === 1 ? 'a different header item' : `${n} different header items`),
   section: (n) => (n === 1 ? 'a renamed section' : `${n} renamed sections`),
   bullet: (n) => `${count(n, 'bullet', 'bullets')} worded differently`,
-  summary: () => 'a reworded summary',
-  text: (n) => `${count(n, 'line', 'lines')} worded differently`,
+  summaryLine: () => 'a reworded summary',
+  textLine: (n) => `${count(n, 'line', 'lines')} worded differently`,
 };
 
 /** One phrase of the sentence; changes with the same `key` are counted into it. */
@@ -154,9 +173,10 @@ interface PhraseKind {
 }
 
 function classifyDifference(change: Change): PhraseKind | null {
+  const { kind, target } = change;
   const tone = getChangeTone(change);
-  const [one, many] = THING_NAMES[change.line];
-  if (change.kind === 'reorder') {
+  const [one, many] = THING_NAMES[target.type];
+  if (kind === 'move') {
     return {
       key: `moved ${one}`,
       isMissing: false,
@@ -164,9 +184,9 @@ function classifyDifference(change: Change): PhraseKind | null {
       write: (n) => `${count(n, one, many)} in a different place`,
     };
   }
-  if (change.kind === 'add' || change.kind === 'remove' || change.kind === 'toggle') {
+  if (kind !== 'edit') {
     const isMissing = tone !== 'add';
-    if (change.line === 'summary') {
+    if (target.type === 'summaryLine') {
       return {
         key: isMissing ? 'missing summary' : 'extra summary',
         isMissing,
@@ -181,17 +201,17 @@ function classifyDifference(change: Change): PhraseKind | null {
       write: (n) => (isMissing ? count(n, one, many) : `${n} extra ${plural(n, one, many)}`),
     };
   }
-  if (change.line === 'field' && change.field) {
-    const [single, several] = DIFFERENT_FIELDS[change.field];
+  if (target.type === 'entryField' && target.field) {
+    const [single, several] = DIFFERENT_FIELDS[target.field];
     return {
-      key: `field ${change.field}`,
+      key: `field ${target.field}`,
       isMissing: false,
       tone,
       write: (n) => `${plural(n, single, several)} on ${count(n, 'entry', 'entries')}`,
     };
   }
-  const write = WORDED_DIFFERENTLY[change.line];
-  return write ? { key: `edited ${change.line}`, isMissing: false, tone: 'edit', write } : null;
+  const write = WORDED_DIFFERENTLY[target.type];
+  return write ? { key: `edited ${target.type}`, isMissing: false, tone: 'edit', write } : null;
 }
 
 /**
@@ -215,9 +235,9 @@ export function describeDifference(changes: readonly Change[]): DifferenceWordin
   }
 
   const where = new Set<string>();
-  for (const change of changes) {
-    if (change.line === 'item' || change.line === 'name') where.add('the header');
-    else if (change.line !== 'summary') where.add(change.where.split(' › ')[0]);
+  for (const { target, path } of changes) {
+    if (target.type === 'headerItem' || target.type === 'name') where.add('the header');
+    else if (target.type !== 'summaryLine') where.add(path.split(' › ')[0]);
   }
   return { has, missing, where: [...where] };
 }

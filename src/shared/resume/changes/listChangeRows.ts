@@ -1,56 +1,44 @@
-import type {
-  ContactInfo,
-  HeaderItemKind,
-  ResumeData,
-  ResumeEntry,
-  ResumeSection,
-} from '../../types/resume';
+import type { ContactInfo, ResumeData, ResumeEntry, ResumeSection } from '../../types/resume';
 import { formatEntryHeading } from '../entryHeading';
-import type { ChangeLine, EntryField } from './resumeChange';
+import type { ChangeTarget, EntryField } from './resumeChange';
 
 export interface ChangeRow {
   key: string;
-  line: ChangeLine;
+  target: ChangeTarget;
   text: string;
   isPrinted: boolean;
   /** Emptied, a thing is gone rather than left off the page. */
   hasText: boolean;
-  field?: EntryField;
-  itemKind?: HeaderItemKind;
-  sectionId: string | null;
-  entryId: string | null;
-  bulletId: string | null;
-  where: string;
-  label?: string;
-  n?: number | null;
+  path: string;
+  number: number | null;
+  displayName?: string;
 }
 
 const ENTRY_FIELDS: EntryField[] = ['title', 'organization', 'location', 'dates'];
 
 const trim = (value: string | undefined) => (value ?? '').trim();
 
-const IN_HEADER = { sectionId: null, entryId: null, bulletId: null, where: 'Header' };
-
 function listHeaderRows(contact: ContactInfo): ChangeRow[] {
   const nameRow: ChangeRow = {
     key: 'name',
-    line: 'name',
+    target: { type: 'name' },
     text: trim(contact.name),
     isPrinted: true,
     hasText: true,
-    ...IN_HEADER,
+    path: 'Header',
+    number: null,
   };
   const itemRows = contact.header.lines.flatMap((line) =>
     line.items.map((item): ChangeRow => {
       const text = trim(item.text);
       return {
         key: `item:${item.id}`,
-        line: 'item',
-        itemKind: item.kind,
+        target: { type: 'headerItem', itemId: item.id, itemKind: item.kind },
         text,
         isPrinted: item.shown && !!text,
         hasText: !!text,
-        ...IN_HEADER,
+        path: 'Header',
+        number: null,
       };
     })
   );
@@ -65,25 +53,25 @@ interface SectionPlace {
 
 /** The app's summary is a text-only section, so each of its lines diffs word by word. */
 function listTextLineRows({ section, label, isOn }: SectionPlace): ChangeRow[] {
-  const line = section.kind === 'summary' ? 'summary' : 'text';
+  const isSummary = section.kind === 'summary';
   let printedCount = 0;
   return section.items.map((entry) => {
     const text = trim(entry.text);
     const isPrinted = isOn && entry.selected && !!text;
     if (isPrinted) printedCount++;
-    const isSummary = line === 'summary';
     return {
       key: `entry:${entry.id}`,
-      line,
+      target: {
+        type: isSummary ? 'summaryLine' : 'textLine',
+        sectionId: section.id,
+        entryId: entry.id,
+      },
       text,
       isPrinted,
       hasText: !!text,
-      sectionId: section.id,
-      entryId: entry.id,
-      bulletId: null,
-      where: isSummary ? label : `${label} › line ${printedCount}`,
-      label: isSummary ? 'Summary' : `${label}, line ${printedCount}`,
-      n: isPrinted ? printedCount : null,
+      path: isSummary ? label : `${label} › line ${printedCount}`,
+      number: isPrinted ? printedCount : null,
+      displayName: isSummary ? 'Summary' : `${label}, line ${printedCount}`,
     };
   });
 }
@@ -99,8 +87,8 @@ function listEntryRows({ section, label, isOn }: SectionPlace, entry: ResumeEntr
   };
   const heading = formatEntryHeading(fields);
   const entryName = fields.title || fields.organization;
-  const where = entryName ? `${label} › ${entryName}` : label;
-  const inEntry = { sectionId: section.id, entryId: entry.id, bulletId: null, where };
+  const path = entryName ? `${label} › ${entryName}` : label;
+  const ids = { sectionId: section.id, entryId: entry.id };
   const bullets = entry.bullets.map((bullet) => {
     const text = trim(bullet.text);
     return { id: bullet.id, text, isPrinted: isEntryOn && bullet.selected && !!text };
@@ -108,23 +96,24 @@ function listEntryRows({ section, label, isOn }: SectionPlace, entry: ResumeEntr
 
   const entryRow: ChangeRow = {
     key: `entry:${entry.id}`,
-    line: 'entry',
+    target: { type: 'entry', ...ids },
     text: fields.dates ? `${heading}  ·  ${fields.dates}` : heading,
-    label: entryName || heading || label,
     isPrinted:
       isEntryOn && !!(heading || fields.dates || bullets.some((bullet) => bullet.isPrinted)),
     hasText: !!(heading || fields.dates || bullets.some((bullet) => bullet.text)),
-    ...inEntry,
+    path,
+    number: null,
+    displayName: entryName || heading || label,
   };
   const fieldRows = ENTRY_FIELDS.map(
     (field): ChangeRow => ({
       key: `${field}:${entry.id}`,
-      line: 'field',
-      field,
+      target: { type: 'entryField', ...ids, field },
       text: fields[field],
       isPrinted: isEntryOn,
       hasText: true,
-      ...inEntry,
+      path,
+      number: null,
     })
   );
   let printedCount = 0;
@@ -132,14 +121,12 @@ function listEntryRows({ section, label, isOn }: SectionPlace, entry: ResumeEntr
     if (bullet.isPrinted) printedCount++;
     return {
       key: `bullet:${bullet.id}`,
-      line: 'bullet',
+      target: { type: 'bullet', ...ids, bulletId: bullet.id },
       text: bullet.text,
       isPrinted: bullet.isPrinted,
       hasText: !!bullet.text,
-      ...inEntry,
-      bulletId: bullet.id,
-      where: `${where} › bullet ${printedCount}`,
-      n: bullet.isPrinted ? printedCount : null,
+      path: `${path} › bullet ${printedCount}`,
+      number: bullet.isPrinted ? printedCount : null,
     };
   });
   return [entryRow, ...fieldRows, ...bulletRows];
@@ -149,14 +136,13 @@ function listSectionRows(section: ResumeSection): ChangeRow[] {
   const place = { section, label: trim(section.label), isOn: !section.hidden };
   const sectionRow: ChangeRow = {
     key: `section:${section.id}`,
-    line: 'section',
+    target: { type: 'section', sectionId: section.id },
     text: place.label,
     isPrinted: place.isOn,
     hasText: true,
-    sectionId: section.id,
-    entryId: null,
-    bulletId: null,
-    where: place.label,
+    path: place.label,
+    number: null,
+    displayName: place.label,
   };
   const contentRows =
     section.layout === 'lines'

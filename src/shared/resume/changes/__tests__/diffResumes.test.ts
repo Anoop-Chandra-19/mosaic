@@ -45,10 +45,12 @@ describe('diffResumes', () => {
     });
     expect(changes).toMatchObject([
       {
-        kind: 'rewrite',
-        line: 'bullet',
-        bulletId: 'b2',
-        where: 'Work History › Analyst › bullet 2',
+        kind: 'edit',
+        target: { type: 'bullet', sectionId: 'work', entryId: 'babbage', bulletId: 'b2' },
+        path: 'Work History › Analyst › bullet 2',
+        number: 2,
+        before: 'Checked every table by hand.',
+        after: 'Checked every table twice by hand.',
       },
     ]);
     expect(
@@ -137,9 +139,9 @@ describe('diffResumes', () => {
       { noun: 'Analyst', verb: 'entry left off the page', detail: null },
     ]);
     expect(all.length).toBeGreaterThan(1);
-    expect(
-      all.filter((change) => change.isChild).every((c) => c.parentKey === 'entry:babbage')
-    ).toBe(true);
+    const children = all.filter((change) => change.parentId);
+    expect(children.length).toBeGreaterThan(0);
+    expect(children.every((change) => change.parentId === 'entry:babbage')).toBe(true);
   });
 
   it('puts a removed line back where it stood, after its earlier neighbour', () => {
