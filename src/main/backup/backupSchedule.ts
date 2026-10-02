@@ -182,12 +182,16 @@ export function isBackupDue(
 }
 
 /** Writes under `fileName` in `folder`, or "-2", "-3"… beside a file already there. */
-function writeNewFile(folder: string, fileName: string, pieces: () => Iterable<string>): string {
+async function writeNewFile(
+  folder: string,
+  fileName: string,
+  pieces: () => Iterable<string>
+): Promise<string> {
   const { name, ext } = path.parse(fileName);
   for (let n = 1; ; n++) {
     const candidate = n === 1 ? fileName : `${name}-${n}${ext}`;
     try {
-      writeNewFileSafely(path.join(folder, candidate), pieces());
+      await writeNewFileSafely(path.join(folder, candidate), pieces());
       return candidate;
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error;
@@ -216,13 +220,13 @@ function describeFailure(error: unknown): string {
  * to show, and the schedule stays due, so the next check tries again. With no templates
  * there is nothing to back up yet, and nothing is written.
  */
-export function runScheduledBackup(db: Database, now: number = Date.now()): void {
+export async function runScheduledBackup(db: Database, now: number = Date.now()): Promise<void> {
   const schedule = readSchedule(db);
   if (!isBackupDue(schedule, now) || schedule.folder === null) return;
   const { pieces, record } = prepareBackup(db, now);
   if (record.templates === 0) return;
   try {
-    writeNewFile(schedule.folder, buildBackupFileName(new Date(now)), pieces);
+    await writeNewFile(schedule.folder, buildBackupFileName(new Date(now)), pieces);
   } catch (error) {
     setSetting(db, FAILURE_KEY, JSON.stringify({ at: now, message: describeFailure(error) }));
     return;
