@@ -147,7 +147,7 @@ export function AppTooltip({
               setHintLength(isBeside ? node.offsetHeight : node.offsetWidth);
             }
           }}
-          className="z-50 max-w-72 rounded-md border border-line-strong bg-background px-2.5 py-1.5 text-xs leading-snug text-pretty text-foreground shadow-md animate-in fade-in-0"
+          className="z-50 max-w-72 rounded-md border border-line-strong bg-background px-2.5 py-1.5 text-xs leading-snug text-pretty text-foreground shadow-md animate-in fade-in-0 data-[state=closed]:animate-none"
         >
           {content}
         </Tooltip.Content>

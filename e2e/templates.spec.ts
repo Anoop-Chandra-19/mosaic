@@ -37,8 +37,11 @@ test('a version can be read in the sheet, then restored', async () => {
   await named.hover();
   await named.getByRole('button', { name: 'Read v2' }).click();
   const sheet = page.getByRole('main');
-  await expect(sheet.getByText('Reading v2')).toBeVisible();
-  await expect(sheet.getByText('1 line differs from your draft')).toBeVisible();
+  await expect(sheet.getByText('Reading v2', { exact: true })).toBeVisible();
+  await expect(
+    sheet.getByText('Compared with your draft, it has a different name in the header.')
+  ).toBeVisible();
+  await expect(named).toContainText('differs in 1 place');
   await expect(sheet.getByText('Ada Lovelace').first()).toBeVisible();
 
   // The editor reads the version too, without the controls it can't use there.

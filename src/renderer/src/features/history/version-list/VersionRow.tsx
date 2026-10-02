@@ -8,6 +8,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 import type { VersionMeta, VersionSource } from '@shared/types/db';
+import { useVersionPreviewComparison } from '../useVersionPreviewComparison';
 
 /**
  * Tags only where the source is news. Named versions and plain edits need none: the dot
@@ -21,6 +22,22 @@ const SOURCE_TAGS: Partial<Record<VersionSource, string>> = {
   switched: 'left off',
   closed: 'left off',
 };
+
+function describePreviewDistance(placeCount: number, hasFormatting: boolean): string {
+  if (placeCount > 0) return `differs in ${placeCount} ${placeCount === 1 ? 'place' : 'places'}`;
+  return hasFormatting ? 'same words as your draft' : 'same as your draft';
+}
+
+/** How far the version being read in the sheet is from the draft. */
+function PreviewDistance() {
+  const comparison = useVersionPreviewComparison();
+  if (!comparison) return null;
+  return (
+    <span title="Places where this version and your draft differ">
+      {describePreviewDistance(comparison.diff.changes.length, comparison.formatting.length > 0)}
+    </span>
+  );
+}
 
 /** What a row can do with its version; the list passes the same to every row. */
 export interface VersionRowActions {
@@ -137,6 +154,7 @@ export function VersionRow({
           <span>{label}</span>
           <span>{time}</span>
           {head && <span className="text-amber-600 dark:text-amber-400">newest</span>}
+          {previewing && !isWide && <PreviewDistance />}
         </p>
       </div>
       <span

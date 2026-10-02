@@ -20,7 +20,7 @@ import { attempt, showToast, useOverlayStore } from '@/stores/overlayStore';
 import { useTemplateStore } from '@/stores/templateStore';
 import { useUiStore } from '@/stores/uiStore';
 import type { TemplateSummary, Version, VersionMeta } from '@shared/types/db';
-import type { HistoryFilter } from '@/types/history';
+import type { HistoryComparison, HistoryFilter } from '@/types/history';
 import { VersionList, type HistoryReveal } from '../version-list/VersionList';
 import { useTemplateVersions, versionLabel } from '../useTemplateVersions';
 import { HistoryIndex } from './HistoryIndex';
@@ -46,6 +46,7 @@ interface FullHistoryProps {
   templateId: string;
   filter?: HistoryFilter;
   versionId?: string;
+  comparison?: HistoryComparison;
 }
 
 /**
@@ -54,7 +55,13 @@ interface FullHistoryProps {
  * template's history, not only the open one's. It suspends until its first page is
  * loaded, so it opens whole, inside the view transition that brings it in.
  */
-export function FullHistory({ opening, templateId, filter, versionId }: FullHistoryProps) {
+export function FullHistory({
+  opening,
+  templateId,
+  filter,
+  versionId,
+  comparison,
+}: FullHistoryProps) {
   const prepared = use(prepareHistoryOpening(opening, templateId, versionId));
   const template = useTemplateStore((s) => s.templates.find((t) => t.id === templateId));
   const closeSurface = useOverlayStore((s) => s.closeSurface);
@@ -71,6 +78,7 @@ export function FullHistory({ opening, templateId, filter, versionId }: FullHist
       template={template}
       filter={filter}
       versionId={versionId}
+      comparison={comparison}
       prepared={prepared}
     />
   );
@@ -80,10 +88,17 @@ interface FullHistoryFrameProps {
   template: TemplateSummary;
   filter?: HistoryFilter;
   versionId?: string;
+  comparison?: HistoryComparison;
   prepared: PreparedHistory | null;
 }
 
-function FullHistoryFrame({ template, filter, versionId, prepared }: FullHistoryFrameProps) {
+function FullHistoryFrame({
+  template,
+  filter,
+  versionId,
+  comparison,
+  prepared,
+}: FullHistoryFrameProps) {
   const versions = useTemplateVersions(template, true, prepared?.versions);
   const closeSurface = useOverlayStore((s) => s.closeSurface);
   const restoreVersion = useTemplateStore((s) => s.restoreVersion);
@@ -92,6 +107,14 @@ function FullHistoryFrame({ template, filter, versionId, prepared }: FullHistory
   const paperSize = useUiStore((s) => s.paperSize);
   const isDetailed = useUiStore((s) => s.shouldShowHistoryDetails);
   const setIsDetailed = useUiStore((s) => s.setShouldShowHistoryDetails);
+  const storedComparison = useUiStore((s) => s.historyComparison);
+  const setStoredComparison = useUiStore((s) => s.setHistoryComparison);
+  // Opened from a version being read, the view keeps to that comparison until one is picked.
+  const [openedComparison, setOpenedComparison] = useState(comparison);
+  const pickComparison = (picked: HistoryComparison) => {
+    setOpenedComparison(undefined);
+    setStoredComparison(picked);
+  };
   const windowWidth = useWindowWidth();
   const [isIndexOpen, setIsIndexOpen] = useState(
     () => window.innerWidth >= INDEX_OPEN_MIN_WINDOW_PX
@@ -325,6 +348,8 @@ function FullHistoryFrame({ template, filter, versionId, prepared }: FullHistory
             parent={parent}
             parentLabel={parent ? labelOf(parent) : ''}
             isHead={selected.id === versions[0].id}
+            comparison={openedComparison ?? storedComparison}
+            onComparisonChange={pickComparison}
             maxWidthCss={`calc(100vw - ${indexWidth + LIST_MIN_WIDTH_PX}px)`}
             canWidenToPage={maxReadWidth >= pageNeedsPx}
             onRestore={(version) => void restore(version)}

@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { HistoryFilter } from '@/types/history';
+import type { HistoryComparison, HistoryFilter } from '@/types/history';
 import type { ResumePreviewMeta } from '@/types/preview';
 import type { SettingsSectionId } from '@/types/settings';
 import type { OpenedBackup } from '@shared/types/bundle';
@@ -46,7 +46,14 @@ export interface ExportVersion extends VersionPreview {
  */
 export type WorkspaceSurface =
   | { kind: 'start' }
-  | { kind: 'history'; templateId: string; filter?: HistoryFilter; versionId?: string };
+  | {
+      kind: 'history';
+      templateId: string;
+      filter?: HistoryFilter;
+      versionId?: string;
+      /** Opened from a version being read: kept to that comparison, not remembered. */
+      comparison?: HistoryComparison;
+    };
 
 interface OverlayState {
   surface: WorkspaceSurface | null;
@@ -70,6 +77,8 @@ interface OverlayState {
    * preview ends on Back to draft, a restore, or when a different draft is loaded.
    */
   preview: VersionPreview | null;
+  /** Whether the version being read has its differences from the draft marked. */
+  arePreviewMarksShown: boolean;
   /** How the sheet paginated, as the preview measured it; the status bar repeats it. */
   previewMeta: ResumePreviewMeta;
   toast: Toast | null;
@@ -94,6 +103,7 @@ interface OverlayState {
   closeExport: () => void;
   setPendingRestore: (backup: OpenedBackup | null) => void;
   setPreview: (preview: VersionPreview | null) => void;
+  togglePreviewMarks: () => void;
   setPreviewMeta: (meta: ResumePreviewMeta) => void;
   dismissToast: () => void;
   setTourStep: (step: number | null) => void;
@@ -111,6 +121,7 @@ export const useOverlayStore = create<OverlayState>()((set) => ({
   exportVersion: null,
   pendingRestore: null,
   preview: null,
+  arePreviewMarksShown: true,
   previewMeta: { totalPages: 1, hasMorePages: false },
   toast: null,
   tourStep: null,
@@ -129,6 +140,7 @@ export const useOverlayStore = create<OverlayState>()((set) => ({
   closeExport: () => set({ exportOpen: false }),
   setPendingRestore: (pendingRestore) => set({ pendingRestore }),
   setPreview: (preview) => set({ preview }),
+  togglePreviewMarks: () => set((state) => ({ arePreviewMarksShown: !state.arePreviewMarksShown })),
   // The preview reports after every render; only a different count is news. Storing an
   // equal copy would re-render the preview, which reports again — a loop.
   setPreviewMeta: (meta) =>

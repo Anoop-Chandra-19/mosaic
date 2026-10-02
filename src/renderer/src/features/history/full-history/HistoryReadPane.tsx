@@ -5,20 +5,19 @@ import { AppTooltip } from '@/components/AppTooltip';
 import { ChangeList } from '@/features/document-diff/ChangeList';
 import { MarkedVersionText } from '@/features/document-diff/MarkedVersionText';
 import { collectPageMarks, putGoneBack } from '@/features/document-diff/pageMarks';
+import { revealChangeMark } from '@/features/document-diff/revealChangeMark';
 import { UnifiedDiff } from '@/features/document-diff/UnifiedDiff';
 import { PAPER_DIMENSIONS_PT } from '@/features/preview/pageGeometry';
 import { ResumePreview } from '@/features/preview/ResumePreview';
 import { startPaneResize } from '@/features/shell/paneResize';
 import { transitionClasses } from '@/features/view-transitions/transitionClasses';
 import { isTypingField } from '@/lib/keyboardShortcuts';
-import { prefersReducedMotion } from '@/lib/motion/motionTiming';
-import { flashChange } from '@/lib/motion/rowMotions';
 import { cn } from '@/lib/utils';
 import { HISTORY_READ_WIDTH, useUiStore } from '@/stores/uiStore';
 import type { ResumeDiff } from '@shared/resume/changes/diffResumes';
-import type { Change } from '@shared/resume/changes/resumeChange';
 import type { Version, VersionMeta, VersionSource } from '@shared/types/db';
 import type { ResumeData } from '@shared/types/resume';
+import type { HistoryComparison } from '@/types/history';
 import { formatHistoryDay, formatTimeOfDay } from '../groupVersionHistory';
 import { ReadPaneControls, type ReadPaneView } from './ReadPaneControls';
 import { useVersionComparison } from './useVersionComparison';
@@ -46,6 +45,8 @@ interface HistoryReadPaneProps {
   parent: VersionMeta | null;
   parentLabel: string;
   isHead: boolean;
+  comparison: HistoryComparison;
+  onComparisonChange: (comparison: HistoryComparison) => void;
   /** The widest the pane may get, for saying whether widening it would help. */
   maxWidthCss: string;
   canWidenToPage: boolean;
@@ -127,12 +128,6 @@ function VersionPage({
   );
 }
 
-/** The change's mark on the page or in Changes only: not the preview's offscreen copy. */
-function findChangeMark(body: HTMLElement | null, change: Change): Element | undefined {
-  const marks = body?.querySelectorAll(`[data-change-id="${CSS.escape(change.id)}"]`) ?? [];
-  return [...marks].find((mark) => !mark.closest('[data-preview-measure]'));
-}
-
 /**
  * The version being read, beside the list: what changed in it, then the version as the
  * printed page, as text when the pane is too narrow, or as only the lines that differ.
@@ -144,6 +139,8 @@ export function HistoryReadPane({
   parent,
   parentLabel,
   isHead,
+  comparison: pickedComparison,
+  onComparisonChange,
   maxWidthCss,
   canWidenToPage,
   onRestore,
@@ -155,7 +152,6 @@ export function HistoryReadPane({
   const setWidthPx = useUiStore((s) => s.setHistoryReadWidthPx);
   const paperSize = useUiStore((s) => s.paperSize);
   const isDetailed = useUiStore((s) => s.shouldShowHistoryDetails);
-  const setComparison = useUiStore((s) => s.setHistoryComparison);
   const paneRef = useRef<HTMLElement>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
   const [bodyWidth, setBodyWidth] = useState(0);
@@ -164,7 +160,13 @@ export function HistoryReadPane({
   /** Chosen over the text read in a narrow pane. */
   const [isPageChosen, setIsPageChosen] = useState(false);
   const loaded = doc?.id === version.id ? doc : null;
-  const comparison = useVersionComparison({ templateId, version: loaded, parent, parentLabel });
+  const comparison = useVersionComparison({
+    templateId,
+    version: loaded,
+    parent,
+    parentLabel,
+    comparison: pickedComparison,
+  });
   const { diff, formatting, otherSide, draftChangeCount, hasDraftFormatting } = comparison;
 
   // Before paint, so the view transition that opens the pane captures the right choice
@@ -184,20 +186,11 @@ export function HistoryReadPane({
   const [cursorAt, setCursorAt] = useState({ key: cursorKey, index: 0 });
   const cursor = cursorAt.key === cursorKey ? cursorAt.index : 0;
   const changes = diff?.changes ?? [];
-  const revealChange = (change: Change) => {
-    const target = findChangeMark(bodyRef.current, change);
-    if (!target) return;
-    target.scrollIntoView({
-      block: 'center',
-      behavior: prefersReducedMotion() ? 'auto' : 'smooth',
-    });
-    flashChange(target);
-  };
   const goToChange = (index: number) => {
     if (changes.length === 0) return;
     const wrapped = (index + changes.length) % changes.length;
     setCursorAt({ key: cursorKey, index: wrapped });
-    revealChange(changes[wrapped]);
+    revealChangeMark(bodyRef.current, changes[wrapped]);
   };
 
   const onKeyDown = useEffectEvent((event: KeyboardEvent) => {
@@ -267,7 +260,7 @@ export function HistoryReadPane({
             versionLabel={label}
             isAgainstDraft={comparison.isAgainstDraft}
             canCompareWithParent={comparison.canCompareWithParent}
-            onComparisonChange={setComparison}
+            onComparisonChange={onComparisonChange}
             view={view}
             onViewChange={setView}
             isMarked={isMarked}

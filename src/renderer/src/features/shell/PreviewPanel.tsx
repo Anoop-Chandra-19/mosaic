@@ -8,6 +8,11 @@ import { usePreviewCanvas } from '@/features/preview/usePreviewCanvas';
 import { cn } from '@/lib/utils';
 import { shortcutLabel } from '@/lib/keyboardShortcuts';
 import type { PaperSize } from '@/types/paper';
+import { collectPageMarks, putGoneBack } from '@/features/document-diff/pageMarks';
+import {
+  useVersionPreviewComparison,
+  type VersionPreviewComparison,
+} from '@/features/history/useVersionPreviewComparison';
 import { VersionPreviewBanner } from '@/features/history/VersionPreviewBanner';
 import { useIsPageHandedOff } from '@/features/view-transitions/pageHandoff';
 import { tourTargetProps } from '@/features/onboarding/tourSteps';
@@ -15,13 +20,25 @@ import { transitionClasses } from '@/features/view-transitions/transitionClasses
 import { useOverlayStore } from '@/stores/overlayStore';
 import { PREVIEW_ZOOM_RANGE, useUiStore } from '@/stores/uiStore';
 
+/** The version's page, with what differs from the draft marked when marks are on. */
+function readVersionPage({ preview, draft, diff }: VersionPreviewComparison, isMarked: boolean) {
+  const versionDoc = preview.version.doc;
+  if (!isMarked || diff.all.length === 0) return { doc: versionDoc };
+  return {
+    doc: putGoneBack(versionDoc, draft, diff.all),
+    marks: collectPageMarks(diff.all, 'your draft'),
+  };
+}
+
 export function PreviewPanel() {
   const paperSize = useUiStore((s) => s.paperSize);
   const setPaperSize = useUiStore((s) => s.setPaperSize);
   const previewZoom = useUiStore((s) => s.previewZoom);
   const meta = useOverlayStore((s) => s.previewMeta);
   const setMeta = useOverlayStore((s) => s.setPreviewMeta);
-  const preview = useOverlayStore((s) => s.preview);
+  const isMarked = useOverlayStore((s) => s.arePreviewMarksShown);
+  const comparison = useVersionPreviewComparison();
+  const preview = comparison?.preview;
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const canvas = usePreviewCanvas(scrollRef);
   const shown = useFitPreviewForHandoff(scrollRef);
@@ -40,7 +57,13 @@ export function PreviewPanel() {
       className="@container/preview flex flex-1 flex-col overflow-hidden bg-background"
       {...tourTargetProps('preview')}
     >
-      {preview && <VersionPreviewBanner preview={preview} />}
+      {comparison && (
+        <VersionPreviewBanner
+          key={comparison.preview.version.id}
+          comparison={comparison}
+          pageRef={scrollRef}
+        />
+      )}
       <div className="flex items-center justify-between border-b border-border bg-card px-4 py-2.5 md:px-6">
         <div className="flex items-center gap-2">
           <span className="text-xs font-semibold tracking-widest text-zinc-900 uppercase dark:text-zinc-100">
@@ -132,7 +155,7 @@ export function PreviewPanel() {
           previewZoom={shown.zoom}
           isZoomEased={shown.isZoomEased}
           onMetaChange={setMeta}
-          doc={preview?.version.doc}
+          {...(comparison && readVersionPage(comparison, isMarked))}
         />
       </div>
     </main>

@@ -86,6 +86,7 @@ export function AppShell() {
                 templateId={shownSurface.templateId}
                 filter={shownSurface.filter}
                 versionId={shownSurface.versionId}
+                comparison={shownSurface.comparison}
               />
             </ViewTransition>
           )}
