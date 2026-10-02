@@ -67,10 +67,10 @@ describe('runScheduledBackup', () => {
     setBackupFrequency(db, 'daily');
   }
 
-  it('writes a dated backup of every template, once a day', () => {
+  it('writes a dated backup of every template, once a day', async () => {
     schedule();
-    runScheduledBackup(db, at(22, 9));
-    runScheduledBackup(db, at(22, 18));
+    await runScheduledBackup(db, at(22, 9));
+    await runScheduledBackup(db, at(22, 18));
     expect(files()).toEqual([buildBackupFileName(new Date(at(22, 9)))]);
 
     const backup = JSON.parse(fs.readFileSync(path.join(folder, files()[0]), 'utf8'));
@@ -79,23 +79,23 @@ describe('runScheduledBackup', () => {
     ).toEqual(['Backend CV']);
     expect(readBackupStatus(db).last).toMatchObject({ at: at(22, 9), templates: 1, versions: 1 });
 
-    runScheduledBackup(db, at(23, 9));
+    await runScheduledBackup(db, at(23, 9));
     expect(files()).toHaveLength(2);
   });
 
-  it('never writes over a file already in the folder', () => {
+  it('never writes over a file already in the folder', async () => {
     schedule();
     const name = buildBackupFileName(new Date(at(22, 9)));
     fs.writeFileSync(path.join(folder, name), 'mine');
-    runScheduledBackup(db, at(22, 9));
+    await runScheduledBackup(db, at(22, 9));
     expect(fs.readFileSync(path.join(folder, name), 'utf8')).toBe('mine');
     expect(files()).toEqual([name.replace('.json', '-2.json'), name]);
   });
 
-  it('keeps a failure for Settings, and tries again until one is written', () => {
+  it('keeps a failure for Settings, and tries again until one is written', async () => {
     schedule();
     setBackupFolder(db, path.join(folder, 'gone'));
-    runScheduledBackup(db, at(22, 9));
+    await runScheduledBackup(db, at(22, 9));
     expect(readBackupStatus(db).failure).toEqual({
       at: at(22, 9),
       message: 'The folder is gone. Choose another one.',
@@ -103,20 +103,20 @@ describe('runScheduledBackup', () => {
     expect(readBackupStatus(db).last).toBeNull();
 
     fs.mkdirSync(path.join(folder, 'gone'));
-    runScheduledBackup(db, at(22, 10));
+    await runScheduledBackup(db, at(22, 10));
     expect(readBackupStatus(db).failure).toBeNull();
     expect(readBackupStatus(db).last?.at).toBe(at(22, 10));
   });
 
-  it('writes nothing while there are no templates, or while it is off', () => {
+  it('writes nothing while there are no templates, or while it is off', async () => {
     setBackupFolder(db, folder);
     setBackupFrequency(db, 'daily');
-    runScheduledBackup(db, at(22, 9));
+    await runScheduledBackup(db, at(22, 9));
     expect(files()).toEqual([]);
 
     createTemplate(db, 'Backend CV', createDefaultResume());
     setBackupFrequency(db, 'off');
-    runScheduledBackup(db, at(22, 9));
+    await runScheduledBackup(db, at(22, 9));
     expect(files()).toEqual([]);
   });
 
@@ -153,11 +153,11 @@ describe('prepareBackup', () => {
     expect(record.bytes).toBe(Buffer.byteLength(text));
   });
 
-  it('stops, writing nothing, when the file would be too large to read back', () => {
+  it('stops, writing nothing, when the file would be too large to read back', async () => {
     createTemplate(db, 'Backend CV', createDefaultResume());
     const { pieces } = prepareBackup(db, 0, 100);
     const file = path.join(folder, 'mosaic-backup.json');
-    expect(() => writeNewFileSafely(file, pieces())).toThrow(BackupTooLargeError);
+    await expect(writeNewFileSafely(file, pieces())).rejects.toThrow(BackupTooLargeError);
     expect(fs.readdirSync(folder)).toEqual([]);
   });
 });

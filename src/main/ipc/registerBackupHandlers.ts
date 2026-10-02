@@ -24,15 +24,14 @@ const CHECK_EVERY_MS = 60 * 60 * 1000;
  * Scheduled backups read the database as it stands. The draft's autosave lands a second
  * after typing stops (five at most), so only the last few keystrokes can be missing.
  */
-function startBackupTimer(getDb: () => Database | undefined): void {
+function startBackupTimer(
+  getDb: () => Database | undefined,
+  backUpIfDue: (db: Database) => Promise<void>
+): void {
   const check = () => {
     const db = getDb();
     if (!db) return;
-    try {
-      runScheduledBackup(db);
-    } catch (error) {
-      console.error('Scheduled backup failed', error);
-    }
+    backUpIfDue(db).catch((error: unknown) => console.error('Scheduled backup failed', error));
   };
   setTimeout(() => {
     check();
@@ -49,6 +48,14 @@ export function registerBackupHandlers(
     const db = getDb();
     if (!db) throw new Error('The database is not open');
     return db;
+  };
+
+  // One at a time: a second run waits, then finds the backup already written.
+  let lastRun: Promise<void> = Promise.resolve();
+  const backUpIfDue = (db: Database): Promise<void> => {
+    const run = lastRun.then(() => runScheduledBackup(db));
+    lastRun = run.catch(() => undefined);
+    return run;
   };
 
   const chooseFolder = async (win: BrowserWindow): Promise<void> => {
@@ -90,7 +97,7 @@ export function registerBackupHandlers(
       const db = openDb();
       if (next === 'off' || hasBackupFolder(db)) {
         setBackupFrequency(db, next);
-        runScheduledBackup(db);
+        await backUpIfDue(db);
       }
       return readBackupStatus(db);
     },
@@ -98,7 +105,7 @@ export function registerBackupHandlers(
     chooseFolder: async (win) => {
       await chooseFolder(win);
       const db = openDb();
-      runScheduledBackup(db);
+      await backUpIfDue(db);
       return readBackupStatus(db);
     },
   };
@@ -115,5 +122,5 @@ export function registerBackupHandlers(
     });
   }
 
-  startBackupTimer(getDb);
+  startBackupTimer(getDb, backUpIfDue);
 }
