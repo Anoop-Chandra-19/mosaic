@@ -1,5 +1,9 @@
 import type { HeaderItemKind } from '../../types/resume';
-import type { TextPhrase } from './changePhrases';
+
+/** The assistant writes these itself, so the short keys are what it is asked for. */
+export type TextPhrase =
+  | { k: 'keep'; t: string }
+  | { k: 'edit'; id: string; del: string; ins: string };
 
 export type ChangeKind = 'edit' | 'add' | 'remove' | 'show' | 'hide' | 'move';
 
