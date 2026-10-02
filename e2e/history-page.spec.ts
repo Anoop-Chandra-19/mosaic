@@ -86,8 +86,8 @@ test('stepping to another version shows its page laid out, never the old text re
   await expect(history).toBeVisible();
   const row = (name: string) => history.locator('li[data-version-id]').filter({ hasText: name });
 
-  // The page it was showing, then the new one: nothing in between.
-  for (const name of ['Long', 'Short']) {
+  // The page it was showing, then the new one: nothing in between. It opens on Long.
+  for (const name of ['Short', 'Long']) {
     const changes = await recordPageChanges(page, () => row(name).click());
     expect(changes).toHaveLength(2);
   }

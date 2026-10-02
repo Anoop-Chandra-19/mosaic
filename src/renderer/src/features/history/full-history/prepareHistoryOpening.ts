@@ -11,6 +11,18 @@ export interface PreparedHistory {
 const openings = new WeakMap<object, Promise<PreparedHistory | null>>();
 
 /**
+ * The version the view opens on: the one asked for, or else the one before the newest,
+ * since the newest holds what the draft already has.
+ */
+export function chooseOpeningVersion(
+  versions: VersionMeta[],
+  versionId?: string
+): string | undefined {
+  if (versionId && versions.some((version) => version.id === versionId)) return versionId;
+  return (versions[1] ?? versions[0])?.id;
+}
+
+/**
  * What the history view first shows, loaded before it opens, so it opens with its page
  * drawn and the preview's page can move into it, once the preview has eased to fit. One
  * promise per opening, keyed by the surface object, as `use()` needs. On failure the view
@@ -27,7 +39,7 @@ export function prepareHistoryOpening(
     prepared = (async () => {
       const db = getDb();
       const versions = await db.versions.list(templateId);
-      const id = versions.some((v) => v.id === versionId) ? versionId : versions[0]?.id;
+      const id = chooseOpeningVersion(versions, versionId);
       const version = id ? await db.versions.get(id) : null;
       await settled;
       return { versions, version };

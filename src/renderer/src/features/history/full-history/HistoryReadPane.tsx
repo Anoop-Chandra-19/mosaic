@@ -1,18 +1,23 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useEffectEvent, useLayoutEffect, useRef, useState } from 'react';
 import { Copy, Download, History } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
 import { AppTooltip } from '@/components/AppTooltip';
+import { ChangeList } from '@/features/document-diff/ChangeList';
+import { UnifiedDiff } from '@/features/document-diff/UnifiedDiff';
 import { PAPER_DIMENSIONS_PT } from '@/features/preview/pageGeometry';
 import { ResumePreview } from '@/features/preview/ResumePreview';
 import { startPaneResize } from '@/features/shell/paneResize';
 import { transitionClasses } from '@/features/view-transitions/transitionClasses';
+import { isTypingField } from '@/lib/keyboardShortcuts';
+import { prefersReducedMotion } from '@/lib/motion/motionTiming';
+import { flashChange } from '@/lib/motion/rowMotions';
 import { cn } from '@/lib/utils';
-import { getDb } from '@/lib/storage/mosaicDb';
-import { useResumeStore } from '@/stores/resumeStore';
 import { HISTORY_READ_WIDTH, useUiStore } from '@/stores/uiStore';
-import type { Draft, Version, VersionMeta } from '@shared/types/db';
+import type { Change } from '@shared/resume/changes/resumeChange';
+import type { Version, VersionMeta, VersionSource } from '@shared/types/db';
 import { formatHistoryDay, formatTimeOfDay } from '../groupVersionHistory';
-import { countChangedLines, isSamePage } from '../versionDiff';
+import { ReadPaneControls, type ReadPaneView } from './ReadPaneControls';
+import { useVersionComparison } from './useVersionComparison';
 import { VersionAsText } from './VersionAsText';
 
 /** Below this the page is a thumbnail, not something to read, so the pane shows text. */
@@ -20,10 +25,22 @@ export const LEGIBLE_PAGE_SCALE = 0.66;
 /** The body's padding either side of the page. */
 const PAGE_GUTTER_PX = 24;
 
+const AUTOMATIC_REASONS: Partial<Record<VersionSource, string>> = {
+  import: 'import',
+  restore: 'before restore',
+  create: 'new template',
+  duplicate: 'duplicate',
+  switched: 'left off',
+  closed: 'left off',
+};
+
 interface HistoryReadPaneProps {
   templateId: string;
   version: VersionMeta;
   label: string;
+  /** The version before it, which it is compared with by default; null for the first. */
+  parent: VersionMeta | null;
+  parentLabel: string;
   isHead: boolean;
   /** The widest the pane may get, for saying whether widening it would help. */
   maxWidthCss: string;
@@ -37,14 +54,57 @@ interface HistoryReadPaneProps {
 
 const ignorePreviewMeta = () => {};
 
+function describeDraftDistance(changeCount: number, hasFormatting: boolean): string {
+  if (changeCount > 0) {
+    return `${changeCount} printed ${changeCount === 1 ? 'line differs' : 'lines differ'} from your draft`;
+  }
+  return hasFormatting ? 'same words as your draft, formatting differs' : 'identical to your draft';
+}
+
+function describeRestore(isHead: boolean, isIdentical: boolean): string {
+  if (isHead) return 'This is the newest version';
+  if (isIdentical) return 'Your draft already matches this version';
+  return 'Restore. What you have now is kept in history first.';
+}
+
+interface VersionPageProps {
+  version: Version;
+  isLegible: boolean;
+  canWidenToPage: boolean;
+}
+
+/** The version as the printed page, or as text when the pane is too narrow to read one. */
+function VersionPage({ version, isLegible, canWidenToPage }: VersionPageProps) {
+  const paperSize = useUiStore((s) => s.paperSize);
+  if (!isLegible) {
+    return (
+      <VersionAsText
+        resume={version.doc}
+        note={
+          canWidenToPage
+            ? 'Widen this pane to read it as the printed page.'
+            : 'This window is too narrow to show the printed page. Reading it as text instead.'
+        }
+      />
+    );
+  }
+  return (
+    <div style={{ paddingInline: PAGE_GUTTER_PX }}>
+      <ResumePreview paperSize={paperSize} doc={version.doc} onMetaChange={ignorePreviewMeta} />
+    </div>
+  );
+}
+
 /**
- * The version being read, beside the list: as the printed page when there is room, as
- * text when there is not. Its header holds the one document comparison in the history.
+ * The version being read, beside the list: what changed in it, then the version as the
+ * printed page, as text when the pane is too narrow, or as only the lines that differ.
  */
 export function HistoryReadPane({
   templateId,
   version,
   label,
+  parent,
+  parentLabel,
   isHead,
   maxWidthCss,
   canWidenToPage,
@@ -56,11 +116,15 @@ export function HistoryReadPane({
   const widthPx = useUiStore((s) => s.historyReadWidthPx);
   const setWidthPx = useUiStore((s) => s.setHistoryReadWidthPx);
   const paperSize = useUiStore((s) => s.paperSize);
+  const isDetailed = useUiStore((s) => s.shouldShowHistoryDetails);
+  const setComparison = useUiStore((s) => s.setHistoryComparison);
   const paneRef = useRef<HTMLElement>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
   const [bodyWidth, setBodyWidth] = useState(0);
+  const [view, setView] = useState<ReadPaneView>('page');
   const loaded = doc?.id === version.id ? doc : null;
-  const draft = useComparedDraft(templateId);
+  const comparison = useVersionComparison({ templateId, version: loaded, parent, parentLabel });
+  const { diff, formatting, otherSide, draftChangeCount, hasDraftFormatting } = comparison;
 
   // Before paint, so the view transition that opens the pane captures the right choice
   // of page or text.
@@ -74,10 +138,43 @@ export function HistoryReadPane({
     return () => observer.disconnect();
   }, []);
 
-  const changedLines = loaded && draft ? countChangedLines(loaded.doc, draft) : null;
-  const isSame = loaded !== null && draft !== null && isSamePage(loaded.doc, draft);
+  // The change stepped to starts over for each version and each comparison.
+  const cursorKey = `${version.id}:${otherSide}`;
+  const [cursorAt, setCursorAt] = useState({ key: cursorKey, index: 0 });
+  const cursor = cursorAt.key === cursorKey ? cursorAt.index : 0;
+  const changes = diff?.changes ?? [];
+  const revealChange = (change: Change) => {
+    const target = bodyRef.current?.querySelector(`[data-change-id="${CSS.escape(change.id)}"]`);
+    if (!target) return;
+    target.scrollIntoView({
+      block: 'center',
+      behavior: prefersReducedMotion() ? 'auto' : 'smooth',
+    });
+    flashChange(target);
+  };
+  const goToChange = (index: number) => {
+    if (changes.length === 0) return;
+    const wrapped = (index + changes.length) % changes.length;
+    setCursorAt({ key: cursorKey, index: wrapped });
+    revealChange(changes[wrapped]);
+  };
+
+  const onKeyDown = useEffectEvent((event: KeyboardEvent) => {
+    if (event.defaultPrevented || event.metaKey || event.ctrlKey || event.altKey) return;
+    if (isTypingField(event.target)) return;
+    if (event.key === 'n' || event.key === ']') goToChange(cursor + 1);
+    if (event.key === 'p' || event.key === '[') goToChange(cursor - 1);
+  });
+  useEffect(() => {
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, []);
+
+  const isIdentical = draftChangeCount === 0 && !hasDraftFormatting;
+  const isSameAsBase = diff !== null && changes.length === 0 && formatting.length === 0;
   const pageScale = (bodyWidth - PAGE_GUTTER_PX * 2) / PAPER_DIMENSIONS_PT[paperSize].width;
   const isLegible = bodyWidth === 0 || pageScale >= LEGIBLE_PAGE_SCALE;
+  const reason = AUTOMATIC_REASONS[version.source];
   return (
     <aside
       ref={paneRef}
@@ -105,23 +202,63 @@ export function HistoryReadPane({
         <p className="mt-1.25 flex flex-wrap items-center gap-x-2 gap-y-1 font-mono text-[0.7rem] text-ink-faint">
           <span>{label}</span>
           <span aria-hidden>·</span>
+          {version.kind !== 'named' && (
+            <>
+              <span>automatic{reason ? `, ${reason}` : ''}</span>
+              <span aria-hidden>·</span>
+            </>
+          )}
           <span>
             {formatHistoryDay(version.createdAt)}, {formatTimeOfDay(version.createdAt)}
           </span>
-          {changedLines !== null && (
+          {draftChangeCount !== null && (
             <>
               <span aria-hidden>·</span>
-              <span className={isSame ? undefined : 'text-amber-600 dark:text-amber-400'}>
-                {isSame
-                  ? 'identical to your draft'
-                  : changedLines === 0
-                    ? 'the same lines as your draft, in another order'
-                    : `${changedLines} printed ${changedLines === 1 ? 'line differs' : 'lines differ'} from your draft`}
+              <span className={cn(draftChangeCount > 0 && 'text-amber-600 dark:text-amber-400')}>
+                {describeDraftDistance(draftChangeCount, hasDraftFormatting)}
               </span>
             </>
           )}
         </p>
+        {loaded && (
+          <ReadPaneControls
+            versionLabel={label}
+            isAgainstDraft={comparison.isAgainstDraft}
+            canCompareWithParent={comparison.canCompareWithParent}
+            onComparisonChange={setComparison}
+            view={view}
+            onViewChange={setView}
+          />
+        )}
       </header>
+
+      {diff &&
+        (isSameAsBase ? (
+          <p className="border-b border-line bg-background px-3.5 py-2.25 text-[0.775rem] text-ink-muted">
+            {comparison.isAgainstDraft
+              ? 'Your draft is exactly this version. Nothing to restore.'
+              : 'Nothing printed changed in this version.'}
+          </p>
+        ) : (
+          <ChangeList
+            key={`${cursorKey}:${isDetailed}`}
+            diff={diff}
+            formatting={formatting}
+            cursor={cursor}
+            onPick={(change) => goToChange(changes.indexOf(change))}
+            onStep={(direction) => goToChange(cursor + direction)}
+            versionLabel={label}
+            otherSide={otherSide}
+            isAgainstDraft={comparison.isAgainstDraft}
+            isDetailed={isDetailed}
+          />
+        ))}
+      {loaded && !comparison.canCompareWithParent && (
+        <p className="border-b border-line bg-background px-3.5 py-2.25 font-mono text-[0.7rem] text-ink-faint">
+          {label} is the first version, so it has no changes of its own. It is shown against your
+          draft.
+        </p>
+      )}
 
       <div
         ref={bodyRef}
@@ -130,25 +267,20 @@ export function HistoryReadPane({
           transitionClasses({ name: 'page', motion: 'handoff step' })
         )}
       >
-        {loaded &&
-          (isLegible ? (
-            <div style={{ paddingInline: PAGE_GUTTER_PX }}>
-              <ResumePreview
-                paperSize={paperSize}
-                doc={loaded.doc}
-                onMetaChange={ignorePreviewMeta}
-              />
-            </div>
-          ) : (
-            <VersionAsText
-              resume={loaded.doc}
-              note={
-                canWidenToPage
-                  ? 'Widen this pane to read it as the printed page.'
-                  : 'This window is too narrow to show the printed page. Reading it as text instead.'
-              }
-            />
-          ))}
+        {loaded && view === 'changes' && diff && (
+          <UnifiedDiff
+            key={cursorKey}
+            diff={diff}
+            formatting={formatting}
+            cursorId={changes[cursor]?.id ?? null}
+            onPick={(change) => goToChange(changes.indexOf(change))}
+            otherSide={otherSide}
+            isDetailed={isDetailed}
+          />
+        )}
+        {loaded && view === 'page' && (
+          <VersionPage version={loaded} isLegible={isLegible} canWidenToPage={canWidenToPage} />
+        )}
       </div>
 
       <footer className="flex gap-1.5 border-t border-line bg-card px-3 py-2.25">
@@ -156,14 +288,8 @@ export function HistoryReadPane({
           variant="outline"
           size="sm"
           className="flex-1"
-          disabled={isHead || isSame}
-          title={
-            isHead
-              ? 'This is the newest version'
-              : isSame
-                ? 'Your draft already matches this version'
-                : 'Restore. What you have now is kept in history first.'
-          }
+          disabled={isHead || isIdentical}
+          title={describeRestore(isHead, isIdentical)}
           onClick={() => onRestore(version)}
         >
           <History />
@@ -186,33 +312,4 @@ export function HistoryReadPane({
       </footer>
     </aside>
   );
-}
-
-/**
- * The draft a version is compared with: the editor's, as typed, for the open template;
- * the stored one for any other, read without opening it.
- */
-function useComparedDraft(templateId: string) {
-  const isOpen = useResumeStore((s) => s.templateId === templateId);
-  const schemaVersion = useResumeStore((s) => s.schemaVersion);
-  const contact = useResumeStore((s) => s.contact);
-  const sections = useResumeStore((s) => s.sections);
-  const [stored, setStored] = useState<Draft | null>(null);
-
-  useEffect(() => {
-    if (isOpen) return;
-    let isCurrent = true;
-    getDb()
-      .drafts.get(templateId)
-      .then(
-        (draft) => isCurrent && setStored(draft),
-        (error: unknown) => console.error('Could not read the draft', error)
-      );
-    return () => {
-      isCurrent = false;
-    };
-  }, [templateId, isOpen]);
-
-  if (isOpen) return { schemaVersion, contact, sections };
-  return stored?.templateId === templateId ? stored.doc : null;
 }

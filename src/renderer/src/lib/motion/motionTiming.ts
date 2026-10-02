@@ -19,6 +19,7 @@ export const MOTION_MS = {
   fold: 220,
   carryTint: 900,
   carryTintDelay: 140,
+  changeFlash: 1300,
 } as const;
 
 /** With reduced motion nothing moves, so there is nothing to animate or wait for. */

@@ -110,6 +110,14 @@
   --color-info: var(--info);
   --color-info-line: var(--info-line);
   --color-info-soft: var(--info-soft);
+  --color-add: var(--add);
+  --color-add-soft: var(--add-soft);
+  --color-add-line: var(--add-line);
+  --color-del: var(--del);
+  --color-del-soft: var(--del-soft);
+  --color-del-line: var(--del-line);
+  --color-add-word: var(--add-word);
+  --color-del-word: var(--del-word);
 }
 
 @theme {
@@ -244,6 +252,18 @@
   --info-line: oklch(0.86 0.04 240);
   /* Translucent, like the lines: it tints a bullet on the pane and in the raised editor. */
   --info-soft: oklch(0.52 0.13 240 / 11%);
+  /* A diff's two sides, in the chrome: what is only here, and what is only on the other side. */
+  --add: oklch(0.55 0.15 155);
+  --add-soft: oklch(0.55 0.15 155 / 12%);
+  --add-line: oklch(0.55 0.15 155 / 30%);
+  --del: oklch(0.55 0.19 25);
+  --del-soft: oklch(0.55 0.19 25 / 11%);
+  --del-line: oklch(0.55 0.19 25 / 28%);
+  /* The words that changed inside a line already tinted add or del; the same in both themes. */
+  --add-word: oklch(0.76 0.15 155 / 30%);
+  --del-word: oklch(0.7 0.17 22 / 30%);
+  /* A change stepped to, held a moment. */
+  --change-flash: oklch(0.93 0.13 95 / 70%);
 }
 
 .dark {
@@ -296,6 +316,12 @@
   --info: oklch(0.74 0.11 235);
   --info-line: oklch(0.36 0.045 235);
   --info-soft: oklch(0.74 0.11 235 / 13%);
+  --add: oklch(0.76 0.15 155);
+  --add-soft: oklch(0.76 0.15 155 / 13%);
+  --add-line: oklch(0.76 0.15 155 / 32%);
+  --del: oklch(0.7 0.17 22);
+  --del-soft: oklch(0.7 0.17 22 / 12%);
+  --del-line: oklch(0.7 0.17 22 / 30%);
 }
 
 /* Interface density: the chrome's spacing steps, never the page's. */

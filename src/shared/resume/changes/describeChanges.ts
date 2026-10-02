@@ -66,11 +66,14 @@ const DESCRIBE_PLACEMENT_BEFORE: Record<Placement['relation'], (name: string) =>
   alone: () => 'was first',
 };
 
+function describeWhereItWas({ relation, name }: Placement): string {
+  return DESCRIBE_PLACEMENT_BEFORE[relation](name);
+}
+
 function describeMove(change: Change): string {
   if (!change.move) return 'moved';
   const { placement, placementBefore } = change.move;
-  const before = DESCRIBE_PLACEMENT_BEFORE[placementBefore.relation](placementBefore.name);
-  return `moved ${describePlacement(placement)} (${before})`;
+  return `moved ${describePlacement(placement)} (${describeWhereItWas(placementBefore)})`;
 }
 
 /** An entry or section says what it is: "Analyst entry left off the page". */
@@ -119,6 +122,39 @@ export function describeChange(change: Change): ChangeWording {
     verb: describeVerb(change),
     detail: describeDetail(change),
   };
+}
+
+/** A version label stays lower case (v12); any other sentence starts with a capital. */
+const capitalize = (text: string) =>
+  /^v\d/.test(text) ? text : text.charAt(0).toUpperCase() + text.slice(1);
+
+/**
+ * What a mark or a row says on hover: what the other side has there. `otherSide` names it,
+ * as in `describeFormattingChange`.
+ */
+export function describeChangeTip(change: Change, otherSide: string): string {
+  const side = `in ${otherSide}`;
+  const noun = nameChangedThing(change);
+  switch (change.kind) {
+    case 'move': {
+      if (!change.move) return `${noun} moved.`;
+      const moved = `${noun} moved ${describePlacement(change.move.placement)}`;
+      return `${capitalize(moved)}. ${capitalize(describeWhereItWas(change.move.placementBefore))} ${side}.`;
+    }
+    case 'show':
+      return `Left off the page ${side}, still in the document there.`;
+    case 'hide':
+      return `On the page ${side}. Left off here, still in the document.`;
+    case 'add':
+      return `Only in this version. Not ${side}.`;
+    case 'remove':
+      return `Only ${side}. Not in this version.`;
+    case 'edit':
+      if (change.phrases) return `${capitalize(otherSide)} reads: ${change.before}`;
+      if (!change.before) return `Empty ${side}.`;
+      if (!change.after) return `${capitalize(noun)} ${side}: ${change.before}. Empty here.`;
+      return `${capitalize(noun)} ${side}: ${change.before}`;
+  }
 }
 
 export interface DifferencePhrase {
