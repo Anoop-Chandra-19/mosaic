@@ -1,4 +1,12 @@
-import { useDeferredValue, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import {
+  useDeferredValue,
+  useEffect,
+  useEffectEvent,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import type { PageMarks } from '@/features/document-diff/pageMarks';
 import { cn } from '@/lib/utils';
 import { useLiveEditStore } from '@/stores/liveEditStore';
@@ -28,6 +36,19 @@ interface ResumePreviewProps {
   isZoomEased?: boolean;
   /** What changed against another version, marked on the page; exports never pass this. */
   marks?: PageMarks;
+  /**
+   * The page is laid out from its own measurements, before it paints. Called again each
+   * time its layout changes.
+   */
+  onLaidOut?: () => void;
+}
+
+/** Measurements, with what they were taken of, so a layout from stale ones can be told apart. */
+interface MeasuredPage {
+  measurements: PaginationMeasurements;
+  contact: ResumeData['contact'];
+  sections: ReturnType<typeof normalizeSections>;
+  marks: PageMarks | undefined;
 }
 
 /** How long an eased change of zoom takes: the `duration-160` of the classes below. */
@@ -117,6 +138,7 @@ export function ResumePreview({
   doc,
   isZoomEased = false,
   marks,
+  onLaidOut,
 }: ResumePreviewProps) {
   const draftContact = useResumeStore((s) => s.contact);
   const draftSections = useResumeStore((s) => s.sections);
@@ -130,7 +152,7 @@ export function ResumePreview({
   }, [doc, draftContact, draftSections, liveEdit]);
   const measureRootRef = useRef<HTMLDivElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const [measurements, setMeasurements] = useState<PaginationMeasurements | null>(null);
+  const [measured, setMeasured] = useState<MeasuredPage | null>(null);
   const [availableWidth, setAvailableWidth] = useState(0);
 
   // The sheet is a known fixed size in points, so there is nothing to measure.
@@ -144,7 +166,9 @@ export function ResumePreview({
   // Marks change the words drawn, so turning them on or off measures again.
   useLayoutEffect(() => {
     const root = measureRootRef.current;
-    if (root) setMeasurements(measurePagination(root, pageContentSize.height));
+    if (!root) return;
+    const measurements = measurePagination(root, pageContentSize.height);
+    setMeasured({ measurements, contact, sections: activeSections, marks });
   }, [contact, activeSections, pageContentSize.width, pageContentSize.height, marks]);
 
   // Track only how much room the panel gives us, so a page wider than the panel
@@ -163,7 +187,12 @@ export function ResumePreview({
     return () => observer.disconnect();
   }, []);
 
-  const paginationMeasurements = measurements ?? createFallbackMeasurements(activeSections);
+  const paginationMeasurements =
+    measured?.measurements ?? createFallbackMeasurements(activeSections);
+  const isMeasured =
+    measured?.contact === contact &&
+    measured.sections === activeSections &&
+    measured.marks === marks;
 
   const paginated = useMemo(
     // One page past the limit, so "exactly ten" can be told from "more than ten".
@@ -188,6 +217,11 @@ export function ResumePreview({
   useEffect(() => {
     onMetaChange(meta);
   }, [meta, onMetaChange]);
+
+  const reportLaidOut = useEffectEvent(() => onLaidOut?.());
+  useLayoutEffect(() => {
+    if (isMeasured) reportLaidOut();
+  }, [isMeasured, paginated]);
 
   const drawnPages = paginated.slice(0, MAX_PREVIEW_PAGES);
 

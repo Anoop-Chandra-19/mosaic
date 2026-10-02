@@ -8,18 +8,21 @@ import { collectPageMarks, putGoneBack } from '@/features/document-diff/pageMark
 import { revealChangeMark } from '@/features/document-diff/revealChangeMark';
 import { UnifiedDiff } from '@/features/document-diff/UnifiedDiff';
 import { PAPER_DIMENSIONS_PT } from '@/features/preview/pageGeometry';
+import { useOwnPageZoom, type PageZoom } from '@/features/preview/pageZoom';
 import { ResumePreview } from '@/features/preview/ResumePreview';
+import { usePreviewCanvas } from '@/features/preview/usePreviewCanvas';
 import { startPaneResize } from '@/features/shell/paneResize';
 import { transitionClasses } from '@/features/view-transitions/transitionClasses';
 import { isTypingField } from '@/lib/keyboardShortcuts';
 import { cn } from '@/lib/utils';
-import { HISTORY_READ_WIDTH, useUiStore } from '@/stores/uiStore';
+import { HISTORY_READ_WIDTH, PREVIEW_DEFAULT_ZOOM, useUiStore } from '@/stores/uiStore';
 import type { ResumeDiff } from '@shared/resume/changes/diffResumes';
 import type { Version, VersionMeta, VersionSource } from '@shared/types/db';
 import type { ResumeData } from '@shared/types/resume';
 import type { HistoryComparison } from '@/types/history';
 import { formatHistoryDay, formatTimeOfDay } from '../groupVersionHistory';
 import { ReadPaneControls, type ReadPaneView } from './ReadPaneControls';
+import { findReadingPlace, restoreReadingPlace, type ReadingPlace } from './readingPlace';
 import { useVersionComparison } from './useVersionComparison';
 import { VersionAsText } from './VersionAsText';
 
@@ -93,6 +96,8 @@ interface VersionPageProps {
   isTextRead: boolean;
   textReadNote: string;
   onShowPage: () => void;
+  zoom: number;
+  onLaidOut: () => void;
 }
 
 /** The version as the printed page, or as text when the pane is too narrow to read one. */
@@ -105,6 +110,8 @@ function VersionPage({
   isTextRead,
   textReadNote,
   onShowPage,
+  zoom,
+  onLaidOut,
 }: VersionPageProps) {
   const paperSize = useUiStore((s) => s.paperSize);
   const marked = isMarked && diff && base && diff.all.length > 0 ? { diff, base } : null;
@@ -120,9 +127,11 @@ function VersionPage({
     <div style={{ paddingInline: PAGE_GUTTER_PX }}>
       <ResumePreview
         paperSize={paperSize}
+        previewZoom={zoom}
         doc={marked ? putGoneBack(version.doc, marked.base, marked.diff.all) : version.doc}
         marks={marked ? collectPageMarks(marked.diff.all, otherSide) : undefined}
         onMetaChange={ignorePreviewMeta}
+        onLaidOut={onLaidOut}
       />
     </div>
   );
@@ -209,7 +218,36 @@ export function HistoryReadPane({
   const pageScale = (bodyWidth - PAGE_GUTTER_PX * 2) / PAPER_DIMENSIONS_PT[paperSize].width;
   const isLegible = bodyWidth === 0 || pageScale >= LEGIBLE_PAGE_SCALE;
   const isTextRead = view === 'page' && !isLegible && !isPageChosen;
+  const isPageShown = loaded !== null && view === 'page' && !isTextRead;
   const reason = AUTOMATIC_REASONS[version.source];
+
+  const ownZoom = useOwnPageZoom();
+  // Zooming in from the text read shows the page instead; zooming out leaves the text.
+  const pageZoom: PageZoom = {
+    ...ownZoom,
+    setZoom: (next) => {
+      if (!isTextRead) return ownZoom.setZoom(next);
+      if (next <= ownZoom.readZoom()) return ownZoom.readZoom();
+      setIsPageChosen(true);
+      return ownZoom.setZoom(next);
+    },
+  };
+  const canvas = usePreviewCanvas(bodyRef, pageZoom);
+  const readAsText = () => {
+    setIsPageChosen(false);
+    ownZoom.setZoom(PREVIEW_DEFAULT_ZOOM);
+  };
+
+  // The line at the top of the pane, kept there when the page under it changes.
+  const readingPlace = useRef<ReadingPlace | null>(null);
+  const noteReadingPlace = () => {
+    readingPlace.current = bodyRef.current ? findReadingPlace(bodyRef.current) : null;
+  };
+  const keepReadingPlace = () => {
+    if (bodyRef.current && readingPlace.current) {
+      restoreReadingPlace(bodyRef.current, readingPlace.current);
+    }
+  };
   return (
     <aside
       ref={paneRef}
@@ -266,7 +304,17 @@ export function HistoryReadPane({
             isMarked={isMarked}
             onMarkedChange={setIsMarked}
             canReadAsText={view === 'page' && !isLegible && isPageChosen}
-            onReadAsText={() => setIsPageChosen(false)}
+            onReadAsText={readAsText}
+            zoom={
+              view === 'page'
+                ? {
+                    value: ownZoom.zoom,
+                    isTextRead,
+                    onStep: canvas.zoomByStep,
+                    onReset: canvas.resetZoom,
+                  }
+                : null
+            }
           />
         )}
       </header>
@@ -301,8 +349,13 @@ export function HistoryReadPane({
 
       <div
         ref={bodyRef}
+        onScroll={noteReadingPlace}
+        onPointerDown={isPageShown ? canvas.onPointerDown : undefined}
         className={cn(
-          'min-h-0 flex-1 overflow-auto pt-3.5 pb-5',
+          // The reading place keeps the line in view, so the browser's own anchoring stays out.
+          'min-h-0 flex-1 overflow-auto pt-3.5 pb-5 [overflow-anchor:none]',
+          isPageShown && canvas.panning && 'cursor-grabbing select-none',
+          isPageShown && !canvas.panning && canvas.readyToPan && 'cursor-grab',
           transitionClasses({ name: 'page', motion: 'handoff step' })
         )}
       >
@@ -331,6 +384,8 @@ export function HistoryReadPane({
                 : 'This window is too narrow to show the printed page. Reading it as text instead.'
             }
             onShowPage={() => setIsPageChosen(true)}
+            zoom={ownZoom.zoom}
+            onLaidOut={keepReadingPlace}
           />
         )}
       </div>

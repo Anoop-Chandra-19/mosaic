@@ -1,4 +1,4 @@
-import { Check, ChevronDown, Eye } from 'lucide-react';
+import { Check, ChevronDown, Eye, Minus, Plus } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
 import { AppTooltip } from '@/components/AppTooltip';
 import {
@@ -9,6 +9,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { cn } from '@/lib/utils';
+import { PREVIEW_ZOOM_RANGE } from '@/stores/uiStore';
 import type { HistoryComparison } from '@/types/history';
 
 export type ReadPaneView = 'page' | 'changes';
@@ -34,6 +35,54 @@ interface ReadPaneControlsProps {
   /** The page was chosen over the text read in a narrow pane, which can be gone back to. */
   canReadAsText: boolean;
   onReadAsText: () => void;
+  /** The page's zoom, while the page is the view; null otherwise. */
+  zoom: ReadPaneZoom | null;
+}
+
+interface ReadPaneZoom {
+  value: number;
+  /** The pane reads the version as text: zooming in shows the page instead. */
+  isTextRead: boolean;
+  onStep: (direction: 1 | -1) => void;
+  onReset: () => void;
+}
+
+function ZoomControl({ value, isTextRead, onStep, onReset }: ReadPaneZoom) {
+  return (
+    <span className="inline-flex items-center gap-0.5">
+      <AppButton
+        variant="ghost"
+        size="2xs"
+        shape="square"
+        aria-label="Zoom out"
+        disabled={isTextRead || value <= PREVIEW_ZOOM_RANGE.min}
+        onClick={() => onStep(-1)}
+      >
+        <Minus />
+      </AppButton>
+      <AppButton
+        variant="ghost"
+        size="2xs"
+        className="min-w-8.5 px-1 font-mono text-[0.6875rem] font-normal text-ink-soft"
+        aria-label="Reset zoom"
+        title={isTextRead ? 'Zoom in to read the printed page' : 'Reset to fit width'}
+        disabled={isTextRead}
+        onClick={onReset}
+      >
+        {isTextRead ? 'Text' : `${Math.round(value * 100)}%`}
+      </AppButton>
+      <AppButton
+        variant="ghost"
+        size="2xs"
+        shape="square"
+        aria-label="Zoom in"
+        disabled={value >= PREVIEW_ZOOM_RANGE.max}
+        onClick={() => onStep(1)}
+      >
+        <Plus />
+      </AppButton>
+    </span>
+  );
 }
 
 /** What the version is read against, and how. */
@@ -48,6 +97,7 @@ export function ReadPaneControls({
   onMarkedChange,
   canReadAsText,
   onReadAsText,
+  zoom,
 }: ReadPaneControlsProps) {
   const item =
     'h-5.75 min-w-0 rounded-[0.3125rem] px-2.25 text-xs font-medium text-ink-muted hover:bg-transparent hover:text-foreground disabled:text-ink-faint aria-checked:bg-pane-raised aria-checked:text-foreground aria-checked:shadow-[0_1px_2px_oklch(0_0_0/25%)]';
@@ -105,6 +155,7 @@ export function ReadPaneControls({
           ))}
         </DropdownMenuContent>
       </DropdownMenu>
+      {zoom && <ZoomControl {...zoom} />}
       {canReadAsText && (
         <AppButton
           variant="ghost"

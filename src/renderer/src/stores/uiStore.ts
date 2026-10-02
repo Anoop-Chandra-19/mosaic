@@ -76,7 +76,7 @@ export const PREVIEW_ZOOM_STEPS = [0.75, 0.9, 1, 1.15, 1.3, 1.5, 2, 3] as const;
 export const PREVIEW_DEFAULT_ZOOM = 1;
 export const PREVIEW_ZOOM_RANGE = { min: 0.5, max: 3 } as const;
 
-function clampPreviewZoom(zoom: number) {
+export function clampPreviewZoom(zoom: number) {
   if (!Number.isFinite(zoom)) return PREVIEW_DEFAULT_ZOOM;
   return Math.min(PREVIEW_ZOOM_RANGE.max, Math.max(PREVIEW_ZOOM_RANGE.min, zoom));
 }

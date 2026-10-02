@@ -1,6 +1,7 @@
 import {
   useCallback,
   useEffect,
+  useEffectEvent,
   useLayoutEffect,
   useRef,
   useState,
@@ -8,7 +9,8 @@ import {
   type RefObject,
 } from 'react';
 import { isTypingField } from '@/lib/keyboardShortcuts';
-import { PREVIEW_DEFAULT_ZOOM, nextPreviewZoomStep, useUiStore } from '@/stores/uiStore';
+import { PREVIEW_DEFAULT_ZOOM, nextPreviewZoomStep } from '@/stores/uiStore';
+import type { PageZoom } from './pageZoom';
 
 /*
  * The preview as a canvas, the way a PDF viewer works it: Ctrl or ⌘ with the wheel (or a
@@ -47,34 +49,32 @@ export interface PreviewCanvas {
   onPointerDown: (event: ReactPointerEvent<HTMLElement>) => void;
 }
 
-export function usePreviewCanvas(scrollRef: RefObject<HTMLDivElement | null>): PreviewCanvas {
-  const previewZoom = useUiStore((s) => s.previewZoom);
-  const setPreviewZoom = useUiStore((s) => s.setPreviewZoom);
+export function usePreviewCanvas(
+  scrollRef: RefObject<HTMLDivElement | null>,
+  pageZoom: PageZoom
+): PreviewCanvas {
+  const { zoom: shownZoom, readZoom, setZoom } = pageZoom;
   const [readyToPan, setReadyToPan] = useState(false);
   const [panning, setPanning] = useState(false);
   const anchor = useRef<ZoomAnchor | null>(null);
 
-  const zoomAround = useCallback(
-    (nextZoom: number, clientX: number, clientY: number) => {
-      const stack = scrollRef.current?.querySelector(STACK);
-      const zoom = useUiStore.getState().previewZoom;
-      if (stack) {
-        const box = stack.getBoundingClientRect();
-        anchor.current = {
-          offsetX: clientX - box.left,
-          offsetY: clientY - box.top,
-          clientX,
-          clientY,
-          // The store clamps, so the ratio is read back from it once it has.
-          ratio: 1,
-        };
-      }
-      setPreviewZoom(nextZoom);
-      const settled = useUiStore.getState().previewZoom;
-      if (anchor.current) anchor.current.ratio = settled / zoom;
-    },
-    [scrollRef, setPreviewZoom]
-  );
+  const zoomAround = (nextZoom: number, clientX: number, clientY: number) => {
+    const stack = scrollRef.current?.querySelector(STACK);
+    const zoom = readZoom();
+    if (stack) {
+      const box = stack.getBoundingClientRect();
+      anchor.current = {
+        offsetX: clientX - box.left,
+        offsetY: clientY - box.top,
+        clientX,
+        clientY,
+        // The zoom is clamped, so the ratio is worked out from what it became.
+        ratio: 1,
+      };
+    }
+    const settled = setZoom(nextZoom);
+    if (anchor.current) anchor.current.ratio = settled / zoom;
+  };
 
   // Put the point that was under the pointer back under it, now that the new zoom is laid out.
   useLayoutEffect(() => {
@@ -86,21 +86,21 @@ export function usePreviewCanvas(scrollRef: RefObject<HTMLDivElement | null>): P
     const box = stack.getBoundingClientRect();
     scroller.scrollLeft += box.left + held.offsetX * held.ratio - held.clientX;
     scroller.scrollTop += box.top + held.offsetY * held.ratio - held.clientY;
-  }, [previewZoom, scrollRef]);
+  }, [shownZoom, scrollRef]);
 
+  const onWheel = useEffectEvent((event: WheelEvent) => {
+    // Without a modifier the wheel scrolls, as it does anywhere else.
+    if (!event.ctrlKey && !event.metaKey) return;
+    event.preventDefault();
+    const zoom = readZoom() * Math.exp(-event.deltaY / WHEEL_ZOOM_DIVISOR);
+    zoomAround(zoom, event.clientX, event.clientY);
+  });
   useEffect(() => {
     const scroller = scrollRef.current;
     if (!scroller) return;
-    const onWheel = (event: WheelEvent) => {
-      // Without a modifier the wheel scrolls, as it does anywhere else.
-      if (!event.ctrlKey && !event.metaKey) return;
-      event.preventDefault();
-      const zoom = useUiStore.getState().previewZoom;
-      zoomAround(zoom * Math.exp(-event.deltaY / WHEEL_ZOOM_DIVISOR), event.clientX, event.clientY);
-    };
     scroller.addEventListener('wheel', onWheel, { passive: false });
     return () => scroller.removeEventListener('wheel', onWheel);
-  }, [scrollRef, zoomAround]);
+  }, [scrollRef]);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -149,26 +149,23 @@ export function usePreviewCanvas(scrollRef: RefObject<HTMLDivElement | null>): P
     [readyToPan, scrollRef]
   );
 
-  const zoomByStep = useCallback(
-    (direction: 1 | -1) => {
-      const scroller = scrollRef.current;
-      const next = nextPreviewZoomStep(useUiStore.getState().previewZoom, direction);
-      if (next === undefined) return;
-      if (!scroller) {
-        setPreviewZoom(next);
-        return;
-      }
-      // Around the middle of the panel: what the reader is looking at stays put.
-      const box = scroller.getBoundingClientRect();
-      zoomAround(next, box.left + box.width / 2, box.top + box.height / 2);
-    },
-    [scrollRef, setPreviewZoom, zoomAround]
-  );
+  const zoomByStep = (direction: 1 | -1) => {
+    const scroller = scrollRef.current;
+    const next = nextPreviewZoomStep(readZoom(), direction);
+    if (next === undefined) return;
+    if (!scroller) {
+      setZoom(next);
+      return;
+    }
+    // Around the middle of the panel: what the reader is looking at stays put.
+    const box = scroller.getBoundingClientRect();
+    zoomAround(next, box.left + box.width / 2, box.top + box.height / 2);
+  };
 
-  const resetZoom = useCallback(() => {
-    setPreviewZoom(PREVIEW_DEFAULT_ZOOM);
+  const resetZoom = () => {
+    setZoom(PREVIEW_DEFAULT_ZOOM);
     scrollRef.current?.scrollTo({ left: 0, top: 0 });
-  }, [scrollRef, setPreviewZoom]);
+  };
 
   return { readyToPan, panning, zoomByStep, resetZoom, onPointerDown };
 }
