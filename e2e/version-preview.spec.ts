@@ -44,6 +44,13 @@ test('a version read in the sheet is marked against the draft and stepped throug
   await expect(sheet).toContainText('2 places');
   await expect(pageMarks(page).first()).toBeVisible();
 
+  // The bar in the margin says on hover what the line does.
+  const bar = await sheet.locator('[data-preview-stack] .w-\\[2\\.5px\\]').first().boundingBox();
+  if (!bar) throw new Error('No bar in the margin');
+  await page.mouse.move(bar.x + bar.width / 2, bar.y + bar.height / 2);
+  await expect(page.getByRole('tooltip', { name: /in your draft/ })).toBeAttached();
+  await page.mouse.move(0, 0);
+
   await sheet.getByRole('button', { name: 'Next place' }).click();
   await expect(sheet).toContainText('1 of 2');
   await sheet.getByRole('button', { name: 'Previous place' }).click();

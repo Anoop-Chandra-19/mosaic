@@ -1,12 +1,8 @@
 import { measureCommonRuns } from './measureCommonRuns';
 
+/** Positions count from 1, among the ids both lists have. */
 export interface Move {
   id: string;
-  /** Its neighbours now, and on the other side. */
-  nextId: string | null;
-  previousId: string | null;
-  nextIdBefore: string | null;
-  previousIdBefore: string | null;
   position: number;
   positionBefore: number;
 }
@@ -38,17 +34,7 @@ export function findMoves(beforeIds: string[], afterIds: string[]): Move[] {
   const before = beforeIds.filter((id) => inAfter.has(id));
   const after = afterIds.filter((id) => inBefore.has(id));
   const inPlace = findIdsInPlace(before, after);
-  return after.flatMap((id, index) => {
-    if (inPlace.has(id)) return [];
-    const indexBefore = before.indexOf(id);
-    return {
-      id,
-      nextId: after[index + 1] ?? null,
-      previousId: after[index - 1] ?? null,
-      nextIdBefore: before[indexBefore + 1] ?? null,
-      previousIdBefore: before[indexBefore - 1] ?? null,
-      position: index + 1,
-      positionBefore: indexBefore + 1,
-    };
-  });
+  return after.flatMap((id, index) =>
+    inPlace.has(id) ? [] : { id, position: index + 1, positionBefore: before.indexOf(id) + 1 }
+  );
 }

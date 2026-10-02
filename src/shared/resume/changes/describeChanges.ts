@@ -5,10 +5,10 @@ import {
   getChangeTone,
   isShortFieldChange,
   type Change,
+  type ChangeMove,
   type ChangeTargetType,
   type ChangeTone,
   type EntryField,
-  type Placement,
 } from './resumeChange';
 
 const FIELD_NAMES: Record<EntryField, string> = {
@@ -55,25 +55,24 @@ function nameChangedThing({ kind, target, number, displayName }: Change): string
   }
 }
 
-function describePlacement({ relation, name }: Placement): string {
-  return relation === 'in' ? `to ${name}` : `${relation} ${name}`;
+const plural = (n: number, one: string, many: string) => (n === 1 ? one : many);
+const count = (n: number, one: string, many: string) => `${n} ${plural(n, one, many)}`;
+
+/** "moved up 1 place", "moved from Projects". */
+function describeMove(move: ChangeMove | undefined): string {
+  if (!move) return 'moved';
+  if (move.direction === 'across') return `moved from ${move.fromSection}`;
+  return `moved ${move.direction} ${count(move.places, 'place', 'places')}`;
 }
 
-const DESCRIBE_PLACEMENT_BEFORE: Record<Placement['relation'], (name: string) => string> = {
-  below: (name) => `was below ${name}`,
-  above: (name) => `was first, above ${name}`,
-  in: (name) => `was in ${name}`,
-  alone: () => 'was first',
-};
+const MOVE_COMPARISONS = { up: 'higher', down: 'lower' } as const;
 
-function describeWhereItWas({ relation, name }: Placement): string {
-  return DESCRIBE_PLACEMENT_BEFORE[relation](name);
-}
-
-function describeMove(change: Change): string {
-  if (!change.move) return 'moved';
-  const { placement, placementBefore } = change.move;
-  return `moved ${describePlacement(placement)} (${describeWhereItWas(placementBefore)})`;
+/** "1 place higher than in v3.", "Was in Projects in your draft." */
+function describeMoveTip(move: ChangeMove | undefined, side: string): string {
+  if (!move) return 'Moved.';
+  if (move.direction === 'across') return `Was in ${move.fromSection} ${side}.`;
+  const places = count(move.places, 'place', 'places');
+  return `${places} ${MOVE_COMPARISONS[move.direction]} than ${side}.`;
 }
 
 /** An entry or section says what it is: "Analyst entry left off the page". */
@@ -94,7 +93,7 @@ function describeVerb(change: Change): string {
   const kindWord = KIND_WORDS[change.target.type] ?? '';
   switch (change.kind) {
     case 'move':
-      return describeMove(change);
+      return describeMove(change.move);
     case 'show':
       return `${kindWord}back on the page`;
     case 'hide':
@@ -136,11 +135,8 @@ export function describeChangeTip(change: Change, otherSide: string): string {
   const side = `in ${otherSide}`;
   const noun = nameChangedThing(change);
   switch (change.kind) {
-    case 'move': {
-      if (!change.move) return `${noun} moved.`;
-      const moved = `${noun} moved ${describePlacement(change.move.placement)}`;
-      return `${capitalize(moved)}. ${capitalize(describeWhereItWas(change.move.placementBefore))} ${side}.`;
-    }
+    case 'move':
+      return describeMoveTip(change.move, side);
     case 'show':
       return `Left off the page ${side}, still in the document there.`;
     case 'hide':
@@ -168,9 +164,6 @@ export interface DifferenceWording {
   missing: DifferencePhrase[];
   where: string[];
 }
-
-const plural = (n: number, one: string, many: string) => (n === 1 ? one : many);
-const count = (n: number, one: string, many: string) => `${n} ${plural(n, one, many)}`;
 
 /** What a line is called when counted. A summary or text line is just a line. */
 const THING_NAMES: Record<ChangeTargetType, [string, string]> = {

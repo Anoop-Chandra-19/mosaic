@@ -31,12 +31,13 @@ export interface ChangeTarget {
   field?: EntryField;
 }
 
-/** Where a thing stands: next to a neighbour, in a section, or alone in its list. */
-export interface Placement {
-  relation: 'above' | 'below' | 'in' | 'alone';
-  /** The neighbour's or the section's name; empty when alone. */
-  name: string;
-}
+/**
+ * How a thing moved from the other side to this one: up or down its own list, counted in
+ * the lines both sides have, or across from another section.
+ */
+export type ChangeMove =
+  | { direction: 'up' | 'down'; places: number }
+  | { direction: 'across'; fromSection: string };
 
 export type ChangeTone = 'add' | 'del' | 'edit';
 
@@ -58,7 +59,7 @@ export interface Change {
   after: string;
   /** A long text's edit, word by word. A short field's edit has none: it shows whole. */
   phrases?: TextPhrase[];
-  move?: { placement: Placement; placementBefore: Placement; isMovedUp: boolean };
+  move?: ChangeMove;
   /** Inside an entry or section that itself came, went, or was hidden: drawn, not counted. */
   parentId?: string;
   origin: 'assistant' | 'diff';
