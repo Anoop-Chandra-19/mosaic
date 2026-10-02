@@ -4,6 +4,7 @@ import { AppButton } from '@/components/AppButton';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { ResumePreview } from '@/features/preview/ResumePreview';
 import { useFitPreviewForHandoff } from '@/features/preview/useFitPreviewForHandoff';
+import { useStoredPreviewZoom } from '@/features/preview/pageZoom';
 import { usePreviewCanvas } from '@/features/preview/usePreviewCanvas';
 import { cn } from '@/lib/utils';
 import { shortcutLabel } from '@/lib/keyboardShortcuts';
@@ -40,7 +41,7 @@ export function PreviewPanel() {
   const comparison = useVersionPreviewComparison();
   const preview = comparison?.preview;
   const scrollRef = useRef<HTMLDivElement | null>(null);
-  const canvas = usePreviewCanvas(scrollRef);
+  const canvas = usePreviewCanvas(scrollRef, useStoredPreviewZoom());
   const shown = useFitPreviewForHandoff(scrollRef);
   const isPageHandedOff = useIsPageHandedOff();
 
