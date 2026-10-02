@@ -109,8 +109,10 @@ Someone new should understand a module, and how its files connect, in about 30 m
   those; the rest are its steps and may change freely. Update the comment with the files.
 - Dependencies point one way: a module's main functions use its steps, steps use types and
   shared helpers, and nothing imports back up. No import cycles, type-only ones included.
-- Types live with the code that produces them, unless several modules share them
-  (then `src/shared/types/`).
+- The same between layers: `main` and `renderer` use `shared`, never each other; in the
+  renderer, `features` → `components` → `stores` → `lib` and `types`.
+- Types live with the code that produces them, unless several modules share them: then
+  `src/shared/types/` across processes, `src/renderer/src/types/` within the renderer.
 - Apply to new modules, and to existing ones when they are next reworked.
 
 ## Readability

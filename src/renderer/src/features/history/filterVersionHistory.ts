@@ -1,13 +1,5 @@
+import type { HistoryFilter } from '@/types/history';
 import type { VersionMeta } from '@shared/types/db';
-
-export type HistoryKindFilter = 'all' | 'named' | 'events';
-
-export interface HistoryFilter {
-  kind: HistoryKindFilter;
-  /** A section label, or null for any section. */
-  section: string | null;
-  query: string;
-}
 
 export const NO_HISTORY_FILTER: HistoryFilter = { kind: 'all', section: null, query: '' };
 

@@ -32,8 +32,7 @@ import { showToast, useOverlayStore } from '@/stores/overlayStore';
 import { useResumeStore } from '@/stores/resumeStore';
 import { useTemplateStore } from '@/stores/templateStore';
 import { PREVIEW_DEFAULT_ZOOM, useUiStore, type SidebarTab } from '@/stores/uiStore';
-import { useApplyDensity } from '@/lib/hooks/useDensity';
-import { useApplyTheme } from '@/lib/hooks/useTheme';
+import { useApplyDensity, useApplyTheme } from './useAppearance';
 
 export function AppShell() {
   useApplyTheme();

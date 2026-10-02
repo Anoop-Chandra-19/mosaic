@@ -1,13 +1,13 @@
 import { useLayoutEffect, useRef, useState } from 'react';
 import { cn } from '@/lib/utils';
 import type { VersionMeta } from '@shared/types/db';
+import type { HistoryFilter } from '@/types/history';
 import { chooseVisibleVersions } from './chooseVisibleVersions';
 import {
   filterVersionHistory,
   isHistoryFiltered,
   listHistorySections,
   NO_HISTORY_FILTER,
-  type HistoryFilter,
 } from '../filterVersionHistory';
 import { formatHistoryMonth, formatTimeInDay, groupVersionHistory } from '../groupVersionHistory';
 import { versionLabel } from '../useTemplateVersions';

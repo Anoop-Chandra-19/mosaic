@@ -6,7 +6,8 @@ import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/compone
 import { cn } from '@/lib/utils';
 import { useAiStore } from '@/stores/aiStore';
 import { ShortcutsPanel } from '@/features/shortcuts/ShortcutsPanel';
-import { SETTINGS_GROUPS, SETTINGS_SECTION_BY_ID, type SettingsSectionId } from './settingsNav';
+import type { SettingsSectionId } from '@/types/settings';
+import { SETTINGS_GROUPS, SETTINGS_SECTION_BY_ID } from './settingsNav';
 import { AboutSection } from './sections/AboutSection';
 import { AiSection } from './sections/AiSection';
 import { AppearanceSection } from './sections/AppearanceSection';

@@ -1,5 +1,4 @@
-import { applyDensityClass } from '@/lib/hooks/useDensity';
-import { applyThemeClass, isThemeDark } from '@/lib/hooks/useTheme';
+import { applyDensityClass, applyThemeClass, isThemeDark } from '@/lib/appearance';
 import { seedSettings } from '@/lib/storage/settingsStorage';
 import type { BootState } from '@shared/types/db';
 import { useAiStore } from './aiStore';

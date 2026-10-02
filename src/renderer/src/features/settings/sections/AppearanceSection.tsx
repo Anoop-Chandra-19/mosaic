@@ -8,10 +8,9 @@ import {
   clampPaneWidth,
   SIDEBAR_WIDTH,
   useUiStore,
-  type InterfaceDensity,
   type PaneWidthLimits,
-  type ThemeChoice,
 } from '@/stores/uiStore';
+import type { InterfaceDensity, ThemeChoice } from '@/lib/appearance';
 import { SettingRow } from '../SettingRow';
 
 export function AppearanceSection() {

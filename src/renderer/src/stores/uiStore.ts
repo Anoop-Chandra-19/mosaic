@@ -1,13 +1,12 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { immer } from 'zustand/middleware/immer';
+import type { InterfaceDensity, ThemeChoice } from '@/lib/appearance';
 import { settingsStorage } from '@/lib/storage/settingsStorage';
 import type { PaperSize } from '@/types/paper';
 
 export type SidebarTab = 'content' | 'templates';
 
-/** The chrome's theme. System follows the operating system, and changes when it does. */
-export type ThemeChoice = 'dark' | 'light' | 'system';
 const THEME_CHOICES: readonly ThemeChoice[] = ['dark', 'light', 'system'];
 
 /**
@@ -17,8 +16,6 @@ const THEME_CHOICES: readonly ThemeChoice[] = ['dark', 'light', 'system'];
 export type LaunchView = 'last' | 'start' | 'templates';
 const LAUNCH_VIEWS: readonly LaunchView[] = ['last', 'start', 'templates'];
 
-/** How tightly the chrome is spaced. The resume page never changes with it. */
-export type InterfaceDensity = 'comfortable' | 'compact';
 const INTERFACE_DENSITIES: readonly InterfaceDensity[] = ['comfortable', 'compact'];
 
 /** How many steps back Ctrl/⌘+Z can go within one open draft. */
