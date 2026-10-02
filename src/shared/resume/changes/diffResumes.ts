@@ -15,7 +15,7 @@ import type { ResumeData } from '../../types/resume';
 import { diffTextsAsPhrases } from './diffTextsAsPhrases';
 import { findMoves, type Move } from './findMoves';
 import { listChangeRows, type ChangeRow } from './listChangeRows';
-import type { Change, ChangeTargetType, Placement } from './resumeChange';
+import type { Change, ChangeMove, ChangeTargetType } from './resumeChange';
 
 export type { ChangeRow };
 
@@ -126,18 +126,7 @@ function findParentChange(parents: Map<string, Change | null>, row: ChangeRow): 
   return parents.get(`entry:${entryId}`) ?? null;
 }
 
-/** How a move names its neighbours: a bullet or line by number, anything else by name. */
-function nameNeighbour(rowsByKey: Map<string, ChangeRow>, key: string): string {
-  const row = rowsByKey.get(key);
-  if (!row) return '';
-  if (row.target.type === 'bullet') return `bullet ${row.number}`;
-  if (row.target.type === 'summaryLine' || row.target.type === 'textLine') {
-    return `line ${row.number}`;
-  }
-  return row.displayName ?? row.text;
-}
-
-function describeMove(row: ChangeRow, rowBefore: ChangeRow, move: Change['move']): Change {
+function describeMove(row: ChangeRow, rowBefore: ChangeRow, move: ChangeMove): Change {
   return {
     id: `move:${row.key}`,
     kind: 'move',
@@ -152,22 +141,11 @@ function describeMove(row: ChangeRow, rowBefore: ChangeRow, move: Change['move']
   };
 }
 
-const ALONE: Placement = { relation: 'alone', name: '' };
-
-/** Where it is now: above the one it now leads, or else below the one it follows. */
-function placeAfterMove(rows: ResumeRows, move: Move, keyOf: (id: string) => string): Placement {
-  const name = (id: string) => nameNeighbour(rows.afterByKey, keyOf(id));
-  if (move.nextId) return { relation: 'above', name: name(move.nextId) };
-  if (move.previousId) return { relation: 'below', name: name(move.previousId) };
-  return ALONE;
-}
-
-/** Where it was: below the one it followed, or else first, above the one it led. */
-function placeBeforeMove(rows: ResumeRows, move: Move, keyOf: (id: string) => string): Placement {
-  const name = (id: string) => nameNeighbour(rows.beforeByKey, keyOf(id));
-  if (move.previousIdBefore) return { relation: 'below', name: name(move.previousIdBefore) };
-  if (move.nextIdBefore) return { relation: 'above', name: name(move.nextIdBefore) };
-  return ALONE;
+function measureMove({ position, positionBefore }: Move): ChangeMove {
+  return {
+    direction: position < positionBefore ? 'up' : 'down',
+    places: Math.abs(positionBefore - position),
+  };
 }
 
 /** The ids of the printed rows `isInList` picks, in page order. */
@@ -199,16 +177,8 @@ function findAllMoves(rows: ResumeRows): Map<string, Change> {
       const key = keyOf(move.id);
       const row = rows.afterByKey.get(key);
       const rowBefore = rows.beforeByKey.get(key);
-      const placement = placeAfterMove(rows, move, keyOf);
-      if (!row || !rowBefore || placement.relation === 'alone') continue;
-      moves.set(
-        key,
-        describeMove(row, rowBefore, {
-          placement,
-          placementBefore: placeBeforeMove(rows, move, keyOf),
-          isMovedUp: move.position < move.positionBefore,
-        })
-      );
+      if (!row || !rowBefore) continue;
+      moves.set(key, describeMove(row, rowBefore, measureMove(move)));
     }
   };
 
@@ -237,16 +207,8 @@ function findAllMoves(rows: ResumeRows): Map<string, Change> {
     const sectionId = entry.target.sectionId;
     const sectionIdBefore = entryBefore.target.sectionId;
     if (sectionIdBefore !== sectionId && !moves.has(entry.key)) {
-      const sectionName = (byKey: Map<string, ChangeRow>, id: string | undefined) =>
-        byKey.get(`section:${id}`)?.text ?? '';
-      moves.set(
-        entry.key,
-        describeMove(entry, entryBefore, {
-          placement: { relation: 'in', name: sectionName(rows.afterByKey, sectionId) },
-          placementBefore: { relation: 'in', name: sectionName(rows.beforeByKey, sectionIdBefore) },
-          isMovedUp: false,
-        })
-      );
+      const fromSection = rows.beforeByKey.get(`section:${sectionIdBefore}`)?.text ?? '';
+      moves.set(entry.key, describeMove(entry, entryBefore, { direction: 'across', fromSection }));
     }
   }
   return moves;

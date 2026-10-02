@@ -37,7 +37,21 @@ describe('describeChangeTip', () => {
         const [translator] = findSection(doc, 'work').items.splice(1, 1);
         findSection(doc, 'projects').items.push(translator);
       })
-    ).toEqual(['Translator moved to Projects. Was in Work History in your draft.']);
+    ).toEqual(['Was in Work History in your draft.']);
+  });
+
+  it('says how far a moved thing is from where the other side has it', () => {
+    expect(
+      tipsAgainstDraft((doc) => {
+        findSection(doc, 'work').items.reverse();
+      })
+    ).toEqual(['1 place higher than in your draft.']);
+    expect(
+      tipsAgainstDraft((doc) => {
+        const job = findEntry(doc, 'work', 'babbage');
+        job.bullets.push(job.bullets.shift()!);
+      })
+    ).toEqual(['2 places lower than in your draft.']);
   });
 
   it('keeps a version label lower case at the start of a sentence', () => {

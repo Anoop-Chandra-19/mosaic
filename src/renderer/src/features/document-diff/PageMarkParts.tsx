@@ -4,7 +4,12 @@ import { cn } from '@/lib/utils';
 import { describeChangeTip } from '@shared/resume/changes/describeChanges';
 import type { EntryHeadingFields } from '@shared/resume/entryHeading';
 import { ENTRY_HEADING_SEPARATOR } from '@shared/resume/entryHeading';
-import { getChangeTone, type Change, type ChangeTone } from '@shared/resume/changes/resumeChange';
+import {
+  getChangeTone,
+  type Change,
+  type ChangeMove,
+  type ChangeTone,
+} from '@shared/resume/changes/resumeChange';
 import { LINE_GUTTER, type MarkGutter } from './pageMarks';
 import { PhraseText } from './PhraseText';
 
@@ -55,9 +60,10 @@ function Bar({ tone, gutter }: { tone: ChangeTone; gutter: MarkGutter }) {
   return <span aria-hidden className={cn(BAR, BAR_TONE[tone])} style={{ left: -gutter.barPx }} />;
 }
 
+const MOVE_GLYPHS: Record<ChangeMove['direction'], string> = { up: '↑', down: '↓', across: '⇄' };
+
 function MoveGlyph({ move, gutter }: { move: Change; gutter: MarkGutter }) {
-  const placement = move.move?.placement;
-  const glyph = placement?.relation === 'in' ? '⇄' : move.move?.isMovedUp ? '↑' : '↓';
+  const glyph = MOVE_GLYPHS[move.move?.direction ?? 'down'];
   return (
     <i
       aria-hidden

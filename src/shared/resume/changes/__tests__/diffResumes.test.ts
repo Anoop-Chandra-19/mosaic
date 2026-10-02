@@ -167,17 +167,33 @@ describe('diffResumes', () => {
         const job = findEntry(doc, 'work', 'babbage');
         job.bullets.unshift(job.bullets.pop()!);
       })
-    ).toEqual(['Bullet 1 · moved above bullet 2 (was below bullet 2)']);
+    ).toEqual(['Bullet 1 · moved up 2 places']);
     expect(
       read((doc) => {
         findSection(doc, 'work').items.reverse();
       })
-    ).toEqual(['Translator · moved above Analyst (was below Analyst)']);
+    ).toEqual(['Translator · moved up 1 place']);
     expect(
       read((doc) => {
         findSection(doc, 'projects').order = 0.5;
       })
-    ).toEqual(['Projects · moved above Work History (was below Work History)']);
+    ).toEqual(['Projects · moved up 1 place']);
+  });
+
+  it('counts a move in the lines both sides have, so a swap is one place', () => {
+    expect(
+      read((doc) => {
+        const job = findEntry(doc, 'work', 'babbage');
+        job.bullets.push(job.bullets.shift()!);
+        job.bullets.splice(1, 0, { id: 'b4', selected: true, text: 'Drew the engine.' });
+      })
+    ).toEqual(['Bullet 2 · added', 'Bullet 4 · moved down 2 places']);
+    expect(
+      read((doc) => {
+        const job = findEntry(doc, 'work', 'babbage');
+        job.bullets.splice(1, 0, job.bullets.splice(2, 1)[0]);
+      })
+    ).toEqual(['Bullet 2 · moved up 1 place']);
   });
 
   it('reads an entry taken to another section as moved there', () => {
@@ -187,7 +203,7 @@ describe('diffResumes', () => {
     }).changes;
     expect(changes.map(describeChange)).toContainEqual({
       noun: 'Translator',
-      verb: 'moved to Projects (was in Work History)',
+      verb: 'moved from Work History',
       detail: null,
     });
   });
