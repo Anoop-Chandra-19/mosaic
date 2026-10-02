@@ -3,6 +3,7 @@ import { HEADER_ALIGNS, LINK_COLORS, LINK_STYLES } from '../resumeHeader';
 import type { FormattingChange, FormattingSetting } from './diffFormatting';
 import {
   getChangeTone,
+  isShortFieldChange,
   type Change,
   type ChangeLine,
   type ChangeTone,
@@ -53,35 +54,52 @@ function nameChangedThing(change: Change): string {
   }
 }
 
+function describeMove(change: Change): string {
+  const where = change.rel === 'to' ? `to ${change.other}` : `${change.rel} ${change.other}`;
+  return change.was ? `moved ${where} (${change.was})` : `moved ${where}`;
+}
+
+/** An entry or section says what it is: "Analyst entry left off the page". */
+const KIND_WORDS: Partial<Record<ChangeLine, string>> = { entry: 'entry ', section: 'section ' };
+
+/** How the text changed: worded differently, or a short field filled, emptied, or replaced. */
+function describeEdit(change: Change): string {
+  if (change.phrases) return change.line === 'summary' ? 'reworded' : 'edited';
+  if (!change.from) return 'added';
+  if (!change.to) return 'cleared';
+  return change.line === 'section' || change.field === 'title' ? 'renamed' : 'changed';
+}
+
+function describeVerb(change: Change): string {
+  const kindWord = KIND_WORDS[change.line] ?? '';
+  switch (change.kind) {
+    case 'reorder':
+      return describeMove(change);
+    case 'toggle':
+      return kindWord + (change.isOnPage ? 'back on the page' : 'left off the page');
+    case 'add':
+      return `${kindWord}added`;
+    case 'remove':
+      return `${kindWord}removed`;
+    default:
+      return describeEdit(change);
+  }
+}
+
+/** A short field's old → new, or whichever side it has. */
+function describeDetail(change: Change): string | null {
+  if (!isShortFieldChange(change)) return null;
+  if (change.from && change.to) return `${change.from} → ${change.to}`;
+  return change.from || change.to || null;
+}
+
 /** One wording for the change list, the unified view, and the banner. */
 export function describeChange(change: Change): ChangeWording {
-  const kindWord = change.line === 'entry' ? 'entry ' : change.line === 'section' ? 'section ' : '';
-  let verb: string;
-  if (change.kind === 'reorder') {
-    verb = change.rel === 'to' ? `moved to ${change.other}` : `moved ${change.rel} ${change.other}`;
-    if (change.was) verb += ` (${change.was})`;
-  } else if (change.kind === 'toggle') {
-    verb = kindWord + (change.isOnPage ? 'back on the page' : 'left off the page');
-  } else if (change.kind === 'add') {
-    verb = `${kindWord}added`;
-  } else if (change.kind === 'remove') {
-    verb = `${kindWord}removed`;
-  } else if (change.phrases) {
-    verb = change.line === 'summary' ? 'reworded' : 'edited';
-  } else if (!change.from) {
-    verb = 'added';
-  } else if (!change.to) {
-    verb = 'cleared';
-  } else {
-    verb = change.line === 'section' || change.field === 'title' ? 'renamed' : 'changed';
-  }
-  const isShortField = !change.phrases && change.from !== undefined && change.kind !== 'toggle';
-  const detail = isShortField
-    ? change.from && change.to
-      ? `${change.from} → ${change.to}`
-      : change.from || change.to || null
-    : null;
-  return { noun: nameChangedThing(change), verb, detail };
+  return {
+    noun: nameChangedThing(change),
+    verb: describeVerb(change),
+    detail: describeDetail(change),
+  };
 }
 
 export interface DifferencePhrase {

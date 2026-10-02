@@ -76,9 +76,14 @@ export function getChangeGlyph(change: Change): string {
 }
 
 /** Whether a change adds to the page being read, takes from it, or edits it. */
+/** A short field shown whole, old → new, rather than word by word. */
+export const isShortFieldChange = (change: Change) =>
+  !change.phrases && change.from !== undefined && change.kind !== 'toggle';
+
 export function getChangeTone(change: Change): ChangeTone {
-  if (!change.phrases && change.from !== undefined && change.kind !== 'toggle') {
-    return !change.from ? 'add' : !change.to ? 'del' : 'edit';
+  if (isShortFieldChange(change)) {
+    if (!change.from) return 'add';
+    return change.to ? 'edit' : 'del';
   }
   if (change.kind === 'add' || (change.kind === 'toggle' && change.isOnPage)) return 'add';
   if (change.kind === 'remove' || change.kind === 'toggle') return 'del';
