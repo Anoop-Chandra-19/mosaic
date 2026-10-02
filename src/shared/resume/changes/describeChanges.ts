@@ -1,7 +1,13 @@
 import type { HeaderItemKind } from '../../types/resume';
 import { HEADER_ALIGNS, LINK_COLORS, LINK_STYLES } from '../resumeHeader';
-import type { FormattingChange } from './diffFormatting';
-import { getChangeTone, type Change, type ChangeTone, type EntryField } from './resumeChange';
+import type { FormattingChange, FormattingSetting } from './diffFormatting';
+import {
+  getChangeTone,
+  type Change,
+  type ChangeLine,
+  type ChangeTone,
+  type EntryField,
+} from './resumeChange';
 
 const FIELD_NAMES: Record<EntryField, string> = {
   title: 'Role',
@@ -91,12 +97,17 @@ export interface DifferenceWording {
 }
 
 const plural = (n: number, one: string, many: string) => (n === 1 ? one : many);
+const count = (n: number, one: string, many: string) => `${n} ${plural(n, one, many)}`;
 
-const THINGS: Partial<Record<Change['line'], [string, string]>> = {
-  bullet: ['bullet', 'bullets'],
-  entry: ['entry', 'entries'],
-  section: ['section', 'sections'],
+/** What a line is called when counted. A summary or text line is just a line. */
+const THING_NAMES: Record<ChangeLine, [string, string]> = {
+  name: ['name', 'names'],
   item: ['header item', 'header items'],
+  section: ['section', 'sections'],
+  entry: ['entry', 'entries'],
+  field: ['field', 'fields'],
+  bullet: ['bullet', 'bullets'],
+  summary: ['line', 'lines'],
   text: ['line', 'lines'],
 };
 
@@ -107,60 +118,82 @@ const DIFFERENT_FIELDS: Record<EntryField, [string, string]> = {
   dates: ['different dates', 'different dates'],
 };
 
+const WORDED_DIFFERENTLY: Partial<Record<ChangeLine, (n: number) => string>> = {
+  name: () => 'a different name',
+  item: (n) => (n === 1 ? 'a different header item' : `${n} different header items`),
+  section: (n) => (n === 1 ? 'a renamed section' : `${n} renamed sections`),
+  bullet: (n) => `${count(n, 'bullet', 'bullets')} worded differently`,
+  summary: () => 'a reworded summary',
+  text: (n) => `${count(n, 'line', 'lines')} worded differently`,
+};
+
+/** One phrase of the sentence; changes with the same `key` are counted into it. */
+interface PhraseKind {
+  key: string;
+  isMissing: boolean;
+  tone: ChangeTone;
+  write: (n: number) => string;
+}
+
+function classifyDifference(change: Change): PhraseKind | null {
+  const tone = getChangeTone(change);
+  const [one, many] = THING_NAMES[change.line];
+  if (change.kind === 'reorder') {
+    return {
+      key: `moved ${one}`,
+      isMissing: false,
+      tone: 'edit',
+      write: (n) => `${count(n, one, many)} in a different place`,
+    };
+  }
+  if (change.kind === 'add' || change.kind === 'remove' || change.kind === 'toggle') {
+    const isMissing = tone !== 'add';
+    if (change.line === 'summary') {
+      return {
+        key: isMissing ? 'missing summary' : 'extra summary',
+        isMissing,
+        tone,
+        write: () => (isMissing ? 'the summary' : 'a summary'),
+      };
+    }
+    return {
+      key: `${isMissing ? 'missing' : 'extra'} ${one}`,
+      isMissing,
+      tone,
+      write: (n) => (isMissing ? count(n, one, many) : `${n} extra ${plural(n, one, many)}`),
+    };
+  }
+  if (change.line === 'field' && change.field) {
+    const [single, several] = DIFFERENT_FIELDS[change.field];
+    return {
+      key: `field ${change.field}`,
+      isMissing: false,
+      tone,
+      write: (n) => `${plural(n, single, several)} on ${count(n, 'entry', 'entries')}`,
+    };
+  }
+  const write = WORDED_DIFFERENTLY[change.line];
+  return write ? { key: `edited ${change.line}`, isMissing: false, tone: 'edit', write } : null;
+}
+
 /**
  * The banner's sentence, in parts: it describes the page being read against the other side
  * ("it has 1 extra bullet … and is missing 1 entry"), never bare +1 / −1.
  */
 export function describeDifference(changes: readonly Change[]): DifferenceWording {
-  const counts = new Map<string, { n: number; tone: ChangeTone }>();
-  const bump = (key: string, tone: ChangeTone) => {
-    const count = counts.get(key) ?? { n: 0, tone };
-    count.n++;
-    counts.set(key, count);
-  };
+  const groups = new Map<string, { phrase: PhraseKind; n: number }>();
   for (const change of changes) {
-    const tone = getChangeTone(change);
-    if (change.kind === 'reorder') {
-      const moved =
-        change.line === 'bullet' || change.line === 'entry'
-          ? change.line
-          : change.line === 'summary' || change.line === 'text'
-            ? 'text'
-            : 'section';
-      bump(`move:${moved}`, 'edit');
-    } else if (change.kind === 'add' || change.kind === 'remove' || change.kind === 'toggle') {
-      if (change.line === 'summary')
-        bump(tone === 'add' ? 'has-summary:' : 'missing-summary:', tone);
-      else bump(`${tone === 'add' ? 'extra' : 'missing'}:${change.line}`, tone);
-    } else if (change.line === 'field') {
-      bump(`field:${change.field}`, tone);
-    } else {
-      bump(`edit:${change.line}`, 'edit');
-    }
+    const phrase = classifyDifference(change);
+    if (!phrase) continue;
+    const group = groups.get(phrase.key) ?? { phrase, n: 0 };
+    group.n++;
+    groups.set(phrase.key, group);
   }
 
   const has: DifferencePhrase[] = [];
   const missing: DifferencePhrase[] = [];
-  for (const [key, { n, tone }] of counts) {
-    const [kind, what] = key.split(':') as [string, Change['line']];
-    const [one, many] = THINGS[what] ?? [what, `${what}s`];
-    let text: string | null = null;
-    if (kind === 'extra') text = `${n} extra ${plural(n, one, many)}`;
-    else if (kind === 'missing') missing.push({ text: `${n} ${plural(n, one, many)}`, tone });
-    else if (kind === 'has-summary') text = 'a summary';
-    else if (kind === 'missing-summary') missing.push({ text: 'the summary', tone });
-    else if (kind === 'field') {
-      const [single, several] = DIFFERENT_FIELDS[what as EntryField];
-      text = `${plural(n, single, several)} on ${n} ${plural(n, 'entry', 'entries')}`;
-    } else if (kind === 'move') text = `${n} ${plural(n, one, many)} in a different place`;
-    else if (what === 'bullet') text = `${n} ${plural(n, 'bullet', 'bullets')} worded differently`;
-    else if (what === 'text') text = `${n} ${plural(n, 'line', 'lines')} worded differently`;
-    else if (what === 'summary') text = 'a reworded summary';
-    else if (what === 'section') text = n === 1 ? 'a renamed section' : `${n} renamed sections`;
-    else if (what === 'item') {
-      text = n === 1 ? 'a different header item' : `${n} different header items`;
-    } else if (what === 'name') text = 'a different name';
-    if (text) has.push({ text, tone });
+  for (const { phrase, n } of groups.values()) {
+    (phrase.isMissing ? missing : has).push({ text: phrase.write(n), tone: phrase.tone });
   }
 
   const where = new Set<string>();
@@ -182,49 +215,69 @@ export interface FormattingWording {
   to: string;
 }
 
-const VALUE_WORDS: Record<string, Record<string, string>> = {
-  linkStyle: { underline: 'underlined', plain: 'plain' },
-  linkColor: { blue: 'blue', ink: 'black' },
-  align: { left: 'left-aligned', center: 'centered' },
-};
+interface SettingWords {
+  name: string;
+  /** In a sentence: "underlined", "separated by “·”". */
+  describe: (value: string) => string;
+  /** The other side's, once the setting has been named, where it differs: "by “|”". */
+  describeOther?: (value: string) => string;
+  /** Settings' own label: "Underlined", "·". */
+  label: (value: string) => string;
+}
 
+const wordFor = (words: Record<string, string>) => (value: string) => words[value] ?? value;
+const labelFor = (options: readonly { value: string; label: string }[]) => (value: string) =>
+  options.find((option) => option.value === value)?.label ?? value;
 const quoteSeparator = (separator: string) =>
   separator.trim() ? `“${separator.trim()}”` : 'spaces';
 
-function nameSettingValue(setting: FormattingChange['setting'], value: string): string {
-  if (setting === 'separator') return value.trim() || 'spaces';
-  const options =
-    setting === 'linkStyle' ? LINK_STYLES : setting === 'linkColor' ? LINK_COLORS : HEADER_ALIGNS;
-  return options.find((option) => option.value === value)?.label ?? value;
-}
+const SETTING_WORDS: Record<FormattingSetting, SettingWords> = {
+  linkStyle: {
+    name: 'Links',
+    describe: wordFor({ underline: 'underlined', plain: 'plain' }),
+    label: labelFor(LINK_STYLES),
+  },
+  linkColor: {
+    name: 'Link color',
+    describe: wordFor({ blue: 'blue', ink: 'black' }),
+    label: labelFor(LINK_COLORS),
+  },
+  align: {
+    name: 'alignment',
+    describe: wordFor({ left: 'left-aligned', center: 'centered' }),
+    label: labelFor(HEADER_ALIGNS),
+  },
+  separator: {
+    name: 'separator',
+    describe: (value) => `separated by ${quoteSeparator(value)}`,
+    describeOther: (value) => `by ${quoteSeparator(value)}`,
+    label: (value) => value.trim() || 'spaces',
+  },
+};
+
+const isLinkSetting = (setting: FormattingSetting) =>
+  setting === 'linkStyle' || setting === 'linkColor';
+
+const describeSubject = ({ setting, lineNumber }: FormattingChange) =>
+  isLinkSetting(setting) ? 'Links' : `Header line ${lineNumber}`;
 
 /** `otherSide` names what the page is compared with: "your draft", "v3". */
 export function describeFormattingChange(
   change: FormattingChange,
   otherSide: string
 ): FormattingWording {
-  const { setting, lineNumber } = change;
-  const isLinks = setting === 'linkStyle' || setting === 'linkColor';
-  const subject = isLinks ? 'Links' : `Header line ${lineNumber}`;
-  const describeValue = (value: string) =>
-    setting === 'separator' ? `separated by ${quoteSeparator(value)}` : VALUE_WORDS[setting][value];
-  const otherShort =
-    setting === 'separator' ? `by ${quoteSeparator(change.from)}` : describeValue(change.from);
-  const value = describeValue(change.to);
-  const otherValue = `${otherShort} in ${otherSide}`;
+  const words = SETTING_WORDS[change.setting];
+  const subject = describeSubject(change);
+  const value = words.describe(change.to);
+  const otherValue = `${(words.describeOther ?? words.describe)(change.from)} in ${otherSide}`;
   return {
     subject,
     value,
     otherValue,
     row: `${subject} ${value}, ${otherValue}`,
-    setting:
-      setting === 'linkStyle'
-        ? 'Links'
-        : setting === 'linkColor'
-          ? 'Link color'
-          : `Header line ${lineNumber} ${setting === 'align' ? 'alignment' : 'separator'}`,
-    from: nameSettingValue(setting, change.from),
-    to: nameSettingValue(setting, change.to),
+    setting: isLinkSetting(change.setting) ? words.name : `${subject} ${words.name}`,
+    from: words.label(change.from),
+    to: words.label(change.to),
   };
 }
 
@@ -236,21 +289,17 @@ export function describeFormattingDifference(
   changes: readonly FormattingChange[],
   otherSide: string
 ): string {
-  const groups = new Map<string, FormattingChange[]>();
+  const bySubject = new Map<string, FormattingChange[]>();
   for (const change of changes) {
-    const isLinks = change.setting === 'linkStyle' || change.setting === 'linkColor';
-    const key = isLinks ? 'links' : `line:${change.lineNumber}`;
-    groups.set(key, [...(groups.get(key) ?? []), change]);
+    const subject = describeSubject(change);
+    bySubject.set(subject, [...(bySubject.get(subject) ?? []), change]);
   }
-  return [...groups]
-    .map(([key, group]) => {
-      const values = group.map((change) => describeFormattingChange(change, otherSide));
-      const subject = key === 'links' ? 'links are' : `header line ${group[0].lineNumber} is`;
-      const here = values.map((wording) => wording.value).join(' and ');
-      const there = group
-        .map((change) => describeFormattingChange({ ...change, to: change.from }, otherSide).value)
-        .join(' and ');
-      return `Its ${subject} ${here} (${there} in ${otherSide}).`;
+  return [...bySubject]
+    .map(([subject, group]) => {
+      const describeAll = (side: 'from' | 'to') =>
+        group.map((change) => SETTING_WORDS[change.setting].describe(change[side])).join(' and ');
+      const verb = subject === 'Links' ? 'are' : 'is';
+      return `Its ${subject.toLowerCase()} ${verb} ${describeAll('to')} (${describeAll('from')} in ${otherSide}).`;
     })
     .join(' ');
 }
