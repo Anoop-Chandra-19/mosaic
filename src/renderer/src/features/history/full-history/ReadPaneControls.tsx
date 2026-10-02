@@ -1,4 +1,4 @@
-import { Check, ChevronDown } from 'lucide-react';
+import { Check, ChevronDown, Eye } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
 import { AppTooltip } from '@/components/AppTooltip';
 import {
@@ -8,6 +8,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { cn } from '@/lib/utils';
 import type { HistoryComparison } from '@/types/history';
 
 export type ReadPaneView = 'page' | 'changes';
@@ -28,6 +29,11 @@ interface ReadPaneControlsProps {
   onComparisonChange: (comparison: HistoryComparison) => void;
   view: ReadPaneView;
   onViewChange: (view: ReadPaneView) => void;
+  isMarked: boolean;
+  onMarkedChange: (isMarked: boolean) => void;
+  /** The page was chosen over the text read in a narrow pane, which can be gone back to. */
+  canReadAsText: boolean;
+  onReadAsText: () => void;
 }
 
 /** What the version is read against, and how. */
@@ -38,6 +44,10 @@ export function ReadPaneControls({
   onComparisonChange,
   view,
   onViewChange,
+  isMarked,
+  onMarkedChange,
+  canReadAsText,
+  onReadAsText,
 }: ReadPaneControlsProps) {
   const item =
     'h-5.75 min-w-0 rounded-[0.3125rem] px-2.25 text-xs font-medium text-ink-muted hover:bg-transparent hover:text-foreground disabled:text-ink-faint aria-checked:bg-pane-raised aria-checked:text-foreground aria-checked:shadow-[0_1px_2px_oklch(0_0_0/25%)]';
@@ -95,6 +105,31 @@ export function ReadPaneControls({
           ))}
         </DropdownMenuContent>
       </DropdownMenu>
+      {canReadAsText && (
+        <AppButton
+          variant="ghost"
+          size="2xs"
+          title="Read this version as text"
+          onClick={onReadAsText}
+        >
+          Text
+        </AppButton>
+      )}
+      {view === 'page' && (
+        <AppButton
+          variant="ghost"
+          size="2xs"
+          shape="square"
+          aria-pressed={isMarked}
+          aria-label={
+            isMarked ? 'Hide the marks, read the clean page' : 'Mark the changes on the page'
+          }
+          onClick={() => onMarkedChange(!isMarked)}
+          className={cn(isMarked && 'bg-line-strong text-foreground')}
+        >
+          <Eye />
+        </AppButton>
+      )}
     </div>
   );
 }

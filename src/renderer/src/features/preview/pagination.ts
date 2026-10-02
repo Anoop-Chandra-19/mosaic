@@ -64,10 +64,17 @@ export function normalizeSections(sections: ResumeSection[]): PreviewRenderableS
     layout,
     label,
     entries: entries.map(
-      ({ id, text, heading, dates, bullets }): PaginatedEntry =>
+      ({ id, text, heading, dates, bullets, title, organization, location }): PaginatedEntry =>
         layout === 'lines'
           ? { id, text, bullets: [], _sourceKey: id }
-          : { id, heading, dates, bullets, _sourceKey: id }
+          : {
+              id,
+              heading,
+              fields: { title, organization, location },
+              dates,
+              bullets,
+              _sourceKey: id,
+            }
     ),
   }));
 }

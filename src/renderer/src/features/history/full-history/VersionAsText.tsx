@@ -1,10 +1,11 @@
+import type { ReactNode } from 'react';
 import { normalizeResumeForExport } from '@/features/export/normalizeResumeExport';
 import type { ResumeData } from '@shared/types/resume';
 
 interface VersionAsTextProps {
   resume: ResumeData;
   /** Why this is text and not the printed page. */
-  note: string;
+  note: ReactNode;
 }
 
 /**
@@ -15,7 +16,7 @@ export function VersionAsText({ resume, note }: VersionAsTextProps) {
   const { contact, sections } = normalizeResumeForExport(resume);
   return (
     <div className="mx-auto w-full max-w-105 px-4 text-[0.775rem] leading-normal text-ink-soft">
-      <p className="mb-3 font-mono text-[0.725rem] leading-[1.45] text-ink-faint">{note}</p>
+      {note}
       <h4 className="mb-1.5 text-[0.9375rem] font-semibold tracking-[-0.01em] text-foreground">
         {contact.name}
       </h4>

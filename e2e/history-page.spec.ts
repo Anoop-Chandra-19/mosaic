@@ -85,6 +85,12 @@ test('stepping to another version shows its page laid out, never the old text re
   const history = page.getByRole('region', { name: /^History of/ });
   await expect(history).toBeVisible();
   const row = (name: string) => history.locator('li[data-version-id]').filter({ hasText: name });
+  // The clean pages: marked, both show the same struck and new words, so only the layout
+  // would tell them apart.
+  await history
+    .getByRole('complementary')
+    .getByRole('button', { name: 'Hide the marks, read the clean page' })
+    .click();
 
   // The page it was showing, then the new one: nothing in between. It opens on Long.
   for (const name of ['Short', 'Long']) {

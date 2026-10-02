@@ -3,6 +3,8 @@ import { Copy, Download, History } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
 import { AppTooltip } from '@/components/AppTooltip';
 import { ChangeList } from '@/features/document-diff/ChangeList';
+import { MarkedVersionText } from '@/features/document-diff/MarkedVersionText';
+import { collectPageMarks, putGoneBack } from '@/features/document-diff/pageMarks';
 import { UnifiedDiff } from '@/features/document-diff/UnifiedDiff';
 import { PAPER_DIMENSIONS_PT } from '@/features/preview/pageGeometry';
 import { ResumePreview } from '@/features/preview/ResumePreview';
@@ -13,8 +15,10 @@ import { prefersReducedMotion } from '@/lib/motion/motionTiming';
 import { flashChange } from '@/lib/motion/rowMotions';
 import { cn } from '@/lib/utils';
 import { HISTORY_READ_WIDTH, useUiStore } from '@/stores/uiStore';
+import type { ResumeDiff } from '@shared/resume/changes/diffResumes';
 import type { Change } from '@shared/resume/changes/resumeChange';
 import type { Version, VersionMeta, VersionSource } from '@shared/types/db';
+import type { ResumeData } from '@shared/types/resume';
 import { formatHistoryDay, formatTimeOfDay } from '../groupVersionHistory';
 import { ReadPaneControls, type ReadPaneView } from './ReadPaneControls';
 import { useVersionComparison } from './useVersionComparison';
@@ -67,32 +71,66 @@ function describeRestore(isHead: boolean, isIdentical: boolean): string {
   return 'Restore. What you have now is kept in history first.';
 }
 
+function TextReadNote({ text, onShowPage }: { text: string; onShowPage: () => void }) {
+  return (
+    <p className="mt-1 mb-3.5 flex flex-wrap items-center gap-2.5 rounded-md border border-line px-2.5 py-2 font-mono text-[0.6875rem] text-ink-faint">
+      <span className="min-w-40 flex-1">{text}</span>
+      <AppButton variant="outline" size="2xs" onClick={onShowPage}>
+        Show the page
+      </AppButton>
+    </p>
+  );
+}
+
 interface VersionPageProps {
   version: Version;
-  isLegible: boolean;
-  canWidenToPage: boolean;
+  /** What it is compared with, and what changed: with marks on, drawn on the page. */
+  base: ResumeData | null;
+  diff: ResumeDiff | null;
+  otherSide: string;
+  isMarked: boolean;
+  isTextRead: boolean;
+  textReadNote: string;
+  onShowPage: () => void;
 }
 
 /** The version as the printed page, or as text when the pane is too narrow to read one. */
-function VersionPage({ version, isLegible, canWidenToPage }: VersionPageProps) {
+function VersionPage({
+  version,
+  base,
+  diff,
+  otherSide,
+  isMarked,
+  isTextRead,
+  textReadNote,
+  onShowPage,
+}: VersionPageProps) {
   const paperSize = useUiStore((s) => s.paperSize);
-  if (!isLegible) {
-    return (
-      <VersionAsText
-        resume={version.doc}
-        note={
-          canWidenToPage
-            ? 'Widen this pane to read it as the printed page.'
-            : 'This window is too narrow to show the printed page. Reading it as text instead.'
-        }
-      />
+  const marked = isMarked && diff && base && diff.all.length > 0 ? { diff, base } : null;
+  const note = <TextReadNote text={textReadNote} onShowPage={onShowPage} />;
+  if (isTextRead) {
+    return marked ? (
+      <MarkedVersionText diff={marked.diff} otherSide={otherSide} note={note} />
+    ) : (
+      <VersionAsText resume={version.doc} note={note} />
     );
   }
   return (
     <div style={{ paddingInline: PAGE_GUTTER_PX }}>
-      <ResumePreview paperSize={paperSize} doc={version.doc} onMetaChange={ignorePreviewMeta} />
+      <ResumePreview
+        paperSize={paperSize}
+        doc={marked ? putGoneBack(version.doc, marked.base, marked.diff.all) : version.doc}
+        marks={marked ? collectPageMarks(marked.diff.all, otherSide) : undefined}
+        onMetaChange={ignorePreviewMeta}
+      />
     </div>
   );
+}
+
+/** The change's mark on the page or in Changes only: not the preview's offscreen copy. */
+function findChangeMark(body: HTMLElement | null, change: Change): Element | undefined {
+  const marks = body?.querySelectorAll(`[data-change-id="${CSS.escape(change.id)}"]`) ?? [];
+  return [...marks].find((mark) => !mark.closest('[data-preview-measure]'));
 }
 
 /**
@@ -122,6 +160,9 @@ export function HistoryReadPane({
   const bodyRef = useRef<HTMLDivElement>(null);
   const [bodyWidth, setBodyWidth] = useState(0);
   const [view, setView] = useState<ReadPaneView>('page');
+  const [isMarked, setIsMarked] = useState(true);
+  /** Chosen over the text read in a narrow pane. */
+  const [isPageChosen, setIsPageChosen] = useState(false);
   const loaded = doc?.id === version.id ? doc : null;
   const comparison = useVersionComparison({ templateId, version: loaded, parent, parentLabel });
   const { diff, formatting, otherSide, draftChangeCount, hasDraftFormatting } = comparison;
@@ -144,7 +185,7 @@ export function HistoryReadPane({
   const cursor = cursorAt.key === cursorKey ? cursorAt.index : 0;
   const changes = diff?.changes ?? [];
   const revealChange = (change: Change) => {
-    const target = bodyRef.current?.querySelector(`[data-change-id="${CSS.escape(change.id)}"]`);
+    const target = findChangeMark(bodyRef.current, change);
     if (!target) return;
     target.scrollIntoView({
       block: 'center',
@@ -174,6 +215,7 @@ export function HistoryReadPane({
   const isSameAsBase = diff !== null && changes.length === 0 && formatting.length === 0;
   const pageScale = (bodyWidth - PAGE_GUTTER_PX * 2) / PAPER_DIMENSIONS_PT[paperSize].width;
   const isLegible = bodyWidth === 0 || pageScale >= LEGIBLE_PAGE_SCALE;
+  const isTextRead = view === 'page' && !isLegible && !isPageChosen;
   const reason = AUTOMATIC_REASONS[version.source];
   return (
     <aside
@@ -228,6 +270,10 @@ export function HistoryReadPane({
             onComparisonChange={setComparison}
             view={view}
             onViewChange={setView}
+            isMarked={isMarked}
+            onMarkedChange={setIsMarked}
+            canReadAsText={view === 'page' && !isLegible && isPageChosen}
+            onReadAsText={() => setIsPageChosen(false)}
           />
         )}
       </header>
@@ -279,7 +325,20 @@ export function HistoryReadPane({
           />
         )}
         {loaded && view === 'page' && (
-          <VersionPage version={loaded} isLegible={isLegible} canWidenToPage={canWidenToPage} />
+          <VersionPage
+            version={loaded}
+            base={comparison.base}
+            diff={diff}
+            otherSide={otherSide}
+            isMarked={isMarked}
+            isTextRead={isTextRead}
+            textReadNote={
+              canWidenToPage
+                ? 'Widen this pane to read it as the printed page.'
+                : 'This window is too narrow to show the printed page. Reading it as text instead.'
+            }
+            onShowPage={() => setIsPageChosen(true)}
+          />
         )}
       </div>
 

@@ -1,6 +1,7 @@
 import { HEADLESS_LAYOUT } from '@/lib/resume/headlessLayout';
 import type { PaperSize } from '@/types/paper';
 import type { NormalizedResumeExport } from '../normalizeResumeExport';
+import { createTextMeasurer } from './breakLinesLikeWord';
 
 interface RenderResumePdfOptions {
   data: NormalizedResumeExport;
@@ -10,10 +11,9 @@ interface RenderResumePdfOptions {
 /** The resume as PDF file bytes. */
 export async function renderResumePdf(options: RenderResumePdfOptions): Promise<Uint8Array> {
   // Lazy-load PDF rendering so the editor stays lighter on initial load.
-  const [{ pdf }, { PdfResumeDocument }, { createTextMeasurer }] = await Promise.all([
+  const [{ pdf }, { PdfResumeDocument }] = await Promise.all([
     import('@react-pdf/renderer'),
     import('./PdfResumeDocument'),
-    import('./breakLinesLikeWord'),
   ]);
   const body = createTextMeasurer(HEADLESS_LAYOUT.bodyFontSize);
   const contact = createTextMeasurer(HEADLESS_LAYOUT.contactFontSize);
