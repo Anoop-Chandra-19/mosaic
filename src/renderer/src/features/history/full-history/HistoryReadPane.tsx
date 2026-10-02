@@ -14,6 +14,7 @@ import { usePreviewCanvas } from '@/features/preview/usePreviewCanvas';
 import { startPaneResize } from '@/features/shell/paneResize';
 import { transitionClasses } from '@/features/view-transitions/transitionClasses';
 import { isTypingField } from '@/lib/keyboardShortcuts';
+import { easeHeightChanges } from '@/lib/motion/easeHeightChanges';
 import { cn } from '@/lib/utils';
 import { HISTORY_READ_WIDTH, PREVIEW_DEFAULT_ZOOM, useUiStore } from '@/stores/uiStore';
 import type { ResumeDiff } from '@shared/resume/changes/diffResumes';
@@ -21,6 +22,7 @@ import type { Version, VersionMeta, VersionSource } from '@shared/types/db';
 import type { ResumeData } from '@shared/types/resume';
 import type { HistoryComparison } from '@/types/history';
 import { formatHistoryDay, formatTimeOfDay } from '../groupVersionHistory';
+import type { VersionPair } from './prepareHistoryOpening';
 import { ReadPaneControls, type ReadPaneView } from './ReadPaneControls';
 import { findReadingPlace, restoreReadingPlace, type ReadingPlace } from './readingPlace';
 import { useVersionComparison } from './useVersionComparison';
@@ -56,8 +58,8 @@ interface HistoryReadPaneProps {
   onRestore: (version: VersionMeta) => void;
   onDuplicate: (version: VersionMeta) => void;
   onExport: (version: Version, label: string) => void;
-  /** The version's document, read by the view before it selected the version. */
-  doc: Version | null;
+  /** The version's document and its parent's, read by the view before it selected them. */
+  docs: VersionPair;
 }
 
 const ignorePreviewMeta = () => {};
@@ -155,7 +157,7 @@ export function HistoryReadPane({
   onRestore,
   onDuplicate,
   onExport,
-  doc,
+  docs,
 }: HistoryReadPaneProps) {
   const widthPx = useUiStore((s) => s.historyReadWidthPx);
   const setWidthPx = useUiStore((s) => s.setHistoryReadWidthPx);
@@ -168,11 +170,17 @@ export function HistoryReadPane({
   const [isMarked, setIsMarked] = useState(true);
   /** Chosen over the text read in a narrow pane. */
   const [isPageChosen, setIsPageChosen] = useState(false);
-  const loaded = doc?.id === version.id ? doc : null;
+  /**
+   * The change list opened or closed by hand, kept through every step. Until then it is
+   * one line, opened only when formatting is all that changed.
+   */
+  const [listChoice, setListChoice] = useState<'open' | 'closed' | null>(null);
+  const loaded = docs.version?.id === version.id ? docs.version : null;
   const comparison = useVersionComparison({
     templateId,
     version: loaded,
     parent,
+    parentVersion: docs.parent?.id === parent?.id ? docs.parent : null,
     parentLabel,
     comparison: pickedComparison,
   });
@@ -319,33 +327,37 @@ export function HistoryReadPane({
         )}
       </header>
 
-      {diff &&
-        (isSameAsBase ? (
-          <p className="border-b border-line bg-background px-3.5 py-2.25 text-[0.775rem] text-ink-muted">
-            {comparison.isAgainstDraft
-              ? 'Your draft is exactly this version. Nothing to restore.'
-              : 'Nothing printed changed in this version.'}
+      {/* What changed differs in height from version to version: eased, not jumped. */}
+      <div ref={easeHeightChanges} className="shrink-0 overflow-hidden">
+        {diff &&
+          (isSameAsBase ? (
+            <p className="border-b border-line bg-background px-3.5 py-2.25 text-[0.775rem] text-ink-muted">
+              {comparison.isAgainstDraft
+                ? 'Your draft is exactly this version. Nothing to restore.'
+                : 'Nothing printed changed in this version.'}
+            </p>
+          ) : (
+            <ChangeList
+              diff={diff}
+              formatting={formatting}
+              cursor={cursor}
+              onPick={(change) => goToChange(changes.indexOf(change))}
+              onStep={(direction) => goToChange(cursor + direction)}
+              versionLabel={label}
+              otherSide={otherSide}
+              isAgainstDraft={comparison.isAgainstDraft}
+              isDetailed={isDetailed}
+              isOpen={listChoice === null ? changes.length === 0 : listChoice === 'open'}
+              onOpenChange={(isOpen) => setListChoice(isOpen ? 'open' : 'closed')}
+            />
+          ))}
+        {loaded && !comparison.canCompareWithParent && (
+          <p className="border-b border-line bg-background px-3.5 py-2.25 font-mono text-[0.7rem] text-ink-faint">
+            {label} is the first version, so it has no changes of its own. It is shown against your
+            draft.
           </p>
-        ) : (
-          <ChangeList
-            key={`${cursorKey}:${isDetailed}`}
-            diff={diff}
-            formatting={formatting}
-            cursor={cursor}
-            onPick={(change) => goToChange(changes.indexOf(change))}
-            onStep={(direction) => goToChange(cursor + direction)}
-            versionLabel={label}
-            otherSide={otherSide}
-            isAgainstDraft={comparison.isAgainstDraft}
-            isDetailed={isDetailed}
-          />
-        ))}
-      {loaded && !comparison.canCompareWithParent && (
-        <p className="border-b border-line bg-background px-3.5 py-2.25 font-mono text-[0.7rem] text-ink-faint">
-          {label} is the first version, so it has no changes of its own. It is shown against your
-          draft.
-        </p>
-      )}
+        )}
+      </div>
 
       <div
         ref={bodyRef}

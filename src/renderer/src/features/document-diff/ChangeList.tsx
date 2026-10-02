@@ -13,7 +13,7 @@
  * Other modules use ChangeList, UnifiedDiff, pageMarks, MarkedVersionText and
  * revealChangeMark; the rest are their steps.
  */
-import { useState, type ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { ChevronDown } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
 import { cn } from '@/lib/utils';
@@ -52,6 +52,8 @@ interface ChangeListProps {
   otherSide: string;
   isAgainstDraft: boolean;
   isDetailed: boolean;
+  isOpen: boolean;
+  onOpenChange: (isOpen: boolean) => void;
 }
 
 function describeCountsInWords(counts: Record<ChangeTone, number>): string {
@@ -101,9 +103,10 @@ export function ChangeList({
   otherSide,
   isAgainstDraft,
   isDetailed,
+  isOpen,
+  onOpenChange,
 }: ChangeListProps) {
   const hasChanges = diff.changes.length > 0;
-  const [isOpen, setIsOpen] = useState(!hasChanges);
   const counts = countChangesByTone(diff.changes);
   const groups = groupByPlace(diff.changes);
   const places = [...new Set(groups.map(([group]) => group.split(' › ')[0]))];
@@ -116,7 +119,7 @@ export function ChangeList({
           variant="ghost"
           shape="text"
           aria-expanded={isOpen}
-          onClick={() => setIsOpen((open) => !open)}
+          onClick={() => onOpenChange(!isOpen)}
           className="flex min-w-0 shrink items-center gap-2 px-1.5 py-0.75 whitespace-nowrap"
         >
           <ChevronDown

@@ -36,24 +36,6 @@ function useComparedDraft(templateId: string) {
   return stored?.templateId === templateId ? stored.doc : null;
 }
 
-function useStoredVersion(versionId: string | null): Version | null {
-  const [stored, setStored] = useState<Version | null>(null);
-  useEffect(() => {
-    if (!versionId) return;
-    let isCurrent = true;
-    getDb()
-      .versions.get(versionId)
-      .then(
-        (version) => isCurrent && setStored(version),
-        (error: unknown) => console.error('Could not read that version', error)
-      );
-    return () => {
-      isCurrent = false;
-    };
-  }, [versionId]);
-  return stored?.id === versionId ? stored : null;
-}
-
 function compareResumes(before: ResumeData | null, after: ResumeData | null) {
   if (!before || !after) return null;
   return { diff: diffResumes(before, after), formatting: diffFormatting(before, after) };
@@ -65,6 +47,8 @@ interface ComparedVersion {
   version: Version | null;
   /** The version before it; null for the first. */
   parent: VersionMeta | null;
+  /** Its document, once read. */
+  parentVersion: Version | null;
   parentLabel: string;
   comparison: HistoryComparison;
 }
@@ -78,11 +62,11 @@ export function useVersionComparison({
   templateId,
   version,
   parent,
+  parentVersion,
   parentLabel,
   comparison,
 }: ComparedVersion) {
   const draft = useComparedDraft(templateId);
-  const parentVersion = useStoredVersion(parent?.id ?? null);
   const isAgainstDraft = comparison === 'draft' || !parent;
   const versionDoc = version?.doc ?? null;
   const base = isAgainstDraft ? draft : (parentVersion?.doc ?? null);
