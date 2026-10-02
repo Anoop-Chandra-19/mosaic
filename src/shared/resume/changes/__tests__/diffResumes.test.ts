@@ -224,4 +224,31 @@ describe('describeDifference', () => {
       where: ['the header', 'Summary'],
     });
   });
+
+  it('counts each kind of edit into its own phrase', () => {
+    const edited = editFixture((doc) => {
+      const [, secondSummaryLine] = findSection(doc, 'summary').items;
+      secondSummaryLine.selected = false;
+      findSection(doc, 'work').label = 'Experience';
+      const job = findEntry(doc, 'work', 'babbage');
+      job.bullets[0].text = 'Wrote the first program for the analytical engine.';
+      job.bullets[1].text = 'Checked every table twice.';
+      job.organization = 'Babbage and Co';
+      findEntry(doc, 'work', 'somerville').organization = 'Somerville House';
+      const skills = findSection(doc, 'skills').items;
+      skills.reverse();
+      skills.push({ id: 'sk-3', selected: true, text: 'Engines', bullets: [] });
+    });
+    expect(describeDifference(diffResumes(before, edited).changes)).toEqual({
+      has: [
+        { text: 'a renamed section', tone: 'edit' },
+        { text: 'different companies on 2 entries', tone: 'edit' },
+        { text: '2 bullets worded differently', tone: 'edit' },
+        { text: '1 line in a different place', tone: 'edit' },
+        { text: '1 extra line', tone: 'add' },
+      ],
+      missing: [{ text: 'the summary', tone: 'del' }],
+      where: ['Experience', 'Skills'],
+    });
+  });
 });
