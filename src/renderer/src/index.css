@@ -116,6 +116,8 @@
   --color-del: var(--del);
   --color-del-soft: var(--del-soft);
   --color-del-line: var(--del-line);
+  --color-add-word: var(--add-word);
+  --color-del-word: var(--del-word);
 }
 
 @theme {
@@ -257,6 +259,11 @@
   --del: oklch(0.55 0.19 25);
   --del-soft: oklch(0.55 0.19 25 / 11%);
   --del-line: oklch(0.55 0.19 25 / 28%);
+  /* The words that changed inside a line already tinted add or del; the same in both themes. */
+  --add-word: oklch(0.76 0.15 155 / 30%);
+  --del-word: oklch(0.7 0.17 22 / 30%);
+  /* A change stepped to, held a moment. */
+  --change-flash: oklch(0.93 0.13 95 / 70%);
 }
 
 .dark {

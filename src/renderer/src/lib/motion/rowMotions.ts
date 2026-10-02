@@ -90,7 +90,7 @@ export function carryTint(target: Element): void {
 
 /** A change stepped to holds a highlight, then lets it go: "here it is". */
 export function flashChange(target: Element): void {
-  const highlight = 'oklch(0.93 0.13 95 / 70%)';
+  const highlight = 'var(--change-flash)';
   target.animate(
     [
       { backgroundColor: highlight },

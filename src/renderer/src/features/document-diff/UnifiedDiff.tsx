@@ -21,8 +21,8 @@ interface UnifiedDiffProps {
   isDetailed: boolean;
 }
 
-const DELETED_WORDS = 'rounded-xs bg-[oklch(0.7_0.17_22/30%)] text-foreground';
-const INSERTED_WORDS = 'rounded-xs bg-[oklch(0.76_0.15_155/30%)] text-foreground';
+const DELETED_WORDS = 'rounded-xs bg-del-word text-foreground';
+const INSERTED_WORDS = 'rounded-xs bg-add-word text-foreground';
 
 /** Each line: before and after numbers when detailed, a sign, then the text. */
 function lineGrid(isDetailed: boolean) {
