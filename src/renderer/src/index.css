@@ -118,6 +118,14 @@
   --color-del-line: var(--del-line);
   --color-add-word: var(--add-word);
   --color-del-word: var(--del-word);
+  --color-paper-changed: var(--paper-changed);
+  --color-paper-add: var(--paper-add);
+  --color-paper-add-soft: var(--paper-add-soft);
+  --color-paper-del: var(--paper-del);
+  --color-paper-del-text: var(--paper-del-text);
+  --color-paper-tag: var(--paper-tag);
+  --color-paper-tag-line: var(--paper-tag-line);
+  --color-paper-mark-hover: var(--paper-mark-hover);
 }
 
 @theme {
@@ -264,6 +272,18 @@
   --del-word: oklch(0.7 0.17 22 / 30%);
   /* A change stepped to, held a moment. */
   --change-flash: oklch(0.93 0.13 95 / 70%);
+  /*
+   * Marks on the printed page, which is white in both themes: neutral for a changed line,
+   * green for what only this page has, red for what only the other side has.
+   */
+  --paper-changed: #6f6f6f;
+  --paper-add: #3f8f5f;
+  --paper-add-soft: oklch(0.86 0.14 150 / 32%);
+  --paper-del: #b04a3a;
+  --paper-del-text: #8a4a40;
+  --paper-tag: #6b6b6b;
+  --paper-tag-line: #b9b9b9;
+  --paper-mark-hover: oklch(0.6 0 0 / 18%);
 }
 
 .dark {

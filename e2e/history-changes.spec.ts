@@ -131,3 +131,53 @@ test('the comparison and the details are remembered, and Settings shows the deta
   await expect(settings.getByRole('switch', { name: 'Always show all details' })).toBeChecked();
   expect(errors).toEqual([]);
 });
+
+test('the page marks what changed in place, and an export from it carries no marks', async () => {
+  const { app, page, errors } = mosaic();
+  await page.getByRole('button', { name: /Start from a sample/ }).click();
+  await page.getByRole('button', { name: 'Example resume' }).click();
+  await nameVersion(page, 'First');
+  await page.getByRole('checkbox', { name: 'Toggle bullet visibility' }).nth(1).click();
+  const bullet = page
+    .getByRole('complementary')
+    .locator('.group\\/bullet', { hasText: 'Built REST APIs' });
+  await bullet.hover();
+  await bullet.getByRole('button', { name: 'Bullet actions' }).click();
+  await page.getByRole('menuitem', { name: 'Delete bullet' }).click();
+  await nameVersion(page, 'Second');
+  await page.getByRole('main').click({ position: { x: 20, y: 200 } });
+  await page.keyboard.press('Control+Shift+H');
+
+  const view = page.getByRole('region', { name: /^History of/ });
+  await view.locator('li[data-version-id]').filter({ hasText: 'Second' }).click();
+  const reading = view.getByRole('complementary');
+  await expect(reading.getByRole('heading', { name: 'Second', exact: true })).toBeVisible();
+
+  // What Second dropped stands where it was, and what it left off says so.
+  const sheet = reading.locator('[data-preview-stack]');
+  await expect(sheet).toContainText('Built REST APIs');
+  await expect(sheet.getByText('hidden', { exact: true })).toBeVisible();
+  await page.keyboard.press('n');
+  await expect(reading).toContainText('2 of 2');
+
+  // The version exports as it was: nothing put back, nothing marked.
+  await app.evaluate(({ clipboard }) => clipboard.writeText(''));
+  await reading.getByRole('button', { name: 'Export this version' }).click();
+  const exporting = page.getByRole('dialog', { name: /^Export v\d+$/ });
+  await exporting.getByRole('radio', { name: /^Plain text/ }).click();
+  await exporting.getByRole('button', { name: 'Copy to clipboard' }).click();
+  await expect
+    .poll(() => app.evaluate(({ clipboard }) => clipboard.readText()))
+    .toContain('Your Name');
+  const copied = await app.evaluate(({ clipboard }) => clipboard.readText());
+  expect(copied).not.toContain('Built REST APIs');
+  expect(copied).not.toContain('hidden');
+  await expect(exporting).toBeHidden();
+  await expect(view).toBeVisible();
+
+  // The clean page has neither.
+  await reading.getByRole('button', { name: 'Hide the marks, read the clean page' }).click();
+  await expect(sheet).not.toContainText('Built REST APIs');
+  await expect(sheet.getByText('hidden', { exact: true })).toHaveCount(0);
+  expect(errors).toEqual([]);
+});

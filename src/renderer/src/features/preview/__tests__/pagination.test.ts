@@ -96,6 +96,7 @@ describe('normalizeSections', () => {
           {
             id: 'job-1',
             heading: 'Engineer, Mosaic',
+            fields: { title: 'Engineer', organization: 'Mosaic', location: '' },
             dates: '2024',
             bullets: [{ id: 'b1', text: 'Built export flow' }],
             _sourceKey: 'job-1',

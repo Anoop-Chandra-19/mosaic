@@ -1,4 +1,5 @@
 import { useDeferredValue, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import type { PageMarks } from '@/features/document-diff/pageMarks';
 import { cn } from '@/lib/utils';
 import { useLiveEditStore } from '@/stores/liveEditStore';
 import { useResumeStore } from '@/stores/resumeStore';
@@ -25,6 +26,8 @@ interface ResumePreviewProps {
   doc?: ResumeData;
   /** Ease a change of zoom rather than jump; off while the user zooms, which must track. */
   isZoomEased?: boolean;
+  /** What changed against another version, marked on the page; exports never pass this. */
+  marks?: PageMarks;
 }
 
 /** How long an eased change of zoom takes: the `duration-160` of the classes below. */
@@ -113,6 +116,7 @@ export function ResumePreview({
   onMetaChange,
   doc,
   isZoomEased = false,
+  marks,
 }: ResumePreviewProps) {
   const draftContact = useResumeStore((s) => s.contact);
   const draftSections = useResumeStore((s) => s.sections);
@@ -137,10 +141,11 @@ export function ResumePreview({
 
   // Measured before paint, so a change shows once, already paginated: never first with
   // the old heights and then again. Stepping between versions slides in a laid-out page.
+  // Marks change the words drawn, so turning them on or off measures again.
   useLayoutEffect(() => {
     const root = measureRootRef.current;
     if (root) setMeasurements(measurePagination(root, pageContentSize.height));
-  }, [contact, activeSections, pageContentSize.width, pageContentSize.height]);
+  }, [contact, activeSections, pageContentSize.width, pageContentSize.height, marks]);
 
   // Track only how much room the panel gives us, so a page wider than the panel
   // can be scaled down to fit instead of overflowing. Measured before paint, so the first
@@ -227,7 +232,11 @@ export function ResumePreview({
               >
                 {pageIndex === 0 && <PreviewHeader contact={contact} />}
                 {pageSections.map((section) => (
-                  <PreviewSection key={`${section.id}-${pageIndex}`} section={section} />
+                  <PreviewSection
+                    key={`${section.id}-${pageIndex}`}
+                    section={section}
+                    marks={marks}
+                  />
                 ))}
               </PreviewPage>
             ))}
@@ -242,7 +251,11 @@ export function ResumePreview({
       </div>
 
       {/* Offscreen, unpaginated, unscaled render that page splitting measures. */}
-      <div className="pointer-events-none fixed top-0 -left-24999.75" aria-hidden>
+      <div
+        className="pointer-events-none fixed top-0 -left-24999.75"
+        aria-hidden
+        data-preview-measure
+      >
         {/* flow-root keeps margins inside, as the page's padding does. */}
         <div
           ref={measureRootRef}
@@ -250,8 +263,9 @@ export function ResumePreview({
           style={{ width: `${pageContentSize.width}px` }}
         >
           <PreviewHeader contact={contact} />
+          {/* Marked as on the page, since a struck word takes room. */}
           {activeSections.map((section) => (
-            <PreviewSection key={`measure-${section.id}`} section={section} />
+            <PreviewSection key={`measure-${section.id}`} section={section} marks={marks} />
           ))}
         </div>
       </div>

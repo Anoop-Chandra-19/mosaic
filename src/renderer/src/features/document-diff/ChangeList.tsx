@@ -112,7 +112,7 @@ export function ChangeList({
           shape="text"
           aria-expanded={isOpen}
           onClick={() => setIsOpen((open) => !open)}
-          className="flex min-w-0 items-center gap-2 px-1.5 py-0.75 whitespace-nowrap"
+          className="flex min-w-0 shrink items-center gap-2 px-1.5 py-0.75 whitespace-nowrap"
         >
           <ChevronDown
             aria-hidden
@@ -150,7 +150,7 @@ export function ChangeList({
         <span className="flex-1" />
         {hasChanges && (
           <>
-            <span className="font-mono text-xs text-ink-faint">
+            <span className="font-mono text-xs whitespace-nowrap text-ink-faint">
               {cursor + 1} of {diff.changes.length}
             </span>
             <AppButton

@@ -84,11 +84,12 @@ export function useVersionComparison({
   const parentVersion = useStoredVersion(parent?.id ?? null);
   const isAgainstDraft = comparison === 'draft' || !parent;
   const versionDoc = version?.doc ?? null;
+  const base = isAgainstDraft ? draft : (parentVersion?.doc ?? null);
   const againstDraft = compareResumes(draft, versionDoc);
-  const shown = isAgainstDraft
-    ? againstDraft
-    : compareResumes(parentVersion?.doc ?? null, versionDoc);
+  const shown = isAgainstDraft ? againstDraft : compareResumes(base, versionDoc);
   return {
+    /** What the version is compared with, as a resume; null until read. */
+    base,
     diff: shown?.diff ?? null,
     formatting: shown?.formatting ?? [],
     isAgainstDraft,

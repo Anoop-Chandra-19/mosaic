@@ -1,5 +1,9 @@
+import type { EntryHeadingFields } from '@shared/resume/entryHeading';
 import type { SectionLayout } from '@shared/types/resume';
+import { MarkedDates, MarkedHeading, MarkedLine } from '@/features/document-diff/PageMarkParts';
+import { findMarks, LINE_GUTTER, type PageMarks } from '@/features/document-diff/pageMarks';
 import { HEADLESS_LAYOUT as LYT } from '@/lib/resume/headlessLayout';
+import { cn } from '@/lib/utils';
 
 export interface PreviewBullet {
   id: string;
@@ -12,6 +16,8 @@ export interface PreviewEntry {
   id: string;
   /** The printed left side: title, organization, and location (`formatEntryHeading`). */
   heading?: string;
+  /** The heading's parts, for marking the one that changed. */
+  fields?: EntryHeadingFields;
   dates?: string;
   text?: string;
   bullets: PreviewBullet[];
@@ -28,6 +34,8 @@ export interface PreviewRenderableSection {
 
 interface PreviewSectionProps {
   section: PreviewRenderableSection;
+  /** What changed against another version, marked on the page; exports never pass this. */
+  marks?: PageMarks;
 }
 
 const bodyText = {
@@ -35,8 +43,21 @@ const bodyText = {
   lineHeight: `${LYT.bodyLeading}px`,
 };
 
-export function PreviewSection({ section }: PreviewSectionProps) {
+/** A bullet's marks sit past its marker, in the same margin as a heading's. */
+const BULLET_GUTTER = {
+  barPx: LYT.bulletTextIndent + LINE_GUTTER.barPx,
+  glyphPx: LYT.bulletTextIndent + LINE_GUTTER.glyphPx,
+};
+
+export function PreviewSection({ section, marks }: PreviewSectionProps) {
   const isTextOnly = section.layout === 'lines';
+  const otherSide = marks?.otherSide ?? '';
+  const markLine = (changes: ReturnType<typeof findMarks>, text: string, gutter = LINE_GUTTER) =>
+    marks ? (
+      <MarkedLine changes={changes} text={text} otherSide={otherSide} gutter={gutter} />
+    ) : (
+      text
+    );
 
   return (
     <section
@@ -55,8 +76,12 @@ export function PreviewSection({ section }: PreviewSectionProps) {
         extraction that ATS parsers rely on.
       */}
       {!section.isContinued && (
-        <h2 className="font-bold" style={bodyText} data-preview-section-title-id={section.id}>
-          {section.label}
+        <h2
+          className={cn('font-bold', marks && 'relative')}
+          style={bodyText}
+          data-preview-section-title-id={section.id}
+        >
+          {markLine(findMarks(marks, 'section', section.id), section.label)}
         </h2>
       )}
 
@@ -65,12 +90,13 @@ export function PreviewSection({ section }: PreviewSectionProps) {
           isTextOnly ? (
             <p
               key={entry.id}
+              className={cn(marks && 'relative')}
               style={bodyText}
               data-preview-entry-id={entry.id}
               data-preview-entry-key={`${section.id}::${entry.id}`}
               data-preview-section-id={section.id}
             >
-              {entry.text}
+              {markLine(findMarks(marks, 'entry', entry.id), entry.text ?? '')}
             </p>
           ) : (
             <article
@@ -83,7 +109,7 @@ export function PreviewSection({ section }: PreviewSectionProps) {
                 // Job and project lines are italic, never bold. Only an entry
                 // that has bullets needs the gap beneath its title line.
                 <div
-                  className="flex items-baseline justify-between italic"
+                  className={cn('flex items-baseline justify-between italic', marks && 'relative')}
                   style={{
                     ...bodyText,
                     gap: `${LYT.entryHeadingGap}px`,
@@ -92,8 +118,31 @@ export function PreviewSection({ section }: PreviewSectionProps) {
                   }}
                   data-preview-entry-heading-key={`${section.id}::${entry.id}`}
                 >
-                  <h3>{entry.heading}</h3>
-                  {entry.dates && <p className="shrink-0 text-right">{entry.dates}</p>}
+                  <h3>
+                    {marks ? (
+                      <MarkedHeading
+                        changes={findMarks(marks, 'entry', entry.id)}
+                        heading={entry.heading ?? ''}
+                        fields={entry.fields ?? { title: '', organization: '', location: '' }}
+                        otherSide={otherSide}
+                      />
+                    ) : (
+                      entry.heading
+                    )}
+                  </h3>
+                  {entry.dates && (
+                    <p className="shrink-0 text-right">
+                      {marks ? (
+                        <MarkedDates
+                          changes={findMarks(marks, 'entry', entry.id)}
+                          dates={entry.dates}
+                          otherSide={otherSide}
+                        />
+                      ) : (
+                        entry.dates
+                      )}
+                    </p>
+                  )}
                 </div>
               )}
 
@@ -110,10 +159,10 @@ export function PreviewSection({ section }: PreviewSectionProps) {
                   {entry.bullets.map((bullet) => (
                     <li
                       key={bullet.id}
-                      className={bullet.isContinued ? 'list-none' : undefined}
+                      className={cn(bullet.isContinued && 'list-none', marks && 'relative')}
                       data-preview-bullet-id={bullet.id}
                     >
-                      {bullet.text}
+                      {markLine(findMarks(marks, 'bullet', bullet.id), bullet.text, BULLET_GUTTER)}
                     </li>
                   ))}
                 </ul>
