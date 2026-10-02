@@ -79,6 +79,39 @@ test('the read pane says what a version changed, against the one before it or th
   expect(errors).toEqual([]);
 });
 
+test('stepping keeps the change list as it was left, and never empties it on the way', async () => {
+  const { page, errors } = mosaic();
+  const view = await startWithVersions(page);
+  const reading = view.getByRole('complementary');
+  await expect(reading.getByRole('heading', { name: 'Second', exact: true })).toBeVisible();
+  const toggle = reading.locator('button[aria-expanded]:not([aria-haspopup])');
+  await toggle.click();
+  await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+
+  // The strip's height on every frame of a step there and back.
+  await page.evaluate(() => {
+    const w = window as unknown as { heights: number[] };
+    w.heights = [];
+    const start = performance.now();
+    const tick = () => {
+      const strip = document.querySelector('aside[aria-label^="Reading"] > header + div');
+      w.heights.push(strip?.getBoundingClientRect().height ?? 0);
+      if (performance.now() - start < 1500) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  });
+  await page.keyboard.press('ArrowUp');
+  await expect(reading.getByRole('heading', { name: 'Restyled', exact: true })).toBeVisible();
+  await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+  await page.keyboard.press('ArrowDown');
+  await expect(reading.getByRole('heading', { name: 'Second', exact: true })).toBeVisible();
+  await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+  await page.waitForTimeout(1600);
+  const heights = await page.evaluate(() => (window as unknown as { heights: number[] }).heights);
+  expect(Math.min(...heights)).toBeGreaterThan(20);
+  expect(errors).toEqual([]);
+});
+
 test('Changes only steps through with n, and the details add line numbers', async () => {
   const { page, errors } = mosaic();
   const view = await startWithVersions(page);

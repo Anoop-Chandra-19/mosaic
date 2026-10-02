@@ -14,7 +14,6 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { PAPER_DIMENSIONS_PT } from '@/features/preview/pageGeometry';
 import { TRANSITION_TYPE } from '@/features/view-transitions/transitionClasses';
 import { isTypingField } from '@/lib/keyboardShortcuts';
-import { getDb } from '@/lib/storage/mosaicDb';
 import { cn } from '@/lib/utils';
 import { attempt, showToast, useOverlayStore } from '@/stores/overlayStore';
 import { useTemplateStore } from '@/stores/templateStore';
@@ -28,7 +27,9 @@ import { HistoryReadPane, LEGIBLE_PAGE_SCALE } from './HistoryReadPane';
 import {
   chooseOpeningVersion,
   prepareHistoryOpening,
+  readVersionPair,
   type PreparedHistory,
+  type VersionPair,
 } from './prepareHistoryOpening';
 
 /** The index is the first thing to give up its width; below this it starts folded. */
@@ -153,27 +154,30 @@ function FullHistoryFrame({
   const selected = versions?.find((version) => version.id === readId) ?? versions?.[0];
   const selectedIndex = selected && versions ? versions.indexOf(selected) : -1;
   const parent = (selectedIndex >= 0 && versions?.[selectedIndex + 1]) || null;
-  // The document of the version being read: the one the view opened on, then each read
-  // before its step lands. Only ever the one, so nothing piles up while the view is open.
-  const [doc, setDoc] = useState(prepared?.version ?? null);
+  // The documents of the version being read and the one before it: the pair the view
+  // opened on, then each read before its step lands, so the page and what changed in it
+  // land together. Only ever the one pair, so nothing piles up while the view is open.
+  const [docs, setDocs] = useState<VersionPair>(
+    prepared?.opening ?? { version: null, parent: null }
+  );
   const latestStep = useRef(0);
   const shownId = useRef(selected?.id);
 
   // When the view couldn't read its first version ahead of opening, or the history list
   // changed under it, read the selected one now.
+  const isPairRead =
+    docs.version?.id === selected?.id && (docs.parent?.id ?? null) === (parent?.id ?? null);
   useEffect(() => {
-    if (!selected || doc?.id === selected.id) return;
+    if (!selected || !versions || isPairRead) return;
     let isCurrent = true;
-    getDb()
-      .versions.get(selected.id)
-      .then(
-        (read) => isCurrent && setDoc(read),
-        (error: unknown) => console.error('Could not read that version', error)
-      );
+    readVersionPair(versions, selected.id).then(
+      (read) => isCurrent && setDocs(read),
+      (error: unknown) => console.error('Could not read that version', error)
+    );
     return () => {
       isCurrent = false;
     };
-  }, [selected, doc]);
+  }, [selected, versions, isPairRead]);
   const labelOf = (version: VersionMeta) =>
     versions ? versionLabel(versions, versions.indexOf(version)) : '';
   // A step through time: the page slides the way the history runs, older to the left. The
@@ -181,7 +185,7 @@ function FullHistoryFrame({
   // the latest step lands: reads can finish out of order, and a slower one must not win.
   const step = (version: VersionMeta, shouldReveal: boolean) => {
     const ticket = ++latestStep.current;
-    const show = (read: Version | null) => {
+    const show = (read: VersionPair) => {
       if (ticket !== latestStep.current || !versions) return;
       const from = versions.findIndex(({ id }) => id === shownId.current);
       const to = versions.indexOf(version);
@@ -192,18 +196,17 @@ function FullHistoryFrame({
           addTransitionType(to > from ? TRANSITION_TYPE.stepBack : TRANSITION_TYPE.stepForward);
         }
         setSelectedId(version.id);
-        setDoc(read);
+        setDocs(read);
         if (shouldReveal) setReveal({ versionId: version.id });
       });
     };
-    getDb()
-      .versions.get(version.id)
-      .then(show, (error: unknown) => {
-        // Still selected, so the list and the pane agree on which version this is.
-        console.error('Could not read that version', error);
-        showToast('Could not read that version', 'error');
-        show(null);
-      });
+    if (!versions) return;
+    readVersionPair(versions, version.id).then(show, (error: unknown) => {
+      // Still selected, so the list and the pane agree on which version this is.
+      console.error('Could not read that version', error);
+      showToast('Could not read that version', 'error');
+      show({ version: null, parent: null });
+    });
   };
   const select = (version: VersionMeta) => step(version, false);
   const goTo = (version: VersionMeta) => step(version, true);
@@ -355,7 +358,7 @@ function FullHistoryFrame({
             onRestore={(version) => void restore(version)}
             onDuplicate={(version) => void duplicate(version)}
             onExport={exportVersion}
-            doc={doc}
+            docs={docs}
           />
         )}
       </div>

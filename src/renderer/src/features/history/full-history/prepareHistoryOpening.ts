@@ -2,10 +2,29 @@ import { whenPreviewSettled } from '@/features/view-transitions/pageHandoff';
 import { getDb } from '@/lib/storage/mosaicDb';
 import type { Version, VersionMeta } from '@shared/types/db';
 
+/** A version's document and the one before it, read together so they land together. */
+export interface VersionPair {
+  version: Version | null;
+  /** Null for the first version. */
+  parent: Version | null;
+}
+
 export interface PreparedHistory {
   versions: VersionMeta[];
   /** The version the view opens on. */
-  version: Version | null;
+  opening: VersionPair;
+}
+
+/** Reads the version `id` and the one before it in `versions`, newest first. */
+export async function readVersionPair(versions: VersionMeta[], id: string): Promise<VersionPair> {
+  const db = getDb();
+  const index = versions.findIndex((version) => version.id === id);
+  const parentMeta = index >= 0 ? versions[index + 1] : undefined;
+  const [version, parent] = await Promise.all([
+    db.versions.get(id),
+    parentMeta ? db.versions.get(parentMeta.id) : null,
+  ]);
+  return { version, parent };
 }
 
 const openings = new WeakMap<object, Promise<PreparedHistory | null>>();
@@ -37,12 +56,11 @@ export function prepareHistoryOpening(
   if (!prepared) {
     const settled = whenPreviewSettled();
     prepared = (async () => {
-      const db = getDb();
-      const versions = await db.versions.list(templateId);
+      const versions = await getDb().versions.list(templateId);
       const id = chooseOpeningVersion(versions, versionId);
-      const version = id ? await db.versions.get(id) : null;
+      const opening = id ? await readVersionPair(versions, id) : { version: null, parent: null };
       await settled;
-      return { versions, version };
+      return { versions, opening };
     })().catch((error: unknown) => {
       console.error('Could not load the history ahead of opening it', error);
       return null;
