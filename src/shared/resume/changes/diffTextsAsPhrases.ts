@@ -1,37 +1,26 @@
 import type { TextPhrase } from './changePhrases';
+import { measureCommonRuns } from './measureCommonRuns';
 
 type Step = { op: 'same' | 'del' | 'ins'; token: string };
 
 function alignWords(before: string[], after: string[]): Step[] {
-  const n = before.length;
-  const m = after.length;
-  // kept[i * (m + 1) + j]: the longest common run of before[i..] and after[j..].
-  const kept = new Int32Array((n + 1) * (m + 1));
-  const at = (i: number, j: number) => i * (m + 1) + j;
-  for (let i = n - 1; i >= 0; i--) {
-    for (let j = m - 1; j >= 0; j--) {
-      kept[at(i, j)] =
-        before[i] === after[j]
-          ? kept[at(i + 1, j + 1)] + 1
-          : Math.max(kept[at(i + 1, j)], kept[at(i, j + 1)]);
-    }
-  }
+  const runFrom = measureCommonRuns(before, after);
   const steps: Step[] = [];
   let i = 0;
   let j = 0;
-  while (i < n && j < m) {
+  while (i < before.length && j < after.length) {
     if (before[i] === after[j]) {
       steps.push({ op: 'same', token: before[i] });
       i++;
       j++;
-    } else if (kept[at(i + 1, j)] >= kept[at(i, j + 1)]) {
+    } else if (runFrom(i + 1, j) >= runFrom(i, j + 1)) {
       steps.push({ op: 'del', token: before[i++] });
     } else {
       steps.push({ op: 'ins', token: after[j++] });
     }
   }
-  while (i < n) steps.push({ op: 'del', token: before[i++] });
-  while (j < m) steps.push({ op: 'ins', token: after[j++] });
+  while (i < before.length) steps.push({ op: 'del', token: before[i++] });
+  while (j < after.length) steps.push({ op: 'ins', token: after[j++] });
   return steps;
 }
 

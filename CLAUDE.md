@@ -93,3 +93,19 @@ Bun and npm both work (Node ≥ 22.18): `bun run <script>` = `npm run <script>`;
 - Apply to new code; rename existing code separately, one area at a time, updating references
   and running affected tests, build, and lint. Never rename persisted keys, database fields,
   IPC strings, or external-format fields as an internal naming cleanup.
+
+## Readability
+
+- One job per function. When a function needs comments to mark its steps, make the steps
+  named functions, so the top-level one reads as the list of steps.
+- Closures in a long function that don't need its state become top-level functions with
+  explicit inputs.
+- Don't pack meaning into a string to split it apart later (`"extra:bullet"`); build the
+  object once.
+- Per-case wording or settings go in a table (`Record<Kind, …>`), not an `if`/`else` chain.
+  At most one level of ternary.
+- Short names (`n`, `i`, `a`) only in a few lines or a math loop. Elsewhere, name what it
+  holds: `printedBefore`, not `was`.
+- Write an algorithm once and share it.
+- A readability refactor changes no behavior: prove it against the old code with the tests,
+  or a before/after comparison of outputs where tests don't reach.
