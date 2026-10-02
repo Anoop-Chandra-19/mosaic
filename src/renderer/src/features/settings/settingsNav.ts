@@ -1,5 +1,6 @@
 import type { LucideIcon } from 'lucide-react';
 import {
+  Clock,
   Contrast,
   Database,
   FileText,
@@ -46,6 +47,13 @@ export const SETTINGS_GROUPS: SettingsGroup[] = [
         label: 'Document',
         description: 'How the page is set up. Its metrics stay on the 18pt leading grid.',
         icon: FileText,
+      },
+      {
+        id: 'history',
+        label: 'History',
+        description:
+          'Your draft is written to disk as you type, always, with nothing to turn on. History is separate: the versions you name, plus snapshots kept at moments like an import or a restore.',
+        icon: Clock,
       },
       {
         id: 'keys',

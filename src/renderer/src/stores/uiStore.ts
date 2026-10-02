@@ -3,6 +3,7 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import { immer } from 'zustand/middleware/immer';
 import type { InterfaceDensity, ThemeChoice } from '@/lib/appearance';
 import { settingsStorage } from '@/lib/storage/settingsStorage';
+import type { HistoryComparison } from '@/types/history';
 import type { PaperSize } from '@/types/paper';
 
 export type SidebarTab = 'content' | 'templates';
@@ -17,6 +18,8 @@ export type LaunchView = 'last' | 'start' | 'templates';
 const LAUNCH_VIEWS: readonly LaunchView[] = ['last', 'start', 'templates'];
 
 const INTERFACE_DENSITIES: readonly InterfaceDensity[] = ['comfortable', 'compact'];
+
+const HISTORY_COMPARISONS: readonly HistoryComparison[] = ['parent', 'draft'];
 
 /** How many steps back Ctrl/⌘+Z can go within one open draft. */
 export const UNDO_HISTORY_STEP_OPTIONS = [50, 200, 500] as const;
@@ -102,6 +105,10 @@ export const DEFAULT_INTERFACE = {
   agentPaneOpen: true,
   agentPaneWidthPx: AGENT_PANE_WIDTH.defaultPx,
   historyReadWidthPx: HISTORY_READ_WIDTH.defaultPx,
+  /** The comparison last picked in the full history, which it opens on next time. */
+  historyComparison: 'parent' as HistoryComparison,
+  /** The full history's months index, symbol counts, and line numbers. */
+  shouldShowHistoryDetails: false,
   /** Icons beside the header's items in the editor; the page never has them. */
   shouldShowHeaderIcons: true,
 };
@@ -132,6 +139,8 @@ interface UiState {
   agentPaneOpen: boolean;
   agentPaneWidthPx: number;
   historyReadWidthPx: number;
+  historyComparison: HistoryComparison;
+  shouldShowHistoryDetails: boolean;
   shouldShowHeaderIcons: boolean;
   hasSeenTour: boolean;
   setTheme: (theme: ThemeChoice) => void;
@@ -150,6 +159,8 @@ interface UiState {
   toggleAgentPane: () => void;
   setAgentPaneWidthPx: (px: number) => void;
   setHistoryReadWidthPx: (px: number) => void;
+  setHistoryComparison: (comparison: HistoryComparison) => void;
+  setShouldShowHistoryDetails: (shown: boolean) => void;
   toggleHeaderIcons: () => void;
   markTourSeen: () => void;
   resetInterface: () => void;
@@ -224,6 +235,14 @@ export const useUiStore = create<UiState>()(
         set((state) => {
           state.historyReadWidthPx = clampPaneWidth(px, HISTORY_READ_WIDTH);
         }),
+      setHistoryComparison: (comparison) =>
+        set((state) => {
+          state.historyComparison = comparison;
+        }),
+      setShouldShowHistoryDetails: (shown) =>
+        set((state) => {
+          state.shouldShowHistoryDetails = shown;
+        }),
       toggleHeaderIcons: () =>
         set((state) => {
           state.shouldShowHeaderIcons = !state.shouldShowHeaderIcons;
@@ -270,6 +289,12 @@ export const useUiStore = create<UiState>()(
             DEFAULT_PREFERENCES.undoHistorySteps
           ),
           hasSeenTour: stored.hasSeenTour === true,
+          historyComparison: pickChoice(
+            stored.historyComparison,
+            HISTORY_COMPARISONS,
+            DEFAULT_INTERFACE.historyComparison
+          ),
+          shouldShowHistoryDetails: stored.shouldShowHistoryDetails === true,
           sidebarWidthPx: clampPaneWidth(
             stored.sidebarWidthPx ?? SIDEBAR_WIDTH.defaultPx,
             SIDEBAR_WIDTH

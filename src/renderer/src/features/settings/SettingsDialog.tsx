@@ -13,6 +13,7 @@ import { AiSection } from './sections/AiSection';
 import { AppearanceSection } from './sections/AppearanceSection';
 import { DocumentSection } from './sections/DocumentSection';
 import { GeneralSection } from './sections/GeneralSection';
+import { HistorySection } from './sections/HistorySection';
 import { ImportExportSection } from './sections/ImportExportSection';
 import { PrivacySection } from './sections/PrivacySection';
 
@@ -117,6 +118,7 @@ export function SettingsDialog() {
             {section === 'general' && <GeneralSection />}
             {section === 'appearance' && <AppearanceSection />}
             {section === 'document' && <DocumentSection />}
+            {section === 'history' && <HistorySection />}
             {section === 'keys' && <ShortcutsPanel isEmbedded />}
             {section === 'ai' && <AiSection />}
             {section === 'portability' && <ImportExportSection onCloseSettings={close} />}

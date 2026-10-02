@@ -102,7 +102,10 @@ export function countChangesByTone(changes: readonly Change[]): Record<ChangeTon
   return counts;
 }
 
-export function getChangeGroup(change: Change): string {
-  const parts = change.path.split(' › ').filter((part) => !/^(?:bullet|line) \d+/.test(part));
+/** "Work History › Analyst": a path less its bullet or line, which is what changes group by. */
+export function trimPathToGroup(path: string): string {
+  const parts = path.split(' › ').filter((part) => !/^(?:bullet|line) \d+/.test(part));
   return parts.join(' › ') || 'Header';
 }
+
+export const getChangeGroup = (change: Change) => trimPathToGroup(change.path);

@@ -11,10 +11,17 @@ interface HistoryIndexProps {
   labelOf: (version: VersionMeta) => string;
   /** Asks the list to bring a version into view: never a scroll position. */
   onGoTo: (version: VersionMeta) => void;
+  shouldShowMonths: boolean;
 }
 
 /** The full view's table of contents: the named versions, then the months. */
-export function HistoryIndex({ versions, selectedId, labelOf, onGoTo }: HistoryIndexProps) {
+export function HistoryIndex({
+  versions,
+  selectedId,
+  labelOf,
+  onGoTo,
+  shouldShowMonths,
+}: HistoryIndexProps) {
   const named = versions.filter((version) => version.kind === 'named');
   return (
     <nav
@@ -49,19 +56,25 @@ export function HistoryIndex({ versions, selectedId, labelOf, onGoTo }: HistoryI
           </span>
         </AppButton>
       ))}
-      <h3 className={cn(EYEBROW, 'mt-3.5')}>Months</h3>
-      {listHistoryMonths(versions).map((month) => (
-        <AppButton
-          key={month.label}
-          variant="ghost"
-          shape="text"
-          onClick={() => onGoTo(month.newest)}
-          className="flex w-full justify-between px-1.75 py-1.5 font-mono text-[0.71875rem] text-ink-muted"
-        >
-          <span>{month.label}</span>
-          <span className="text-[0.6625rem] text-ink-faint">{month.count.toLocaleString()}</span>
-        </AppButton>
-      ))}
+      {shouldShowMonths && (
+        <>
+          <h3 className={cn(EYEBROW, 'mt-3.5')}>Months</h3>
+          {listHistoryMonths(versions).map((month) => (
+            <AppButton
+              key={month.label}
+              variant="ghost"
+              shape="text"
+              onClick={() => onGoTo(month.newest)}
+              className="flex w-full justify-between px-1.75 py-1.5 font-mono text-[0.71875rem] text-ink-muted"
+            >
+              <span>{month.label}</span>
+              <span className="text-[0.6625rem] text-ink-faint">
+                {month.count.toLocaleString()}
+              </span>
+            </AppButton>
+          ))}
+        </>
+      )}
     </nav>
   );
 }

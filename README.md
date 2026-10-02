@@ -82,7 +82,7 @@ src/
     src/
       assets/     # Bundled assets
       components/ # Shared app components and shadcn primitives
-      features/   # shell, editor, preview, templates, history, import, export, backup, settings, start, agent
+      features/   # shell, editor, preview, templates, history, document-diff, import, export, backup, settings, start, agent
       stores/     # Zustand stores
       lib/        # Renderer domain logic and infrastructure (layout, storage bridge, …)
       types/      # Renderer-only types

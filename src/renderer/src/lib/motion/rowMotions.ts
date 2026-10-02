@@ -88,6 +88,19 @@ export function carryTint(target: Element): void {
   });
 }
 
+/** A change stepped to holds a highlight, then lets it go: "here it is". */
+export function flashChange(target: Element): void {
+  const highlight = 'oklch(0.93 0.13 95 / 70%)';
+  target.animate(
+    [
+      { backgroundColor: highlight },
+      { backgroundColor: highlight, offset: 0.3 },
+      { backgroundColor: 'transparent' },
+    ],
+    { duration: MOTION_MS.changeFlash, easing: 'ease-out' }
+  );
+}
+
 /** Puts a row that has left back where it was, over the list, for its way out. */
 function drawLeftRow(box: HTMLElement, place: RowPlace, keyframes: Keyframe[], ms: number) {
   if (prefersReducedMotion()) return;

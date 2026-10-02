@@ -88,11 +88,12 @@ test('opening, stepping through, and closing the history each run one transition
   await expect(page.getByRole('region', { name: /^History of/ })).toBeVisible();
   expect(await transitions.take(1)).toEqual([{ types: [], ran: true }]);
 
-  await versionRow(page, 'Draft A').click();
-  // An older version is a step back in time; a newer one, forward.
-  expect(await transitions.take(1)).toEqual([{ types: ['step-back'], ran: true }]);
+  // It opens on Draft A, the version before the newest. A newer version is a step forward
+  // in time; an older one, back.
   await versionRow(page, 'Draft B').click();
   expect(await transitions.take(1)).toEqual([{ types: ['step-forward'], ran: true }]);
+  await versionRow(page, 'Draft A').click();
+  expect(await transitions.take(1)).toEqual([{ types: ['step-back'], ran: true }]);
 
   await page.keyboard.press('Control+Shift+H');
   await expect(page.getByRole('region', { name: /^History of/ })).toBeHidden();

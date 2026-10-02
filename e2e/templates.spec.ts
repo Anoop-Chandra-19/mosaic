@@ -174,19 +174,21 @@ test('the full history reads a version beside the list, and restoring closes it'
   const view = page.getByRole('region', { name: 'History of Untitled resume' });
   await expect(view).toBeVisible();
 
-  // The newest version reads first; it is the draft, so there is nothing to restore.
+  // It opens on the version before the newest: the newest holds what the draft has.
   const reading = view.getByRole('complementary');
-  await expect(reading).toContainText('identical to your draft');
-  await expect(reading.getByRole('button', { name: 'Restore' })).toBeDisabled();
-
-  // The index goes to a named version, and the pane reads it.
-  await view
-    .getByRole('navigation', { name: 'History index' })
-    .getByRole('button', { name: /Sent to Northwind/ })
-    .click();
   await expect(reading.getByRole('heading', { name: 'Sent to Northwind' })).toBeVisible();
   await expect(reading).toContainText('1 printed line differs from your draft');
   await expect(reading).toContainText('Ada Lovelace');
+
+  // The index goes to the newest, which is the draft, so there is nothing to restore.
+  const index = view.getByRole('navigation', { name: 'History index' });
+  await index.getByRole('button', { name: /Sent to Kestrel/ }).click();
+  await expect(reading.getByRole('heading', { name: 'Sent to Kestrel' })).toBeVisible();
+  await expect(reading).toContainText('identical to your draft');
+  await expect(reading.getByRole('button', { name: 'Restore' })).toBeDisabled();
+
+  await index.getByRole('button', { name: /Sent to Northwind/ }).click();
+  await expect(reading.getByRole('heading', { name: 'Sent to Northwind' })).toBeVisible();
 
   await reading.getByRole('button', { name: 'Restore' }).click();
   await expect(view).toHaveCount(0);

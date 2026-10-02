@@ -1,8 +1,19 @@
-import { addTransitionType, startTransition, use, useEffect, useRef, useState } from 'react';
+import {
+  addTransitionType,
+  startTransition,
+  use,
+  useEffect,
+  useEffectEvent,
+  useRef,
+  useState,
+} from 'react';
 import { Clock, List, X } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
+import { AppTooltip } from '@/components/AppTooltip';
+import { Checkbox } from '@/components/ui/checkbox';
 import { PAPER_DIMENSIONS_PT } from '@/features/preview/pageGeometry';
 import { TRANSITION_TYPE } from '@/features/view-transitions/transitionClasses';
+import { isTypingField } from '@/lib/keyboardShortcuts';
 import { getDb } from '@/lib/storage/mosaicDb';
 import { cn } from '@/lib/utils';
 import { attempt, showToast, useOverlayStore } from '@/stores/overlayStore';
@@ -14,13 +25,20 @@ import { VersionList, type HistoryReveal } from '../version-list/VersionList';
 import { useTemplateVersions, versionLabel } from '../useTemplateVersions';
 import { HistoryIndex } from './HistoryIndex';
 import { HistoryReadPane, LEGIBLE_PAGE_SCALE } from './HistoryReadPane';
-import { prepareHistoryOpening, type PreparedHistory } from './prepareHistoryOpening';
+import {
+  chooseOpeningVersion,
+  prepareHistoryOpening,
+  type PreparedHistory,
+} from './prepareHistoryOpening';
 
 /** The index is the first thing to give up its width; below this it starts folded. */
 const INDEX_OPEN_MIN_WINDOW_PX = 1180;
 const INDEX_WIDTH_PX = 204;
 /** The list never gets narrower than this. */
 const LIST_MIN_WIDTH_PX = 320;
+
+/** Newest first, so down is older. */
+const ARROW_STEPS: Record<string, number> = { ArrowDown: 1, ArrowUp: -1 };
 
 interface FullHistoryProps {
   /** The surface that opened it: what it first shows is loaded once per opening. */
@@ -72,6 +90,8 @@ function FullHistoryFrame({ template, filter, versionId, prepared }: FullHistory
   const duplicateVersion = useTemplateStore((s) => s.duplicateVersion);
   const openExport = useOverlayStore((s) => s.openExport);
   const paperSize = useUiStore((s) => s.paperSize);
+  const isDetailed = useUiStore((s) => s.shouldShowHistoryDetails);
+  const setIsDetailed = useUiStore((s) => s.setShouldShowHistoryDetails);
   const windowWidth = useWindowWidth();
   const [isIndexOpen, setIsIndexOpen] = useState(
     () => window.innerWidth >= INDEX_OPEN_MIN_WINDOW_PX
@@ -106,7 +126,10 @@ function FullHistoryFrame({ template, filter, versionId, prepared }: FullHistory
   }, [closeSurface]);
   const onClose = () => closeSurface('history');
 
-  const selected = versions?.find((version) => version.id === selectedId) ?? versions?.[0];
+  const readId = selectedId ?? (versions && chooseOpeningVersion(versions, versionId));
+  const selected = versions?.find((version) => version.id === readId) ?? versions?.[0];
+  const selectedIndex = selected && versions ? versions.indexOf(selected) : -1;
+  const parent = (selectedIndex >= 0 && versions?.[selectedIndex + 1]) || null;
   // The document of the version being read: the one the view opened on, then each read
   // before its step lands. Only ever the one, so nothing piles up while the view is open.
   const [doc, setDoc] = useState(prepared?.version ?? null);
@@ -162,6 +185,21 @@ function FullHistoryFrame({ template, filter, versionId, prepared }: FullHistory
   const select = (version: VersionMeta) => step(version, false);
   const goTo = (version: VersionMeta) => step(version, true);
 
+  // ↑ and ↓ step through the versions, unless something else has the key.
+  const onArrowKey = useEffectEvent((event: KeyboardEvent) => {
+    const offset = ARROW_STEPS[event.key];
+    if (!offset || !versions || event.defaultPrevented || isTypingField(event.target)) return;
+    if (event.metaKey || event.ctrlKey || event.altKey) return;
+    const next = versions[selectedIndex + offset];
+    if (!next) return;
+    event.preventDefault();
+    goTo(next);
+  });
+  useEffect(() => {
+    window.addEventListener('keydown', onArrowKey);
+    return () => window.removeEventListener('keydown', onArrowKey);
+  }, []);
+
   const indexWidth = isIndexOpen ? INDEX_WIDTH_PX : 0;
   const maxReadWidth = windowWidth - indexWidth - LIST_MIN_WIDTH_PX;
   const pageNeedsPx = LEGIBLE_PAGE_SCALE * PAPER_DIMENSIONS_PT[paperSize].width + 48;
@@ -206,11 +244,20 @@ function FullHistoryFrame({ template, filter, versionId, prepared }: FullHistory
         <span className="min-w-0 truncate text-[0.8125rem] text-ink-soft">{template.name}</span>
         {versions && (
           <span className="ml-1 hidden font-mono text-[0.71875rem] whitespace-nowrap text-ink-faint @min-[56rem]/full-history:inline">
-            {versions.length.toLocaleString()} versions · {namedCount} named · nothing is ever
-            removed
+            {versions.length.toLocaleString()} versions · {namedCount} named
           </span>
         )}
         <span className="flex-1" />
+        <AppTooltip content="The months index, symbol counts, and line numbers in Changes only">
+          <label className="flex cursor-pointer items-center gap-1.5 px-1.5 text-xs text-ink-muted select-none">
+            <Checkbox
+              checked={isDetailed}
+              onCheckedChange={(checked) => setIsDetailed(checked === true)}
+              className="size-3.5"
+            />
+            Show all details
+          </label>
+        </AppTooltip>
         <AppButton
           variant="ghost"
           size="sm"
@@ -244,6 +291,7 @@ function FullHistoryFrame({ template, filter, versionId, prepared }: FullHistory
             selectedId={selected?.id ?? null}
             labelOf={labelOf}
             onGoTo={goTo}
+            shouldShowMonths={isDetailed}
           />
         )}
         {/* The same ground as the sidebar's history, which its sticky headers are painted in. */}
@@ -274,6 +322,8 @@ function FullHistoryFrame({ template, filter, versionId, prepared }: FullHistory
             templateId={template.id}
             version={selected}
             label={labelOf(selected)}
+            parent={parent}
+            parentLabel={parent ? labelOf(parent) : ''}
             isHead={selected.id === versions[0].id}
             maxWidthCss={`calc(100vw - ${indexWidth + LIST_MIN_WIDTH_PX}px)`}
             canWidenToPage={maxReadWidth >= pageNeedsPx}
