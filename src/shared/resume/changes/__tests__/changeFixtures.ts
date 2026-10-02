@@ -3,12 +3,12 @@ import type { Change } from '../resumeChange';
 
 export const createChange = (fields: Partial<Change>): Change => ({
   id: 'c',
-  kind: 'rewrite',
-  line: 'bullet',
-  sectionId: null,
-  entryId: null,
-  bulletId: null,
-  where: '',
+  kind: 'edit',
+  target: { type: 'bullet', sectionId: 's', entryId: 'e', bulletId: 'b' },
+  path: '',
+  number: 1,
+  before: '',
+  after: '',
   origin: 'diff',
   ...fields,
 });

@@ -1,93 +1,95 @@
 import type { HeaderItemKind } from '../../types/resume';
 import type { TextPhrase } from './changePhrases';
 
-export type ChangeKind =
-  | 'rewrite'
-  | 'add'
-  | 'remove'
-  | 'toggle'
-  | 'reorder'
-  | 'subtitle'
-  | 'rename';
+export type ChangeKind = 'edit' | 'add' | 'remove' | 'show' | 'hide' | 'move';
 
-/** A text-only section's line is `summary` in a summary section and `text` in any other. */
-export type ChangeLine =
+/** A text-only section's line is a `summaryLine` in a summary section, a `textLine` in any other. */
+export type ChangeTargetType =
   | 'name'
-  | 'item'
+  | 'headerItem'
   | 'section'
   | 'entry'
-  | 'field'
+  | 'entryField'
   | 'bullet'
-  | 'summary'
-  | 'text';
+  | 'summaryLine'
+  | 'textLine';
 
 export type EntryField = 'title' | 'organization' | 'location' | 'dates';
+
+/** The editor field a change is about. Each id is set when the target has one. */
+export interface ChangeTarget {
+  type: ChangeTargetType;
+  itemId?: string;
+  itemKind?: HeaderItemKind;
+  sectionId?: string;
+  entryId?: string;
+  bulletId?: string;
+  field?: EntryField;
+}
+
+/** Where a thing stands: next to a neighbour, in a section, or alone in its list. */
+export interface Placement {
+  relation: 'above' | 'below' | 'in' | 'alone';
+  /** The neighbour's or the section's name; empty when alone. */
+  name: string;
+}
 
 export type ChangeTone = 'add' | 'del' | 'edit';
 
 /**
- * One change between two resumes, or one the assistant proposes. History's own changes
- * (`origin: 'diff'`) are worked out after the fact, so their phrases are read-only.
+ * One change from an earlier resume to a later one, or one the assistant proposes. History's
+ * own changes (`origin: 'diff'`) are worked out after the fact, so their phrases are read-only.
  */
 export interface Change {
   id: string;
   kind: ChangeKind;
-  line: ChangeLine;
-  field?: EntryField;
-  itemKind?: HeaderItemKind;
-  sectionId: string | null;
-  entryId: string | null;
-  bulletId: string | null;
-  where: string;
+  target: ChangeTarget;
+  path: string;
   /** A bullet's or a text line's number on its page. */
-  n?: number | null;
-  label?: string;
+  number: number | null;
+  /** An entry's, a section's, or a text line's name in the wording. */
+  displayName?: string;
+  /** The text as each side prints it; empty where it doesn't print. */
+  before: string;
+  after: string;
+  /** A long text's edit, word by word. A short field's edit has none: it shows whole. */
   phrases?: TextPhrase[];
-  /** Short fields are shown whole, never word by word. */
-  from?: string;
-  to?: string;
-  text?: string;
-  /** A toggle: true when it is on the page being read, and off it on the other side. */
-  isOnPage?: boolean;
-  rel?: 'above' | 'below' | 'to';
-  other?: string;
-  was?: string;
-  isMovedUp?: boolean;
+  move?: { placement: Placement; placementBefore: Placement; isMovedUp: boolean };
   /** Inside an entry or section that itself came, went, or was hidden: drawn, not counted. */
-  isChild?: boolean;
-  parentKey?: string;
+  parentId?: string;
   origin: 'assistant' | 'diff';
   turn?: number;
 }
 
 const GLYPHS: Record<ChangeKind, string> = {
-  rewrite: '~',
-  subtitle: '~',
-  rename: '~',
+  edit: '~',
   add: '+',
   remove: '−',
-  toggle: '~',
-  reorder: '↕',
+  show: '+',
+  hide: '−',
+  move: '↕',
 };
 
-export function getChangeGlyph(change: Change): string {
-  if (change.kind === 'toggle') return change.isOnPage ? '+' : '−';
-  return GLYPHS[change.kind];
-}
+export const getChangeGlyph = (change: Change) => GLYPHS[change.kind];
+
+export const isShortFieldChange = (change: Change) => change.kind === 'edit' && !change.phrases;
 
 /** Whether a change adds to the page being read, takes from it, or edits it. */
-/** A short field shown whole, old → new, rather than word by word. */
-export const isShortFieldChange = (change: Change) =>
-  !change.phrases && change.from !== undefined && change.kind !== 'toggle';
-
 export function getChangeTone(change: Change): ChangeTone {
-  if (isShortFieldChange(change)) {
-    if (!change.from) return 'add';
-    return change.to ? 'edit' : 'del';
+  switch (change.kind) {
+    case 'add':
+    case 'show':
+      return 'add';
+    case 'remove':
+    case 'hide':
+      return 'del';
+    case 'move':
+      return 'edit';
+    case 'edit':
+      if (change.phrases) return 'edit';
+      if (!change.before) return 'add';
+      return change.after ? 'edit' : 'del';
   }
-  if (change.kind === 'add' || (change.kind === 'toggle' && change.isOnPage)) return 'add';
-  if (change.kind === 'remove' || change.kind === 'toggle') return 'del';
-  return 'edit';
 }
 
 export function countChangesByTone(changes: readonly Change[]): Record<ChangeTone, number> {
@@ -97,6 +99,6 @@ export function countChangesByTone(changes: readonly Change[]): Record<ChangeTon
 }
 
 export function getChangeGroup(change: Change): string {
-  const parts = change.where.split(' › ').filter((part) => !/^(?:bullet|line) \d+/.test(part));
+  const parts = change.path.split(' › ').filter((part) => !/^(?:bullet|line) \d+/.test(part));
   return parts.join(' › ') || 'Header';
 }

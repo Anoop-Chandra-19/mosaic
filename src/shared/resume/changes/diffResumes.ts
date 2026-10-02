@@ -2,7 +2,7 @@ import type { ResumeData } from '../../types/resume';
 import { diffTextsAsPhrases } from './diffTextsAsPhrases';
 import { findMoves, type Move } from './findMoves';
 import { listChangeRows, type ChangeRow } from './listChangeRows';
-import type { Change, ChangeLine } from './resumeChange';
+import type { Change, ChangeTargetType, Placement } from './resumeChange';
 
 export interface DiffLine {
   row: ChangeRow;
@@ -49,40 +49,36 @@ function findPrinted(rowsByKey: Map<string, ChangeRow>, key: string): ChangeRow 
 }
 
 /** A text section's lines are its entries. */
-const isEntryRow = (row: ChangeRow) =>
-  row.line === 'entry' || row.line === 'summary' || row.line === 'text';
+const isEntryRow = ({ target }: ChangeRow) =>
+  target.type === 'entry' || target.type === 'summaryLine' || target.type === 'textLine';
 
-const SHORT_LINES: ReadonlySet<ChangeLine> = new Set(['field', 'item', 'section']);
+const SHORT_TARGETS: ReadonlySet<ChangeTargetType> = new Set([
+  'entryField',
+  'headerItem',
+  'section',
+]);
 
+/** What happened to a row: edited, if both sides print it, or added or removed. */
 function describeRowChange(
   row: ChangeRow,
   before: ChangeRow | null,
   after: ChangeRow | null
 ): Change {
-  const base = {
+  const change: Change = {
     id: row.key,
-    line: row.line,
-    field: row.field,
-    itemKind: row.itemKind,
-    sectionId: row.sectionId,
-    entryId: row.entryId,
-    bulletId: row.bulletId,
-    where: row.where,
-    n: (after ?? before)?.n,
-    label: row.label,
-    origin: 'diff' as const,
+    kind: before ? (after ? 'edit' : 'remove') : 'add',
+    target: row.target,
+    path: row.path,
+    number: (after ?? before)?.number ?? null,
+    displayName: row.displayName,
+    before: before?.text ?? '',
+    after: after?.text ?? '',
+    origin: 'diff',
   };
-  if (before && after) {
-    if (SHORT_LINES.has(row.line)) {
-      const kind =
-        row.line === 'section' ? 'rename' : row.line === 'field' ? 'subtitle' : 'rewrite';
-      return { ...base, kind, from: before.text, to: after.text };
-    }
-    const phrases = diffTextsAsPhrases(before.text, after.text, `${row.key}:`);
-    return { ...base, kind: 'rewrite', phrases, from: before.text, to: after.text };
+  if (change.kind === 'edit' && !SHORT_TARGETS.has(row.target.type)) {
+    change.phrases = diffTextsAsPhrases(change.before, change.after, `${row.key}:`);
   }
-  if (after) return { ...base, kind: 'add', text: after.text };
-  return { ...base, kind: 'remove', text: before?.text ?? '' };
+  return change;
 }
 
 /** On the page on one side only: left off, if it still has text on the other side, or gone. */
@@ -93,73 +89,80 @@ function describePresence(rows: ResumeRows, row: ChangeRow): Change | null {
   const change = describeRowChange(row, printedBefore, printedAfter);
   const otherSide = printedAfter ? rows.beforeByKey.get(row.key) : rows.afterByKey.get(row.key);
   if (!otherSide?.hasText) return change;
-  const printed = printedBefore ?? printedAfter;
-  return { ...change, kind: 'toggle', isOnPage: !!printedAfter, text: printed?.text };
+  return { ...change, kind: printedAfter ? 'show' : 'hide' };
 }
 
 /** Sections and entries that came, went, or were left off; changes inside them are children. */
 function findParentChanges(rows: ResumeRows): Map<string, Change | null> {
   const parents = new Map<string, Change | null>();
   for (const row of [...rows.before, ...rows.after]) {
-    if ((row.line === 'section' || row.line === 'entry') && !parents.has(row.key)) {
-      parents.set(row.key, describePresence(rows, row));
-    }
+    const isParent = row.target.type === 'section' || row.target.type === 'entry';
+    if (isParent && !parents.has(row.key)) parents.set(row.key, describePresence(rows, row));
   }
   return parents;
 }
 
 function findParentChange(parents: Map<string, Change | null>, row: ChangeRow): Change | null {
-  if (row.line === 'section') return null;
-  const sectionChange = parents.get(`section:${row.sectionId}`);
+  const { type, sectionId, entryId } = row.target;
+  if (type === 'section') return null;
+  const sectionChange = parents.get(`section:${sectionId}`);
   if (sectionChange) return sectionChange;
-  if (row.line === 'entry') return null;
-  return parents.get(`entry:${row.entryId}`) ?? null;
+  if (type === 'entry') return null;
+  return parents.get(`entry:${entryId}`) ?? null;
 }
 
 /** How a move names its neighbours: a bullet or line by number, anything else by name. */
 function nameNeighbour(rowsByKey: Map<string, ChangeRow>, key: string): string {
   const row = rowsByKey.get(key);
   if (!row) return '';
-  if (row.line === 'bullet') return `bullet ${row.n}`;
-  if (row.line === 'summary' || row.line === 'text') return `line ${row.n}`;
-  return row.label ?? row.text;
+  if (row.target.type === 'bullet') return `bullet ${row.number}`;
+  if (row.target.type === 'summaryLine' || row.target.type === 'textLine') {
+    return `line ${row.number}`;
+  }
+  return row.displayName ?? row.text;
 }
 
-function describeMove(row: ChangeRow, fields: Partial<Change>): Change {
+function describeMove(row: ChangeRow, rowBefore: ChangeRow, move: Change['move']): Change {
   return {
     id: `move:${row.key}`,
-    kind: 'reorder',
-    line: row.line,
-    sectionId: row.sectionId,
-    entryId: row.entryId,
-    bulletId: row.bulletId,
-    where: row.where,
-    n: row.n,
-    label: row.label,
-    text: row.text,
+    kind: 'move',
+    target: row.target,
+    path: row.path,
+    number: row.number,
+    displayName: row.displayName,
+    before: rowBefore.text,
+    after: row.text,
+    move,
     origin: 'diff',
-    ...fields,
   };
 }
 
-function describeWhereItWas(rows: ResumeRows, move: Move, keyOf: (id: string) => string) {
-  if (move.previousIdBefore) {
-    return `was below ${nameNeighbour(rows.beforeByKey, keyOf(move.previousIdBefore))}`;
-  }
-  if (move.nextIdBefore) {
-    return `was first, above ${nameNeighbour(rows.beforeByKey, keyOf(move.nextIdBefore))}`;
-  }
-  return 'was first';
+const ALONE: Placement = { relation: 'alone', name: '' };
+
+/** Where it is now: above the one it now leads, or else below the one it follows. */
+function placeAfterMove(rows: ResumeRows, move: Move, keyOf: (id: string) => string): Placement {
+  const name = (id: string) => nameNeighbour(rows.afterByKey, keyOf(id));
+  if (move.nextId) return { relation: 'above', name: name(move.nextId) };
+  if (move.previousId) return { relation: 'below', name: name(move.previousId) };
+  return ALONE;
+}
+
+/** Where it was: below the one it followed, or else first, above the one it led. */
+function placeBeforeMove(rows: ResumeRows, move: Move, keyOf: (id: string) => string): Placement {
+  const name = (id: string) => nameNeighbour(rows.beforeByKey, keyOf(id));
+  if (move.previousIdBefore) return { relation: 'below', name: name(move.previousIdBefore) };
+  if (move.nextIdBefore) return { relation: 'above', name: name(move.nextIdBefore) };
+  return ALONE;
 }
 
 /** The ids of the printed rows `isInList` picks, in page order. */
 function listPrintedIds(
   rows: ChangeRow[],
   isInList: (row: ChangeRow) => boolean,
-  idOf: (row: ChangeRow) => string | null
+  idOf: (row: ChangeRow) => string | undefined
 ): string[] {
   return rows.flatMap((row) => {
-    const id = row.isPrinted && isInList(row) ? idOf(row) : null;
+    const id = row.isPrinted && isInList(row) ? idOf(row) : undefined;
     return id ? [id] : [];
   });
 }
@@ -172,7 +175,7 @@ function findAllMoves(rows: ResumeRows): Map<string, Change> {
   const moves = new Map<string, Change>();
   const addMovesWithin = (
     isInList: (row: ChangeRow) => boolean,
-    idOf: (row: ChangeRow) => string | null,
+    idOf: (row: ChangeRow) => string | undefined,
     keyOf: (id: string) => string
   ) => {
     const beforeIds = listPrintedIds(rows.before, isInList, idOf);
@@ -180,29 +183,31 @@ function findAllMoves(rows: ResumeRows): Map<string, Change> {
     for (const move of findMoves(beforeIds, afterIds)) {
       const key = keyOf(move.id);
       const row = rows.afterByKey.get(key);
-      const neighbourId = move.nextId ?? move.previousId;
-      if (!row || !neighbourId) continue;
-      const fields: Partial<Change> = {
-        rel: move.nextId ? 'above' : 'below',
-        other: nameNeighbour(rows.afterByKey, keyOf(neighbourId)),
-        was: describeWhereItWas(rows, move, keyOf),
-        isMovedUp: move.position < move.positionBefore,
-      };
-      moves.set(key, describeMove(row, fields));
+      const rowBefore = rows.beforeByKey.get(key);
+      const placement = placeAfterMove(rows, move, keyOf);
+      if (!row || !rowBefore || placement.relation === 'alone') continue;
+      moves.set(
+        key,
+        describeMove(row, rowBefore, {
+          placement,
+          placementBefore: placeBeforeMove(rows, move, keyOf),
+          isMovedUp: move.position < move.positionBefore,
+        })
+      );
     }
   };
 
   addMovesWithin(
-    (row) => row.line === 'section',
-    (row) => row.sectionId,
+    ({ target }) => target.type === 'section',
+    ({ target }) => target.sectionId,
     (id) => `section:${id}`
   );
   for (const section of rows.after) {
     const isOnBothPages = section.isPrinted && findPrinted(rows.beforeByKey, section.key);
-    if (section.line !== 'section' || !isOnBothPages) continue;
+    if (section.target.type !== 'section' || !isOnBothPages) continue;
     addMovesWithin(
-      (row) => isEntryRow(row) && row.sectionId === section.sectionId,
-      (row) => row.entryId,
+      (row) => isEntryRow(row) && row.target.sectionId === section.target.sectionId,
+      ({ target }) => target.entryId,
       (id) => `entry:${id}`
     );
   }
@@ -210,18 +215,23 @@ function findAllMoves(rows: ResumeRows): Map<string, Change> {
     const entryBefore = findPrinted(rows.beforeByKey, entry.key);
     if (!isEntryRow(entry) || !entry.isPrinted || !entryBefore) continue;
     addMovesWithin(
-      (row) => row.line === 'bullet' && row.entryId === entry.entryId,
-      (row) => row.bulletId,
+      ({ target }) => target.type === 'bullet' && target.entryId === entry.target.entryId,
+      ({ target }) => target.bulletId,
       (id) => `bullet:${id}`
     );
-    if (entryBefore.sectionId !== entry.sectionId && !moves.has(entry.key)) {
-      const sectionBefore = rows.beforeByKey.get(`section:${entryBefore.sectionId}`);
-      const fields: Partial<Change> = {
-        rel: 'to',
-        other: rows.afterByKey.get(`section:${entry.sectionId}`)?.text,
-        was: `was in ${sectionBefore?.text ?? ''}`,
-      };
-      moves.set(entry.key, describeMove(entry, fields));
+    const sectionId = entry.target.sectionId;
+    const sectionIdBefore = entryBefore.target.sectionId;
+    if (sectionIdBefore !== sectionId && !moves.has(entry.key)) {
+      const sectionName = (byKey: Map<string, ChangeRow>, id: string | undefined) =>
+        byKey.get(`section:${id}`)?.text ?? '';
+      moves.set(
+        entry.key,
+        describeMove(entry, entryBefore, {
+          placement: { relation: 'in', name: sectionName(rows.afterByKey, sectionId) },
+          placementBefore: { relation: 'in', name: sectionName(rows.beforeByKey, sectionIdBefore) },
+          isMovedUp: false,
+        })
+      );
     }
   }
   return moves;
@@ -235,7 +245,7 @@ function groupGoneRowsByAnchor(rows: ResumeRows): Map<string, ChangeRow[]> {
   const gone = new Map<string, ChangeRow[]>();
   let anchorKey = '';
   for (const row of rows.before) {
-    if (!row.isPrinted || row.line === 'field') continue;
+    if (!row.isPrinted || row.target.type === 'entryField') continue;
     if (findPrinted(rows.afterByKey, row.key)) anchorKey = row.key;
     else gone.set(anchorKey, [...(gone.get(anchorKey) ?? []), row]);
   }
@@ -250,20 +260,20 @@ export function diffResumes(before: ResumeData, after: ResumeData): ResumeDiff {
 
   const markChild = (change: Change | null, row: ChangeRow): Change | null => {
     const parent = change && findParentChange(parents, row);
-    return parent ? { ...change, isChild: true, parentKey: parent.id } : change;
+    return parent ? { ...change, parentId: parent.id } : change;
   };
   const lines: DiffLine[] = [];
   const addGoneLines = (anchorKey: string) => {
     for (const row of goneByAnchor.get(anchorKey) ?? []) {
       const change = markChild(describePresence(rows, row), row);
-      lines.push({ row, beforeNumber: row.n ?? null, afterNumber: null, change });
+      lines.push({ row, beforeNumber: row.number, afterNumber: null, change });
     }
   };
 
   addGoneLines('');
   for (const row of rows.after) {
     const rowBefore = rows.beforeByKey.get(row.key);
-    if (row.line === 'field') {
+    if (row.target.type === 'entryField') {
       // Unchanged fields stay out: the entry's line already shows them.
       const printedBefore = findPrinted(rows.beforeByKey, row.key);
       const isChanged = printedBefore && printedBefore.text !== row.text;
@@ -274,13 +284,13 @@ export function diffResumes(before: ResumeData, after: ResumeData): ResumeDiff {
       continue;
     }
     if (!row.isPrinted) continue;
-    const isReworded = rowBefore && rowBefore.text !== row.text && row.line !== 'entry';
+    const isReworded = rowBefore && rowBefore.text !== row.text && row.target.type !== 'entry';
     const change =
       describePresence(rows, row) ?? (isReworded ? describeRowChange(row, rowBefore, row) : null);
     lines.push({
       row,
-      beforeNumber: rowBefore?.isPrinted ? (rowBefore.n ?? null) : null,
-      afterNumber: row.n ?? null,
+      beforeNumber: rowBefore?.isPrinted ? rowBefore.number : null,
+      afterNumber: row.number,
       change: markChild(change, row),
     });
     const move = moves.get(row.key);
@@ -290,5 +300,5 @@ export function diffResumes(before: ResumeData, after: ResumeData): ResumeDiff {
   }
 
   const all = lines.flatMap((line) => (line.change ? [line.change] : []));
-  return { lines, changes: all.filter((change) => !change.isChild), all };
+  return { lines, changes: all.filter((change) => !change.parentId), all };
 }
