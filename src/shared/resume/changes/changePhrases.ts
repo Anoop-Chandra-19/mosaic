@@ -1,9 +1,4 @@
-import type { Change } from './resumeChange';
-
-/** The assistant writes these itself, so the short keys are what it is asked for. */
-export type TextPhrase =
-  | { k: 'keep'; t: string }
-  | { k: 'edit'; id: string; del: string; ins: string };
+import type { Change, TextPhrase } from './resumeChange';
 
 /** Each edit kept (true, the default) or dropped (false), by its id. */
 export type PhraseDecisions = Record<string, boolean>;

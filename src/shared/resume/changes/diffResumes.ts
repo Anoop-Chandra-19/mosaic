@@ -1,8 +1,23 @@
+/*
+ * What changed between two resumes, as the history shows it, and later as the assistant
+ * proposes it. Start here.
+ *
+ * diffResumes lists each side's editor fields as rows (listChangeRows), then finds what
+ * came, went, was left off, was edited (diffTextsAsPhrases, word by word) and moved
+ * (findMoves, on measureCommonRuns). The result is `Change`s (resumeChange): for display
+ * only, never stored or sent to a model. describeChanges words them, diffFormatting compares
+ * what isn't words, and changePhrases checks and folds an edit's phrases.
+ *
+ * Other modules use diffResumes, describeChanges, diffFormatting, changePhrases and
+ * resumeChange; the rest are its steps.
+ */
 import type { ResumeData } from '../../types/resume';
 import { diffTextsAsPhrases } from './diffTextsAsPhrases';
 import { findMoves, type Move } from './findMoves';
 import { listChangeRows, type ChangeRow } from './listChangeRows';
 import type { Change, ChangeTargetType, Placement } from './resumeChange';
+
+export type { ChangeRow };
 
 export interface DiffLine {
   row: ChangeRow;

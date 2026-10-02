@@ -94,6 +94,25 @@ Bun and npm both work (Node ≥ 22.18): `bun run <script>` = `npm run <script>`;
   and running affected tests, build, and lint. Never rename persisted keys, database fields,
   IPC strings, or external-format fields as an internal naming cleanup.
 
+## Structure
+
+Someone new should understand a module, and how its files connect, in about 30 minutes.
+
+- One responsibility per file, and the name says it: `diffResumes.ts` diffs resumes. If the
+  honest description needs "and", it is two files; if it is a few lines only one file uses,
+  it stays in that file. Never split just to make files smaller.
+- A folder is a module, kept flat and imported file by file: no `index.ts` barrels, and no
+  folder or file names that repeat in every module (`internal/`, `utils`). A subfolder is
+  named for what it holds, and only once it helps navigation.
+- A module's main file opens with a short comment: what the module is for, the path data
+  takes through its files, and which files other modules use. Other modules import only
+  those; the rest are its steps and may change freely. Update the comment with the files.
+- Dependencies point one way: a module's main functions use its steps, steps use types and
+  shared helpers, and nothing imports back up. No import cycles, type-only ones included.
+- Types live with the code that produces them, unless several modules share them
+  (then `src/shared/types/`).
+- Apply to new modules, and to existing ones when they are next reworked.
+
 ## Readability
 
 - One job per function. When a function needs comments to mark its steps, make the steps

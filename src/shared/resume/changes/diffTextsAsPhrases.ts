@@ -1,4 +1,4 @@
-import type { TextPhrase } from './changePhrases';
+import type { TextPhrase } from './resumeChange';
 import { measureCommonRuns } from './measureCommonRuns';
 
 type Step = { op: 'same' | 'del' | 'ins'; token: string };
