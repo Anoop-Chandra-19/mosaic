@@ -126,6 +126,10 @@
   --color-paper-tag: var(--paper-tag);
   --color-paper-tag-line: var(--paper-tag-line);
   --color-paper-mark-hover: var(--paper-mark-hover);
+  --color-swatch-add: var(--swatch-add);
+  --color-swatch-add-line: var(--swatch-add-line);
+  --color-swatch-del: var(--swatch-del);
+  --color-swatch-edit: var(--swatch-edit);
 }
 
 @theme {
@@ -284,6 +288,11 @@
   --paper-tag: #6b6b6b;
   --paper-tag-line: #b9b9b9;
   --paper-mark-hover: oklch(0.6 0 0 / 18%);
+  /* The version banner's swatches, each the mark its phrase stands for on the page. */
+  --swatch-add: oklch(0.86 0.14 150 / 55%);
+  --swatch-add-line: #3f8f5f;
+  --swatch-del: #e07a68;
+  --swatch-edit: #9a9a9a;
 }
 
 .dark {

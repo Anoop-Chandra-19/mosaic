@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { getDb } from '@/lib/storage/mosaicDb';
 import { useResumeStore } from '@/stores/resumeStore';
-import { useUiStore } from '@/stores/uiStore';
+import type { HistoryComparison } from '@/types/history';
 import { diffFormatting } from '@shared/resume/changes/diffFormatting';
 import { diffResumes } from '@shared/resume/changes/diffResumes';
 import type { Draft, Version, VersionMeta } from '@shared/types/db';
@@ -66,10 +66,11 @@ interface ComparedVersion {
   /** The version before it; null for the first. */
   parent: VersionMeta | null;
   parentLabel: string;
+  comparison: HistoryComparison;
 }
 
 /**
- * A version against the one before it, or against the draft, as last picked; the first
+ * A version against the one before it, or against the draft, as picked; the first
  * version has nothing before it, so it is read against the draft. How far it is from the
  * draft is worked out either way, for Restore.
  */
@@ -78,8 +79,8 @@ export function useVersionComparison({
   version,
   parent,
   parentLabel,
+  comparison,
 }: ComparedVersion) {
-  const comparison = useUiStore((s) => s.historyComparison);
   const draft = useComparedDraft(templateId);
   const parentVersion = useStoredVersion(parent?.id ?? null);
   const isAgainstDraft = comparison === 'draft' || !parent;

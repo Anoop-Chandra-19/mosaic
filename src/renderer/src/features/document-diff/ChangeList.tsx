@@ -6,7 +6,12 @@
  * in hunks from groupDiffLines. Both draw an edit's words with PhraseText and word every
  * change, hover tips included, through the change model's describeChanges.
  *
- * Other modules use ChangeList and UnifiedDiff; the rest are their steps.
+ * On the page, pageMarks says what each place is marked with and puts back what only the
+ * other side printed; the preview draws the marks with PageMarkParts. MarkedVersionText is
+ * the same marks on the page read as text. revealChangeMark steps to a change's mark.
+ *
+ * Other modules use ChangeList, UnifiedDiff, pageMarks, MarkedVersionText and
+ * revealChangeMark; the rest are their steps.
  */
 import { useState, type ReactNode } from 'react';
 import { ChevronDown } from 'lucide-react';
