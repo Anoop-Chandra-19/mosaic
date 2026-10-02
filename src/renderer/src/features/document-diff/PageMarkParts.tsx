@@ -32,32 +32,64 @@ const HOVER = 'cursor-help rounded-[2px] hover:shadow-[0_0_0_2px_var(--paper-mar
 
 const isGone = (change: Change) => change.kind === 'remove' || change.kind === 'hide';
 
-function Tip({
-  changes,
-  otherSide,
-  children,
-}: {
+function describeTips(changes: Change[], otherSide: string): ReactNode {
+  return changes.map((change, index) => <p key={index}>{describeChangeTip(change, otherSide)}</p>);
+}
+
+/** Room past the outermost margin mark, so it is easy to hover. */
+const GUTTER_REACH_PX = 4;
+
+/** How far into the left margin a line's hover reaches: past its bar, or its move glyph. */
+function measureGutterReach(gutter: MarkGutter, hasMove: boolean): number {
+  return (hasMove ? gutter.glyphPx : gutter.barPx) + GUTTER_REACH_PX;
+}
+
+interface TipProps {
   changes: Change[];
   otherSide: string;
+  /** How far the hover reaches into the margin, over the line's marks there; none if 0. */
+  gutterReachPx?: number;
   children: ReactNode;
-}) {
-  const tips = changes.map((change) => describeChangeTip(change, otherSide));
+}
+
+/**
+ * A marked line's one hover target: its text, and its marks in the margin up to the text.
+ * The tip follows the pointer along the line, below it.
+ */
+function Tip({ changes, otherSide, gutterReachPx = 0, children }: TipProps) {
   const topLevel = changes.find((change) => !change.parentId && change.kind !== 'move');
   return (
-    <AppTooltip
-      content={tips.map((tip, index) => (
-        <p key={index}>{tip}</p>
-      ))}
-    >
+    <AppTooltip content={describeTips(changes, otherSide)} shouldFollowPointer>
       <span data-change-id={topLevel?.id} className={HOVER}>
+        {gutterReachPx > 0 && (
+          <span
+            aria-hidden
+            className="absolute top-0 bottom-0"
+            style={{ left: -gutterReachPx, width: gutterReachPx }}
+          />
+        )}
         {children}
       </span>
     </AppTooltip>
   );
 }
 
-function Bar({ tone, gutter }: { tone: ChangeTone; gutter: MarkGutter }) {
-  return <span aria-hidden className={cn(BAR, BAR_TONE[tone])} style={{ left: -gutter.barPx }} />;
+/** The bar and any move glyph in the margin; hovering them is hovering the line's tip. */
+function GutterMarks({
+  tone,
+  move,
+  gutter,
+}: {
+  tone: ChangeTone;
+  move?: Change;
+  gutter: MarkGutter;
+}) {
+  return (
+    <>
+      <span aria-hidden className={cn(BAR, BAR_TONE[tone])} style={{ left: -gutter.barPx }} />
+      {move && <MoveGlyph move={move} gutter={gutter} />}
+    </>
+  );
 }
 
 const MOVE_GLYPHS: Record<ChangeMove['direction'], string> = { up: '↑', down: '↓', across: '⇄' };
@@ -68,7 +100,7 @@ function MoveGlyph({ move, gutter }: { move: Change; gutter: MarkGutter }) {
     <i
       aria-hidden
       data-change-id={move.parentId ? undefined : move.id}
-      className="pointer-events-none absolute top-0 font-sans text-[9px] leading-none font-bold text-paper-changed not-italic"
+      className="pointer-events-none absolute top-0 font-sans text-[9px] leading-[inherit] font-bold text-paper-changed not-italic"
       style={{ left: -gutter.glyphPx }}
     >
       {glyph}
@@ -132,9 +164,12 @@ export function MarkedLine({ changes, text, otherSide, gutter }: MarkedLineProps
   if (!change && !move) return text;
   return (
     <>
-      <Bar tone={change ? getChangeTone(change) : 'edit'} gutter={gutter} />
-      {move && <MoveGlyph move={move} gutter={gutter} />}
-      <Tip changes={changes} otherSide={otherSide}>
+      <GutterMarks tone={change ? getChangeTone(change) : 'edit'} move={move} gutter={gutter} />
+      <Tip
+        changes={changes}
+        otherSide={otherSide}
+        gutterReachPx={measureGutterReach(gutter, move !== undefined)}
+      >
         {change ? <MarkedContent change={change} text={text} /> : text}
       </Tip>
     </>
@@ -177,9 +212,12 @@ export function MarkedHeading({ changes, heading, fields, otherSide }: MarkedHea
     .filter((part) => part !== null);
   return (
     <>
-      <Bar tone={toneOfEntry(entryChange, fieldChanges)} gutter={LINE_GUTTER} />
-      {move && <MoveGlyph move={move} gutter={LINE_GUTTER} />}
-      <Tip changes={changes} otherSide={otherSide}>
+      <GutterMarks tone={toneOfEntry(entryChange, fieldChanges)} move={move} gutter={LINE_GUTTER} />
+      <Tip
+        changes={changes}
+        otherSide={otherSide}
+        gutterReachPx={measureGutterReach(LINE_GUTTER, move !== undefined)}
+      >
         {entryChange ? (
           <MarkedContent change={entryChange} text={heading} />
         ) : (
