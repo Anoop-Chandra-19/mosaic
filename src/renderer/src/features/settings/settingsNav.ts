@@ -9,16 +9,7 @@ import {
   Shield,
   Sparkles,
 } from 'lucide-react';
-
-export type SettingsSectionId =
-  | 'general'
-  | 'appearance'
-  | 'document'
-  | 'keys'
-  | 'ai'
-  | 'portability'
-  | 'privacy'
-  | 'about';
+import type { SettingsSectionId } from '@/types/settings';
 
 export interface SettingsSection {
   id: SettingsSectionId;

@@ -9,7 +9,7 @@ import { attempt, showToast, useOverlayStore } from '@/stores/overlayStore';
 import { useTemplateStore } from '@/stores/templateStore';
 import { useUiStore } from '@/stores/uiStore';
 import type { TemplateSummary, Version, VersionMeta } from '@shared/types/db';
-import type { HistoryFilter } from '../filterVersionHistory';
+import type { HistoryFilter } from '@/types/history';
 import { VersionList, type HistoryReveal } from '../version-list/VersionList';
 import { useTemplateVersions, versionLabel } from '../useTemplateVersions';
 import { HistoryIndex } from './HistoryIndex';

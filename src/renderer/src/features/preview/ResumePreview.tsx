@@ -4,6 +4,7 @@ import { useLiveEditStore } from '@/stores/liveEditStore';
 import { useResumeStore } from '@/stores/resumeStore';
 import type { ResumeData } from '@shared/types/resume';
 import type { PaperSize } from '@/types/paper';
+import type { ResumePreviewMeta } from '@/types/preview';
 import { PreviewHeader } from './PreviewHeader';
 import { PreviewPage } from './PreviewPage';
 import { PreviewSection } from './PreviewSection';
@@ -29,13 +30,6 @@ interface ResumePreviewProps {
 /** How long an eased change of zoom takes: the `duration-160` of the classes below. */
 export const PREVIEW_ZOOM_EASE_MS = 160;
 const ZOOM_EASE = 'duration-160 ease-settle motion-reduce:transition-none';
-
-export interface ResumePreviewMeta {
-  /** Pages laid out, which is every page unless the resume runs past the limit. */
-  totalPages: number;
-  /** The resume runs past `MAX_PREVIEW_PAGES`, so the rest was not laid out. */
-  hasMorePages: boolean;
-}
 
 /** Offsets into a paragraph's text where each drawn line begins, found by word. */
 function measureLineStarts(paragraph: HTMLElement): number[] {

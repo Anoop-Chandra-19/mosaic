@@ -31,7 +31,7 @@ import { useTemplateStore } from '@/stores/templateStore';
 import type { TemplateSummary, VersionMeta } from '@shared/types/db';
 import { DeleteTemplateDialog } from './DeleteTemplateDialog';
 import { formatRelativeTime } from './formatRelativeTime';
-import type { HistoryFilter } from '@/features/history/filterVersionHistory';
+import type { HistoryFilter } from '@/types/history';
 import { useTemplateVersions, versionLabel } from '@/features/history/useTemplateVersions';
 import { VersionList } from '@/features/history/version-list/VersionList';
 import { tourTargetProps } from '@/features/onboarding/tourSteps';

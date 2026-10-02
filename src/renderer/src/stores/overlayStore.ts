@@ -1,7 +1,7 @@
 import { create } from 'zustand';
-import type { HistoryFilter } from '@/features/history/filterVersionHistory';
-import type { ResumePreviewMeta } from '@/features/preview/ResumePreview';
-import type { SettingsSectionId } from '@/features/settings/settingsNav';
+import type { HistoryFilter } from '@/types/history';
+import type { ResumePreviewMeta } from '@/types/preview';
+import type { SettingsSectionId } from '@/types/settings';
 import type { OpenedBackup } from '@shared/types/bundle';
 import type { Version } from '@shared/types/db';
 

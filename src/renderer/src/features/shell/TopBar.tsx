@@ -3,7 +3,7 @@ import { AppButton } from '@/components/AppButton';
 import { redoShortcutLabel, shortcutLabel } from '@/lib/keyboardShortcuts';
 import { showToast, useOverlayStore } from '@/stores/overlayStore';
 import { useResumeStore } from '@/stores/resumeStore';
-import { useIsDarkTheme } from '@/lib/hooks/useTheme';
+import { useIsDarkTheme } from './useAppearance';
 import { useUiStore } from '@/stores/uiStore';
 import { useActiveTemplate } from '@/features/templates/useActiveTemplate';
 import { useTemplateStatus } from '@/features/templates/useTemplateStatus';
