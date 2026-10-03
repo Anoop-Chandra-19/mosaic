@@ -77,7 +77,8 @@ Use a motion that exists before inventing one:
 | `recede`                            | Stepping back behind a view, unchanged, returning   | The workspace               |
 | `handoff`                           | The same thing moving between two boxes showing it  | The page: preview ↔ history |
 | `step` + `step-back`/`step-forward` | Sliding the way a sequence runs, back from the left | The page between versions   |
-| `slide-in`, `slide-away`            | Leaving to the edge, the space reclaimed, and back  | The sidebar toggle          |
+| `slide-in`, `slide-away`            | Leaving to the edge, the space reclaimed, and back  | The sidebar, history index  |
+| `reclaim`                           | A box easing into space given up beside it          | The history list            |
 
 - A view transition blocks input while it runs: use one for whole-view changes and moves
   between boxes; keep frequent or interruptible changes (zoom, folds, hovers) CSS.
