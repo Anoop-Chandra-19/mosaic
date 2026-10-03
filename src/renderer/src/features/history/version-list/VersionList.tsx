@@ -3,6 +3,7 @@ import { AppButton } from '@/components/AppButton';
 import { cn } from '@/lib/utils';
 import { useOverlayStore } from '@/stores/overlayStore';
 import { useUiStore } from '@/stores/uiStore';
+import type { ChangeTone } from '@shared/resume/changes/resumeChange';
 import type { VersionMeta } from '@shared/types/db';
 import type { HistoryFilter } from '@/types/history';
 import { chooseVisibleVersions } from './chooseVisibleVersions';
@@ -59,6 +60,8 @@ interface VersionListProps extends VersionRowActions {
   onOpenFullHistory?: (filter: HistoryFilter) => void;
   /** The fold note's "change". Without it, Settings opens on History. */
   onChangeFolding?: () => void;
+  /** Shown on the row being read: what it changed from the one before it. */
+  selectedCounts?: Record<ChangeTone, number> | null;
 }
 
 /** A template's history until the count line is worth its row. */
@@ -91,6 +94,7 @@ export function VersionList({
   onSelect,
   onOpenFullHistory,
   onChangeFolding,
+  selectedCounts,
   ...rowProps
 }: VersionListProps) {
   const [filter, setFilterOnly] = useState(initialFilter);
@@ -190,6 +194,7 @@ export function VersionList({
       label={versionLabel(version)}
       time={formatTimeInDay(version.createdAt)}
       mode={edits.modeOf(version)}
+      counts={version.id === rowProps.previewId ? selectedCounts : null}
       isJustNamed={edits.justNamedId === version.id}
       onModeChange={(mode) => edits.setMode(version, mode)}
       onName={edits.name}

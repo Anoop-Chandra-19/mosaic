@@ -176,11 +176,38 @@ export function MarkedLine({ changes, text, otherSide, gutter }: MarkedLineProps
   );
 }
 
+/** The tone several changes on one line share, or an edit's when they differ. */
+function toneOfChanges(changes: Change[]): ChangeTone {
+  const tones = new Set(changes.map(getChangeTone));
+  return tones.size === 1 ? [...tones][0] : 'edit';
+}
+
 /** The tone of an entry's line: its own change's, or its fields' if they agree. */
 function toneOfEntry(entryChange: Change | undefined, fieldChanges: Change[]): ChangeTone {
-  if (entryChange) return getChangeTone(entryChange);
-  const tones = new Set(fieldChanges.map(getChangeTone));
-  return tones.size === 1 ? [...tones][0] : 'edit';
+  return entryChange ? getChangeTone(entryChange) : toneOfChanges(fieldChanges);
+}
+
+/** One bar for a header line, whatever changed in it. Its box must be positioned. */
+export function HeaderLineBar({ changes }: { changes: Change[] }) {
+  if (changes.length === 0) return null;
+  return <GutterMarks tone={toneOfChanges(changes)} gutter={LINE_GUTTER} />;
+}
+
+/** A header item, marked in its line: old → new, new highlighted, or struck where it stood. */
+export function MarkedItem({
+  change,
+  text,
+  otherSide,
+}: {
+  change: Change;
+  text: string;
+  otherSide: string;
+}) {
+  return (
+    <Tip changes={[change]} otherSide={otherSide}>
+      <MarkedContent change={change} text={text} />
+    </Tip>
+  );
 }
 
 interface MarkedHeadingProps {

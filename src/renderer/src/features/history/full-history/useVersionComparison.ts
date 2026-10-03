@@ -53,6 +53,8 @@ interface ComparedVersion {
   comparison: HistoryComparison;
 }
 
+export type VersionComparison = ReturnType<typeof useVersionComparison>;
+
 /**
  * A version against the one before it, or against the draft, as picked; the first
  * version has nothing before it, so it is read against the draft. How far it is from the

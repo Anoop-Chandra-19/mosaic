@@ -327,8 +327,9 @@ export function restoreVersion(
 
     const draft = readDraft(db, templateId);
     const head = headVersion(db, templateId);
-    // Restoring the version the editor already matches changes nothing.
+    // Restoring a version the editor already matches changes nothing, and adds no rows.
     if (head?.id === versionId && headHoldingDraft(db, head, draft)) return draft;
+    if (readDocHash(db, versionId) === hashDoc(draft.doc)) return draft;
 
     return replaceDraft(db, templateId, version.doc, {
       source: 'restore',

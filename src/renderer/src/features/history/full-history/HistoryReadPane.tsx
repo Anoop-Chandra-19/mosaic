@@ -10,10 +10,11 @@ import { UnifiedDiff } from '@/features/document-diff/UnifiedDiff';
 import { PAPER_DIMENSIONS_PT } from '@/features/preview/pageGeometry';
 import { useOwnPageZoom, type PageZoom } from '@/features/preview/pageZoom';
 import { ResumePreview } from '@/features/preview/ResumePreview';
-import { usePreviewCanvas } from '@/features/preview/usePreviewCanvas';
+import { usePreviewCanvas, type PreviewCanvas } from '@/features/preview/usePreviewCanvas';
 import { startPaneResize } from '@/features/shell/paneResize';
 import { transitionClasses } from '@/features/view-transitions/transitionClasses';
-import { isTypingField } from '@/lib/keyboardShortcuts';
+import { SHORTCUTS } from '@/features/shortcuts/shortcutList';
+import { isTypingField, matchesShortcut } from '@/lib/keyboardShortcuts';
 import { easeHeightChanges } from '@/lib/motion/easeHeightChanges';
 import { cn } from '@/lib/utils';
 import { HISTORY_READ_WIDTH, PREVIEW_DEFAULT_ZOOM, useUiStore } from '@/stores/uiStore';
@@ -25,7 +26,7 @@ import { formatHistoryDay, formatTimeOfDay } from '../groupVersionHistory';
 import type { VersionPair } from './prepareHistoryOpening';
 import { ReadPaneControls, type ReadPaneView } from './ReadPaneControls';
 import { findReadingPlace, restoreReadingPlace, type ReadingPlace } from './readingPlace';
-import { useVersionComparison } from './useVersionComparison';
+import type { VersionComparison } from './useVersionComparison';
 import { VersionAsText } from './VersionAsText';
 
 /** Below this the page is a thumbnail, not something to read, so the pane shows text. */
@@ -43,14 +44,11 @@ const AUTOMATIC_REASONS: Partial<Record<VersionSource, string>> = {
 };
 
 interface HistoryReadPaneProps {
-  templateId: string;
   version: VersionMeta;
   label: string;
-  /** The version before it, which it is compared with by default; null for the first. */
-  parent: VersionMeta | null;
-  parentLabel: string;
   isHead: boolean;
-  comparison: HistoryComparison;
+  /** The version against the one before it or the draft, as picked; the list shares it. */
+  comparison: VersionComparison;
   onComparisonChange: (comparison: HistoryComparison) => void;
   /** The widest the pane may get, for saying whether widening it would help. */
   maxWidthCss: string;
@@ -63,6 +61,13 @@ interface HistoryReadPaneProps {
 }
 
 const ignorePreviewMeta = () => {};
+
+/** The live preview's zoom keys, for the page being read. */
+const ZOOM_SHORTCUTS: { combo: string; run: (canvas: PreviewCanvas) => void }[] = [
+  { combo: SHORTCUTS.zoomIn, run: (canvas) => canvas.zoomByStep(1) },
+  { combo: SHORTCUTS.zoomOut, run: (canvas) => canvas.zoomByStep(-1) },
+  { combo: SHORTCUTS.fitPage, run: (canvas) => canvas.resetZoom() },
+];
 
 function describeDraftDistance(changeCount: number, hasFormatting: boolean): string {
   if (changeCount > 0) {
@@ -144,13 +149,10 @@ function VersionPage({
  * printed page, as text when the pane is too narrow, or as only the lines that differ.
  */
 export function HistoryReadPane({
-  templateId,
   version,
   label,
-  parent,
-  parentLabel,
   isHead,
-  comparison: pickedComparison,
+  comparison,
   onComparisonChange,
   maxWidthCss,
   canWidenToPage,
@@ -176,14 +178,6 @@ export function HistoryReadPane({
    */
   const [listChoice, setListChoice] = useState<'open' | 'closed' | null>(null);
   const loaded = docs.version?.id === version.id ? docs.version : null;
-  const comparison = useVersionComparison({
-    templateId,
-    version: loaded,
-    parent,
-    parentVersion: docs.parent?.id === parent?.id ? docs.parent : null,
-    parentLabel,
-    comparison: pickedComparison,
-  });
   const { diff, formatting, otherSide, draftChangeCount, hasDraftFormatting } = comparison;
 
   // Before paint, so the view transition that opens the pane captures the right choice
@@ -241,6 +235,17 @@ export function HistoryReadPane({
     },
   };
   const canvas = usePreviewCanvas(bodyRef, pageZoom);
+  const onZoomKey = useEffectEvent((event: KeyboardEvent) => {
+    if (view !== 'page' || event.defaultPrevented || isTypingField(event.target)) return;
+    const shortcut = ZOOM_SHORTCUTS.find(({ combo }) => matchesShortcut(event, combo));
+    if (!shortcut) return;
+    event.preventDefault();
+    shortcut.run(canvas);
+  });
+  useEffect(() => {
+    window.addEventListener('keydown', onZoomKey);
+    return () => window.removeEventListener('keydown', onZoomKey);
+  }, []);
   const readAsText = () => {
     setIsPageChosen(false);
     ownZoom.setZoom(PREVIEW_DEFAULT_ZOOM);

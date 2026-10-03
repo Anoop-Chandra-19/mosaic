@@ -19,7 +19,7 @@ export const SNAPSHOT_TRIGGER_OPTIONS: TriggerOption[] = [
   {
     trigger: 'beforeRestore',
     label: 'Before you restore a version',
-    description: 'So the draft you replaced is one click away.',
+    description: 'Keeps the draft you replaced one click away.',
   },
   { trigger: 'onImport', label: 'When you import a file' },
   {
