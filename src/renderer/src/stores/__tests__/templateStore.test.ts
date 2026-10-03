@@ -16,6 +16,7 @@ vi.mock('@/lib/storage/mosaicDb', async (importOriginal) => ({
 const { DbError, unwrapBridge } = await import('@/lib/storage/mosaicDb');
 const { flushDraft, UnsavedDraftError, useResumeStore } = await import('../resumeStore');
 const { useTemplateStore } = await import('../templateStore');
+const { DEFAULT_PREFERENCES, useUiStore } = await import('../uiStore');
 
 let sqlite: Database;
 
@@ -42,6 +43,7 @@ beforeEach(() => {
   db.current = unwrapBridge(inProcessBridge(createDbHandlers(sqlite)));
   templates().load([]);
   resume().loadDraft(null);
+  useUiStore.setState({ snapshotTriggers: { ...DEFAULT_PREFERENCES.snapshotTriggers } });
 });
 
 afterEach(async () => {
@@ -275,6 +277,7 @@ describe('templateStore', () => {
 
 describe('auto snapshots', () => {
   const history = () => db.current!.versions.list(resume().templateId!);
+  beforeEach(() => useUiStore.getState().setSnapshotTrigger('whileWorking', true));
 
   it('keeps the draft as a version saying what changed, and counts from it', async () => {
     await templates().createTemplate('Backend', createDefaultResume());
@@ -335,5 +338,63 @@ describe('auto snapshots', () => {
 
   it('does nothing at all with no template open', async () => {
     await expect(templates().snapshotOpenDraft('closed')).resolves.toBeUndefined();
+  });
+
+  it('keeps nothing while you work unless the user turned that on', async () => {
+    useUiStore.getState().setSnapshotTrigger('whileWorking', false);
+    await templates().createTemplate('Backend', createDefaultResume());
+    resume().setName('Ada Lovelace');
+
+    await templates().snapshotOpenDraft('edit');
+
+    expect(await history()).toHaveLength(1);
+  });
+});
+
+describe('snapshot settings', () => {
+  const history = () => db.current!.versions.list(resume().templateId!);
+
+  it('restores without keeping unsaved edits when that is turned off', async () => {
+    useUiStore.getState().setSnapshotTrigger('beforeRestore', false);
+    await templates().createTemplate('Backend', createDefaultResume());
+    const [created] = await history();
+    resume().setName('Ada Lovelace');
+
+    await templates().restoreVersion(resume().templateId!, created.id);
+
+    expect((await history()).map((version) => version.source)).toEqual(['restore', 'create']);
+  });
+
+  it('imports without a row in the history when that is turned off', async () => {
+    useUiStore.getState().setSnapshotTrigger('onImport', false);
+    await templates().createTemplate('Backend', createDefaultResume());
+
+    await templates().importIntoDraft(createEmptyResume(), 'pasted text');
+
+    expect(await history()).toHaveLength(1);
+    expect(resume().contact.name).toBe('');
+  });
+});
+
+describe('naming and deleting versions', () => {
+  const history = () => db.current!.versions.list(resume().templateId!);
+
+  it('names an older version, deletes it, and puts it back, re-reading the history each time', async () => {
+    await templates().createTemplate('Backend', createDefaultResume());
+    const [created] = await history();
+    resume().setName('Ada Lovelace');
+    await templates().nameVersion('Second');
+    const edits = () => templates().historyEdits;
+    const before = edits();
+
+    await templates().renameVersion(created.id, 'First');
+    expect((await history()).at(-1)).toMatchObject({ kind: 'named', summary: 'First' });
+
+    await templates().removeVersion({ ...created, kind: 'named', summary: 'First' });
+    expect(templates().templates[0].versionCount).toBe(1);
+
+    await templates().putBackVersion(created.id);
+    expect((await history()).map((version) => version.number)).toEqual([2, 1]);
+    expect(edits()).toBe(before + 3);
   });
 });

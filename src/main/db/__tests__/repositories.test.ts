@@ -15,6 +15,7 @@ import {
   removeTemplate,
   renameTemplate,
 } from '../templates';
+import { putBackVersion, removeVersion, renameVersion } from '../versionEdits';
 import {
   getVersion,
   importIntoDraft,
@@ -171,7 +172,7 @@ describe('versions', () => {
     saveDraft(db, id, resumeFor('B'), 0);
 
     const named = nameDraft(db, id, 'Sent to Fastly');
-    importIntoDraft(db, id, resumeFor('C'), 'pasted text');
+    importIntoDraft(db, id, resumeFor('C'), 'pasted text', true);
 
     expect(named.id).not.toBe(head.id);
     expect(getVersion(db, named.id).doc).toEqual(resumeFor('B'));
@@ -265,7 +266,7 @@ describe('versions', () => {
     nameDraft(db, id, 'B');
     saveDraft(db, id, resumeFor('C, unsaved'), 2);
 
-    const draft = restoreVersion(db, id, created.id);
+    const draft = restoreVersion(db, id, created.id, true);
 
     expect(draft).toEqual({ templateId: id, doc: resumeFor('A'), rev: 3 });
     expect(readDraft(db, id)).toEqual(draft);
@@ -281,10 +282,24 @@ describe('versions', () => {
     expect(isClean(id)).toBe(true);
   });
 
+  it('restore can leave unsaved edits out of the history, and still records the restore', () => {
+    const { id, head: created } = createTemplate(db, 'CV', resumeFor('A'));
+    saveDraft(db, id, resumeFor('B'), 1);
+    const named = nameDraft(db, id, 'B');
+    saveDraft(db, id, resumeFor('C, unsaved'), 2);
+
+    restoreVersion(db, id, created.id, false);
+
+    const [restored, ...rest] = listVersions(db, id);
+    expect(rest.map((v) => v.id)).toEqual([named.id, created.id]);
+    expect(restored).toMatchObject({ source: 'restore', parentId: created.id, rev: 3 });
+    expect(isClean(id)).toBe(true);
+  });
+
   it('restoring the version a clean draft already matches changes nothing', () => {
     const { id, head } = createTemplate(db, 'CV', resumeFor('A'));
 
-    expect(restoreVersion(db, id, head.id)).toEqual(readDraft(db, id));
+    expect(restoreVersion(db, id, head.id, true)).toEqual(readDraft(db, id));
     expect(listVersions(db, id)).toHaveLength(1);
     expect(getTemplate(db, id).rev).toBe(0);
   });
@@ -293,7 +308,7 @@ describe('versions', () => {
     const a = createTemplate(db, 'A', resumeFor('A'));
     const b = createTemplate(db, 'B', resumeFor('B'));
 
-    expect(() => restoreVersion(db, a.id, b.head.id)).toThrow(
+    expect(() => restoreVersion(db, a.id, b.head.id, true)).toThrow(
       expect.objectContaining({ code: 'not-found' })
     );
     expect(readDraft(db, a.id).doc).toEqual(resumeFor('A'));
@@ -303,7 +318,7 @@ describe('versions', () => {
     const { id } = createTemplate(db, 'CV', resumeFor('A'));
     saveDraft(db, id, resumeFor('A, unsaved'), 4);
 
-    const draft = importIntoDraft(db, id, resumeFor('From DOCX'), 'platform-resume.docx');
+    const draft = importIntoDraft(db, id, resumeFor('From DOCX'), 'platform-resume.docx', true);
 
     expect(draft).toEqual({ templateId: id, doc: resumeFor('From DOCX'), rev: 5 });
     expect(readDraft(db, id)).toEqual(draft);
@@ -327,11 +342,102 @@ describe('versions', () => {
   it('importing over a clean draft adds only the import', () => {
     const { id, head } = createTemplate(db, 'CV', resumeFor('A'));
 
-    importIntoDraft(db, id, resumeFor('Pasted'), 'pasted text');
+    importIntoDraft(db, id, resumeFor('Pasted'), 'pasted text', true);
 
     const versions = listVersions(db, id);
     expect(versions.map((v) => v.summary)).toEqual(['Imported from pasted text', 'Created']);
     expect(versions[0].parentId).toBe(head.id);
+  });
+
+  it('an import left out of the history only replaces the draft', () => {
+    const { id, head } = createTemplate(db, 'CV', resumeFor('A'));
+    saveDraft(db, id, resumeFor('A, unsaved'), 4);
+
+    const draft = importIntoDraft(db, id, resumeFor('Pasted'), 'pasted text', false);
+
+    expect(draft).toEqual({ templateId: id, doc: resumeFor('Pasted'), rev: 5 });
+    expect(listVersions(db, id)).toEqual([head]);
+    expect(isClean(id)).toBe(false);
+  });
+});
+
+describe('naming and deleting versions', () => {
+  /** Created (v1), then B (v2), C (v3) and D (v4) named in turn. */
+  function historyOfFour() {
+    const { id, head } = createTemplate(db, 'CV', resumeFor('A'));
+    const named = ['B', 'C', 'D'].map((name, index) => {
+      saveDraft(db, id, resumeFor(name), index + 1);
+      return nameDraft(db, id, name);
+    });
+    return { id, versions: [head, ...named] };
+  }
+
+  it('numbers versions from 1, and names any of them after the fact', () => {
+    const { id, versions } = historyOfFour();
+    expect(versions.map((v) => v.number)).toEqual([1, 2, 3, 4]);
+
+    expect(renameVersion(db, versions[0].id, 'First')).toMatchObject({
+      id: versions[0].id,
+      kind: 'named',
+      summary: 'First',
+      number: 1,
+    });
+    expect(listVersions(db, id).at(-1)).toMatchObject({ kind: 'named', summary: 'First' });
+    expect(() => renameVersion(db, 'missing', 'x')).toThrow(
+      expect.objectContaining({ code: 'not-found' })
+    );
+  });
+
+  it('deletes a version without renumbering the rest, and links its child past it', () => {
+    const { id, versions } = historyOfFour();
+    const [v1, v2, v3, v4] = versions;
+
+    removeVersion(db, v2.id);
+
+    const left = listVersions(db, id);
+    expect(left.map((v) => v.number)).toEqual([4, 3, 1]);
+    expect(left.find((v) => v.id === v3.id)?.parentId).toBe(v1.id);
+    expect(getTemplate(db, id)).toMatchObject({ versionCount: 3, head: { id: v4.id } });
+    expect(isClean(id)).toBe(true);
+  });
+
+  it('never deletes the newest version, which the draft is measured from', () => {
+    const { id, versions } = historyOfFour();
+    expect(() => removeVersion(db, versions[3].id)).toThrow(
+      expect.objectContaining({ code: 'invalid-argument' })
+    );
+    expect(listVersions(db, id)).toHaveLength(4);
+  });
+
+  it('drops a deleted version’s document when nothing else holds it', () => {
+    const { versions } = historyOfFour();
+    const countDocs = () => db.prepare('select count(*) from docs').pluck().get() as number;
+    expect(countDocs()).toBe(4);
+    removeVersion(db, versions[1].id);
+    expect(countDocs()).toBe(3);
+  });
+
+  it('puts a deleted version back as it was, with its number, place and child', () => {
+    const { id, versions } = historyOfFour();
+    const before = listVersions(db, id);
+
+    removeVersion(db, versions[1].id);
+    expect(putBackVersion(db, versions[1].id)).toEqual(before[2]);
+
+    expect(listVersions(db, id)).toEqual(before);
+    expect(getVersion(db, versions[1].id).doc).toEqual(resumeFor('B'));
+    expect(() => putBackVersion(db, versions[1].id)).toThrow(
+      expect.objectContaining({ code: 'not-found' })
+    );
+  });
+
+  it('links a version put back to the nearest one before it that is still there', () => {
+    const { id, versions } = historyOfFour();
+    removeVersion(db, versions[2].id);
+    removeVersion(db, versions[1].id);
+
+    expect(putBackVersion(db, versions[2].id)).toMatchObject({ parentId: versions[0].id });
+    expect(listVersions(db, id).map((v) => v.number)).toEqual([4, 3, 1]);
   });
 });
 
@@ -426,7 +532,7 @@ describe('documents, stored once by hash', () => {
     nameDraft(db, id, 'B');
     expect(countDocs()).toBe(2);
 
-    restoreVersion(db, id, created.id);
+    restoreVersion(db, id, created.id, true);
     expect(listVersions(db, id)).toHaveLength(3);
     expect(countDocs()).toBe(2);
     expect(getVersion(db, listVersions(db, id)[0].id).doc).toEqual(resumeFor('A'));

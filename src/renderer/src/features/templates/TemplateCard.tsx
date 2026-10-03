@@ -104,7 +104,7 @@ export function TemplateCard({ template, active, expanded, onToggle }: TemplateC
           ? preview
           : {
               version: await getDb().versions.get(versions[0].id),
-              label: versionLabel(versions, 0),
+              label: versionLabel(versions[0]),
             };
       openExport({ ...target, templateName: template.name });
     } catch (error) {
@@ -298,8 +298,8 @@ export function TemplateCard({ template, active, expanded, onToggle }: TemplateC
                   aria-label="What your draft is doing"
                   title={
                     dirty
-                      ? 'Your draft saves as you type, and Mosaic keeps versions of it as you go. Name one to find it again easily.'
-                      : `Your draft matches ${versionLabel(versions, 0)}.`
+                      ? 'Working draft, saved as you type. Name it to keep this point in history.'
+                      : `Your draft matches ${versionLabel(versions[0])}.`
                   }
                 >
                   <Info className="size-3" />
@@ -344,7 +344,7 @@ export function TemplateCard({ template, active, expanded, onToggle }: TemplateC
               title={
                 previewId && preview
                   ? `Export ${preview.label}, the version in the sheet`
-                  : `Export ${versionLabel(versions, 0)}, the newest version`
+                  : `Export ${versionLabel(versions[0])}, the newest version`
               }
               onClick={() => void exportVersion()}
             >

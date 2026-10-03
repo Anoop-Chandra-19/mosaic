@@ -56,7 +56,7 @@ export function GeneralSection() {
       </SettingRow>
       <SettingRow
         label="Undo history"
-        description={`Steps ${shortcutLabel('Z')} can take back in the open resume. Version history keeps everything either way.`}
+        description={`Steps ${shortcutLabel('Z')} can take back in the open resume. Named versions are kept either way.`}
       >
         <Select
           value={String(undoHistorySteps)}

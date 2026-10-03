@@ -18,6 +18,7 @@ import { StorageError } from './storageError';
 interface VersionRow {
   id: string;
   template_id: string;
+  seq: number;
   parent_id: string | null;
   kind: VersionKind;
   source: VersionSource;
@@ -27,12 +28,14 @@ interface VersionRow {
   created_at: number;
 }
 
-const META_COLUMNS = 'id, template_id, parent_id, kind, source, summary, section, rev, created_at';
+const META_COLUMNS =
+  'id, template_id, seq, parent_id, kind, source, summary, section, rev, created_at';
 
 function toMeta(row: VersionRow): VersionMeta {
   return {
     id: row.id,
     templateId: row.template_id,
+    number: row.seq,
     parentId: row.parent_id,
     kind: row.kind,
     source: row.source,
@@ -79,6 +82,14 @@ export function readDocHash(db: Database, versionId: string): string {
   return row.doc_hash;
 }
 
+export function getVersionMeta(db: Database, versionId: string): VersionMeta {
+  const row = db
+    .prepare<[string], VersionRow>(`select ${META_COLUMNS} from versions where id = ?`)
+    .get(versionId);
+  if (!row) throw new StorageError('not-found', `No version with id ${versionId}`);
+  return toMeta(row);
+}
+
 export function getVersion(db: Database, versionId: string): Version {
   const row = db
     .prepare<
@@ -101,16 +112,30 @@ export interface NewVersion {
   /** `doc`'s hash, when it is already stored. */
   docHash?: string;
   rev: number;
-  /** Set only when importing a bundle, which keeps its ids and dates. */
+  /**
+   * Set only when importing a bundle, which keeps its ids, numbers and dates, or putting
+   * back a deleted version.
+   */
   id?: string;
+  number?: number;
   createdAt?: number;
 }
 
-/** Appends a version after the template's current head. */
+function nextVersionNumber(db: Database, templateId: string): number {
+  return db
+    .prepare<
+      [string],
+      { next: number }
+    >('select coalesce(max(seq), 0) + 1 as next from versions where template_id = ?')
+    .get(templateId)!.next;
+}
+
+/** Appends a version after the template's current head, unless it brings its own number. */
 export function insertVersion(db: Database, version: NewVersion): VersionMeta {
   const meta: VersionMeta = {
     id: version.id ?? randomUUID(),
     templateId: version.templateId,
+    number: version.number ?? nextVersionNumber(db, version.templateId),
     parentId: version.parentId,
     kind: version.kind,
     source: version.source,
@@ -121,11 +146,11 @@ export function insertVersion(db: Database, version: NewVersion): VersionMeta {
   };
   db.prepare(
     `insert into versions (id, template_id, seq, parent_id, kind, source, summary, section, rev, created_at, doc_hash)
-     values (?, ?, (select coalesce(max(seq), 0) + 1 from versions where template_id = ?), ?, ?, ?, ?, ?, ?, ?, ?)`
+     values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
   ).run(
     meta.id,
     meta.templateId,
-    meta.templateId,
+    meta.number,
     meta.parentId,
     meta.kind,
     meta.source,
@@ -252,13 +277,16 @@ interface Replacement {
   after: string;
   /** What the new document came from; defaults to the draft it replaced. */
   parentId?: string;
+  /** Whether unsaved edits get the `before` version; the user can turn it off. */
+  shouldKeepDraft: boolean;
 }
 
 /**
  * Replace the editor's document from outside the editor. Unsaved edits are kept as an
- * auto version first, and the new document is recorded too, so the change can be undone
- * from history and the draft starts clean. The rev moves forward — the document changed
- * under the renderer's anchors — and the returned draft carries it.
+ * auto version first, unless the user turned that off, and the new document is recorded
+ * too, so the change can be undone from history and the draft starts clean. The rev
+ * moves forward — the document changed under the renderer's anchors — and the returned
+ * draft carries it.
  */
 function replaceDraft(
   db: Database,
@@ -267,15 +295,13 @@ function replaceDraft(
   replacement: Replacement
 ): Draft {
   const draft = readDraft(db, templateId);
-  const kept = snapshotDraft(db, {
-    templateId,
-    source: replacement.source,
-    summary: replacement.before,
-  });
+  const kept = replacement.shouldKeepDraft
+    ? snapshotDraft(db, { templateId, source: replacement.source, summary: replacement.before })
+    : headVersion(db, templateId);
   const rev = draft.rev + 1;
   insertVersion(db, {
     templateId,
-    parentId: replacement.parentId ?? kept.id,
+    parentId: replacement.parentId ?? kept?.id ?? null,
     kind: 'auto',
     source: replacement.source,
     summary: replacement.after,
@@ -287,7 +313,12 @@ function replaceDraft(
 }
 
 /** Put an older version back in the editor. */
-export function restoreVersion(db: Database, templateId: string, versionId: string): Draft {
+export function restoreVersion(
+  db: Database,
+  templateId: string,
+  versionId: string,
+  shouldKeepDraft: boolean
+): Draft {
   return db.transaction(() => {
     const version = getVersion(db, versionId);
     if (version.templateId !== templateId) {
@@ -304,6 +335,7 @@ export function restoreVersion(db: Database, templateId: string, versionId: stri
       before: `Before restoring "${version.summary}"`,
       after: `Restored "${version.summary}"`,
       parentId: version.id,
+      shouldKeepDraft,
     });
   })();
 }
@@ -311,19 +343,29 @@ export function restoreVersion(db: Database, templateId: string, versionId: stri
 /**
  * Import a resume over the editor's document — pasted text today, PDF/DOCX later. The
  * import review happens before this; `from` names the source for history
- * ("platform-resume.docx", "pasted text").
+ * ("platform-resume.docx", "pasted text"). An import the user doesn't record in history
+ * is an edit of the draft like any other.
  */
 export function importIntoDraft(
   db: Database,
   templateId: string,
   doc: ResumeData,
-  from: string
+  from: string,
+  isRecorded: boolean
 ): Draft {
-  return db.transaction(() =>
-    replaceDraft(db, templateId, doc, {
+  return db.transaction(() => {
+    if (!isRecorded) return writeNextDraft(db, templateId, doc);
+    return replaceDraft(db, templateId, doc, {
       source: 'import',
       before: `Before importing ${from}`,
       after: `Imported from ${from}`,
-    })
-  )();
+      shouldKeepDraft: true,
+    });
+  })();
+}
+
+function writeNextDraft(db: Database, templateId: string, doc: ResumeData): Draft {
+  const rev = readDraft(db, templateId).rev + 1;
+  writeDraft(db, templateId, doc, rev);
+  return { templateId, doc, rev };
 }

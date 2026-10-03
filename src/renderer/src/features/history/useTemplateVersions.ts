@@ -1,15 +1,17 @@
 import { useEffect, useState } from 'react';
 import { getDb } from '@/lib/storage/mosaicDb';
+import { useTemplateStore } from '@/stores/templateStore';
 import type { TemplateSummary, VersionMeta } from '@shared/types/db';
 
-/** "v3": a version's place in its template's history, counted from the oldest. */
-export function versionLabel(versions: VersionMeta[], index: number): string {
-  return `v${versions.length - index}`;
+/** "v3": its place in the history when it was taken. Deleting another never changes it. */
+export function versionLabel(version: VersionMeta): string {
+  return `v${version.number}`;
 }
 
 /**
  * A template's history, newest first, loaded while its card is expanded. It reloads when
- * the summary shows the history changed — a new version, or the newest one renamed.
+ * the summary shows the history changed (a new version, or the newest one renamed), or
+ * after any rename or delete.
  */
 export function useTemplateVersions(
   template: TemplateSummary,
@@ -18,7 +20,8 @@ export function useTemplateVersions(
 ): VersionMeta[] | null {
   const [versions, setVersions] = useState<VersionMeta[] | null>(initial);
   const { id, versionCount, head } = template;
-  const changed = `${versionCount}:${head.id}:${head.kind}:${head.summary}:${head.rev}`;
+  const historyEdits = useTemplateStore((s) => s.historyEdits);
+  const changed = `${versionCount}:${head.id}:${head.kind}:${head.summary}:${head.rev}:${historyEdits}`;
 
   useEffect(() => {
     if (!enabled) return;

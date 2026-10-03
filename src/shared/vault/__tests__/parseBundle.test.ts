@@ -13,6 +13,7 @@ const TEMPLATE = {
 };
 const V1 = {
   id: 'v1',
+  number: 1,
   parentId: null,
   kind: 'auto',
   source: 'create',
@@ -23,6 +24,8 @@ const V1 = {
 };
 const V2 = {
   id: 'v2',
+  // A gap: v2 to v4 were deleted.
+  number: 5,
   parentId: 'v1',
   kind: 'named',
   source: 'name',
@@ -190,6 +193,8 @@ describe('parseBundle', () => {
       (f) => (templatesOf(f)[0].versions[0].kind = 'draft'),
       (f) => (templatesOf(f)[0].versions[0].source = 'telepathy'),
       (f) => (templatesOf(f)[0].versions[0].rev = -1),
+      (f) => delete templatesOf(f)[0].versions[0].number,
+      (f) => (templatesOf(f)[0].versions[1].number = 1),
       (f) => (templatesOf(f)[0].template.rev = 1.5),
       (f) => (templatesOf(f)[0].template.createdAt = 'yesterday'),
     ];

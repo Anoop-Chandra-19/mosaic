@@ -10,6 +10,7 @@ function history(count: number, spacingHours: number): VersionMeta[] {
   return Array.from({ length: count }, (_, i) => ({
     id: `v${count - i}`,
     templateId: 't',
+    number: count - i,
     parentId: null,
     kind: 'auto',
     source: 'edit',

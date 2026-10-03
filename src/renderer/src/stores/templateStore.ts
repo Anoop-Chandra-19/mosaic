@@ -3,6 +3,7 @@ import { immer } from 'zustand/middleware/immer';
 import { getDb } from '@/lib/storage/mosaicDb';
 import { useOverlayStore } from '@/stores/overlayStore';
 import { flushDraft, saveDraftOrStop, useResumeStore } from '@/stores/resumeStore';
+import { useUiStore } from '@/stores/uiStore';
 import type { ImportMode, MosaicBundle } from '@shared/types/bundle';
 import type { Draft, SnapshotOccasion, TemplateSummary, VersionMeta } from '@shared/types/db';
 import type { PendingTextAiChange, ResumeData } from '@shared/types/resume';
@@ -24,6 +25,11 @@ export interface DeletedTemplate {
 
 interface TemplateState {
   templates: TemplateSummary[];
+  /**
+   * Counts renames and deletes in any history, which the summaries can miss (an older
+   * version renamed), so a loaded history knows to read itself again.
+   */
+  historyEdits: number;
   pendingAiChanges: PendingTextAiChange[];
 
   load: (templates: TemplateSummary[]) => void;
@@ -58,13 +64,18 @@ interface TemplateState {
    * The undo stack stays as it is. Nothing to keep, or no template open, does nothing.
    */
   snapshotOpenDraft: (occasion: SnapshotOccasion) => Promise<void>;
-  /** Replaces the open draft, keeping unsaved edits in history first. */
+  /** Replaces the open draft, keeping unsaved edits in history first if the user wants it. */
   importIntoDraft: (doc: ResumeData, from: string) => Promise<void>;
   /**
    * Puts an older version back as the template's draft, keeping unsaved edits in history
-   * first, and opens that template if another one is open.
+   * first if the user wants it, and opens that template if another one is open.
    */
   restoreVersion: (templateId: string, versionId: string) => Promise<void>;
+  /** Names any version of any template; see `MosaicDb['versions']['rename']`. */
+  renameVersion: (versionId: string, name: string) => Promise<void>;
+  /** Deletes a version other than the newest. `putBackVersion` undoes it. */
+  removeVersion: (version: VersionMeta) => Promise<void>;
+  putBackVersion: (versionId: string) => Promise<void>;
 
   // AI queue (T3, exposed now for interface stability)
   enqueueAiChange: (change: PendingTextAiChange) => void;
@@ -110,8 +121,17 @@ export const useTemplateStore = create<TemplateState>()(
       useResumeStore.getState().loadDraft(draft, asStep ? { asStep } : undefined);
     };
 
+    /** After a rename or delete: summaries, and any history that is loaded, read again. */
+    const refreshHistory = async () => {
+      set((state) => {
+        state.historyEdits += 1;
+      });
+      await get().refresh();
+    };
+
     return {
       templates: [],
+      historyEdits: 0,
       pendingAiChanges: [],
 
       load: (templates) =>
@@ -213,6 +233,7 @@ export const useTemplateStore = create<TemplateState>()(
       },
 
       snapshotOpenDraft: async (occasion) => {
+        if (!useUiStore.getState().snapshotTriggers.whileWorking) return;
         await flushDraft();
         const templateId = openTemplateId();
         if (templateId === null) return;
@@ -233,18 +254,38 @@ export const useTemplateStore = create<TemplateState>()(
       importIntoDraft: async (doc, from) => {
         const templateId = requireOpenTemplate();
         await saveDraftOrStop();
-        showDraft(await getDb().drafts.importInto(templateId, doc, from), 'import');
+        const { onImport } = useUiStore.getState().snapshotTriggers;
+        showDraft(await getDb().drafts.importInto(templateId, doc, from, onImport), 'import');
         await get().refresh();
       },
 
       restoreVersion: async (templateId, versionId) => {
         await saveDraftOrStop();
         const db = getDb();
-        const restored = await db.versions.restore(templateId, versionId);
+        const { beforeRestore } = useUiStore.getState().snapshotTriggers;
+        const restored = await db.versions.restore(templateId, versionId, beforeRestore);
         // Restoring into the open draft is a step of it; another template is a fresh start.
         if (templateId === openTemplateId()) showDraft(restored, 'restore');
         else showDraft(await db.templates.open(templateId));
         await get().refresh();
+      },
+
+      renameVersion: async (versionId, name) => {
+        await getDb().versions.rename(versionId, name);
+        await refreshHistory();
+      },
+
+      removeVersion: async (version) => {
+        await getDb().versions.remove(version.id);
+        if (useOverlayStore.getState().preview?.version.id === version.id) {
+          useOverlayStore.getState().setPreview(null);
+        }
+        await refreshHistory();
+      },
+
+      putBackVersion: async (versionId) => {
+        await getDb().versions.putBack(versionId);
+        await refreshHistory();
       },
 
       // AI queue (T3, stubs wired for interface stability)

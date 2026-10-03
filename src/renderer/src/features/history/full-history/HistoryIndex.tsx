@@ -1,28 +1,41 @@
 import { Save } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
 import { cn } from '@/lib/utils';
+import { useUiStore } from '@/stores/uiStore';
 import type { VersionMeta } from '@shared/types/db';
-import { formatHistoryDay, listHistoryMonths } from '../groupVersionHistory';
+import {
+  countFoldedByMonth,
+  findFoldCutoff,
+  formatHistoryDay,
+  groupVersionHistory,
+  listHistoryMonths,
+} from '../groupVersionHistory';
+import { versionLabel } from '../useTemplateVersions';
 
 interface HistoryIndexProps {
   /** Newest first. */
   versions: VersionMeta[];
   selectedId: string | null;
-  labelOf: (version: VersionMeta) => string;
   /** Asks the list to bring a version into view: never a scroll position. */
   onGoTo: (version: VersionMeta) => void;
   shouldShowMonths: boolean;
 }
 
-/** The full view's table of contents: the named versions, then the months. */
+/**
+ * The full view's table of contents: the named versions, then the months. A month counts
+ * every version, folded ones included, so its number doesn't change with folding.
+ */
 export function HistoryIndex({
   versions,
   selectedId,
-  labelOf,
   onGoTo,
   shouldShowMonths,
 }: HistoryIndexProps) {
   const named = versions.filter((version) => version.kind === 'named');
+  const foldDays = useUiStore((s) => s.foldSnapshotsAfterDays);
+  const folded = shouldShowMonths
+    ? countFoldedByMonth(groupVersionHistory(versions, { foldBefore: findFoldCutoff(foldDays) }))
+    : new Map<string, number>();
   return (
     <nav
       aria-label="History index"
@@ -51,7 +64,7 @@ export function HistoryIndex({
           <span className="min-w-0 flex-1">
             {version.summary}
             <span className="mt-0.5 block font-mono text-[0.6625rem] text-ink-faint">
-              {labelOf(version)} · {formatHistoryDay(version.createdAt)}
+              {versionLabel(version)} · {formatHistoryDay(version.createdAt)}
             </span>
           </span>
         </AppButton>
@@ -65,9 +78,16 @@ export function HistoryIndex({
               variant="ghost"
               shape="text"
               onClick={() => onGoTo(month.newest)}
-              className="flex w-full justify-between px-1.75 py-1.5 font-mono text-[0.71875rem] text-ink-muted"
+              className="flex w-full items-start justify-between px-1.75 py-1.5 font-mono text-[0.71875rem] text-ink-muted"
             >
-              <span>{month.label}</span>
+              <span>
+                {month.label}
+                {folded.has(month.label) && (
+                  <span className="mt-px block text-[0.65rem] text-ink-faint">
+                    {folded.get(month.label)} folded
+                  </span>
+                )}
+              </span>
               <span className="text-[0.6625rem] text-ink-faint">
                 {month.count.toLocaleString()}
               </span>

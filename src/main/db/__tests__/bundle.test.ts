@@ -8,6 +8,7 @@ import { exportBundle, importBundle } from '../bundle';
 import { openDatabase, type Database } from '../connection';
 import { readDraft, saveDraft } from '../drafts';
 import { createTemplate, listTemplates } from '../templates';
+import { removeVersion } from '../versionEdits';
 import { listVersions, nameDraft, restoreVersion } from '../versions';
 
 let db: Database;
@@ -26,13 +27,19 @@ function resumeFor(name: string): ResumeData {
   return doc;
 }
 
-/** Two templates with real history: named versions, a restore, and unsaved edits. */
+/**
+ * Two templates with real history: named versions, a restore, a deleted version, and
+ * unsaved edits.
+ */
 function seedHistory(): void {
   const cv = createTemplate(db, 'Backend CV', resumeFor('A'));
   saveDraft(db, cv.id, resumeFor('B'), 1);
   nameDraft(db, cv.id, 'Sent to Fastly');
-  restoreVersion(db, cv.id, cv.head.id);
-  saveDraft(db, cv.id, resumeFor('C, unsaved'), 3);
+  saveDraft(db, cv.id, resumeFor('B2'), 2);
+  const deleted = nameDraft(db, cv.id, 'Deleted later');
+  restoreVersion(db, cv.id, cv.head.id, true);
+  removeVersion(db, deleted.id);
+  saveDraft(db, cv.id, resumeFor('C, unsaved'), 4);
 
   createTemplate(db, 'Frontend CV', resumeFor('F'));
 }
@@ -91,6 +98,9 @@ describe('bundle', () => {
     const originals = listVersions(db, backend.id);
     const copies = listVersions(db, copyId);
     expect(copies.map((v) => v.summary)).toEqual(originals.map((v) => v.summary));
+    // The deleted version's number stays a gap, so the labels read the same.
+    expect(copies.map((v) => v.number)).toEqual([4, 2, 1]);
+    expect(copies.map((v) => v.number)).toEqual(originals.map((v) => v.number));
     expect(copies.some((v) => originals.some((o) => o.id === v.id))).toBe(false);
     const copyIds = new Set(copies.map((v) => v.id));
     for (const v of copies) if (v.parentId !== null) expect(copyIds.has(v.parentId)).toBe(true);
