@@ -3,10 +3,12 @@ import { configDefaults, defineConfig } from 'vitest/config';
 
 export default defineConfig({
   resolve: {
-    alias: {
-      '@': resolve(import.meta.dirname, 'src/renderer/src'),
-      '@shared': resolve(import.meta.dirname, 'src/shared'),
-    },
+    alias: [
+      { find: '@', replacement: resolve(import.meta.dirname, 'src/renderer/src') },
+      { find: '@shared', replacement: resolve(import.meta.dirname, 'src/shared') },
+      // As in the renderer build: one `cn`, taught the type roles.
+      { find: /^cn$/, replacement: resolve(import.meta.dirname, 'src/renderer/src/lib/utils.ts') },
+    ],
   },
   test: {
     // Playwright specs that drive the built Electron app: `bun run test:e2e`, and the

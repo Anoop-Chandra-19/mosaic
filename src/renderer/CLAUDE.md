@@ -36,6 +36,24 @@ For resume content, preview, or exports, also read `docs/resume-format.md` (repo
   of React; don't add manual memoization by default or remove existing memoization blindly.
   Compiler optimization does not replace effect dependencies or Zustand subscriptions.
 
+## Type
+
+- The interface is set in Source Sans 3 and Source Code Pro (`public/fonts/`, SIL OFL, loaded
+  from disk). The resume page keeps Arial and `HEADLESS_LAYOUT`; nothing below reaches it.
+- Ten roles from the design (`Type - Scale and Font`): heading, editor, title, body, strong,
+  secondary, meta, eyebrow, tag, key. Each is a `text-*` token in `index.css` carrying size,
+  line height, tracking and weight (`secondary`'s is `text-support`, since `text-secondary`
+  is a colour). Weights: `font-regular` 460, `font-control` 560, `font-strong` 650,
+  `font-tag` 700.
+- Write interface text as `<Text variant="…">` (`components/Text.tsx`); its table adds the
+  role's family, case and colour. Where an element can't be a `Text`, such as a Radix part,
+  use `textVariantClasses(variant)`. Override colour through `className`, never the size.
+- Text colour is `foreground`, `ink-soft`, `ink-muted` or `ink-faint`; status colours only
+  for meaning. Tabular numbers on counts, times, labels and percentages (the meta role has
+  them).
+- `cn` knows the role names (`lib/utils.ts`; the `cn` package is aliased to it), so a colour
+  passed beside a role keeps the role. Add a new role in both places.
+
 ## First-run tour
 
 `features/onboarding/` holds the tour, which points at live elements marked with `tourTargetProps(...)` from
