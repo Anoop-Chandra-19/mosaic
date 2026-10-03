@@ -3,7 +3,7 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import { immer } from 'zustand/middleware/immer';
 import type { InterfaceDensity, ThemeChoice } from '@/lib/appearance';
 import { settingsStorage } from '@/lib/storage/settingsStorage';
-import type { HistoryComparison } from '@/types/history';
+import type { HistoryComparison, SnapshotFoldDays, SnapshotTrigger } from '@/types/history';
 import type { PaperSize } from '@/types/paper';
 
 export type SidebarTab = 'content' | 'templates';
@@ -20,6 +20,26 @@ const LAUNCH_VIEWS: readonly LaunchView[] = ['last', 'start', 'templates'];
 const INTERFACE_DENSITIES: readonly InterfaceDensity[] = ['comfortable', 'compact'];
 
 const HISTORY_COMPARISONS: readonly HistoryComparison[] = ['parent', 'draft'];
+
+export const SNAPSHOT_FOLD_OPTIONS: readonly SnapshotFoldDays[] = [30, 90, null];
+
+/** The safety nets start on; snapshots while you work are asked for. */
+const DEFAULT_SNAPSHOT_TRIGGERS: Record<SnapshotTrigger, boolean> = {
+  beforeRestore: true,
+  onImport: true,
+  whileWorking: false,
+  afterAiEdits: true,
+};
+
+function pickSnapshotTriggers(stored: unknown): Record<SnapshotTrigger, boolean> {
+  const triggers = { ...DEFAULT_SNAPSHOT_TRIGGERS };
+  if (typeof stored !== 'object' || stored === null) return triggers;
+  for (const trigger of Object.keys(triggers) as SnapshotTrigger[]) {
+    const isOn = (stored as Record<string, unknown>)[trigger];
+    if (typeof isOn === 'boolean') triggers[trigger] = isOn;
+  }
+  return triggers;
+}
 
 /** How many steps back Ctrl/⌘+Z can go within one open draft. */
 export const UNDO_HISTORY_STEP_OPTIONS = [50, 200, 500] as const;
@@ -122,6 +142,8 @@ export const DEFAULT_PREFERENCES = {
   undoHistorySteps: 200 as UndoHistorySteps,
   paperSize: 'a4' as PaperSize,
   hasSeenTour: false,
+  snapshotTriggers: DEFAULT_SNAPSHOT_TRIGGERS,
+  foldSnapshotsAfterDays: 30 as SnapshotFoldDays,
 };
 
 interface UiState {
@@ -143,6 +165,8 @@ interface UiState {
   shouldShowHistoryDetails: boolean;
   shouldShowHeaderIcons: boolean;
   hasSeenTour: boolean;
+  snapshotTriggers: Record<SnapshotTrigger, boolean>;
+  foldSnapshotsAfterDays: SnapshotFoldDays;
   setTheme: (theme: ThemeChoice) => void;
   setInterfaceDensity: (density: InterfaceDensity) => void;
   setOpenOnLaunch: (view: LaunchView) => void;
@@ -162,6 +186,8 @@ interface UiState {
   setHistoryComparison: (comparison: HistoryComparison) => void;
   setShouldShowHistoryDetails: (shown: boolean) => void;
   toggleHeaderIcons: () => void;
+  setSnapshotTrigger: (trigger: SnapshotTrigger, isOn: boolean) => void;
+  setFoldSnapshotsAfterDays: (days: SnapshotFoldDays) => void;
   markTourSeen: () => void;
   resetInterface: () => void;
 }
@@ -247,6 +273,14 @@ export const useUiStore = create<UiState>()(
         set((state) => {
           state.shouldShowHeaderIcons = !state.shouldShowHeaderIcons;
         }),
+      setSnapshotTrigger: (trigger, isOn) =>
+        set((state) => {
+          state.snapshotTriggers[trigger] = isOn;
+        }),
+      setFoldSnapshotsAfterDays: (days) =>
+        set((state) => {
+          state.foldSnapshotsAfterDays = days;
+        }),
       markTourSeen: () =>
         set((state) => {
           state.hasSeenTour = true;
@@ -289,6 +323,12 @@ export const useUiStore = create<UiState>()(
             DEFAULT_PREFERENCES.undoHistorySteps
           ),
           hasSeenTour: stored.hasSeenTour === true,
+          snapshotTriggers: pickSnapshotTriggers(stored.snapshotTriggers),
+          foldSnapshotsAfterDays: pickChoice(
+            stored.foldSnapshotsAfterDays,
+            SNAPSHOT_FOLD_OPTIONS,
+            DEFAULT_PREFERENCES.foldSnapshotsAfterDays
+          ),
           historyComparison: pickChoice(
             stored.historyComparison,
             HISTORY_COMPARISONS,

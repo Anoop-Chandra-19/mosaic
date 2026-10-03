@@ -10,8 +10,9 @@ const resumeNamed = (name: string): ResumeData => {
   return { ...doc, contact: { ...doc.contact, name } };
 };
 
-const version = (id: string, doc: ResumeData): BundleVersion => ({
+const version = (id: string, doc: ResumeData, number = 1): BundleVersion => ({
   id,
+  number,
   parentId: null,
   kind: 'auto',
   source: 'edit',
@@ -37,12 +38,12 @@ function createBundle(): MosaicBundle {
       {
         template: template('t1'),
         draft: resumeNamed('A'),
-        versions: [version('v1', resumeNamed('A')), version('v2', resumeNamed('B'))],
+        versions: [version('v1', resumeNamed('A')), version('v2', resumeNamed('B'), 2)],
       },
       {
         template: template('t2'),
         draft: resumeNamed('B'),
-        versions: [version('v3', resumeNamed('B')), version('v4', resumeNamed('A'))],
+        versions: [version('v3', resumeNamed('B')), version('v4', resumeNamed('A'), 2)],
       },
     ],
   };

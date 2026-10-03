@@ -11,6 +11,17 @@ async function setName(page: Page, current: string, next: string) {
   await page.getByPlaceholder('Your name').press('Enter');
 }
 
+/** Snapshots while you work are off until asked for, in Settings › History. */
+async function keepSnapshotsWhileWorking(page: Page) {
+  await page.getByRole('button', { name: 'Open settings' }).click();
+  const settings = page.getByRole('dialog', { name: 'Settings' });
+  await settings.getByRole('navigation').getByRole('button', { name: 'History' }).click();
+  await settings.getByRole('switch', { name: 'While you work' }).click();
+  await expect(settings.getByRole('switch', { name: 'While you work' })).toBeChecked();
+  await page.keyboard.press('Escape');
+  await expect(settings).toBeHidden();
+}
+
 async function nameVersion(page: Page, name: string) {
   await page.keyboard.press('Control+s');
   await page.getByLabel('Version name').fill(name);
@@ -28,7 +39,9 @@ test('a version can be read in the sheet, then restored', async () => {
   await page.getByRole('tab', { name: 'Templates' }).click();
   // The open template's history is showing: its creation, and the named version on top.
   await page.getByRole('button', { name: 'What your draft is doing' }).hover();
-  await expect(page.getByRole('tooltip', { name: /^Your draft saves as you type/ })).toBeAttached();
+  await expect(
+    page.getByRole('tooltip', { name: /^Working draft, saved as you type/ })
+  ).toBeAttached();
   await page.keyboard.press('Escape');
   const named = page.getByRole('listitem').filter({ hasText: 'Sent to Striped' });
   await expect(named).toContainText('v2');
@@ -76,8 +89,27 @@ test('a version can be duplicated as its own template', async () => {
   await expect(page.getByRole('button', { name: 'Open', exact: true })).toBeVisible();
 });
 
+test('switching templates keeps no row of its own until asked to', async () => {
+  const { page } = mosaic();
+  await page.getByRole('button', { name: /Blank resume/ }).click();
+  await setName(page, 'Your name', 'Ada Lovelace');
+
+  await page.getByRole('tab', { name: 'Templates' }).click();
+  await page.getByRole('button', { name: 'New', exact: true }).click();
+  await page.getByRole('button', { name: /Blank resume/ }).click();
+
+  await page.getByRole('tab', { name: 'Templates' }).click();
+  await page.getByRole('button', { name: 'Open', exact: true }).click();
+  await expect(page.getByRole('listitem').filter({ hasText: 'Created' })).toContainText('newest');
+  await expect(page.getByRole('listitem').filter({ hasText: 'Where you left it' })).toHaveCount(0);
+  // The draft itself is saved regardless.
+  await page.getByRole('tab', { name: 'Content' }).click();
+  await expect(page.getByRole('complementary').getByText('Ada Lovelace')).toBeVisible();
+});
+
 test('editing alone is kept in history when another template takes the editor', async () => {
   const { page } = mosaic();
+  await keepSnapshotsWhileWorking(page);
   await page.getByRole('button', { name: /Blank resume/ }).click();
   await setName(page, 'Your name', 'Ada Lovelace');
 
@@ -102,6 +134,7 @@ test('editing alone is kept in history when the window closes', async ({ launchA
   const first = await launchApp();
   const { userDataDir } = first;
   try {
+    await keepSnapshotsWhileWorking(first.page);
     await first.page.getByRole('button', { name: /Blank resume/ }).click();
     await setName(first.page, 'Your name', 'Ada Lovelace');
     await first.app.close();

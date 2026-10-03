@@ -30,6 +30,8 @@ export interface BundleTemplate {
 
 export interface BundleVersion {
   id: string;
+  /** "v7", kept so a restored backup labels its versions as they were. Rises through the list. */
+  number: number;
   /** Always an earlier version of the same template, or null. */
   parentId: string | null;
   kind: VersionKind;

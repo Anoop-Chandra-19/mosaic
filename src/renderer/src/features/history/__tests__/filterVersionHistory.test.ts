@@ -15,6 +15,7 @@ function version(
   return {
     id,
     templateId: 't',
+    number: Number(id.slice(1)),
     parentId: null,
     kind: source === 'name' ? 'named' : 'auto',
     source,

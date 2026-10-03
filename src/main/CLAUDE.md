@@ -31,9 +31,13 @@ Read with the root `CLAUDE.md`. This covers `src/main/` and its contract with pr
   version holds renames that version rather than adding one; if only the rev moved, the
   version adopts it, which makes the draft clean again. Every
   template has at least one version; zero templates is valid.
-- Versions are appended, never rewritten: undo moves the draft alone. The renderer decides
-  when an auto version is taken (`useAutoSnapshot`, template switch, window close); main
-  writes it and describes what changed (`describeDraftChanges`).
+- Versions are appended, and undo moves the draft alone. The user can name any version and
+  delete any but the newest (`versionEdits.ts`). A version's number (`seq`, shown as v7)
+  never changes, so deleting leaves a gap; its children link to its parent instead. Undo
+  puts it back from main's memory, for this session only. The renderer decides when an
+  auto version is taken (`useAutoSnapshot`, template switch, window close, each behind the
+  user's snapshot settings); main writes it and describes what changed
+  (`describeDraftChanges`).
 - `app.*` settings belong to main (`app.activeTemplateId`, `app.apiKeys`), and
   `db.settings` refuses them from the renderer. Boot sends every setting to the renderer,
   so none may hold a secret.

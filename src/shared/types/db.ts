@@ -36,6 +36,8 @@ export type SnapshotOccasion = Extract<VersionSource, 'edit' | 'switched' | 'clo
 export interface VersionMeta {
   id: string;
   templateId: string;
+  /** Its place in the template's history when it was taken: "v7". Deleting others never changes it. */
+  number: number;
   parentId: string | null;
   kind: VersionKind;
   source: VersionSource;
@@ -111,8 +113,16 @@ export interface MosaicDb {
     get(templateId: string): Promise<Draft>;
     /** Refused with `stale-rev` when `rev` is older than the stored one. */
     save(templateId: string, doc: ResumeData, rev: number): Promise<void>;
-    /** Replaces the draft, keeping unsaved edits as a "Before importing …" version. */
-    importInto(templateId: string, doc: ResumeData, from: string): Promise<Draft>;
+    /**
+     * Replaces the draft. When `isRecorded`, unsaved edits are kept as a "Before importing …"
+     * version and the import gets a row of its own.
+     */
+    importInto(
+      templateId: string,
+      doc: ResumeData,
+      from: string,
+      isRecorded: boolean
+    ): Promise<Draft>;
   };
   versions: {
     /** Newest first, without documents. */
@@ -125,10 +135,20 @@ export interface MosaicDb {
     /**
      * Puts a version back as its template's draft. Template-scoped: the version must be
      * one of that template's own, so each template's history stays self-contained.
+     * `shouldKeepDraft` keeps unsaved edits as a "Before restoring …" version first.
      */
-    restore(templateId: string, versionId: string): Promise<Draft>;
+    restore(templateId: string, versionId: string, shouldKeepDraft: boolean): Promise<Draft>;
     /** A new template from this version; the version says which template it came from. */
     duplicate(versionId: string): Promise<TemplateSummary>;
+    /** Names any version, which keeps it for good; a named one is renamed. */
+    rename(versionId: string, name: string): Promise<VersionMeta>;
+    /**
+     * Deletes a version, never the newest: the draft is measured from it. Its children
+     * link to its parent instead. Refused with `invalid-argument` for the newest.
+     */
+    remove(versionId: string): Promise<void>;
+    /** Undoes a `remove` made since the app started. `not-found` once it can't be. */
+    putBack(versionId: string): Promise<VersionMeta>;
   };
   settings: {
     set(key: string, value: string): Promise<void>;

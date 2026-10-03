@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import type { VersionMeta, VersionSource } from '@shared/types/db';
 import {
+  countFoldedByMonth,
   describeRunSections,
+  findFoldCutoff,
   formatTimeInDay,
   groupVersionHistory,
   listHistoryMonths,
@@ -22,6 +24,7 @@ function version(
   return {
     id: `v${seq}`,
     templateId: 't',
+    number: seq,
     parentId: null,
     kind,
     source,
@@ -32,13 +35,15 @@ function version(
   };
 }
 
-/** Each group as its label, and each item as a version id or [ids of a run]. */
+/** Each group as its label, and each item as a version id, [ids of a run] or {fold: ids}. */
 function shape(groups: HistoryGroup[]) {
   return groups.map((group) => [
     group.label,
-    group.items.map((item) =>
-      item.kind === 'run' ? item.versions.map((version) => version.id) : item.version.id
-    ),
+    group.items.map((item) => {
+      if (item.kind === 'version') return item.version.id;
+      const ids = item.versions.map((version) => version.id);
+      return item.kind === 'run' ? ids : { fold: ids };
+    }),
   ]);
 }
 
@@ -101,6 +106,48 @@ describe('groupVersionHistory', () => {
       [1, true],
     ]);
     expect(groups[0].isToday).toBe(false);
+  });
+
+  it('past the fold age, goes by month and folds automatic snapshots between named ones', () => {
+    seq = 0;
+    const july = (day: number) => new Date(2026, 6, day, 10).getTime();
+    const versions = newestFirst([
+      version(july(2), 'create'),
+      version(july(3)),
+      version(july(4), 'closed'),
+      version(july(5), 'name', 'named'),
+      version(july(6)),
+      version(july(7), 'import'),
+      version(july(8), 'name', 'named'),
+      // A lone one stays a row: a fold of one says less in the same height.
+      version(july(9)),
+      version(at(21, 9)),
+    ]);
+    const groups = groupVersionHistory(versions, {
+      now: NOW,
+      foldBefore: findFoldCutoff(30, NOW),
+    });
+    expect(shape(groups)).toEqual([
+      ['Yesterday', ['v9']],
+      ['Jul 2026', ['v8', 'v7', { fold: ['v6', 'v5'] }, 'v4', { fold: ['v3', 'v2', 'v1'] }]],
+    ]);
+    expect(groups.map((g) => g.isPastFold)).toEqual([false, true]);
+    expect(countFoldedByMonth(groups)).toEqual(new Map([['Jul 2026', 5]]));
+  });
+
+  it('folds nothing when filtered, or when folding is off', () => {
+    seq = 0;
+    const versions = newestFirst([1, 2, 3].map((day) => version(new Date(2026, 6, day).getTime())));
+    const foldBefore = findFoldCutoff(30, NOW);
+    const isFolded = (groups: HistoryGroup[]) =>
+      groups.some((group) => group.items.some((item) => item.kind === 'fold'));
+    expect(isFolded(groupVersionHistory(versions, { now: NOW, byMonth: true, foldBefore }))).toBe(
+      false
+    );
+    expect(
+      isFolded(groupVersionHistory(versions, { now: NOW, foldBefore: findFoldCutoff(null) }))
+    ).toBe(false);
+    expect(isFolded(groupVersionHistory(versions, { now: NOW, foldBefore }))).toBe(true);
   });
 });
 

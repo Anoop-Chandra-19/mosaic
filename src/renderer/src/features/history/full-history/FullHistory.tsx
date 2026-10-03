@@ -24,6 +24,7 @@ import { VersionList, type HistoryReveal } from '../version-list/VersionList';
 import { useTemplateVersions, versionLabel } from '../useTemplateVersions';
 import { HistoryIndex } from './HistoryIndex';
 import { HistoryReadPane, LEGIBLE_PAGE_SCALE } from './HistoryReadPane';
+import { SnapshotSettingsPopover } from './SnapshotSettingsPopover';
 import {
   chooseOpeningVersion,
   prepareHistoryOpening,
@@ -121,6 +122,7 @@ function FullHistoryFrame({
     () => window.innerWidth >= INDEX_OPEN_MIN_WINDOW_PX
   );
   const [selectedId, setSelectedId] = useState(versionId ?? null);
+  const [isSnapshotsOpen, setIsSnapshotsOpen] = useState(false);
   const [reveal, setReveal] = useState<HistoryReveal | null>(versionId ? { versionId } : null);
   const rootRef = useRef<HTMLDivElement>(null);
 
@@ -151,8 +153,12 @@ function FullHistoryFrame({
   const onClose = () => closeSurface('history');
 
   const readId = selectedId ?? (versions && chooseOpeningVersion(versions, versionId));
-  const selected = versions?.find((version) => version.id === readId) ?? versions?.[0];
+  // A deleted selection moves to the version that took its place in the list, not the newest.
+  const [lastIndex, setLastIndex] = useState(0);
+  const found = versions?.find((version) => version.id === readId);
+  const selected = found ?? versions?.[Math.min(lastIndex, versions.length - 1)];
   const selectedIndex = selected && versions ? versions.indexOf(selected) : -1;
+  if (found && selectedIndex !== lastIndex) setLastIndex(selectedIndex);
   const parent = (selectedIndex >= 0 && versions?.[selectedIndex + 1]) || null;
   // The documents of the version being read and the one before it: the pair the view
   // opened on, then each read before its step lands, so the page and what changed in it
@@ -178,8 +184,6 @@ function FullHistoryFrame({
       isCurrent = false;
     };
   }, [selected, versions, isPairRead]);
-  const labelOf = (version: VersionMeta) =>
-    versions ? versionLabel(versions, versions.indexOf(version)) : '';
   // A step through time: the page slides the way the history runs, older to the left. The
   // version is read first, so the slide lands on its page rather than an empty pane. Only
   // the latest step lands: reads can finish out of order, and a slower one must not win.
@@ -284,6 +288,7 @@ function FullHistoryFrame({
             Show all details
           </label>
         </AppTooltip>
+        <SnapshotSettingsPopover isOpen={isSnapshotsOpen} onOpenChange={setIsSnapshotsOpen} />
         <AppButton
           variant="ghost"
           size="sm"
@@ -315,7 +320,6 @@ function FullHistoryFrame({
           <HistoryIndex
             versions={versions}
             selectedId={selected?.id ?? null}
-            labelOf={labelOf}
             onGoTo={goTo}
             shouldShowMonths={isDetailed}
           />
@@ -337,6 +341,7 @@ function FullHistoryFrame({
                 onPreview={select}
                 onRestore={(version) => void restore(version)}
                 onDuplicate={(version) => void duplicate(version)}
+                onChangeFolding={() => setIsSnapshotsOpen(true)}
               />
             ) : (
               <p className="mt-3 text-xs text-ink-faint">Loading history…</p>
@@ -347,9 +352,9 @@ function FullHistoryFrame({
           <HistoryReadPane
             templateId={template.id}
             version={selected}
-            label={labelOf(selected)}
+            label={versionLabel(selected)}
             parent={parent}
-            parentLabel={parent ? labelOf(parent) : ''}
+            parentLabel={parent ? versionLabel(parent) : ''}
             isHead={selected.id === versions[0].id}
             comparison={openedComparison ?? storedComparison}
             onComparisonChange={pickComparison}

@@ -16,6 +16,7 @@ import { readDraft, saveDraft } from '../db/drafts';
 import { readBootState } from '../db/readBootState';
 import { MAIN_SETTINGS_PREFIX, removeSetting, setSetting } from '../db/settings';
 import { StorageError } from '../db/storageError';
+import { putBackVersion, removeVersion, renameVersion } from '../db/versionEdits';
 import {
   createTemplate,
   duplicateTemplate,
@@ -61,6 +62,11 @@ function optionalText(value: unknown, what: string): string | undefined {
 
 function resume(value: unknown): ResumeData {
   if (!isResumeData(value)) throw new InvalidArgumentError('doc is not a resume');
+  return value;
+}
+
+function yesOrNo(value: unknown, what: string): boolean {
+  if (typeof value !== 'boolean') throw new InvalidArgumentError(`${what} must be true or false`);
   return value;
 }
 
@@ -143,8 +149,14 @@ export function createDbHandlers(db: Database): Handlers<MosaicDb> {
       get: (templateId) => readDraft(db, text(templateId, 'templateId')),
       save: (templateId, doc, rev) =>
         saveDraft(db, text(templateId, 'templateId'), resume(doc), revision(rev)),
-      importInto: (templateId, doc, from) =>
-        importIntoDraft(db, text(templateId, 'templateId'), resume(doc), text(from, 'from')),
+      importInto: (templateId, doc, from, isRecorded) =>
+        importIntoDraft(
+          db,
+          text(templateId, 'templateId'),
+          resume(doc),
+          text(from, 'from'),
+          yesOrNo(isRecorded, 'isRecorded')
+        ),
     },
     versions: {
       list: (templateId) => listVersions(db, text(templateId, 'templateId')),
@@ -152,9 +164,18 @@ export function createDbHandlers(db: Database): Handlers<MosaicDb> {
       name: (templateId, name) => nameDraft(db, text(templateId, 'templateId'), text(name, 'name')),
       snapshot: (templateId, occasion) =>
         snapshotEditedDraft(db, text(templateId, 'templateId'), snapshotOccasion(occasion)),
-      restore: (templateId, versionId) =>
-        restoreVersion(db, text(templateId, 'templateId'), text(versionId, 'versionId')),
+      restore: (templateId, versionId, shouldKeepDraft) =>
+        restoreVersion(
+          db,
+          text(templateId, 'templateId'),
+          text(versionId, 'versionId'),
+          yesOrNo(shouldKeepDraft, 'shouldKeepDraft')
+        ),
       duplicate: (versionId) => duplicateVersion(db, text(versionId, 'versionId')),
+      rename: (versionId, name) =>
+        renameVersion(db, text(versionId, 'versionId'), text(name, 'name')),
+      remove: (versionId) => removeVersion(db, text(versionId, 'versionId')),
+      putBack: (versionId) => putBackVersion(db, text(versionId, 'versionId')),
     },
     settings: {
       set: (key, value) => setSetting(db, rendererSettingKey(key), settingValue(value)),

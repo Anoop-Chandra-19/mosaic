@@ -6,15 +6,23 @@ export const SESSION_GAP_MS = 45 * MINUTE;
 /** Fewer rows than this and collapsing a run hides more than it saves. */
 export const SESSION_MIN_ROWS = 4;
 
+/** Fewer rows than this past the fold age stay plain: a fold would be as tall and say less. */
+export const FOLD_MIN_ROWS = 2;
+
 export type HistoryItem =
   | { kind: 'version'; version: VersionMeta }
-  | { kind: 'run'; versions: VersionMeta[] };
+  /** Plain editing held as one row. */
+  | { kind: 'run'; versions: VersionMeta[] }
+  /** Automatic snapshots past the fold age, between two named versions. */
+  | { kind: 'fold'; versions: VersionMeta[] };
 
 export interface HistoryGroup {
   /** The day's (or month's) first moment. */
   key: number;
   label: string;
   isToday: boolean;
+  /** Past the fold age: a month whose automatic snapshots fold. */
+  isPastFold: boolean;
   count: number;
   items: HistoryItem[];
 }
@@ -99,48 +107,102 @@ export function describeRunSections(versions: VersionMeta[]): string {
   return top.length === 0 ? 'across the document' : `mostly ${top.join(' and ')}`;
 }
 
+/** The moment before which automatic snapshots fold: the start of the day `days` ago. */
+export function findFoldCutoff(days: number | null, now: number = Date.now()): number {
+  return days === null ? -Infinity : startOfDay(now) - days * 24 * 60 * MINUTE;
+}
+
+interface GroupOptions {
+  now?: number;
+  /** A filtered list: by month, and nothing held or folded, so no match is hidden. */
+  byMonth?: boolean;
+  /** Automatic snapshots taken before this fold, by month (`findFoldCutoff`). */
+  foldBefore?: number;
+}
+
+function startGroup(at: number, isMonth: boolean, isPastFold: boolean, now: number): HistoryGroup {
+  const key = isMonth ? startOfMonth(at) : startOfDay(at);
+  return {
+    key,
+    label: isMonth ? formatHistoryMonth(at) : formatHistoryDay(at, now),
+    isToday: !isMonth && key === startOfDay(now),
+    isPastFold,
+    count: 0,
+    items: [],
+  };
+}
+
+/** Where a version goes in its group: into the run or fold before it, or a row of its own. */
+function placeVersion(group: HistoryGroup, version: VersionMeta, isFiltered: boolean): void {
+  const last = group.items.at(-1);
+  if (group.isPastFold && version.kind === 'auto') {
+    if (last?.kind === 'fold') last.versions.push(version);
+    else group.items.push({ kind: 'fold', versions: [version] });
+  } else if (isFiltered || group.isPastFold || !isPlainEdit(version)) {
+    group.items.push({ kind: 'version', version });
+  } else if (
+    last?.kind === 'run' &&
+    last.versions.at(-1)!.createdAt - version.createdAt < SESSION_GAP_MS
+  ) {
+    last.versions.push(version);
+  } else {
+    group.items.push({ kind: 'run', versions: [version] });
+  }
+}
+
+const MIN_HELD_ROWS: Record<'run' | 'fold', number> = {
+  run: SESSION_MIN_ROWS,
+  fold: FOLD_MIN_ROWS,
+};
+
+/** Runs and folds too short to be worth holding go back to plain rows. */
+function unholdShortItems(items: HistoryItem[]): HistoryItem[] {
+  return items.flatMap((item) =>
+    item.kind !== 'version' && item.versions.length < MIN_HELD_ROWS[item.kind]
+      ? item.versions.map((version): HistoryItem => ({ kind: 'version', version }))
+      : [item]
+  );
+}
+
 /**
  * The history, newest first, as days, and inside a day the runs of plain editing that can
- * be held as one row. A filtered list is sparse, so `byMonth` groups by month and holds no
- * runs: one row under each date header would read as a header per row.
+ * be held as one row. Past the fold age it goes by month, and the automatic snapshots
+ * between two named versions fold into one row; nothing is deleted. A filtered list is
+ * sparse, so `byMonth` groups by month and holds nothing: one row under each date header
+ * would read as a header per row.
  */
 export function groupVersionHistory(
   versions: VersionMeta[],
-  { now = Date.now(), byMonth = false }: { now?: number; byMonth?: boolean } = {}
+  { now = Date.now(), byMonth = false, foldBefore = -Infinity }: GroupOptions = {}
 ): HistoryGroup[] {
   const groups: HistoryGroup[] = [];
   for (const version of versions) {
     const at = version.createdAt;
-    const key = byMonth ? startOfMonth(at) : startOfDay(at);
+    const isPastFold = !byMonth && at < foldBefore;
+    const isMonth = byMonth || isPastFold;
+    const key = isMonth ? startOfMonth(at) : startOfDay(at);
     let group = groups.at(-1);
-    if (!group || group.key !== key) {
-      group = {
-        key,
-        label: byMonth ? formatHistoryMonth(at) : formatHistoryDay(at, now),
-        isToday: !byMonth && key === startOfDay(now),
-        count: 0,
-        items: [],
-      };
+    if (!group || group.key !== key || group.isPastFold !== isPastFold) {
+      group = startGroup(at, isMonth, isPastFold, now);
       groups.push(group);
     }
     group.count += 1;
+    placeVersion(group, version, byMonth);
+  }
 
-    const last = group.items.at(-1);
-    if (byMonth || !isPlainEdit(version)) {
-      group.items.push({ kind: 'version', version });
-    } else if (last?.kind === 'run' && last.versions.at(-1)!.createdAt - at < SESSION_GAP_MS) {
-      last.versions.push(version);
-    } else {
-      group.items.push({ kind: 'run', versions: [version] });
+  for (const group of groups) group.items = unholdShortItems(group.items);
+  return groups;
+}
+
+/** How many versions sit inside a fold, by month label. Lone rows past the age don't. */
+export function countFoldedByMonth(groups: HistoryGroup[]): Map<string, number> {
+  const folded = new Map<string, number>();
+  for (const group of groups) {
+    for (const item of group.items) {
+      if (item.kind === 'fold') {
+        folded.set(group.label, (folded.get(group.label) ?? 0) + item.versions.length);
+      }
     }
   }
-
-  for (const group of groups) {
-    group.items = group.items.flatMap((item) =>
-      item.kind === 'run' && item.versions.length < SESSION_MIN_ROWS
-        ? item.versions.map((version): HistoryItem => ({ kind: 'version', version }))
-        : [item]
-    );
-  }
-  return groups;
+  return folded;
 }

@@ -1,5 +1,8 @@
 import { useLayoutEffect, useRef, useState } from 'react';
+import { AppButton } from '@/components/AppButton';
 import { cn } from '@/lib/utils';
+import { useOverlayStore } from '@/stores/overlayStore';
+import { useUiStore } from '@/stores/uiStore';
 import type { VersionMeta } from '@shared/types/db';
 import type { HistoryFilter } from '@/types/history';
 import { chooseVisibleVersions } from './chooseVisibleVersions';
@@ -9,10 +12,17 @@ import {
   listHistorySections,
   NO_HISTORY_FILTER,
 } from '../filterVersionHistory';
-import { formatHistoryMonth, formatTimeInDay, groupVersionHistory } from '../groupVersionHistory';
+import {
+  findFoldCutoff,
+  formatHistoryMonth,
+  formatTimeInDay,
+  groupVersionHistory,
+  type HistoryGroup,
+} from '../groupVersionHistory';
 import { versionLabel } from '../useTemplateVersions';
 import { HistoryFilterBar, type HistoryMonth } from './HistoryFilterBar';
 import { HistoryCount, HistoryHandoff, HistoryRangeEdge } from './HistoryListEdges';
+import { useVersionEdits } from './useVersionEdits';
 import {
   clampVisibleRange,
   NEWEST_RANGE,
@@ -47,12 +57,26 @@ interface VersionListProps extends VersionRowActions {
   onSelect?: (version: VersionMeta) => void;
   /** Tells the opener which filter is on, so the full view can start from it. */
   onOpenFullHistory?: (filter: HistoryFilter) => void;
+  /** The fold note's "change". Without it, Settings opens on History. */
+  onChangeFolding?: () => void;
 }
 
 /** A template's history until the count line is worth its row. */
 const SHORT_HISTORY = 8;
 /** A list this long has scrolled far enough that its end is worth saying. */
 const END_LINE_ROWS = 60;
+
+/** The run or fold holding a version, by the key it opens under: its oldest version's id. */
+function findHolderKey(groups: HistoryGroup[], versionId: string): string | null {
+  for (const group of groups) {
+    for (const item of group.items) {
+      if (item.kind !== 'version' && item.versions.some((version) => version.id === versionId)) {
+        return item.versions.at(-1)!.id;
+      }
+    }
+  }
+  return null;
+}
 
 /**
  * One history, two layers: auto versions Mosaic takes on its own (import, restore) sit
@@ -66,6 +90,7 @@ export function VersionList({
   reveal = null,
   onSelect,
   onOpenFullHistory,
+  onChangeFolding,
   ...rowProps
 }: VersionListProps) {
   const [filter, setFilterOnly] = useState(initialFilter);
@@ -74,7 +99,11 @@ export function VersionList({
   const [openRuns, setOpenRuns] = useState<ReadonlySet<string>>(new Set());
   const [range, setRange] = useState(NEWEST_RANGE);
   const [handledReveal, setHandledReveal] = useState<HistoryReveal | null>(null);
+  const [openedForReveal, setOpenedForReveal] = useState<HistoryReveal | null>(null);
   const rootRef = useRef<HTMLDivElement>(null);
+  const foldDays = useUiStore((s) => s.foldSnapshotsAfterDays);
+  const openSettings = useOverlayStore((s) => s.openSettings);
+  const edits = useVersionEdits();
 
   // A different filter is a different list, so the range starts again at its newest.
   const setFilter = (next: HistoryFilter) => {
@@ -109,7 +138,18 @@ export function VersionList({
       }
     : chooseVisibleVersions(matched, { total: versions.length, isFiltering, isCompact });
   const newerCount = isWide ? clampedRange.from : 0;
-  const groups = groupVersionHistory(shown, { byMonth: isFiltering && !isWide });
+  // A match is never hidden in a fold, so a filtered list folds nothing.
+  const groups = groupVersionHistory(shown, {
+    byMonth: isFiltering && !isWide,
+    foldBefore: isFiltering ? -Infinity : findFoldCutoff(foldDays),
+  });
+
+  // A version asked for that sits in a run or a fold opens it, so the row itself shows.
+  if (reveal !== openedForReveal) {
+    setOpenedForReveal(reveal);
+    const holder = reveal && findHolderKey(groups, reveal.versionId);
+    if (holder && !openRuns.has(holder)) setOpenRuns(new Set(openRuns).add(holder));
+  }
 
   // Scroll once the revealed version is really in the tree. One held in a run scrolls to
   // the run.
@@ -123,8 +163,6 @@ export function VersionList({
   }, [reveal]);
   const isLong = versions.length > SHORT_HISTORY;
   const hasFilterBar = isLong && !isCompact;
-  const positions = new Map(versions.map((version, index) => [version.id, index]));
-  const labelOf = (version: VersionMeta) => versionLabel(versions, positions.get(version.id)!);
 
   const months: HistoryMonth[] = [];
   for (const group of groups) {
@@ -149,12 +187,18 @@ export function VersionList({
       isHead={version.id === versions[0].id}
       isNested={isNested}
       isWide={isWide}
-      label={labelOf(version)}
+      label={versionLabel(version)}
       time={formatTimeInDay(version.createdAt)}
+      mode={edits.modeOf(version)}
+      isJustNamed={edits.justNamedId === version.id}
+      onModeChange={(mode) => edits.setMode(version, mode)}
+      onName={edits.name}
+      onDelete={edits.remove}
       onSelect={onSelect}
       {...rowProps}
     />
   );
+  const foldNoteIndex = groups.findIndex((group) => group.isPastFold);
   const jumpToNewest = () => {
     setRange(NEWEST_RANGE);
     // The newest rows may only now be rendering, so the scroll waits for them.
@@ -198,13 +242,31 @@ export function VersionList({
             className="absolute top-2 bottom-2.5 left-[0.34rem] w-px bg-zinc-300 dark:bg-zinc-700"
           />
         )}
-        {groups.map((group) => (
+        {groups.map((group, index) => (
           <section
-            key={group.key}
+            key={`${group.isPastFold ? 'month' : 'day'}-${group.key}`}
             data-group={group.key}
             aria-label={group.label}
             className={scrollMargin}
           >
+            {index === foldNoteIndex && (
+              <p
+                role="note"
+                className="mt-4 ml-5.5 flex flex-wrap items-baseline gap-x-2 border-t border-dashed border-line-strong pt-1.75 text-[0.725rem] leading-[1.4] text-pretty text-ink-muted"
+              >
+                <span>
+                  Older than {foldDays} days: automatic snapshots fold by month. Nothing is deleted.
+                </span>
+                <AppButton
+                  variant="link"
+                  shape="text"
+                  onClick={onChangeFolding ?? (() => openSettings('history'))}
+                  className="h-auto p-0 font-mono text-[0.7rem] text-ink-muted underline underline-offset-2 hover:text-amber-600 dark:hover:text-amber-400"
+                >
+                  change
+                </AppButton>
+              </p>
+            )}
             <h4
               className={cn(
                 'sticky z-3 flex items-center gap-2 bg-white pt-2.75 pb-1.25 pl-5.5 text-[0.65625rem] font-semibold tracking-[0.08em] uppercase dark:bg-zinc-950',
@@ -225,8 +287,8 @@ export function VersionList({
                 return (
                   <RunRow
                     key={key}
+                    kind={item.kind}
                     run={item.versions}
-                    labelOf={labelOf}
                     isOpen={openRuns.has(key)}
                     onToggle={() => toggleRun(key)}
                   >

@@ -100,6 +100,12 @@ describe('db handlers', () => {
       ['drafts.save', 'id', doc, '2'],
       ['versions.snapshot', 'id'],
       ['versions.snapshot', 'id', 'quit'],
+      ['versions.restore', 'id', 'v1'],
+      ['versions.restore', 'id', 'v1', 'yes'],
+      ['drafts.importInto', 'id', doc, 'pasted text'],
+      ['versions.rename', 'v1', ''],
+      ['versions.remove', 7],
+      ['versions.putBack', null],
       ['settings.set', 'ui', { darkMode: true }],
       // `app.` settings are main's own: where keys live, the template to reopen.
       ['settings.set', 'app.apiKeys', '{"location":"session","keychain":[]}'],

@@ -32,17 +32,20 @@ function exportTemplate(db: Database, id: string, docs: Map<string, ResumeData>)
     draft: readDraft(db, id).doc,
     versions: listVersions(db, id)
       .reverse()
-      .map(({ id: versionId, parentId, kind, source, summary, section, rev, createdAt }) => ({
-        id: versionId,
-        parentId,
-        kind,
-        source,
-        summary,
-        section,
-        rev,
-        createdAt: iso(createdAt),
-        doc: docOf(versionId),
-      })),
+      .map(
+        ({ id: versionId, number, parentId, kind, source, summary, section, rev, createdAt }) => ({
+          id: versionId,
+          number,
+          parentId,
+          kind,
+          source,
+          summary,
+          section,
+          rev,
+          createdAt: iso(createdAt),
+          doc: docOf(versionId),
+        })
+      ),
   };
 }
 
@@ -93,6 +96,7 @@ function importTemplate(
     }
     insertVersion(db, {
       id: versionId,
+      number: version.number,
       templateId: id,
       parentId: version.parentId === null ? null : (versionIds.get(version.parentId) ?? null),
       kind: version.kind,

@@ -115,6 +115,7 @@ function parseVersions(
   }
 
   const earlier = new Set<string>();
+  let previousNumber = 0;
   return value.map((raw: unknown, index) => {
     const what = `version ${index + 1} of "${templateName}"`;
     if (!isRecord(raw)) throw new BundleError('invalid-templates', `${what} is malformed`);
@@ -130,8 +131,14 @@ function parseVersions(
       throw new BundleError('invalid-templates', `${what} has an unknown source`);
     }
 
+    if (!Number.isSafeInteger(raw.number) || (raw.number as number) <= previousNumber) {
+      throw new BundleError('invalid-templates', `${what}'s number doesn't follow the one before`);
+    }
+    previousNumber = raw.number as number;
+
     const version: BundleVersion = {
       id,
+      number: previousNumber,
       // A parent outside this template, or not yet seen, cannot be linked on import.
       parentId: typeof raw.parentId === 'string' && earlier.has(raw.parentId) ? raw.parentId : null,
       kind: raw.kind as VersionKind,
