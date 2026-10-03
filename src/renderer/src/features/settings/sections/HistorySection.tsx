@@ -1,9 +1,4 @@
-import {
-  FOLD_NOTE,
-  FOLD_OPTIONS,
-  SNAPSHOT_TRIGGER_OPTIONS,
-  SNAPSHOTS_INTRO,
-} from '@/features/history/snapshotSettings';
+import { FOLD_OPTIONS, SNAPSHOT_TRIGGER_OPTIONS } from '@/features/history/snapshotSettings';
 import {
   Select,
   SelectContent,
@@ -27,9 +22,6 @@ export function HistorySection() {
   return (
     <>
       <h3 className={HEADING}>Automatic snapshots</h3>
-      <p className="pb-1 text-xs leading-relaxed text-zinc-600 dark:text-zinc-400">
-        {SNAPSHOTS_INTRO}
-      </p>
       {SNAPSHOT_TRIGGER_OPTIONS.map(({ trigger, label, description }) => (
         <SettingRow key={trigger} label={label} description={description}>
           <Switch
@@ -39,7 +31,22 @@ export function HistorySection() {
           />
         </SettingRow>
       ))}
-      <SettingRow label="Fold old automatic snapshots" description={FOLD_NOTE}>
+      <h3 className={HEADING}>Full history</h3>
+      <SettingRow
+        label="Always show all details"
+        description="Adds the months index, per-row change counts, and line numbers in Changes only. Off, counts read in words."
+      >
+        <Switch
+          checked={isDetailed}
+          onCheckedChange={setIsDetailed}
+          aria-label="Always show all details"
+        />
+      </SettingRow>
+      <h3 className={HEADING}>Keeping</h3>
+      <SettingRow
+        label="Fold old automatic snapshots"
+        description="Folded rows stay in the list as one expandable row. Nothing is deleted. Named versions never fold."
+      >
         <Select
           value={String(foldDays)}
           onValueChange={(value) =>
@@ -57,17 +64,6 @@ export function HistorySection() {
             ))}
           </SelectContent>
         </Select>
-      </SettingRow>
-      <h3 className={HEADING}>Full history</h3>
-      <SettingRow
-        label="Always show all details"
-        description="Adds the months index, symbol counts, and line numbers in Changes only. Off, counts read in words."
-      >
-        <Switch
-          checked={isDetailed}
-          onCheckedChange={setIsDetailed}
-          aria-label="Always show all details"
-        />
       </SettingRow>
     </>
   );

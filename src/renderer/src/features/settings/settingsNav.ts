@@ -52,7 +52,7 @@ export const SETTINGS_GROUPS: SettingsGroup[] = [
         id: 'history',
         label: 'History',
         description:
-          'Your draft is written to disk as you type, always, with nothing to turn on. History is separate: the versions you name, plus snapshots kept at moments like an import or a restore.',
+          'Your draft is written to disk as you type, always, with nothing to turn on. History is separate: the versions you name, plus automatic snapshots at the moments below. Every row can be named or deleted.',
         icon: Clock,
       },
       {

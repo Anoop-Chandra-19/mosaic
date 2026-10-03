@@ -1,5 +1,7 @@
 import { Save } from 'lucide-react';
+import { ChangeCounts } from '@/features/document-diff/ChangeCounts';
 import { cn } from '@/lib/utils';
+import type { ChangeTone } from '@shared/resume/changes/resumeChange';
 import type { VersionMeta, VersionSource } from '@shared/types/db';
 import { useVersionPreviewComparison } from '../useVersionPreviewComparison';
 import { VersionActions } from './VersionActions';
@@ -60,6 +62,8 @@ interface VersionRowProps extends VersionRowActions {
   mode: VersionRowMode | null;
   /** Named a moment ago: it washes amber once. */
   isJustNamed: boolean;
+  /** The full view's selected row, with all details on: what it changed from the one before. */
+  counts?: Record<ChangeTone, number> | null;
   onModeChange: (mode: VersionRowMode | null) => void;
   onName: (version: VersionMeta, name: string) => void;
   onDelete: (version: VersionMeta) => void;
@@ -75,6 +79,7 @@ export function VersionRow({
   time,
   mode,
   isJustNamed,
+  counts,
   onModeChange,
   onName,
   onDelete,
@@ -109,7 +114,10 @@ export function VersionRow({
         isNested
           ? 'py-0.75 before:absolute before:top-2.75 before:-left-3 before:h-px before:w-1.75 before:bg-line'
           : 'py-1.25',
-        isPreviewing && 'bg-amber-soft ring-4 ring-amber-soft hover:bg-amber-soft',
+        isPreviewing &&
+          (isWide
+            ? 'bg-amber-soft shadow-[inset_0_0_0_1px_var(--amber-line)] hover:bg-amber-soft'
+            : 'bg-amber-soft ring-4 ring-amber-soft hover:bg-amber-soft'),
         isConfirming &&
           'bg-del-soft pr-1.5 shadow-[inset_0_0_0_1px_var(--del-line)] hover:bg-del-soft',
         isJustNamed && 'animate-named-wash motion-reduce:animate-none'
@@ -193,6 +201,7 @@ export function VersionRow({
                 <span className="text-amber-600 dark:text-amber-400">newest</span>
               )}
               {!mode && isPreviewing && !isWide && <PreviewDistance />}
+              {!mode && counts && <ChangeCounts counts={counts} />}
             </p>
           </div>
           {!mode && (

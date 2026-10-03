@@ -264,7 +264,7 @@ export function ResumePreview({
                 pageCount={meta.totalPages}
                 pageCountIsPartial={meta.hasMorePages}
               >
-                {pageIndex === 0 && <PreviewHeader contact={contact} />}
+                {pageIndex === 0 && <PreviewHeader contact={contact} marks={marks} />}
                 {pageSections.map((section) => (
                   <PreviewSection
                     key={`${section.id}-${pageIndex}`}
@@ -296,8 +296,8 @@ export function ResumePreview({
           className="flow-root [font-kerning:none]"
           style={{ width: `${pageContentSize.width}px` }}
         >
-          <PreviewHeader contact={contact} />
           {/* Marked as on the page, since a struck word takes room. */}
+          <PreviewHeader contact={contact} marks={marks} />
           {activeSections.map((section) => (
             <PreviewSection key={`measure-${section.id}`} section={section} marks={marks} />
           ))}

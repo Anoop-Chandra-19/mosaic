@@ -4,10 +4,19 @@ import { diffResumes } from '@shared/resume/changes/diffResumes';
 import type { ResumeData } from '@shared/types/resume';
 import { collectPageMarks, findMarks, putGoneBack } from '../pageMarks';
 
+/** The default resume with every header item printing its kind's name. */
+function createFilledResume(): ResumeData {
+  const resume = createDefaultResume();
+  for (const line of resume.contact.header.lines) {
+    for (const item of line.items) item.text = item.kind;
+  }
+  return resume;
+}
+
 /** The draft is the default resume; the version read is it, edited. */
 function readVersion(edit: (resume: ResumeData) => void) {
-  const draft = createDefaultResume();
-  const version = createDefaultResume();
+  const draft = createFilledResume();
+  const version = createFilledResume();
   edit(version);
   const { all } = diffResumes(draft, version);
   return { page: putGoneBack(version, draft, all), marks: collectPageMarks(all, 'your draft') };
@@ -51,6 +60,30 @@ describe('putGoneBack', () => {
       ['sec-experience', false],
       ['sec-projects', false],
     ]);
+  });
+
+  it('puts a header item only the draft has back where it stood in its line', () => {
+    const draftItems = createFilledResume().contact.header.lines[0].items;
+    const { page, marks } = readVersion((version) => {
+      version.contact.header.lines[0].items.splice(1, 1);
+    });
+    expect(page.contact.header.lines[0].items.map((item) => item.id)).toEqual(
+      draftItems.map((item) => item.id)
+    );
+    expect(findMarks(marks, 'item', draftItems[1].id).map((change) => change.kind)).toEqual([
+      'remove',
+    ]);
+  });
+
+  it('shows a header item left off the page, and marks the name by its words', () => {
+    const { page, marks } = readVersion((version) => {
+      version.contact.header.lines[0].items[0].shown = false;
+      version.contact.name = 'Ada Lovelace';
+    });
+    const item = page.contact.header.lines[0].items[0];
+    expect(item.shown).toBe(true);
+    expect(findMarks(marks, 'item', item.id).map((change) => change.kind)).toEqual(['hide']);
+    expect(findMarks(marks, 'name', '')[0]).toMatchObject({ kind: 'edit', after: 'Ada Lovelace' });
   });
 
   it('puts back a removed section between the ones around it', () => {

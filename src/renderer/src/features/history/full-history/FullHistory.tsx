@@ -23,6 +23,7 @@ import { cn } from '@/lib/utils';
 import { attempt, showToast, useOverlayStore } from '@/stores/overlayStore';
 import { useTemplateStore } from '@/stores/templateStore';
 import { useUiStore } from '@/stores/uiStore';
+import { countChangesByTone } from '@shared/resume/changes/resumeChange';
 import type { TemplateSummary, Version, VersionMeta } from '@shared/types/db';
 import type { HistoryComparison, HistoryFilter } from '@/types/history';
 import { VersionList, type HistoryReveal } from '../version-list/VersionList';
@@ -30,6 +31,7 @@ import { useTemplateVersions, versionLabel } from '../useTemplateVersions';
 import { HistoryIndex } from './HistoryIndex';
 import { HistoryReadPane, LEGIBLE_PAGE_SCALE } from './HistoryReadPane';
 import { SnapshotSettingsPopover } from './SnapshotSettingsPopover';
+import { useVersionComparison } from './useVersionComparison';
 import {
   chooseOpeningVersion,
   prepareHistoryOpening,
@@ -173,6 +175,15 @@ function FullHistoryFrame({
   );
   const latestStep = useRef(0);
   const shownId = useRef(selected?.id);
+  // Worked out once, for the read pane and the selected row's counts.
+  const versionComparison = useVersionComparison({
+    templateId: template.id,
+    version: docs.version?.id === selected?.id ? docs.version : null,
+    parent,
+    parentVersion: docs.parent?.id === parent?.id ? docs.parent : null,
+    parentLabel: parent ? versionLabel(parent) : '',
+    comparison: openedComparison ?? storedComparison,
+  });
 
   // When the view couldn't read its first version ahead of opening, or the history list
   // changed under it, read the selected one now.
@@ -354,6 +365,11 @@ function FullHistoryFrame({
                 onRestore={(version) => void restore(version)}
                 onDuplicate={(version) => void duplicate(version)}
                 onChangeFolding={() => setIsSnapshotsOpen(true)}
+                selectedCounts={
+                  isDetailed && !versionComparison.isAgainstDraft && versionComparison.diff
+                    ? countChangesByTone(versionComparison.diff.changes)
+                    : null
+                }
               />
             ) : (
               <p className="mt-3 text-xs text-ink-faint">Loading history…</p>
@@ -362,13 +378,10 @@ function FullHistoryFrame({
         </div>
         {versions && selected && (
           <HistoryReadPane
-            templateId={template.id}
             version={selected}
             label={versionLabel(selected)}
-            parent={parent}
-            parentLabel={parent ? versionLabel(parent) : ''}
             isHead={selected.id === versions[0].id}
-            comparison={openedComparison ?? storedComparison}
+            comparison={versionComparison}
             onComparisonChange={pickComparison}
             maxWidthCss={`calc(100vw - ${indexWidth + LIST_MIN_WIDTH_PX}px)`}
             canWidenToPage={maxReadWidth >= pageNeedsPx}

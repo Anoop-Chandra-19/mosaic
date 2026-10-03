@@ -1,8 +1,11 @@
 import type { ResumeData, ResumeEntry, ResumeSection } from '@shared/types/resume';
 import type { Change, ChangeTarget } from '@shared/resume/changes/resumeChange';
 
-/** Where marks sit on the page: a section's heading, an entry or text line, or a bullet. */
-export type MarkPlace = 'section' | 'entry' | 'bullet';
+/**
+ * Where marks sit on the page: the name, a header item, a section's heading, an entry or
+ * text line, or a bullet.
+ */
+export type MarkPlace = 'name' | 'item' | 'section' | 'entry' | 'bullet';
 
 /** The changes the page marks, by the thing each sits on, and how hover tips name the other side. */
 export interface PageMarks {
@@ -21,6 +24,10 @@ export const LINE_GUTTER: MarkGutter = { barPx: 23, glyphPx: 34 };
 
 function placeKeyOf(target: ChangeTarget): string | null {
   switch (target.type) {
+    case 'name':
+      return 'name:';
+    case 'headerItem':
+      return `item:${target.itemId}`;
     case 'section':
       return `section:${target.sectionId}`;
     case 'entry':
@@ -30,9 +37,6 @@ function placeKeyOf(target: ChangeTarget): string | null {
       return `entry:${target.entryId}`;
     case 'bullet':
       return `bullet:${target.bulletId}`;
-    default:
-      // The name and the header's items are not marked on the page.
-      return null;
   }
 }
 
@@ -128,6 +132,29 @@ function putBulletBack(resume: ResumeData, before: ResumeData, change: Change): 
   else insertAfterEarlierSibling(entry.bullets, beforeEntry.bullets, bullet);
 }
 
+function putHeaderItemBack(resume: ResumeData, before: ResumeData, itemId: string): void {
+  const beforeLines = before.contact.header.lines;
+  const beforeLine = beforeLines.find((line) => line.items.some(({ id }) => id === itemId));
+  const beforeItem = beforeLine?.items.find(({ id }) => id === itemId);
+  if (!beforeLine || !beforeItem) return;
+  const item = { ...beforeItem, shown: true };
+  const lines = resume.contact.header.lines;
+  // Left off, or emptied: it stands where it is, with what the other side printed.
+  for (const line of lines) {
+    const index = line.items.findIndex(({ id }) => id === itemId);
+    if (index >= 0) {
+      line.items.splice(index, 1, item);
+      return;
+    }
+  }
+  let line = lines.find(({ id }) => id === beforeLine.id);
+  if (!line) {
+    line = { ...beforeLine, items: [] };
+    insertAfterEarlierSibling(lines, beforeLines, line);
+  }
+  insertAfterEarlierSibling(line.items, beforeLine.items, item);
+}
+
 /**
  * The page being read, with what only the other side printed put back where it stood, so
  * it can be marked struck through in place. Sections go back before their entries, and
@@ -136,8 +163,9 @@ function putBulletBack(resume: ResumeData, before: ResumeData, change: Change): 
 export function putGoneBack(after: ResumeData, before: ResumeData, changes: readonly Change[]) {
   const resume = structuredClone(after);
   for (const change of changes.filter(isGone)) {
-    const { type, sectionId } = change.target;
-    if (type === 'section' && sectionId) putSectionBack(resume, before, sectionId);
+    const { type, sectionId, itemId } = change.target;
+    if (type === 'headerItem' && itemId) putHeaderItemBack(resume, before, itemId);
+    else if (type === 'section' && sectionId) putSectionBack(resume, before, sectionId);
     else if (type === 'entry' || type === 'summaryLine' || type === 'textLine') {
       putEntryBack(resume, before, change);
     } else if (type === 'bullet') putBulletBack(resume, before, change);

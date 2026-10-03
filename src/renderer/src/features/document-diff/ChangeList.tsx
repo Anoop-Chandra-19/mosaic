@@ -10,12 +10,15 @@
  * other side printed; the preview draws the marks with PageMarkParts. MarkedVersionText is
  * the same marks on the page read as text. revealChangeMark steps to a change's mark.
  *
- * Other modules use ChangeList, UnifiedDiff, pageMarks, MarkedVersionText and
+ * ChangeCounts is the "~2 +1 −1" both the list and a history row show.
+ *
+ * Other modules use ChangeList, ChangeCounts, UnifiedDiff, pageMarks, MarkedVersionText and
  * revealChangeMark; the rest are their steps.
  */
 import type { ReactNode } from 'react';
 import { ChevronDown } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
+import { ChangeCounts } from './ChangeCounts';
 import { cn } from '@/lib/utils';
 import {
   describeChange,
@@ -136,11 +139,7 @@ export function ChangeList({
                 {diff.changes.length === 1 ? '' : 's'}
               </span>
               {isDetailed ? (
-                <span className="inline-flex gap-1.5 font-mono text-[0.6875rem]">
-                  {counts.edit > 0 && <span className="text-ink-soft">~{counts.edit}</span>}
-                  {counts.add > 0 && <span className="text-add">+{counts.add}</span>}
-                  {counts.del > 0 && <span className="text-del">−{counts.del}</span>}
-                </span>
+                <ChangeCounts counts={counts} />
               ) : (
                 <span className="text-xs text-ink-soft">{describeCountsInWords(counts)}</span>
               )}

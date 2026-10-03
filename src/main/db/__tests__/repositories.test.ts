@@ -304,6 +304,17 @@ describe('versions', () => {
     expect(getTemplate(db, id).rev).toBe(0);
   });
 
+  it('restoring an older version the draft already matches changes nothing either', () => {
+    const { id, head: created } = createTemplate(db, 'CV', resumeFor('A'));
+    saveDraft(db, id, resumeFor('B'), 1);
+    nameDraft(db, id, 'B');
+    saveDraft(db, id, resumeFor('A'), 2);
+
+    expect(restoreVersion(db, id, created.id, true)).toEqual(readDraft(db, id));
+    expect(listVersions(db, id)).toHaveLength(2);
+    expect(getTemplate(db, id).rev).toBe(2);
+  });
+
   it('will not restore a version from another template', () => {
     const a = createTemplate(db, 'A', resumeFor('A'));
     const b = createTemplate(db, 'B', resumeFor('B'));
