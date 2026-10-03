@@ -35,7 +35,7 @@ export function PreviewPage({
       >
         <div
           // Word doesn't kern body text, and a kerned line can hold a word Word's can't.
-          className="h-full text-black [font-kerning:none]"
+          className="h-full font-normal tracking-normal text-black [font-kerning:none]"
           data-preview-page-content
           style={{
             paddingTop: `${PAGE_MARGINS_PT.top}px`,

@@ -293,7 +293,7 @@ export function ResumePreview({
         {/* flow-root keeps margins inside, as the page's padding does. */}
         <div
           ref={measureRootRef}
-          className="flow-root [font-kerning:none]"
+          className="flow-root font-normal tracking-normal [font-kerning:none]"
           style={{ width: `${pageContentSize.width}px` }}
         >
           {/* Marked as on the page, since a struck word takes room. */}

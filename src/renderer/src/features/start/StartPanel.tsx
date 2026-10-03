@@ -113,7 +113,7 @@ export function StartPanel({ closable }: StartPanelProps) {
                 type="button"
                 data-start-option
                 onClick={() => void startFromSample()}
-                onPointerEnter={focusOnPointer}
+                onPointerMove={focusOnPointer}
                 className={cn(
                   'flex flex-col items-center gap-2 rounded-lg border border-line-strong bg-zinc-50 p-3 text-xs font-medium text-zinc-700 dark:bg-zinc-900 dark:text-zinc-300',
                   OPTION_HIGHLIGHT
@@ -229,9 +229,17 @@ interface StartRouteProps {
 const OPTION_HIGHLIGHT =
   'transition-colors outline-none focus:border-amber-500 focus:bg-zinc-100 dark:focus:border-amber-600 dark:focus:bg-zinc-800';
 
-/** Pointing at an option focuses it, so the highlight follows the pointer. */
-const focusOnPointer = (event: ReactPointerEvent<HTMLButtonElement>) =>
-  event.currentTarget.focus({ preventScroll: true });
+/**
+ * Moving the pointer over an option focuses it, so the highlight follows the pointer. Only a
+ * real move: the browser also reports one, standing still, when the layout shifts under a
+ * resting pointer, and that must not take the focus the panel opened with.
+ */
+const focusOnPointer = (event: ReactPointerEvent<HTMLButtonElement>) => {
+  const hasMoved = event.movementX !== 0 || event.movementY !== 0;
+  if (hasMoved && document.activeElement !== event.currentTarget) {
+    event.currentTarget.focus({ preventScroll: true });
+  }
+};
 
 /** Up/Down and Left/Right move between a group's options, wrapping; Home and End jump. */
 function moveFocusWithArrows(event: ReactKeyboardEvent<HTMLElement>) {
@@ -255,7 +263,7 @@ function StartRoute({ icon, title, description, hint, autoFocus, onClick }: Star
       type="button"
       data-start-option
       onClick={onClick}
-      onPointerEnter={focusOnPointer}
+      onPointerMove={focusOnPointer}
       autoFocus={autoFocus}
       className={cn(
         'group/route flex w-full items-center gap-3 rounded-lg border border-line-strong bg-zinc-50 p-3 text-left text-zinc-900 dark:bg-zinc-900 dark:text-zinc-100',

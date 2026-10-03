@@ -8,7 +8,12 @@ import type { Plugin } from 'vite';
 const root = import.meta.dirname;
 const rendererRoot = resolve(root, 'src/renderer');
 const sharedAlias = { '@shared': resolve(root, 'src/shared') };
-const rendererAlias = { ...sharedAlias, '@': resolve(rendererRoot, 'src') };
+const rendererAlias = [
+  ...Object.entries(sharedAlias).map(([find, replacement]) => ({ find, replacement })),
+  { find: '@', replacement: resolve(rendererRoot, 'src') },
+  // Every `cn` import, shadcn's included, gets the one that knows the type roles.
+  { find: /^cn$/, replacement: resolve(rendererRoot, 'src/lib/utils.ts') },
+];
 const { version } = JSON.parse(readFileSync(resolve(root, 'package.json'), 'utf8')) as {
   version: string;
 };
