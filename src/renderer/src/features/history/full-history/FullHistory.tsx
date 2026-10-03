@@ -6,13 +6,18 @@ import {
   useEffectEvent,
   useRef,
   useState,
+  ViewTransition,
 } from 'react';
 import { Clock, List, X } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
 import { AppTooltip } from '@/components/AppTooltip';
 import { Checkbox } from '@/components/ui/checkbox';
 import { PAPER_DIMENSIONS_PT } from '@/features/preview/pageGeometry';
-import { TRANSITION_TYPE } from '@/features/view-transitions/transitionClasses';
+import {
+  SLIDE_AWAY_MOTION,
+  TRANSITION_TYPE,
+  transitionClasses,
+} from '@/features/view-transitions/transitionClasses';
 import { isTypingField } from '@/lib/keyboardShortcuts';
 import { cn } from '@/lib/utils';
 import { attempt, showToast, useOverlayStore } from '@/stores/overlayStore';
@@ -295,7 +300,7 @@ function FullHistoryFrame({
           shape="square"
           aria-label={isIndexOpen ? 'Hide the index' : 'Show named versions and months'}
           aria-pressed={isIndexOpen}
-          onClick={() => setIsIndexOpen((open) => !open)}
+          onClick={() => startTransition(() => setIsIndexOpen((open) => !open))}
           className={cn('size-6.75', isIndexOpen && 'bg-line-strong text-foreground')}
         >
           <List className="size-3.5" />
@@ -317,15 +322,22 @@ function FullHistoryFrame({
 
       <div className="flex min-h-0 flex-1">
         {isIndexOpen && versions && (
-          <HistoryIndex
-            versions={versions}
-            selectedId={selected?.id ?? null}
-            onGoTo={goTo}
-            shouldShowMonths={isDetailed}
-          />
+          <ViewTransition enter={SLIDE_AWAY_MOTION.in} exit={SLIDE_AWAY_MOTION.out} update="none">
+            <HistoryIndex
+              versions={versions}
+              selectedId={selected?.id ?? null}
+              onGoTo={goTo}
+              shouldShowMonths={isDetailed}
+            />
+          </ViewTransition>
         )}
         {/* The same ground as the sidebar's history, which its sticky headers are painted in. */}
-        <div className="min-w-80 flex-1 overflow-auto bg-white px-4 pb-6 dark:bg-zinc-950">
+        <div
+          className={cn(
+            'min-w-80 flex-1 overflow-auto bg-white px-4 pb-6 dark:bg-zinc-950',
+            transitionClasses({ name: 'history-list', motion: 'reclaim' })
+          )}
+        >
           {/* Padding above the scrolled content, not the box: rows would show above the
               pinned strip through the box's own padding. */}
           <div className="max-w-180 pt-1">

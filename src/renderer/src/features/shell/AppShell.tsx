@@ -80,7 +80,11 @@ export function AppShell() {
         {/* Mounted from the start, so a surface still loading keeps the one before on screen. */}
         <Suspense fallback={null}>
           {shownSurface?.kind === 'history' && (
-            <ViewTransition enter={SURFACE_MOTION.in} exit={SURFACE_MOTION.out}>
+            <ViewTransition
+              enter={SURFACE_MOTION.in}
+              exit={SURFACE_MOTION.out}
+              update={SURFACE_MOTION.in}
+            >
               <FullHistory
                 opening={shownSurface}
                 templateId={shownSurface.templateId}

@@ -8,11 +8,23 @@
 
 /* ---- surface-in, surface-out: a view fading in over the workspace, and out ---- */
 
-::view-transition-new(.surface-in) {
+/* Only arriving and leaving move; paired with itself, the view just changes. */
+::view-transition-old(.surface-in),
+::view-transition-old(.surface-out) {
+  display: none;
+}
+
+::view-transition-new(.surface-in),
+::view-transition-new(.surface-out) {
+  animation: none;
+}
+
+::view-transition-new(.surface-in):only-child {
   animation: surface-in 180ms var(--ease-settle);
 }
 
-::view-transition-old(.surface-out) {
+::view-transition-old(.surface-out):only-child {
+  display: block;
   animation: surface-out 140ms ease-in forwards;
 }
 
@@ -67,6 +79,12 @@
 
 /* ---- slide-in, slide-away: leaving to the edge, the space reclaimed, and coming back ---- */
 
+/* The panel stays above what glides into its space. */
+::view-transition-group(.slide-away),
+::view-transition-group(.slide-in) {
+  z-index: 2;
+}
+
 ::view-transition-old(.slide-away) {
   animation: slide-away 180ms ease-in both;
 }
@@ -88,15 +106,49 @@
   }
 }
 
+/* ---- reclaim: a box easing into the space beside it given up, and giving it back ---- */
+
+/* Growing back past its narrower content, the box shows its own ground, not a gap. */
+::view-transition-group(.reclaim) {
+  background: var(--background);
+}
+
+/* The content keeps its natural size from the left edge, so only the box moves. */
+::view-transition-old(.reclaim),
+::view-transition-new(.reclaim) {
+  inline-size: auto;
+  block-size: auto;
+  animation: none;
+}
+
+::view-transition-old(.reclaim) {
+  display: none;
+}
+
+/* Coming and going with the view around it. */
+::view-transition-new(.reclaim):only-child {
+  animation: surface-in 180ms var(--ease-settle);
+}
+
+::view-transition-old(.reclaim):only-child {
+  display: block;
+  animation: surface-out 140ms ease-in forwards;
+}
+
 /* ---- handoff: the same thing moving between two boxes that show it ---- */
 
 /* Name the clipping boxes, not the page: a named element draws unclipped while it moves. */
-::view-transition-group(.handoff) {
-  /* Groups stack in the old DOM order, which puts this under the view coming in. */
-  z-index: 1;
+/* Anything gliding to its new place and size moves at one pace. */
+::view-transition-group(.handoff),
+::view-transition-group(.reclaim) {
   overflow: clip;
   animation-duration: 340ms;
   animation-timing-function: var(--ease-settle);
+}
+
+/* Groups stack in the old DOM order, which puts this under the view coming in. */
+::view-transition-group(.handoff) {
+  z-index: 1;
 }
 
 /* A short swap, in lockstep: the images add their light, so any other timing dims mid-way. */

@@ -4,6 +4,7 @@
 const NAME_CLASS = {
   page: '[view-transition-name:page]',
   workspace: '[view-transition-name:workspace]',
+  'history-list': '[view-transition-name:history-list]',
 } as const;
 
 // An element has one view-transition-class list, so motions that go together are one entry.
@@ -11,6 +12,7 @@ const MOTION_CLASS = {
   recede: '[view-transition-class:recede]',
   handoff: '[view-transition-class:handoff]',
   'handoff step': '[view-transition-class:handoff_step]',
+  reclaim: '[view-transition-class:reclaim]',
 } as const;
 
 // Classes for React's <ViewTransition enter exit>, for things that come and go.
