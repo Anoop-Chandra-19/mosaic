@@ -59,7 +59,9 @@ For resume content, preview, or exports, also read `docs/resume-format.md` (repo
   is a colour). Weights: `font-regular` 460, `font-control` 560, `font-strong` 650,
   `font-tag` 700.
 - Write interface text as `<Text variant="…">` (`components/Text.tsx`); its table adds the
-  role's family, case and colour. Where an element can't be a `Text`, such as a Radix part,
+  role's family, case and colour. No bare `<h1>`–`<h6>`, `<p>` or `<span>` styled with type
+  classes: keep the element for its meaning with `as` (`<Text as="h3" variant="title">`),
+  since headings are how screen readers and the e2e specs find things. Where an element can't be a `Text`, such as a Radix part,
   use `textVariantClasses(variant)`. Override colour through `className`, never the size.
 - Text colour is `foreground`, `ink-soft`, `ink-muted` or `ink-faint`; status colours only
   for meaning. Tabular numbers on counts, times, labels and percentages (the meta role has

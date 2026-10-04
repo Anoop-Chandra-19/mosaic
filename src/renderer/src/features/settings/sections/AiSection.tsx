@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from 'react';
 import { Check, Eye, EyeOff, ShieldCheck } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
+import { Note } from '@/components/Note';
 import { AppInput } from '@/components/AppInput';
 import {
   AppSelect,
@@ -21,7 +22,7 @@ import {
   type KeyLocation,
   type KeyTest,
 } from '@shared/types/secrets';
-import { SettingRow, SettingsNote } from '../SettingRow';
+import { SettingRow } from '../SettingRow';
 import { useSecretsStatus } from '../useSecretsStatus';
 import { AI_PROVIDER_BY_ID, AI_PROVIDER_OPTIONS } from './aiProviderOptions';
 import { OllamaAddressRow, OllamaModelRow } from './OllamaRows';
@@ -43,11 +44,11 @@ export function AiSection() {
 
   return (
     <>
-      <SettingsNote icon={ShieldCheck} className="mb-4">
+      <Note icon={ShieldCheck} className="mb-4">
         Mosaic is a complete resume editor with AI switched off, and nothing is gated behind it.
         When it’s on, your resume text is sent to the provider you choose, and only when you ask for
         something.
-      </SettingsNote>
+      </Note>
 
       <SettingRow
         label="Enable AI assistant"
@@ -106,12 +107,7 @@ export function AiSection() {
               className="w-54"
             />
             {model !== suggested && (
-              <AppButton
-                variant="ghost"
-                size="sm"
-                className="h-8 text-xs"
-                onClick={() => resetModel(provider)}
-              >
+              <AppButton variant="ghost" size="sm" onClick={() => resetModel(provider)}>
                 Use {suggested}
               </AppButton>
             )}
@@ -130,7 +126,7 @@ export function AiSection() {
 function testMessage(result: KeyTest, label: string, model: string): ReactNode {
   if (result.ok) {
     return result.modelFound === false ? (
-      <span className="text-amber-700 dark:text-amber-400">
+      <span className="text-warn">
         The key works, but it can’t reach “{model}”. Check the model name above.
       </span>
     ) : null;
@@ -146,7 +142,7 @@ function testMessage(result: KeyTest, label: string, model: string): ReactNode {
 }
 
 function ErrorText({ children }: { children: ReactNode }) {
-  return <span className="text-red-700 dark:text-red-400">{children}</span>;
+  return <span className="text-del">{children}</span>;
 }
 
 const LOCATION_DESCRIPTIONS: Record<KeyLocation | 'unavailable', string> = {
@@ -241,7 +237,6 @@ function ApiKeyRows({ provider, model }: { provider: KeyedProvider; model: strin
       type="button"
       variant="outline"
       size="sm"
-      className="h-8"
       disabled={tested === 'testing' || (!savedIn && (!key || keyHasSpaces))}
       onClick={() => void runTest()}
     >
@@ -249,7 +244,7 @@ function ApiKeyRows({ provider, model }: { provider: KeyedProvider; model: strin
         'Testing…'
       ) : tested?.ok ? (
         <>
-          <Check className="text-emerald-600 dark:text-emerald-400" />
+          <Check className="text-add" />
           Reachable
         </>
       ) : (
@@ -282,11 +277,11 @@ function ApiKeyRows({ provider, model }: { provider: KeyedProvider; model: strin
       >
         {status === null && !loadFailed ? null : savedIn ? (
           <>
-            <span className="text-xs font-medium text-zinc-700 dark:text-zinc-300">
+            <span className="text-support font-control text-ink-soft">
               {savedIn === 'keychain' ? 'Saved in the keychain' : 'Saved for this session'}
             </span>
             {testButton}
-            <AppButton variant="outline" size="sm" className="h-8" onClick={() => void remove()}>
+            <AppButton variant="outline" size="sm" onClick={() => void remove()}>
               Remove
             </AppButton>
           </>
@@ -322,13 +317,7 @@ function ApiKeyRows({ provider, model }: { provider: KeyedProvider; model: strin
               </AppButton>
             </div>
             {testButton}
-            <AppButton
-              type="submit"
-              variant="outline"
-              size="sm"
-              className="h-8"
-              disabled={!key || keyHasSpaces}
-            >
+            <AppButton type="submit" variant="outline" size="sm" disabled={!key || keyHasSpaces}>
               Save
             </AppButton>
           </form>

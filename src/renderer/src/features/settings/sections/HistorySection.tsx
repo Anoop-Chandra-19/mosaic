@@ -8,9 +8,7 @@ import {
 } from '@/components/AppSelect';
 import { AppSwitch } from '@/components/AppSwitch';
 import { useUiStore } from '@/stores/uiStore';
-import { SettingRow } from '../SettingRow';
-
-const HEADING = 'pt-2.5 pb-1 text-[0.65rem] font-bold tracking-wider text-ink-faint uppercase';
+import { SettingGroupHeading, SettingRow } from '../SettingRow';
 
 export function HistorySection() {
   const isDetailed = useUiStore((s) => s.shouldShowHistoryDetails);
@@ -21,7 +19,7 @@ export function HistorySection() {
   const setFoldDays = useUiStore((s) => s.setFoldSnapshotsAfterDays);
   return (
     <>
-      <h3 className={HEADING}>Automatic snapshots</h3>
+      <SettingGroupHeading>Automatic snapshots</SettingGroupHeading>
       {SNAPSHOT_TRIGGER_OPTIONS.map(({ trigger, label, description }) => (
         <SettingRow key={trigger} label={label} description={description}>
           <AppSwitch
@@ -31,7 +29,7 @@ export function HistorySection() {
           />
         </SettingRow>
       ))}
-      <h3 className={HEADING}>Full history</h3>
+      <SettingGroupHeading>Full history</SettingGroupHeading>
       <SettingRow
         label="Always show all details"
         description="Adds the months index, per-row change counts, and line numbers in Changes only. Off, counts read in words."
@@ -42,7 +40,7 @@ export function HistorySection() {
           aria-label="Always show all details"
         />
       </SettingRow>
-      <h3 className={HEADING}>Keeping</h3>
+      <SettingGroupHeading>Keeping</SettingGroupHeading>
       <SettingRow
         label="Fold old automatic snapshots"
         description="Folded rows stay in the list as one expandable row. Nothing is deleted. Named versions never fold."

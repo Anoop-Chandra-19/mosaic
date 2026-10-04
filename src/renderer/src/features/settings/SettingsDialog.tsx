@@ -4,6 +4,7 @@ import { useOverlayStore } from '@/stores/overlayStore';
 import { AppButton } from '@/components/AppButton';
 import { AppDialog, AppDialogContent } from '@/components/AppDialog';
 import { DialogFrameHeader } from '@/components/DialogFrame';
+import { Text } from '@/components/Text';
 import { cn } from '@/lib/utils';
 import { useAiStore } from '@/stores/aiStore';
 import { ShortcutsPanel } from '@/features/shortcuts/ShortcutsPanel';
@@ -47,14 +48,18 @@ export function SettingsDialog() {
         <div className="flex min-h-0 flex-1 flex-col md:flex-row">
           <nav
             aria-label="Settings sections"
-            className="flex shrink-0 gap-1 overflow-x-auto border-b border-line bg-zinc-50 px-2 py-2 md:w-49 md:flex-col md:overflow-y-auto md:border-r md:border-b-0 md:py-2.5 dark:bg-zinc-900"
+            className="flex shrink-0 gap-1 overflow-x-auto border-b border-line bg-pane px-2 py-2 md:w-49 md:flex-col md:gap-0 md:overflow-y-auto md:border-r md:border-b-0 md:py-2.5"
           >
             {SETTINGS_GROUPS.map((group, index) => (
-              <div key={group.label ?? index} className="flex gap-1 md:flex-col">
+              <div key={group.label ?? index} className="flex gap-1 md:flex-col md:gap-0">
                 {group.label && (
-                  <p className="hidden px-2 pt-3 pb-1 text-[0.65rem] font-bold tracking-wider text-zinc-500 uppercase md:block">
+                  <Text
+                    as="p"
+                    variant="tag"
+                    className="hidden px-2.25 pt-2.75 pb-1.25 text-ink-faint md:block"
+                  >
                     {group.label}
-                  </p>
+                  </Text>
                 )}
                 {group.sections.map((item) => {
                   const Icon = item.icon;
@@ -67,21 +72,17 @@ export function SettingsDialog() {
                       onClick={() => setSection(item.id)}
                       aria-current={isActive ? 'page' : undefined}
                       className={cn(
-                        'justify-start gap-2 px-2 font-normal',
-                        isActive
-                          ? 'bg-white font-medium text-zinc-900 ring-1 ring-line-strong ring-inset hover:bg-white dark:bg-zinc-800 dark:text-zinc-100 dark:hover:bg-zinc-800'
-                          : 'text-zinc-700 dark:text-zinc-300'
+                        'justify-start gap-2.25 rounded-sm px-2.25 font-regular',
+                        isActive &&
+                          'bg-pane-raised font-control text-foreground ring-1 ring-line-strong ring-inset hover:bg-pane-raised'
                       )}
                     >
                       <Icon
-                        className={cn(
-                          'size-3.5',
-                          isActive ? 'text-zinc-700 dark:text-zinc-300' : 'text-zinc-500'
-                        )}
+                        className={cn('size-3.5', isActive ? 'text-ink-soft' : 'text-ink-faint')}
                       />
                       {item.label}
                       {item.id === 'ai' && !aiEnabled && (
-                        <span className="ml-auto rounded border border-line-strong bg-zinc-100 px-1 text-[0.65rem] leading-4 font-medium text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400">
+                        <span className="ml-auto inline-flex h-4 items-center rounded-sm border border-line bg-line px-1.5 text-tag font-control tracking-normal text-ink-soft normal-case">
                           off
                         </span>
                       )}
@@ -96,15 +97,12 @@ export function SettingsDialog() {
             aria-labelledby="settings-section-title"
             className="min-h-0 flex-1 overflow-y-auto px-5.5 pt-4.5 pb-6 dense:px-5 dense:pt-3.5 dense:pb-5.5"
           >
-            <h3
-              id="settings-section-title"
-              className="text-base font-semibold tracking-tight text-zinc-900 dark:text-zinc-100"
-            >
+            <Text as="h3" variant="heading" id="settings-section-title">
               {active.label}
-            </h3>
-            <p className="mt-1 mb-3 text-xs leading-relaxed text-zinc-600 dark:text-zinc-400">
+            </Text>
+            <Text as="p" variant="secondary" className="mt-1 mb-3">
               {active.description}
-            </p>
+            </Text>
             {section === 'general' && <GeneralSection />}
             {section === 'appearance' && <AppearanceSection />}
             {section === 'document' && <DocumentSection />}

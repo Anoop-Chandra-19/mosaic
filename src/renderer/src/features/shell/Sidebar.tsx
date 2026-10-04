@@ -10,6 +10,7 @@ import {
 import { AppButton } from '@/components/AppButton';
 import { AppTabs, AppTabsContent, AppTabsList, AppTabsTrigger } from '@/components/AppTabs';
 import { AppTooltip } from '@/components/AppTooltip';
+import { Text } from '@/components/Text';
 import { cn } from '@/lib/utils';
 import { HEADER_OUTLINE_ID, useOutlineStore } from '@/stores/outlineStore';
 import { attempt, showToast, useOverlayStore, type VersionPreview } from '@/stores/overlayStore';
@@ -89,9 +90,7 @@ export function Sidebar() {
         </AppTabsList>
 
         <div className="flex min-h-6.25 shrink-0 items-center justify-between gap-2 px-3 pt-0.5 pb-2">
-          <span className="text-[0.65625rem] font-semibold tracking-[0.09em] text-ink-faint uppercase">
-            {active.caption}
-          </span>
+          <Text variant="eyebrow">{active.caption}</Text>
           {active.id === 'content' && <CollapseAllButton />}
         </div>
 
@@ -129,7 +128,7 @@ export function Sidebar() {
               })
             }
             onDoubleClick={() => setWidthPx(SIDEBAR_WIDTH.defaultPx)}
-            className="absolute top-0 right-0 bottom-0 w-1 cursor-col-resize transition-colors hover:bg-amber-500 active:bg-amber-600"
+            className="absolute top-0 right-0 bottom-0 w-1 cursor-col-resize transition-colors hover:bg-amber active:bg-amber"
           />
         </AppTooltip>
       )}
@@ -158,21 +157,16 @@ function ReadingVersionNote({ preview }: { preview: VersionPreview }) {
   };
 
   return (
-    <div className="mb-2 rounded-md border border-amber-300 bg-amber-50 p-2 text-xs text-amber-900 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200">
+    <div className="mb-2 rounded-md border border-amber-line bg-amber-soft p-2 text-support text-foreground">
       <div className="flex items-start gap-1.5">
-        <Eye className="mt-px size-3.5 shrink-0 text-amber-600 dark:text-amber-400" />
+        <Eye className="mt-0.5 size-3.5 shrink-0 text-amber" />
         <span className="min-w-0 flex-1">
-          Reading <span className="font-mono font-semibold">{label}</span>, not your draft. Restore
-          it to edit it.
+          Reading <span className="font-mono font-strong">{label}</span>, not your draft. Restore it
+          to edit it.
         </span>
       </div>
       <div className="mt-1.5 flex justify-end gap-1.5">
-        <AppButton
-          variant="ghost"
-          size="xs"
-          className="h-6 px-2 text-xs"
-          onClick={() => setPreview(null)}
-        >
+        <AppButton variant="ghost" size="xs" onClick={() => setPreview(null)}>
           Back to draft
         </AppButton>
         <AppButton variant="accent" size="xs" onClick={() => void restore()}>

@@ -113,6 +113,7 @@
   --color-sidebar-ring: var(--sidebar-ring);
   /* The design's pane surfaces and inks (Claude Design `mosaic-app.css`), solid so no
      component needs opacity for hierarchy. */
+  --color-chrome: var(--chrome);
   --color-pane: var(--pane);
   --color-pane-raised: var(--pane-raised);
   --color-pane-sunken: var(--pane-sunken);
@@ -123,6 +124,8 @@
   --color-ink-muted: var(--ink-muted);
   --color-ink-faint: var(--ink-faint);
   --color-amber: var(--amber);
+  --color-amber-hover: var(--amber-hover);
+  --color-solid-hover: var(--solid-hover);
   --color-amber-ink: var(--amber-ink);
   --color-scrim: var(--scrim);
   --color-amber-soft: var(--amber-soft);
@@ -136,6 +139,9 @@
   --color-del: var(--del);
   --color-del-soft: var(--del-soft);
   --color-del-line: var(--del-line);
+  --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
+  --color-warn-line: var(--warn-line);
   --color-add-word: var(--add-word);
   --color-del-word: var(--del-word);
   --color-paper-changed: var(--paper-changed);
@@ -346,6 +352,8 @@
   --sidebar-accent-foreground: oklch(0.21 0.006 285.885);
   --sidebar-border: var(--line);
   --sidebar-ring: oklch(0.705 0.015 286.067);
+  /* The status bar's strip. */
+  --chrome: oklch(0.955 0.002 286);
   --pane: oklch(0.975 0.002 286);
   --pane-raised: oklch(1 0 0);
   --pane-sunken: oklch(0.925 0.003 286);
@@ -359,6 +367,9 @@
   --ink-faint: oklch(0.53 0.013 286);
   /* The design's accent: a switch that is on, a chosen option, the current step. */
   --amber: oklch(0.66 0.15 58);
+  /* Hovered: an amber button, and a solid (ink) one. */
+  --amber-hover: oklch(0.58 0.15 52);
+  --solid-hover: oklch(0.3 0.006 286);
   /* What sits on amber: a switch's knob, a chosen option's check. */
   --amber-ink: oklch(0.17 0.02 60);
   --amber-soft: oklch(0.948 0.02 69);
@@ -375,6 +386,11 @@
   --del: oklch(0.55 0.19 25);
   --del-soft: oklch(0.55 0.19 25 / 11%);
   --del-line: oklch(0.55 0.19 25 / 28%);
+  /* Worth a look before going on: a resume past one page, a step that can't be undone.
+     Errors and destructive actions use del. */
+  --warn: oklch(0.58 0.17 45);
+  --warn-soft: oklch(0.58 0.17 45 / 13%);
+  --warn-line: oklch(0.58 0.17 45 / 32%);
   /* The words that changed inside a line already tinted add or del; the same in both themes. */
   --add-word: oklch(0.76 0.15 155 / 30%);
   --del-word: oklch(0.7 0.17 22 / 30%);
@@ -442,6 +458,7 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: var(--line);
   --sidebar-ring: oklch(0.552 0.016 285.938);
+  --chrome: oklch(0.185 0.004 286);
   --pane: oklch(0.175 0.004 286);
   --pane-raised: oklch(0.205 0.005 286);
   --pane-sunken: oklch(0.125 0.004 286);
@@ -452,6 +469,8 @@
   --ink-muted: oklch(0.67 0.012 286);
   --ink-faint: oklch(0.6 0.012 286);
   --amber: oklch(0.78 0.155 72);
+  --amber-hover: oklch(0.68 0.15 62);
+  --solid-hover: oklch(0.88 0 0);
   --amber-ink: oklch(0.17 0.02 60);
   --amber-soft: oklch(0.26 0.019 66);
   --info: oklch(0.74 0.11 235);
@@ -463,6 +482,9 @@
   --del: oklch(0.7 0.17 22);
   --del-soft: oklch(0.7 0.17 22 / 12%);
   --del-line: oklch(0.7 0.17 22 / 30%);
+  --warn: oklch(0.7 0.17 45);
+  --warn-soft: oklch(0.7 0.17 45 / 15%);
+  --warn-line: oklch(0.7 0.17 45 / 34%);
   --overlay-shadow: 0 24px 60px -12px oklch(0 0 0 / 70%), 0 2px 6px oklch(0 0 0 / 40%);
 }
 

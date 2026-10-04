@@ -4,6 +4,8 @@ import { DialogFrameFooter, DialogFrameHeader } from '@/components/DialogFrame';
 import { AppButton } from '@/components/AppButton';
 import { AppDialog, AppDialogContent } from '@/components/AppDialog';
 import { AppTextarea } from '@/components/AppTextarea';
+import { Note } from '@/components/Note';
+import { Text } from '@/components/Text';
 import { fileFailure } from '@/features/backup/backupFiles';
 import { easeHeightChanges } from '@/lib/motion/easeHeightChanges';
 import { cn } from '@/lib/utils';
@@ -145,38 +147,32 @@ function PickStep({
           onDrop={(event) => void drop(event)}
           className={cn(
             'flex flex-col items-center rounded-[0.8125rem] border border-dashed px-4.5 py-5.5 text-center transition-colors',
-            dragging
-              ? 'border-amber-500 bg-amber-50 dark:border-amber-600 dark:bg-amber-950'
-              : 'border-line-heavy bg-pane'
+            dragging ? 'border-amber bg-amber-soft' : 'border-line-heavy bg-pane'
           )}
         >
           <span className="mb-2.25 grid size-8.5 place-items-center rounded-full border border-line-strong bg-pane-raised text-ink-muted">
             <Upload className="size-4.5" />
           </span>
-          <p className="mb-0.75 text-[0.84375rem] font-semibold text-foreground">
+          <Text as="p" variant="title" className="mb-0.75">
             Drop a resume here
-          </p>
-          <p className="mx-auto mb-3 max-w-82 text-[0.78125rem] leading-normal text-ink-muted">
+          </Text>
+          <Text as="p" variant="secondary" className="mx-auto mb-3 max-w-82">
             PDF, Word (.docx), Markdown, plain text, JSON Resume, or a Mosaic JSON backup.
-          </p>
+          </Text>
           <AppButton variant="outline" size="sm" onClick={() => void choose()}>
             Choose a file…
           </AppButton>
         </div>
 
         {fileError && (
-          <p
-            role="alert"
-            className="mt-2.5 flex gap-2 rounded-lg border border-red-300 bg-red-50 p-2.5 text-xs leading-relaxed text-red-900 dark:border-red-900 dark:bg-red-950 dark:text-red-200"
-          >
-            <AlertTriangle className="mt-0.5 size-3.5 shrink-0 text-red-600 dark:text-red-400" />
+          <Note icon={AlertTriangle} tone="error" size="sm" role="alert" className="mt-2.5">
             {fileError}
-          </p>
+          </Note>
         )}
 
         <label
           htmlFor="import-paste"
-          className="mt-3.5 mb-1.25 block text-xs font-medium text-ink-soft"
+          className="mt-3.5 mb-1.25 block text-support font-control text-ink-soft"
         >
           Or paste the text
         </label>
@@ -186,15 +182,14 @@ function PickStep({
           onChange={(event) => setText(event.target.value)}
           placeholder={PLACEHOLDER}
           spellCheck={false}
-          className="h-30 px-2.5 py-2 font-mono text-[0.71875rem] leading-[1.65]"
+          className="h-30 px-2.5 py-2 font-mono text-meta"
         />
 
-        <p className="mt-3 flex gap-2.5 rounded-[0.5625rem] border border-line-strong bg-pane px-3 py-2.75 text-[0.8rem] leading-relaxed text-ink-soft">
-          <Info className="mt-0.5 size-3.5 shrink-0 text-ink-muted" />
+        <Note icon={Info} className="mt-3">
           Everything is read on your computer. Import is a quick start, not an exact copy, and a
           PDF’s layout is the hardest to read back. You’ll see what Mosaic found and what it left
           out, and choose what to keep, before anything is written.
-        </p>
+        </Note>
       </div>
 
       <DialogFrameFooter note="Nothing is written until you review it.">

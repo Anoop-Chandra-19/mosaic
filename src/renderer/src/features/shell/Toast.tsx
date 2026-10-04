@@ -16,19 +16,19 @@ export function Toast() {
       {toast && (
         <div
           key={toast.id}
-          className="pointer-events-auto flex max-w-full items-center gap-2.5 rounded-full border border-line-strong bg-white py-2 pr-2 pl-3.5 text-sm text-zinc-800 shadow-2xl duration-200 animate-in fade-in-0 slide-in-from-bottom-1 motion-reduce:animate-none dark:bg-zinc-900 dark:text-zinc-200"
+          className="pointer-events-auto flex max-w-full items-center gap-2.5 rounded-full border border-line-strong bg-pane-raised py-2 pr-2 pl-3.5 text-body text-foreground shadow-overlay duration-200 animate-in fade-in-0 slide-in-from-bottom-1 motion-reduce:animate-none"
         >
           {toast.tone === 'success' ? (
-            <Check className="size-3.5 shrink-0 text-emerald-600 dark:text-emerald-400" />
+            <Check className="size-3.5 shrink-0 text-add" />
           ) : (
-            <AlertTriangle className="size-3.5 shrink-0 text-red-600 dark:text-red-400" />
+            <AlertTriangle className="size-3.5 shrink-0 text-del" />
           )}
           <span className="min-w-0">{toast.message}</span>
           {toast.action && (
             <AppButton
               variant="ghost"
               size="sm"
-              className="h-6 shrink-0 rounded-full px-2.5 font-semibold text-amber-700 hover:text-amber-800 dark:text-amber-400 dark:hover:text-amber-300"
+              className="h-6 shrink-0 rounded-full px-2.5 font-strong text-amber hover:text-amber"
               onClick={() => {
                 dismiss();
                 toast.action?.run();

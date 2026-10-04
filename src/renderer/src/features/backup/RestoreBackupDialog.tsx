@@ -1,15 +1,12 @@
 import { useState } from 'react';
 import { AlertTriangle, ArchiveRestore, FileJson2 } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
-import {
-  AppDialog,
-  AppDialogContent,
-  AppDialogDescription,
-  AppDialogFooter,
-  AppDialogHeader,
-  AppDialogTitle,
-} from '@/components/AppDialog';
+import { AppDialog, AppDialogContent, AppDialogDescription } from '@/components/AppDialog';
 import { AppRadioGroup, AppRadioGroupItem } from '@/components/AppRadioGroup';
+import { CHOICE_CARD_CLASSES } from '@/components/controlStyles';
+import { DialogFrameBody, DialogFrameFooter, DialogFrameHeader } from '@/components/DialogFrame';
+import { Note } from '@/components/Note';
+import { Text } from '@/components/Text';
 import { formatRelativeTime } from '@/features/templates/formatRelativeTime';
 import { cn } from '@/lib/utils';
 import { attempt, showToast, useOverlayStore } from '@/stores/overlayStore';
@@ -37,7 +34,7 @@ export function RestoreBackupDialog() {
 
   return (
     <AppDialog open={backup !== null} onOpenChange={(open) => !open && close()}>
-      <AppDialogContent className="sm:max-w-lg">
+      <AppDialogContent showCloseButton={false} className="w-[min(35rem,96vw)] gap-0 p-0">
         {/* Mounted per file, so the choice starts on the safe option each time. */}
         {backup && <RestoreForm backup={backup} onDone={close} />}
       </AppDialogContent>
@@ -78,67 +75,71 @@ function RestoreForm({ backup, onDone }: { backup: OpenedBackup; onDone: () => v
 
   return (
     <>
-      <AppDialogHeader>
-        <AppDialogTitle className="flex items-center gap-2">
-          <ArchiveRestore className="size-4 text-zinc-500" />
-          Restore a backup
-        </AppDialogTitle>
+      <DialogFrameHeader
+        icon={ArchiveRestore}
+        title="Restore a backup"
+        closeLabel="Close"
+        onClose={onDone}
+      />
+      <DialogFrameBody>
         <AppDialogDescription>
           {localCount === 0
             ? 'Mosaic has no templates, so the backup’s become yours, with their history.'
             : 'Check what the file holds, then choose what happens to the templates here.'}
         </AppDialogDescription>
-      </AppDialogHeader>
 
-      <div className="flex items-start gap-3 rounded-lg border border-line bg-zinc-50 p-3 dark:bg-zinc-900">
-        <FileJson2 className="mt-0.5 size-4 shrink-0 text-zinc-500" />
-        <div className="min-w-0 text-xs leading-relaxed">
-          <p className="truncate font-mono text-zinc-900 dark:text-zinc-100">{backup.fileName}</p>
-          <p className="text-zinc-600 dark:text-zinc-400">
-            {Number.isNaN(exportedAt) ? '' : `Backed up ${formatRelativeTime(exportedAt)} · `}
-            {count(templates, 'template')}, {count(versions, 'version')}
-          </p>
-          <p className="mt-1 text-zinc-600 dark:text-zinc-400">
-            {listNames(backup.bundle.templates.map((entry) => entry.template.name))}
-          </p>
+        <div className="flex items-start gap-3 rounded-[0.5625rem] border border-line bg-pane p-3">
+          <FileJson2 className="mt-0.5 size-4 shrink-0 text-ink-muted" />
+          <div className="min-w-0">
+            <Text as="p" variant="meta" className="truncate text-foreground">
+              {backup.fileName}
+            </Text>
+            <Text as="p" variant="secondary" className="tabular-nums">
+              {Number.isNaN(exportedAt) ? '' : `Backed up ${formatRelativeTime(exportedAt)} · `}
+              {count(templates, 'template')}, {count(versions, 'version')}
+            </Text>
+            <Text as="p" variant="secondary" className="mt-1">
+              {listNames(backup.bundle.templates.map((entry) => entry.template.name))}
+            </Text>
+          </div>
         </div>
-      </div>
 
-      {localCount > 0 && (
-        <AppRadioGroup
-          value={mode}
-          onValueChange={(value) => setMode(value as ImportMode)}
-          aria-label="What happens to the templates here"
-          className="gap-2"
-        >
-          <ModeOption
-            value="as-new-template"
-            selected={mode}
-            label="Add as new templates"
-            description={`Keeps everything here and adds the backup’s ${count(templates, 'template')} beside it.`}
-          />
-          <ModeOption
-            value="restore-all"
-            selected={mode}
-            label="Replace everything"
-            description={`Deletes the ${count(localCount, 'template')} here, history included, and rebuilds Mosaic from the backup.`}
-          />
-        </AppRadioGroup>
-      )}
+        {localCount > 0 && (
+          <AppRadioGroup
+            value={mode}
+            onValueChange={(value) => setMode(value as ImportMode)}
+            aria-label="What happens to the templates here"
+            className="gap-2"
+          >
+            <ModeOption
+              value="as-new-template"
+              selected={mode}
+              label="Add as new templates"
+              description={`Keeps everything here and adds the backup’s ${count(templates, 'template')} beside it.`}
+            />
+            <ModeOption
+              value="restore-all"
+              selected={mode}
+              label="Replace everything"
+              description={`Deletes the ${count(localCount, 'template')} here, history included, and rebuilds Mosaic from the backup.`}
+            />
+          </AppRadioGroup>
+        )}
 
-      {replacing && (
-        <p className="flex gap-2 rounded-lg border border-amber-300 bg-amber-50 p-3 text-xs leading-relaxed text-amber-900 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-200">
-          <AlertTriangle className="mt-0.5 size-3.5 shrink-0 text-amber-600 dark:text-amber-400" />
-          <span>Replacing can’t be undone. Back up first if you might want what’s here.</span>
-        </p>
-      )}
+        {replacing && (
+          <Note icon={AlertTriangle} tone="warn" size="sm">
+            Replacing can’t be undone. Back up first if you might want what’s here.
+          </Note>
+        )}
+      </DialogFrameBody>
 
-      <AppDialogFooter>
-        <AppButton variant="ghost" onClick={onDone}>
+      <DialogFrameFooter>
+        <AppButton variant="ghost" size="sm" onClick={onDone}>
           Cancel
         </AppButton>
         <AppButton
           variant={replacing ? 'destructive' : 'solid'}
+          size="sm"
           disabled={restoring}
           onClick={() => void restore()}
         >
@@ -148,7 +149,7 @@ function RestoreForm({ backup, onDone }: { backup: OpenedBackup; onDone: () => v
               ? 'Restore'
               : `Add ${count(templates, 'template')}`}
         </AppButton>
-      </AppDialogFooter>
+      </DialogFrameFooter>
     </>
   );
 }
@@ -169,18 +170,18 @@ function ModeOption({
     <label
       htmlFor={id}
       className={cn(
-        'flex cursor-pointer items-start gap-3 rounded-lg border p-3 transition-colors',
-        value === selected
-          ? 'border-amber-500 bg-zinc-50 dark:border-amber-600 dark:bg-zinc-900'
-          : 'border-line hover:bg-zinc-50 dark:hover:bg-zinc-900'
+        CHOICE_CARD_CLASSES.base,
+        value === selected ? CHOICE_CARD_CLASSES.chosen : CHOICE_CARD_CLASSES.idle
       )}
     >
       <AppRadioGroupItem id={id} value={value} className="mt-0.5" />
       <span className="min-w-0">
-        <span className="block text-sm font-medium text-zinc-900 dark:text-zinc-100">{label}</span>
-        <span className="mt-0.5 block text-xs leading-relaxed text-zinc-600 dark:text-zinc-400">
+        <Text variant="strong" className="block">
+          {label}
+        </Text>
+        <Text variant="secondary" className="mt-0.5 block">
           {description}
-        </span>
+        </Text>
       </span>
     </label>
   );

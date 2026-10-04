@@ -1,15 +1,10 @@
 import { useState } from 'react';
-import { Info } from 'lucide-react';
+import { Check, Info, Save } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
-import {
-  AppDialog,
-  AppDialogContent,
-  AppDialogDescription,
-  AppDialogFooter,
-  AppDialogHeader,
-  AppDialogTitle,
-} from '@/components/AppDialog';
+import { AppDialog, AppDialogContent, AppDialogDescription } from '@/components/AppDialog';
 import { AppInput } from '@/components/AppInput';
+import { DialogFrameBody, DialogFrameFooter, DialogFrameHeader } from '@/components/DialogFrame';
+import { Note } from '@/components/Note';
 import { attempt, showToast, useOverlayStore } from '@/stores/overlayStore';
 import { useTemplateStore } from '@/stores/templateStore';
 import { useActiveTemplate } from './useActiveTemplate';
@@ -25,7 +20,7 @@ export function NameVersionDialog() {
 
   return (
     <AppDialog open={open} onOpenChange={setOpen}>
-      <AppDialogContent className="sm:max-w-md">
+      <AppDialogContent showCloseButton={false} className="w-[min(35rem,96vw)] gap-0 p-0">
         {/* Remounted per opening, so the name starts empty each time. */}
         {open && <NameVersionForm onDone={() => setOpen(false)} />}
       </AppDialogContent>
@@ -57,37 +52,41 @@ function NameVersionForm({ onDone }: { onDone: () => void }) {
         event.preventDefault();
         void submit();
       }}
-      className="grid gap-4"
+      className="contents"
     >
-      <AppDialogHeader>
-        <AppDialogTitle>Name this version</AppDialogTitle>
-        <AppDialogDescription>{template?.name}</AppDialogDescription>
-      </AppDialogHeader>
-
-      <AppInput
-        value={name}
-        onChange={(event) => setName(event.target.value)}
-        placeholder="A name you’ll recognise later, like “Sent to Striped”"
-        aria-label="Version name"
-        maxLength={200}
-        autoFocus
+      <DialogFrameHeader
+        icon={Save}
+        title="Name this version"
+        closeLabel="Close"
+        onClose={onDone}
       />
-
-      <p className="flex gap-2 rounded-lg border border-line-strong bg-zinc-100 p-3 text-xs leading-relaxed text-zinc-600 dark:bg-zinc-900 dark:text-zinc-400">
-        <Info className="mt-0.5 size-3.5 shrink-0 text-zinc-500" />
-        {status === 'clean'
-          ? 'Nothing has changed since the newest version, so this names that version rather than making a new one.'
-          : 'Your draft is already saved. Naming pins it in history so you can find it later. Nothing is overwritten.'}
-      </p>
-
-      <AppDialogFooter>
-        <AppButton type="button" variant="ghost" onClick={onDone}>
+      <DialogFrameBody>
+        <AppDialogDescription className="font-mono text-meta text-ink-soft">
+          {template?.name}
+        </AppDialogDescription>
+        <AppInput
+          value={name}
+          onChange={(event) => setName(event.target.value)}
+          placeholder="A name you’ll recognise later, like “Sent to Striped”"
+          aria-label="Version name"
+          maxLength={200}
+          autoFocus
+        />
+        <Note icon={Info} size="sm">
+          {status === 'clean'
+            ? 'Nothing has changed since the newest version, so this names that version rather than making a new one.'
+            : 'Your draft is already saved. Naming pins it in history so you can find it later. Nothing is overwritten.'}
+        </Note>
+      </DialogFrameBody>
+      <DialogFrameFooter>
+        <AppButton type="button" variant="ghost" size="sm" onClick={onDone}>
           Cancel
         </AppButton>
-        <AppButton type="submit" disabled={!trimmed || saving}>
+        <AppButton type="submit" variant="accent" size="sm" disabled={!trimmed || saving}>
+          <Check />
           Name version
         </AppButton>
-      </AppDialogFooter>
+      </DialogFrameFooter>
     </form>
   );
 }

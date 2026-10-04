@@ -1,5 +1,6 @@
 import { LayoutTemplate, Plus } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
+import { Text } from '@/components/Text';
 import { createBlankResume } from '@/features/start/blankResume';
 import { useStartResume } from '@/features/start/useStartResume';
 import { createEmptyResume } from '@shared/resume/defaultResume';
@@ -29,17 +30,17 @@ export function NoTemplates() {
 
   return (
     <div className="mx-auto max-w-sm px-2.5 py-8 text-center">
-      <div className="mx-auto mb-3 grid size-11 place-items-center rounded-xl border border-line-strong bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400">
+      <div className="mx-auto mb-3 grid size-11 place-items-center rounded-xl border border-line-strong bg-line text-ink-muted">
         <LayoutTemplate className="size-4.5" />
       </div>
-      <p className="mb-1 text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+      <Text as="p" variant="title" className="mb-1">
         {firstRun ? 'No templates yet' : 'No templates'}
-      </p>
-      <p className="mb-3 text-xs leading-relaxed text-zinc-600 dark:text-zinc-400">
+      </Text>
+      <Text as="p" variant="secondary" className="mb-3">
         {firstRun
           ? 'A template holds one resume’s content and its history. Your first one is created as soon as you start writing.'
           : 'Nothing is open. Start a resume and Mosaic creates a template for it, with its own history.'}
-      </p>
+      </Text>
       <AppButton variant="outline" size="sm" onClick={() => void startResume()}>
         <Plus />
         Start a resume

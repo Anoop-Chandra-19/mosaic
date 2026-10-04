@@ -9,12 +9,12 @@ const BADGES: Partial<Record<TemplateStatus, { label: string; title: string; cla
     edited: {
       label: 'edited',
       title: 'Saved as you type. Name a version when you want to find this state again.',
-      className: 'border-line-strong bg-zinc-200 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300',
+      className: 'bg-line text-ink-soft',
     },
     clean: {
       label: 'up to date',
       title: "Your draft matches the newest version in this template's history.",
-      className: 'border-line-strong text-zinc-500 dark:text-zinc-500',
+      className: 'text-ink-faint',
     },
   };
 
@@ -25,7 +25,7 @@ export function TemplateStatusBadge({ status }: { status: TemplateStatus }) {
     <AppTooltip content={badge.title}>
       <span
         className={cn(
-          'inline-flex shrink-0 items-center rounded-md border px-1.5 py-0.5 text-xs font-semibold',
+          'inline-flex h-[1.1875rem] shrink-0 items-center rounded-[0.3125rem] border border-line-strong px-[0.4375rem] text-support font-strong tracking-[0.01em] whitespace-nowrap',
           badge.className
         )}
       >

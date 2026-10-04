@@ -1,6 +1,5 @@
 import type { ReactNode } from 'react';
-import type { LucideIcon } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { Text } from '@/components/Text';
 
 /** One setting: what it is on the left, its control on the right. */
 export function SettingRow({
@@ -15,9 +14,13 @@ export function SettingRow({
   return (
     <div className="flex flex-col gap-2.5 border-b border-line py-(--density-pad) last:border-b-0 sm:flex-row sm:items-start sm:justify-between sm:gap-5">
       <div className="min-w-0 flex-1">
-        <p className="text-body font-control text-foreground">{label}</p>
+        <Text as="p" variant="body" className="font-control text-foreground">
+          {label}
+        </Text>
         {description && (
-          <p className="mt-[0.1875rem] max-w-[46ch] text-support text-ink-muted">{description}</p>
+          <Text as="p" variant="secondary" className="mt-[0.1875rem] max-w-[46ch]">
+            {description}
+          </Text>
         )}
       </div>
       <div className="flex shrink-0 flex-wrap items-center gap-2">{children}</div>
@@ -25,37 +28,16 @@ export function SettingRow({
   );
 }
 
-/** A plain statement about a section — how something works, not a control. */
-export function SettingsNote({
-  icon: Icon,
-  tone = 'neutral',
-  className,
-  children,
-}: {
-  icon: LucideIcon;
-  tone?: 'neutral' | 'safe';
-  className?: string;
-  children: ReactNode;
-}) {
+/** A group of rows within a section, the design's `.setgrp`. */
+export function SettingGroupHeading({ children }: { children: ReactNode }) {
   return (
-    <div
-      className={cn(
-        'flex gap-2.5 rounded-lg border border-line bg-zinc-50 p-3 text-xs leading-relaxed text-zinc-700 dark:bg-zinc-900 dark:text-zinc-300',
-        className
-      )}
-    >
-      <Icon
-        className={cn(
-          'mt-px size-3.5 shrink-0',
-          tone === 'safe' ? 'text-emerald-600 dark:text-emerald-400' : 'text-zinc-500'
-        )}
-      />
-      <div>{children}</div>
-    </div>
+    <Text as="h4" variant="tag" className="pt-3 pb-1 text-ink-faint">
+      {children}
+    </Text>
   );
 }
 
 /** For a setting that cannot be switched off: says so instead of offering a dead switch. */
 export function AlwaysOn() {
-  return <span className="text-xs font-medium text-zinc-500">Always on</span>;
+  return <span className="text-support font-control text-ink-faint">Always on</span>;
 }
