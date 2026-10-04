@@ -3,7 +3,7 @@ import { HeaderLinkToggles } from '@/features/editor/header/HeaderLinkToggles';
 import { useResumeStore } from '@/stores/resumeStore';
 import { useUiStore } from '@/stores/uiStore';
 import type { PaperSize } from '@/types/paper';
-import { AlwaysOn, SettingRow } from '../SettingRow';
+import { SettingRow } from '../SettingRow';
 
 export function DocumentSection() {
   const paperSize = useUiStore((s) => s.paperSize);
@@ -35,12 +35,6 @@ export function DocumentSection() {
           <HeaderLinkToggles />
         </SettingRow>
       )}
-      <SettingRow
-        label="ATS-safe headings"
-        description="Section headers stay plain, with no small caps and no letter-spacing, so parsers read them."
-      >
-        <AlwaysOn />
-      </SettingRow>
     </>
   );
 }
