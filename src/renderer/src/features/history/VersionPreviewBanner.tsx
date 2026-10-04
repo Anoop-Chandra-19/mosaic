@@ -1,6 +1,7 @@
 import { Fragment, useState, type RefObject } from 'react';
 import { ChevronDown, ChevronUp, Eye, History } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
+import { Text } from '@/components/Text';
 import { revealChangeMark } from '@/features/document-diff/revealChangeMark';
 import { cn } from '@/lib/utils';
 import { attempt, showToast, useOverlayStore } from '@/stores/overlayStore';
@@ -41,7 +42,7 @@ function PhraseList({ phrases }: { phrases: DifferencePhrase[] }) {
     <Fragment key={phrase.text}>
       {index > 0 && (index === phrases.length - 1 ? ' and ' : ', ')}
       <Swatch tone={phrase.tone} />
-      <b className="font-semibold text-foreground">{phrase.text}</b>
+      <b className="font-strong text-foreground">{phrase.text}</b>
     </Fragment>
   ));
 }
@@ -110,9 +111,9 @@ function PlaceStepper({ comparison, pageRef }: PlaceStepperProps) {
         </AppButton>
       ) : (
         <>
-          <span className="font-mono text-[0.6875rem] text-ink-faint">
+          <Text variant="meta">
             {cursor < 0 ? `${changes.length} places` : `${cursor + 1} of ${changes.length}`}
-          </span>
+          </Text>
           <AppButton
             variant="ghost"
             size="xs"
@@ -183,12 +184,16 @@ export function VersionPreviewBanner({ comparison, pageRef }: VersionPreviewBann
     });
 
   return (
-    <div className="flex flex-wrap items-center gap-x-2.25 gap-y-1.5 border-b border-amber-line bg-amber-soft px-3.5 py-2 text-[0.78125rem] text-ink-soft">
-      <Eye className="size-3.5 shrink-0 text-amber-600 dark:text-amber-400" />
+    <Text
+      as="div"
+      variant="secondary"
+      className="flex flex-wrap items-center gap-x-2.25 gap-y-1.5 border-b border-amber-line bg-amber-soft px-3.5 py-2 text-ink-soft"
+    >
+      <Eye className="size-3.5 shrink-0 text-amber" />
       <span className="min-w-0 flex-[1_1_16.25rem] leading-normal">
         <span className="text-ink-muted">
           Reading{' '}
-          <span className="mr-1.5 ml-0.75 font-mono font-semibold text-amber-600 dark:text-amber-400">
+          <span className="mr-1.5 ml-0.75 font-mono font-strong text-amber tabular-nums">
             {label}
           </span>
           <span className="text-ink-soft italic">{version.summary}</span>
@@ -215,6 +220,6 @@ export function VersionPreviewBanner({ comparison, pageRef }: VersionPreviewBann
         <History />
         Restore this version
       </AppButton>
-    </div>
+    </Text>
   );
 }

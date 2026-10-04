@@ -3,6 +3,7 @@ import { AppButton } from '@/components/AppButton';
 import { AppTooltip } from '@/components/AppTooltip';
 import { AppMenu, AppMenuContent, AppMenuItem, AppMenuTrigger } from '@/components/AppMenu';
 import { AppToggleGroup, AppToggleGroupItem } from '@/components/AppToggleGroup';
+import { Text } from '@/components/Text';
 import { cn } from '@/lib/utils';
 import { PREVIEW_ZOOM_RANGE } from '@/stores/uiStore';
 import type { HistoryComparison } from '@/types/history';
@@ -58,7 +59,7 @@ function ZoomControl({ value, isTextRead, onStep, onReset }: ReadPaneZoom) {
       <AppButton
         variant="ghost"
         size="2xs"
-        className="min-w-8.5 px-1 font-mono text-[0.6875rem] font-normal text-ink-soft"
+        className="min-w-8.5 px-1 font-mono font-regular text-ink-soft tabular-nums"
         aria-label="Reset zoom"
         title={isTextRead ? 'Zoom in to read the printed page' : 'Reset to fit width'}
         disabled={isTextRead}
@@ -139,8 +140,12 @@ export function ReadPaneControls({
               {view === value && (
                 <Check aria-hidden className="absolute top-2.25 left-2.25 size-3 text-ink-soft" />
               )}
-              <span className="text-[0.78125rem] text-foreground">{label}</span>
-              <span className="text-[0.71875rem] text-ink-faint">{description}</span>
+              <Text variant="secondary" className="text-foreground">
+                {label}
+              </Text>
+              <Text variant="secondary" className="text-ink-faint">
+                {description}
+              </Text>
             </AppMenuItem>
           ))}
         </AppMenuContent>

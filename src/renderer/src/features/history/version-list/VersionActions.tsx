@@ -8,6 +8,7 @@ import {
   AppMenuSeparator,
   AppMenuTrigger,
 } from '@/components/AppMenu';
+import { Text } from '@/components/Text';
 import { cn } from '@/lib/utils';
 import type { VersionMeta } from '@shared/types/db';
 
@@ -65,7 +66,7 @@ export function VersionActions({
   return (
     <span
       className={cn(
-        'pointer-events-none absolute right-1 z-2 flex gap-px rounded-[0.4375rem] bg-pane-raised p-0.5 opacity-0 shadow-[0_0_0_1px_var(--line-strong),0_6px_16px_-8px_oklch(0_0_0/55%)] transition-opacity duration-100',
+        'pointer-events-none absolute right-1 z-2 flex gap-px rounded-[0.4375rem] bg-pane-raised p-0.5 opacity-0 shadow-floating ring-1 ring-line-strong transition-opacity duration-100',
         'group-focus-within:pointer-events-auto group-focus-within:opacity-100 group-hover:pointer-events-auto group-hover:opacity-100 has-data-[state=open]:pointer-events-auto has-data-[state=open]:opacity-100 motion-reduce:transition-none',
         isNested ? 'top-0' : 'top-0.5',
         isPressed && 'pointer-events-auto opacity-100'
@@ -179,9 +180,9 @@ export function VersionActions({
               <Trash2 className="mt-0.5" />
               <span>
                 Delete
-                <span className="mt-0.5 block text-[0.6875rem] leading-snug">
+                <Text variant="secondary" className="mt-0.5 block text-inherit">
                   The newest version can’t be deleted. Your draft is measured from it.
-                </span>
+                </Text>
               </span>
             </AppMenuItem>
           ) : (

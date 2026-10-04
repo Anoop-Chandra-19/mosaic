@@ -1,8 +1,13 @@
 import { ChevronDown, ChevronUp, ExternalLink } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
+import { Text } from '@/components/Text';
 import { cn } from '@/lib/utils';
 import type { VersionMeta } from '@shared/types/db';
 import { formatHistoryMonth } from '../groupVersionHistory';
+
+/** A link set in the meta line it sits in. */
+export const HISTORY_LINK =
+  'h-auto p-0 font-mono text-meta font-regular text-ink-muted underline underline-offset-2 hover:text-amber';
 
 /*
  * The lines at either end of a history list: how much there is above it, and what it
@@ -19,34 +24,32 @@ interface HistoryCountProps {
 export function HistoryCount({ versions, isCompact, onOpenFullHistory }: HistoryCountProps) {
   const namedCount = versions.filter((version) => version.kind === 'named').length;
   return (
-    <p
+    <Text
+      as="p"
+      variant="meta"
       className={cn(
-        'mb-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 font-mono text-[0.7rem] text-ink-faint',
+        'mb-0.5 flex flex-wrap items-center gap-x-2 gap-y-1',
         isCompact ? 'mt-1.5' : 'mt-2.25'
       )}
     >
       <span>
-        <b className="font-semibold text-ink-muted">{versions.length.toLocaleString()}</b> versions
+        <b className="font-strong text-ink-muted">{versions.length.toLocaleString()}</b> versions
       </span>
       <span aria-hidden>·</span>
       <span>
-        <b className="font-semibold text-ink-muted">{namedCount.toLocaleString()}</b> named
+        <b className="font-strong text-ink-muted">{namedCount.toLocaleString()}</b> named
       </span>
       <span aria-hidden>·</span>
       <span>since {formatHistoryMonth(versions.at(-1)!.createdAt)}</span>
       {onOpenFullHistory && (
         <>
           <span aria-hidden>·</span>
-          <AppButton
-            variant="link"
-            onClick={onOpenFullHistory}
-            className="h-auto p-0 font-mono text-[0.7rem] font-normal text-ink-muted underline underline-offset-2 hover:text-amber-600 dark:hover:text-amber-400"
-          >
+          <AppButton variant="link" onClick={onOpenFullHistory} className={HISTORY_LINK}>
             full history
           </AppButton>
         </>
       )}
-    </p>
+    </Text>
   );
 }
 
@@ -76,11 +79,11 @@ export function HistoryRangeEdge({ direction, count, oldestMonth, onShow }: Hist
         <Chevron className="size-3" />
         {isNewer ? 'Show newer' : 'Show earlier'}
       </span>
-      <span className="text-left font-mono text-[0.675rem] font-normal whitespace-normal text-ink-faint">
+      <Text variant="meta" className="text-left whitespace-normal">
         {isNewer
           ? `${count.toLocaleString()} newer ${count === 1 ? 'version' : 'versions'}, up to today.`
           : `${count.toLocaleString()} more, back to ${oldestMonth}`}
-      </span>
+      </Text>
     </AppButton>
   );
 }
@@ -116,9 +119,9 @@ export function HistoryHandoff({
         <ExternalLink className="size-3" />
         {label}
       </span>
-      <span className="text-left font-mono text-[0.675rem] font-normal whitespace-normal text-ink-faint">
+      <Text variant="meta" className="text-left whitespace-normal">
         {rest} All kept.
-      </span>
+      </Text>
     </AppButton>
   );
 }

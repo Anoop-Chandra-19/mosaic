@@ -1,5 +1,7 @@
 import type { ReactNode } from 'react';
 import { AppTooltip } from '@/components/AppTooltip';
+import { Text } from '@/components/Text';
+import { textVariantClasses } from '@/components/textVariants';
 import { cn } from '@/lib/utils';
 import { describeChange, describeChangeTip } from '@shared/resume/changes/describeChanges';
 import type { DiffLine, ResumeDiff } from '@shared/resume/changes/diffResumes';
@@ -23,18 +25,20 @@ const TEXT_LINE =
   'relative mt-0.75 rounded-[3px] pl-3 text-pretty before:absolute before:top-2 before:left-0.75 before:size-0.75 before:rounded-full before:bg-ink-faint';
 
 const ROW_STYLES: Record<ChangeTargetType, { as: 'p' | 'h4' | 'h5'; className: string }> = {
-  name: {
-    as: 'h4',
-    className: 'mb-1.5 text-[0.9375rem] font-semibold tracking-[-0.01em] text-foreground',
-  },
+  name: { as: 'h4', className: cn(textVariantClasses('editor'), 'mb-1.5') },
   section: {
     as: 'h5',
-    className:
-      'mt-3.5 mb-1.5 border-b border-line pb-0.75 text-[0.625rem] font-bold tracking-[0.1em] text-ink-faint uppercase',
+    className: cn(
+      textVariantClasses('tag'),
+      'mt-3.5 mb-1.5 border-b border-line pb-0.75 text-ink-faint'
+    ),
   },
-  entry: { as: 'p', className: 'mt-2 mb-0.5 text-[0.7875rem] font-semibold text-foreground' },
-  entryField: { as: 'p', className: 'mt-0.5 text-xs' },
-  headerItem: { as: 'p', className: 'mt-0.5 text-xs' },
+  entry: {
+    as: 'p',
+    className: cn(textVariantClasses('secondary'), 'mt-2 mb-0.5 font-strong text-foreground'),
+  },
+  entryField: { as: 'p', className: cn(textVariantClasses('secondary'), 'mt-0.5') },
+  headerItem: { as: 'p', className: cn(textVariantClasses('secondary'), 'mt-0.5') },
   bullet: { as: 'p', className: TEXT_LINE },
   summaryLine: { as: 'p', className: TEXT_LINE },
   textLine: { as: 'p', className: TEXT_LINE },
@@ -70,9 +74,9 @@ function LineText({ line }: { line: DiffLine }) {
 /** A field or header item names itself, since it stands apart from the line it belongs to. */
 function FieldLabel({ change }: { change: Change }) {
   return (
-    <span className="mr-2 inline-block min-w-18.5 font-mono text-[0.65625rem] text-ink-faint">
+    <Text variant="meta" className="mr-2 inline-block min-w-18.5">
       {describeChange(change).noun}
-    </span>
+    </Text>
   );
 }
 
@@ -92,7 +96,9 @@ function MarkedRow({ line, otherSide }: { line: DiffLine; otherSide: string }) {
       {isField && change && <FieldLabel change={change} />}
       <LineText line={line} />
       {change?.kind === 'hide' && (
-        <span className="ml-2 font-mono text-[0.65625rem] text-ink-faint no-underline">hidden</span>
+        <Text variant="meta" className="ml-2 no-underline">
+          hidden
+        </Text>
       )}
     </Tag>
   );
@@ -113,16 +119,16 @@ interface MarkedVersionTextProps {
  */
 export function MarkedVersionText({ diff, otherSide, note }: MarkedVersionTextProps) {
   return (
-    <div className="mx-auto w-full max-w-105 px-4.5 text-[0.775rem] leading-normal text-ink-muted">
+    <Text as="div" variant="body" className="mx-auto block w-full max-w-105 px-4.5 text-ink-muted">
       {note}
       {diff.lines.map((line, index) => {
         const key = `${line.row.key}:${index}`;
         if (line.isMove && line.change) {
           const { noun, verb } = describeChange(line.change);
           return (
-            <p key={key} className="mt-0.5 ml-3 font-mono text-[0.6875rem] text-ink-faint">
+            <Text key={key} as="p" variant="meta" className="mt-0.5 ml-3">
               ↕ {noun} {verb}
-            </p>
+            </Text>
           );
         }
         const isUnchangedField =
@@ -131,6 +137,6 @@ export function MarkedVersionText({ diff, otherSide, note }: MarkedVersionTextPr
         if (isUnchangedField) return null;
         return <MarkedRow key={key} line={line} otherSide={otherSide} />;
       })}
-    </div>
+    </Text>
   );
 }

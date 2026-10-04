@@ -12,6 +12,8 @@ import { Clock, List, X } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
 import { AppCheckbox } from '@/components/AppCheckbox';
 import { AppTooltip } from '@/components/AppTooltip';
+import { Text } from '@/components/Text';
+import { textVariantClasses } from '@/components/textVariants';
 import { PAPER_DIMENSIONS_PT } from '@/features/preview/pageGeometry';
 import {
   SLIDE_AWAY_MOTION,
@@ -281,21 +283,33 @@ function FullHistoryFrame({
       aria-label={`History of ${template.name}`}
       className="absolute inset-0 z-30 flex flex-col bg-background outline-none @container/full-history"
     >
-      <header className="flex h-11.5 shrink-0 items-center gap-2.5 border-b border-line bg-card pr-2.5 pl-3.5">
+      <header className="flex h-11.5 shrink-0 items-center gap-2.5 border-b border-line bg-chrome pr-2.5 pl-3.5">
         <Clock aria-hidden className="size-3.75 text-ink-muted" />
-        <h2 className="text-[0.84375rem] font-semibold tracking-[-0.01em]">History</h2>
+        <Text as="h2" variant="title">
+          History
+        </Text>
         <span aria-hidden className="text-ink-faint">
           ·
         </span>
-        <span className="min-w-0 truncate text-[0.8125rem] text-ink-soft">{template.name}</span>
+        <Text variant="body" className="min-w-0 truncate">
+          {template.name}
+        </Text>
         {versions && (
-          <span className="ml-1 hidden font-mono text-[0.71875rem] whitespace-nowrap text-ink-faint @min-[56rem]/full-history:inline">
+          <Text
+            variant="meta"
+            className="ml-1 hidden whitespace-nowrap @min-[56rem]/full-history:inline"
+          >
             {versions.length.toLocaleString()} versions · {namedCount} named
-          </span>
+          </Text>
         )}
         <span className="flex-1" />
         <AppTooltip content="The months index, symbol counts, and line numbers in Changes only">
-          <label className="flex cursor-pointer items-center gap-1.5 px-1.5 text-xs text-ink-muted select-none">
+          <label
+            className={cn(
+              textVariantClasses('secondary'),
+              'flex cursor-pointer items-center gap-1.5 px-1.5 select-none'
+            )}
+          >
             <AppCheckbox
               size="sm"
               checked={isDetailed}
@@ -345,7 +359,7 @@ function FullHistoryFrame({
         {/* The same ground as the sidebar's history, which its sticky headers are painted in. */}
         <div
           className={cn(
-            'min-w-80 flex-1 overflow-auto bg-white px-4 pb-6 dark:bg-zinc-950',
+            'min-w-80 flex-1 overflow-auto bg-background px-4 pb-6',
             transitionClasses({ name: 'history-list', motion: 'reclaim' })
           )}
         >
@@ -372,7 +386,9 @@ function FullHistoryFrame({
                 }
               />
             ) : (
-              <p className="mt-3 text-xs text-ink-faint">Loading history…</p>
+              <Text as="p" variant="secondary" className="mt-3 text-ink-faint">
+                Loading history…
+              </Text>
             )}
           </div>
         </div>

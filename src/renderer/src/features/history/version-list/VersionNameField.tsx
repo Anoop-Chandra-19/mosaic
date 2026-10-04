@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Bookmark, Pencil } from 'lucide-react';
+import { textVariantClasses } from '@/components/textVariants';
 import { cn } from '@/lib/utils';
 import { MAX_DB_TEXT_LENGTH, type VersionMeta } from '@shared/types/db';
 
@@ -47,7 +48,7 @@ export function VersionNameField({ version, label, onCommit, onCancel }: Version
         aria-hidden
         className={cn(
           'pointer-events-none absolute top-1.5 left-1.75 size-2.75',
-          isNamed ? 'text-ink-muted' : 'text-amber-600 dark:text-amber-400'
+          isNamed ? 'text-ink-muted' : 'text-amber'
         )}
       />
       <input
@@ -67,7 +68,10 @@ export function VersionNameField({ version, label, onCommit, onCancel }: Version
         onBlur={() => {
           if (document.hasFocus()) finish(true);
         }}
-        className="h-5.5 min-w-0 flex-1 rounded-[0.3125rem] bg-pane-raised pr-1.5 pl-5.5 text-[0.8rem] font-semibold text-foreground shadow-[inset_0_0_0_1px_var(--line-heavy),0_0_0_3px_var(--amber-soft)] outline-none placeholder:font-normal placeholder:text-ink-faint"
+        className={cn(
+          textVariantClasses('strong'),
+          'h-5.5 min-w-0 flex-1 rounded-[0.3125rem] bg-pane-raised pr-1.5 pl-5.5 shadow-[inset_0_0_0_1px_var(--line-heavy),0_0_0_3px_var(--amber-soft)] outline-none placeholder:font-regular placeholder:text-ink-faint'
+        )}
       />
     </div>
   );
@@ -86,7 +90,8 @@ function Kbd({ className, children }: { className?: string; children: string }) 
   return (
     <kbd
       className={cn(
-        'rounded-[0.1875rem] border border-line-strong bg-line px-1 font-mono text-[0.625rem] leading-3.5 text-ink-muted',
+        textVariantClasses('key'),
+        'rounded-[0.1875rem] border border-line-strong bg-line px-1 leading-3.5 text-ink-muted',
         className
       )}
     >

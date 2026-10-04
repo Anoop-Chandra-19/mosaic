@@ -1,5 +1,7 @@
 import { Fragment, useState, type ReactNode } from 'react';
 import { AppButton } from '@/components/AppButton';
+import { Text } from '@/components/Text';
+import { textVariantClasses } from '@/components/textVariants';
 import { cn } from '@/lib/utils';
 import {
   describeChange,
@@ -22,12 +24,14 @@ interface UnifiedDiffProps {
 }
 
 const DELETED_WORDS = 'rounded-xs bg-del-word text-foreground';
+/** The narrow label a field or setting names itself with, before its value. */
+const FIELD_LABEL = 'mr-2 inline-block min-w-18.5';
 const INSERTED_WORDS = 'rounded-xs bg-add-word text-foreground';
 
 /** Each line: before and after numbers when detailed, a sign, then the text. */
 function lineGrid(isDetailed: boolean) {
   return cn(
-    'grid w-full items-baseline text-left text-[0.775rem] leading-[1.55]',
+    'grid w-full items-baseline text-left text-body',
     isDetailed
       ? 'grid-cols-[1.625rem_1.625rem_1rem_minmax(0,1fr)]'
       : 'grid-cols-[1rem_minmax(0,1fr)]'
@@ -35,11 +39,15 @@ function lineGrid(isDetailed: boolean) {
 }
 
 function LineNumbers({ before, after }: { before: number | null; after: number | null }) {
-  const number = 'self-stretch pt-px pr-1.5 text-right font-mono text-[0.65625rem] text-ink-faint';
+  const number = 'self-stretch pt-px pr-1.5 text-right';
   return (
     <>
-      <span className={number}>{before ?? ''}</span>
-      <span className={number}>{after ?? ''}</span>
+      <Text variant="meta" className={number}>
+        {before ?? ''}
+      </Text>
+      <Text variant="meta" className={number}>
+        {after ?? ''}
+      </Text>
     </>
   );
 }
@@ -57,9 +65,9 @@ function Line({ isDetailed, numbers, sign, className, signClassName, children }:
   return (
     <div className={cn(lineGrid(isDetailed), className)}>
       {isDetailed && <LineNumbers {...numbers} />}
-      <span className={cn('text-center font-mono text-xs text-ink-faint', signClassName)}>
+      <Text variant="meta" className={cn('text-center', signClassName)}>
         {sign}
-      </span>
+      </Text>
       <span className="py-0.75 pr-3 pl-0.5 text-pretty">{children}</span>
     </div>
   );
@@ -72,9 +80,9 @@ const isTextRow = (line: DiffLine) =>
 function FieldLabel({ change }: { change: Change }) {
   if (change.target.type !== 'entryField' && change.target.type !== 'headerItem') return null;
   return (
-    <span className="mr-2 inline-block min-w-18.5 font-mono text-[0.65625rem] text-ink-faint not-italic">
+    <Text variant="meta" className={cn(FIELD_LABEL, 'not-italic')}>
       {describeChange(change).noun}
-    </span>
+    </Text>
   );
 }
 
@@ -100,7 +108,7 @@ function ChangeLines({
         sign="↕"
         signClassName="text-ink-muted"
       >
-        <span className="text-xs text-ink-muted">{describeChange(change).verb}</span>
+        <Text variant="secondary">{describeChange(change).verb}</Text>
       </Line>
     );
   }
@@ -162,9 +170,9 @@ function ChangeLines({
       <FieldLabel change={change} />
       {text(change.after || change.before)}
       {(change.kind === 'show' || change.kind === 'hide') && (
-        <span className="ml-2 font-mono text-[0.65625rem] text-ink-faint not-italic">
+        <Text variant="meta" className="ml-2 not-italic">
           {change.kind === 'show' ? 'was left off' : 'left off the page, still in the document'}
-        </span>
+        </Text>
       )}
     </Line>
   );
@@ -215,9 +223,11 @@ function UnifiedLine({ line, isCurrent, onPick, otherSide, isDetailed }: Unified
   );
 }
 
-const HUNK = 'overflow-hidden rounded-md border border-line bg-background';
-const HUNK_HEADER =
-  'flex items-center gap-1.75 border-b border-line bg-pane-raised px-2.5 py-1.5 text-xs text-ink-soft';
+const HUNK = 'overflow-hidden rounded-sm border border-line bg-background';
+const HUNK_HEADER = cn(
+  textVariantClasses('secondary'),
+  'flex items-center gap-1.75 border-b border-line bg-pane-raised px-2.5 py-1.5 text-ink-soft'
+);
 
 /**
  * "Changes only": one hunk per entry, section, or the header, with the lines that differ,
@@ -238,7 +248,11 @@ export function UnifiedDiff({
       {hunks.map((hunk) => (
         <section key={hunk.key} aria-label={hunk.title} className={HUNK}>
           <header className={HUNK_HEADER}>
-            {isDetailed && <span className="font-mono text-[0.6875rem] text-info">@@</span>}
+            {isDetailed && (
+              <Text variant="meta" className="text-info">
+                @@
+              </Text>
+            )}
             {hunk.title.split(' › ').map((part, index) => (
               <Fragment key={index}>
                 {index > 0 && <span className="text-ink-faint">›</span>}
@@ -256,10 +270,10 @@ export function UnifiedDiff({
                 className="group block w-full rounded-none p-0 hover:bg-line"
               >
                 <Line isDetailed={isDetailed} numbers={{ before: null, after: null }} sign="⋯">
-                  <span className="font-mono text-[0.6875rem] text-ink-faint group-hover:text-ink-soft">
+                  <Text variant="meta" className="group-hover:text-ink-soft">
                     {item.lines.length} unchanged {item.noun}
                     {item.lines.length === 1 ? '' : 's'}
-                  </span>
+                  </Text>
                 </Line>
               </AppButton>
             ) : (
@@ -291,9 +305,9 @@ export function UnifiedDiff({
                   sign=""
                   className="text-ink-soft"
                 >
-                  <span className="mr-2 inline-block min-w-18.5 font-mono text-[0.65625rem] text-ink-faint">
+                  <Text variant="meta" className={FIELD_LABEL}>
                     {wording.setting}
-                  </span>
+                  </Text>
                   {wording.from} → {wording.to}
                 </Line>
               </div>

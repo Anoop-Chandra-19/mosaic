@@ -3,6 +3,7 @@ import { AppButton } from '@/components/AppButton';
 import { AppCheckbox } from '@/components/AppCheckbox';
 import { AppPopover, AppPopoverContent, AppPopoverTrigger } from '@/components/AppPopover';
 import { AppToggleGroup, AppToggleGroupItem } from '@/components/AppToggleGroup';
+import { Text } from '@/components/Text';
 import { useUiStore } from '@/stores/uiStore';
 import {
   FOLD_NOTE,
@@ -43,10 +44,12 @@ export function SnapshotSettingsPopover({ isOpen, onOpenChange }: SnapshotSettin
         onEscapeKeyDown={(event) => event.stopPropagation()}
         className="w-80 px-3.5"
       >
-        <h3 className="text-[0.8125rem] font-semibold text-foreground">Automatic snapshots</h3>
-        <p className="mt-1 mb-2 text-[0.7375rem] leading-[1.45] text-pretty text-ink-faint">
+        <Text as="h3" variant="strong">
+          Automatic snapshots
+        </Text>
+        <Text as="p" variant="secondary" className="mt-1 mb-2 text-pretty text-ink-faint">
           {SNAPSHOTS_INTRO}
-        </p>
+        </Text>
         {SNAPSHOT_TRIGGER_OPTIONS.map(({ trigger, label, description }) => (
           <label key={trigger} className="flex cursor-pointer items-start gap-2.25 py-1.5">
             <AppCheckbox
@@ -56,16 +59,20 @@ export function SnapshotSettingsPopover({ isOpen, onOpenChange }: SnapshotSettin
               className="mt-0.5"
             />
             <span>
-              <span className="block text-[0.7875rem] text-ink-soft">{label}</span>
+              <Text variant="secondary" className="block text-ink-soft">
+                {label}
+              </Text>
               {description && (
-                <span className="mt-px block text-[0.7125rem] text-ink-faint">{description}</span>
+                <Text variant="meta" className="mt-px block font-sans">
+                  {description}
+                </Text>
               )}
             </span>
           </label>
         ))}
-        <h3 className="mt-3 text-[0.8125rem] font-semibold text-foreground">
+        <Text as="h3" variant="strong" className="mt-3 block">
           Fold old automatic snapshots
-        </h3>
+        </Text>
         <AppToggleGroup
           type="single"
           size="sm"
@@ -82,9 +89,9 @@ export function SnapshotSettingsPopover({ isOpen, onOpenChange }: SnapshotSettin
             </AppToggleGroupItem>
           ))}
         </AppToggleGroup>
-        <p className="mt-1.5 text-[0.7375rem] leading-[1.45] text-pretty text-ink-faint">
+        <Text as="p" variant="secondary" className="mt-1.5 text-pretty text-ink-faint">
           {FOLD_NOTE}
-        </p>
+        </Text>
       </AppPopoverContent>
     </AppPopover>
   );
