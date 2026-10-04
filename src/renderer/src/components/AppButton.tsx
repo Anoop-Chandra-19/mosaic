@@ -13,7 +13,7 @@ import { cn } from '@/lib/utils';
  * margins) go in `className`: they belong to where a button sits, not to what it is.
  */
 const appButtonVariants = cva(
-  'inline-flex shrink-0 items-center justify-center font-control whitespace-nowrap transition-colors outline-none focus-visible:ring-[3px] focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0',
+  'inline-flex shrink-0 items-center justify-center font-control whitespace-nowrap select-none transition-colors outline-none focus-visible:ring-[3px] focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0',
   {
     variants: {
       variant: {

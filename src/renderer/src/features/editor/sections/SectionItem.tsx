@@ -135,8 +135,9 @@ export function SectionItem({
           <Text
             variant="editor"
             className={cn(
-              'min-w-0 truncate line-through transition-[color,text-decoration-color] duration-200',
-              isHidden ? 'text-ink-faint decoration-line-heavy' : 'decoration-transparent'
+              // Struck only while off: a selection paints even a transparent line.
+              'min-w-0 truncate transition-colors duration-200',
+              isHidden && 'text-ink-faint line-through decoration-line-heavy'
             )}
           >
             {section.label || <span className="text-ink-faint">Untitled section</span>}

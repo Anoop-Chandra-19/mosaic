@@ -119,9 +119,9 @@ export function HeaderItemRow({
         title="Edit text and link"
         className={cn(
           // Sized by its words, so a short item keeps them whole beside a long link.
-          // Struck through either way, so the line fades in and out with the colour.
-          'flex-auto line-through transition-[color,background-color,text-decoration-color] duration-200',
-          item.shown ? 'decoration-transparent' : 'text-ink-faint decoration-line-heavy',
+          // Struck only while off: a selection paints even a transparent line.
+          'flex-auto transition-colors duration-200',
+          !item.shown && 'text-ink-faint line-through decoration-line-heavy',
           isUnprinted && 'text-ink-faint'
         )}
       >
