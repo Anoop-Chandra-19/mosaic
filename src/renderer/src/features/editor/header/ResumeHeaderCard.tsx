@@ -186,7 +186,7 @@ export function ResumeHeaderCard({ contact: shown }: { contact?: ContactInfo }) 
               onClick={() => addLine()}
               data-motion-id="new-line"
               className={cn(
-                'mt-2.5 h-[2.125rem] w-full text-support font-strong tracking-[0.01em] text-ink-muted',
+                'mt-2.5 h-[2.125rem] w-full text-support font-strong text-ink-muted',
                 HIDDEN_WHILE_READING
               )}
             >

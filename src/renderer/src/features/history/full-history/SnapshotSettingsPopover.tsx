@@ -63,7 +63,7 @@ export function SnapshotSettingsPopover({ isOpen, onOpenChange }: SnapshotSettin
                 {label}
               </Text>
               {description && (
-                <Text variant="meta" className="mt-px block font-sans">
+                <Text variant="caption" className="mt-px block">
                   {description}
                 </Text>
               )}

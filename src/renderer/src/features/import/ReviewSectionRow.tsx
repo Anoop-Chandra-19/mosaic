@@ -49,7 +49,10 @@ function SourceLines({ lines }: { lines: SourceLine[] }) {
         'pageBreak' in line ? (
           <div
             key={index}
-            className="my-0.5 flex items-center gap-1.5 font-sans text-amber before:flex-1 before:border-t before:border-dashed before:border-current after:flex-1 after:border-t after:border-dashed after:border-current"
+            className={cn(
+              textVariantClasses('caption'),
+              'my-0.5 flex items-center gap-1.5 text-amber before:flex-1 before:border-t before:border-dashed before:border-current after:flex-1 after:border-t after:border-dashed after:border-current'
+            )}
           >
             page break
           </div>
@@ -233,8 +236,8 @@ export function ReviewSectionRow({
             {withSource && (
               <div
                 className={cn(
-                  textVariantClasses('meta'),
-                  'grid grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)] gap-4 border-b border-line pt-1.25 pb-0.75 font-sans',
+                  textVariantClasses('caption'),
+                  'grid grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)] gap-4 border-b border-line pt-1.25 pb-0.75',
                   ARRIVES
                 )}
               >

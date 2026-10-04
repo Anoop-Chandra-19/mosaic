@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
 import { AppTooltip } from '@/components/AppTooltip';
-import { Text } from '@/components/Text';
+import { Badge } from '@/components/Badge';
 import {
   AppMenu,
   AppMenuContent,
@@ -164,12 +164,7 @@ export function HeaderItemRow({
 
       {isUnprinted && item.url && (
         <AppTooltip content="No text, so nothing prints for it. The link is kept.">
-          <Text
-            variant="meta"
-            className="shrink-0 rounded-xs border border-line-strong px-[0.3125rem] py-px font-sans tracking-[0.02em]"
-          >
-            no text
-          </Text>
+          <Badge size="sm">no text</Badge>
         </AppTooltip>
       )}
 

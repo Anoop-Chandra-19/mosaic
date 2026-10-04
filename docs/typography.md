@@ -52,6 +52,10 @@ values assume a 16px root; the tokens are in rem. The same in both themes and bo
 `secondary` is a colour name already (`--color-secondary`), so its size token is
 `text-support`; in code the role is still `variant="secondary"`.
 
+`caption` is meta's size in sans (`text-meta`, 460, `ink-faint`): a small label or note
+that isn't a number or a name, such as a shortcut hint, a group label in a list, or an
+option's description.
+
 **Weights** have their own tokens for controls and emphasis: `font-regular` 460,
 `font-control` 560, `font-strong` 650, `font-tag` 700. A weight class beside a role class
 wins, so `text-body font-control` is a control's label.
@@ -84,6 +88,8 @@ roles built in:
 | Wrapper                                     | Design             | Type                                                                             |
 | ------------------------------------------- | ------------------ | -------------------------------------------------------------------------------- |
 | `AppButton`                                 | `.btn`             | body at `font-control`; `xs` support, `2xs` meta; solid and accent `font-strong` |
+| `AppButton size="chip"`                     | `.hchip`           | meta in sans at `font-strong`, `0.04em`: a value shown in place                  |
+| `Badge`                                     | `.badge`, `.htag`  | `md` support, `sm` meta; sans, `font-strong`, `0.02em`                           |
 | `AppInput`, `AppTextarea`                   | `.input`           | body, `foreground`, faint placeholder                                            |
 | `AppSelect`                                 | `.input` + `.menu` | body; list rows as menu rows                                                     |
 | `AppMenu`                                   | `.menu`            | rows body in `ink-soft`; labels support in `ink-faint`                           |
@@ -107,8 +113,10 @@ Every screen is on the roles and the colour tokens. ESLint keeps it that way
 (`STYLE_RULES` in `eslint.config.js`): renderer code may not use an arbitrary `text-[…]`
 size, a Tailwind size or weight (`text-xs`, `font-semibold`), a palette shade
 (`zinc-500`), white or black, a literal colour in an arbitrary value (`oklch(…)`, `#…`), or
-a stock shadow (`shadow-md`). The resume page (`features/preview/`, the page marks,
-`lib/resume/`) and `components/ui/` are exempt.
+a stock shadow (`shadow-md`). An arbitrary `tracking-[…]` or `leading-[…]` is allowed only
+in `components/`, so a spacing the roles don't carry becomes a shared look (`Badge`, an
+`AppButton` size) rather than a number repeated at each use. The resume page
+(`features/preview/`, the page marks, `lib/resume/`) and `components/ui/` are exempt.
 
 ## 6. Wrapping, density, and window size
 

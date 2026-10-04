@@ -40,6 +40,15 @@ const STYLE_RULES = [
   },
 ];
 
+/** Allowed only in components/: feature code uses the role or the shared look that has it. */
+const SHARED_LOOK_RULES = [
+  {
+    pattern: /(^|[\s:'"`])(tracking|leading)-\[/,
+    message:
+      'Use the role’s own tracking and line height, or a shared look in components/ (Badge, an AppButton size), not an arbitrary value.',
+  },
+];
+
 /** One `no-restricted-syntax` entry per rule, for plain strings and template literals. */
 function restrictClassStrings(rules) {
   return rules.flatMap(({ pattern, message }) => [
@@ -95,6 +104,24 @@ export default defineConfig([
     ],
     rules: {
       'no-restricted-syntax': ['error', ...restrictClassStrings(STYLE_RULES)],
+    },
+  },
+  {
+    // A spacing the roles don't carry is a shared look, written once in components/. This
+    // block's list replaces the one above, so it repeats STYLE_RULES.
+    files: ['src/renderer/src/**/*.{ts,tsx}'],
+    ignores: [
+      'src/renderer/src/components/**',
+      'src/renderer/src/features/preview/**',
+      'src/renderer/src/features/document-diff/PageMarkParts.tsx',
+      'src/renderer/src/lib/resume/**',
+      '**/__tests__/**',
+    ],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        ...restrictClassStrings([...STYLE_RULES, ...SHARED_LOOK_RULES]),
+      ],
     },
   },
   {

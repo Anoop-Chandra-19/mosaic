@@ -58,7 +58,10 @@ For resume content, preview, or exports, also read `docs/resume-format.md` (repo
   secondary, meta, eyebrow, tag, key. Each is a `text-*` token in `index.css` carrying size,
   line height, tracking and weight (`secondary`'s is `text-support`, since `text-secondary`
   is a colour). Weights: `font-regular` 460, `font-control` 560, `font-strong` 650,
-  `font-tag` 700.
+  `font-tag` 700. `caption` is meta's size in sans, for a small label that isn't a number.
+- Tracking and line height come with the role. A look that needs its own (a chip, a badge)
+  is written once in `components/` (`Badge`, `AppButton size="chip"`); ESLint refuses
+  `tracking-[…]` and `leading-[…]` elsewhere.
 - Write interface text as `<Text variant="…">` (`components/Text.tsx`); its table adds the
   role's family, case and colour. No bare `<h1>`–`<h6>`, `<p>` or `<span>` styled with type
   classes: keep the element for its meaning with `as` (`<Text as="h3" variant="title">`),

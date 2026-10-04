@@ -46,7 +46,7 @@ const TONE_TEXT: Record<ChangeTone, string> = {
 };
 
 const COUNT = 'font-strong text-foreground';
-const GROUP_LABEL = cn(textVariantClasses('meta'), 'pt-1 pr-2 pb-0.75 pl-7.5 font-sans');
+const GROUP_LABEL = cn(textVariantClasses('caption'), 'pt-1 pr-2 pb-0.75 pl-7.5');
 const CHANGE_ROW =
   'grid grid-cols-[1rem_auto_minmax(0,1fr)] items-baseline gap-2 px-2 py-1.25 text-support';
 

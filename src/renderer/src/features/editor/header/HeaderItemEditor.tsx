@@ -100,7 +100,7 @@ export function HeaderItemEditor({
           placeholder={placeholder}
           onChange={(event) => setText(event.target.value.replace(/\n/g, ' '))}
           onKeyDown={handleKeyDown}
-          className="min-h-7 min-w-0 flex-1 px-[0.4375rem] py-[0.3125rem] leading-[1.45] wrap-anywhere"
+          className="min-h-7 min-w-0 flex-1 px-[0.4375rem] py-[0.3125rem] wrap-anywhere"
         />
       </div>
       <div className="mb-1.5 flex items-center gap-2">

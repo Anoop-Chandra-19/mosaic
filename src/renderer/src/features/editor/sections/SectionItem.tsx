@@ -2,6 +2,7 @@ import { useRef, useState } from 'react';
 import { ArrowDown, ArrowUp, Ellipsis, Eye, EyeOff, Pencil, Plus, Trash2 } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
 import { AppTooltip } from '@/components/AppTooltip';
+import { Badge } from '@/components/Badge';
 import { Text } from '@/components/Text';
 import { AppCollapsible, AppCollapsibleTrigger } from '@/components/AppCollapsible';
 import { useListMotion } from '@/lib/motion/useListMotion';
@@ -143,12 +144,9 @@ export function SectionItem({
         )}
         {isHidden ? (
           <AppTooltip content="This whole section is left off the resume">
-            <Text
-              variant="meta"
-              className="shrink-0 rounded-[0.3125rem] border border-line-strong bg-line px-1.5 py-px font-sans font-strong tracking-[0.02em] text-ink-muted"
-            >
+            <Badge size="sm" tone="filled">
               not on resume
-            </Text>
+            </Badge>
           </AppTooltip>
         ) : (
           <Text variant="meta" className="shrink-0">

@@ -10,6 +10,7 @@ const VARIANTS: TextVariant[] = [
   'strong',
   'secondary',
   'meta',
+  'caption',
   'eyebrow',
   'tag',
   'key',
