@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { AppTooltipProvider } from '@/components/AppTooltip';
+import { useNoSelectionBehindLayers } from '@/components/useNoSelectionBehindLayers';
 import { AppShell } from '@/features/shell/AppShell';
 
 const SCROLLBAR_IDLE_MS = 900;
@@ -17,6 +18,8 @@ const SCROLL_KEYS = new Set([
 ]);
 
 function App() {
+  useNoSelectionBehindLayers();
+
   useEffect(() => {
     // Keep custom scrollbars visible only while the user is actively scrolling.
     const root = document.documentElement;

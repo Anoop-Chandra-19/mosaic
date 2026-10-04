@@ -80,7 +80,7 @@ function describeDraftDistance(changeCount: number, hasFormatting: boolean): str
 function describeRestore(isHead: boolean, isIdentical: boolean): string {
   if (isHead) return 'This is the newest version';
   if (isIdentical) return 'Your draft already matches this version';
-  return 'Restore. What you have now is kept in history first.';
+  return 'Restore this version. Your current draft is saved to history first.';
 }
 
 function TextReadNote({ text, onShowPage }: { text: string; onShowPage: () => void }) {

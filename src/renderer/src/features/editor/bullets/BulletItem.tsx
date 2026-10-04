@@ -199,11 +199,9 @@ export function BulletItem({
       onKeyDown={handleKeyDown}
       className={cn(
         'group/bullet relative flex items-start gap-2 py-(--density-bullet) text-body text-pretty',
-        // Struck through either way, so the line fades in and out with the colour.
-        'line-through transition-[color,text-decoration-color] duration-200',
-        bullet.selected
-          ? 'text-ink-soft decoration-transparent'
-          : 'text-ink-faint decoration-line-heavy'
+        // Struck only while off: a selection paints even a transparent line.
+        'transition-colors duration-200',
+        bullet.selected ? 'text-ink-soft' : 'text-ink-faint line-through decoration-line-heavy'
       )}
     >
       <SortGripHandle

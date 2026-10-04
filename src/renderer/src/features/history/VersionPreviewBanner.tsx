@@ -205,12 +205,7 @@ export function VersionPreviewBanner({ comparison, pageRef }: VersionPreviewBann
       {comparison.diff.changes.length > 0 && (
         <PlaceStepper comparison={comparison} pageRef={pageRef} />
       )}
-      <AppButton
-        variant="ghost"
-        size="xs"
-        title="List every change, with the whole history beside it"
-        onClick={openFullHistory}
-      >
+      <AppButton variant="ghost" size="xs" title="Open the full history" onClick={openFullHistory}>
         Full history
       </AppButton>
       <AppButton variant="ghost" size="xs" onClick={() => setPreview(null)}>

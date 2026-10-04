@@ -106,7 +106,7 @@ async function readLongFromBullet(view: Locator, index: number) {
   const reading = view.getByRole('complementary');
   await view.getByRole('button', { name: 'Hide the index' }).click();
   await expect(reading.getByRole('heading', { name: 'Long', exact: true })).toBeVisible();
-  await reading.getByRole('button', { name: 'Hide the marks, read the clean page' }).click();
+  await reading.getByRole('button', { name: 'Hide the change marks' }).click();
   for (const zoom of ['115%', '130%', '150%']) {
     await reading.getByRole('button', { name: 'Zoom in' }).click();
     await expect(zoomReadout(reading)).toHaveText(zoom);

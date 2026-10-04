@@ -7,6 +7,7 @@ export type TextVariant =
   | 'strong'
   | 'secondary'
   | 'meta'
+  | 'caption'
   | 'eyebrow'
   | 'tag'
   | 'key';
@@ -20,9 +21,11 @@ const VARIANT_CLASSES: Record<TextVariant, string> = {
   strong: 'text-strong text-foreground',
   secondary: 'text-support text-ink-muted',
   meta: 'text-meta font-mono tabular-nums text-ink-faint',
+  // Meta's size in the interface's sans: a label or note, not a number or a name.
+  caption: 'text-meta font-sans text-ink-faint',
   eyebrow: 'text-eyebrow uppercase text-ink-faint',
   // A status tag takes its status colour through `className`.
-  tag: 'text-tag uppercase text-ink-muted',
+  tag: 'text-tag font-sans uppercase text-ink-muted',
   key: 'text-key font-mono text-ink-soft',
 };
 

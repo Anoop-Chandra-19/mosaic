@@ -13,7 +13,7 @@ import { cn } from '@/lib/utils';
  * margins) go in `className`: they belong to where a button sits, not to what it is.
  */
 const appButtonVariants = cva(
-  'inline-flex shrink-0 items-center justify-center font-control whitespace-nowrap transition-colors outline-none focus-visible:ring-[3px] focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0',
+  'inline-flex shrink-0 items-center justify-center font-control whitespace-nowrap select-none transition-colors outline-none focus-visible:ring-[3px] focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0',
   {
     variants: {
       variant: {
@@ -35,12 +35,19 @@ const appButtonVariants = cva(
         // The last step of asking: the answer that removes.
         danger: 'bg-del font-strong text-del-ink hover:bg-del-hover',
         link: 'text-foreground underline-offset-4 hover:underline',
+        // One of a few ways forward, laid out as a card: the focused one is edged amber, and
+        // the pointer moves focus, so the edge is the only highlight.
+        option:
+          'border border-line-strong bg-pane-raised text-foreground focus:border-amber focus:bg-line focus-visible:border-amber focus-visible:ring-0',
         // One step of a sequence; the current one (`aria-current="step"`) stretches, amber.
         dot: 'bg-line-heavy transition-[background-color,width] duration-120 hover:bg-ink-faint aria-[current=step]:w-4 aria-[current=step]:rounded-[0.1875rem] aria-[current=step]:bg-amber motion-reduce:transition-none',
       },
       size: {
         '2xs': "h-[1.375rem] gap-1 px-1.5 text-meta [&_svg:not([class*='size-'])]:size-2.5",
         xs: "h-[1.625rem] gap-[0.3125rem] px-[0.5625rem] text-support [&_svg:not([class*='size-'])]:size-3",
+        // A setting's current value, shown in place and opening its choices (the design's
+        // `.hchip`): set strong and spaced, so a single character still reads as a control.
+        chip: 'h-[1.375rem] gap-1 px-[0.4375rem] text-meta font-strong tracking-[0.04em]',
         sm: "h-8 gap-1.5 px-3 text-body [&_svg:not([class*='size-'])]:size-3.5",
         md: "h-9 gap-2 px-4 text-body [&_svg:not([class*='size-'])]:size-4",
         lg: "h-10 gap-2 px-6 text-body [&_svg:not([class*='size-'])]:size-4",
@@ -53,6 +60,8 @@ const appButtonVariants = cva(
         square: 'aspect-square rounded-md px-0',
         // Words that open an editor: no fixed height, wrapping like the prose they are.
         text: 'block h-auto min-w-0 rounded-[0.3125rem] px-1.5 py-1 text-left font-regular text-pretty wrap-break-word whitespace-normal',
+        // A box of content that is pressed as a whole: its own padding, wrapping text.
+        card: 'h-auto justify-start rounded-[0.5625rem] p-3 text-left font-regular whitespace-normal',
       },
     },
     compoundVariants: [

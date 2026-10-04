@@ -2,6 +2,7 @@ import { useRef, useState } from 'react';
 import { ArrowDown, ArrowUp, Ellipsis, Eye, EyeOff, Pencil, Plus, Trash2 } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
 import { AppTooltip } from '@/components/AppTooltip';
+import { Badge } from '@/components/Badge';
 import { Text } from '@/components/Text';
 import { AppCollapsible, AppCollapsibleTrigger } from '@/components/AppCollapsible';
 import { useListMotion } from '@/lib/motion/useListMotion';
@@ -134,8 +135,9 @@ export function SectionItem({
           <Text
             variant="editor"
             className={cn(
-              'min-w-0 truncate line-through transition-[color,text-decoration-color] duration-200',
-              isHidden ? 'text-ink-faint decoration-line-heavy' : 'decoration-transparent'
+              // Struck only while off: a selection paints even a transparent line.
+              'min-w-0 truncate transition-colors duration-200',
+              isHidden && 'text-ink-faint line-through decoration-line-heavy'
             )}
           >
             {section.label || <span className="text-ink-faint">Untitled section</span>}
@@ -143,12 +145,9 @@ export function SectionItem({
         )}
         {isHidden ? (
           <AppTooltip content="This whole section is left off the resume">
-            <Text
-              variant="meta"
-              className="shrink-0 rounded-[0.3125rem] border border-line-strong bg-line px-1.5 py-px font-sans font-strong tracking-[0.02em] text-ink-muted"
-            >
+            <Badge size="sm" tone="filled">
               not on resume
-            </Text>
+            </Badge>
           </AppTooltip>
         ) : (
           <Text variant="meta" className="shrink-0">

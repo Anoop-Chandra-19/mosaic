@@ -15,6 +15,7 @@ import { explainFailure, showToast, useOverlayStore } from '@/stores/overlayStor
 import { saveDraftOrStop, useResumeStore } from '@/stores/resumeStore';
 import type { BackupFrequency, BackupStatus } from '@shared/types/backup';
 import { Note } from '@/components/Note';
+import { Text } from '@/components/Text';
 import { SettingRow } from '../SettingRow';
 
 const FREQUENCY_OPTIONS: { value: BackupFrequency; label: string }[] = [
@@ -176,9 +177,9 @@ export function ImportExportSection({ onCloseSettings }: { onCloseSettings: () =
             <AppTooltip content={backup.folder}>
               {/* Clipped from the left, so the folder's own name stays in view. The path is
                   isolated, or right-to-left would move its leading "/" or "~" to the end. */}
-              <span className="max-w-55 truncate font-mono text-meta tracking-[-0.01em] text-ink-soft [direction:rtl]">
+              <Text variant="meta" className="max-w-55 truncate text-ink-soft [direction:rtl]">
                 <bdi>{backup.folder}</bdi>
-              </span>
+              </Text>
             </AppTooltip>
           )}
           <AppButton

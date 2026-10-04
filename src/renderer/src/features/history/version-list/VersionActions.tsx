@@ -60,8 +60,8 @@ export function VersionActions({
     : !canPreview
       ? 'Open this template to preview its versions'
       : isPressed
-        ? 'Stop reading it and go back to your draft'
-        : 'Read this version in the sheet. Nothing is changed.';
+        ? 'Back to your draft'
+        : 'Preview this version. Nothing changes until you restore.';
 
   return (
     <span
@@ -94,7 +94,7 @@ export function VersionActions({
             size="2xs"
             shape="square"
             aria-label={`Restore ${label}`}
-            title="Restore. What you have now is kept in history first."
+            title="Restore this version. Your current draft is saved to history first."
             onClick={onRestore}
             className="rounded-[0.3125rem]"
           >
@@ -119,7 +119,7 @@ export function VersionActions({
             size="2xs"
             shape="square"
             aria-label={`Name ${label}`}
-            title="Name it. Named versions are kept for good."
+            title="Name this version to keep it for good"
             onClick={onStartNaming}
             className="rounded-[0.3125rem]"
           >

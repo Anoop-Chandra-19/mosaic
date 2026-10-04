@@ -297,7 +297,7 @@ export function UnifiedDiff({
             return (
               <div
                 key={`${change.setting}:${change.lineId}`}
-                title={`${wording.row}. Formatting is not marked on the page.`}
+                title={`${wording.row}. Formatting isn’t marked on the page or counted as a change.`}
               >
                 <Line
                   isDetailed={isDetailed}

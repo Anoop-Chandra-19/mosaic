@@ -53,6 +53,16 @@ describe('AppButton', () => {
     }
   });
 
+  it('lays a card out with its own padding, wrapping, from the start', () => {
+    const classes = classesOf({ variant: 'option', size: 'md', shape: 'card' });
+    expect(classes).toEqual(
+      expect.arrayContaining(['h-auto', 'p-3', 'justify-start', 'whitespace-normal'])
+    );
+    for (const layout of ['h-9', 'px-4', 'justify-center', 'whitespace-nowrap']) {
+      expect(classes).not.toContain(layout);
+    }
+  });
+
   it('forwards disabled, aria and Radix state props and keeps a focus ring', () => {
     const markup = renderToStaticMarkup(
       createElement(AppButton, {

@@ -112,22 +112,20 @@ export function StartPanel({ closable }: StartPanelProps) {
               onClose={closable ? close : undefined}
             />
             <div className="grid grid-cols-2 gap-2.5" onKeyDown={moveFocusWithArrows}>
-              <button
-                type="button"
+              <AppButton
+                variant="option"
+                size="xs"
+                shape="card"
                 data-start-option
                 onClick={() => void startFromSample()}
                 onPointerMove={focusOnPointer}
-                className={cn(
-                  SLOT,
-                  'border-line-strong bg-pane-raised font-control text-ink-soft',
-                  OPTION_HIGHLIGHT
-                )}
+                className="flex-col justify-center gap-2.25 font-control text-ink-soft"
                 autoFocus
               >
                 <SlotPaper />
                 Example resume
-              </button>
-              <div className={cn(SLOT, 'border-dashed border-line-heavy text-ink-faint')}>
+              </AppButton>
+              <div className={SLOT}>
                 <SlotPaper />
                 More coming
               </div>
@@ -217,22 +215,18 @@ interface StartRouteProps {
   onClick: () => void;
 }
 
-/**
- * One highlight, as in a menu: the amber marks the focused option, which is the one Enter
- * picks. The pointer moves focus as it goes over an option, and the arrow keys move it too
- * (`moveFocusWithArrows`), so hover and keyboard never disagree.
- */
-const OPTION_HIGHLIGHT = 'transition-colors outline-none focus:border-amber focus:bg-line';
-
+/** A sample still to come: the option's shape, dashed, with nothing to press. */
 const SLOT = cn(
   textVariantClasses('secondary'),
-  'flex flex-col items-center gap-2.25 rounded-[0.5625rem] border p-3'
+  'flex flex-col items-center gap-2.25 rounded-[0.5625rem] border border-dashed border-line-heavy p-3 text-ink-faint'
 );
 
 /**
- * Moving the pointer over an option focuses it, so the highlight follows the pointer. Only a
- * real move: the browser also reports one, standing still, when the layout shifts under a
- * resting pointer, and that must not take the focus the panel opened with.
+ * One highlight, as in a menu: the amber edge marks the focused option, which is the one
+ * Enter picks. Moving the pointer over an option focuses it, and the arrow keys move focus
+ * too (`moveFocusWithArrows`), so hover and keyboard never disagree. Only a real move: the
+ * browser also reports one, standing still, when the layout shifts under a resting pointer,
+ * and that must not take the focus the panel opened with.
  */
 const focusOnPointer = (event: ReactPointerEvent<HTMLButtonElement>) => {
   const hasMoved = event.movementX !== 0 || event.movementY !== 0;
@@ -259,16 +253,14 @@ function moveFocusWithArrows(event: ReactKeyboardEvent<HTMLElement>) {
 
 function StartRoute({ icon, title, description, hint, autoFocus, onClick }: StartRouteProps) {
   return (
-    <button
-      type="button"
+    <AppButton
+      variant="option"
+      shape="card"
       data-start-option
       onClick={onClick}
       onPointerMove={focusOnPointer}
       autoFocus={autoFocus}
-      className={cn(
-        'group/route flex w-full items-center gap-3 rounded-[0.5625rem] border border-line-strong bg-pane-raised px-3.25 py-3 text-left',
-        OPTION_HIGHLIGHT
-      )}
+      className="group/route w-full gap-3 px-3.25"
     >
       <RouteIcon icon={icon} />
       <span className="flex min-w-0 flex-1 flex-col gap-0.5">
@@ -276,12 +268,16 @@ function StartRoute({ icon, title, description, hint, autoFocus, onClick }: Star
         <Text variant="secondary">{description}</Text>
       </span>
       {hint && (
-        <kbd className="shrink-0 rounded-[0.3125rem] border border-line-strong px-1.25 py-0.5 font-sans text-meta text-ink-faint">
+        <Text
+          as="kbd"
+          variant="caption"
+          className="shrink-0 rounded-[0.3125rem] border border-line-strong px-1.25 py-0.5"
+        >
           {hint}
-        </kbd>
+        </Text>
       )}
       <ArrowRight className="size-3.5 shrink-0 text-ink-faint" />
-    </button>
+    </AppButton>
   );
 }
 

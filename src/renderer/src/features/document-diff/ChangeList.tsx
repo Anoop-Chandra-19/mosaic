@@ -46,7 +46,7 @@ const TONE_TEXT: Record<ChangeTone, string> = {
 };
 
 const COUNT = 'font-strong text-foreground';
-const GROUP_LABEL = cn(textVariantClasses('meta'), 'pt-1 pr-2 pb-0.75 pl-7.5 font-sans');
+const GROUP_LABEL = cn(textVariantClasses('caption'), 'pt-1 pr-2 pb-0.75 pl-7.5');
 const CHANGE_ROW =
   'grid grid-cols-[1rem_auto_minmax(0,1fr)] items-baseline gap-2 px-2 py-1.25 text-support';
 
@@ -240,7 +240,7 @@ export function ChangeList({
                 return (
                   <div
                     key={`${change.setting}:${change.lineId}`}
-                    title={`${wording.row}. Not marked on the page, not counted as a change.`}
+                    title={`${wording.row}. Formatting isn’t marked on the page or counted as a change.`}
                     className={CHANGE_ROW}
                   >
                     <span aria-hidden />

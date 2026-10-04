@@ -67,10 +67,9 @@ export function HeaderLineBlock({ line, lines }: HeaderLineBlockProps) {
           <AppMenuTrigger asChild>
             <AppButton
               variant="outline"
-              size="2xs"
-              title="Between items"
-              aria-label={`Between items: ${separator.label.toLowerCase()}`}
-              className="px-[0.4375rem] font-strong tracking-[0.04em]"
+              size="chip"
+              title="Separator between items"
+              aria-label={`Separator between items: ${separator.label.toLowerCase()}`}
             >
               {separator.label.toLowerCase()}
             </AppButton>
@@ -95,10 +94,9 @@ export function HeaderLineBlock({ line, lines }: HeaderLineBlockProps) {
           <AppMenuTrigger asChild>
             <AppButton
               variant="outline"
-              size="2xs"
+              size="chip"
               title="Alignment"
               aria-label={`Alignment: ${align.label.toLowerCase()}`}
-              className="px-[0.4375rem] font-strong tracking-[0.04em]"
             >
               {align.label.toLowerCase()}
             </AppButton>

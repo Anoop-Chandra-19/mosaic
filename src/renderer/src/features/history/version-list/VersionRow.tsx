@@ -195,7 +195,7 @@ export function VersionRow({
                 <Text
                   variant="tag"
                   className={cn(
-                    'inline-flex h-4 items-center rounded-[0.25rem] border px-1.25 font-sans',
+                    'inline-flex h-4 items-center rounded-[0.25rem] border px-1.25',
                     version.source === 'restore'
                       ? 'border-info-line text-info'
                       : isStop
