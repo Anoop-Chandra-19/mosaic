@@ -1,12 +1,12 @@
 import { AppButton } from '@/components/AppButton';
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+  AppDialog,
+  AppDialogContent,
+  AppDialogDescription,
+  AppDialogFooter,
+  AppDialogHeader,
+  AppDialogTitle,
+} from '@/components/AppDialog';
 
 interface ConfirmDeleteDialogProps {
   open: boolean;
@@ -24,13 +24,13 @@ export function ConfirmDeleteDialog({
   onConfirm,
 }: ConfirmDeleteDialogProps) {
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>{title}</DialogTitle>
-          <DialogDescription>{description}</DialogDescription>
-        </DialogHeader>
-        <DialogFooter>
+    <AppDialog open={open} onOpenChange={onOpenChange}>
+      <AppDialogContent>
+        <AppDialogHeader>
+          <AppDialogTitle>{title}</AppDialogTitle>
+          <AppDialogDescription>{description}</AppDialogDescription>
+        </AppDialogHeader>
+        <AppDialogFooter>
           <AppButton variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </AppButton>
@@ -43,8 +43,8 @@ export function ConfirmDeleteDialog({
           >
             Delete
           </AppButton>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </AppDialogFooter>
+      </AppDialogContent>
+    </AppDialog>
   );
 }

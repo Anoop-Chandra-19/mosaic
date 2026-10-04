@@ -10,8 +10,8 @@ import {
 } from 'react';
 import { Clock, List, X } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
+import { AppCheckbox } from '@/components/AppCheckbox';
 import { AppTooltip } from '@/components/AppTooltip';
-import { Checkbox } from '@/components/ui/checkbox';
 import { PAPER_DIMENSIONS_PT } from '@/features/preview/pageGeometry';
 import {
   SLIDE_AWAY_MOTION,
@@ -296,10 +296,10 @@ function FullHistoryFrame({
         <span className="flex-1" />
         <AppTooltip content="The months index, symbol counts, and line numbers in Changes only">
           <label className="flex cursor-pointer items-center gap-1.5 px-1.5 text-xs text-ink-muted select-none">
-            <Checkbox
+            <AppCheckbox
+              size="sm"
               checked={isDetailed}
               onCheckedChange={(checked) => setIsDetailed(checked === true)}
-              className="size-3.5"
             />
             Show all details
           </label>

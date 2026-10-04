@@ -1,14 +1,14 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { RotateCw } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
-import { Input } from '@/components/ui/input';
+import { AppInput } from '@/components/AppInput';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+  AppSelect,
+  AppSelectContent,
+  AppSelectItem,
+  AppSelectTrigger,
+  AppSelectValue,
+} from '@/components/AppSelect';
 import {
   DEFAULT_OLLAMA_ADDRESS,
   isLocalOllamaAddress,
@@ -84,7 +84,7 @@ export function OllamaAddressRow({
         </>
       }
     >
-      <Input
+      <AppInput
         value={draft ?? address}
         onChange={(event) => setDraft(event.target.value)}
         onBlur={commit}
@@ -96,7 +96,7 @@ export function OllamaAddressRow({
         aria-invalid={invalid}
         spellCheck={false}
         autoComplete="off"
-        className="h-8 w-54 font-mono text-xs"
+        className="w-54 font-mono text-meta"
       />
       {address !== DEFAULT_OLLAMA_ADDRESS && (
         <AppButton
@@ -198,28 +198,28 @@ export function OllamaModelRow({
         </>
       }
     >
-      <Select value={model} onValueChange={onChange}>
-        <SelectTrigger size="sm" className="w-54" aria-label="Ollama model">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
+      <AppSelect value={model} onValueChange={onChange}>
+        <AppSelectTrigger className="w-54" aria-label="Ollama model">
+          <AppSelectValue />
+        </AppSelectTrigger>
+        <AppSelectContent>
           {/* The chosen model stays listed, pulled or not, so the field never goes blank. */}
           {!isPulled && (
-            <SelectItem value={model}>
+            <AppSelectItem value={model}>
               {model}
-              {knownMissing && <span className="text-xs text-zinc-500">not pulled</span>}
-            </SelectItem>
+              {knownMissing && <span className="text-support text-ink-faint">not pulled</span>}
+            </AppSelectItem>
           )}
           {pulled.map((option) => (
-            <SelectItem key={option.name} value={option.name}>
+            <AppSelectItem key={option.name} value={option.name}>
               {option.name}
               {gigabytes(option.sizeBytes) && (
-                <span className="text-xs text-zinc-500">{gigabytes(option.sizeBytes)}</span>
+                <span className="text-support text-ink-faint">{gigabytes(option.sizeBytes)}</span>
               )}
-            </SelectItem>
+            </AppSelectItem>
           ))}
-        </SelectContent>
-      </Select>
+        </AppSelectContent>
+      </AppSelect>
       <AppButton
         variant="ghost"
         size="sm"

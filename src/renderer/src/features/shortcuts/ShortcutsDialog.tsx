@@ -1,7 +1,7 @@
 import { Keyboard } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
 import { DialogFrameHeader } from '@/components/DialogFrame';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { AppDialog, AppDialogContent } from '@/components/AppDialog';
 import { useOverlayStore } from '@/stores/overlayStore';
 import { ShortcutsPanel } from './ShortcutsPanel';
 
@@ -12,10 +12,10 @@ export function ShortcutsDialog() {
   const close = () => setOpen(false);
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent
+    <AppDialog open={open} onOpenChange={setOpen}>
+      <AppDialogContent
         showCloseButton={false}
-        className="flex h-[min(37.25rem,86vh)] w-[min(53.75rem,96vw)] max-w-none flex-col gap-0 overflow-hidden rounded-xl border-line-strong bg-white p-0 sm:max-w-none dark:bg-zinc-950"
+        className="flex h-[min(37.25rem,86vh)] w-[min(53.75rem,96vw)] max-w-none flex-col gap-0 overflow-hidden p-0 sm:max-w-none"
       >
         <DialogFrameHeader
           icon={Keyboard}
@@ -31,7 +31,7 @@ export function ShortcutsDialog() {
             </AppButton>
           }
         />
-      </DialogContent>
-    </Dialog>
+      </AppDialogContent>
+    </AppDialog>
   );
 }

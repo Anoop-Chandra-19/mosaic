@@ -1,12 +1,12 @@
 import { FOLD_OPTIONS, SNAPSHOT_TRIGGER_OPTIONS } from '@/features/history/snapshotSettings';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
+  AppSelect,
+  AppSelectContent,
+  AppSelectItem,
+  AppSelectTrigger,
+  AppSelectValue,
+} from '@/components/AppSelect';
+import { AppSwitch } from '@/components/AppSwitch';
 import { useUiStore } from '@/stores/uiStore';
 import { SettingRow } from '../SettingRow';
 
@@ -24,7 +24,7 @@ export function HistorySection() {
       <h3 className={HEADING}>Automatic snapshots</h3>
       {SNAPSHOT_TRIGGER_OPTIONS.map(({ trigger, label, description }) => (
         <SettingRow key={trigger} label={label} description={description}>
-          <Switch
+          <AppSwitch
             checked={triggers[trigger]}
             onCheckedChange={(isOn) => setTrigger(trigger, isOn)}
             aria-label={label}
@@ -36,7 +36,7 @@ export function HistorySection() {
         label="Always show all details"
         description="Adds the months index, per-row change counts, and line numbers in Changes only. Off, counts read in words."
       >
-        <Switch
+        <AppSwitch
           checked={isDetailed}
           onCheckedChange={setIsDetailed}
           aria-label="Always show all details"
@@ -47,23 +47,23 @@ export function HistorySection() {
         label="Fold old automatic snapshots"
         description="Folded rows stay in the list as one expandable row. Nothing is deleted. Named versions never fold."
       >
-        <Select
+        <AppSelect
           value={String(foldDays)}
           onValueChange={(value) =>
             setFoldDays(FOLD_OPTIONS.find((option) => String(option.days) === value)!.days)
           }
         >
-          <SelectTrigger size="sm" className="w-36" aria-label="Fold old automatic snapshots">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
+          <AppSelectTrigger className="w-36" aria-label="Fold old automatic snapshots">
+            <AppSelectValue />
+          </AppSelectTrigger>
+          <AppSelectContent>
             {FOLD_OPTIONS.map(({ days, label }) => (
-              <SelectItem key={label} value={String(days)}>
+              <AppSelectItem key={label} value={String(days)}>
                 {label}
-              </SelectItem>
+              </AppSelectItem>
             ))}
-          </SelectContent>
-        </Select>
+          </AppSelectContent>
+        </AppSelect>
       </SettingRow>
     </>
   );

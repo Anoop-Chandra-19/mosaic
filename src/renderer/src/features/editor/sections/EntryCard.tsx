@@ -3,13 +3,13 @@ import { ArrowDown, ArrowUp, Copy, Ellipsis, Eye, EyeOff, Trash2 } from 'lucide-
 import { AppButton } from '@/components/AppButton';
 import { ConfirmDeleteDialog } from '@/components/ConfirmDeleteDialog';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { Collapsible } from '@/components/ui/collapsible';
+  AppMenu,
+  AppMenuContent,
+  AppMenuItem,
+  AppMenuSeparator,
+  AppMenuTrigger,
+} from '@/components/AppMenu';
+import { AppCollapsible } from '@/components/AppCollapsible';
 import { SHORTCUTS } from '@/features/shortcuts/shortcutList';
 import { isTypingField, matchesShortcut } from '@/lib/keyboardShortcuts';
 import { ListMotionContext, useSwapMotion } from '@/lib/motion/useListMotion';
@@ -152,7 +152,7 @@ export function EntryCard({
                   placeholder="Role or title"
                   label="Title"
                   className="text-[0.9375rem] leading-[1.35] font-semibold tracking-[-0.012em] text-foreground"
-                  inputClassName="text-[0.9375rem] font-semibold md:text-[0.9375rem]"
+                  inputClassName="text-[0.9375rem] font-semibold"
                 />
               </div>
               <div className="flex min-w-0">
@@ -163,7 +163,7 @@ export function EntryCard({
                   placeholder="Company or context"
                   label="Organization"
                   className="text-[0.8375rem]"
-                  inputClassName="text-[0.8375rem] md:text-[0.8375rem]"
+                  inputClassName="text-[0.8375rem]"
                 />
               </div>
               <div className="mt-0.5 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-ink-faint">
@@ -174,7 +174,7 @@ export function EntryCard({
                   placeholder="Location or Remote"
                   label="Location"
                   className={META_FIELD}
-                  inputClassName="text-[0.775rem] md:text-[0.775rem]"
+                  inputClassName="text-[0.775rem]"
                 />
                 <span aria-hidden="true" className="text-xs">
                   ·
@@ -186,7 +186,7 @@ export function EntryCard({
                   placeholder="Dates"
                   label="Dates"
                   className={META_FIELD}
-                  inputClassName="text-[0.775rem] md:text-[0.775rem]"
+                  inputClassName="text-[0.775rem]"
                 />
               </div>
               {!isDimmed && headingLines !== null && headingLines > 1 && (
@@ -200,7 +200,7 @@ export function EntryCard({
 
           {/* A left-off entry keeps its bullets, but folded away until it is back on. */}
           {!isTextOnly && (
-            <Collapsible open={entry.selected}>
+            <AppCollapsible open={entry.selected}>
               <EditorFold>
                 <ListMotionContext value={motion}>
                   <div
@@ -266,7 +266,7 @@ export function EntryCard({
                   </div>
                 </ListMotionContext>
               </EditorFold>
-            </Collapsible>
+            </AppCollapsible>
           )}
         </div>
 
@@ -279,8 +279,8 @@ export function EntryCard({
               : 'invisible group-focus-within/entry:visible group-hover/entry:visible'
           )}
         >
-          <DropdownMenu open={actionsOpen} onOpenChange={setActionsOpen}>
-            <DropdownMenuTrigger asChild>
+          <AppMenu open={actionsOpen} onOpenChange={setActionsOpen}>
+            <AppMenuTrigger asChild>
               <AppButton
                 variant="ghost"
                 size="xs"
@@ -290,35 +290,32 @@ export function EntryCard({
               >
                 <Ellipsis />
               </AppButton>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onSelect={() => toggleEntry(sectionId, entry.id)}>
+            </AppMenuTrigger>
+            <AppMenuContent align="end">
+              <AppMenuItem onSelect={() => toggleEntry(sectionId, entry.id)}>
                 {entry.selected ? <EyeOff /> : <Eye />}
                 {entry.selected ? 'Leave off the resume' : 'Put on the resume'}
-              </DropdownMenuItem>
-              <DropdownMenuItem onSelect={() => duplicateEntry(sectionId, entry.id)}>
+              </AppMenuItem>
+              <AppMenuItem onSelect={() => duplicateEntry(sectionId, entry.id)}>
                 <Copy />
                 Duplicate entry
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem disabled={isFirst} onSelect={onMoveUp}>
+              </AppMenuItem>
+              <AppMenuSeparator />
+              <AppMenuItem disabled={isFirst} onSelect={onMoveUp}>
                 <ArrowUp />
                 Move up
-              </DropdownMenuItem>
-              <DropdownMenuItem disabled={isLast} onSelect={onMoveDown}>
+              </AppMenuItem>
+              <AppMenuItem disabled={isLast} onSelect={onMoveDown}>
                 <ArrowDown />
                 Move down
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                onSelect={() => setConfirmOpen(true)}
-                className="text-destructive focus:text-destructive"
-              >
+              </AppMenuItem>
+              <AppMenuSeparator />
+              <AppMenuItem variant="destructive" onSelect={() => setConfirmOpen(true)}>
                 <Trash2 />
                 Delete entry…
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+              </AppMenuItem>
+            </AppMenuContent>
+          </AppMenu>
         </div>
       </div>
 

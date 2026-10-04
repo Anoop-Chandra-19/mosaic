@@ -7,18 +7,18 @@ import { cn } from '@/lib/utils';
 /*
  * Every button in Mosaic, on three independent axes (the Claude Design's buttons):
  * - variant: tone and fill;
- * - size: scale only — height, padding, font size, and icon size;
+ * - size: scale only — height, padding, type role, and icon size;
  * - shape: the box's outline.
- * Typography beyond the size's font size, colour tweaks, and layout (full width, alignment,
+ * Typography beyond the size's role, colour tweaks, and layout (full width, alignment,
  * margins) go in `className`: they belong to where a button sits, not to what it is.
  */
 const appButtonVariants = cva(
-  'inline-flex shrink-0 items-center justify-center font-medium whitespace-nowrap transition-colors outline-none focus-visible:ring-[3px] focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0',
+  'inline-flex shrink-0 items-center justify-center font-control whitespace-nowrap transition-colors outline-none focus-visible:ring-[3px] focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0',
   {
     variants: {
       variant: {
-        solid: 'bg-foreground text-background hover:bg-zinc-700 dark:hover:bg-zinc-300',
-        accent: 'bg-amber-500 text-zinc-950 hover:bg-amber-600',
+        solid: 'bg-foreground font-strong text-background hover:bg-zinc-700 dark:hover:bg-zinc-300',
+        accent: 'bg-amber-500 font-strong text-zinc-950 hover:bg-amber-600',
         // "Open" means a menu this button opened is showing. A collapsible's trigger is open
         // too, but only a menu's trigger (`aria-haspopup="menu"`) is drawn pressed.
         outline:
@@ -35,14 +35,14 @@ const appButtonVariants = cva(
           'bg-destructive text-white hover:bg-red-700 dark:bg-red-900 dark:hover:bg-red-800',
         link: 'text-foreground underline-offset-4 hover:underline',
         // One step of a sequence; the current one (`aria-current="step"`) stretches, amber.
-        dot: 'bg-line-heavy transition-[background-color,width] duration-120 hover:bg-ink-faint aria-[current=step]:w-4 aria-[current=step]:rounded-[0.1875rem] aria-[current=step]:bg-[oklch(0.66_0.15_58)] motion-reduce:transition-none dark:aria-[current=step]:bg-[oklch(0.78_0.155_72)]',
+        dot: 'bg-line-heavy transition-[background-color,width] duration-120 hover:bg-ink-faint aria-[current=step]:w-4 aria-[current=step]:rounded-[0.1875rem] aria-[current=step]:bg-amber motion-reduce:transition-none',
       },
       size: {
-        '2xs': "h-[1.375rem] gap-1 px-1.5 text-[0.6875rem] [&_svg:not([class*='size-'])]:size-2.5",
-        xs: "h-[1.625rem] gap-[0.3125rem] px-[0.5625rem] text-[0.78125rem] [&_svg:not([class*='size-'])]:size-3",
-        sm: "h-8 gap-1.5 px-3 text-sm [&_svg:not([class*='size-'])]:size-3.5",
-        md: "h-9 gap-2 px-4 text-sm [&_svg:not([class*='size-'])]:size-4",
-        lg: "h-10 gap-2 px-6 text-sm [&_svg:not([class*='size-'])]:size-4",
+        '2xs': "h-[1.375rem] gap-1 px-1.5 text-meta [&_svg:not([class*='size-'])]:size-2.5",
+        xs: "h-[1.625rem] gap-[0.3125rem] px-[0.5625rem] text-support [&_svg:not([class*='size-'])]:size-3",
+        sm: "h-8 gap-1.5 px-3 text-body [&_svg:not([class*='size-'])]:size-3.5",
+        md: "h-9 gap-2 px-4 text-body [&_svg:not([class*='size-'])]:size-4",
+        lg: "h-10 gap-2 px-6 text-body [&_svg:not([class*='size-'])]:size-4",
         dot: 'size-1.5 px-0',
       },
       shape: {
@@ -51,7 +51,7 @@ const appButtonVariants = cva(
         // As wide as it is tall: an icon on its own.
         square: 'aspect-square rounded-md px-0',
         // Words that open an editor: no fixed height, wrapping like the prose they are.
-        text: 'block h-auto min-w-0 rounded-[0.3125rem] px-1.5 py-1 text-left font-normal text-pretty wrap-break-word whitespace-normal',
+        text: 'block h-auto min-w-0 rounded-[0.3125rem] px-1.5 py-1 text-left font-regular text-pretty wrap-break-word whitespace-normal',
       },
     },
     compoundVariants: [

@@ -2,12 +2,12 @@ import { useRef } from 'react';
 import { Bookmark, Copy, Eye, History, MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+  AppMenu,
+  AppMenuContent,
+  AppMenuItem,
+  AppMenuSeparator,
+  AppMenuTrigger,
+} from '@/components/AppMenu';
 import { cn } from '@/lib/utils';
 import type { VersionMeta } from '@shared/types/db';
 
@@ -126,8 +126,8 @@ export function VersionActions({
           </AppButton>
         )}
       </span>
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
+      <AppMenu>
+        <AppMenuTrigger asChild>
           <AppButton
             variant="ghost"
             size="2xs"
@@ -137,8 +137,8 @@ export function VersionActions({
           >
             <MoreHorizontal className="size-3" />
           </AppButton>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent
+        </AppMenuTrigger>
+        <AppMenuContent
           align="end"
           className="w-56.5"
           onCloseAutoFocus={(event) => {
@@ -150,32 +150,32 @@ export function VersionActions({
           }}
         >
           {canRead && (
-            <DropdownMenuItem disabled={!canPreview} onClick={onPreview}>
+            <AppMenuItem disabled={!canPreview} onClick={onPreview}>
               <Eye />
               {isPressed ? 'Stop reading it' : 'Read this version'}
-            </DropdownMenuItem>
+            </AppMenuItem>
           )}
           {!isHead && (
-            <DropdownMenuItem onClick={onRestore}>
+            <AppMenuItem onClick={onRestore}>
               <History />
               Restore
-            </DropdownMenuItem>
+            </AppMenuItem>
           )}
-          <DropdownMenuItem onClick={onDuplicate}>
+          <AppMenuItem onClick={onDuplicate}>
             <Copy />
             Duplicate
-          </DropdownMenuItem>
-          <DropdownMenuItem
+          </AppMenuItem>
+          <AppMenuItem
             onClick={() => {
               opensInRow.current = onStartNaming;
             }}
           >
             {isNamed ? <Pencil /> : <Bookmark />}
             {isNamed ? 'Rename' : 'Name it'}
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
+          </AppMenuItem>
+          <AppMenuSeparator />
           {isHead ? (
-            <DropdownMenuItem disabled className="items-start">
+            <AppMenuItem disabled className="items-start">
               <Trash2 className="mt-0.5" />
               <span>
                 Delete
@@ -183,9 +183,9 @@ export function VersionActions({
                   The newest version can’t be deleted. Your draft is measured from it.
                 </span>
               </span>
-            </DropdownMenuItem>
+            </AppMenuItem>
           ) : (
-            <DropdownMenuItem
+            <AppMenuItem
               variant="destructive"
               onClick={() => {
                 if (isNamed) opensInRow.current = onDelete;
@@ -194,10 +194,10 @@ export function VersionActions({
             >
               <Trash2 />
               {isNamed ? 'Delete…' : 'Delete'}
-            </DropdownMenuItem>
+            </AppMenuItem>
           )}
-        </DropdownMenuContent>
-      </DropdownMenu>
+        </AppMenuContent>
+      </AppMenu>
     </span>
   );
 }

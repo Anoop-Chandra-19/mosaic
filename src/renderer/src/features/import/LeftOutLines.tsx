@@ -1,14 +1,14 @@
 import { useState } from 'react';
 import { Check, ChevronDown, Copy } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
-import { Collapsible, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { AppCollapsible, AppCollapsibleTrigger } from '@/components/AppCollapsible';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+  AppMenu,
+  AppMenuContent,
+  AppMenuItem,
+  AppMenuSeparator,
+  AppMenuTrigger,
+} from '@/components/AppMenu';
 import { copyText } from '@/features/export/exportResume';
 import type { SectionLayout } from '@shared/types/resume';
 import { newSectionNameFor, type PlaceTarget } from './applyImportChoices';
@@ -47,25 +47,23 @@ function PlaceLineMenu({
   onPlace: (target: PlaceTarget) => void;
 }) {
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
+    <AppMenu>
+      <AppMenuTrigger asChild>
         <AppButton variant="ghost" size="xs" className="shrink-0">
           Add to
           <ChevronDown className="size-2.75" />
         </AppButton>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="min-w-40">
+      </AppMenuTrigger>
+      <AppMenuContent align="end" className="min-w-40">
         {sections.map((section) => (
-          <DropdownMenuItem key={section.id} onSelect={() => onPlace({ sectionId: section.id })}>
+          <AppMenuItem key={section.id} onSelect={() => onPlace({ sectionId: section.id })}>
             {asWhat(section)}
-          </DropdownMenuItem>
+          </AppMenuItem>
         ))}
-        {sections.length > 0 && <DropdownMenuSeparator />}
-        <DropdownMenuItem onSelect={() => onPlace('new')}>
-          New section “{newSectionName}”
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+        {sections.length > 0 && <AppMenuSeparator />}
+        <AppMenuItem onSelect={() => onPlace('new')}>New section “{newSectionName}”</AppMenuItem>
+      </AppMenuContent>
+    </AppMenu>
   );
 }
 
@@ -157,12 +155,12 @@ export function LeftOutLines({
     );
 
   return (
-    <Collapsible
+    <AppCollapsible
       defaultOpen={placeable.length > 0}
       className="group/row mt-2.5 rounded-[0.5625rem] border border-line"
     >
       <div className="flex items-center justify-between gap-2 py-1.25 pr-1.75 pl-2.25">
-        <CollapsibleTrigger asChild>
+        <AppCollapsibleTrigger asChild>
           <AppButton variant="plain" className="h-5.5 gap-1.5 px-0 text-[0.8125rem]">
             <RowCaret />
             Left out
@@ -171,7 +169,7 @@ export function LeftOutLines({
               {placed.size > 0 && ` · ${placed.size} placed`}
             </span>
           </AppButton>
-        </CollapsibleTrigger>
+        </AppCollapsibleTrigger>
         <AppButton variant="ghost" size="xs" onClick={() => void copy()}>
           {copyState === 'copied' ? <Check /> : <Copy />}
           {COPY_LABELS[copyState]}
@@ -183,6 +181,6 @@ export function LeftOutLines({
           {group('Dropped on purpose', dropped)}
         </div>
       </ReviewFold>
-    </Collapsible>
+    </AppCollapsible>
   );
 }

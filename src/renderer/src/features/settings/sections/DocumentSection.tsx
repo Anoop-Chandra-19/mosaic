@@ -1,4 +1,4 @@
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { AppToggleGroup, AppToggleGroupItem } from '@/components/AppToggleGroup';
 import { HeaderLinkToggles } from '@/features/editor/header/HeaderLinkToggles';
 import { useResumeStore } from '@/stores/resumeStore';
 import { useUiStore } from '@/stores/uiStore';
@@ -17,17 +17,15 @@ export function DocumentSection() {
         label="Paper size"
         description="Used by the preview and the PDF. Switch any time: the content stays the same."
       >
-        <ToggleGroup
+        <AppToggleGroup
           type="single"
-          variant="outline"
-          size="sm"
           value={paperSize}
           onValueChange={(value) => value && setPaperSize(value as PaperSize)}
           aria-label="Paper size"
         >
-          <ToggleGroupItem value="a4">A4</ToggleGroupItem>
-          <ToggleGroupItem value="letter">US Letter</ToggleGroupItem>
-        </ToggleGroup>
+          <AppToggleGroupItem value="a4">A4</AppToggleGroupItem>
+          <AppToggleGroupItem value="letter">US Letter</AppToggleGroupItem>
+        </AppToggleGroup>
       </SettingRow>
       {isResumeOpen && (
         <SettingRow

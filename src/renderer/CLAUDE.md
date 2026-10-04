@@ -14,9 +14,18 @@ For resume content, preview, or exports, also read `docs/resume-format.md` (repo
 
 ## UI foundation
 
-- Use Radix/shadcn primitives (new-york, zinc base), not hand-rolled equivalents.
-  Use `@/components/AppButton` for app buttons; don't import the shadcn Button directly.
-  Use the appropriate primitive for tabs, toggles, and other non-button semantics.
+- Use Radix/shadcn primitives (new-york, zinc base), not hand-rolled equivalents, through
+  their `App*` wrappers in `components/`: `AppButton`, `AppMenu`, `AppSelect`, `AppInput`,
+  `AppTextarea`, `AppDialog` (with `DialogFrame` for the framed dialogs), `AppToggleGroup`,
+  `AppTabs`, `AppRadioGroup`, `AppCheckbox`, `AppSwitch`, `AppPopover`, `AppCollapsible`,
+  `AppTooltip`. Each draws the design's control (`controlStyles.ts` holds the shared field,
+  floating surface and list row) and passes Radix props through. ESLint refuses
+  `components/ui/` anywhere else: a primitive with no wrapper gets one first.
+- A wrapper builds on the shadcn part when its markup fits, and on Radix directly when the
+  design's anatomy differs (a switch's knob, a radio's check, a segmented strip, tabs,
+  the dialog's scrim). Variants only where the design has them (`size="sm"`), never a
+  restyle at the call site.
+- Use the appropriate primitive for tabs, toggles, and other non-button semantics.
 - Never edit `src/components/ui/` (shadcn-managed). Customize app wrappers, usage, or theme
   tokens instead. Lucide supplies icons.
 - `bunx shadcn@latest add <component>` keeps upstream imports, including `cn` from `cn`
@@ -29,6 +38,10 @@ For resume content, preview, or exports, also read `docs/resume-format.md` (repo
 - `className` for anything chosen from a known set, animations and transitions included;
   `style` (or `element.animate()`) only for values computed at runtime, like a dragged
   width or a scroll offset.
+- Colours come from the theme tokens in `index.css`, defined for both themes: never a
+  literal (`oklch(…)`, `#…`) or a Tailwind palette shade (`zinc-500`, `amber-600`) in app UI.
+  When one is missing, add a token. The resume page (black on white in both themes) is
+  the exception.
 - No opacity utilities for hierarchy in app-owned components (`text-*/..`, `bg-*/..`,
   `border-*/..`, `ring-*/..`, `opacity-*`). Use explicit tone steps or semantic tokens:
   stronger titles/actions get higher contrast, metadata/secondary copy lower.

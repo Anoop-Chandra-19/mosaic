@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { Settings, X } from 'lucide-react';
+import { Settings } from 'lucide-react';
 import { useOverlayStore } from '@/stores/overlayStore';
 import { AppButton } from '@/components/AppButton';
-import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
+import { AppDialog, AppDialogContent } from '@/components/AppDialog';
+import { DialogFrameHeader } from '@/components/DialogFrame';
 import { cn } from '@/lib/utils';
 import { useAiStore } from '@/stores/aiStore';
 import { ShortcutsPanel } from '@/features/shortcuts/ShortcutsPanel';
@@ -30,29 +31,18 @@ export function SettingsDialog() {
   const active = SETTINGS_SECTION_BY_ID[section];
 
   return (
-    <Dialog open={showing !== null} onOpenChange={(open) => !open && close()}>
-      <DialogContent
+    <AppDialog open={showing !== null} onOpenChange={(open) => !open && close()}>
+      <AppDialogContent
         showCloseButton={false}
-        className="flex h-[min(37.5rem,90vh)] w-[min(54rem,96vw)] max-w-none flex-col gap-0 overflow-hidden rounded-xl border-line-strong bg-white p-0 sm:max-w-none dark:bg-zinc-950"
+        className="flex h-[min(37.5rem,90vh)] w-[min(54rem,96vw)] max-w-none flex-col gap-0 overflow-hidden p-0 sm:max-w-none"
       >
-        <header className="flex items-center justify-between border-b border-line px-3.5 py-3">
-          <DialogTitle className="flex items-center gap-2 text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-            <Settings className="size-4 text-zinc-500" />
-            Settings
-          </DialogTitle>
-          <DialogDescription className="sr-only">
-            How Mosaic behaves, looks, and handles your data on this computer.
-          </DialogDescription>
-          <AppButton
-            variant="ghost"
-            size="sm"
-            shape="square"
-            onClick={close}
-            aria-label="Close settings"
-          >
-            <X className="size-4" />
-          </AppButton>
-        </header>
+        <DialogFrameHeader
+          icon={Settings}
+          title="Settings"
+          description="How Mosaic behaves, looks, and handles your data on this computer."
+          closeLabel="Close settings"
+          onClose={close}
+        />
 
         <div className="flex min-h-0 flex-1 flex-col md:flex-row">
           <nav
@@ -126,7 +116,7 @@ export function SettingsDialog() {
             {section === 'about' && <AboutSection />}
           </section>
         </div>
-      </DialogContent>
-    </Dialog>
+      </AppDialogContent>
+    </AppDialog>
   );
 }

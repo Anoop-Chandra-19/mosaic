@@ -16,13 +16,13 @@ import {
 } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { Input } from '@/components/ui/input';
+  AppMenu,
+  AppMenuContent,
+  AppMenuItem,
+  AppMenuSeparator,
+  AppMenuTrigger,
+} from '@/components/AppMenu';
+import { AppInput } from '@/components/AppInput';
 import { getDb } from '@/lib/storage/mosaicDb';
 import { cn } from '@/lib/utils';
 import { attempt, showToast, useOverlayStore } from '@/stores/overlayStore';
@@ -181,7 +181,7 @@ export function TemplateCard({ template, active, expanded, onToggle }: TemplateC
         <div className="min-w-0 flex-1">
           <div className="flex min-w-0 items-center gap-1.5">
             {renaming ? (
-              <Input
+              <AppInput
                 defaultValue={template.name}
                 aria-label="Template name"
                 maxLength={200}
@@ -191,7 +191,7 @@ export function TemplateCard({ template, active, expanded, onToggle }: TemplateC
                   if (event.key === 'Enter') rename(event.currentTarget.value);
                   if (event.key === 'Escape') setRenaming(false);
                 }}
-                className="h-7 text-sm font-semibold"
+                className="h-7 font-strong"
               />
             ) : (
               <AppButton
@@ -232,8 +232,8 @@ export function TemplateCard({ template, active, expanded, onToggle }: TemplateC
               Open
             </AppButton>
           )}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
+          <AppMenu>
+            <AppMenuTrigger asChild>
               <AppButton
                 variant="ghost"
                 size="xs"
@@ -242,40 +242,40 @@ export function TemplateCard({ template, active, expanded, onToggle }: TemplateC
               >
                 <MoreHorizontal className="size-3.5" />
               </AppButton>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48">
-              <DropdownMenuItem disabled={active} onClick={() => void open()}>
+            </AppMenuTrigger>
+            <AppMenuContent align="end" className="w-48">
+              <AppMenuItem disabled={active} onClick={() => void open()}>
                 <LayoutTemplate />
                 {active ? 'Already open' : 'Open template'}
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setRenaming(true)}>
+              </AppMenuItem>
+              <AppMenuItem onClick={() => setRenaming(true)}>
                 <Pencil />
                 Rename…
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => void duplicate()}>
+              </AppMenuItem>
+              <AppMenuItem onClick={() => void duplicate()}>
                 <Copy />
                 Duplicate
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => void exportTemplate()}>
+              </AppMenuItem>
+              <AppMenuSeparator />
+              <AppMenuItem onClick={() => void exportTemplate()}>
                 <Download />
                 Export…
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={onToggle}>
+              </AppMenuItem>
+              <AppMenuItem onClick={onToggle}>
                 <Clock />
                 {expanded ? 'Hide history' : 'Show history'}
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => openFullHistory()}>
+              </AppMenuItem>
+              <AppMenuItem onClick={() => openFullHistory()}>
                 <ExternalLink />
                 Open full history…
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem variant="destructive" onClick={() => setPendingDelete(true)}>
+              </AppMenuItem>
+              <AppMenuSeparator />
+              <AppMenuItem variant="destructive" onClick={() => setPendingDelete(true)}>
                 <Trash2 />
                 Delete template…
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+              </AppMenuItem>
+            </AppMenuContent>
+          </AppMenu>
         </div>
       </div>
 

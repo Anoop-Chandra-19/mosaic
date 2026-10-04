@@ -1,6 +1,6 @@
 import type { ComponentProps } from 'react';
 import { ChevronRight } from 'lucide-react';
-import { CollapsibleContent } from '@/components/ui/collapsible';
+import { AppCollapsibleContent } from '@/components/AppCollapsible';
 import { cn } from '@/lib/utils';
 
 /** Turns with the open state of the nearest `group/row`. */
@@ -10,9 +10,9 @@ export function RowCaret() {
   );
 }
 
-export function ReviewFold({ className, ...props }: ComponentProps<typeof CollapsibleContent>) {
+export function ReviewFold({ className, ...props }: ComponentProps<typeof AppCollapsibleContent>) {
   return (
-    <CollapsibleContent
+    <AppCollapsibleContent
       className={cn(
         'overflow-hidden duration-180 ease-settle data-[state=closed]:animate-collapsible-up data-[state=open]:animate-collapsible-down motion-reduce:animate-none',
         className

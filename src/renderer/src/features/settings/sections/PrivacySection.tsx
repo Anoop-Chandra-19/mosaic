@@ -2,13 +2,13 @@ import { useState } from 'react';
 import { ShieldCheck, Trash2 } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+  AppDialog,
+  AppDialogContent,
+  AppDialogDescription,
+  AppDialogFooter,
+  AppDialogHeader,
+  AppDialogTitle,
+} from '@/components/AppDialog';
 import { attempt, showToast } from '@/stores/overlayStore';
 import { useUiStore } from '@/stores/uiStore';
 import { SettingRow, SettingsNote } from '../SettingRow';
@@ -87,20 +87,20 @@ export function PrivacySection() {
         </AppButton>
       </SettingRow>
 
-      <Dialog open={confirmingErase} onOpenChange={setConfirmingErase}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
+      <AppDialog open={confirmingErase} onOpenChange={setConfirmingErase}>
+        <AppDialogContent className="sm:max-w-md">
+          <AppDialogHeader>
+            <AppDialogTitle className="flex items-center gap-2">
               <Trash2 className="size-4 text-red-600 dark:text-red-400" />
               Erase local data
-            </DialogTitle>
-            <DialogDescription>
+            </AppDialogTitle>
+            <AppDialogDescription>
               Every template, its history, your settings, and your API keys are deleted from this
               machine, and Mosaic starts over as if just installed. There is no other copy unless
               you made a backup.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
+            </AppDialogDescription>
+          </AppDialogHeader>
+          <AppDialogFooter>
             <AppButton variant="ghost" onClick={() => setConfirmingErase(false)}>
               Cancel
             </AppButton>
@@ -108,9 +108,9 @@ export function PrivacySection() {
               <Trash2 />
               Erase everything
             </AppButton>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </AppDialogFooter>
+        </AppDialogContent>
+      </AppDialog>
     </>
   );
 }

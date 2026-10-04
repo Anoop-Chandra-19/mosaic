@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { Minus, Plus, TriangleAlert } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { AppToggleGroup, AppToggleGroupItem } from '@/components/AppToggleGroup';
 import { ResumePreview } from '@/features/preview/ResumePreview';
 import { useFitPreviewForHandoff } from '@/features/preview/useFitPreviewForHandoff';
 import { useStoredPreviewZoom } from '@/features/preview/pageZoom';
@@ -119,26 +119,23 @@ export function PreviewPanel() {
             </AppButton>
           </div>
 
-          <ToggleGroup
+          <AppToggleGroup
             type="single"
-            variant="outline"
-            size="sm"
             value={paperSize}
             // A single-choice group reports '' when the pressed item is pressed again.
             onValueChange={(value) => value && setPaperSize(value as PaperSize)}
             aria-label="Paper size"
           >
             {(['a4', 'letter'] as PaperSize[]).map((size) => (
-              <ToggleGroupItem
+              <AppToggleGroupItem
                 key={size}
                 value={size}
                 aria-label={`Switch paper size to ${size === 'a4' ? 'A4' : 'US Letter'}`}
-                className="h-6.5 px-2 text-xs font-semibold"
               >
                 {size === 'a4' ? 'A4' : 'Letter'}
-              </ToggleGroupItem>
+              </AppToggleGroupItem>
             ))}
-          </ToggleGroup>
+          </AppToggleGroup>
         </div>
       </div>
 

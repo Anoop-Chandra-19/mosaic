@@ -1,11 +1,6 @@
 import { Plus } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+import { AppMenu, AppMenuContent, AppMenuSeparator, AppMenuTrigger } from '@/components/AppMenu';
 import { BUILT_IN_KINDS, SECTION_PRESETS } from '@shared/resume/sectionPresets';
 import type { ResumeSection } from '@shared/types/resume';
 import { useOverlayStore } from '@/stores/overlayStore';
@@ -74,8 +69,8 @@ export function SectionList({
       {showAddSection && (
         // Marked like a row, so it slides with them.
         <div data-sort-id="add-section">
-          <DropdownMenu open={isAddSectionMenuOpen} onOpenChange={setAddSectionMenuOpen}>
-            <DropdownMenuTrigger asChild>
+          <AppMenu open={isAddSectionMenuOpen} onOpenChange={setAddSectionMenuOpen}>
+            <AppMenuTrigger asChild>
               <AppButton
                 variant="outline"
                 size="xs"
@@ -84,16 +79,16 @@ export function SectionList({
                 <Plus />
                 Add section
               </AppButton>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" onCloseAutoFocus={custom.onCloseAutoFocus}>
+            </AppMenuTrigger>
+            <AppMenuContent align="start" onCloseAutoFocus={custom.onCloseAutoFocus}>
               <PresetMenuItems
                 kinds={BUILT_IN_KINDS}
                 onAdd={(kind) => addSection({ kind, ...SECTION_PRESETS[kind] })}
               />
-              <DropdownMenuSeparator />
+              <AppMenuSeparator />
               <CustomMenuItems onChoose={custom.choose} />
-            </DropdownMenuContent>
-          </DropdownMenu>
+            </AppMenuContent>
+          </AppMenu>
         </div>
       )}
     </div>

@@ -22,20 +22,18 @@ export default defineConfig([
     },
   },
   {
+    // shadcn's parts are reached only through the App* wrappers in components/.
     files: ['src/renderer/src/**/*.{ts,tsx}'],
-    ignores: [
-      'src/renderer/src/components/ui/**',
-      'src/renderer/src/components/AppButton.tsx',
-      'src/renderer/src/components/__tests__/AppButton.test.ts',
-    ],
+    ignores: ['src/renderer/src/components/ui/**', 'src/renderer/src/components/App*.tsx'],
     rules: {
       'no-restricted-imports': [
         'error',
         {
           patterns: [
             {
-              regex: '(^|/)ui/button(\\.[cm]?[jt]sx?)?$',
-              message: 'Use AppButton from @/components/AppButton in app-owned UI.',
+              regex: '(^|/)components/ui/',
+              message:
+                'Use the App* wrapper from @/components (AppButton, AppMenu, AppInput, …), or add one.',
             },
           ],
         },

@@ -1,4 +1,4 @@
-import { DropdownMenuItem } from '@/components/ui/dropdown-menu';
+import { AppMenuItem } from '@/components/AppMenu';
 import { SECTION_PRESETS } from '@shared/resume/sectionPresets';
 import type { BuiltInSectionKind, SectionLayout } from '@shared/types/resume';
 import { CUSTOM_ICONS, PRESET_ICONS } from './sectionIcons';
@@ -14,10 +14,10 @@ export function PresetMenuItems({
   return kinds.map((kind) => {
     const Icon = PRESET_ICONS[kind];
     return (
-      <DropdownMenuItem key={kind} onSelect={() => onAdd(kind)}>
-        <Icon className="mr-2 size-4" />
+      <AppMenuItem key={kind} onSelect={() => onAdd(kind)}>
+        <Icon />
         {SECTION_PRESETS[kind].label}
-      </DropdownMenuItem>
+      </AppMenuItem>
     );
   });
 }
@@ -32,11 +32,11 @@ export function CustomMenuItems({ onChoose }: { onChoose: (layout: SectionLayout
   return CUSTOM_ITEMS.map(({ layout, label, hint }) => {
     const Icon = CUSTOM_ICONS[layout];
     return (
-      <DropdownMenuItem key={layout} onSelect={() => onChoose(layout)}>
-        <Icon className="mr-2 size-4" />
+      <AppMenuItem key={layout} onSelect={() => onChoose(layout)}>
+        <Icon />
         {label}
-        <span className="ml-auto pl-4 text-xs text-zinc-500">{hint}</span>
-      </DropdownMenuItem>
+        <span className="ml-auto pl-4 text-support text-ink-faint">{hint}</span>
+      </AppMenuItem>
     );
   });
 }

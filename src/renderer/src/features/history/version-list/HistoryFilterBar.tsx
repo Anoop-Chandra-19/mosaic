@@ -3,16 +3,16 @@ import { ChevronUp, Clock, LayoutTemplate, List, Save, Search, Sparkles, X } fro
 import { AppButton } from '@/components/AppButton';
 import { AppTooltip } from '@/components/AppTooltip';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { Input } from '@/components/ui/input';
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+  AppMenu,
+  AppMenuContent,
+  AppMenuItem,
+  AppMenuRadioGroup,
+  AppMenuRadioItem,
+  AppMenuSeparator,
+  AppMenuTrigger,
+} from '@/components/AppMenu';
+import { AppInput } from '@/components/AppInput';
+import { AppToggleGroup, AppToggleGroupItem } from '@/components/AppToggleGroup';
 import { cn } from '@/lib/utils';
 import type { HistoryFilter, HistoryKindFilter } from '@/types/history';
 
@@ -72,30 +72,29 @@ export function HistoryFilterBar({
   return (
     <>
       <div className="sticky top-0 z-5 mt-0.5 flex h-10.5 items-center gap-1.25 border-b border-line bg-white dark:bg-zinc-950">
-        <ToggleGroup
+        <AppToggleGroup
           type="single"
-          spacing={0.5}
+          size="sm"
           value={filter.kind}
           onValueChange={(kind) =>
             kind && onFilterChange({ ...filter, kind: kind as HistoryKindFilter })
           }
           aria-label="Which versions to show"
-          className="rounded-md border border-line bg-line p-0.5"
+          className="p-0.5"
         >
-          {/* Styled by aria-checked: the tooltip's trigger overwrites the item's data-state. */}
           {KIND_FILTERS.map(({ value, label, hint, Icon }) => (
             <AppTooltip key={value} content={hint}>
-              <ToggleGroupItem
+              <AppToggleGroupItem
                 value={value}
                 aria-label={label}
-                className="h-5.5 min-w-0 gap-1.25 rounded-[0.3125rem] px-2.25 text-xs font-medium text-ink-muted hover:bg-transparent hover:text-foreground aria-checked:bg-pane-raised aria-checked:text-foreground aria-checked:shadow-[0_1px_2px_oklch(0_0_0/25%)] @max-[22.5rem]/history:px-1.75"
+                className="gap-1.25 px-2.25 @max-[22.5rem]/history:px-1.75"
               >
                 <Icon className="size-2.75" />
                 <span className="@max-[22.5rem]/history:hidden">{label}</span>
-              </ToggleGroupItem>
+              </AppToggleGroupItem>
             </AppTooltip>
           ))}
-        </ToggleGroup>
+        </AppToggleGroup>
         {filter.section !== null && (
           <AppButton
             variant="ghost"
@@ -111,8 +110,8 @@ export function HistoryFilterBar({
         )}
         <span className="flex-1" />
         {sections.length > 0 && (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
+          <AppMenu>
+            <AppMenuTrigger asChild>
               <AppButton
                 variant="ghost"
                 size="xs"
@@ -122,26 +121,26 @@ export function HistoryFilterBar({
               >
                 <LayoutTemplate className="size-3" />
               </AppButton>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48">
-              <DropdownMenuRadioGroup
+            </AppMenuTrigger>
+            <AppMenuContent align="end" className="w-48">
+              <AppMenuRadioGroup
                 value={filter.section ?? ''}
                 onValueChange={(section) => setSection(section || null)}
               >
-                <DropdownMenuRadioItem value="">Any section</DropdownMenuRadioItem>
-                <DropdownMenuSeparator />
+                <AppMenuRadioItem value="">Any section</AppMenuRadioItem>
+                <AppMenuSeparator />
                 {sections.map((section) => (
-                  <DropdownMenuRadioItem key={section} value={section}>
+                  <AppMenuRadioItem key={section} value={section}>
                     {section}
-                  </DropdownMenuRadioItem>
+                  </AppMenuRadioItem>
                 ))}
-              </DropdownMenuRadioGroup>
-            </DropdownMenuContent>
-          </DropdownMenu>
+              </AppMenuRadioGroup>
+            </AppMenuContent>
+          </AppMenu>
         )}
         {months.length > 1 && (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
+          <AppMenu>
+            <AppMenuTrigger asChild>
               <AppButton
                 variant="ghost"
                 size="xs"
@@ -151,21 +150,21 @@ export function HistoryFilterBar({
                 <Clock />
                 <span className="@max-[22.5rem]/history:sr-only">Jump</span>
               </AppButton>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-46">
-              <DropdownMenuItem onClick={onJumpToNewest}>
+            </AppMenuTrigger>
+            <AppMenuContent align="end" className="w-46">
+              <AppMenuItem onClick={onJumpToNewest}>
                 <ChevronUp />
                 Newest version
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
+              </AppMenuItem>
+              <AppMenuSeparator />
               {months.slice(0, 12).map((month) => (
-                <DropdownMenuItem key={month.key} onClick={() => onJumpToMonth(month.key)}>
+                <AppMenuItem key={month.key} onClick={() => onJumpToMonth(month.key)}>
                   <Clock />
                   {month.label}
-                </DropdownMenuItem>
+                </AppMenuItem>
               ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
+            </AppMenuContent>
+          </AppMenu>
         )}
         <AppButton
           ref={searchButtonRef}
@@ -187,7 +186,7 @@ export function HistoryFilterBar({
               aria-hidden
               className="absolute top-1/2 left-1.75 size-3.25 -translate-y-1/2 text-ink-faint"
             />
-            <Input
+            <AppInput
               autoFocus
               aria-label="Find a version"
               placeholder={`Find a version in all ${total.toLocaleString()}…`}
@@ -202,7 +201,7 @@ export function HistoryFilterBar({
                   searchButtonRef.current?.focus();
                 }
               }}
-              className="h-7 pl-6.5 text-[0.78125rem] md:text-[0.78125rem]"
+              className="h-7 pl-6.5 text-[0.78125rem]"
             />
           </span>
         </div>

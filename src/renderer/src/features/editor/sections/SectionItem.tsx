@@ -2,15 +2,15 @@ import { useRef, useState } from 'react';
 import { ArrowDown, ArrowUp, Ellipsis, Eye, EyeOff, Pencil, Plus, Trash2 } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
 import { AppTooltip } from '@/components/AppTooltip';
-import { Collapsible, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { AppCollapsible, AppCollapsibleTrigger } from '@/components/AppCollapsible';
 import { useListMotion } from '@/lib/motion/useListMotion';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+  AppMenu,
+  AppMenuContent,
+  AppMenuItem,
+  AppMenuSeparator,
+  AppMenuTrigger,
+} from '@/components/AppMenu';
 import { ConfirmDeleteDialog } from '@/components/ConfirmDeleteDialog';
 import { cn } from '@/lib/utils';
 import { useOutlineStore } from '@/stores/outlineStore';
@@ -88,7 +88,11 @@ export function SectionItem({
   const hiddenLabel = isHidden ? 'Put section on the resume' : 'Leave section off the resume';
 
   return (
-    <Collapsible open={open} onOpenChange={(next) => setOpen(section.id, next)} className="mb-0.75">
+    <AppCollapsible
+      open={open}
+      onOpenChange={(next) => setOpen(section.id, next)}
+      className="mb-0.75"
+    >
       {/* The whole row opens and closes the section; its buttons do their own thing. */}
       <div
         onClick={() => !isRenaming && setOpen(section.id, !open)}
@@ -99,7 +103,7 @@ export function SectionItem({
           label={`Drag ${section.label} to reorder`}
           className="invisible group-focus-within/section:visible group-hover/section:visible"
         />
-        <CollapsibleTrigger asChild>
+        <AppCollapsibleTrigger asChild>
           <AppButton
             variant="ghost"
             size="xs"
@@ -110,7 +114,7 @@ export function SectionItem({
           >
             <FoldChevron isOpen={open} />
           </AppButton>
-        </CollapsibleTrigger>
+        </AppCollapsibleTrigger>
         <Icon className="-ml-1 size-3.5 shrink-0 text-ink-muted" />
         {isRenaming ? (
           <div className="flex min-w-0 flex-1" onClick={(event) => event.stopPropagation()}>
@@ -122,7 +126,7 @@ export function SectionItem({
               openAtStart
               label="Section name"
               placeholder="Section name"
-              inputClassName="text-[0.96875rem] font-semibold md:text-[0.96875rem]"
+              inputClassName="text-[0.96875rem] font-semibold"
             />
           </div>
         ) : (
@@ -182,8 +186,8 @@ export function SectionItem({
           >
             <Plus className="size-3" />
           </AppButton>
-          <DropdownMenu open={actionsOpen} onOpenChange={setActionsOpen}>
-            <DropdownMenuTrigger asChild>
+          <AppMenu open={actionsOpen} onOpenChange={setActionsOpen}>
+            <AppMenuTrigger asChild>
               <AppButton
                 variant="ghost"
                 size="xs"
@@ -193,8 +197,8 @@ export function SectionItem({
               >
                 <Ellipsis />
               </AppButton>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent
+            </AppMenuTrigger>
+            <AppMenuContent
               align="end"
               onCloseAutoFocus={(event) => {
                 if (!renameAfterMenu.current) return;
@@ -203,41 +207,38 @@ export function SectionItem({
                 setIsRenaming(true);
               }}
             >
-              <DropdownMenuItem onSelect={() => toggleSection(section.id)}>
+              <AppMenuItem onSelect={() => toggleSection(section.id)}>
                 {isHidden ? <Eye /> : <EyeOff />}
                 {hiddenLabel}
-              </DropdownMenuItem>
-              <DropdownMenuItem
+              </AppMenuItem>
+              <AppMenuItem
                 onSelect={() => {
                   renameAfterMenu.current = true;
                 }}
               >
                 <Pencil />
                 Rename section
-              </DropdownMenuItem>
-              <DropdownMenuItem onSelect={handleAddEntry}>
+              </AppMenuItem>
+              <AppMenuItem onSelect={handleAddEntry}>
                 <Plus />
                 Add entry
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem disabled={isFirst} onSelect={onMoveUp}>
+              </AppMenuItem>
+              <AppMenuSeparator />
+              <AppMenuItem disabled={isFirst} onSelect={onMoveUp}>
                 <ArrowUp />
                 Move up
-              </DropdownMenuItem>
-              <DropdownMenuItem disabled={isLast} onSelect={onMoveDown}>
+              </AppMenuItem>
+              <AppMenuItem disabled={isLast} onSelect={onMoveDown}>
                 <ArrowDown />
                 Move down
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                onSelect={() => setConfirmOpen(true)}
-                className="text-destructive focus:text-destructive"
-              >
+              </AppMenuItem>
+              <AppMenuSeparator />
+              <AppMenuItem variant="destructive" onSelect={() => setConfirmOpen(true)}>
                 <Trash2 />
                 Delete section…
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+              </AppMenuItem>
+            </AppMenuContent>
+          </AppMenu>
         </div>
       </div>
 
@@ -280,6 +281,6 @@ export function SectionItem({
         description={`This will permanently remove “${section.label}” and all its entries.`}
         onConfirm={() => removeSection(section.id)}
       />
-    </Collapsible>
+    </AppCollapsible>
   );
 }

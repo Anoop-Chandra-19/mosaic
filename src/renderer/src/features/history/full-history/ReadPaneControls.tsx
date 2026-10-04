@@ -1,13 +1,8 @@
 import { Check, ChevronDown, Eye, Minus, Plus } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
 import { AppTooltip } from '@/components/AppTooltip';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { AppMenu, AppMenuContent, AppMenuItem, AppMenuTrigger } from '@/components/AppMenu';
+import { AppToggleGroup, AppToggleGroupItem } from '@/components/AppToggleGroup';
 import { cn } from '@/lib/utils';
 import { PREVIEW_ZOOM_RANGE } from '@/stores/uiStore';
 import type { HistoryComparison } from '@/types/history';
@@ -99,19 +94,16 @@ export function ReadPaneControls({
   onReadAsText,
   zoom,
 }: ReadPaneControlsProps) {
-  const item =
-    'h-5.75 min-w-0 rounded-[0.3125rem] px-2.25 text-xs font-medium text-ink-muted hover:bg-transparent hover:text-foreground disabled:text-ink-faint aria-checked:bg-pane-raised aria-checked:text-foreground aria-checked:shadow-[0_1px_2px_oklch(0_0_0/25%)]';
   return (
     <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
-      <ToggleGroup
+      <AppToggleGroup
         type="single"
-        spacing={0.5}
+        size="sm"
         value={isAgainstDraft ? 'draft' : 'parent'}
         onValueChange={(value) => value && onComparisonChange(value as HistoryComparison)}
         aria-label="Compare with"
-        className="rounded-md border border-line bg-line p-0.5"
+        className="p-0.5"
       >
-        {/* Styled by aria-checked: the tooltip's trigger overwrites the item's data-state. */}
         <AppTooltip
           content={
             canCompareWithParent
@@ -119,27 +111,25 @@ export function ReadPaneControls({
               : 'The first version has nothing before it'
           }
         >
-          <ToggleGroupItem value="parent" disabled={!canCompareWithParent} className={item}>
+          <AppToggleGroupItem value="parent" disabled={!canCompareWithParent}>
             Changes in {versionLabel}
-          </ToggleGroupItem>
+          </AppToggleGroupItem>
         </AppTooltip>
         <AppTooltip content="What Restore would do">
-          <ToggleGroupItem value="draft" className={item}>
-            Against your draft
-          </ToggleGroupItem>
+          <AppToggleGroupItem value="draft">Against your draft</AppToggleGroupItem>
         </AppTooltip>
-      </ToggleGroup>
+      </AppToggleGroup>
       <span className="flex-1" />
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
+      <AppMenu>
+        <AppMenuTrigger asChild>
           <AppButton variant="ghost" size="2xs">
             View as: {view === 'page' ? 'Page' : 'Changes only'}
             <ChevronDown className="size-2.75" />
           </AppButton>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-65">
+        </AppMenuTrigger>
+        <AppMenuContent align="end" className="w-65">
           {VIEWS.map(({ value, label, description }) => (
-            <DropdownMenuItem
+            <AppMenuItem
               key={value}
               role="menuitemradio"
               aria-checked={view === value}
@@ -151,10 +141,10 @@ export function ReadPaneControls({
               )}
               <span className="text-[0.78125rem] text-foreground">{label}</span>
               <span className="text-[0.71875rem] text-ink-faint">{description}</span>
-            </DropdownMenuItem>
+            </AppMenuItem>
           ))}
-        </DropdownMenuContent>
-      </DropdownMenu>
+        </AppMenuContent>
+      </AppMenu>
       {zoom && <ZoomControl {...zoom} />}
       {canReadAsText && (
         <AppButton

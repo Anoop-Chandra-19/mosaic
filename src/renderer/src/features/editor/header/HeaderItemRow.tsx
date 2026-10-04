@@ -15,12 +15,12 @@ import {
 import { AppButton } from '@/components/AppButton';
 import { AppTooltip } from '@/components/AppTooltip';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+  AppMenu,
+  AppMenuContent,
+  AppMenuItem,
+  AppMenuSeparator,
+  AppMenuTrigger,
+} from '@/components/AppMenu';
 import { resolveHeaderItemHref, getHeaderKindInfo } from '@shared/resume/resumeHeader';
 import { useSwapMotion } from '@/lib/motion/useListMotion';
 import { cn } from '@/lib/utils';
@@ -183,8 +183,8 @@ export function HeaderItemRow({
       >
         {item.shown ? <Eye /> : <EyeOff />}
       </AppButton>
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
+      <AppMenu>
+        <AppMenuTrigger asChild>
           <AppButton
             variant="ghost"
             size="xs"
@@ -194,8 +194,8 @@ export function HeaderItemRow({
           >
             <Ellipsis />
           </AppButton>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent
+        </AppMenuTrigger>
+        <AppMenuContent
           align="end"
           onCloseAutoFocus={(event) => {
             // The editor opens once the menu has closed: while open, the menu holds focus
@@ -206,61 +206,55 @@ export function HeaderItemRow({
             setEditing('text');
           }}
         >
-          <DropdownMenuItem
+          <AppMenuItem
             onSelect={() => {
               editAfterMenu.current = true;
             }}
           >
             <Pencil />
             Edit text and link
-          </DropdownMenuItem>
-          <DropdownMenuItem onSelect={toggleShown}>
+          </AppMenuItem>
+          <AppMenuItem onSelect={toggleShown}>
             {item.shown ? <EyeOff /> : <Eye />}
             {item.shown ? 'Leave off the page' : 'Put back on the page'}
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem disabled={!item.text} onSelect={() => update(item.id, { text: '' })}>
+          </AppMenuItem>
+          <AppMenuSeparator />
+          <AppMenuItem disabled={!item.text} onSelect={() => update(item.id, { text: '' })}>
             <X />
             Clear text
-          </DropdownMenuItem>
-          <DropdownMenuItem disabled={!item.url} onSelect={() => update(item.id, { url: '' })}>
+          </AppMenuItem>
+          <AppMenuItem disabled={!item.url} onSelect={() => update(item.id, { url: '' })}>
             <X />
             Clear link
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem disabled={index === 0} onSelect={() => move(item.id, -1)}>
+          </AppMenuItem>
+          <AppMenuSeparator />
+          <AppMenuItem disabled={index === 0} onSelect={() => move(item.id, -1)}>
             <ArrowUp />
             Move up
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            disabled={index === line.items.length - 1}
-            onSelect={() => move(item.id, 1)}
-          >
+          </AppMenuItem>
+          <AppMenuItem disabled={index === line.items.length - 1} onSelect={() => move(item.id, 1)}>
             <ArrowDown />
             Move down
-          </DropdownMenuItem>
+          </AppMenuItem>
           {lines.map((other, number) =>
             other.id === line.id ? null : (
-              <DropdownMenuItem key={other.id} onSelect={() => moveToLine(item.id, other.id)}>
+              <AppMenuItem key={other.id} onSelect={() => moveToLine(item.id, other.id)}>
                 <ArrowDown className={cn(number < lines.indexOf(line) && 'rotate-180')} />
                 Move to line {number + 1}
-              </DropdownMenuItem>
+              </AppMenuItem>
             )
           )}
-          <DropdownMenuSeparator />
-          <DropdownMenuItem onSelect={() => duplicate(item.id)}>
+          <AppMenuSeparator />
+          <AppMenuItem onSelect={() => duplicate(item.id)}>
             <Copy />
             Duplicate
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            onSelect={() => remove(item.id)}
-            className="text-destructive focus:text-destructive"
-          >
+          </AppMenuItem>
+          <AppMenuItem variant="destructive" onSelect={() => remove(item.id)}>
             <Trash2 />
             Remove
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+          </AppMenuItem>
+        </AppMenuContent>
+      </AppMenu>
     </div>
   );
 }
