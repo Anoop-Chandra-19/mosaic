@@ -7,6 +7,7 @@ import {
 } from 'react';
 import { ArrowRight, FileText, Info, Lock, Sparkles, Upload, X } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
+import { MosaicMark } from '@/components/MosaicMark';
 import { cn } from '@/lib/utils';
 import { isModKey, shortcutLabel } from '@/lib/keyboardShortcuts';
 import { createDefaultResume } from '@shared/resume/defaultResume';
@@ -69,7 +70,7 @@ export function StartPanel({ closable }: StartPanelProps) {
         {view === 'routes' ? (
           <>
             <PanelHead
-              mark={<MosaicMark />}
+              mark={<MosaicMark size="md" />}
               title={first ? 'Start your first resume' : 'Start a new resume'}
               subtitle="Mosaic keeps everything on your computer. Your drafts and history never leave it."
               onClose={closable ? close : undefined}
@@ -185,15 +186,6 @@ function PanelFoot({ icon: Icon, children }: { icon: typeof Lock; children: Reac
     <div className="mt-4 flex items-center gap-2 border-t border-line pt-3 text-xs text-zinc-500">
       <Icon className="size-3 shrink-0" />
       {children}
-    </div>
-  );
-}
-
-/** The app's mark, as in the top bar. */
-function MosaicMark() {
-  return (
-    <div className="flex size-8.5 items-center justify-center rounded-lg bg-amber-500 text-base font-bold text-white">
-      M
     </div>
   );
 }

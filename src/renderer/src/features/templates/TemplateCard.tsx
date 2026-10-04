@@ -23,6 +23,8 @@ import {
   AppMenuTrigger,
 } from '@/components/AppMenu';
 import { AppInput } from '@/components/AppInput';
+import { Note } from '@/components/Note';
+import { Text } from '@/components/Text';
 import { getDb } from '@/lib/storage/mosaicDb';
 import { cn } from '@/lib/utils';
 import { attempt, showToast, useOverlayStore } from '@/stores/overlayStore';
@@ -160,7 +162,7 @@ export function TemplateCard({ template, active, expanded, onToggle }: TemplateC
       className={cn(
         // Clip, not hidden: a card that could scroll would pin the history's day headers
         // inside itself instead of to the sidebar.
-        '@container overflow-clip rounded-lg border bg-zinc-50 transition-colors dark:bg-zinc-900',
+        '@container overflow-clip rounded-[0.5625rem] border bg-pane-raised transition-colors duration-120',
         active ? 'border-amber-line' : 'border-line hover:border-line-strong'
       )}
     >
@@ -197,21 +199,21 @@ export function TemplateCard({ template, active, expanded, onToggle }: TemplateC
               <AppButton
                 variant="link"
                 onClick={onToggle}
-                className="h-auto min-w-0 shrink justify-start p-0 text-sm font-semibold"
+                className="h-auto min-w-0 shrink justify-start p-0 text-title"
               >
                 <span className="truncate">{template.name}</span>
               </AppButton>
             )}
             {active && !renaming && (
-              <span className="shrink-0 rounded bg-zinc-900 px-1.5 py-px text-[0.7rem] font-semibold text-white dark:bg-zinc-100 dark:text-zinc-900">
+              <span className="inline-flex h-[1.1875rem] shrink-0 items-center rounded-[0.3125rem] bg-foreground px-[0.4375rem] text-support font-strong text-background">
                 open
               </span>
             )}
           </div>
-          <p className="mt-0.5 text-xs text-zinc-500">
+          <Text as="p" variant="secondary" className="mt-[0.1875rem] tabular-nums">
             {template.versionCount} {template.versionCount === 1 ? 'version' : 'versions'} ·{' '}
             {formatRelativeTime(template.head.createdAt)}
-          </p>
+          </Text>
         </div>
 
         <div className="flex shrink-0 items-center gap-0.5">
@@ -281,15 +283,15 @@ export function TemplateCard({ template, active, expanded, onToggle }: TemplateC
 
       {expanded && (
         <div
-          className="border-t border-line bg-white px-3 pt-2.5 pb-3 dark:bg-zinc-950"
+          className="border-t border-line bg-background px-3 pt-2.5 pb-3"
           {...(active && tourTargetProps('history'))}
         >
           <div className="flex items-center justify-between">
             <span className="inline-flex items-center gap-0.5">
-              <span className="inline-flex items-center gap-1.5 text-[0.7rem] font-semibold tracking-wider text-zinc-500 uppercase">
+              <Text variant="eyebrow" className="inline-flex items-center gap-1.5">
                 <Clock className="size-3" />
                 History
-              </span>
+              </Text>
               {active && versions && (
                 <AppButton
                   variant="ghost"
@@ -306,7 +308,7 @@ export function TemplateCard({ template, active, expanded, onToggle }: TemplateC
                 </AppButton>
               )}
             </span>
-            <span className="font-mono text-[0.7rem] text-zinc-500">newest first</span>
+            <Text variant="meta">newest first</Text>
           </div>
 
           {versions ? (
@@ -321,18 +323,22 @@ export function TemplateCard({ template, active, expanded, onToggle }: TemplateC
               onOpenFullHistory={openFullHistory}
             />
           ) : (
-            <p className="mt-2 text-xs text-zinc-500">Loading history…</p>
+            <Text as="p" variant="secondary" className="mt-2 text-ink-faint">
+              Loading history…
+            </Text>
           )}
 
           {previewId && preview && (
-            <Note icon={Eye} tone="amber">
-              <span className="flex-1">
-                Showing {preview.label} in the sheet. Your draft is untouched. Restore from the
-                banner if you want this version back.
+            <Note icon={Eye} tone="amber" size="sm" className="mt-2">
+              <span className="flex items-start gap-2">
+                <span className="flex-1">
+                  Showing {preview.label} in the sheet. Your draft is untouched. Restore from the
+                  banner if you want this version back.
+                </span>
+                <AppButton variant="outline" size="xs" onClick={() => setPreview(null)}>
+                  Exit
+                </AppButton>
               </span>
-              <AppButton variant="outline" size="xs" onClick={() => setPreview(null)}>
-                Exit
-              </AppButton>
             </Note>
           )}
 
@@ -363,28 +369,6 @@ export function TemplateCard({ template, active, expanded, onToggle }: TemplateC
         onOpenChange={setPendingDelete}
         onDelete={remove}
       />
-    </div>
-  );
-}
-
-function Note({
-  icon: Icon,
-  tone,
-  children,
-}: {
-  icon: typeof Info;
-  tone?: 'amber';
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="mt-2 flex items-start gap-2 rounded-md border border-line bg-zinc-50 px-2.5 py-2 text-xs leading-relaxed text-zinc-600 dark:bg-zinc-900 dark:text-zinc-400">
-      <Icon
-        className={cn(
-          'mt-0.5 size-3.5 shrink-0',
-          tone === 'amber' ? 'text-amber-600 dark:text-amber-400' : 'text-zinc-500'
-        )}
-      />
-      {children}
     </div>
   );
 }

@@ -1,5 +1,7 @@
 import { ExternalLink } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
+import { MosaicMark } from '@/components/MosaicMark';
+import { Text } from '@/components/Text';
 import { useOverlayStore } from '@/stores/overlayStore';
 import { useResumeStore } from '@/stores/resumeStore';
 import { SettingRow } from '../SettingRow';
@@ -12,17 +14,15 @@ export function AboutSection() {
   const setTourStep = useOverlayStore((s) => s.setTourStep);
   return (
     <>
-      <div className="mt-1 mb-2 flex items-center gap-3">
-        <div className="grid size-9.5 place-items-center rounded-lg bg-amber-500 text-lg font-bold text-white">
-          M
-        </div>
+      <div className="mt-3.5 mb-2 flex items-center gap-3">
+        <MosaicMark size="lg" />
         <div>
-          <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+          <Text as="p" variant="title">
             Mosaic {__APP_VERSION__}
-          </p>
-          <p className="text-xs text-zinc-600 dark:text-zinc-400">
+          </Text>
+          <Text as="p" variant="secondary">
             Everything stays on your computer. No account, no server.
-          </p>
+          </Text>
         </div>
       </div>
       <SettingRow
@@ -38,12 +38,12 @@ export function AboutSection() {
         </AppButton>
       </SettingRow>
 
-      <h3 className="mt-5 text-base font-semibold tracking-tight text-zinc-900 dark:text-zinc-100">
+      <Text as="h3" variant="heading" className="mt-5">
         Guided tours
-      </h3>
-      <p className="mt-1 mb-1.5 text-xs leading-relaxed text-zinc-600 dark:text-zinc-400">
+      </Text>
+      <Text as="p" variant="secondary" className="mt-1 mb-1.5">
         Each one runs over the real interface. Replay any of them whenever you like.
-      </p>
+      </Text>
       <SettingRow
         label="The basics"
         description={

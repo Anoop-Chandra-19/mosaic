@@ -10,6 +10,7 @@ Paths below are relative to the repository root. Read the relevant files before 
 
 - Main, preload, IPC, SQLite, migrations, or secrets: `src/main/CLAUDE.md`.
 - Renderer UI, state, or styling: `src/renderer/CLAUDE.md`.
+- Interface type, colours, or controls: `docs/typography.md` and `src/renderer/CLAUDE.md`.
 - Import readers, parsing, or review: `src/renderer/src/features/import/CLAUDE.md`.
 - Resume schema, header, sections, preview, import, or export: `docs/resume-format.md`.
 - Setup, full source tree, and scripts: `README.md`.

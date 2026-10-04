@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { Minus, Plus, TriangleAlert } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
+import { Text } from '@/components/Text';
 import { AppToggleGroup, AppToggleGroupItem } from '@/components/AppToggleGroup';
 import { ResumePreview } from '@/features/preview/ResumePreview';
 import { useFitPreviewForHandoff } from '@/features/preview/useFitPreviewForHandoff';
@@ -65,17 +66,17 @@ export function PreviewPanel() {
           pageRef={scrollRef}
         />
       )}
-      <div className="flex items-center justify-between border-b border-border bg-card px-4 py-2.5 md:px-6">
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-semibold tracking-widest text-zinc-900 uppercase dark:text-zinc-100">
+      <div className="flex h-10 shrink-0 items-center justify-between gap-2.5 border-b border-line bg-background px-3">
+        <div className="flex min-w-0 items-center gap-2">
+          <Text variant="eyebrow" className="truncate">
             {preview ? `Reading ${preview.label}` : 'Live Preview'}
-          </span>
+          </Text>
           <span
             className={cn(
-              'inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-xs font-semibold',
+              'inline-flex h-5.5 shrink-0 items-center gap-1.25 rounded-sm border px-2 font-mono text-meta whitespace-nowrap tabular-nums',
               runsLong
-                ? 'border-amber-300 bg-amber-100 text-amber-900 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-300'
-                : 'border-line-strong bg-zinc-100 text-zinc-700 dark:bg-zinc-900 dark:text-zinc-300'
+                ? 'border-warn-line bg-warn-soft text-warn'
+                : 'border-transparent bg-line text-ink-soft'
             )}
           >
             {runsLong && <TriangleAlert className="size-3" />}
@@ -100,7 +101,7 @@ export function PreviewPanel() {
             <AppButton
               variant="ghost"
               size="xs"
-              className="min-w-11 font-semibold text-ink-soft"
+              className="min-w-9.5 px-0.5 font-regular text-ink-muted tabular-nums"
               onClick={canvas.resetZoom}
               aria-label="Reset zoom"
               title={`Reset zoom. ${shortcutLabel('scroll')} zooms to the pointer, and Space drags the page.`}

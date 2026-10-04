@@ -48,7 +48,7 @@ function PaneToggle({
       title={`${label}  ${shortcutLabel(shortcut)}`}
       className={cn(
         'aspect-auto h-5 w-5.5 rounded-sm hover:text-foreground',
-        pressed && 'text-amber-600 dark:text-amber-400'
+        pressed && 'text-amber hover:text-amber'
       )}
     >
       <Icon className="size-3.5" />
@@ -57,7 +57,7 @@ function PaneToggle({
 }
 
 function Divider() {
-  return <span className="text-zinc-400 dark:text-zinc-600">|</span>;
+  return <span className="text-line-heavy">|</span>;
 }
 
 function Words() {
@@ -108,21 +108,21 @@ export function StatusBar() {
 
   let saveState: ReactNode;
   if (!template) {
-    saveState = <span className="text-zinc-500">No resume open</span>;
+    saveState = <span className="text-ink-faint">No resume open</span>;
   } else if (saveFailed) {
     saveState = (
       <AppTooltip
         side="top"
         content="The edits are still in the editor; Mosaic tries again with your next change."
       >
-        <span className="text-red-700 dark:text-red-400">Couldn’t save the last change</span>
+        <span className="text-del">Couldn’t save the last change</span>
       </AppTooltip>
     );
   } else {
     saveState = (
       <AppTooltip side="top" content="Every change is written to your computer as you type.">
         <span className="flex items-center gap-1.5">
-          <span className="size-1.5 rounded-full bg-emerald-500" />
+          <span className="size-1.25 rounded-full bg-add" />
           Autosaved · {formatRelativeTime(savedAt ?? template.updatedAt, now)}
         </span>
       </AppTooltip>
@@ -133,7 +133,7 @@ export function StatusBar() {
   const pagesWord = meta.totalPages === 1 && !meta.hasMorePages ? 'page' : 'pages';
 
   return (
-    <footer className="flex h-7 shrink-0 items-center justify-between gap-3 border-t border-border bg-card px-2 text-xs text-zinc-600 dark:text-zinc-400">
+    <footer className="flex h-7 shrink-0 items-center justify-between gap-3 border-t border-line bg-chrome px-2 text-support text-ink-muted tabular-nums">
       <div className="flex min-w-0 items-center gap-2 whitespace-nowrap">
         {/* Without the preview, the sidebar is all there is, so it stays. */}
         {shouldShowPreview && (

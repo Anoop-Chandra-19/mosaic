@@ -24,7 +24,7 @@ function gigabytes(bytes: number): string | null {
 
 function Command({ children }: { children: ReactNode }) {
   return (
-    <code className="rounded bg-zinc-100 px-1 font-mono text-[0.95em] whitespace-nowrap text-zinc-800 dark:bg-zinc-800 dark:text-zinc-200">
+    <code className="rounded-xs bg-line px-1 font-mono text-[0.95em] whitespace-nowrap text-foreground">
       {children}
     </code>
   );
@@ -32,13 +32,7 @@ function Command({ children }: { children: ReactNode }) {
 
 function Note({ tone, children }: { tone: 'error' | 'warning'; children: ReactNode }) {
   return (
-    <span
-      className={
-        tone === 'error'
-          ? 'mt-1 block text-red-700 dark:text-red-400'
-          : 'mt-1 block text-amber-700 dark:text-amber-400'
-      }
-    >
+    <span className={tone === 'error' ? 'mt-1 block text-del' : 'mt-1 block text-warn'}>
       {children}
     </span>
   );
@@ -102,7 +96,6 @@ export function OllamaAddressRow({
         <AppButton
           variant="ghost"
           size="sm"
-          className="h-8 text-xs"
           onClick={() => {
             setDraft(null);
             onChange(DEFAULT_OLLAMA_ADDRESS);

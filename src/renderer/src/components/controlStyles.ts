@@ -11,6 +11,13 @@ export const FIELD_CLASSES =
 export const FLOATING_SURFACE_CLASSES =
   'rounded-[0.5625rem] border border-line-strong bg-pane-raised text-ink-soft shadow-overlay';
 
+/** A radio option drawn as a card (the design's `.card`), the chosen one edged in amber. */
+export const CHOICE_CARD_CLASSES = {
+  base: 'flex cursor-pointer items-start gap-2.5 rounded-[0.5625rem] border bg-pane-raised p-2.75 transition-colors duration-120',
+  chosen: 'border-amber-line',
+  idle: 'border-line hover:border-line-strong',
+} as const;
+
 /** One row of a menu or a select's list, from the design's `.menu-item`. */
 export const LIST_ROW_CLASSES =
   "min-h-[1.8125rem] gap-[0.5625rem] rounded-sm px-2 py-0 text-body text-ink-soft focus:bg-line focus:text-foreground data-[disabled]:opacity-40 [&_svg:not([class*='size-'])]:size-[0.8125rem] [&_svg:not([class*='text-'])]:text-current";

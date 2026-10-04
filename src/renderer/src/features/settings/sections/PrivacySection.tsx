@@ -1,17 +1,11 @@
 import { useState } from 'react';
-import { ShieldCheck, Trash2 } from 'lucide-react';
+import { ShieldCheck } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
-import {
-  AppDialog,
-  AppDialogContent,
-  AppDialogDescription,
-  AppDialogFooter,
-  AppDialogHeader,
-  AppDialogTitle,
-} from '@/components/AppDialog';
+import { ConfirmDeleteDialog } from '@/components/ConfirmDeleteDialog';
 import { attempt, showToast } from '@/stores/overlayStore';
 import { useUiStore } from '@/stores/uiStore';
-import { SettingRow, SettingsNote } from '../SettingRow';
+import { Note } from '@/components/Note';
+import { SettingRow } from '../SettingRow';
 import { useSecretsStatus } from '../useSecretsStatus';
 
 export function PrivacySection() {
@@ -38,10 +32,10 @@ export function PrivacySection() {
 
   return (
     <>
-      <SettingsNote icon={ShieldCheck} tone="safe" className="mb-4">
+      <Note icon={ShieldCheck} tone="safe" className="mb-4">
         Local storage on your computer is the only copy of your resume. Network access happens only
         when you ask the AI assistant for something.
-      </SettingsNote>
+      </Note>
 
       <SettingRow
         label="Forget stored API keys"
@@ -77,40 +71,21 @@ export function PrivacySection() {
         label="Delete everything"
         description="Templates, versions, settings, keys. Back up first: this cannot be undone."
       >
-        <AppButton
-          variant="outline"
-          size="sm"
-          className="border-red-300 text-red-700 hover:bg-red-50 hover:text-red-800 dark:border-red-900 dark:text-red-400 dark:hover:bg-red-950 dark:hover:text-red-300"
-          onClick={() => setConfirmingErase(true)}
-        >
+        <AppButton variant="destructive" size="sm" onClick={() => setConfirmingErase(true)}>
           Erase local data
         </AppButton>
       </SettingRow>
 
-      <AppDialog open={confirmingErase} onOpenChange={setConfirmingErase}>
-        <AppDialogContent className="sm:max-w-md">
-          <AppDialogHeader>
-            <AppDialogTitle className="flex items-center gap-2">
-              <Trash2 className="size-4 text-red-600 dark:text-red-400" />
-              Erase local data
-            </AppDialogTitle>
-            <AppDialogDescription>
-              Every template, its history, your settings, and your API keys are deleted from this
-              machine, and Mosaic starts over as if just installed. There is no other copy unless
-              you made a backup.
-            </AppDialogDescription>
-          </AppDialogHeader>
-          <AppDialogFooter>
-            <AppButton variant="ghost" onClick={() => setConfirmingErase(false)}>
-              Cancel
-            </AppButton>
-            <AppButton variant="destructive" disabled={erasing} onClick={() => void erase()}>
-              <Trash2 />
-              Erase everything
-            </AppButton>
-          </AppDialogFooter>
-        </AppDialogContent>
-      </AppDialog>
+      <ConfirmDeleteDialog
+        open={confirmingErase}
+        onOpenChange={setConfirmingErase}
+        title="Erase local data"
+        description="Every template, its history, your settings, and your API keys are deleted from this computer, and Mosaic starts over as if just installed. There is no other copy unless you made a backup."
+        confirmLabel="Erase everything"
+        isDeleting={erasing}
+        shouldCloseOnConfirm={false}
+        onConfirm={() => void erase()}
+      />
     </>
   );
 }

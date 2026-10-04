@@ -88,7 +88,7 @@ describe('AppButton', () => {
 
   it('lets callers override typography and layout', () => {
     const classes = classesOf({ variant: 'accent', size: 'xs', className: 'px-3 font-semibold' });
-    expect(classes).toEqual(expect.arrayContaining(['bg-amber-500', 'px-3', 'font-semibold']));
+    expect(classes).toEqual(expect.arrayContaining(['bg-amber', 'px-3', 'font-semibold']));
     expect(classes).not.toContain('px-[0.5625rem]');
     expect(classes).not.toContain('font-medium');
   });

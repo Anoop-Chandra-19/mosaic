@@ -1,5 +1,7 @@
 import { Download, Moon, Redo2, Save, Settings, Sun, Undo2, Upload } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
+import { MosaicMark } from '@/components/MosaicMark';
+import { Text } from '@/components/Text';
 import { redoShortcutLabel, shortcutLabel } from '@/lib/keyboardShortcuts';
 import { showToast, useOverlayStore } from '@/stores/overlayStore';
 import { useResumeStore } from '@/stores/resumeStore';
@@ -29,19 +31,17 @@ export function TopBar() {
   const previewing = useOverlayStore((s) => s.preview !== null);
 
   return (
-    <header className="flex h-12 shrink-0 items-center justify-between gap-3 border-b border-border bg-card px-4">
-      <div className="flex min-w-0 items-center gap-2.5">
-        <div className="flex size-7 shrink-0 items-center justify-center rounded-md bg-amber-500 text-sm font-bold text-white">
-          M
-        </div>
-        <span className="text-base font-semibold tracking-wide text-zinc-900 dark:text-zinc-100">
-          Mosaic
-        </span>
-        <span className="text-sm font-medium text-zinc-600">/</span>
+    <header className="flex h-[3.125rem] shrink-0 items-center justify-between gap-3 border-b border-line bg-background pr-2.5 pl-3">
+      <div className="flex min-w-0 items-center gap-2.25">
+        <MosaicMark size="sm" />
+        <Text variant="editor">Mosaic</Text>
+        <Text variant="body" className="text-ink-faint">
+          /
+        </Text>
         <div className="flex min-w-0 items-center gap-2">
-          <span className="max-w-[28vw] truncate text-sm font-medium text-zinc-600 dark:text-zinc-400">
+          <Text variant="body" className="max-w-[28vw] truncate font-control text-foreground">
             {activeTemplate?.name ?? 'No resume open'}
-          </span>
+          </Text>
           <TemplateStatusBadge status={templateStatus} />
           {activeTemplate && (
             <AppButton

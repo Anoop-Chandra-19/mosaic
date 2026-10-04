@@ -1,13 +1,6 @@
-import { Info, Trash2 } from 'lucide-react';
-import { AppButton } from '@/components/AppButton';
-import {
-  AppDialog,
-  AppDialogContent,
-  AppDialogDescription,
-  AppDialogFooter,
-  AppDialogHeader,
-  AppDialogTitle,
-} from '@/components/AppDialog';
+import { Info } from 'lucide-react';
+import { ConfirmDeleteDialog } from '@/components/ConfirmDeleteDialog';
+import { Note } from '@/components/Note';
 import type { TemplateSummary } from '@shared/types/db';
 
 interface DeleteTemplateDialogProps {
@@ -36,43 +29,25 @@ export function DeleteTemplateDialog({
   const versions = template.versionCount;
 
   return (
-    <AppDialog open={open} onOpenChange={onOpenChange}>
-      <AppDialogContent className="sm:max-w-md">
-        <AppDialogHeader>
-          <AppDialogTitle className="flex items-center gap-2">
-            <Trash2 className="size-4 text-red-600 dark:text-red-400" />
-            Delete template
-          </AppDialogTitle>
-          <AppDialogDescription>
-            Delete <b className="text-zinc-900 dark:text-zinc-100">{template.name}</b> and its{' '}
-            {versions} {versions === 1 ? 'version' : 'versions'}?
-          </AppDialogDescription>
-        </AppDialogHeader>
-        <p className="flex gap-2 rounded-lg border border-line-strong bg-zinc-100 p-3 text-xs leading-relaxed text-zinc-600 dark:bg-zinc-900 dark:text-zinc-400">
-          <Info className="mt-0.5 size-3.5 shrink-0 text-zinc-500" />
-          <span>
-            {active && 'This is the template you have open, so your draft goes with it. '}
-            {last
-              ? 'It is your last one, so Mosaic will be left with nothing open. Export it first if you might want it back.'
-              : 'Your other templates are untouched. Export it first if you might want it back.'}
-          </span>
-        </p>
-        <AppDialogFooter>
-          <AppButton variant="ghost" onClick={() => onOpenChange(false)}>
-            Cancel
-          </AppButton>
-          <AppButton
-            variant="destructive"
-            onClick={() => {
-              onDelete();
-              onOpenChange(false);
-            }}
-          >
-            <Trash2 />
-            Delete template
-          </AppButton>
-        </AppDialogFooter>
-      </AppDialogContent>
-    </AppDialog>
+    <ConfirmDeleteDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      title="Delete template"
+      description={
+        <>
+          Delete <b className="font-strong text-foreground">{template.name}</b> and its {versions}{' '}
+          {versions === 1 ? 'version' : 'versions'}?
+        </>
+      }
+      confirmLabel="Delete template"
+      onConfirm={onDelete}
+    >
+      <Note icon={Info} size="sm">
+        {active && 'This is the template you have open, so your draft goes with it. '}
+        {last
+          ? 'It is your last one, so Mosaic will be left with nothing open. Export it first if you might want it back.'
+          : 'Your other templates are untouched. Export it first if you might want it back.'}
+      </Note>
+    </ConfirmDeleteDialog>
   );
 }

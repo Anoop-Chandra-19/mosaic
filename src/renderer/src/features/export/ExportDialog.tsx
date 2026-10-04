@@ -16,6 +16,9 @@ import { AppDialog, AppDialogContent } from '@/components/AppDialog';
 import { AppInput } from '@/components/AppInput';
 import { AppRadioGroup, AppRadioGroupItem } from '@/components/AppRadioGroup';
 import { AppToggleGroup, AppToggleGroupItem } from '@/components/AppToggleGroup';
+import { CHOICE_CARD_CLASSES } from '@/components/controlStyles';
+import { Note } from '@/components/Note';
+import { Text } from '@/components/Text';
 import { useActiveTemplate } from '@/features/templates/useActiveTemplate';
 import { buildExportName, toFileName } from '@/lib/files/fileNames';
 import { HeaderLinkToggles } from '@/features/editor/header/HeaderLinkToggles';
@@ -153,10 +156,10 @@ function ExportForm({ version, onDone }: { version: ExportVersion | null; onDone
 
       <div className="min-h-0 flex-1 overflow-y-auto px-4 pt-3.5 pb-1">
         {version && (
-          <p className="mb-3 text-xs leading-relaxed text-zinc-600 dark:text-zinc-400">
+          <Text as="p" variant="secondary" className="mb-3">
             {version.label} of {version.templateName}, “{version.version.summary}”, as it was then
             and not your draft.
-          </p>
+          </Text>
         )}
 
         <AppRadioGroup
@@ -262,17 +265,11 @@ function PdfFontNote({ characters }: { characters: string[] }) {
   const listed = characters.slice(0, LISTED_CHARACTERS).join(' ');
   const more = characters.length - LISTED_CHARACTERS;
   return (
-    <p
-      role="status"
-      className="mt-2 flex items-start gap-1.5 rounded-md border border-line-strong bg-pane-sunken px-2.5 py-2 text-xs leading-relaxed text-ink-soft"
-    >
-      <TriangleAlert className="mt-0.5 size-3.5 shrink-0 text-ink-muted" />
-      <span>
-        The PDF can’t show <span className="font-medium text-foreground">{listed}</span>
-        {more > 0 && ` and ${more} more`}. Its built-in font doesn’t have them, so they would print
-        as other characters. The Word export shows them.
-      </span>
-    </p>
+    <Note icon={TriangleAlert} tone="warn" size="sm" role="status" className="mt-2">
+      The PDF can’t show <span className="font-strong text-foreground">{listed}</span>
+      {more > 0 && ` and ${more} more`}. Its built-in font doesn’t have them, so they would print as
+      other characters. The Word export shows them.
+    </Note>
   );
 }
 
@@ -283,34 +280,34 @@ function FormatOption({ format, selected }: { format: ExportFormatInfo; selected
     <label
       htmlFor={id}
       className={cn(
-        'flex cursor-pointer items-start gap-2.5 rounded-lg border p-2.5 transition-colors',
-        selected
-          ? 'border-amber-500 bg-zinc-50 dark:border-amber-600 dark:bg-zinc-900'
-          : 'border-line hover:bg-zinc-50 dark:hover:bg-zinc-900'
+        CHOICE_CARD_CLASSES.base,
+        selected ? CHOICE_CARD_CLASSES.chosen : CHOICE_CARD_CLASSES.idle
       )}
     >
       <span
         className={cn(
-          'grid size-7 shrink-0 place-items-center rounded-md border',
+          'grid size-6.5 shrink-0 place-items-center rounded-[0.4375rem] border',
           selected
-            ? 'border-amber-300 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-400'
-            : 'border-line-strong bg-zinc-100 text-zinc-500 dark:bg-zinc-800'
+            ? 'border-amber-line bg-amber-soft text-amber'
+            : 'border-line-strong bg-line text-ink-muted'
         )}
       >
-        <Icon className="size-3.5" />
+        <Icon className="size-3.25" />
       </span>
       <span className="min-w-0 flex-1">
-        <span className="flex items-center gap-1.5 text-sm font-medium text-zinc-900 dark:text-zinc-100">
-          {format.name}
+        <span className="flex items-center gap-1.5">
+          <Text variant="secondary" className="font-strong text-foreground">
+            {format.name}
+          </Text>
           {format.id === 'pdf' && (
-            <span className="rounded border border-line-strong px-1 text-[0.65rem] leading-4 font-medium text-zinc-500">
+            <span className="inline-flex h-4 items-center rounded-sm border border-line bg-line px-1.5 text-tag font-control text-ink-soft">
               default
             </span>
           )}
         </span>
-        <span className="mt-0.5 block text-xs leading-snug text-zinc-600 dark:text-zinc-400">
+        <Text variant="secondary" className="mt-0.5 block">
           {format.description}
-        </span>
+        </Text>
       </span>
       <AppRadioGroupItem id={id} value={format.id} className="mt-0.5" />
     </label>
@@ -329,11 +326,13 @@ function Row({
   return (
     <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line py-2.5 last:border-b-0">
       <span className="min-w-0 flex-1 basis-60">
-        <span className="block text-sm font-medium text-zinc-900 dark:text-zinc-100">{label}</span>
+        <Text variant="body" className="block font-control text-foreground">
+          {label}
+        </Text>
         {description && (
-          <span className="mt-0.5 block text-xs leading-snug text-zinc-600 dark:text-zinc-400">
+          <Text variant="secondary" className="mt-[0.1875rem] block">
             {description}
-          </span>
+          </Text>
         )}
       </span>
       {children}
@@ -348,7 +347,7 @@ function Row({
 function HeaderLinksControl({ version }: { version: ExportVersion | null }) {
   if (version) {
     return (
-      <span className="text-sm text-zinc-600 dark:text-zinc-400">
+      <span className="text-body text-ink-muted">
         {describeLinkLook(version.version.doc.contact.header)}
       </span>
     );

@@ -14,7 +14,8 @@ import { formatRelativeTime } from '@/features/templates/formatRelativeTime';
 import { explainFailure, showToast, useOverlayStore } from '@/stores/overlayStore';
 import { saveDraftOrStop, useResumeStore } from '@/stores/resumeStore';
 import type { BackupFrequency, BackupStatus } from '@shared/types/backup';
-import { SettingRow, SettingsNote } from '../SettingRow';
+import { Note } from '@/components/Note';
+import { SettingRow } from '../SettingRow';
 
 const FREQUENCY_OPTIONS: { value: BackupFrequency; label: string }[] = [
   { value: 'off', label: 'Off' },
@@ -175,7 +176,7 @@ export function ImportExportSection({ onCloseSettings }: { onCloseSettings: () =
             <AppTooltip content={backup.folder}>
               {/* Clipped from the left, so the folder's own name stays in view. The path is
                   isolated, or right-to-left would move its leading "/" or "~" to the end. */}
-              <span className="max-w-55 truncate font-mono text-[0.71875rem] tracking-[-0.01em] text-ink-soft [direction:rtl]">
+              <span className="max-w-55 truncate font-mono text-meta tracking-[-0.01em] text-ink-soft [direction:rtl]">
                 <bdi>{backup.folder}</bdi>
               </span>
             </AppTooltip>
@@ -191,17 +192,18 @@ export function ImportExportSection({ onCloseSettings }: { onCloseSettings: () =
       )}
 
       {failure ? (
-        <SettingsNote icon={TriangleAlert} className="mt-4">
+        <Note icon={TriangleAlert} tone="error" className="mt-4">
           The scheduled backup {formatRelativeTime(failure.at)} couldn’t be written.{' '}
           {failure.message}
-        </SettingsNote>
+        </Note>
       ) : (
         last && (
-          <SettingsNote icon={Info} className="mt-4">
-            Last backup: <b className="font-semibold">{formatRelativeTime(last.at)}</b> ·{' '}
+          <Note icon={Info} className="mt-4 tabular-nums">
+            Last backup:{' '}
+            <b className="font-strong text-foreground">{formatRelativeTime(last.at)}</b> ·{' '}
             {count(last.templates, 'template')}, {count(last.versions, 'version')} ·{' '}
             {formatSize(last.bytes)}
-          </SettingsNote>
+          </Note>
         )
       )}
     </>

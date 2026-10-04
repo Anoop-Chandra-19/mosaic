@@ -136,7 +136,7 @@ function PaneWidthField({
         aria-label={label}
         className="w-20 text-right font-mono"
       />
-      <span className="text-xs text-zinc-500">px</span>
+      <span className="text-support text-ink-faint">px</span>
       <AppButton
         variant="ghost"
         size="sm"

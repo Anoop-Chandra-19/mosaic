@@ -63,6 +63,8 @@ for local models through Ollama is in place, and AI features are in progress.
 
 See [docs/architecture.md](docs/architecture.md) for the diagram: how the processes divide
 the work, where data lives, and what crosses each boundary.
+See [docs/typography.md](docs/typography.md) for the interface's fonts, type roles and
+controls, and how the printed resume's type stays separate.
 
 ```text
 src/

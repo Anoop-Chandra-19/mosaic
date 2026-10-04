@@ -17,8 +17,8 @@ const appButtonVariants = cva(
   {
     variants: {
       variant: {
-        solid: 'bg-foreground font-strong text-background hover:bg-zinc-700 dark:hover:bg-zinc-300',
-        accent: 'bg-amber-500 font-strong text-zinc-950 hover:bg-amber-600',
+        solid: 'bg-foreground font-strong text-background hover:bg-solid-hover',
+        accent: 'bg-amber font-strong text-background hover:bg-amber-hover',
         // "Open" means a menu this button opened is showing. A collapsible's trigger is open
         // too, but only a menu's trigger (`aria-haspopup="menu"`) is drawn pressed.
         outline:
@@ -31,8 +31,7 @@ const appButtonVariants = cva(
           'text-ink-faint hover:bg-line hover:text-ink-soft aria-[haspopup=menu]:data-[state=open]:bg-line aria-[haspopup=menu]:data-[state=open]:text-ink-soft',
         // A row's name that opens it: no fill, even on hover.
         plain: 'text-foreground',
-        destructive:
-          'bg-destructive text-white hover:bg-red-700 dark:bg-red-900 dark:hover:bg-red-800',
+        destructive: 'border border-del-line bg-del-soft font-strong text-del hover:bg-del-line',
         link: 'text-foreground underline-offset-4 hover:underline',
         // One step of a sequence; the current one (`aria-current="step"`) stretches, amber.
         dot: 'bg-line-heavy transition-[background-color,width] duration-120 hover:bg-ink-faint aria-[current=step]:w-4 aria-[current=step]:rounded-[0.1875rem] aria-[current=step]:bg-amber motion-reduce:transition-none',
