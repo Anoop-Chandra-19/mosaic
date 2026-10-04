@@ -5,7 +5,7 @@ import { AppTooltip } from '@/components/AppTooltip';
 import { Text } from '@/components/Text';
 import { AI_PROVIDER_BY_ID } from '@/features/settings/sections/aiProviderOptions';
 import { formatPaneWidth, startPaneResize } from '@/features/shell/paneResize';
-import { shortcutLabel } from '@/lib/keyboardShortcuts';
+import { useShortcutLabel } from '@/features/shortcuts/shortcutBindings';
 import { AI_PROVIDER_DEFAULT_MODEL, useAiStore } from '@/stores/aiStore';
 import { useOverlayStore } from '@/stores/overlayStore';
 import { AGENT_PANE_WIDTH, useUiStore } from '@/stores/uiStore';
@@ -31,6 +31,7 @@ export function AgentPane() {
   const model = useAiStore((s) => s.modelsByProvider[s.provider]);
   const openSettings = useOverlayStore((s) => s.openSettings);
   const paneRef = useRef<HTMLElement>(null);
+  const closeKeys = useShortcutLabel('toggleAssistant');
 
   return (
     <aside
@@ -68,7 +69,7 @@ export function AgentPane() {
           shape="square"
           onClick={close}
           aria-label="Close assistant"
-          title={`Close  ${shortcutLabel('\\')}`}
+          title={`Close  ${closeKeys}`.trim()}
         >
           <X className="size-3.5" />
         </AppButton>

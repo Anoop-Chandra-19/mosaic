@@ -8,11 +8,11 @@ import { ShortcutsPanel } from './ShortcutsPanel';
 /** The shortcut sheet on its own, from Ctrl/⌘+/ anywhere. Mounted once, in the app shell. */
 export function ShortcutsDialog() {
   const open = useOverlayStore((s) => s.shortcutsOpen);
-  const setOpen = useOverlayStore((s) => s.setShortcutsOpen);
-  const close = () => setOpen(false);
+  const place = useOverlayStore((s) => s.shortcutsPlace);
+  const close = useOverlayStore((s) => s.closeShortcuts);
 
   return (
-    <AppDialog open={open} onOpenChange={setOpen}>
+    <AppDialog open={open} onOpenChange={(isOpen) => !isOpen && close()}>
       <AppDialogContent
         showCloseButton={false}
         className="flex h-[min(37.25rem,86vh)] w-[min(53.75rem,96vw)] max-w-none flex-col gap-0 overflow-hidden p-0 sm:max-w-none"
@@ -25,6 +25,7 @@ export function ShortcutsDialog() {
           onClose={close}
         />
         <ShortcutsPanel
+          place={place}
           footerAction={
             <AppButton variant="outline" size="xs" onClick={close}>
               Done

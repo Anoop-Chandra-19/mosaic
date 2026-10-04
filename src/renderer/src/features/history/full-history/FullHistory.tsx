@@ -20,7 +20,9 @@ import {
   TRANSITION_TYPE,
   transitionClasses,
 } from '@/features/view-transitions/transitionClasses';
+import { matchesAction } from '@/features/shortcuts/shortcutBindings';
 import { isTypingField } from '@/lib/keyboardShortcuts';
+import type { ShortcutId } from '@/lib/shortcutCatalog';
 import { cn } from '@/lib/utils';
 import { attempt, showToast, useOverlayStore } from '@/stores/overlayStore';
 import { useTemplateStore } from '@/stores/templateStore';
@@ -48,8 +50,11 @@ const INDEX_WIDTH_PX = 204;
 /** The list never gets narrower than this. */
 const LIST_MIN_WIDTH_PX = 320;
 
-/** Newest first, so down is older. */
-const ARROW_STEPS: Record<string, number> = { ArrowDown: 1, ArrowUp: -1 };
+/** Newest first, so an older version is further down the list. */
+const VERSION_STEPS: { id: ShortcutId; offset: number }[] = [
+  { id: 'olderVersion', offset: 1 },
+  { id: 'newerVersion', offset: -1 },
+];
 
 interface FullHistoryProps {
   /** The surface that opened it: what it first shows is loaded once per opening. */
@@ -235,9 +240,9 @@ function FullHistoryFrame({
 
   // ↑ and ↓ step through the versions, unless something else has the key.
   const onArrowKey = useEffectEvent((event: KeyboardEvent) => {
-    const offset = ARROW_STEPS[event.key];
-    if (!offset || !versions || event.defaultPrevented || isTypingField(event.target)) return;
-    if (event.metaKey || event.ctrlKey || event.altKey) return;
+    if (!versions || event.defaultPrevented || isTypingField(event.target)) return;
+    const offset = VERSION_STEPS.find(({ id }) => matchesAction(event, id))?.offset;
+    if (!offset) return;
     const next = versions[selectedIndex + offset];
     if (!next) return;
     event.preventDefault();

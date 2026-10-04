@@ -25,8 +25,9 @@ import {
   useShownSurface,
 } from '@/features/view-transitions/useShownSurface';
 import { ShortcutsDialog } from '@/features/shortcuts/ShortcutsDialog';
-import { SHORTCUTS } from '@/features/shortcuts/shortcutList';
-import { isRedoKey, isTypingField, isUndoKey, matchesShortcut } from '@/lib/keyboardShortcuts';
+import { matchesAction } from '@/features/shortcuts/shortcutBindings';
+import { isRedoKey, isTypingField, isUndoKey } from '@/lib/keyboardShortcuts';
+import { SHORTCUT_PLACES, type ShortcutId, type ShortcutPlace } from '@/lib/shortcutCatalog';
 import { useAiStore } from '@/stores/aiStore';
 import { showToast, useOverlayStore } from '@/stores/overlayStore';
 import { useResumeStore } from '@/stores/resumeStore';
@@ -111,6 +112,22 @@ export function AppShell() {
 
 const NOTHING_OPEN = 'Nothing is open. Start a resume first.';
 
+/**
+ * Where the keys were pressed, for the sheet to show that place's keys first: the area marked
+ * `data-shortcut-place` that has focus (the innermost, so a bullet being edited beats the
+ * sidebar around it), else the one under the pointer.
+ */
+function findShortcutPlace(): ShortcutPlace | null {
+  if (useOverlayStore.getState().surface?.kind === 'history') return 'history';
+  const area =
+    document.activeElement?.closest<HTMLElement>('[data-shortcut-place]') ??
+    document.querySelector<HTMLElement>('[data-shortcut-place]:hover');
+  const place = SHORTCUT_PLACES.find((known) => known === area?.dataset.shortcutPlace);
+  // The sidebar's keys are the editor's; on the Templates tab they would not apply.
+  if (place === 'sidebar' && useUiStore.getState().activeSidebarTab !== 'content') return null;
+  return place ?? null;
+}
+
 /** The sidebar, shown, on `tab`. */
 function showSidebarTab(tab: SidebarTab) {
   const ui = useUiStore.getState();
@@ -119,38 +136,38 @@ function showSidebarTab(tab: SidebarTab) {
 }
 
 /**
- * The shortcuts that work anywhere in the window (`SHORTCUTS`). Undo and redo leave a field
+ * The shortcuts that work anywhere in the window, on the keys they are bound to now. Undo and redo leave a field
  * that is being typed in alone: the browser's own undo belongs to it. Ctrl/⌘+S names a
  * version; the draft itself is always saved already.
  *
  * While a surface covers the workspace, only those marked `worksOverSurface` run: the
  * rest act on the editor, and would change what is out of sight.
  */
-const GLOBAL_SHORTCUTS: { combos: string[]; run: () => void; worksOverSurface?: true }[] = [
+const GLOBAL_SHORTCUTS: { id: ShortcutId; run: () => void; worksOverSurface?: true }[] = [
   {
-    combos: [SHORTCUTS.openSettings],
+    id: 'openSettings',
     run: () => useOverlayStore.getState().openSettings(),
     worksOverSurface: true,
   },
   {
-    combos: [SHORTCUTS.showShortcuts],
-    run: () => useOverlayStore.getState().setShortcutsOpen(true),
+    id: 'showShortcuts',
+    run: () => useOverlayStore.getState().openShortcuts(findShortcutPlace()),
     worksOverSurface: true,
   },
   {
-    combos: [SHORTCUTS.toggleSidebar],
+    id: 'toggleSidebar',
     run: () => {
       if (useUiStore.getState().shouldShowPreview) useUiStore.getState().toggleSidebarCollapsed();
     },
   },
   {
-    combos: [SHORTCUTS.toggleAssistant, SHORTCUTS.toggleAssistantBackslash],
+    id: 'toggleAssistant',
     run: () => {
       if (useAiStore.getState().enabled) useUiStore.getState().toggleAgentPane();
     },
   },
   {
-    combos: [SHORTCUTS.nameVersion],
+    id: 'nameVersion',
     run: () => {
       if (useResumeStore.getState().templateId === null) showToast(NOTHING_OPEN);
       else useOverlayStore.getState().setNameVersionOpen(true);
@@ -158,7 +175,7 @@ const GLOBAL_SHORTCUTS: { combos: string[]; run: () => void; worksOverSurface?: 
   },
   // Opens the open template's history, and closes it again: a view you toggle, like a pane.
   {
-    combos: [SHORTCUTS.showHistory],
+    id: 'showHistory',
     run: () => {
       const overlay = useOverlayStore.getState();
       if (overlay.surface?.kind === 'history') return overlay.closeSurface('history');
@@ -171,25 +188,25 @@ const GLOBAL_SHORTCUTS: { combos: string[]; run: () => void; worksOverSurface?: 
   },
   // On the Start panel the same keys make a blank resume; the panel listens for that.
   {
-    combos: [SHORTCUTS.newTemplate],
+    id: 'newTemplate',
     run: () => useOverlayStore.getState().openSurface({ kind: 'start' }),
     worksOverSurface: true,
   },
-  { combos: [SHORTCUTS.switchTemplate], run: () => showSidebarTab('templates') },
+  { id: 'switchTemplate', run: () => showSidebarTab('templates') },
   {
-    combos: [SHORTCUTS.exportResume],
+    id: 'exportResume',
     run: () => {
       if (useResumeStore.getState().templateId === null) showToast(NOTHING_OPEN);
       else useOverlayStore.getState().openExport();
     },
   },
   {
-    combos: [SHORTCUTS.importResume],
+    id: 'importResume',
     run: () => useOverlayStore.getState().openImport(useResumeStore.getState().templateId === null),
     worksOverSurface: true,
   },
   {
-    combos: [SHORTCUTS.newSection],
+    id: 'newSection',
     run: () => {
       if (useResumeStore.getState().templateId === null) return showToast(NOTHING_OPEN);
       if (useOverlayStore.getState().preview) return showToast(READING_A_VERSION);
@@ -201,14 +218,14 @@ const GLOBAL_SHORTCUTS: { combos: string[]; run: () => void; worksOverSurface?: 
       if (!isEmpty) useOverlayStore.getState().setAddSectionMenuOpen(true);
     },
   },
-  { combos: [SHORTCUTS.zoomIn], run: () => useUiStore.getState().zoomPreviewIn() },
-  { combos: [SHORTCUTS.zoomOut], run: () => useUiStore.getState().zoomPreviewOut() },
+  { id: 'zoomIn', run: () => useUiStore.getState().zoomPreviewIn() },
+  { id: 'zoomOut', run: () => useUiStore.getState().zoomPreviewOut() },
   {
-    combos: [SHORTCUTS.fitPage],
+    id: 'fitPage',
     run: () => useUiStore.getState().setPreviewZoom(PREVIEW_DEFAULT_ZOOM),
   },
   {
-    combos: [SHORTCUTS.toggleTheme],
+    id: 'toggleTheme',
     run: () => {
       const isDark = document.documentElement.classList.contains('dark');
       useUiStore.getState().setTheme(isDark ? 'light' : 'dark');
@@ -234,9 +251,7 @@ function useShortcuts() {
         else resume.redo();
         return;
       }
-      const shortcut = GLOBAL_SHORTCUTS.find(({ combos }) =>
-        combos.some((combo) => matchesShortcut(event, combo))
-      );
+      const shortcut = GLOBAL_SHORTCUTS.find(({ id }) => matchesAction(event, id));
       if (!shortcut || (isSurfaceUp && !shortcut.worksOverSurface)) return;
       event.preventDefault();
       shortcut.run();

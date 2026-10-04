@@ -17,6 +17,7 @@ export function AppDialogContent({
   className,
   children,
   showCloseButton = true,
+  onEscapeKeyDown,
   ...props
 }: ComponentProps<typeof Dialog.Content> & { showCloseButton?: boolean }) {
   return (
@@ -27,6 +28,14 @@ export function AppDialogContent({
           'fixed top-1/2 left-1/2 z-50 grid w-full max-w-[calc(100%-2rem)] -translate-1/2 gap-4 rounded-[0.875rem] border border-line-strong bg-background p-6 text-body text-ink-soft shadow-overlay duration-200 outline-none data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 sm:max-w-lg',
           className
         )}
+        onEscapeKeyDown={(event) => {
+          // Something inside with its own use for Esc (a field to clear, keys being
+          // captured) marks itself, and gets the key instead of the dialog closing.
+          if ((event.target as Element | null)?.closest('[data-keeps-escape]')) {
+            event.preventDefault();
+          }
+          onEscapeKeyDown?.(event);
+        }}
         {...props}
       >
         {children}

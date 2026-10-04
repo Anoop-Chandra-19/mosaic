@@ -10,9 +10,19 @@ const TITLES = [
   'History keeps itself',
   'Name version',
   'One template per story you tell',
+  'Keys for where you are',
   'Take it anywhere',
 ];
-const TARGETS = [null, 'content', 'preview', 'history', 'name-version', 'templates', 'export'];
+const TARGETS = [
+  null,
+  'content',
+  'preview',
+  'history',
+  'name-version',
+  'templates',
+  'settings',
+  'export',
+];
 
 const card = (page: Page, title: string) =>
   page.getByRole('dialog', { name: new RegExp(`^${title}`) });
@@ -61,14 +71,14 @@ test('starts once the first resume is in the editor, and walks every step', asyn
   }
 
   await page.keyboard.press('ArrowLeft');
-  await expect(card(page, TITLES[5])).toBeVisible();
+  await expect(card(page, TITLES[6])).toBeVisible();
   await page.getByRole('button', { name: `Step 3: ${TITLES[2]}` }).click();
   await expect(card(page, TITLES[2])).toBeVisible();
-  await page.getByRole('button', { name: `Step 7: ${TITLES[6]}` }).click();
+  await page.getByRole('button', { name: `Step 8: ${TITLES[7]}` }).click();
 
   // Focus sits on the card's own button, so Enter presses it.
   await page.keyboard.press('Enter');
-  await expect(card(page, TITLES[6])).toBeHidden();
+  await expect(card(page, TITLES[7])).toBeHidden();
   await expect(
     page.getByText('Tour finished. Replay it any time from Settings › About.')
   ).toBeVisible();

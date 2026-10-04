@@ -20,8 +20,7 @@ import {
   AppMenuSeparator,
   AppMenuTrigger,
 } from '@/components/AppMenu';
-import { SHORTCUTS } from '@/features/shortcuts/shortcutList';
-import { matchesShortcut } from '@/lib/keyboardShortcuts';
+import { matchesAction } from '@/features/shortcuts/shortcutBindings';
 import { carryTint, travelFrom } from '@/lib/motion/rowMotions';
 import { ListMotionContext, useSwapMotion } from '@/lib/motion/useListMotion';
 import { cn } from '@/lib/utils';
@@ -181,11 +180,11 @@ export function BulletItem({
   const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     const keys = event.nativeEvent;
     let run: (() => void) | undefined;
-    if (matchesShortcut(keys, SHORTCUTS.moveBulletUp) && !isFirst) run = onMoveUp;
-    else if (matchesShortcut(keys, SHORTCUTS.moveBulletDown) && !isLast) run = onMoveDown;
-    else if (matchesShortcut(keys, SHORTCUTS.newBulletBelow)) run = onAddBelow;
-    else if (matchesShortcut(keys, SHORTCUTS.deleteBullet)) run = remove;
-    else if (matchesShortcut(keys, SHORTCUTS.mergeBullets) && startMerge) {
+    if (matchesAction(keys, 'moveBulletUp') && !isFirst) run = onMoveUp;
+    else if (matchesAction(keys, 'moveBulletDown') && !isLast) run = onMoveDown;
+    else if (matchesAction(keys, 'newBulletBelow')) run = onAddBelow;
+    else if (matchesAction(keys, 'deleteBullet')) run = remove;
+    else if (matchesAction(keys, 'mergeBullets') && startMerge) {
       run = () => startMerge(bullet.text);
     }
     if (!run) return;

@@ -11,7 +11,7 @@ import { MosaicMark } from '@/components/MosaicMark';
 import { Text } from '@/components/Text';
 import { textVariantClasses } from '@/components/textVariants';
 import { cn } from '@/lib/utils';
-import { isModKey, shortcutLabel } from '@/lib/keyboardShortcuts';
+import { matchesAction, useShortcutLabel } from '@/features/shortcuts/shortcutBindings';
 import { createDefaultResume } from '@shared/resume/defaultResume';
 import { useOverlayStore } from '@/stores/overlayStore';
 import { useTemplateStore } from '@/stores/templateStore';
@@ -37,6 +37,7 @@ export function StartPanel({ closable }: StartPanelProps) {
   const close = () => closeSurface('start');
   const openImport = useOverlayStore((s) => s.openImport);
   const start = useStartResume();
+  const newTemplateKeys = useShortcutLabel('newTemplate');
 
   const startBlank = () =>
     start(
@@ -52,7 +53,8 @@ export function StartPanel({ closable }: StartPanelProps) {
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
-      if (isModKey(event) && event.key.toLowerCase() === 'n') {
+      // New template's keys, pressed here, mean the blank resume.
+      if (matchesAction(event, 'newTemplate')) {
         event.preventDefault();
         void startBlank();
       }
@@ -82,7 +84,7 @@ export function StartPanel({ closable }: StartPanelProps) {
                 icon={FileText}
                 title="Blank resume"
                 description="Experience, Education and Skills, all empty."
-                hint={shortcutLabel('N')}
+                hint={newTemplateKeys}
                 onClick={() => void startBlank()}
                 autoFocus
               />

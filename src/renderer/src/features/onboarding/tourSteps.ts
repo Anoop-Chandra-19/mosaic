@@ -1,3 +1,4 @@
+import type { ShortcutId } from '@/lib/shortcutCatalog';
 import type { SidebarTab } from '@/stores/uiStore';
 
 /** The elements the tour points at, each marked with `tourTargetProps` where it renders. */
@@ -8,6 +9,7 @@ export const TOUR_TARGET = {
   nameVersion: 'name-version',
   templates: 'templates',
   export: 'export',
+  settings: 'settings',
   contentTab: 'content-tab',
   templatesTab: 'templates-tab',
 } as const;
@@ -39,8 +41,8 @@ export interface TourStep {
   /** The open template's history, unfolded even if the user folded it. */
   showsOpenTemplateHistory?: true;
   title: string;
-  /** A shortcut's key, shown after the title as this platform writes it. */
-  titleShortcutKey?: string;
+  /** An action whose keys are shown after the title, as they are bound now. */
+  titleShortcut?: ShortcutId;
   body: string;
 }
 
@@ -81,7 +83,7 @@ export const TOUR_STEPS: readonly TourStep[] = [
     target: 'nameVersion',
     side: 'bottom',
     title: 'Name version',
-    titleShortcutKey: 'S',
+    titleShortcut: 'nameVersion',
     body: 'Name a version when you want to find it again, like “Sent for the design role”. Named versions stand out in history, in bold with the amber mark.',
   },
   {
@@ -92,6 +94,16 @@ export const TOUR_STEPS: readonly TourStep[] = [
     title: 'One template per story you tell',
     body: 'Each template is a tailored resume with its own history. Duplicate one before you rewrite it for a different role, and open a template to make it the draft you are editing.',
   },
+  // At Settings, which holds the same list: the sheet itself has nothing to point at.
+  {
+    id: 'shortcuts',
+    target: 'settings',
+    side: 'bottom',
+    title: 'Keys for where you are',
+    titleShortcut: 'showShortcuts',
+    body: 'Press it anywhere for the keyboard shortcuts, with the ones for where you are first: a bullet, the page, the history. Settings has the same list, where you can change any of them.',
+  },
+  // Last: the resume made, it goes out.
   {
     id: 'export',
     target: 'export',

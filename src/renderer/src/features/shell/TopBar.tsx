@@ -11,6 +11,7 @@ import { useActiveTemplate } from '@/features/templates/useActiveTemplate';
 import { useTemplateStatus } from '@/features/templates/useTemplateStatus';
 import { TemplateStatusBadge } from '@/features/templates/TemplateStatusBadge';
 import { tourTargetProps } from '@/features/onboarding/tourSteps';
+import { useShortcutLabel } from '@/features/shortcuts/shortcutBindings';
 
 /** Reading an older version is a read mode: the draft is left where it is. */
 export const READING_A_VERSION = 'Go back to your draft to edit it.';
@@ -28,6 +29,8 @@ export function TopBar() {
   const redoLabel = useResumeStore((s) => s.redoLabel);
   const undo = useResumeStore((s) => s.undo);
   const redo = useResumeStore((s) => s.redo);
+  const nameVersionKeys = useShortcutLabel('nameVersion');
+  const settingsKeys = useShortcutLabel('openSettings');
   const previewing = useOverlayStore((s) => s.preview !== null);
 
   return (
@@ -53,7 +56,7 @@ export function TopBar() {
                 templateStatus === 'edited'
                   ? 'Give this state a name so you can find it in history'
                   : 'Name the newest version so you can find it in history'
-              }  ${shortcutLabel('S')}`}
+              }  ${nameVersionKeys}`.trim()}
             >
               <Save className="size-3" />
               Name version…
@@ -101,8 +104,9 @@ export function TopBar() {
           size="sm"
           shape="square"
           onClick={() => openSettings()}
+          {...tourTargetProps('settings')}
           aria-label="Open settings"
-          title={`Settings  ${shortcutLabel(',')}`}
+          title={`Settings  ${settingsKeys}`.trim()}
         >
           <Settings className="h-4 w-4" />
         </AppButton>

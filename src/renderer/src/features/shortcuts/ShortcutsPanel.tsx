@@ -1,13 +1,35 @@
-import { useState, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from 'react';
+import { useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from 'react';
 import { Search } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
 import { AppInput } from '@/components/AppInput';
 import { Text } from '@/components/Text';
 import { textVariantClasses } from '@/components/textVariants';
-import { formatShortcutKeys, isSameShortcut, readShortcutCombo } from '@/lib/keyboardShortcuts';
+import { isSameShortcut, readShortcutCombo } from '@/lib/keyboardShortcuts';
+import {
+  isFixedShortcut,
+  resolveShortcutCombos,
+  type ShortcutBindings,
+  type ShortcutId,
+  type ShortcutPlace,
+} from '@/lib/shortcutCatalog';
 import { cn } from '@/lib/utils';
-import { useAiStore } from '@/stores/aiStore';
-import { listShortcutGroups, type ShortcutRow } from './shortcutList';
+import { useUiStore } from '@/stores/uiStore';
+import { ShortcutCapture } from './ShortcutCapture';
+import { ShortcutKeys } from './ShortcutKeys';
+import { ShortcutRowView } from './ShortcutRowView';
+import {
+  listPlaceShortcuts,
+  listShortcutGroups,
+  type ShortcutGroup,
+  type ShortcutRow,
+} from './shortcutList';
+
+/*
+ * The shortcut sheet: every action by group, with its keys and a pencil to change them, a
+ * search over the names, and a lookup: keys pressed in the search field say what they do.
+ * Opened from a place (a bullet being edited, the full history), that place's keys come
+ * first. Its steps: `ShortcutRowView` per action, `ShortcutCapture` while one listens.
+ */
 
 const PLATFORM_NAMES: Record<string, string> = {
   darwin: 'macOS',
@@ -15,111 +37,52 @@ const PLATFORM_NAMES: Record<string, string> = {
   linux: 'Linux',
 };
 
-/** A shortcut's keycaps; `alt` follows after a slash. */
-export function ShortcutKeys({ combo, alt }: { combo: string; alt?: string }) {
-  const caps = (keys: string) =>
-    formatShortcutKeys(keys).map((key, index) => (
-      <kbd
-        key={`${keys}-${index}`}
-        className={cn(
-          textVariantClasses('meta'),
-          'inline-flex h-4.75 min-w-4.75 items-center justify-center rounded-[0.25rem] border border-line-strong bg-line px-1.25 text-ink-soft'
-        )}
-      >
-        {key}
-      </kbd>
-    ));
-  return (
-    <span className="flex shrink-0 items-center gap-0.75">
-      {caps(combo)}
-      {alt && (
-        <>
-          <Text variant="meta" className="mx-px">
-            /
-          </Text>
-          {caps(alt)}
-        </>
-      )}
-    </span>
-  );
-}
-
-/** A label with the searched-for part picked out. */
-function MarkedLabel({ label, query }: { label: string; query: string }) {
-  const at = query ? label.toLowerCase().indexOf(query.toLowerCase()) : -1;
-  if (at < 0) return label;
-  return (
-    <>
-      {label.slice(0, at)}
-      <em className="rounded-xs bg-amber-soft px-px text-amber not-italic">
-        {label.slice(at, at + query.length)}
-      </em>
-      {label.slice(at + query.length)}
-    </>
-  );
-}
-
-function ShortcutRowView({
-  row,
-  query = '',
-  groupTitle,
-}: {
-  row: ShortcutRow;
-  query?: string;
-  /** Shown beside the label when rows from several groups are listed together. */
-  groupTitle?: string;
-}) {
-  return (
-    <div
-      className={cn(
-        'flex h-7 items-center gap-2.5 rounded-sm px-1.75 text-body hover:bg-line hover:text-foreground dense:h-6.25',
-        row.isUnavailable ? 'text-ink-faint' : 'text-ink-soft'
-      )}
-    >
-      <span className="min-w-0 flex-1 truncate">
-        <MarkedLabel label={row.label} query={query} />
-      </span>
-      {(groupTitle || row.isUnavailable) && (
-        <Text
-          variant="meta"
-          className="shrink-0 rounded-[0.25rem] border border-line px-1.25 py-px"
-        >
-          {row.isUnavailable ? row.unavailableNote : groupTitle}
-        </Text>
-      )}
-      <ShortcutKeys combo={row.combo} alt={row.alt} />
-    </div>
-  );
-}
-
 const GROUP_HEADING = 'mb-1.25 flex items-center gap-1.5';
 
 /**
- * The shortcut sheet: every binding by group, a search over their names, and a lookup:
- * pressing a combination in the search field says what it does. In Settings it flows with
- * the section; on its own (Ctrl/⌘+/) it fills a dialog.
+ * Every combination an action answers to, for the lookup. Windows and Linux redo with Ctrl+Y
+ * as well, fixed with the rest. A row shows only the first: second keys are spares, and
+ * listing them crowds the label out of a narrow column.
  */
-export function ShortcutsPanel({
-  isEmbedded = false,
-  footerAction,
-}: {
+function listAllCombos(id: ShortcutId, bindings: ShortcutBindings, platform: string): string[] {
+  const combos = resolveShortcutCombos(id, bindings[id]);
+  return id === 'redo' && platform !== 'darwin' ? [...combos, 'mod+Y'] : combos;
+}
+
+/** The row listening for keys: which action, in which group, as the same action can be in two. */
+interface Editing {
+  id: ShortcutId;
+  group: string;
+}
+
+interface ShortcutsPanelProps {
   isEmbedded?: boolean;
+  /** Where the sheet was opened from; that place's keys are listed first. */
+  place?: ShortcutPlace | null;
   /** At the end of the footer, such as the dialog's Done. */
   footerAction?: ReactNode;
-}) {
-  const isAiEnabled = useAiStore((s) => s.enabled);
+}
+
+export function ShortcutsPanel({ isEmbedded = false, place, footerAction }: ShortcutsPanelProps) {
+  const bindings = useUiStore((s) => s.shortcutBindings);
+  const restoreDefaults = useUiStore((s) => s.restoreDefaultShortcuts);
   const [query, setQuery] = useState('');
   const [pressed, setPressed] = useState<string | null>(null);
+  const [editing, setEditing] = useState<Editing | null>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
   const { platform } = window.mosaic;
-  const groups = listShortcutGroups({ platform, isAiEnabled });
+  const groups = listShortcutGroups();
   const rows = groups.flatMap((group) => group.rows.map((row) => ({ row, group: group.title })));
+  const changedCount = Object.keys(bindings).length;
 
   const trimmed = query.trim();
   const matches = trimmed
     ? rows.filter(({ row }) => row.label.toLowerCase().includes(trimmed.toLowerCase()))
     : null;
   const found = pressed
-    ? rows.find(({ row }) => [row.combo, row.alt].some((c) => c && isSameShortcut(c, pressed)))
+    ? rows.find(({ row }) =>
+        listAllCombos(row.id, bindings, platform).some((combo) => isSameShortcut(combo, pressed))
+      )
     : undefined;
 
   const clear = () => {
@@ -145,8 +108,56 @@ export function ShortcutsPanel({
     setPressed(combo);
   };
 
+  // Focus goes back to the row whose keys were being changed.
+  const finishEditing = () => {
+    const rowId = editing && `${editing.group}:${editing.id}`;
+    setEditing(null);
+    requestAnimationFrame(() =>
+      panelRef.current?.querySelector<HTMLElement>(`[data-shortcut-row="${rowId}"] button`)?.focus()
+    );
+  };
+
+  const renderRow = (row: ShortcutRow, group: string, search?: { tag: string }) => {
+    if (editing?.id === row.id && editing.group === group) {
+      return <ShortcutCapture key={row.id} id={row.id} onDone={finishEditing} />;
+    }
+    return (
+      <ShortcutRowView
+        key={row.id}
+        rowId={`${group}:${row.id}`}
+        label={row.label}
+        combos={listAllCombos(row.id, bindings, platform).slice(0, 1)}
+        query={search ? trimmed : undefined}
+        tag={search?.tag}
+        isCustom={row.id in bindings}
+        onEdit={isFixedShortcut(row.id) ? undefined : () => setEditing({ id: row.id, group })}
+      />
+    );
+  };
+
+  // The group for where the sheet was opened from has its tag in amber, to stand apart.
+  const renderGroup = (group: ShortcutGroup, isWhereYouAre = false) => (
+    <section key={group.title} aria-label={group.title} className="mb-3.5">
+      <Text as="h4" variant="eyebrow" className={GROUP_HEADING}>
+        {group.title}
+        {group.note && (
+          <Text
+            variant="tag"
+            className={cn(
+              'inline-flex h-3.75 items-center rounded-[0.25rem] border px-1 normal-case',
+              isWhereYouAre ? 'border-amber-line text-amber' : 'border-line-strong text-ink-faint'
+            )}
+          >
+            {group.note}
+          </Text>
+        )}
+      </Text>
+      {group.rows.map((row) => renderRow(row, group.title))}
+    </section>
+  );
+
   return (
-    <div className={cn('flex min-h-0 flex-col', !isEmbedded && 'flex-1')}>
+    <div ref={panelRef} className={cn('flex min-h-0 flex-col', !isEmbedded && 'flex-1')}>
       <div
         className={cn(
           'flex items-center gap-2 border-b border-line',
@@ -161,6 +172,8 @@ export function ShortcutsPanel({
             autoFocus={!isEmbedded}
             aria-label="Search shortcuts"
             placeholder="Search an action, or press the keys you’re looking for"
+            // While there is something to clear, Esc clears it rather than closing.
+            data-keeps-escape={query || pressed ? '' : undefined}
             onKeyDown={lookUpPressedKeys}
             onChange={(event) => {
               setQuery(event.target.value);
@@ -188,7 +201,7 @@ export function ShortcutsPanel({
               You pressed
             </Text>
             <div className="flex items-center gap-2.75 rounded-[0.5625rem] border border-line bg-pane-raised px-3.25 py-3">
-              <ShortcutKeys combo={pressed} />
+              <ShortcutKeys combos={[pressed]} />
               {found ? (
                 <>
                   <Text as="div" variant="body" className="min-w-0 flex-1">
@@ -197,6 +210,19 @@ export function ShortcutsPanel({
                       {found.group}
                     </Text>
                   </Text>
+                  {!isFixedShortcut(found.row.id) && (
+                    <AppButton
+                      variant="ghost"
+                      size="xs"
+                      onClick={() => {
+                        setPressed(null);
+                        setQuery(found.row.label);
+                        setEditing({ id: found.row.id, group: found.group });
+                      }}
+                    >
+                      Change…
+                    </AppButton>
+                  )}
                   <AppButton
                     variant="ghost"
                     size="xs"
@@ -222,9 +248,7 @@ export function ShortcutsPanel({
             <Text as="h4" variant="eyebrow" className={GROUP_HEADING}>
               {matches.length} {matches.length === 1 ? 'action' : 'actions'}
             </Text>
-            {matches.map(({ row, group }) => (
-              <ShortcutRowView key={row.id} row={row} query={trimmed} groupTitle={group} />
-            ))}
+            {matches.map(({ row, group }) => renderRow(row, group, { tag: group }))}
             {matches.length === 0 && (
               <Text as="p" variant="secondary" className="mx-0.5 my-1">
                 Nothing matches “{trimmed}”.
@@ -234,26 +258,14 @@ export function ShortcutsPanel({
         )}
 
         {!matches && !pressed && (
-          <div className="grid grid-cols-1 content-start gap-x-4 @[36rem]/shortcuts:grid-cols-2">
-            {groups.map((group) => (
-              <section key={group.title} aria-label={group.title} className="mb-3.5">
-                <Text as="h4" variant="eyebrow" className={GROUP_HEADING}>
-                  {group.title}
-                  {group.note && (
-                    <Text
-                      variant="tag"
-                      className="inline-flex h-3.75 items-center rounded-[0.25rem] border border-line-strong px-1 text-ink-faint normal-case"
-                    >
-                      {group.note}
-                    </Text>
-                  )}
-                </Text>
-                {group.rows.map((row) => (
-                  <ShortcutRowView key={row.id} row={row} />
-                ))}
-              </section>
-            ))}
-          </div>
+          <>
+            {place && (
+              <div className="max-w-130">{renderGroup(listPlaceShortcuts(place), true)}</div>
+            )}
+            <div className="grid grid-cols-1 content-start gap-x-4 @[36rem]/shortcuts:grid-cols-2">
+              {groups.map((group) => renderGroup(group))}
+            </div>
+          </>
         )}
       </div>
 
@@ -264,10 +276,22 @@ export function ShortcutsPanel({
           isEmbedded ? 'pt-2.5' : 'h-11 bg-chrome px-3.5'
         )}
       >
-        <span className="flex-1">
-          Keys are shown for {PLATFORM_NAMES[platform] ?? platform}, the system Mosaic is running
-          on.
+        <span className={cn('flex-1', changedCount > 0 && 'text-amber')}>
+          {changedCount > 0
+            ? `${changedCount} ${changedCount === 1 ? 'shortcut differs' : 'shortcuts differ'} from the defaults.`
+            : `Keys are shown for ${PLATFORM_NAMES[platform] ?? platform}, the system Mosaic is running on.`}
         </span>
+        <AppButton
+          variant="ghost"
+          size="xs"
+          disabled={changedCount === 0}
+          onClick={() => {
+            setEditing(null);
+            restoreDefaults();
+          }}
+        >
+          Restore defaults
+        </AppButton>
         {footerAction}
       </div>
     </div>

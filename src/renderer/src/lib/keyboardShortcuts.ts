@@ -78,6 +78,11 @@ export function formatShortcutKeys(combo: string): string[] {
   return [...modifiers, ...keys.filter((key) => !MAC_MODIFIER_ORDER.includes(key))];
 }
 
+/** A shortcut written out in one piece, for a tooltip or a hint: "⇧⌘N", "Ctrl+Shift+N". */
+export function formatShortcutLabel(combo: string): string {
+  return formatShortcutKeys(combo).join(window.mosaic.platform === 'darwin' ? '' : '+');
+}
+
 const EVENT_KEY_NAMES: Record<string, string> = {
   Enter: 'enter',
   Escape: 'esc',

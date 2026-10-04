@@ -58,8 +58,8 @@ export const SETTINGS_GROUPS: SettingsGroup[] = [
       {
         id: 'keys',
         label: 'Keyboard shortcuts',
-        description:
-          'Every shortcut, grouped by where it works. Ctrl/⌘+/ opens this list anywhere.',
+        // The section adds the keys that open the sheet, as they are bound now.
+        description: 'Every shortcut, grouped by where it works.',
         icon: Keyboard,
       },
     ],

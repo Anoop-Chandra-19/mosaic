@@ -10,8 +10,8 @@ import {
   AppMenuTrigger,
 } from '@/components/AppMenu';
 import { AppCollapsible } from '@/components/AppCollapsible';
-import { SHORTCUTS } from '@/features/shortcuts/shortcutList';
-import { isTypingField, matchesShortcut } from '@/lib/keyboardShortcuts';
+import { matchesAction } from '@/features/shortcuts/shortcutBindings';
+import { isTypingField } from '@/lib/keyboardShortcuts';
 import { ListMotionContext, useSwapMotion } from '@/lib/motion/useListMotion';
 import { Text } from '@/components/Text';
 import { cn } from '@/lib/utils';
@@ -101,7 +101,7 @@ export function EntryCard({
   // With focus anywhere in the entry, except a field being typed in.
   const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     if (isTypingField(event.target)) return;
-    if (!matchesShortcut(event.nativeEvent, SHORTCUTS.duplicateEntry)) return;
+    if (!matchesAction(event.nativeEvent, 'duplicateEntry')) return;
     event.preventDefault();
     event.stopPropagation();
     duplicateEntry(sectionId, entry.id);
