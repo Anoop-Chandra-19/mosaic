@@ -12,7 +12,7 @@ import {
   type LaunchView,
   type UndoHistorySteps,
 } from '@/stores/uiStore';
-import { AlwaysOn, SettingRow } from '../SettingRow';
+import { SettingRow } from '../SettingRow';
 
 const LAUNCH_VIEW_OPTIONS: { value: LaunchView; label: string }[] = [
   { value: 'last', label: 'Last template used' },
@@ -47,12 +47,6 @@ export function GeneralSection() {
             ))}
           </AppSelectContent>
         </AppSelect>
-      </SettingRow>
-      <SettingRow
-        label="Autosave"
-        description="Every edit is saved on your computer as you type. Name a version when you want to find a state again."
-      >
-        <AlwaysOn />
       </SettingRow>
       <SettingRow
         label="Undo history"

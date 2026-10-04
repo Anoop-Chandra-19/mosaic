@@ -36,8 +36,3 @@ export function SettingGroupHeading({ children }: { children: ReactNode }) {
     </Text>
   );
 }
-
-/** For a setting that cannot be switched off: says so instead of offering a dead switch. */
-export function AlwaysOn() {
-  return <span className="text-support font-control text-ink-faint">Always on</span>;
-}
