@@ -1,12 +1,12 @@
 import type { ReactNode } from 'react';
 import { X, type LucideIcon } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
-import { DialogDescription, DialogTitle } from '@/components/ui/dialog';
+import { AppDialogDescription, AppDialogTitle } from '@/components/AppDialog';
 import { cn } from '@/lib/utils';
 
 /*
  * The chrome the design gives its larger dialogs (Settings, Export, Import): a titled bar
- * with a close button, a body, and a footer bar of actions. Use inside a `DialogContent`
+ * with a close button, a body, and a footer bar of actions. Use inside an `AppDialogContent`
  * with `showCloseButton={false}` and no padding.
  */
 
@@ -25,12 +25,12 @@ export function DialogFrameHeader({
   onClose: () => void;
 }) {
   return (
-    <header className="flex items-center justify-between gap-3 border-b border-line px-4 py-3">
-      <DialogTitle className="flex min-w-0 items-center gap-2 text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-        <Icon className="size-4 shrink-0 text-zinc-500" />
+    <header className="flex items-center justify-between gap-3 border-b border-line px-3.5 py-[0.8125rem]">
+      <AppDialogTitle className="flex min-w-0 items-center gap-2.25">
+        <Icon className="size-[0.9375rem] shrink-0 text-ink-muted" />
         {title}
-      </DialogTitle>
-      <DialogDescription className="sr-only">{description}</DialogDescription>
+      </AppDialogTitle>
+      <AppDialogDescription className="sr-only">{description}</AppDialogDescription>
       <AppButton variant="ghost" size="sm" shape="square" onClick={onClose} aria-label={closeLabel}>
         <X className="size-4" />
       </AppButton>
@@ -55,7 +55,7 @@ export function DialogFrameFooter({
         className
       )}
     >
-      {note && <p className="mr-auto text-xs text-zinc-500">{note}</p>}
+      {note && <p className="mr-auto text-support text-ink-muted">{note}</p>}
       {children}
     </footer>
   );

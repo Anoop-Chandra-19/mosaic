@@ -1,9 +1,8 @@
+import { AppTextarea } from '@/components/AppTextarea';
 import { AppTooltip } from '@/components/AppTooltip';
-import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 import { useInlineEdit } from '@/lib/hooks/useInlineEdit';
 import type { LiveEdit } from '@/stores/liveEditStore';
-import { EDITOR_INPUT_CLASS } from './editorClasses';
 import { useLiveEdit } from './useLiveEdit';
 
 interface InlineEditFieldProps {
@@ -51,7 +50,7 @@ export function InlineEditField({
   // Enter still saves, and a line break pasted in becomes a space.
   if (editing) {
     return (
-      <Textarea
+      <AppTextarea
         value={draft}
         rows={1}
         onChange={(e) => setDraft(e.target.value.replace(/\s*\n\s*/g, ' '))}
@@ -62,9 +61,8 @@ export function InlineEditField({
         placeholder={placeholder}
         aria-label={label}
         className={cn(
-          EDITOR_INPUT_CLASS,
           // As wide as its text, up to the row; past that it wraps.
-          'min-h-[1.625rem] w-auto max-w-full min-w-12 flex-none resize-none px-1.5 py-[0.1875rem] text-[0.8875rem] leading-[1.45] wrap-anywhere',
+          'min-h-[1.625rem] w-auto max-w-full min-w-12 flex-none px-1.5 py-[0.1875rem] text-[0.8875rem] leading-[1.45] wrap-anywhere',
           inputClassName
         )}
       />

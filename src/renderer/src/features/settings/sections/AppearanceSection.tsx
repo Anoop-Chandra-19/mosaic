@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { AppButton } from '@/components/AppButton';
-import { Input } from '@/components/ui/input';
-import { Switch } from '@/components/ui/switch';
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { AppInput } from '@/components/AppInput';
+import { AppSwitch } from '@/components/AppSwitch';
+import { AppToggleGroup, AppToggleGroupItem } from '@/components/AppToggleGroup';
 import {
   AGENT_PANE_WIDTH,
   clampPaneWidth,
@@ -31,41 +31,37 @@ export function AppearanceSection() {
         label="Theme"
         description="System follows your operating system, and changes when it does."
       >
-        <ToggleGroup
+        <AppToggleGroup
           type="single"
-          variant="outline"
-          size="sm"
           value={theme}
           // A single-choice group reports '' when the pressed item is pressed again.
           onValueChange={(value) => value && setTheme(value as ThemeChoice)}
           aria-label="Theme"
         >
-          <ToggleGroupItem value="dark">Dark</ToggleGroupItem>
-          <ToggleGroupItem value="light">Light</ToggleGroupItem>
-          <ToggleGroupItem value="system">System</ToggleGroupItem>
-        </ToggleGroup>
+          <AppToggleGroupItem value="dark">Dark</AppToggleGroupItem>
+          <AppToggleGroupItem value="light">Light</AppToggleGroupItem>
+          <AppToggleGroupItem value="system">System</AppToggleGroupItem>
+        </AppToggleGroup>
       </SettingRow>
       <SettingRow
         label="Interface density"
         description="Tightens the content sidebar, lists and dialogs. The resume page never changes."
       >
-        <ToggleGroup
+        <AppToggleGroup
           type="single"
-          variant="outline"
-          size="sm"
           value={interfaceDensity}
           onValueChange={(value) => value && setInterfaceDensity(value as InterfaceDensity)}
           aria-label="Interface density"
         >
-          <ToggleGroupItem value="comfortable">Comfortable</ToggleGroupItem>
-          <ToggleGroupItem value="compact">Compact</ToggleGroupItem>
-        </ToggleGroup>
+          <AppToggleGroupItem value="comfortable">Comfortable</AppToggleGroupItem>
+          <AppToggleGroupItem value="compact">Compact</AppToggleGroupItem>
+        </AppToggleGroup>
       </SettingRow>
       <SettingRow
         label="Show live preview"
         description="Turn off to edit content full-width on a small screen."
       >
-        <Switch
+        <AppSwitch
           checked={shouldShowPreview}
           onCheckedChange={setShouldShowPreview}
           aria-label="Show live preview"
@@ -124,7 +120,7 @@ function PaneWidthField({
 
   return (
     <div className="flex items-center gap-1.5">
-      <Input
+      <AppInput
         type="number"
         inputMode="numeric"
         min={limits.minPx}
@@ -138,7 +134,7 @@ function PaneWidthField({
           if (event.key === 'Escape') setDraft(null);
         }}
         aria-label={label}
-        className="h-8 w-20 text-right font-mono text-sm"
+        className="w-20 text-right font-mono"
       />
       <span className="text-xs text-zinc-500">px</span>
       <AppButton

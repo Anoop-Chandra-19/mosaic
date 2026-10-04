@@ -2,14 +2,14 @@ import { useRef, useState } from 'react';
 import { ArrowDown, ArrowUp, Ellipsis, Plus, Trash2 } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+  AppMenu,
+  AppMenuContent,
+  AppMenuItem,
+  AppMenuRadioGroup,
+  AppMenuRadioItem,
+  AppMenuSeparator,
+  AppMenuTrigger,
+} from '@/components/AppMenu';
 import {
   BUILT_IN_HEADER_KINDS,
   HEADER_ALIGNS,
@@ -62,8 +62,8 @@ export function HeaderLineBlock({ line, lines }: HeaderLineBlockProps) {
           Line {number}
         </h4>
 
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
+        <AppMenu>
+          <AppMenuTrigger asChild>
             <AppButton
               variant="outline"
               size="2xs"
@@ -73,25 +73,25 @@ export function HeaderLineBlock({ line, lines }: HeaderLineBlockProps) {
             >
               {separator.label.toLowerCase()}
             </AppButton>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuRadioGroup
+          </AppMenuTrigger>
+          <AppMenuContent align="end">
+            <AppMenuRadioGroup
               value={line.separator}
               onValueChange={(value) =>
                 updateLine(line.id, { separator: value as HeaderSeparator })
               }
             >
               {HEADER_SEPARATORS.map(({ value, label }) => (
-                <DropdownMenuRadioItem key={label} value={value}>
+                <AppMenuRadioItem key={label} value={value}>
                   {label === 'Space' ? 'Spaces' : `Separated by ${label}`}
-                </DropdownMenuRadioItem>
+                </AppMenuRadioItem>
               ))}
-            </DropdownMenuRadioGroup>
-          </DropdownMenuContent>
-        </DropdownMenu>
+            </AppMenuRadioGroup>
+          </AppMenuContent>
+        </AppMenu>
 
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
+        <AppMenu>
+          <AppMenuTrigger asChild>
             <AppButton
               variant="outline"
               size="2xs"
@@ -101,23 +101,23 @@ export function HeaderLineBlock({ line, lines }: HeaderLineBlockProps) {
             >
               {align.label.toLowerCase()}
             </AppButton>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuRadioGroup
+          </AppMenuTrigger>
+          <AppMenuContent align="end">
+            <AppMenuRadioGroup
               value={line.align}
               onValueChange={(value) => updateLine(line.id, { align: value as HeaderAlign })}
             >
               {HEADER_ALIGNS.map(({ value, label }) => (
-                <DropdownMenuRadioItem key={value} value={value}>
+                <AppMenuRadioItem key={value} value={value}>
                   {label}
-                </DropdownMenuRadioItem>
+                </AppMenuRadioItem>
               ))}
-            </DropdownMenuRadioGroup>
-          </DropdownMenuContent>
-        </DropdownMenu>
+            </AppMenuRadioGroup>
+          </AppMenuContent>
+        </AppMenu>
 
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
+        <AppMenu>
+          <AppMenuTrigger asChild>
             <AppButton
               variant="ghost"
               size="xs"
@@ -127,29 +127,26 @@ export function HeaderLineBlock({ line, lines }: HeaderLineBlockProps) {
             >
               <Ellipsis />
             </AppButton>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem disabled={index === 0} onSelect={() => moveLine(line.id, -1)}>
+          </AppMenuTrigger>
+          <AppMenuContent align="end">
+            <AppMenuItem disabled={index === 0} onSelect={() => moveLine(line.id, -1)}>
               <ArrowUp />
               Move line up
-            </DropdownMenuItem>
-            <DropdownMenuItem
+            </AppMenuItem>
+            <AppMenuItem
               disabled={index === lines.length - 1}
               onSelect={() => moveLine(line.id, 1)}
             >
               <ArrowDown />
               Move line down
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem
-              onSelect={() => removeLine(line.id)}
-              className="text-destructive focus:text-destructive"
-            >
+            </AppMenuItem>
+            <AppMenuSeparator />
+            <AppMenuItem variant="destructive" onSelect={() => removeLine(line.id)}>
               <Trash2 />
               Delete line
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+            </AppMenuItem>
+          </AppMenuContent>
+        </AppMenu>
       </div>
 
       {line.items.map((item) => (
@@ -162,8 +159,8 @@ export function HeaderLineBlock({ line, lines }: HeaderLineBlockProps) {
         />
       ))}
 
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
+      <AppMenu>
+        <AppMenuTrigger asChild>
           <AppButton
             variant="quiet"
             size="xs"
@@ -175,8 +172,8 @@ export function HeaderLineBlock({ line, lines }: HeaderLineBlockProps) {
             <Plus />
             Add to line {number}
           </AppButton>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent
+        </AppMenuTrigger>
+        <AppMenuContent
           align="start"
           onCloseAutoFocus={(event) => {
             const kind = pendingKind.current;
@@ -189,7 +186,7 @@ export function HeaderLineBlock({ line, lines }: HeaderLineBlockProps) {
           {ADDABLE.map((kind) => {
             const Icon = HEADER_ICONS[kind];
             return (
-              <DropdownMenuItem
+              <AppMenuItem
                 key={kind}
                 onSelect={() => {
                   pendingKind.current = kind;
@@ -197,11 +194,11 @@ export function HeaderLineBlock({ line, lines }: HeaderLineBlockProps) {
               >
                 <Icon />
                 {getHeaderKindInfo(kind).label}
-              </DropdownMenuItem>
+              </AppMenuItem>
             );
           })}
-        </DropdownMenuContent>
-      </DropdownMenu>
+        </AppMenuContent>
+      </AppMenu>
     </section>
   );
 }

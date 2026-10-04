@@ -12,10 +12,10 @@ import {
 } from 'lucide-react';
 import { DialogFrameFooter, DialogFrameHeader } from '@/components/DialogFrame';
 import { AppButton } from '@/components/AppButton';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { AppDialog, AppDialogContent } from '@/components/AppDialog';
+import { AppInput } from '@/components/AppInput';
+import { AppRadioGroup, AppRadioGroupItem } from '@/components/AppRadioGroup';
+import { AppToggleGroup, AppToggleGroupItem } from '@/components/AppToggleGroup';
 import { useActiveTemplate } from '@/features/templates/useActiveTemplate';
 import { buildExportName, toFileName } from '@/lib/files/fileNames';
 import { HeaderLinkToggles } from '@/features/editor/header/HeaderLinkToggles';
@@ -56,15 +56,15 @@ export function ExportDialog() {
   const closeExport = useOverlayStore((s) => s.closeExport);
 
   return (
-    <Dialog open={open} onOpenChange={(next) => !next && closeExport()}>
-      <DialogContent
+    <AppDialog open={open} onOpenChange={(next) => !next && closeExport()}>
+      <AppDialogContent
         showCloseButton={false}
-        className="flex max-h-[90vh] w-[min(40rem,96vw)] max-w-none flex-col gap-0 overflow-hidden rounded-xl border-line-strong bg-white p-0 sm:max-w-none dark:bg-zinc-950"
+        className="flex max-h-[90vh] w-[min(40rem,96vw)] max-w-none flex-col gap-0 overflow-hidden p-0 sm:max-w-none"
       >
         {/* Mounted per opening, so the format and file name start fresh each time. */}
         {open && <ExportForm version={version} onDone={closeExport} />}
-      </DialogContent>
-    </Dialog>
+      </AppDialogContent>
+    </AppDialog>
   );
 }
 
@@ -159,7 +159,7 @@ function ExportForm({ version, onDone }: { version: ExportVersion | null; onDone
           </p>
         )}
 
-        <RadioGroup
+        <AppRadioGroup
           value={formatId}
           onValueChange={(value) => setFormatId(value as ExportFormat)}
           aria-label="Format"
@@ -168,7 +168,7 @@ function ExportForm({ version, onDone }: { version: ExportVersion | null; onDone
           {formats.map((option) => (
             <FormatOption key={option.id} format={option} selected={option.id === formatId} />
           ))}
-        </RadioGroup>
+        </AppRadioGroup>
         {format.id === 'pdf' && (
           <PdfFontNote
             characters={findCharactersPdfCannotDraw(
@@ -187,32 +187,28 @@ function ExportForm({ version, onDone }: { version: ExportVersion | null; onDone
             }
           >
             {!holdsEverything && (
-              <ToggleGroup
+              <AppToggleGroup
                 type="single"
-                variant="outline"
-                size="sm"
                 value={includeHidden ? 'all' : 'shown'}
                 onValueChange={(value) => value && setIncludeHidden(value === 'all')}
                 aria-label="Content"
               >
-                <ToggleGroupItem value="shown">What’s on the page</ToggleGroupItem>
-                <ToggleGroupItem value="all">Everything</ToggleGroupItem>
-              </ToggleGroup>
+                <AppToggleGroupItem value="shown">What’s on the page</AppToggleGroupItem>
+                <AppToggleGroupItem value="all">Everything</AppToggleGroupItem>
+              </AppToggleGroup>
             )}
           </Row>
           {format.isPaged && (
             <Row label="Paper">
-              <ToggleGroup
+              <AppToggleGroup
                 type="single"
-                variant="outline"
-                size="sm"
                 value={paperSize}
                 onValueChange={(value) => value && setPaperSize(value as PaperSize)}
                 aria-label="Paper"
               >
-                <ToggleGroupItem value="a4">A4</ToggleGroupItem>
-                <ToggleGroupItem value="letter">Letter</ToggleGroupItem>
-              </ToggleGroup>
+                <AppToggleGroupItem value="a4">A4</AppToggleGroupItem>
+                <AppToggleGroupItem value="letter">Letter</AppToggleGroupItem>
+              </AppToggleGroup>
             </Row>
           )}
           <Row label="Header links" description={format.headerLinkNote}>
@@ -220,13 +216,13 @@ function ExportForm({ version, onDone }: { version: ExportVersion | null; onDone
           </Row>
           <Row label="File name">
             <div className="flex w-[min(18rem,100%)]">
-              <Input
+              <AppInput
                 value={name}
                 onChange={(event) => setName(event.target.value)}
                 aria-label="File name"
-                className="h-8 rounded-r-none font-mono text-xs"
+                className="rounded-r-none font-mono text-meta"
               />
-              <span className="grid h-8 shrink-0 place-items-center rounded-r-md border border-l-0 border-input bg-zinc-100 px-2 font-mono text-xs text-zinc-500 dark:bg-zinc-900">
+              <span className="grid h-8 shrink-0 place-items-center rounded-r-sm border border-l-0 border-line-strong bg-line px-2 font-mono text-meta text-ink-muted">
                 .{format.extension}
               </span>
             </div>
@@ -316,7 +312,7 @@ function FormatOption({ format, selected }: { format: ExportFormatInfo; selected
           {format.description}
         </span>
       </span>
-      <RadioGroupItem id={id} value={format.id} className="mt-0.5" />
+      <AppRadioGroupItem id={id} value={format.id} className="mt-0.5" />
     </label>
   );
 }

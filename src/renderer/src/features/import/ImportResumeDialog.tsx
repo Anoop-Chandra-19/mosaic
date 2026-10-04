@@ -2,8 +2,8 @@ import { useState, type DragEvent } from 'react';
 import { AlertTriangle, Info, Upload } from 'lucide-react';
 import { DialogFrameFooter, DialogFrameHeader } from '@/components/DialogFrame';
 import { AppButton } from '@/components/AppButton';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
-import { Textarea } from '@/components/ui/textarea';
+import { AppDialog, AppDialogContent } from '@/components/AppDialog';
+import { AppTextarea } from '@/components/AppTextarea';
 import { fileFailure } from '@/features/backup/backupFiles';
 import { easeHeightChanges } from '@/lib/motion/easeHeightChanges';
 import { cn } from '@/lib/utils';
@@ -33,16 +33,16 @@ export function ImportResumeDialog() {
   const closeImport = useOverlayStore((s) => s.closeImport);
 
   return (
-    <Dialog open={open} onOpenChange={(next) => !next && closeImport()}>
-      <DialogContent
+    <AppDialog open={open} onOpenChange={(next) => !next && closeImport()}>
+      <AppDialogContent
         ref={easeHeightChanges}
         showCloseButton={false}
-        className="flex max-h-[90vh] w-[min(38.75rem,96vw)] max-w-none flex-col gap-0 overflow-hidden rounded-xl bg-white p-0 transition-[width] duration-160 sm:max-w-none motion-reduce:transition-none has-data-[import-step=review]:w-[min(50rem,96vw)] dark:bg-zinc-950"
+        className="flex max-h-[90vh] w-[min(38.75rem,96vw)] max-w-none flex-col gap-0 overflow-hidden p-0 transition-[width] duration-160 sm:max-w-none motion-reduce:transition-none has-data-[import-step=review]:w-[min(50rem,96vw)]"
       >
         {/* Mounted per opening, so each import starts from the file picker. */}
         {open && <ImportFlow onDone={closeImport} />}
-      </DialogContent>
-    </Dialog>
+      </AppDialogContent>
+    </AppDialog>
   );
 }
 
@@ -180,15 +180,13 @@ function PickStep({
         >
           Or paste the text
         </label>
-        <Textarea
+        <AppTextarea
           id="import-paste"
           value={text}
           onChange={(event) => setText(event.target.value)}
           placeholder={PLACEHOLDER}
           spellCheck={false}
-          // An example, not content: quieter than the theme's placeholder, which at seven
-          // lines reads as something already pasted.
-          className="h-30 resize-none px-2.5 py-2 font-mono text-[0.71875rem] leading-[1.65] placeholder:text-ink-faint"
+          className="h-30 px-2.5 py-2 font-mono text-[0.71875rem] leading-[1.65]"
         />
 
         <p className="mt-3 flex gap-2.5 rounded-[0.5625rem] border border-line-strong bg-pane px-3 py-2.75 text-[0.8rem] leading-relaxed text-ink-soft">

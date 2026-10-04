@@ -10,7 +10,7 @@ import {
 } from 'react';
 import { Info, Merge, Split } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { AppToggleGroup, AppToggleGroupItem } from '@/components/AppToggleGroup';
 import { SHORTCUTS } from '@/features/shortcuts/shortcutList';
 import { formatShortcutKeys, matchesShortcut } from '@/lib/keyboardShortcuts';
 import { cn } from '@/lib/utils';
@@ -69,8 +69,6 @@ type EditorMode = 'edit' | 'split' | 'merge';
 const NOTE =
   'flex flex-wrap items-center gap-x-1.75 gap-y-1.25 border-t border-line py-1.25 pr-1.5 pl-2.5 text-[0.71875rem] leading-[1.4] text-pretty text-ink-muted [&>svg]:size-2.75 [&>svg]:shrink-0';
 const NOTE_TEXT = 'min-w-0 flex-[1_1_9.375rem]';
-const SEGMENT =
-  'h-5.25 min-w-0 rounded-[0.3125rem] px-2 text-[0.71875rem] font-medium text-ink-muted hover:bg-transparent hover:text-foreground aria-checked:bg-pane-raised aria-checked:text-foreground aria-checked:shadow-[0_1px_2px_oklch(0_0_0/25%)]';
 
 /**
  * The design's bullet editor: a box that grows with the text, its length as you type, a
@@ -409,21 +407,16 @@ export function BulletEditor({
               : 'This bullet is off the resume.'}{' '}
             The merged bullet is
           </span>
-          <ToggleGroup
+          <AppToggleGroup
             type="single"
-            spacing={0.5}
+            size="sm"
             value={isMergedSelected ? 'on' : 'off'}
             onValueChange={(value) => value && setIsMergedSelected(value === 'on')}
             aria-label="The merged bullet is"
-            className="rounded-md border border-line bg-line p-px"
           >
-            <ToggleGroupItem value="on" className={SEGMENT}>
-              On the resume
-            </ToggleGroupItem>
-            <ToggleGroupItem value="off" className={SEGMENT}>
-              Left off
-            </ToggleGroupItem>
-          </ToggleGroup>
+            <AppToggleGroupItem value="on">On the resume</AppToggleGroupItem>
+            <AppToggleGroupItem value="off">Left off</AppToggleGroupItem>
+          </AppToggleGroup>
         </div>
       )}
       {shouldNudgeSplit && (

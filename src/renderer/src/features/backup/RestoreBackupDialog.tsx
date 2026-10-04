@@ -2,14 +2,14 @@ import { useState } from 'react';
 import { AlertTriangle, ArchiveRestore, FileJson2 } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+  AppDialog,
+  AppDialogContent,
+  AppDialogDescription,
+  AppDialogFooter,
+  AppDialogHeader,
+  AppDialogTitle,
+} from '@/components/AppDialog';
+import { AppRadioGroup, AppRadioGroupItem } from '@/components/AppRadioGroup';
 import { formatRelativeTime } from '@/features/templates/formatRelativeTime';
 import { cn } from '@/lib/utils';
 import { attempt, showToast, useOverlayStore } from '@/stores/overlayStore';
@@ -36,12 +36,12 @@ export function RestoreBackupDialog() {
   const close = () => setPendingRestore(null);
 
   return (
-    <Dialog open={backup !== null} onOpenChange={(open) => !open && close()}>
-      <DialogContent className="sm:max-w-lg">
+    <AppDialog open={backup !== null} onOpenChange={(open) => !open && close()}>
+      <AppDialogContent className="sm:max-w-lg">
         {/* Mounted per file, so the choice starts on the safe option each time. */}
         {backup && <RestoreForm backup={backup} onDone={close} />}
-      </DialogContent>
-    </Dialog>
+      </AppDialogContent>
+    </AppDialog>
   );
 }
 
@@ -78,17 +78,17 @@ function RestoreForm({ backup, onDone }: { backup: OpenedBackup; onDone: () => v
 
   return (
     <>
-      <DialogHeader>
-        <DialogTitle className="flex items-center gap-2">
+      <AppDialogHeader>
+        <AppDialogTitle className="flex items-center gap-2">
           <ArchiveRestore className="size-4 text-zinc-500" />
           Restore a backup
-        </DialogTitle>
-        <DialogDescription>
+        </AppDialogTitle>
+        <AppDialogDescription>
           {localCount === 0
             ? 'Mosaic has no templates, so the backup’s become yours, with their history.'
             : 'Check what the file holds, then choose what happens to the templates here.'}
-        </DialogDescription>
-      </DialogHeader>
+        </AppDialogDescription>
+      </AppDialogHeader>
 
       <div className="flex items-start gap-3 rounded-lg border border-line bg-zinc-50 p-3 dark:bg-zinc-900">
         <FileJson2 className="mt-0.5 size-4 shrink-0 text-zinc-500" />
@@ -105,7 +105,7 @@ function RestoreForm({ backup, onDone }: { backup: OpenedBackup; onDone: () => v
       </div>
 
       {localCount > 0 && (
-        <RadioGroup
+        <AppRadioGroup
           value={mode}
           onValueChange={(value) => setMode(value as ImportMode)}
           aria-label="What happens to the templates here"
@@ -123,7 +123,7 @@ function RestoreForm({ backup, onDone }: { backup: OpenedBackup; onDone: () => v
             label="Replace everything"
             description={`Deletes the ${count(localCount, 'template')} here, history included, and rebuilds Mosaic from the backup.`}
           />
-        </RadioGroup>
+        </AppRadioGroup>
       )}
 
       {replacing && (
@@ -133,7 +133,7 @@ function RestoreForm({ backup, onDone }: { backup: OpenedBackup; onDone: () => v
         </p>
       )}
 
-      <DialogFooter>
+      <AppDialogFooter>
         <AppButton variant="ghost" onClick={onDone}>
           Cancel
         </AppButton>
@@ -148,7 +148,7 @@ function RestoreForm({ backup, onDone }: { backup: OpenedBackup; onDone: () => v
               ? 'Restore'
               : `Add ${count(templates, 'template')}`}
         </AppButton>
-      </DialogFooter>
+      </AppDialogFooter>
     </>
   );
 }
@@ -175,7 +175,7 @@ function ModeOption({
           : 'border-line hover:bg-zinc-50 dark:hover:bg-zinc-900'
       )}
     >
-      <RadioGroupItem id={id} value={value} className="mt-0.5" />
+      <AppRadioGroupItem id={id} value={value} className="mt-0.5" />
       <span className="min-w-0">
         <span className="block text-sm font-medium text-zinc-900 dark:text-zinc-100">{label}</span>
         <span className="mt-0.5 block text-xs leading-relaxed text-zinc-600 dark:text-zinc-400">

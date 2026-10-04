@@ -1,11 +1,6 @@
 import { Plus } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+import { AppMenu, AppMenuContent, AppMenuSeparator, AppMenuTrigger } from '@/components/AppMenu';
 import { STARTER_KINDS } from '@/features/start/blankResume';
 import { BUILT_IN_KINDS, SECTION_PRESETS } from '@shared/resume/sectionPresets';
 import { useResumeStore } from '@/stores/resumeStore';
@@ -56,19 +51,19 @@ export function EmptyContentHint({
             </AppButton>
           );
         })}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
+        <AppMenu>
+          <AppMenuTrigger asChild>
             <AppButton variant="dashed" size="xs" shape="pill" className="font-normal">
               <Plus />
               Something else
             </AppButton>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" onCloseAutoFocus={custom.onCloseAutoFocus}>
+          </AppMenuTrigger>
+          <AppMenuContent align="start" onCloseAutoFocus={custom.onCloseAutoFocus}>
             <PresetMenuItems kinds={others} onAdd={add} />
-            {others.length > 0 && <DropdownMenuSeparator />}
+            {others.length > 0 && <AppMenuSeparator />}
             <CustomMenuItems onChoose={custom.choose} />
-          </DropdownMenuContent>
-        </DropdownMenu>
+          </AppMenuContent>
+        </AppMenu>
       </div>
     </div>
   );

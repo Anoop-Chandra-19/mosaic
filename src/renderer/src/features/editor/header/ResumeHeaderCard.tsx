@@ -2,18 +2,18 @@ import { Fragment } from 'react';
 import { ChevronsDownUp, ChevronsUpDown, Ellipsis, Plus, Shapes } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
 import { AppTooltip } from '@/components/AppTooltip';
-import { Collapsible, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { AppCollapsible, AppCollapsibleTrigger } from '@/components/AppCollapsible';
 import {
-  DropdownMenu,
-  DropdownMenuCheckboxItem,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+  AppMenu,
+  AppMenuCheckboxItem,
+  AppMenuContent,
+  AppMenuItem,
+  AppMenuLabel,
+  AppMenuRadioGroup,
+  AppMenuRadioItem,
+  AppMenuSeparator,
+  AppMenuTrigger,
+} from '@/components/AppMenu';
 import { LINK_COLORS, LINK_STYLES, getPrintableHeaderLines } from '@shared/resume/resumeHeader';
 import { ListMotionContext, useListMotion } from '@/lib/motion/useListMotion';
 import { cn } from '@/lib/utils';
@@ -56,7 +56,7 @@ export function ResumeHeaderCard({ contact: shown }: { contact?: ContactInfo }) 
   );
 
   return (
-    <Collapsible
+    <AppCollapsible
       open={open}
       onOpenChange={(next) => setOpen(HEADER_OUTLINE_ID, next)}
       className="mx-0.5 mb-3 rounded-[0.5625rem] border border-line bg-pane-raised p-3"
@@ -68,12 +68,12 @@ export function ResumeHeaderCard({ contact: shown }: { contact?: ContactInfo }) 
           livePreview={showName}
           placeholder="Your name"
           className="text-base font-semibold tracking-[-0.012em] text-foreground"
-          inputClassName="text-base font-semibold tracking-[-0.012em] md:text-base"
+          inputClassName="text-base font-semibold tracking-[-0.012em]"
           as="h3"
         />
         <div className="flex shrink-0 items-center gap-0.5">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
+          <AppMenu>
+            <AppMenuTrigger asChild>
               <AppButton
                 variant="ghost"
                 size="xs"
@@ -83,47 +83,43 @@ export function ResumeHeaderCard({ contact: shown }: { contact?: ContactInfo }) 
               >
                 <Ellipsis />
               </AppButton>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuLabel className="text-xs font-normal text-zinc-500">
-                Links on the page
-              </DropdownMenuLabel>
-              <DropdownMenuRadioGroup
+            </AppMenuTrigger>
+            <AppMenuContent align="end">
+              <AppMenuLabel>Links on the page</AppMenuLabel>
+              <AppMenuRadioGroup
                 value={header.linkStyle}
                 onValueChange={(value) => setLinkStyle(value as LinkStyle)}
               >
                 {LINK_STYLES.map(({ value, label }) => (
-                  <DropdownMenuRadioItem key={value} value={value}>
+                  <AppMenuRadioItem key={value} value={value}>
                     {label}
-                  </DropdownMenuRadioItem>
+                  </AppMenuRadioItem>
                 ))}
-              </DropdownMenuRadioGroup>
-              <DropdownMenuSeparator />
-              <DropdownMenuLabel className="text-xs font-normal text-zinc-500">
-                Link color
-              </DropdownMenuLabel>
-              <DropdownMenuRadioGroup
+              </AppMenuRadioGroup>
+              <AppMenuSeparator />
+              <AppMenuLabel>Link color</AppMenuLabel>
+              <AppMenuRadioGroup
                 value={header.linkColor ?? 'ink'}
                 onValueChange={(value) => setLinkColor(value as LinkColor)}
               >
                 {LINK_COLORS.map(({ value, label }) => (
-                  <DropdownMenuRadioItem key={value} value={value}>
+                  <AppMenuRadioItem key={value} value={value}>
                     {label}
-                  </DropdownMenuRadioItem>
+                  </AppMenuRadioItem>
                 ))}
-              </DropdownMenuRadioGroup>
-              <DropdownMenuSeparator />
-              <DropdownMenuCheckboxItem checked={shouldShowIcons} onCheckedChange={toggleIcons}>
+              </AppMenuRadioGroup>
+              <AppMenuSeparator />
+              <AppMenuCheckboxItem checked={shouldShowIcons} onCheckedChange={toggleIcons}>
                 <Shapes />
                 Icons in this list
-              </DropdownMenuCheckboxItem>
-              <DropdownMenuItem onSelect={() => addLine()}>
+              </AppMenuCheckboxItem>
+              <AppMenuItem onSelect={() => addLine()}>
                 <Plus />
                 Add a line
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-          <CollapsibleTrigger asChild>
+              </AppMenuItem>
+            </AppMenuContent>
+          </AppMenu>
+          <AppCollapsibleTrigger asChild>
             <AppButton
               variant="ghost"
               size="xs"
@@ -133,7 +129,7 @@ export function ResumeHeaderCard({ contact: shown }: { contact?: ContactInfo }) 
             >
               {open ? <ChevronsDownUp /> : <ChevronsUpDown />}
             </AppButton>
-          </CollapsibleTrigger>
+          </AppCollapsibleTrigger>
         </div>
       </div>
 
@@ -200,6 +196,6 @@ export function ResumeHeaderCard({ contact: shown }: { contact?: ContactInfo }) 
           </div>
         </ListMotionContext>
       </EditorFold>
-    </Collapsible>
+    </AppCollapsible>
   );
 }

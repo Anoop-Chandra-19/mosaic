@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Plus, Search } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
-import { Input } from '@/components/ui/input';
+import { AppInput } from '@/components/AppInput';
 import { useOverlayStore } from '@/stores/overlayStore';
 import { useResumeStore } from '@/stores/resumeStore';
 import { useTemplateStore } from '@/stores/templateStore';
@@ -31,12 +31,12 @@ export function TemplatesTab() {
       <div className="mb-2 flex gap-1.5">
         <div className="relative flex-1">
           <Search className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-zinc-500" />
-          <Input
+          <AppInput
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Find a template…"
             aria-label="Find a template"
-            className="h-8 pl-8 text-sm"
+            className="pl-8"
           />
         </div>
         <AppButton

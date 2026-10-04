@@ -1,11 +1,6 @@
 import { Check, ChevronDown } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+import { AppMenu, AppMenuContent, AppMenuItem, AppMenuTrigger } from '@/components/AppMenu';
 import type { ImportMode } from './buildImportedResume';
 
 const MODES: { id: ImportMode; label: string; hint: string }[] = [
@@ -61,8 +56,8 @@ export function ImportModeButton({
   return (
     <div className="flex">
       {importButton}
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
+      <AppMenu>
+        <AppMenuTrigger asChild>
           <AppButton
             size="sm"
             aria-label="How to import"
@@ -71,10 +66,10 @@ export function ImportModeButton({
           >
             <ChevronDown className="size-3" />
           </AppButton>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent side="top" align="end" className="w-75">
+        </AppMenuTrigger>
+        <AppMenuContent side="top" align="end" className="w-75">
           {MODES.map((option) => (
-            <DropdownMenuItem
+            <AppMenuItem
               key={option.id}
               role="menuitemradio"
               aria-checked={option.id === mode}
@@ -89,10 +84,10 @@ export function ImportModeButton({
               <span className="text-[0.71875rem] leading-[1.45] text-pretty text-ink-muted">
                 {option.hint}
               </span>
-            </DropdownMenuItem>
+            </AppMenuItem>
           ))}
-        </DropdownMenuContent>
-      </DropdownMenu>
+        </AppMenuContent>
+      </AppMenu>
     </div>
   );
 }

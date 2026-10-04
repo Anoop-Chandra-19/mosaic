@@ -1,13 +1,12 @@
 import { useId, useState, type KeyboardEvent } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
+import { AppInput } from '@/components/AppInput';
+import { AppTextarea } from '@/components/AppTextarea';
 import { AppTooltip } from '@/components/AppTooltip';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 import { resolveHeaderItemHref, getHeaderKindInfo } from '@shared/resume/resumeHeader';
 import type { HeaderItem } from '@shared/types/resume';
-import { EDITOR_INPUT_CLASS } from '../editorClasses';
 import { showHeaderItemText } from '../liveEdits';
 import { useLiveEdit } from '../useLiveEdit';
 import { HEADER_ICONS } from './headerIcons';
@@ -89,7 +88,7 @@ export function HeaderItemEditor({
         </label>
         {/* A header item is often a whole clause, so the field grows instead of scrolling;
             it is one line on the page, so Enter saves rather than breaking it. */}
-        <Textarea
+        <AppTextarea
           id={`${fieldId}-text`}
           value={text}
           rows={1}
@@ -97,27 +96,21 @@ export function HeaderItemEditor({
           placeholder={placeholder}
           onChange={(event) => setText(event.target.value.replace(/\n/g, ' '))}
           onKeyDown={handleKeyDown}
-          className={cn(
-            EDITOR_INPUT_CLASS,
-            'min-h-7 min-w-0 flex-1 resize-none px-[0.4375rem] py-[0.3125rem] text-[0.825rem] leading-[1.45] wrap-anywhere md:text-[0.825rem]'
-          )}
+          className="min-h-7 min-w-0 flex-1 px-[0.4375rem] py-[0.3125rem] text-[0.825rem] leading-[1.45] wrap-anywhere"
         />
       </div>
       <div className="mb-1.5 flex items-center gap-2">
         <label htmlFor={`${fieldId}-url`} className={FIELD_LABEL}>
           Links to
         </label>
-        <Input
+        <AppInput
           id={`${fieldId}-url`}
           value={url}
           autoFocus={focus === 'url'}
           placeholder="Optional"
           onChange={(event) => setUrl(event.target.value)}
           onKeyDown={handleKeyDown}
-          className={cn(
-            EDITOR_INPUT_CLASS,
-            'h-7 min-w-0 flex-1 px-2 font-mono text-[0.7188rem] md:text-[0.7188rem]'
-          )}
+          className="h-7 flex-1 px-2 font-mono text-[0.7188rem]"
         />
       </div>
       <div className="mt-0.5 flex items-center gap-[0.3125rem]">

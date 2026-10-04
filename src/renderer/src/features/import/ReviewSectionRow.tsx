@@ -1,7 +1,7 @@
 import { useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { AlertTriangle } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
-import { Collapsible, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { AppCollapsible, AppCollapsibleTrigger } from '@/components/AppCollapsible';
 import { recordPlaces, slideFromRecordedPlaces } from '@/lib/motion/slideToNewPlaces';
 import { cn } from '@/lib/utils';
 import type { ResumeEntry, ResumeSection } from '@shared/types/resume';
@@ -160,7 +160,7 @@ export function ReviewSectionRow({
   );
 
   return (
-    <Collapsible asChild open={isOpen} onOpenChange={onOpenChange}>
+    <AppCollapsible asChild open={isOpen} onOpenChange={onOpenChange}>
       <li ref={rowRef} className="group/row">
         <div className="flex min-w-0 items-center gap-2.25 px-2.75 py-1.75">
           <ReviewCheckbox
@@ -170,12 +170,12 @@ export function ReviewSectionRow({
             onToggle={() => (isMixed ? onKeepAll(within) : onToggle(section.id))}
             label={isMixed ? `Keep everything in ${section.label}` : `Import ${section.label}`}
           />
-          <CollapsibleTrigger asChild>
+          <AppCollapsibleTrigger asChild>
             <AppButton variant="plain" className="h-5.5 min-w-0 gap-1.5 px-0 text-[0.8125rem]">
               <RowCaret />
               <span className={cn('truncate', !isOn && 'text-ink-faint')}>{section.label}</span>
             </AppButton>
-          </CollapsibleTrigger>
+          </AppCollapsibleTrigger>
           {placedCount > 0 && (
             <span className="rounded-md border border-emerald-300 bg-emerald-50 px-1.5 text-[0.6875rem] leading-4 font-medium text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-400">
               +{placedCount}
@@ -308,6 +308,6 @@ export function ReviewSectionRow({
           </div>
         </ReviewFold>
       </li>
-    </Collapsible>
+    </AppCollapsible>
   );
 }

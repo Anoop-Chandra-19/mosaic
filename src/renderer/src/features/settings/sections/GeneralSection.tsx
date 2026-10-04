@@ -1,10 +1,10 @@
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+  AppSelect,
+  AppSelectContent,
+  AppSelectItem,
+  AppSelectTrigger,
+  AppSelectValue,
+} from '@/components/AppSelect';
 import { shortcutLabel } from '@/lib/keyboardShortcuts';
 import {
   UNDO_HISTORY_STEP_OPTIONS,
@@ -32,21 +32,21 @@ export function GeneralSection() {
         label="Open on launch"
         description="What Mosaic shows when you start it. The last template you had open is always loaded behind it."
       >
-        <Select
+        <AppSelect
           value={openOnLaunch}
           onValueChange={(value) => setOpenOnLaunch(value as LaunchView)}
         >
-          <SelectTrigger size="sm" className="w-44" aria-label="Open on launch">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
+          <AppSelectTrigger className="w-44" aria-label="Open on launch">
+            <AppSelectValue />
+          </AppSelectTrigger>
+          <AppSelectContent>
             {LAUNCH_VIEW_OPTIONS.map((option) => (
-              <SelectItem key={option.value} value={option.value}>
+              <AppSelectItem key={option.value} value={option.value}>
                 {option.label}
-              </SelectItem>
+              </AppSelectItem>
             ))}
-          </SelectContent>
-        </Select>
+          </AppSelectContent>
+        </AppSelect>
       </SettingRow>
       <SettingRow
         label="Autosave"
@@ -58,21 +58,21 @@ export function GeneralSection() {
         label="Undo history"
         description={`Steps ${shortcutLabel('Z')} can take back in the open resume. Named versions are kept either way.`}
       >
-        <Select
+        <AppSelect
           value={String(undoHistorySteps)}
           onValueChange={(value) => setUndoHistorySteps(Number(value) as UndoHistorySteps)}
         >
-          <SelectTrigger size="sm" className="w-24" aria-label="Undo history">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
+          <AppSelectTrigger className="w-24" aria-label="Undo history">
+            <AppSelectValue />
+          </AppSelectTrigger>
+          <AppSelectContent>
             {UNDO_HISTORY_STEP_OPTIONS.map((steps) => (
-              <SelectItem key={steps} value={String(steps)}>
+              <AppSelectItem key={steps} value={String(steps)}>
                 {steps}
-              </SelectItem>
+              </AppSelectItem>
             ))}
-          </SelectContent>
-        </Select>
+          </AppSelectContent>
+        </AppSelect>
       </SettingRow>
     </>
   );

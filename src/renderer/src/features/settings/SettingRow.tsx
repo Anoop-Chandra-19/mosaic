@@ -15,11 +15,9 @@ export function SettingRow({
   return (
     <div className="flex flex-col gap-2.5 border-b border-line py-(--density-pad) last:border-b-0 sm:flex-row sm:items-start sm:justify-between sm:gap-5">
       <div className="min-w-0 flex-1">
-        <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">{label}</p>
+        <p className="text-body font-control text-foreground">{label}</p>
         {description && (
-          <p className="mt-0.5 max-w-[46ch] text-xs leading-relaxed text-zinc-600 dark:text-zinc-400">
-            {description}
-          </p>
+          <p className="mt-[0.1875rem] max-w-[46ch] text-support text-ink-muted">{description}</p>
         )}
       </div>
       <div className="flex shrink-0 flex-wrap items-center gap-2">{children}</div>

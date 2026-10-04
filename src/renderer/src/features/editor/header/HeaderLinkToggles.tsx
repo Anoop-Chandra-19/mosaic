@@ -1,4 +1,4 @@
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { AppToggleGroup, AppToggleGroupItem } from '@/components/AppToggleGroup';
 import { LINK_COLORS, LINK_STYLES } from '@shared/resume/resumeHeader';
 import { useResumeStore } from '@/stores/resumeStore';
 import type { LinkColor, LinkStyle } from '@shared/types/resume';
@@ -15,35 +15,31 @@ export function HeaderLinkToggles() {
 
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <ToggleGroup
+      <AppToggleGroup
         type="single"
-        variant="outline"
-        size="sm"
         value={linkStyle}
         // A single-choice group reports '' when the pressed item is pressed again.
         onValueChange={(value) => value && setLinkStyle(value as LinkStyle)}
         aria-label="Header links"
       >
         {LINK_STYLES.map(({ value, label }) => (
-          <ToggleGroupItem key={value} value={value}>
+          <AppToggleGroupItem key={value} value={value}>
             {label}
-          </ToggleGroupItem>
+          </AppToggleGroupItem>
         ))}
-      </ToggleGroup>
-      <ToggleGroup
+      </AppToggleGroup>
+      <AppToggleGroup
         type="single"
-        variant="outline"
-        size="sm"
         value={linkColor}
         onValueChange={(value) => value && setLinkColor(value as LinkColor)}
         aria-label="Header link color"
       >
         {LINK_COLORS.map(({ value, label }) => (
-          <ToggleGroupItem key={value} value={value}>
+          <AppToggleGroupItem key={value} value={value}>
             {label}
-          </ToggleGroupItem>
+          </AppToggleGroupItem>
         ))}
-      </ToggleGroup>
+      </AppToggleGroup>
     </div>
   );
 }

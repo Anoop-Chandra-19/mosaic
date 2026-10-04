@@ -14,12 +14,12 @@ import {
 import { AppButton } from '@/components/AppButton';
 import { AppTooltip } from '@/components/AppTooltip';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+  AppMenu,
+  AppMenuContent,
+  AppMenuItem,
+  AppMenuSeparator,
+  AppMenuTrigger,
+} from '@/components/AppMenu';
 import { SHORTCUTS } from '@/features/shortcuts/shortcutList';
 import { matchesShortcut } from '@/lib/keyboardShortcuts';
 import { carryTint, travelFrom } from '@/lib/motion/rowMotions';
@@ -238,8 +238,8 @@ export function BulletItem({
                 : 'invisible group-focus-within/bullet:visible group-hover/bullet:visible'
             )}
           >
-            <DropdownMenu open={actionsOpen} onOpenChange={setActionsOpen}>
-              <DropdownMenuTrigger asChild>
+            <AppMenu open={actionsOpen} onOpenChange={setActionsOpen}>
+              <AppMenuTrigger asChild>
                 <AppButton
                   variant="ghost"
                   size="xs"
@@ -249,8 +249,8 @@ export function BulletItem({
                 >
                   <Ellipsis />
                 </AppButton>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent
+              </AppMenuTrigger>
+              <AppMenuContent
                 align="end"
                 onCloseAutoFocus={(event) => {
                   const open = afterMenu.current;
@@ -260,24 +260,24 @@ export function BulletItem({
                   open();
                 }}
               >
-                <DropdownMenuItem onSelect={toggle}>
+                <AppMenuItem onSelect={toggle}>
                   {bullet.selected ? <EyeOff /> : <Eye />}
                   {bullet.selected ? 'Leave off the resume' : 'Put on the resume'}
-                </DropdownMenuItem>
-                <DropdownMenuItem
+                </AppMenuItem>
+                <AppMenuItem
                   onSelect={() => {
                     afterMenu.current = () => setEditing({});
                   }}
                 >
                   <Pencil />
                   Edit text
-                </DropdownMenuItem>
-                <DropdownMenuItem onSelect={duplicate}>
+                </AppMenuItem>
+                <AppMenuItem onSelect={duplicate}>
                   <Copy />
                   Duplicate
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
+                </AppMenuItem>
+                <AppMenuSeparator />
+                <AppMenuItem
                   disabled={!canSplitText(bullet.text)}
                   onSelect={() => {
                     afterMenu.current = () => setEditing({ startsSplitting: true });
@@ -285,8 +285,8 @@ export function BulletItem({
                 >
                   <Split />
                   Split bullet
-                </DropdownMenuItem>
-                <DropdownMenuItem
+                </AppMenuItem>
+                <AppMenuItem
                   disabled={!startMerge}
                   onSelect={() => {
                     afterMenu.current = () => startMerge?.(bullet.text);
@@ -294,26 +294,23 @@ export function BulletItem({
                 >
                   <Merge />
                   Merge with bullet below
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem disabled={isFirst} onSelect={onMoveUp}>
+                </AppMenuItem>
+                <AppMenuSeparator />
+                <AppMenuItem disabled={isFirst} onSelect={onMoveUp}>
                   <ArrowUp />
                   Move up
-                </DropdownMenuItem>
-                <DropdownMenuItem disabled={isLast} onSelect={onMoveDown}>
+                </AppMenuItem>
+                <AppMenuItem disabled={isLast} onSelect={onMoveDown}>
                   <ArrowDown />
                   Move down
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  onSelect={remove}
-                  className="text-destructive focus:text-destructive"
-                >
+                </AppMenuItem>
+                <AppMenuSeparator />
+                <AppMenuItem variant="destructive" onSelect={remove}>
                   <Trash2 />
                   Delete bullet
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+                </AppMenuItem>
+              </AppMenuContent>
+            </AppMenu>
           </span>
           {bullet.text || <span className="text-ink-faint no-underline">Empty bullet</span>}
         </div>

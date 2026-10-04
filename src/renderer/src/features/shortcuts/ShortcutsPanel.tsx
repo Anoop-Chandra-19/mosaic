@@ -1,7 +1,7 @@
 import { useState, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from 'react';
 import { Search } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
-import { Input } from '@/components/ui/input';
+import { AppInput } from '@/components/AppInput';
 import { formatShortcutKeys, isSameShortcut, readShortcutCombo } from '@/lib/keyboardShortcuts';
 import { cn } from '@/lib/utils';
 import { useAiStore } from '@/stores/aiStore';
@@ -146,7 +146,7 @@ export function ShortcutsPanel({
       >
         <div className="relative flex-1">
           <Search className="pointer-events-none absolute top-1/2 left-2.25 size-3.25 -translate-y-1/2 text-ink-faint" />
-          <Input
+          <AppInput
             value={query}
             spellCheck={false}
             autoFocus={!isEmbedded}
@@ -157,7 +157,7 @@ export function ShortcutsPanel({
               setQuery(event.target.value);
               setPressed(null);
             }}
-            className="h-7.5 rounded-md border-line-strong bg-pane-sunken pl-7.25 text-[0.8125rem] placeholder:text-ink-faint dark:bg-pane-sunken"
+            className="h-7.5 pl-7.25"
           />
         </div>
         {(query || pressed) && (

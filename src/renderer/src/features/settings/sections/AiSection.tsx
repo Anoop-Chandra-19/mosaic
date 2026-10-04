@@ -1,16 +1,16 @@
 import { useState, type ReactNode } from 'react';
 import { Check, Eye, EyeOff, ShieldCheck } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
-import { Input } from '@/components/ui/input';
+import { AppInput } from '@/components/AppInput';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+  AppSelect,
+  AppSelectContent,
+  AppSelectItem,
+  AppSelectTrigger,
+  AppSelectValue,
+} from '@/components/AppSelect';
+import { AppSwitch } from '@/components/AppSwitch';
+import { AppToggleGroup, AppToggleGroupItem } from '@/components/AppToggleGroup';
 import { isLocalOllamaAddress } from '@shared/ai/ollamaAddress';
 import { cn } from '@/lib/utils';
 import { AI_PROVIDER_DEFAULT_MODEL, useAiStore } from '@/stores/aiStore';
@@ -53,7 +53,11 @@ export function AiSection() {
         label="Enable AI assistant"
         description="Off by default. Nothing is sent anywhere until it is on and you ask."
       >
-        <Switch checked={enabled} onCheckedChange={setEnabled} aria-label="Enable AI assistant" />
+        <AppSwitch
+          checked={enabled}
+          onCheckedChange={setEnabled}
+          aria-label="Enable AI assistant"
+        />
       </SettingRow>
 
       {/* Visible but out of reach while AI is off, so it is clear what turning it on offers. */}
@@ -66,18 +70,18 @@ export function AiSection() {
               : 'Bring your own key. Ollama runs entirely on your computer, so nothing leaves it.'
           }
         >
-          <Select value={provider} onValueChange={(value) => setProvider(value as AiProvider)}>
-            <SelectTrigger size="sm" className="w-44" aria-label="Provider">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
+          <AppSelect value={provider} onValueChange={(value) => setProvider(value as AiProvider)}>
+            <AppSelectTrigger className="w-44" aria-label="Provider">
+              <AppSelectValue />
+            </AppSelectTrigger>
+            <AppSelectContent>
               {AI_PROVIDER_OPTIONS.map((option) => (
-                <SelectItem key={option.id} value={option.id}>
+                <AppSelectItem key={option.id} value={option.id}>
                   {option.id === 'ollama' ? 'Ollama (local)' : option.label}
-                </SelectItem>
+                </AppSelectItem>
               ))}
-            </SelectContent>
-          </Select>
+            </AppSelectContent>
+          </AppSelect>
         </SettingRow>
 
         {provider === 'ollama' ? (
@@ -92,14 +96,14 @@ export function AiSection() {
           </>
         ) : (
           <SettingRow label="Model" description="Any chat model your key can reach.">
-            <Input
+            <AppInput
               value={model}
               onChange={(event) => setModel(event.target.value)}
               placeholder={suggested}
               aria-label={`${active.label} model`}
               spellCheck={false}
               autoComplete="off"
-              className="h-8 w-54 text-sm"
+              className="w-54"
             />
             {model !== suggested && (
               <AppButton
@@ -295,7 +299,7 @@ function ApiKeyRows({ provider, model }: { provider: KeyedProvider; model: strin
             }}
           >
             <div className="relative">
-              <Input
+              <AppInput
                 type={reveal ? 'text' : 'password'}
                 value={draft}
                 onChange={(event) => setDraft(event.target.value)}
@@ -303,7 +307,7 @@ function ApiKeyRows({ provider, model }: { provider: KeyedProvider; model: strin
                 aria-label={`${label} API key`}
                 autoComplete="off"
                 spellCheck={false}
-                className="h-8 w-54 pr-8 font-mono text-xs"
+                className="w-54 pr-8 font-mono text-meta"
               />
               <AppButton
                 type="button"
@@ -350,10 +354,8 @@ function ApiKeyRows({ provider, model }: { provider: KeyedProvider; model: strin
           </>
         }
       >
-        <ToggleGroup
+        <AppToggleGroup
           type="single"
-          variant="outline"
-          size="sm"
           value={status?.location ?? ''}
           // A single-choice group reports '' when the pressed item is pressed again.
           onValueChange={(value) => {
@@ -362,11 +364,11 @@ function ApiKeyRows({ provider, model }: { provider: KeyedProvider; model: strin
           disabled={status === null || moving}
           aria-label="Where to keep the key"
         >
-          <ToggleGroupItem value="keychain" disabled={status?.keychain === 'unavailable'}>
+          <AppToggleGroupItem value="keychain" disabled={status?.keychain === 'unavailable'}>
             OS keychain
-          </ToggleGroupItem>
-          <ToggleGroupItem value="session">This session</ToggleGroupItem>
-        </ToggleGroup>
+          </AppToggleGroupItem>
+          <AppToggleGroupItem value="session">This session</AppToggleGroupItem>
+        </AppToggleGroup>
       </SettingRow>
     </>
   );

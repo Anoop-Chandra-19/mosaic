@@ -1,13 +1,13 @@
 import { Info, Trash2 } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+  AppDialog,
+  AppDialogContent,
+  AppDialogDescription,
+  AppDialogFooter,
+  AppDialogHeader,
+  AppDialogTitle,
+} from '@/components/AppDialog';
 import type { TemplateSummary } from '@shared/types/db';
 
 interface DeleteTemplateDialogProps {
@@ -36,18 +36,18 @@ export function DeleteTemplateDialog({
   const versions = template.versionCount;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+    <AppDialog open={open} onOpenChange={onOpenChange}>
+      <AppDialogContent className="sm:max-w-md">
+        <AppDialogHeader>
+          <AppDialogTitle className="flex items-center gap-2">
             <Trash2 className="size-4 text-red-600 dark:text-red-400" />
             Delete template
-          </DialogTitle>
-          <DialogDescription>
+          </AppDialogTitle>
+          <AppDialogDescription>
             Delete <b className="text-zinc-900 dark:text-zinc-100">{template.name}</b> and its{' '}
             {versions} {versions === 1 ? 'version' : 'versions'}?
-          </DialogDescription>
-        </DialogHeader>
+          </AppDialogDescription>
+        </AppDialogHeader>
         <p className="flex gap-2 rounded-lg border border-line-strong bg-zinc-100 p-3 text-xs leading-relaxed text-zinc-600 dark:bg-zinc-900 dark:text-zinc-400">
           <Info className="mt-0.5 size-3.5 shrink-0 text-zinc-500" />
           <span>
@@ -57,7 +57,7 @@ export function DeleteTemplateDialog({
               : 'Your other templates are untouched. Export it first if you might want it back.'}
           </span>
         </p>
-        <DialogFooter>
+        <AppDialogFooter>
           <AppButton variant="ghost" onClick={() => onOpenChange(false)}>
             Cancel
           </AppButton>
@@ -71,8 +71,8 @@ export function DeleteTemplateDialog({
             <Trash2 />
             Delete template
           </AppButton>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </AppDialogFooter>
+      </AppDialogContent>
+    </AppDialog>
   );
 }

@@ -122,6 +122,9 @@
   --color-ink-soft: var(--ink-soft);
   --color-ink-muted: var(--ink-muted);
   --color-ink-faint: var(--ink-faint);
+  --color-amber: var(--amber);
+  --color-amber-ink: var(--amber-ink);
+  --color-scrim: var(--scrim);
   --color-amber-soft: var(--amber-soft);
   --color-amber-line: var(--amber-line);
   --color-info: var(--info);
@@ -147,6 +150,8 @@
   --color-swatch-add-line: var(--swatch-add-line);
   --color-swatch-del: var(--swatch-del);
   --color-swatch-edit: var(--swatch-edit);
+  --shadow-overlay: var(--overlay-shadow);
+  --shadow-lifted: var(--lifted-shadow);
 }
 
 @theme {
@@ -352,6 +357,10 @@
   --ink-soft: oklch(0.36 0.01 286);
   --ink-muted: oklch(0.48 0.013 286);
   --ink-faint: oklch(0.53 0.013 286);
+  /* The design's accent: a switch that is on, a chosen option, the current step. */
+  --amber: oklch(0.66 0.15 58);
+  /* What sits on amber: a switch's knob, a chosen option's check. */
+  --amber-ink: oklch(0.17 0.02 60);
   --amber-soft: oklch(0.948 0.02 69);
   /* An editor's edge. Translucent, as the design's is in both themes. */
   --amber-line: oklch(0.78 0.155 72 / 34%);
@@ -388,6 +397,12 @@
   --swatch-add-line: #3f8f5f;
   --swatch-del: #e07a68;
   --swatch-edit: #9a9a9a;
+  /* Dims the window behind a dialog. */
+  --scrim: oklch(0 0 0 / 55%);
+  /* What floats over the window (menus, dialogs, popovers), and a chosen tab or segment. */
+  --overlay-shadow:
+    0 24px 60px -16px oklch(0.2 0.01 286 / 28%), 0 2px 6px oklch(0.2 0.01 286 / 12%);
+  --lifted-shadow: 0 1px 2px oklch(0 0 0 / 25%);
 }
 
 .dark {
@@ -436,6 +451,8 @@
   --ink-soft: oklch(0.82 0.008 286);
   --ink-muted: oklch(0.67 0.012 286);
   --ink-faint: oklch(0.6 0.012 286);
+  --amber: oklch(0.78 0.155 72);
+  --amber-ink: oklch(0.17 0.02 60);
   --amber-soft: oklch(0.26 0.019 66);
   --info: oklch(0.74 0.11 235);
   --info-line: oklch(0.36 0.045 235);
@@ -446,6 +463,7 @@
   --del: oklch(0.7 0.17 22);
   --del-soft: oklch(0.7 0.17 22 / 12%);
   --del-line: oklch(0.7 0.17 22 / 30%);
+  --overlay-shadow: 0 24px 60px -12px oklch(0 0 0 / 70%), 0 2px 6px oklch(0 0 0 / 40%);
 }
 
 /* Interface density: the chrome's spacing steps, never the page's. */

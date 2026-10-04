@@ -3,12 +3,12 @@ import { Download, Info, TriangleAlert, Upload } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
 import { AppTooltip } from '@/components/AppTooltip';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+  AppSelect,
+  AppSelectContent,
+  AppSelectItem,
+  AppSelectTrigger,
+  AppSelectValue,
+} from '@/components/AppSelect';
 import { backUpNow, chooseBackup, fileFailure } from '@/features/backup/backupFiles';
 import { formatRelativeTime } from '@/features/templates/formatRelativeTime';
 import { explainFailure, showToast, useOverlayStore } from '@/stores/overlayStore';
@@ -146,24 +146,24 @@ export function ImportExportSection({ onCloseSettings }: { onCloseSettings: () =
         label="Scheduled backup"
         description="Writes a dated JSON file to the folder below."
       >
-        <Select
+        <AppSelect
           value={backup?.frequency ?? 'off'}
           disabled={!backup}
           onValueChange={(value) =>
             void changeSchedule(() => window.mosaic.backup.setFrequency(value as BackupFrequency))
           }
         >
-          <SelectTrigger size="sm" className="w-28" aria-label="Scheduled backup">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
+          <AppSelectTrigger className="w-28" aria-label="Scheduled backup">
+            <AppSelectValue />
+          </AppSelectTrigger>
+          <AppSelectContent>
             {FREQUENCY_OPTIONS.map((option) => (
-              <SelectItem key={option.value} value={option.value}>
+              <AppSelectItem key={option.value} value={option.value}>
                 {option.label}
-              </SelectItem>
+              </AppSelectItem>
             ))}
-          </SelectContent>
-        </Select>
+          </AppSelectContent>
+        </AppSelect>
       </SettingRow>
 
       {isScheduled && (

@@ -2,14 +2,14 @@ import { useState } from 'react';
 import { Info } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
+  AppDialog,
+  AppDialogContent,
+  AppDialogDescription,
+  AppDialogFooter,
+  AppDialogHeader,
+  AppDialogTitle,
+} from '@/components/AppDialog';
+import { AppInput } from '@/components/AppInput';
 import { attempt, showToast, useOverlayStore } from '@/stores/overlayStore';
 import { useTemplateStore } from '@/stores/templateStore';
 import { useActiveTemplate } from './useActiveTemplate';
@@ -24,12 +24,12 @@ export function NameVersionDialog() {
   const setOpen = useOverlayStore((s) => s.setNameVersionOpen);
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent className="sm:max-w-md">
+    <AppDialog open={open} onOpenChange={setOpen}>
+      <AppDialogContent className="sm:max-w-md">
         {/* Remounted per opening, so the name starts empty each time. */}
         {open && <NameVersionForm onDone={() => setOpen(false)} />}
-      </DialogContent>
-    </Dialog>
+      </AppDialogContent>
+    </AppDialog>
   );
 }
 
@@ -59,12 +59,12 @@ function NameVersionForm({ onDone }: { onDone: () => void }) {
       }}
       className="grid gap-4"
     >
-      <DialogHeader>
-        <DialogTitle>Name this version</DialogTitle>
-        <DialogDescription>{template?.name}</DialogDescription>
-      </DialogHeader>
+      <AppDialogHeader>
+        <AppDialogTitle>Name this version</AppDialogTitle>
+        <AppDialogDescription>{template?.name}</AppDialogDescription>
+      </AppDialogHeader>
 
-      <Input
+      <AppInput
         value={name}
         onChange={(event) => setName(event.target.value)}
         placeholder="A name you’ll recognise later, like “Sent to Striped”"
@@ -80,14 +80,14 @@ function NameVersionForm({ onDone }: { onDone: () => void }) {
           : 'Your draft is already saved. Naming pins it in history so you can find it later. Nothing is overwritten.'}
       </p>
 
-      <DialogFooter>
+      <AppDialogFooter>
         <AppButton type="button" variant="ghost" onClick={onDone}>
           Cancel
         </AppButton>
         <AppButton type="submit" disabled={!trimmed || saving}>
           Name version
         </AppButton>
-      </DialogFooter>
+      </AppDialogFooter>
     </form>
   );
 }

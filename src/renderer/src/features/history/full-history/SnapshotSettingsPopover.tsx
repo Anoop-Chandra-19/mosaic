@@ -1,8 +1,8 @@
 import { Settings } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { AppCheckbox } from '@/components/AppCheckbox';
+import { AppPopover, AppPopoverContent, AppPopoverTrigger } from '@/components/AppPopover';
+import { AppToggleGroup, AppToggleGroupItem } from '@/components/AppToggleGroup';
 import { useUiStore } from '@/stores/uiStore';
 import {
   FOLD_NOTE,
@@ -10,9 +10,6 @@ import {
   SNAPSHOT_TRIGGER_OPTIONS,
   SNAPSHOTS_INTRO,
 } from '../snapshotSettings';
-
-const SEGMENT =
-  'h-5.75 min-w-0 rounded-[0.3125rem] px-2.25 text-xs font-medium text-ink-muted hover:bg-transparent hover:text-foreground aria-checked:bg-pane-raised aria-checked:text-foreground aria-checked:shadow-[0_1px_2px_oklch(0_0_0/25%)]';
 
 interface SnapshotSettingsPopoverProps {
   isOpen: boolean;
@@ -27,8 +24,8 @@ export function SnapshotSettingsPopover({ isOpen, onOpenChange }: SnapshotSettin
   const setFoldDays = useUiStore((s) => s.setFoldSnapshotsAfterDays);
 
   return (
-    <Popover open={isOpen} onOpenChange={onOpenChange}>
-      <PopoverTrigger asChild>
+    <AppPopover open={isOpen} onOpenChange={onOpenChange}>
+      <AppPopoverTrigger asChild>
         <AppButton
           variant="ghost"
           size="xs"
@@ -38,13 +35,13 @@ export function SnapshotSettingsPopover({ isOpen, onOpenChange }: SnapshotSettin
           <Settings />
           Automatic snapshots
         </AppButton>
-      </PopoverTrigger>
-      <PopoverContent
+      </AppPopoverTrigger>
+      <AppPopoverContent
         align="end"
         aria-label="Automatic snapshots"
         // Escape closes the popover, not the history view behind it.
         onEscapeKeyDown={(event) => event.stopPropagation()}
-        className="w-80 rounded-[0.625rem] border-line-strong bg-pane px-3.5 py-3 shadow-[0_14px_40px_-12px_rgb(0_0_0/60%)]"
+        className="w-80 px-3.5"
       >
         <h3 className="text-[0.8125rem] font-semibold text-foreground">Automatic snapshots</h3>
         <p className="mt-1 mb-2 text-[0.7375rem] leading-[1.45] text-pretty text-ink-faint">
@@ -52,10 +49,11 @@ export function SnapshotSettingsPopover({ isOpen, onOpenChange }: SnapshotSettin
         </p>
         {SNAPSHOT_TRIGGER_OPTIONS.map(({ trigger, label, description }) => (
           <label key={trigger} className="flex cursor-pointer items-start gap-2.25 py-1.5">
-            <Checkbox
+            <AppCheckbox
+              size="sm"
               checked={triggers[trigger]}
               onCheckedChange={(checked) => setTrigger(trigger, checked === true)}
-              className="mt-0.5 size-3.5"
+              className="mt-0.5"
             />
             <span>
               <span className="block text-[0.7875rem] text-ink-soft">{label}</span>
@@ -68,26 +66,26 @@ export function SnapshotSettingsPopover({ isOpen, onOpenChange }: SnapshotSettin
         <h3 className="mt-3 text-[0.8125rem] font-semibold text-foreground">
           Fold old automatic snapshots
         </h3>
-        <ToggleGroup
+        <AppToggleGroup
           type="single"
-          spacing={0.5}
+          size="sm"
           value={String(foldDays)}
           onValueChange={(value) =>
             value && setFoldDays(FOLD_OPTIONS.find((option) => String(option.days) === value)!.days)
           }
           aria-label="Fold old automatic snapshots"
-          className="mt-1.5 rounded-md border border-line bg-line p-0.5"
+          className="mt-1.5 p-0.5"
         >
           {FOLD_OPTIONS.map(({ days, label }) => (
-            <ToggleGroupItem key={label} value={String(days)} className={SEGMENT}>
+            <AppToggleGroupItem key={label} value={String(days)}>
               {label}
-            </ToggleGroupItem>
+            </AppToggleGroupItem>
           ))}
-        </ToggleGroup>
+        </AppToggleGroup>
         <p className="mt-1.5 text-[0.7375rem] leading-[1.45] text-pretty text-ink-faint">
           {FOLD_NOTE}
         </p>
-      </PopoverContent>
-    </Popover>
+      </AppPopoverContent>
+    </AppPopover>
   );
 }

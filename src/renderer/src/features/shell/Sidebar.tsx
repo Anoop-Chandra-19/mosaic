@@ -8,9 +8,9 @@ import {
   LayoutTemplate,
 } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
+import { AppTabs, AppTabsContent, AppTabsList, AppTabsTrigger } from '@/components/AppTabs';
 import { AppTooltip } from '@/components/AppTooltip';
 import { cn } from '@/lib/utils';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { HEADER_OUTLINE_ID, useOutlineStore } from '@/stores/outlineStore';
 import { attempt, showToast, useOverlayStore, type VersionPreview } from '@/stores/overlayStore';
 import { useResumeStore } from '@/stores/resumeStore';
@@ -36,16 +36,12 @@ const tabs: { id: SidebarTab; label: string; caption: string; icon: React.ReactN
   },
 ];
 
-/** The design's segmented tabs (`.panetab`): the chosen one sits on a raised panel. */
-const TAB_TRIGGER =
-  'h-[1.9375rem] flex-1 gap-[0.4375rem] rounded-md border border-transparent text-[0.84375rem] font-medium text-ink-muted hover:bg-line hover:text-ink-soft data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none! data-[state=active]:hover:bg-transparent dark:text-ink-muted dark:hover:text-ink-soft dark:data-[state=active]:border-transparent dark:data-[state=active]:bg-transparent dark:data-[state=active]:text-foreground';
-
 /**
- * The raised panel, one for both tabs, so it slides to the chosen one. No `top`: the list
- * centers it as it centers the tabs.
+ * The chosen tab's raised panel (the design's `.panetab.active`), one for both tabs, so it
+ * slides to the chosen one. No `top`: the list centers it as it centers the tabs.
  */
 const TAB_PANEL =
-  'pointer-events-none absolute left-2.25 h-[1.9375rem] w-[calc((100%-1.3125rem)/2)] rounded-md border border-line bg-pane-raised shadow-[0_1px_2px_oklch(0_0_0/22%)] transition-transform duration-200 ease-settle motion-reduce:transition-none';
+  'pointer-events-none absolute left-2.25 h-[1.9375rem] w-[calc((100%-1.3125rem)/2)] rounded-sm border border-line bg-pane-raised shadow-lifted transition-transform duration-200 ease-settle motion-reduce:transition-none';
 
 export function Sidebar() {
   const activeSidebarTab = useUiStore((s) => s.activeSidebarTab);
@@ -67,12 +63,12 @@ export function Sidebar() {
       )}
       style={shouldShowPreview ? { width: formatPaneWidth(widthPx, SIDEBAR_WIDTH) } : undefined}
     >
-      <Tabs
+      <AppTabs
         value={active.id}
         onValueChange={(value) => setActiveSidebarTab(value as SidebarTab)}
-        className="min-h-0 flex-1 gap-0"
+        className="min-h-0 flex-1"
       >
-        <TabsList className="relative h-auto w-full shrink-0 gap-0.75 rounded-none bg-transparent px-2.25 pt-2.25 pb-1.75">
+        <AppTabsList className="relative shrink-0 gap-0.75 px-2.25 pt-2.25 pb-1.75">
           <span
             aria-hidden
             className={cn(
@@ -81,17 +77,16 @@ export function Sidebar() {
             )}
           />
           {tabs.map((tab) => (
-            <TabsTrigger
+            <AppTabsTrigger
               key={tab.id}
               value={tab.id}
-              className={TAB_TRIGGER}
               {...tourTargetProps(SIDEBAR_TAB_TARGET[tab.id])}
             >
               {tab.icon}
               {tab.label}
-            </TabsTrigger>
+            </AppTabsTrigger>
           ))}
-        </TabsList>
+        </AppTabsList>
 
         <div className="flex min-h-6.25 shrink-0 items-center justify-between gap-2 px-3 pt-0.5 pb-2">
           <span className="text-[0.65625rem] font-semibold tracking-[0.09em] text-ink-faint uppercase">
@@ -100,7 +95,7 @@ export function Sidebar() {
           {active.id === 'content' && <CollapseAllButton />}
         </div>
 
-        <TabsContent
+        <AppTabsContent
           value="content"
           className="overflow-y-auto px-2.5 pb-3.5 @container/pane"
           {...tourTargetProps('content')}
@@ -111,11 +106,11 @@ export function Sidebar() {
           <div inert={preview !== null} data-reading={preview !== null || undefined}>
             <ContentTab doc={preview?.version.doc} />
           </div>
-        </TabsContent>
-        <TabsContent value="templates" className="overflow-y-auto px-2.5 pb-3.5 @container/pane">
+        </AppTabsContent>
+        <AppTabsContent value="templates" className="overflow-y-auto px-2.5 pb-3.5 @container/pane">
           <TemplatesTab />
-        </TabsContent>
-      </Tabs>
+        </AppTabsContent>
+      </AppTabs>
 
       {shouldShowPreview && (
         <AppTooltip

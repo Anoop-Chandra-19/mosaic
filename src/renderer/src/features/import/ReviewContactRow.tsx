@@ -1,6 +1,6 @@
 import { Fragment, useState } from 'react';
 import { AppButton } from '@/components/AppButton';
-import { Collapsible, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { AppCollapsible, AppCollapsibleTrigger } from '@/components/AppCollapsible';
 import { getPrintableHeaderLines } from '@shared/resume/resumeHeader';
 import type { ContactInfo } from '@shared/types/resume';
 import { formatCount } from './formatCount';
@@ -33,16 +33,16 @@ export function ReviewContactRow({
   ];
 
   return (
-    <Collapsible asChild open={isOpen} onOpenChange={setOpen}>
+    <AppCollapsible asChild open={isOpen} onOpenChange={setOpen}>
       <li className="group/row">
         <div className="flex min-w-0 items-center gap-2.25 px-2.75 py-1.75">
           <span className="w-[0.9375rem] shrink-0" />
-          <CollapsibleTrigger asChild>
+          <AppCollapsibleTrigger asChild>
             <AppButton variant="plain" className="h-5.5 gap-1.5 px-0 text-[0.8125rem]">
               <RowCaret />
               Contact
             </AppButton>
-          </CollapsibleTrigger>
+          </AppCollapsibleTrigger>
           <span
             className={
               labels.length
@@ -72,6 +72,6 @@ export function ReviewContactRow({
           </div>
         </ReviewFold>
       </li>
-    </Collapsible>
+    </AppCollapsible>
   );
 }
