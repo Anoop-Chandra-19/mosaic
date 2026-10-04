@@ -103,12 +103,12 @@ new wrapper variant, not a class at the call site. Settings rows
 
 ## 5. Where the interface is
 
-The fonts, tokens, `Text` and the wrappers are in place. Feature screens move onto the roles
-one area at a time (shell and dialogs, editor, history and diff, then the rest); until an
-area moves, its own text keeps local sizes (`text-[0.78125rem]`, `text-xs`) and some
-explicit zinc colour pairs beside controls already on the roles. The last step adds a lint
-guard against arbitrary `text-[…]` sizes and palette colours in renderer code, except the
-resume page.
+Every screen is on the roles and the colour tokens. ESLint keeps it that way
+(`STYLE_RULES` in `eslint.config.js`): renderer code may not use an arbitrary `text-[…]`
+size, a Tailwind size or weight (`text-xs`, `font-semibold`), a palette shade
+(`zinc-500`), white or black, a literal colour in an arbitrary value (`oklch(…)`, `#…`), or
+a stock shadow (`shadow-md`). The resume page (`features/preview/`, the page marks,
+`lib/resume/`) and `components/ui/` are exempt.
 
 ## 6. Wrapping, density, and window size
 

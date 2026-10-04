@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { ChevronRight, X } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
+import { Text } from '@/components/Text';
 import { isTypingField, shortcutLabel } from '@/lib/keyboardShortcuts';
 import { prefersReducedMotion } from '@/lib/motion/motionTiming';
 import { cn } from '@/lib/utils';
@@ -212,7 +213,7 @@ function TourStepView({ stepIndex }: { stepIndex: number }) {
             aria-hidden
             data-tour-spot
             className={cn(
-              'pointer-events-none absolute rounded-[0.625rem] border border-[oklch(0.78_0.155_72/34%)] transition-[top,left,width,height] duration-160 ease-out motion-reduce:transition-none',
+              'pointer-events-none absolute rounded-[0.625rem] border border-amber-line transition-[top,left,width,height] duration-160 ease-out motion-reduce:transition-none',
               isLeading &&
                 'animate-attention-ping [animation-delay:160ms] motion-reduce:animate-none'
             )}
@@ -229,16 +230,16 @@ function TourStepView({ stepIndex }: { stepIndex: number }) {
         aria-labelledby={titleId}
         data-tour-card
         className={cn(
-          'pointer-events-auto absolute w-[19.75rem] rounded-[0.8125rem] border border-line-strong bg-pane-raised px-3.5 pt-3.5 pb-3 shadow-[0_24px_60px_-16px_oklch(0.2_0.01_286/28%),0_2px_6px_oklch(0.2_0.01_286/12%)] dark:shadow-[0_24px_60px_-12px_oklch(0_0_0/70%),0_2px_6px_oklch(0_0_0/40%)]',
+          'pointer-events-auto absolute w-[19.75rem] rounded-[0.8125rem] border border-line-strong bg-pane-raised px-3.5 pt-3.5 pb-3 shadow-overlay',
           !cardPosition && 'top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2',
           isCardWaiting && 'invisible'
         )}
         style={cardPosition ?? undefined}
       >
         <div className="mb-1.75 flex items-center justify-between">
-          <span className="text-[0.65625rem] font-semibold tracking-[0.09em] text-ink-faint uppercase">
+          <Text variant="eyebrow">
             {isWelcome ? 'Getting started' : `Step ${stepIndex} of ${TOUR_STEPS.length - 1}`}
-          </span>
+          </Text>
           <AppButton
             variant="ghost"
             size="2xs"
@@ -250,18 +251,17 @@ function TourStepView({ stepIndex }: { stepIndex: number }) {
             <X />
           </AppButton>
         </div>
-        <h4
-          id={titleId}
-          className="mb-1.25 text-[0.90625rem] font-semibold tracking-[-0.012em] text-foreground"
-        >
+        <Text as="h4" id={titleId} variant="editor" className="mb-1.25 block">
           {step.title}
           {step.titleShortcutKey && (
-            <span className="ml-2.5 font-normal text-ink-muted">
+            <span className="ml-2.5 font-regular text-ink-muted">
               {shortcutLabel(step.titleShortcutKey)}
             </span>
           )}
-        </h4>
-        <p className="text-[0.8125rem] leading-[1.55] text-pretty text-ink-soft">{step.body}</p>
+        </Text>
+        <Text as="p" variant="body" className="text-pretty">
+          {step.body}
+        </Text>
         <div className="mt-3.25 flex items-center gap-1.5">
           <div className="mr-auto flex gap-1.25">
             {TOUR_STEPS.map((dotStep, index) => (
@@ -295,7 +295,7 @@ function TourStepView({ stepIndex }: { stepIndex: number }) {
           variant="ghost"
           size="xs"
           onClick={() => finishTour(true)}
-          className="pointer-events-auto absolute left-1/2 -translate-x-1/2 text-[0.78125rem] text-ink-muted hover:text-foreground"
+          className="pointer-events-auto absolute left-1/2 -translate-x-1/2 text-ink-muted hover:text-foreground"
           style={{ top: `calc(50% + ${cardSize.height / 2}px + 0.75rem)` }}
         >
           Skip the tour
@@ -305,4 +305,4 @@ function TourStepView({ stepIndex }: { stepIndex: number }) {
   );
 }
 
-const VEIL = 'pointer-events-auto absolute bg-[oklch(0.13_0.01_286/64%)]';
+const VEIL = 'pointer-events-auto absolute bg-veil';

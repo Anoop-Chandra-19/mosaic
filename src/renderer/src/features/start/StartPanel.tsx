@@ -8,6 +8,8 @@ import {
 import { ArrowRight, FileText, Info, Lock, Sparkles, Upload, X } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
 import { MosaicMark } from '@/components/MosaicMark';
+import { Text } from '@/components/Text';
+import { textVariantClasses } from '@/components/textVariants';
 import { cn } from '@/lib/utils';
 import { isModKey, shortcutLabel } from '@/lib/keyboardShortcuts';
 import { createDefaultResume } from '@shared/resume/defaultResume';
@@ -65,7 +67,7 @@ export function StartPanel({ closable }: StartPanelProps) {
     <div className="absolute inset-0 z-30 flex items-center justify-center overflow-auto bg-[color-mix(in_srgb,var(--background)_78%,transparent)] p-5 backdrop-blur-[3px]">
       <section
         aria-labelledby="start-title"
-        className="max-h-full w-full max-w-140 overflow-auto rounded-xl border border-line-strong bg-white px-6 pt-6 pb-3.5 shadow-2xl dark:bg-zinc-950"
+        className="max-h-full w-full max-w-140 overflow-auto rounded-[0.8125rem] border border-line-strong bg-pane px-6 pt-6 pb-3.5 shadow-overlay"
       >
         {view === 'routes' ? (
           <>
@@ -75,7 +77,7 @@ export function StartPanel({ closable }: StartPanelProps) {
               subtitle="Mosaic keeps everything on your computer. Your drafts and history never leave it."
               onClose={closable ? close : undefined}
             />
-            <div className="flex flex-col gap-2" onKeyDown={moveFocusWithArrows}>
+            <div className="flex flex-col gap-1.75" onKeyDown={moveFocusWithArrows}>
               <StartRoute
                 icon={FileText}
                 title="Blank resume"
@@ -87,7 +89,7 @@ export function StartPanel({ closable }: StartPanelProps) {
               <StartRoute
                 icon={Upload}
                 title="Import what you have"
-                description="Word, Markdown, plain text, or a Mosaic backup from another machine."
+                description="Word, Markdown, plain text, or a Mosaic backup from another computer."
                 onClick={() => openImport(true)}
               />
               <StartRoute
@@ -116,7 +118,8 @@ export function StartPanel({ closable }: StartPanelProps) {
                 onClick={() => void startFromSample()}
                 onPointerMove={focusOnPointer}
                 className={cn(
-                  'flex flex-col items-center gap-2 rounded-lg border border-line-strong bg-zinc-50 p-3 text-xs font-medium text-zinc-700 dark:bg-zinc-900 dark:text-zinc-300',
+                  SLOT,
+                  'border-line-strong bg-pane-raised font-control text-ink-soft',
                   OPTION_HIGHLIGHT
                 )}
                 autoFocus
@@ -124,7 +127,7 @@ export function StartPanel({ closable }: StartPanelProps) {
                 <SlotPaper />
                 Example resume
               </button>
-              <div className="flex flex-col items-center gap-2 rounded-lg border border-dashed border-line-heavy p-3 text-xs text-zinc-500">
+              <div className={cn(SLOT, 'border-dashed border-line-heavy text-ink-faint')}>
                 <SlotPaper />
                 More coming
               </div>
@@ -133,8 +136,8 @@ export function StartPanel({ closable }: StartPanelProps) {
               One sample so far. More are being written.
               <AppButton
                 variant="outline"
-                size="sm"
-                className="ml-auto h-7 text-xs"
+                size="xs"
+                className="ml-auto"
                 onClick={() => setView('routes')}
               >
                 Back
@@ -162,15 +165,12 @@ function PanelHead({
     <div className="mb-5 flex items-start gap-3.5">
       <div className="mt-0.5 shrink-0">{mark}</div>
       <div className="min-w-0 flex-1">
-        <h1
-          id="start-title"
-          className="mb-1 text-lg font-semibold tracking-tight text-zinc-900 dark:text-zinc-100"
-        >
+        <Text as="h1" id="start-title" variant="heading" className="mb-1.25 block">
           {title}
-        </h1>
-        <p className="text-xs leading-normal text-pretty text-zinc-600 dark:text-zinc-400">
+        </Text>
+        <Text as="p" variant="secondary" className="text-pretty">
           {subtitle}
-        </p>
+        </Text>
       </div>
       {onClose && (
         <AppButton variant="ghost" size="sm" shape="square" onClick={onClose} aria-label="Close">
@@ -183,10 +183,14 @@ function PanelHead({
 
 function PanelFoot({ icon: Icon, children }: { icon: typeof Lock; children: ReactNode }) {
   return (
-    <div className="mt-4 flex items-center gap-2 border-t border-line pt-3 text-xs text-zinc-500">
+    <Text
+      as="div"
+      variant="secondary"
+      className="mt-4 flex items-center gap-1.75 border-t border-line pt-3 text-ink-faint"
+    >
       <Icon className="size-3 shrink-0" />
       {children}
-    </div>
+    </Text>
   );
 }
 
@@ -195,8 +199,8 @@ function RouteIcon({ icon: Icon }: { icon: typeof Lock }) {
   return (
     <span
       className={cn(
-        'grid size-8 shrink-0 place-items-center rounded-lg border border-line-strong bg-zinc-100 text-zinc-600 transition-colors dark:bg-zinc-800 dark:text-zinc-300',
-        'group-focus/route:border-amber-300 group-focus/route:bg-amber-50 group-focus/route:text-amber-600 dark:group-focus/route:border-amber-800 dark:group-focus/route:bg-amber-950 dark:group-focus/route:text-amber-400'
+        'grid size-8 shrink-0 place-items-center rounded-[0.5625rem] border border-line-strong bg-line text-ink-soft transition-colors',
+        'group-focus/route:border-amber-line group-focus/route:bg-amber-soft group-focus/route:text-amber'
       )}
     >
       <Icon className="size-4" />
@@ -218,8 +222,12 @@ interface StartRouteProps {
  * picks. The pointer moves focus as it goes over an option, and the arrow keys move it too
  * (`moveFocusWithArrows`), so hover and keyboard never disagree.
  */
-const OPTION_HIGHLIGHT =
-  'transition-colors outline-none focus:border-amber-500 focus:bg-zinc-100 dark:focus:border-amber-600 dark:focus:bg-zinc-800';
+const OPTION_HIGHLIGHT = 'transition-colors outline-none focus:border-amber focus:bg-line';
+
+const SLOT = cn(
+  textVariantClasses('secondary'),
+  'flex flex-col items-center gap-2.25 rounded-[0.5625rem] border p-3'
+);
 
 /**
  * Moving the pointer over an option focuses it, so the highlight follows the pointer. Only a
@@ -258,21 +266,21 @@ function StartRoute({ icon, title, description, hint, autoFocus, onClick }: Star
       onPointerMove={focusOnPointer}
       autoFocus={autoFocus}
       className={cn(
-        'group/route flex w-full items-center gap-3 rounded-lg border border-line-strong bg-zinc-50 p-3 text-left text-zinc-900 dark:bg-zinc-900 dark:text-zinc-100',
+        'group/route flex w-full items-center gap-3 rounded-[0.5625rem] border border-line-strong bg-pane-raised px-3.25 py-3 text-left',
         OPTION_HIGHLIGHT
       )}
     >
       <RouteIcon icon={icon} />
       <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-        <span className="text-sm font-semibold">{title}</span>
-        <span className="text-xs leading-snug text-zinc-600 dark:text-zinc-400">{description}</span>
+        <Text variant="strong">{title}</Text>
+        <Text variant="secondary">{description}</Text>
       </span>
       {hint && (
-        <kbd className="shrink-0 rounded border border-line-strong px-1.5 py-0.5 font-sans text-[0.65rem] text-zinc-500">
+        <kbd className="shrink-0 rounded-[0.3125rem] border border-line-strong px-1.25 py-0.5 font-sans text-meta text-ink-faint">
           {hint}
         </kbd>
       )}
-      <ArrowRight className="size-3.5 shrink-0 text-zinc-500" />
+      <ArrowRight className="size-3.5 shrink-0 text-ink-faint" />
     </button>
   );
 }
@@ -282,7 +290,7 @@ function SlotPaper() {
   return (
     <span
       aria-hidden
-      className="block h-26 w-full rounded-sm border border-line-strong bg-[repeating-linear-gradient(var(--color-zinc-200)_0_0.45rem,transparent_0.45rem_0.6rem)] dark:bg-[repeating-linear-gradient(var(--color-zinc-800)_0_0.45rem,transparent_0.45rem_0.6rem)]"
+      className="block h-26 w-full rounded-[0.1875rem] border border-line-strong bg-[repeating-linear-gradient(var(--line)_0_0.4375rem,transparent_0.4375rem_0.5625rem)]"
     />
   );
 }

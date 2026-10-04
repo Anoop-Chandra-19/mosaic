@@ -41,7 +41,8 @@ For resume content, preview, or exports, also read `docs/resume-format.md` (repo
 - Colours come from the theme tokens in `index.css`, defined for both themes: never a
   literal (`oklch(…)`, `#…`) or a Tailwind palette shade (`zinc-500`, `amber-600`) in app UI.
   When one is missing, add a token. The resume page (black on white in both themes) is
-  the exception.
+  the exception. ESLint refuses these, raw type sizes and weights, and stock shadows
+  (`STYLE_RULES` in `eslint.config.js`).
 - No opacity utilities for hierarchy in app-owned components (`text-*/..`, `bg-*/..`,
   `border-*/..`, `ring-*/..`, `opacity-*`). Use explicit tone steps or semantic tokens:
   stronger titles/actions get higher contrast, metadata/secondary copy lower.

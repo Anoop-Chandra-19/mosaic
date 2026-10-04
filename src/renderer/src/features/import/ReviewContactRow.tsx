@@ -1,6 +1,7 @@
 import { Fragment, useState } from 'react';
 import { AppButton } from '@/components/AppButton';
 import { AppCollapsible, AppCollapsibleTrigger } from '@/components/AppCollapsible';
+import { Text } from '@/components/Text';
 import { getPrintableHeaderLines } from '@shared/resume/resumeHeader';
 import type { ContactInfo } from '@shared/types/resume';
 import { formatCount } from './formatCount';
@@ -38,37 +39,42 @@ export function ReviewContactRow({
         <div className="flex min-w-0 items-center gap-2.25 px-2.75 py-1.75">
           <span className="w-[0.9375rem] shrink-0" />
           <AppCollapsibleTrigger asChild>
-            <AppButton variant="plain" className="h-5.5 gap-1.5 px-0 text-[0.8125rem]">
+            <AppButton variant="plain" className="h-5.5 gap-1.5 px-0">
               <RowCaret />
               Contact
             </AppButton>
           </AppCollapsibleTrigger>
-          <span
-            className={
-              labels.length
-                ? 'ml-auto min-w-0 text-right text-xs text-ink-muted'
-                : 'ml-auto text-xs text-amber-600 dark:text-amber-400'
-            }
+          <Text
+            variant="secondary"
+            className={labels.length ? 'ml-auto min-w-0 text-right' : 'ml-auto text-amber'}
           >
             {labels.length ? labels.join(', ') : 'Nothing found'}
-          </span>
+          </Text>
         </div>
         {isHeaderKept && (
-          <p className="-mt-0.75 pr-2.75 pb-1.75 pl-10.25 text-xs text-ink-muted">
+          <Text as="p" variant="secondary" className="-mt-0.75 pr-2.75 pb-1.75 pl-10.25">
             Your header stays as it is.
-          </p>
+          </Text>
         )}
         <ReviewFold>
           <div className="mt-0.5 border-t border-dashed border-line bg-pane pt-0.5 pr-2.75 pb-2.25 pl-6.5">
-            <div className="grid grid-cols-[5.25rem_minmax(0,1fr)] gap-x-3 gap-y-0.75 py-1.5 pl-4.75 text-[0.78125rem]">
+            <Text
+              as="div"
+              variant="secondary"
+              className="grid grid-cols-[5.25rem_minmax(0,1fr)] gap-x-3 gap-y-0.75 py-1.5 pl-4.75"
+            >
               {fields.map(([label, value], index) => (
                 <Fragment key={index}>
-                  <span className="text-ink-muted">{label}</span>
+                  <span>{label}</span>
                   <span className="wrap-break-word text-foreground">{value}</span>
                 </Fragment>
               ))}
-            </div>
-            {linkNote && <p className="pt-0.5 pl-4.75 text-xs text-ink-muted">{linkNote}</p>}
+            </Text>
+            {linkNote && (
+              <Text as="p" variant="secondary" className="pt-0.5 pl-4.75">
+                {linkNote}
+              </Text>
+            )}
           </div>
         </ReviewFold>
       </li>
