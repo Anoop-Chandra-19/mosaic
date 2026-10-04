@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { Text } from '@/components/Text';
 import { normalizeResumeForExport } from '@/features/export/normalizeResumeExport';
 import type { ResumeData } from '@shared/types/resume';
 
@@ -15,16 +16,20 @@ interface VersionAsTextProps {
 export function VersionAsText({ resume, note }: VersionAsTextProps) {
   const { contact, sections } = normalizeResumeForExport(resume);
   return (
-    <div className="mx-auto w-full max-w-105 px-4 text-[0.775rem] leading-normal text-ink-soft">
+    <Text as="div" variant="body" className="mx-auto block w-full max-w-105 px-4">
       {note}
-      <h4 className="mb-1.5 text-[0.9375rem] font-semibold tracking-[-0.01em] text-foreground">
+      <Text as="h4" variant="editor" className="mb-1.5 block">
         {contact.name}
-      </h4>
+      </Text>
       {sections.map((section) => (
         <section key={section.id}>
-          <h5 className="mt-3.5 mb-1.5 border-b border-line pb-0.75 text-[0.625rem] font-bold tracking-[0.1em] text-ink-faint uppercase">
+          <Text
+            as="h5"
+            variant="tag"
+            className="mt-3.5 mb-1.5 block border-b border-line pb-0.75 text-ink-faint"
+          >
             {section.label}
-          </h5>
+          </Text>
           {section.entries.map((entry) =>
             entry.text ? (
               <p key={entry.id} className="mb-1 text-ink-muted">
@@ -32,12 +37,12 @@ export function VersionAsText({ resume, note }: VersionAsTextProps) {
               </p>
             ) : (
               <div key={entry.id} className="mb-2.25">
-                <p className="text-[0.7875rem] font-semibold text-foreground">
+                <Text as="p" variant="secondary" className="font-strong text-foreground">
                   {entry.heading}
                   {entry.dates && (
-                    <span className="font-normal text-ink-muted"> · {entry.dates}</span>
+                    <span className="font-regular text-ink-muted"> · {entry.dates}</span>
                   )}
-                </p>
+                </Text>
                 {entry.bullets.map((bullet, index) => (
                   <p
                     key={index}
@@ -51,6 +56,6 @@ export function VersionAsText({ resume, note }: VersionAsTextProps) {
           )}
         </section>
       ))}
-    </div>
+    </Text>
   );
 }

@@ -1,5 +1,6 @@
 import { useLayoutEffect, useRef, useState } from 'react';
 import { AppButton } from '@/components/AppButton';
+import { Text } from '@/components/Text';
 import { cn } from '@/lib/utils';
 import { useOverlayStore } from '@/stores/overlayStore';
 import { useUiStore } from '@/stores/uiStore';
@@ -22,7 +23,7 @@ import {
 } from '../groupVersionHistory';
 import { versionLabel } from '../useTemplateVersions';
 import { HistoryFilterBar, type HistoryMonth } from './HistoryFilterBar';
-import { HistoryCount, HistoryHandoff, HistoryRangeEdge } from './HistoryListEdges';
+import { HISTORY_LINK, HistoryCount, HistoryHandoff, HistoryRangeEdge } from './HistoryListEdges';
 import { useVersionEdits } from './useVersionEdits';
 import {
   clampVisibleRange,
@@ -244,7 +245,7 @@ export function VersionList({
         {groups.length > 0 && (
           <span
             aria-hidden
-            className="absolute top-2 bottom-2.5 left-[0.34rem] w-px bg-zinc-300 dark:bg-zinc-700"
+            className="absolute top-2 bottom-2.5 left-[0.34rem] w-px bg-line-strong"
           />
         )}
         {groups.map((group, index) => (
@@ -255,9 +256,11 @@ export function VersionList({
             className={scrollMargin}
           >
             {index === foldNoteIndex && (
-              <p
+              <Text
+                as="p"
+                variant="secondary"
                 role="note"
-                className="mt-4 ml-5.5 flex flex-wrap items-baseline gap-x-2 border-t border-dashed border-line-strong pt-1.75 text-[0.725rem] leading-[1.4] text-pretty text-ink-muted"
+                className="mt-4 ml-5.5 flex flex-wrap items-baseline gap-x-2 border-t border-dashed border-line-strong pt-1.75 text-pretty"
               >
                 <span>
                   Older than {foldDays} days: automatic snapshots fold by month. Nothing is deleted.
@@ -266,25 +269,27 @@ export function VersionList({
                   variant="link"
                   shape="text"
                   onClick={onChangeFolding ?? (() => openSettings('history'))}
-                  className="h-auto p-0 font-mono text-[0.7rem] text-ink-muted underline underline-offset-2 hover:text-amber-600 dark:hover:text-amber-400"
+                  className={HISTORY_LINK}
                 >
                   change
                 </AppButton>
-              </p>
+              </Text>
             )}
-            <h4
+            <Text
+              as="h4"
+              variant="eyebrow"
               className={cn(
-                'sticky z-3 flex items-center gap-2 bg-white pt-2.75 pb-1.25 pl-5.5 text-[0.65625rem] font-semibold tracking-[0.08em] uppercase dark:bg-zinc-950',
+                'sticky z-3 flex items-center gap-2 bg-background pt-2.75 pb-1.25 pl-5.5',
                 !hasFilterBar ? 'top-0' : isSearching ? 'top-[5.125rem]' : 'top-10.5',
                 group.isToday ? 'text-ink-soft' : 'text-ink-muted'
               )}
             >
               {group.label}
-              <span className="font-mono font-normal tracking-normal text-ink-faint normal-case">
+              <Text variant="meta" className="normal-case">
                 {group.count}
-              </span>
+              </Text>
               <i aria-hidden className="h-px min-w-2 flex-1 bg-line" />
-            </h4>
+            </Text>
             <ol>
               {group.items.map((item) => {
                 if (item.kind === 'version') return renderRow(item.version);
@@ -306,10 +311,10 @@ export function VersionList({
         ))}
       </div>
       {groups.length === 0 && (
-        <p className="mt-3.5 mb-1.5 ml-5.5 text-[0.775rem] leading-normal text-ink-muted">
+        <Text as="p" variant="secondary" className="mt-3.5 mb-1.5 ml-5.5">
           Nothing matches {filter.query.trim() ? `“${filter.query.trim()}”` : 'that filter'}.
           Everything is still here. Clear the filter to see it.
-        </p>
+        </Text>
       )}
       {hiddenCount > 0 && isWide ? (
         <HistoryRangeEdge
@@ -333,10 +338,10 @@ export function VersionList({
         />
       ) : (
         shown.length > END_LINE_ROWS && (
-          <p className="mt-2.5 mb-0.5 ml-5.5 font-mono text-[0.675rem] text-ink-faint">
+          <Text as="p" variant="meta" className="mt-2.5 mb-0.5 ml-5.5">
             That is all {shown.length.toLocaleString()} of them, back to{' '}
             {formatHistoryMonth(shown.at(-1)!.createdAt)}.
-          </p>
+          </Text>
         )
       )}
     </div>

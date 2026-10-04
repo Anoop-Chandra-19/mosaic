@@ -1,4 +1,6 @@
 import { Save } from 'lucide-react';
+import { Text } from '@/components/Text';
+import type { TextVariant } from '@/components/textVariants';
 import { ChangeCounts } from '@/features/document-diff/ChangeCounts';
 import { cn } from '@/lib/utils';
 import type { ChangeTone } from '@shared/resume/changes/resumeChange';
@@ -20,6 +22,12 @@ const SOURCE_TAGS: Partial<Record<VersionSource, string>> = {
   switched: 'left off',
   closed: 'left off',
 };
+
+/** A named version's summary carries the row; a row inside a run is a step smaller. */
+function summaryVariant(isNamed: boolean, isNested: boolean): TextVariant {
+  if (isNamed) return 'strong';
+  return isNested ? 'secondary' : 'body';
+}
 
 function describePreviewDistance(placeCount: number, hasFormatting: boolean): string {
   if (placeCount > 0) return `differs in ${placeCount} ${placeCount === 1 ? 'place' : 'places'}`;
@@ -127,13 +135,13 @@ export function VersionRow({
         <span
           aria-hidden
           className={cn(
-            'relative z-1 shrink-0 rounded-full border-2 border-white dark:border-zinc-950',
+            'relative z-1 shrink-0 rounded-full border-2 border-background',
             isNamed ? 'mt-[0.21875rem] size-3' : 'mt-1.25 ml-[0.09375rem] size-2.25',
             isJustNamed && 'animate-marker-pop motion-reduce:animate-none',
             isConfirming
               ? 'bg-del'
               : isHead
-                ? 'bg-amber-500 ring-3 ring-amber-soft'
+                ? 'bg-amber ring-3 ring-amber-soft'
                 : isNamed
                   ? 'bg-ink-muted'
                   : isStop
@@ -162,29 +170,32 @@ export function VersionRow({
                 onCancel={() => onModeChange(null)}
               />
             ) : (
-              <p
-                className={cn(
-                  'leading-[1.4]',
-                  isNested ? 'text-[0.775rem]' : 'text-[0.8rem]',
-                  isNamed ? 'font-semibold text-foreground' : 'text-ink-muted'
-                )}
+              <Text
+                as="p"
+                variant={summaryVariant(isNamed, isNested)}
+                className={cn(!isNamed && 'text-ink-muted')}
               >
                 {isNamed && (
                   <Save
                     className={cn(
-                      'mr-1.25 inline size-2.5 align-baseline text-amber-600 dark:text-amber-400',
+                      'mr-1.25 inline size-2.5 align-baseline text-amber',
                       isJustNamed && 'animate-marker-pop motion-reduce:animate-none'
                     )}
                   />
                 )}
                 {version.summary}
-              </p>
+              </Text>
             )}
-            <p className="mt-0.75 flex flex-wrap items-center gap-x-1.75 gap-y-1 font-mono text-[0.70625rem] text-ink-faint *:whitespace-nowrap">
+            <Text
+              as="p"
+              variant="meta"
+              className="mt-0.75 flex flex-wrap items-center gap-x-1.75 gap-y-1 *:whitespace-nowrap"
+            >
               {tag && (
-                <span
+                <Text
+                  variant="tag"
                   className={cn(
-                    'inline-flex h-4 items-center rounded-[0.25rem] border px-1.25 font-sans text-[0.625rem] font-bold tracking-[0.04em] uppercase',
+                    'inline-flex h-4 items-center rounded-[0.25rem] border px-1.25 font-sans',
                     version.source === 'restore'
                       ? 'border-info-line text-info'
                       : isStop
@@ -193,16 +204,14 @@ export function VersionRow({
                   )}
                 >
                   {tag}
-                </span>
+                </Text>
               )}
               <span>{label}</span>
               {mode === 'name' ? <VersionNameKeys /> : <span>{time}</span>}
-              {!mode && isHead && (
-                <span className="text-amber-600 dark:text-amber-400">newest</span>
-              )}
+              {!mode && isHead && <span className="text-amber">newest</span>}
               {!mode && isPreviewing && !isWide && <PreviewDistance />}
               {!mode && counts && <ChangeCounts counts={counts} />}
-            </p>
+            </Text>
           </div>
           {!mode && (
             <VersionActions

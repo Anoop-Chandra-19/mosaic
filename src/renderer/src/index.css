@@ -139,6 +139,8 @@
   --color-del: var(--del);
   --color-del-soft: var(--del-soft);
   --color-del-line: var(--del-line);
+  --color-del-hover: var(--del-hover);
+  --color-del-ink: var(--del-ink);
   --color-warn: var(--warn);
   --color-warn-soft: var(--warn-soft);
   --color-warn-line: var(--warn-line);
@@ -388,6 +390,8 @@
   --del: oklch(0.55 0.19 25);
   --del-soft: oklch(0.55 0.19 25 / 11%);
   --del-line: oklch(0.55 0.19 25 / 28%);
+  --del-hover: oklch(0.62 0.18 22);
+  --del-ink: oklch(0.99 0 0);
   /* Worth a look before going on: a resume past one page, a step that can't be undone.
      Errors and destructive actions use del. */
   --warn: oklch(0.58 0.17 45);
@@ -489,6 +493,8 @@
   --del: oklch(0.7 0.17 22);
   --del-soft: oklch(0.7 0.17 22 / 12%);
   --del-line: oklch(0.7 0.17 22 / 30%);
+  --del-hover: oklch(0.62 0.18 22);
+  --del-ink: oklch(0.99 0 0);
   --warn: oklch(0.7 0.17 45);
   --warn-soft: oklch(0.7 0.17 45 / 15%);
   --warn-line: oklch(0.7 0.17 45 / 34%);

@@ -18,6 +18,8 @@
 import type { ReactNode } from 'react';
 import { ChevronDown } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
+import { Text } from '@/components/Text';
+import { textVariantClasses } from '@/components/textVariants';
 import { ChangeCounts } from './ChangeCounts';
 import { cn } from '@/lib/utils';
 import {
@@ -42,6 +44,11 @@ const TONE_TEXT: Record<ChangeTone, string> = {
   add: 'text-add',
   del: 'text-del',
 };
+
+const COUNT = 'font-strong text-foreground';
+const GROUP_LABEL = cn(textVariantClasses('meta'), 'pt-1 pr-2 pb-0.75 pl-7.5 font-sans');
+const CHANGE_ROW =
+  'grid grid-cols-[1rem_auto_minmax(0,1fr)] items-baseline gap-2 px-2 py-1.25 text-support';
 
 interface ChangeListProps {
   diff: ResumeDiff;
@@ -134,32 +141,36 @@ export function ChangeList({
           />
           {hasChanges ? (
             <>
-              <span className="text-[0.78125rem] font-semibold text-foreground">
+              <Text variant="secondary" className={COUNT}>
                 {diff.changes.length} {noun}
                 {diff.changes.length === 1 ? '' : 's'}
-              </span>
+              </Text>
               {isDetailed ? (
                 <ChangeCounts counts={counts} />
               ) : (
-                <span className="text-xs text-ink-soft">{describeCountsInWords(counts)}</span>
+                <Text variant="secondary" className="text-ink-soft">
+                  {describeCountsInWords(counts)}
+                </Text>
               )}
-              <span className="truncate text-xs text-ink-muted">in {places.join(', ')}</span>
+              <Text variant="secondary" className="truncate">
+                in {places.join(', ')}
+              </Text>
             </>
           ) : (
-            <span className="text-[0.78125rem] font-semibold text-foreground">Same words</span>
+            <Text variant="secondary" className={COUNT}>
+              Same words
+            </Text>
           )}
           {formatting.length > 0 && (
-            <span className="text-xs text-ink-muted">
-              {hasChanges ? 'and formatting' : 'formatting differs'}
-            </span>
+            <Text variant="secondary">{hasChanges ? 'and formatting' : 'formatting differs'}</Text>
           )}
         </AppButton>
         <span className="flex-1" />
         {hasChanges && (
           <>
-            <span className="font-mono text-xs whitespace-nowrap text-ink-faint">
+            <Text variant="meta" className="whitespace-nowrap">
               {cursor + 1} of {diff.changes.length}
-            </span>
+            </Text>
             <AppButton
               variant="ghost"
               size="2xs"
@@ -186,9 +197,7 @@ export function ChangeList({
         <div className="max-h-52.5 overflow-auto px-2 pb-1.5" aria-label="Changes">
           {groups.map(([group, items]) => (
             <div key={group} className="[&+&]:mt-1">
-              <div className="pt-1 pr-2 pb-0.75 pl-7.5 text-[0.6875rem] text-ink-faint">
-                {group}
-              </div>
+              <div className={GROUP_LABEL}>{group}</div>
               {items.map(({ change, index }) => {
                 const tone = getChangeTone(change);
                 const { noun: thing, verb } = describeChange(change);
@@ -200,13 +209,10 @@ export function ChangeList({
                     title={describeChangeTip(change, otherSide)}
                     aria-current={index === cursor || undefined}
                     onClick={() => onPick(change)}
-                    className="grid w-full grid-cols-[1rem_auto_minmax(0,1fr)] items-baseline gap-2 px-2 py-1.25 text-[0.775rem] aria-current:bg-line-strong"
+                    className={cn(CHANGE_ROW, 'w-full aria-current:bg-line-strong')}
                   >
                     <span
-                      className={cn(
-                        'text-center font-mono text-[0.78125rem] font-bold',
-                        TONE_TEXT[tone]
-                      )}
+                      className={cn('text-center font-mono text-meta font-tag', TONE_TEXT[tone])}
                     >
                       {getChangeGlyph(change)}
                     </span>
@@ -228,16 +234,14 @@ export function ChangeList({
           ))}
           {formatting.length > 0 && (
             <div className="mt-1.5 border-t border-line pt-0.5">
-              <div className="pt-1 pr-2 pb-0.75 pl-7.5 text-[0.6875rem] text-ink-faint">
-                Formatting
-              </div>
+              <div className={GROUP_LABEL}>Formatting</div>
               {formatting.map((change) => {
                 const wording = describeFormattingChange(change, otherSide);
                 return (
                   <div
                     key={`${change.setting}:${change.lineId}`}
                     title={`${wording.row}. Not marked on the page, not counted as a change.`}
-                    className="grid grid-cols-[1rem_auto_minmax(0,1fr)] items-baseline gap-2 px-2 py-1.25 text-[0.775rem]"
+                    className={CHANGE_ROW}
                   >
                     <span aria-hidden />
                     <span className="whitespace-nowrap text-foreground">
@@ -252,7 +256,11 @@ export function ChangeList({
         </div>
       )}
 
-      <p className="flex flex-wrap items-center gap-x-2.5 gap-y-1 border-t border-line px-4 pt-1.5 pb-2.25 text-[0.71875rem] text-ink-faint">
+      <Text
+        as="p"
+        variant="secondary"
+        className="flex flex-wrap items-center gap-x-2.5 gap-y-1 border-t border-line px-4 pt-1.5 pb-2.25 text-ink-faint"
+      >
         {isAgainstDraft ? (
           <>
             Against your draft:
@@ -263,15 +271,15 @@ export function ChangeList({
         ) : (
           <>
             <span>
-              What <b className="font-semibold text-ink-soft">{versionLabel}</b> changed from{' '}
-              <b className="font-semibold text-ink-soft">{otherSide}</b>.
+              What <b className="font-strong text-ink-soft">{versionLabel}</b> changed from{' '}
+              <b className="font-strong text-ink-soft">{otherSide}</b>.
             </span>
             <LegendMark tone="add">new</LegendMark>
             <LegendMark tone="edit">edited</LegendMark>
             <LegendMark tone="del">gone</LegendMark>
           </>
         )}
-      </p>
+      </Text>
     </div>
   );
 }

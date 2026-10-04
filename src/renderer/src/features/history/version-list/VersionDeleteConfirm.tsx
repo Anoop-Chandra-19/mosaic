@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { AppButton } from '@/components/AppButton';
+import { Text } from '@/components/Text';
 import type { VersionMeta } from '@shared/types/db';
 
 interface VersionDeleteConfirmProps {
@@ -42,29 +43,18 @@ export function VersionDeleteConfirm({
       className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2.5 gap-y-1.5 outline-none"
     >
       <div className="min-w-0 flex-[1_1_10.625rem]">
-        <p className="text-[0.8rem] leading-[1.4] font-semibold text-foreground">
+        <Text as="p" variant="strong">
           Delete “{version.summary}”?
-        </p>
-        <p className="mt-0.5 text-[0.725rem] leading-[1.4] text-pretty text-ink-muted">
+        </Text>
+        <Text as="p" variant="secondary" className="mt-0.5 text-pretty">
           Only {label} is removed. Automatic snapshots around it stay.
-        </p>
+        </Text>
       </div>
       <span className="ml-auto flex gap-1.25">
-        <AppButton
-          ref={keepRef}
-          variant="outline"
-          size="xs"
-          className="h-6 text-xs"
-          onClick={onKeep}
-        >
+        <AppButton ref={keepRef} variant="outline" size="xs" className="h-6" onClick={onKeep}>
           Keep it
         </AppButton>
-        <AppButton
-          variant="destructive"
-          size="xs"
-          className="h-6 bg-del text-xs text-white hover:bg-[oklch(0.62_0.18_22)] dark:bg-del dark:hover:bg-[oklch(0.62_0.18_22)]"
-          onClick={onDelete}
-        >
+        <AppButton variant="danger" size="xs" className="h-6" onClick={onDelete}>
           Delete
         </AppButton>
       </span>

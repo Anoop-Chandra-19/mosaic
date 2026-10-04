@@ -2,6 +2,7 @@ import { useEffect, useEffectEvent, useLayoutEffect, useRef, useState } from 're
 import { Copy, Download, History } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
 import { AppTooltip } from '@/components/AppTooltip';
+import { Text } from '@/components/Text';
 import { ChangeList } from '@/features/document-diff/ChangeList';
 import { MarkedVersionText } from '@/features/document-diff/MarkedVersionText';
 import { collectPageMarks, putGoneBack } from '@/features/document-diff/pageMarks';
@@ -84,12 +85,16 @@ function describeRestore(isHead: boolean, isIdentical: boolean): string {
 
 function TextReadNote({ text, onShowPage }: { text: string; onShowPage: () => void }) {
   return (
-    <p className="mt-1 mb-3.5 flex flex-wrap items-center gap-2.5 rounded-md border border-line px-2.5 py-2 font-mono text-[0.6875rem] text-ink-faint">
+    <Text
+      as="p"
+      variant="meta"
+      className="mt-1 mb-3.5 flex flex-wrap items-center gap-2.5 rounded-sm border border-line px-2.5 py-2"
+    >
       <span className="min-w-40 flex-1">{text}</span>
       <AppButton variant="outline" size="2xs" onClick={onShowPage}>
         Show the page
       </AppButton>
-    </p>
+    </Text>
   );
 }
 
@@ -279,13 +284,15 @@ export function HistoryReadPane({
             })
           }
           onDoubleClick={() => setWidthPx(HISTORY_READ_WIDTH.defaultPx)}
-          className="absolute top-0 bottom-0 left-0 z-10 w-1 cursor-col-resize transition-colors hover:bg-amber-500 active:bg-amber-600"
+          className="absolute top-0 bottom-0 left-0 z-10 w-1 cursor-col-resize transition-colors hover:bg-amber active:bg-amber-hover"
         />
       </AppTooltip>
 
-      <header className="border-b border-line bg-card px-3.5 pt-3 pb-2.5">
-        <h3 className="text-[0.84375rem] font-semibold tracking-[-0.01em]">{version.summary}</h3>
-        <p className="mt-1.25 flex flex-wrap items-center gap-x-2 gap-y-1 font-mono text-[0.7rem] text-ink-faint">
+      <header className="border-b border-line bg-background px-3.5 pt-3 pb-2.5">
+        <Text as="h3" variant="title">
+          {version.summary}
+        </Text>
+        <Text as="p" variant="meta" className="mt-1.25 flex flex-wrap items-center gap-x-2 gap-y-1">
           <span>{label}</span>
           <span aria-hidden>·</span>
           {version.kind !== 'named' && (
@@ -300,12 +307,12 @@ export function HistoryReadPane({
           {draftChangeCount !== null && (
             <>
               <span aria-hidden>·</span>
-              <span className={cn(draftChangeCount > 0 && 'text-amber-600 dark:text-amber-400')}>
+              <span className={cn(draftChangeCount > 0 && 'text-amber')}>
                 {describeDraftDistance(draftChangeCount, hasDraftFormatting)}
               </span>
             </>
           )}
-        </p>
+        </Text>
         {loaded && (
           <ReadPaneControls
             versionLabel={label}
@@ -336,11 +343,15 @@ export function HistoryReadPane({
       <div ref={easeHeightChanges} className="shrink-0 overflow-hidden">
         {diff &&
           (isSameAsBase ? (
-            <p className="border-b border-line bg-background px-3.5 py-2.25 text-[0.775rem] text-ink-muted">
+            <Text
+              as="p"
+              variant="secondary"
+              className="block border-b border-line bg-background px-3.5 py-2.25"
+            >
               {comparison.isAgainstDraft
                 ? 'Your draft is exactly this version. Nothing to restore.'
                 : 'Nothing printed changed in this version.'}
-            </p>
+            </Text>
           ) : (
             <ChangeList
               diff={diff}
@@ -357,10 +368,14 @@ export function HistoryReadPane({
             />
           ))}
         {loaded && !comparison.canCompareWithParent && (
-          <p className="border-b border-line bg-background px-3.5 py-2.25 font-mono text-[0.7rem] text-ink-faint">
+          <Text
+            as="p"
+            variant="meta"
+            className="block border-b border-line bg-background px-3.5 py-2.25"
+          >
             {label} is the first version, so it has no changes of its own. It is shown against your
             draft.
-          </p>
+          </Text>
         )}
       </div>
 
@@ -407,7 +422,7 @@ export function HistoryReadPane({
         )}
       </div>
 
-      <footer className="flex gap-1.5 border-t border-line bg-card px-3 py-2.25">
+      <footer className="flex gap-1.5 border-t border-line bg-background px-3 py-2.25">
         <AppButton
           variant="outline"
           size="sm"

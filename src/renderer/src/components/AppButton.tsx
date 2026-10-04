@@ -32,6 +32,8 @@ const appButtonVariants = cva(
         // A row's name that opens it: no fill, even on hover.
         plain: 'text-foreground',
         destructive: 'border border-del-line bg-del-soft font-strong text-del hover:bg-del-line',
+        // The last step of asking: the answer that removes.
+        danger: 'bg-del font-strong text-del-ink hover:bg-del-hover',
         link: 'text-foreground underline-offset-4 hover:underline',
         // One step of a sequence; the current one (`aria-current="step"`) stretches, amber.
         dot: 'bg-line-heavy transition-[background-color,width] duration-120 hover:bg-ink-faint aria-[current=step]:w-4 aria-[current=step]:rounded-[0.1875rem] aria-[current=step]:bg-amber motion-reduce:transition-none',

@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
+import { Text } from '@/components/Text';
 import { cn } from '@/lib/utils';
 import type { VersionMeta } from '@shared/types/db';
 import { describeRunSections, formatTimeOfDay } from '../groupVersionHistory';
@@ -28,7 +29,7 @@ const TITLES: Record<HeldKind, (count: number) => string> = {
 /** A run's bead stack, or a fold's dashed ring: rows held, or rows folded away by age. */
 const DOTS: Record<HeldKind, string> = {
   run: 'shadow-[inset_0_0_0_1.5px_var(--line-heavy)] before:absolute before:-top-1.25 before:left-0.5 before:h-0.5 before:w-1.5 before:rounded-full before:bg-line-heavy after:absolute after:-bottom-1.25 after:left-0.5 after:h-0.5 after:w-1.5 after:rounded-full after:bg-line-heavy',
-  fold: 'border-[1.5px] border-dashed border-line-heavy bg-white dark:bg-zinc-950',
+  fold: 'border-[1.5px] border-dashed border-line-heavy bg-background',
 };
 
 interface RunRowProps {
@@ -63,34 +64,33 @@ export function RunRow({ kind, run, isOpen, onToggle, children }: RunRowProps) {
           className={cn('relative mt-1 ml-px size-2.75 shrink-0 rounded-full', DOTS[kind])}
         />
         <span className="min-w-0 flex-1">
-          <span
+          <Text
+            variant="body"
             className={cn(
-              'block text-[0.8rem] leading-[1.4]',
-              kind === 'run'
-                ? 'font-medium text-ink-soft'
-                : isOpen
-                  ? 'text-ink-soft'
-                  : 'text-ink-muted'
+              'block',
+              kind === 'run' && 'font-control',
+              kind === 'run' || isOpen ? 'text-ink-soft' : 'text-ink-muted'
             )}
           >
             {TITLES[kind](run.length)}
-          </span>
-          <span className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 font-mono text-[0.7rem] text-ink-faint">
+          </Text>
+          <Text variant="meta" className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
             <span className="whitespace-nowrap">{describeSpan(kind, oldest, newest)}</span>
             <span className="whitespace-nowrap">
               {versionLabel(oldest)} to {versionLabel(newest)}
             </span>
             {kind === 'run' && <span className="text-ink-muted">{describeRunSections(run)}</span>}
-          </span>
+          </Text>
         </span>
-        <span
+        <Text
+          variant="meta"
           className={cn(
-            'rounded-[0.3125rem] border px-1.25 py-px font-mono text-[0.65625rem] whitespace-nowrap',
+            'rounded-[0.3125rem] border px-1.25 py-px whitespace-nowrap',
             isOpen ? 'border-line-heavy text-ink-soft' : 'border-line-strong text-ink-muted'
           )}
         >
           {isOpen ? 'hide' : 'open'}
-        </span>
+        </Text>
         <Chevron aria-hidden className="mt-1 size-3 text-ink-faint" />
       </AppButton>
       {isOpen && <ol className="mt-px mb-1.5 ml-5.25 border-l border-line pl-3">{children}</ol>}

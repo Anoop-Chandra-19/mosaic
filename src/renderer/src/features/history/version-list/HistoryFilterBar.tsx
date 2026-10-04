@@ -71,7 +71,7 @@ export function HistoryFilterBar({
 
   return (
     <>
-      <div className="sticky top-0 z-5 mt-0.5 flex h-10.5 items-center gap-1.25 border-b border-line bg-white dark:bg-zinc-950">
+      <div className="sticky top-0 z-5 mt-0.5 flex h-10.5 items-center gap-1.25 border-b border-line bg-background">
         <AppToggleGroup
           type="single"
           size="sm"
@@ -102,7 +102,7 @@ export function HistoryFilterBar({
             title="Clear the section filter"
             aria-label={`Clear the section filter, ${filter.section}`}
             onClick={() => setSection(null)}
-            className="h-5.5 min-w-0 gap-1.25 rounded-md border border-line bg-line px-2 text-xs text-ink-soft"
+            className="h-5.5 min-w-0 gap-1.25 rounded-md border border-line bg-line px-2 text-support text-ink-soft"
           >
             <span className="truncate">{filter.section}</span>
             <X className="size-2.5" />
@@ -180,7 +180,7 @@ export function HistoryFilterBar({
         </AppButton>
       </div>
       {isSearching && (
-        <div className="sticky top-10.5 z-5 flex h-10 items-center border-b border-line bg-white dark:bg-zinc-950">
+        <div className="sticky top-10.5 z-5 flex h-10 items-center border-b border-line bg-background">
           <span className="relative flex-1">
             <Search
               aria-hidden
@@ -201,7 +201,7 @@ export function HistoryFilterBar({
                   searchButtonRef.current?.focus();
                 }
               }}
-              className="h-7 pl-6.5 text-[0.78125rem]"
+              className="h-7 pl-6.5 text-support"
             />
           </span>
         </div>
