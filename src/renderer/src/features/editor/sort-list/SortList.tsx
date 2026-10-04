@@ -70,7 +70,7 @@ function DropLine({ kind, atEnd = false }: { kind: SortKind; atEnd?: boolean }) 
     <span
       aria-hidden
       className={cn(
-        'pointer-events-none absolute z-10 h-0.5 rounded-sm bg-amber-500 ring-2 ring-amber-soft',
+        'pointer-events-none absolute z-10 h-0.5 rounded-sm bg-amber ring-2 ring-amber-soft',
         atEnd ? '-bottom-px' : '-top-px',
         kind === 'bullet' ? 'left-3 right-1.5' : 'left-1.5 right-1'
       )}
@@ -205,7 +205,7 @@ export function SortGripHandle({
       className={cn(
         'h-5 w-3.25 cursor-grab touch-none rounded-[0.25rem] px-0 text-ink-soft',
         HIDDEN_WHILE_READING,
-        'hover:bg-amber-soft hover:text-amber-600 active:cursor-grabbing dark:hover:text-amber-400',
+        'hover:bg-amber-soft hover:text-amber active:cursor-grabbing',
         grip.lifted && 'cursor-grabbing',
         className
       )}

@@ -156,7 +156,9 @@
   --color-swatch-add-line: var(--swatch-add-line);
   --color-swatch-del: var(--swatch-del);
   --color-swatch-edit: var(--swatch-edit);
+  --color-print-link: var(--print-link);
   --shadow-overlay: var(--overlay-shadow);
+  --shadow-floating: var(--floating-shadow);
   --shadow-lifted: var(--lifted-shadow);
 }
 
@@ -413,12 +415,17 @@
   --swatch-add-line: #3f8f5f;
   --swatch-del: #e07a68;
   --swatch-edit: #9a9a9a;
+  /* A blue header link as the editor's printed-header box shows it: Word's blue, lightened
+     on the dark box, where Word's is too dark to read. */
+  --print-link: #0563c1;
   /* Dims the window behind a dialog. */
   --scrim: oklch(0 0 0 / 55%);
   /* What floats over the window (menus, dialogs, popovers), and a chosen tab or segment. */
   --overlay-shadow:
     0 24px 60px -16px oklch(0.2 0.01 286 / 28%), 0 2px 6px oklch(0.2 0.01 286 / 12%);
   --lifted-shadow: 0 1px 2px oklch(0 0 0 / 25%);
+  /* A row's hover actions, raised over the row. */
+  --floating-shadow: 0 1px 2px oklch(0.2 0.01 286 / 10%), 0 6px 18px -8px oklch(0.2 0.01 286 / 18%);
 }
 
 .dark {
@@ -486,6 +493,8 @@
   --warn-soft: oklch(0.7 0.17 45 / 15%);
   --warn-line: oklch(0.7 0.17 45 / 34%);
   --overlay-shadow: 0 24px 60px -12px oklch(0 0 0 / 70%), 0 2px 6px oklch(0 0 0 / 40%);
+  --floating-shadow: 0 1px 2px oklch(0 0 0 / 40%), 0 8px 24px -8px oklch(0 0 0 / 55%);
+  --print-link: #38bdf8;
 }
 
 /* Interface density: the chrome's spacing steps, never the page's. */

@@ -69,7 +69,7 @@ export function AddBulletButton({
           size="xs"
           onClick={() => setOpen(true)}
           className={cn(
-            'mt-0.75 h-7 justify-start gap-2 self-start px-1.5 font-normal',
+            'mt-0.75 h-7 justify-start gap-2 self-start px-1.5 font-regular',
             HIDDEN_WHILE_READING
           )}
         >

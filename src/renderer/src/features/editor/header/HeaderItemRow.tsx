@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
 import { AppTooltip } from '@/components/AppTooltip';
+import { Text } from '@/components/Text';
 import {
   AppMenu,
   AppMenuContent,
@@ -119,7 +120,7 @@ export function HeaderItemRow({
         className={cn(
           // Sized by its words, so a short item keeps them whole beside a long link.
           // Struck through either way, so the line fades in and out with the colour.
-          'flex-auto text-[0.8875rem] leading-[1.45] line-through transition-[color,background-color,text-decoration-color] duration-200',
+          'flex-auto line-through transition-[color,background-color,text-decoration-color] duration-200',
           item.shown ? 'decoration-transparent' : 'text-ink-faint decoration-line-heavy',
           isUnprinted && 'text-ink-faint'
         )}
@@ -137,7 +138,7 @@ export function HeaderItemRow({
           aria-label="Edit link"
           className={cn(
             // In a narrow pane the link shows as its glyph alone, so the text keeps its words.
-            'max-w-[7rem] min-w-[1.375rem] shrink-[8] font-normal text-ink-muted @max-[20rem]/pane:w-[1.375rem] @max-[20rem]/pane:px-0',
+            'max-w-[7rem] min-w-[1.375rem] shrink-[8] font-regular text-ink-muted @max-[20rem]/pane:w-[1.375rem] @max-[20rem]/pane:px-0',
             !item.shown && 'border-line text-ink-faint',
             isLinkSameAsText && 'w-[1.375rem] px-0'
           )}
@@ -154,7 +155,7 @@ export function HeaderItemRow({
           shape="pill"
           onClick={() => setEditing('url')}
           title="Add a link"
-          className={cn('border-line-strong font-normal text-ink-faint', HIDDEN_WHILE_READING)}
+          className={cn('border-line-strong font-regular text-ink-faint', HIDDEN_WHILE_READING)}
         >
           <Plus className="size-2.5" />
           <span>link</span>
@@ -163,9 +164,12 @@ export function HeaderItemRow({
 
       {isUnprinted && item.url && (
         <AppTooltip content="No text, so nothing prints for it. The link is kept.">
-          <span className="shrink-0 rounded border border-line-strong px-[0.3125rem] py-px text-[0.65625rem] tracking-[0.02em] text-ink-faint">
+          <Text
+            variant="meta"
+            className="shrink-0 rounded-xs border border-line-strong px-[0.3125rem] py-px font-sans tracking-[0.02em]"
+          >
             no text
-          </span>
+          </Text>
         </AppTooltip>
       )}
 

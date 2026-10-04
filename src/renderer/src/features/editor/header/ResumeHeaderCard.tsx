@@ -2,6 +2,7 @@ import { Fragment } from 'react';
 import { ChevronsDownUp, ChevronsUpDown, Ellipsis, Plus, Shapes } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
 import { AppTooltip } from '@/components/AppTooltip';
+import { Text } from '@/components/Text';
 import { AppCollapsible, AppCollapsibleTrigger } from '@/components/AppCollapsible';
 import {
   AppMenu,
@@ -67,8 +68,7 @@ export function ResumeHeaderCard({ contact: shown }: { contact?: ContactInfo }) 
           onSave={setName}
           livePreview={showName}
           placeholder="Your name"
-          className="text-base font-semibold tracking-[-0.012em] text-foreground"
-          inputClassName="text-base font-semibold tracking-[-0.012em]"
+          variant="editor"
           as="h3"
         />
         <div className="flex shrink-0 items-center gap-0.5">
@@ -138,17 +138,17 @@ export function ResumeHeaderCard({ contact: shown }: { contact?: ContactInfo }) 
         <div
           ref={printedRef}
           className={cn(
-            'relative mt-2.5 rounded-md border border-line bg-pane-sunken px-[0.6875rem] py-2.5 text-center text-[0.775rem] leading-[1.65] wrap-break-word text-ink-soft',
+            'relative mt-2.5 rounded-sm border border-line bg-pane-sunken px-[0.6875rem] py-2.5 text-center text-support wrap-break-word text-ink-soft',
             header.linkStyle === 'underline' &&
               '[&_a]:underline [&_a]:decoration-line-heavy [&_a]:underline-offset-2',
-            // The page's blue is too dark to read on the dark box, so a lighter one there.
-            header.linkColor === 'blue' &&
-              '[&_a]:text-blue-700 [&_a]:decoration-current dark:[&_a]:text-sky-400'
+            header.linkColor === 'blue' && '[&_a]:text-print-link [&_a]:decoration-current'
           )}
           data-header-printed
         >
           {printed.length === 0 ? (
-            <p className="text-ink-faint">nothing in the header yet</p>
+            <Text as="p" variant="secondary" className="text-ink-faint">
+              nothing in the header yet
+            </Text>
           ) : (
             printed.map((line) => (
               <p key={line.id} className={line.align === 'center' ? 'text-center' : 'text-left'}>
@@ -186,7 +186,7 @@ export function ResumeHeaderCard({ contact: shown }: { contact?: ContactInfo }) 
               onClick={() => addLine()}
               data-motion-id="new-line"
               className={cn(
-                'mt-2.5 w-full text-[0.7875rem] font-semibold tracking-[0.01em]',
+                'mt-2.5 h-[2.125rem] w-full text-support font-strong tracking-[0.01em] text-ink-muted',
                 HIDDEN_WHILE_READING
               )}
             >

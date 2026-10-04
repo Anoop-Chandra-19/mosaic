@@ -67,7 +67,7 @@ interface BulletEditorProps {
 type EditorMode = 'edit' | 'split' | 'merge';
 
 const NOTE =
-  'flex flex-wrap items-center gap-x-1.75 gap-y-1.25 border-t border-line py-1.25 pr-1.5 pl-2.5 text-[0.71875rem] leading-[1.4] text-pretty text-ink-muted [&>svg]:size-2.75 [&>svg]:shrink-0';
+  'flex flex-wrap items-center gap-x-1.75 gap-y-1.25 border-t border-line py-1.25 pr-1.5 pl-2.5 text-support text-pretty text-ink-muted [&>svg]:size-2.75 [&>svg]:shrink-0';
 const NOTE_TEXT = 'min-w-0 flex-[1_1_9.375rem]';
 
 /**
@@ -271,7 +271,7 @@ export function BulletEditor({
   const markAt = mode === 'merge' ? seam : cursor;
 
   const longChip = isLong && (
-    <span className="inline-flex h-4 shrink-0 items-center rounded-md border border-amber-300 bg-amber-100 px-2 text-[0.625rem] font-medium whitespace-nowrap text-amber-700 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-400">
+    <span className="inline-flex h-4 shrink-0 items-center rounded-[0.3125rem] border border-warn-line bg-warn-soft px-2 text-tag font-control tracking-normal whitespace-nowrap text-warn">
       Long: will wrap to {lineCount} lines
     </span>
   );
@@ -288,13 +288,7 @@ export function BulletEditor({
         <AppButton variant="ghost" size="xs" onClick={stopSplitting}>
           Cancel split
         </AppButton>
-        <AppButton
-          variant="accent"
-          size="xs"
-          className="font-semibold"
-          disabled={!canSplitHere}
-          onClick={split}
-        >
+        <AppButton variant="accent" size="xs" disabled={!canSplitHere} onClick={split}>
           Split here
         </AppButton>
       </>
@@ -309,13 +303,7 @@ export function BulletEditor({
         <AppButton variant="ghost" size="xs" onClick={cancel}>
           Cancel
         </AppButton>
-        <AppButton
-          variant="accent"
-          size="xs"
-          className="font-semibold"
-          disabled={length === 0}
-          onClick={mergeDraft}
-        >
+        <AppButton variant="accent" size="xs" disabled={length === 0} onClick={mergeDraft}>
           Merge
         </AppButton>
       </>
@@ -329,7 +317,7 @@ export function BulletEditor({
       { combo: 'esc', label: 'cancel', keep },
     ];
     actions = (
-      <AppButton variant="accent" size="xs" className="font-semibold" onClick={save}>
+      <AppButton variant="accent" size="xs" onClick={save}>
         Save
       </AppButton>
     );
@@ -338,10 +326,10 @@ export function BulletEditor({
   return (
     <div
       ref={rootRef}
-      className="my-0.5 animate-ring-in overflow-hidden rounded-md border border-amber-line bg-pane-raised ring-[3px] ring-amber-soft @container motion-reduce:animate-none"
+      className="my-0.5 animate-ring-in overflow-hidden rounded-sm border border-amber-line bg-pane-raised ring-[3px] ring-amber-soft @container motion-reduce:animate-none"
     >
       {mode === 'merge' && (
-        <div className="flex items-center gap-1.5 px-2.5 pt-1.75 text-[0.71875rem] text-ink-muted">
+        <div className="flex items-center gap-1.5 px-2.5 pt-1.75 text-support text-ink-muted">
           <Merge className="size-2.75 shrink-0 text-info" />
           Merging with the bullet below. Tidy the join, then merge.
         </div>
@@ -351,7 +339,7 @@ export function BulletEditor({
         <div
           aria-hidden="true"
           className={cn(
-            'pointer-events-none absolute inset-0 overflow-hidden px-2.5 pt-2 pb-1.25 text-[0.8125rem] leading-normal wrap-break-word whitespace-pre-wrap text-transparent',
+            'pointer-events-none absolute inset-0 overflow-hidden px-2.5 pt-2 pb-1.25 text-body wrap-break-word whitespace-pre-wrap text-transparent',
             mode === 'edit' && 'invisible'
           )}
         >
@@ -394,7 +382,7 @@ export function BulletEditor({
           onPaste={handlePaste}
           onBlur={handleBlur}
           className={cn(
-            'relative block field-sizing-content w-full resize-none overflow-hidden border-0 bg-transparent px-2.5 pt-2 pb-1.25 text-[0.8125rem] leading-normal text-foreground outline-none placeholder:text-ink-faint',
+            'relative block field-sizing-content w-full resize-none overflow-hidden border-0 bg-transparent px-2.5 pt-2 pb-1.25 text-body text-foreground outline-none placeholder:text-ink-faint',
             startsTinted && 'animate-carry-tint'
           )}
         />
@@ -452,7 +440,7 @@ export function BulletEditor({
       )}
       <div className="flex items-center gap-1.5 overflow-hidden border-t border-line pt-1 pr-1.5 pb-1.25 pl-2.25">
         {/* Shrinks first, so the buttons stay whole in a narrow sidebar. */}
-        <span className="min-w-0 truncate font-mono text-[0.6875rem] text-ink-faint">
+        <span className="min-w-0 truncate font-mono text-meta text-ink-faint tabular-nums">
           {mode === 'split' ? (
             <>
               {draft.slice(0, cursor).trim().length} + {draft.slice(cursor).trim().length}
@@ -488,10 +476,10 @@ const KEEP_UNTIL = {
 function KeyHints({ hints }: { hints: KeyHint[] }) {
   const joiner = window.mosaic.platform === 'darwin' ? '' : '+';
   return (
-    <span className="flex items-center gap-2 text-[0.6875rem] whitespace-nowrap text-ink-muted">
+    <span className="flex items-center gap-2 text-meta whitespace-nowrap text-ink-muted">
       {hints.map(({ combo, label, keep }) => (
         <span key={label} className={KEEP_UNTIL[keep ?? 'normal']}>
-          <span className="font-medium text-ink-soft">
+          <span className="font-control text-ink-soft">
             {formatShortcutKeys(combo).join(joiner)}
           </span>{' '}
           {label}

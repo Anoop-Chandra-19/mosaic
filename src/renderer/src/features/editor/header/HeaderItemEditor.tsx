@@ -4,6 +4,7 @@ import { AppButton } from '@/components/AppButton';
 import { AppInput } from '@/components/AppInput';
 import { AppTextarea } from '@/components/AppTextarea';
 import { AppTooltip } from '@/components/AppTooltip';
+import { textVariantClasses } from '@/components/textVariants';
 import { cn } from '@/lib/utils';
 import { resolveHeaderItemHref, getHeaderKindInfo } from '@shared/resume/resumeHeader';
 import type { HeaderItem } from '@shared/types/resume';
@@ -22,8 +23,10 @@ interface HeaderItemEditorProps {
   onCancel: () => void;
 }
 
-const FIELD_LABEL =
-  'w-[3.75rem] shrink-0 text-[0.625rem] tracking-[0.05em] whitespace-nowrap text-ink-faint uppercase';
+const FIELD_LABEL = cn(
+  textVariantClasses('tag'),
+  'w-[3.75rem] shrink-0 whitespace-nowrap text-ink-faint'
+);
 
 /**
  * An item's text and link, edited together in place of its row: the two are independent,
@@ -58,10 +61,11 @@ export function HeaderItemEditor({
   return (
     // It replaces the row in place, so it says which item it is: the row's own text is in
     // a field by now, and the kind is the only handle left.
-    <div className="-mx-[0.5625rem] mt-1 mb-2 animate-ring-in rounded-md border border-line-heavy bg-pane-sunken px-2.5 py-2 motion-reduce:animate-none">
+    <div className="-mx-[0.5625rem] mt-1 mb-2 animate-ring-in rounded-sm border border-line-heavy bg-pane-sunken px-2.5 py-2 motion-reduce:animate-none">
       <div
         className={cn(
-          'mb-[0.4375rem] flex items-center gap-[0.4375rem] text-[0.625rem] tracking-[0.07em] uppercase',
+          textVariantClasses('tag'),
+          'mb-[0.4375rem] flex items-center gap-[0.4375rem]',
           item.shown ? 'text-ink-faint' : 'text-ink-muted'
         )}
       >
@@ -96,7 +100,7 @@ export function HeaderItemEditor({
           placeholder={placeholder}
           onChange={(event) => setText(event.target.value.replace(/\n/g, ' '))}
           onKeyDown={handleKeyDown}
-          className="min-h-7 min-w-0 flex-1 px-[0.4375rem] py-[0.3125rem] text-[0.825rem] leading-[1.45] wrap-anywhere"
+          className="min-h-7 min-w-0 flex-1 px-[0.4375rem] py-[0.3125rem] leading-[1.45] wrap-anywhere"
         />
       </div>
       <div className="mb-1.5 flex items-center gap-2">
@@ -110,14 +114,14 @@ export function HeaderItemEditor({
           placeholder="Optional"
           onChange={(event) => setUrl(event.target.value)}
           onKeyDown={handleKeyDown}
-          className="h-7 flex-1 px-2 font-mono text-[0.7188rem]"
+          className="h-7 flex-1 px-2"
         />
       </div>
       <div className="mt-0.5 flex items-center gap-[0.3125rem]">
         {/* Worth saying only when the file gets something other than what was typed with
             https:// in front: a mail or phone link. */}
         <AppTooltip content="How the link is written into exported files. The field keeps what you typed.">
-          <span className="min-w-0 flex-1 truncate font-mono text-[0.65625rem] text-ink-faint">
+          <span className="min-w-0 flex-1 truncate font-mono text-meta text-ink-faint">
             {/^(?:mailto|tel):/i.test(href) ? href : ''}
           </span>
         </AppTooltip>

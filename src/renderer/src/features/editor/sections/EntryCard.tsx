@@ -13,6 +13,7 @@ import { AppCollapsible } from '@/components/AppCollapsible';
 import { SHORTCUTS } from '@/features/shortcuts/shortcutList';
 import { isTypingField, matchesShortcut } from '@/lib/keyboardShortcuts';
 import { ListMotionContext, useSwapMotion } from '@/lib/motion/useListMotion';
+import { Text } from '@/components/Text';
 import { cn } from '@/lib/utils';
 import { formatEntryHeading } from '@shared/resume/entryHeading';
 import type { ResumeEntry, SectionLayout } from '@shared/types/resume';
@@ -45,9 +46,8 @@ interface EntryCardProps {
   grip: SortGrip;
 }
 
-/** The design's `.emeta` fields: small, and only as wide as their text. */
-const META_FIELD =
-  '-mx-[0.3125rem] max-w-full flex-none px-[0.3125rem] py-0.5 text-[0.775rem] text-ink-muted';
+/** The design's `.emeta` fields: only as wide as their text. */
+const META_FIELD = 'max-w-full flex-none';
 
 /**
  * An entry in the outline, hanging off its section's rail: its checkbox, its heading's
@@ -111,7 +111,7 @@ export function EntryCard({
     <div
       onKeyDown={handleKeyDown}
       className={cn(
-        'group/entry relative ml-3.5 rounded-md border-l border-line pt-1.75 pr-1.5 pb-2.25 pl-2.25 hover:bg-line dense:px-2 dense:py-1.75',
+        'group/entry relative ml-3.5 rounded-sm border-l border-line pt-1.75 pr-1.5 pb-2.25 pl-2.25 hover:bg-line dense:px-2 dense:py-1.75',
         isDimmed && '**:text-ink-faint'
       )}
     >
@@ -139,7 +139,6 @@ export function EntryCard({
                 onSave={(v) => update({ text: v })}
                 livePreview={(text) => showEntryFields(entry.id, { text })}
                 placeholder="Click to edit..."
-                className="leading-normal"
               />
             </div>
           ) : (
@@ -151,8 +150,7 @@ export function EntryCard({
                   livePreview={(title) => showEntryFields(entry.id, { title })}
                   placeholder="Role or title"
                   label="Title"
-                  className="text-[0.9375rem] leading-[1.35] font-semibold tracking-[-0.012em] text-foreground"
-                  inputClassName="text-[0.9375rem] font-semibold"
+                  variant="editor"
                 />
               </div>
               <div className="flex min-w-0">
@@ -162,8 +160,6 @@ export function EntryCard({
                   livePreview={(organization) => showEntryFields(entry.id, { organization })}
                   placeholder="Company or context"
                   label="Organization"
-                  className="text-[0.8375rem]"
-                  inputClassName="text-[0.8375rem]"
                 />
               </div>
               <div className="mt-0.5 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-ink-faint">
@@ -173,27 +169,27 @@ export function EntryCard({
                   livePreview={(location) => showEntryFields(entry.id, { location })}
                   placeholder="Location or Remote"
                   label="Location"
+                  variant="secondary"
                   className={META_FIELD}
-                  inputClassName="text-[0.775rem]"
                 />
-                <span aria-hidden="true" className="text-xs">
+                <Text aria-hidden variant="secondary" className="text-ink-faint">
                   ·
-                </span>
+                </Text>
                 <InlineEditField
                   value={entry.dates ?? ''}
                   onSave={(v) => update({ dates: v })}
                   livePreview={(dates) => showEntryFields(entry.id, { dates })}
                   placeholder="Dates"
                   label="Dates"
+                  variant="secondary"
                   className={META_FIELD}
-                  inputClassName="text-[0.775rem]"
                 />
               </div>
               {!isDimmed && headingLines !== null && headingLines > 1 && (
-                <p className="mt-1 text-[0.6875rem] leading-snug text-amber-700 dark:text-amber-400">
+                <Text as="p" variant="secondary" className="mt-1 text-warn">
                   The heading prints on {headingLines} lines beside the dates. Shorten the title,
                   organization or location to keep it on one.
-                </p>
+                </Text>
               )}
             </div>
           )}
@@ -273,7 +269,7 @@ export function EntryCard({
         {/* Floats over the heading's top-right corner in a raised card, on hover. */}
         <div
           className={cn(
-            'absolute top-1.25 right-1.25 z-10 flex rounded-[0.4375rem] border border-line-strong bg-pane-raised p-0.5 shadow-md',
+            'absolute top-1.25 right-1.25 z-10 flex rounded-[0.4375rem] border border-line-strong bg-pane-raised p-0.5 shadow-floating',
             actionsOpen
               ? 'visible'
               : 'invisible group-focus-within/entry:visible group-hover/entry:visible'
