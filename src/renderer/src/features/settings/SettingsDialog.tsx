@@ -7,6 +7,7 @@ import { DialogFrameHeader } from '@/components/DialogFrame';
 import { Text } from '@/components/Text';
 import { cn } from '@/lib/utils';
 import { useAiStore } from '@/stores/aiStore';
+import { ShortcutsIntro } from '@/features/shortcuts/ShortcutsIntro';
 import { ShortcutsPanel } from '@/features/shortcuts/ShortcutsPanel';
 import type { SettingsSectionId } from '@/types/settings';
 import { SETTINGS_GROUPS, SETTINGS_SECTION_BY_ID } from './settingsNav';
@@ -101,7 +102,11 @@ export function SettingsDialog() {
               {active.label}
             </Text>
             <Text as="p" variant="secondary" className="mt-1 mb-3">
-              {active.description}
+              {section === 'keys' ? (
+                <ShortcutsIntro intro={active.description} />
+              ) : (
+                active.description
+              )}
             </Text>
             {section === 'general' && <GeneralSection />}
             {section === 'appearance' && <AppearanceSection />}

@@ -11,8 +11,8 @@ import {
 import { Info, Merge, Split } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
 import { AppToggleGroup, AppToggleGroupItem } from '@/components/AppToggleGroup';
-import { SHORTCUTS } from '@/features/shortcuts/shortcutList';
-import { formatShortcutKeys, matchesShortcut } from '@/lib/keyboardShortcuts';
+import { matchesAction, useShortcutCombo } from '@/features/shortcuts/shortcutBindings';
+import { formatShortcutKeys } from '@/lib/keyboardShortcuts';
 import { cn } from '@/lib/utils';
 import type { LiveEdit } from '@/stores/liveEditStore';
 import { useUiStore } from '@/stores/uiStore';
@@ -96,6 +96,7 @@ export function BulletEditor({
   livePreview,
 }: BulletEditorProps) {
   const paperSize = useUiStore((s) => s.paperSize);
+  const splitCombo = useShortcutCombo('splitBullet');
   const [draft, setDraft] = useState(initial);
   useLiveEdit(draft, livePreview);
   const [mode, setMode] = useState<EditorMode>(
@@ -185,20 +186,20 @@ export function BulletEditor({
     setRefusal(null);
     let run: (() => void) | undefined;
     if (mode === 'edit') {
-      if (matchesShortcut(keys, SHORTCUTS.newBulletBelow) && onAddBelow) {
+      if (matchesAction(keys, 'newBulletBelow') && onAddBelow) {
         run = () => {
           isDone.current = true;
           onAddBelow(draft.trim());
         };
-      } else if (matchesShortcut(keys, SHORTCUTS.moveBulletUp) && onMove) run = () => move(-1);
-      else if (matchesShortcut(keys, SHORTCUTS.moveBulletDown) && onMove) run = () => move(1);
-      else if (matchesShortcut(keys, SHORTCUTS.deleteBullet) && onDelete) {
+      } else if (matchesAction(keys, 'moveBulletUp') && onMove) run = () => move(-1);
+      else if (matchesAction(keys, 'moveBulletDown') && onMove) run = () => move(1);
+      else if (matchesAction(keys, 'deleteBullet') && onDelete) {
         run = () => {
           isDone.current = true;
           onDelete();
         };
-      } else if (matchesShortcut(keys, SHORTCUTS.splitBullet) && onSplit) run = split;
-      else if (matchesShortcut(keys, SHORTCUTS.mergeBullets) && onMergeBelow) {
+      } else if (matchesAction(keys, 'splitBullet') && onSplit) run = split;
+      else if (matchesAction(keys, 'mergeBullets') && onMergeBelow) {
         run = () => {
           isDone.current = true;
           onMergeBelow(draft);
@@ -313,7 +314,9 @@ export function BulletEditor({
     const keep = onSplit ? 'low' : undefined;
     hints = [
       { combo: 'enter', label: 'save', keep },
-      ...(onSplit ? [{ combo: SHORTCUTS.splitBullet, label: 'split', keep: 'high' as const }] : []),
+      ...(onSplit && splitCombo
+        ? [{ combo: splitCombo, label: 'split', keep: 'high' as const }]
+        : []),
       { combo: 'esc', label: 'cancel', keep },
     ];
     actions = (
@@ -326,6 +329,8 @@ export function BulletEditor({
   return (
     <div
       ref={rootRef}
+      // Tells the shortcut sheet to open on the bullet's keys.
+      data-shortcut-place="bullet"
       className="my-0.5 animate-ring-in overflow-hidden rounded-sm border border-amber-line bg-pane-raised ring-[3px] ring-amber-soft @container motion-reduce:animate-none"
     >
       {mode === 'merge' && (

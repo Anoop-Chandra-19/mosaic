@@ -58,6 +58,7 @@ export function Sidebar() {
   return (
     <aside
       ref={sidebarRef}
+      data-shortcut-place="sidebar"
       className={cn(
         'relative flex flex-col border-line bg-pane',
         shouldShowPreview ? 'shrink-0 border-r' : 'min-w-0 flex-1'

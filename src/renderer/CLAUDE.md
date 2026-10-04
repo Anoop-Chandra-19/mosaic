@@ -80,6 +80,16 @@ For resume content, preview, or exports, also read `docs/resume-format.md` (repo
 step's copy true and run `e2e/tour.spec.ts`. e2e launches store the tour as seen; a spec
 that wants it passes `withApp({ showTour: true })`.
 
+## Keyboard shortcuts
+
+- Every shortcut is an action in `lib/shortcutCatalog.ts`, with its default keys and the
+  rules for rebinding (fixed keys, refused keys, conflicts). A person's own keys are user
+  data: `shortcutBindings` in `uiStore`, kept by Reset interface, never in bundles.
+- Read keys through `features/shortcuts/shortcutBindings.ts`: `matchesAction(event, id)` in
+  handlers, `useShortcutLabel(id)` in tooltips and hints. Never match or print a default
+  combination directly, or a rebound key stops working or shows the old keys.
+- A new shortcut is a catalog entry, a label and a group in `features/shortcuts/shortcutList.ts`.
+
 ## Responsive layout
 
 - Use relative units (%, vw, rem, fr), `clamp()`, `min()`, `max()`, and container queries.

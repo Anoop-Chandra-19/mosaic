@@ -2,7 +2,9 @@ import { useEffect, useRef, useState } from 'react';
 import { ChevronRight, X } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
 import { Text } from '@/components/Text';
-import { isTypingField, shortcutLabel } from '@/lib/keyboardShortcuts';
+import { useShortcutLabel } from '@/features/shortcuts/shortcutBindings';
+import { isTypingField } from '@/lib/keyboardShortcuts';
+import type { ShortcutId } from '@/lib/shortcutCatalog';
 import { prefersReducedMotion } from '@/lib/motion/motionTiming';
 import { cn } from '@/lib/utils';
 import { showToast, useOverlayStore } from '@/stores/overlayStore';
@@ -253,11 +255,7 @@ function TourStepView({ stepIndex }: { stepIndex: number }) {
         </div>
         <Text as="h4" id={titleId} variant="editor" className="mb-1.25 block">
           {step.title}
-          {step.titleShortcutKey && (
-            <span className="ml-2.5 font-regular text-ink-muted">
-              {shortcutLabel(step.titleShortcutKey)}
-            </span>
-          )}
+          {step.titleShortcut && <TitleShortcut id={step.titleShortcut} />}
         </Text>
         <Text as="p" variant="body" className="text-pretty">
           {step.body}
@@ -306,3 +304,8 @@ function TourStepView({ stepIndex }: { stepIndex: number }) {
 }
 
 const VEIL = 'pointer-events-auto absolute bg-veil';
+
+function TitleShortcut({ id }: { id: ShortcutId }) {
+  const keys = useShortcutLabel(id);
+  return keys && <span className="ml-2.5 font-regular text-ink-muted">{keys}</span>;
+}

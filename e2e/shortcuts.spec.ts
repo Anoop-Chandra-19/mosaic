@@ -47,6 +47,67 @@ test('Ctrl+/ opens the sheet, and keys pressed in its search say what they do', 
   expect(errors).toEqual([]);
 });
 
+test('an action takes new keys, another’s with a warning, and both go back to the defaults', async () => {
+  const { page, errors } = mosaic();
+  await importResume(page);
+  await page.keyboard.press('Control+/');
+  const sheet = page.getByRole('dialog', { name: 'Keyboard shortcuts' });
+  const nameVersion = () => page.getByRole('dialog', { name: 'Name this version' });
+
+  await sheet.getByRole('button', { name: 'Change the keys for Name version' }).click();
+  await page.keyboard.press('Control+Shift+S');
+  await expect(sheet.getByText('1 shortcut differs from the defaults.')).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(sheet).toHaveCount(0);
+
+  await page.keyboard.press('Control+s');
+  await expect(nameVersion()).toHaveCount(0);
+  await page.keyboard.press('Control+Shift+S');
+  await expect(nameVersion()).toBeVisible();
+  await page.keyboard.press('Escape');
+
+  // New section's keys are asked about, and taking them leaves New section without any.
+  await page.keyboard.press('Control+/');
+  await sheet.getByRole('button', { name: 'Change the keys for Name version' }).click();
+  await page.keyboard.press('Control+Shift+N');
+  await expect(sheet.getByText(/is taken/)).toBeVisible();
+  await expect(sheet.getByText('Right now it is New section.', { exact: false })).toBeVisible();
+  await sheet.getByRole('button', { name: 'Reassign anyway' }).click();
+  await expect(
+    sheet.locator('[data-shortcut-row="Editing:newSection"]').getByText('unbound')
+  ).toBeVisible();
+
+  await sheet.getByRole('button', { name: 'Restore defaults' }).click();
+  await expect(sheet.getByText(/Keys are shown for/)).toBeVisible();
+  await page.keyboard.press('Escape');
+  await page.keyboard.press('Control+s');
+  await expect(nameVersion()).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
+test('the sheet lists the keys for where it was opened first', async () => {
+  const { page, errors } = mosaic();
+  await importResume(page);
+  const sidebar = page.getByRole('complementary');
+  await sidebar.getByText('First bullet about the engine').click();
+  await sidebar.getByRole('textbox', { name: 'Bullet text' }).press('Control+/');
+
+  const sheet = page.getByRole('dialog', { name: 'Keyboard shortcuts' });
+  const groups = sheet.locator('section h4');
+  await expect(groups.first()).toHaveText(/^Editing a bullet/);
+  await expect(sheet.getByRole('region', { name: 'Editing a bullet' })).toContainText(
+    'Split bullet at the cursor'
+  );
+  // Opening the sheet took focus from the editor, which saved and closed.
+  await page.keyboard.press('Escape');
+
+  // Elsewhere in the sidebar, its own keys come first.
+  await sidebar.getByRole('checkbox').last().focus();
+  await page.keyboard.press('Control+/');
+  await expect(groups.first()).toHaveText(/^In the content sidebar/);
+  expect(errors).toEqual([]);
+});
+
 test('the app’s own keys reach it: export, import, zoom and a new section', async () => {
   const { page, errors } = mosaic();
   await importResume(page);

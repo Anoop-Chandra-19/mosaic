@@ -14,8 +14,9 @@ import { ResumePreview } from '@/features/preview/ResumePreview';
 import { usePreviewCanvas, type PreviewCanvas } from '@/features/preview/usePreviewCanvas';
 import { startPaneResize } from '@/features/shell/paneResize';
 import { transitionClasses } from '@/features/view-transitions/transitionClasses';
-import { SHORTCUTS } from '@/features/shortcuts/shortcutList';
-import { isTypingField, matchesShortcut } from '@/lib/keyboardShortcuts';
+import { matchesAction } from '@/features/shortcuts/shortcutBindings';
+import { isTypingField } from '@/lib/keyboardShortcuts';
+import type { ShortcutId } from '@/lib/shortcutCatalog';
 import { easeHeightChanges } from '@/lib/motion/easeHeightChanges';
 import { cn } from '@/lib/utils';
 import { HISTORY_READ_WIDTH, PREVIEW_DEFAULT_ZOOM, useUiStore } from '@/stores/uiStore';
@@ -64,10 +65,10 @@ interface HistoryReadPaneProps {
 const ignorePreviewMeta = () => {};
 
 /** The live preview's zoom keys, for the page being read. */
-const ZOOM_SHORTCUTS: { combo: string; run: (canvas: PreviewCanvas) => void }[] = [
-  { combo: SHORTCUTS.zoomIn, run: (canvas) => canvas.zoomByStep(1) },
-  { combo: SHORTCUTS.zoomOut, run: (canvas) => canvas.zoomByStep(-1) },
-  { combo: SHORTCUTS.fitPage, run: (canvas) => canvas.resetZoom() },
+const ZOOM_SHORTCUTS: { id: ShortcutId; run: (canvas: PreviewCanvas) => void }[] = [
+  { id: 'zoomIn', run: (canvas) => canvas.zoomByStep(1) },
+  { id: 'zoomOut', run: (canvas) => canvas.zoomByStep(-1) },
+  { id: 'fitPage', run: (canvas) => canvas.resetZoom() },
 ];
 
 function describeDraftDistance(changeCount: number, hasFormatting: boolean): string {
@@ -210,10 +211,9 @@ export function HistoryReadPane({
   };
 
   const onKeyDown = useEffectEvent((event: KeyboardEvent) => {
-    if (event.defaultPrevented || event.metaKey || event.ctrlKey || event.altKey) return;
-    if (isTypingField(event.target)) return;
-    if (event.key === 'n' || event.key === ']') goToChange(cursor + 1);
-    if (event.key === 'p' || event.key === '[') goToChange(cursor - 1);
+    if (event.defaultPrevented || isTypingField(event.target)) return;
+    if (matchesAction(event, 'nextChange')) goToChange(cursor + 1);
+    if (matchesAction(event, 'previousChange')) goToChange(cursor - 1);
   });
   useEffect(() => {
     window.addEventListener('keydown', onKeyDown);
@@ -242,7 +242,7 @@ export function HistoryReadPane({
   const canvas = usePreviewCanvas(bodyRef, pageZoom);
   const onZoomKey = useEffectEvent((event: KeyboardEvent) => {
     if (view !== 'page' || event.defaultPrevented || isTypingField(event.target)) return;
-    const shortcut = ZOOM_SHORTCUTS.find(({ combo }) => matchesShortcut(event, combo));
+    const shortcut = ZOOM_SHORTCUTS.find(({ id }) => matchesAction(event, id));
     if (!shortcut) return;
     event.preventDefault();
     shortcut.run(canvas);

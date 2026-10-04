@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import type { ShortcutPlace } from '@/lib/shortcutCatalog';
 import type { HistoryComparison, HistoryFilter } from '@/types/history';
 import type { ResumePreviewMeta } from '@/types/preview';
 import type { SettingsSectionId } from '@/types/settings';
@@ -65,6 +66,8 @@ interface OverlayState {
   nameVersionOpen: boolean;
   /** The keyboard shortcut sheet, opened on its own with Ctrl/⌘+/. */
   shortcutsOpen: boolean;
+  /** Where the sheet was opened from: that place's keys are listed first. */
+  shortcutsPlace: ShortcutPlace | null;
   /** The sidebar's Add section menu, which Ctrl/⌘+Shift+N opens too. */
   addSectionMenuOpen: boolean;
   exportOpen: boolean;
@@ -96,7 +99,8 @@ interface OverlayState {
   openImport: (asNewOnly: boolean) => void;
   closeImport: () => void;
   setNameVersionOpen: (open: boolean) => void;
-  setShortcutsOpen: (open: boolean) => void;
+  openShortcuts: (place: ShortcutPlace | null) => void;
+  closeShortcuts: () => void;
   setAddSectionMenuOpen: (open: boolean) => void;
   /** Opens Export for the open draft, or for `version`. */
   openExport: (version?: ExportVersion) => void;
@@ -116,6 +120,7 @@ export const useOverlayStore = create<OverlayState>()((set) => ({
   importAsNewOnly: false,
   nameVersionOpen: false,
   shortcutsOpen: false,
+  shortcutsPlace: null,
   addSectionMenuOpen: false,
   exportOpen: false,
   exportVersion: null,
@@ -133,7 +138,9 @@ export const useOverlayStore = create<OverlayState>()((set) => ({
   openImport: (importAsNewOnly) => set({ importOpen: true, importAsNewOnly }),
   closeImport: () => set({ importOpen: false }),
   setNameVersionOpen: (nameVersionOpen) => set({ nameVersionOpen }),
-  setShortcutsOpen: (shortcutsOpen) => set({ shortcutsOpen }),
+  openShortcuts: (shortcutsPlace) => set({ shortcutsOpen: true, shortcutsPlace }),
+  // The place stays until the next opening, so the closing sheet does not change.
+  closeShortcuts: () => set({ shortcutsOpen: false }),
   setAddSectionMenuOpen: (addSectionMenuOpen) => set({ addSectionMenuOpen }),
   openExport: (version) => set({ exportOpen: true, exportVersion: version ?? null }),
   // The target stays until the next opening, so the closing dialog does not change.

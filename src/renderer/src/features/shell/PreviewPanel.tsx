@@ -56,6 +56,7 @@ export function PreviewPanel() {
 
   return (
     <main
+      data-shortcut-place="preview"
       className="@container/preview flex flex-1 flex-col overflow-hidden bg-background"
       {...tourTargetProps('preview')}
     >

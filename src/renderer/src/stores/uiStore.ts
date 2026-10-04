@@ -2,6 +2,12 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { immer } from 'zustand/middleware/immer';
 import type { InterfaceDensity, ThemeChoice } from '@/lib/appearance';
+import {
+  assignShortcut,
+  sanitizeShortcutBindings,
+  type ShortcutBindings,
+  type ShortcutId,
+} from '@/lib/shortcutCatalog';
 import { settingsStorage } from '@/lib/storage/settingsStorage';
 import type { HistoryComparison, SnapshotFoldDays, SnapshotTrigger } from '@/types/history';
 import type { PaperSize } from '@/types/paper';
@@ -144,6 +150,8 @@ export const DEFAULT_PREFERENCES = {
   hasSeenTour: false,
   snapshotTriggers: DEFAULT_SNAPSHOT_TRIGGERS,
   foldSnapshotsAfterDays: 30 as SnapshotFoldDays,
+  /** Only the keys the person changed; every other action keeps its default. */
+  shortcutBindings: {} as ShortcutBindings,
 };
 
 interface UiState {
@@ -167,6 +175,7 @@ interface UiState {
   hasSeenTour: boolean;
   snapshotTriggers: Record<SnapshotTrigger, boolean>;
   foldSnapshotsAfterDays: SnapshotFoldDays;
+  shortcutBindings: ShortcutBindings;
   setTheme: (theme: ThemeChoice) => void;
   setInterfaceDensity: (density: InterfaceDensity) => void;
   setOpenOnLaunch: (view: LaunchView) => void;
@@ -189,6 +198,9 @@ interface UiState {
   setSnapshotTrigger: (trigger: SnapshotTrigger, isOn: boolean) => void;
   setFoldSnapshotsAfterDays: (days: SnapshotFoldDays) => void;
   markTourSeen: () => void;
+  /** `id` on `combo` (null for none); `displaced`, whose key that was, is left without one. */
+  bindShortcut: (id: ShortcutId, combo: string | null, displaced?: ShortcutId) => void;
+  restoreDefaultShortcuts: () => void;
   resetInterface: () => void;
 }
 
@@ -285,6 +297,14 @@ export const useUiStore = create<UiState>()(
         set((state) => {
           state.hasSeenTour = true;
         }),
+      bindShortcut: (id, combo, displaced) =>
+        set((state) => {
+          state.shortcutBindings = assignShortcut(state.shortcutBindings, id, combo, displaced);
+        }),
+      restoreDefaultShortcuts: () =>
+        set((state) => {
+          state.shortcutBindings = {};
+        }),
       resetInterface: () =>
         set((state) => {
           Object.assign(state, DEFAULT_INTERFACE);
@@ -324,6 +344,7 @@ export const useUiStore = create<UiState>()(
           ),
           hasSeenTour: stored.hasSeenTour === true,
           snapshotTriggers: pickSnapshotTriggers(stored.snapshotTriggers),
+          shortcutBindings: sanitizeShortcutBindings(stored.shortcutBindings),
           foldSnapshotsAfterDays: pickChoice(
             stored.foldSnapshotsAfterDays,
             SNAPSHOT_FOLD_OPTIONS,

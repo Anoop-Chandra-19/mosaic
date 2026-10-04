@@ -5,7 +5,8 @@ import { AppTooltip } from '@/components/AppTooltip';
 import { formatRelativeTime } from '@/features/templates/formatRelativeTime';
 import { useActiveTemplate } from '@/features/templates/useActiveTemplate';
 import { useVersionDistance, type VersionDistance } from '@/features/history/useVersionDistance';
-import { shortcutLabel } from '@/lib/keyboardShortcuts';
+import { useShortcutLabel } from '@/features/shortcuts/shortcutBindings';
+import type { ShortcutId } from '@/lib/shortcutCatalog';
 import { cn } from '@/lib/utils';
 import { useAiStore } from '@/stores/aiStore';
 import { useOverlayStore } from '@/stores/overlayStore';
@@ -31,11 +32,12 @@ function PaneToggle({
   onToggle,
 }: {
   label: string;
-  shortcut: string;
+  shortcut: ShortcutId;
   icon: LucideIcon;
   pressed: boolean;
   onToggle: () => void;
 }) {
+  const keys = useShortcutLabel(shortcut);
   return (
     // The design's status bar button: 22 by 20, amber while its pane is showing.
     <AppButton
@@ -45,7 +47,7 @@ function PaneToggle({
       onClick={onToggle}
       aria-label={label}
       aria-pressed={pressed}
-      title={`${label}  ${shortcutLabel(shortcut)}`}
+      title={keys ? `${label}  ${keys}` : label}
       className={cn(
         'aspect-auto h-5 w-5.5 rounded-sm hover:text-foreground',
         pressed && 'text-amber hover:text-amber'
@@ -139,7 +141,7 @@ export function StatusBar() {
         {shouldShowPreview && (
           <PaneToggle
             label="Toggle sidebar"
-            shortcut="B"
+            shortcut="toggleSidebar"
             icon={PanelLeft}
             pressed={!sidebarCollapsed}
             onToggle={toggleSidebar}
@@ -177,7 +179,7 @@ export function StatusBar() {
         {aiEnabled && (
           <PaneToggle
             label="Toggle assistant"
-            shortcut="\"
+            shortcut="toggleAssistant"
             icon={PanelRight}
             pressed={agentPaneOpen}
             onToggle={toggleAgentPane}
