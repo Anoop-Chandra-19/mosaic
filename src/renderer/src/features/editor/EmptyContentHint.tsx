@@ -1,5 +1,6 @@
 import { Plus } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
+import { Text } from '@/components/Text';
 import { AppMenu, AppMenuContent, AppMenuSeparator, AppMenuTrigger } from '@/components/AppMenu';
 import { STARTER_KINDS } from '@/features/start/blankResume';
 import { BUILT_IN_KINDS, SECTION_PRESETS } from '@shared/resume/sectionPresets';
@@ -30,10 +31,10 @@ export function EmptyContentHint({
   const add = (kind: BuiltInSectionKind) => addSection({ kind, ...SECTION_PRESETS[kind] });
 
   return (
-    <div className="rounded-lg border border-dashed border-line-heavy bg-zinc-50 p-3.5 dark:bg-zinc-900">
-      <p className="mb-2.5 text-xs font-semibold tracking-wider text-zinc-500 uppercase">
+    <div className="rounded-[0.5625rem] border border-dashed border-line-heavy bg-pane-raised p-3.5">
+      <Text as="p" variant="eyebrow" className="mb-2.5">
         Add a section
-      </p>
+      </Text>
       <div className="flex flex-wrap gap-1.5">
         {suggested.map((kind) => {
           const Icon = PRESET_ICONS[kind];
@@ -44,7 +45,7 @@ export function EmptyContentHint({
               size="xs"
               shape="pill"
               onClick={() => add(kind)}
-              className="font-normal"
+              className="font-regular"
             >
               <Icon />
               {SECTION_PRESETS[kind].label}
@@ -53,7 +54,7 @@ export function EmptyContentHint({
         })}
         <AppMenu>
           <AppMenuTrigger asChild>
-            <AppButton variant="dashed" size="xs" shape="pill" className="font-normal">
+            <AppButton variant="dashed" size="xs" shape="pill" className="font-regular">
               <Plus />
               Something else
             </AppButton>

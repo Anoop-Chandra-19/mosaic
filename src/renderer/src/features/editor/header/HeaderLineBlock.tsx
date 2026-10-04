@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
 import { ArrowDown, ArrowUp, Ellipsis, Plus, Trash2 } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
+import { Text } from '@/components/Text';
 import {
   AppMenu,
   AppMenuContent,
@@ -58,9 +59,9 @@ export function HeaderLineBlock({ line, lines }: HeaderLineBlockProps) {
       className="border-t border-line pt-1.5 pb-0.5 first:border-t-0"
     >
       <div className="flex items-center gap-1 pt-0.5 pb-[0.1875rem]">
-        <h4 className="flex-1 text-[0.6875rem] font-bold tracking-[0.08em] text-ink-faint uppercase">
+        <Text as="h4" variant="eyebrow" className="flex-1">
           Line {number}
-        </h4>
+        </Text>
 
         <AppMenu>
           <AppMenuTrigger asChild>
@@ -69,7 +70,7 @@ export function HeaderLineBlock({ line, lines }: HeaderLineBlockProps) {
               size="2xs"
               title="Between items"
               aria-label={`Between items: ${separator.label.toLowerCase()}`}
-              className="px-[0.4375rem] text-[0.65625rem] font-semibold tracking-[0.04em]"
+              className="px-[0.4375rem] font-strong tracking-[0.04em]"
             >
               {separator.label.toLowerCase()}
             </AppButton>
@@ -97,7 +98,7 @@ export function HeaderLineBlock({ line, lines }: HeaderLineBlockProps) {
               size="2xs"
               title="Alignment"
               aria-label={`Alignment: ${align.label.toLowerCase()}`}
-              className="px-[0.4375rem] text-[0.65625rem] font-semibold tracking-[0.04em]"
+              className="px-[0.4375rem] font-strong tracking-[0.04em]"
             >
               {align.label.toLowerCase()}
             </AppButton>
@@ -165,7 +166,7 @@ export function HeaderLineBlock({ line, lines }: HeaderLineBlockProps) {
             variant="quiet"
             size="xs"
             className={cn(
-              'mt-0.5 mb-1.5 justify-start pr-[0.5625rem] pl-[0.4375rem] text-[0.775rem] font-normal',
+              'mt-0.5 mb-1.5 justify-start pr-[0.5625rem] pl-[0.4375rem] font-regular',
               HIDDEN_WHILE_READING
             )}
           >

@@ -198,7 +198,7 @@ export function BulletItem({
     <div
       onKeyDown={handleKeyDown}
       className={cn(
-        'group/bullet relative flex items-start gap-2 py-(--density-bullet) text-sm leading-[1.58] text-pretty',
+        'group/bullet relative flex items-start gap-2 py-(--density-bullet) text-body text-pretty',
         // Struck through either way, so the line fades in and out with the colour.
         'line-through transition-[color,text-decoration-color] duration-200',
         bullet.selected
@@ -216,7 +216,7 @@ export function BulletItem({
         dimmed={isDimmed}
         checked={bullet.selected}
         onCheckedChange={toggle}
-        className="mt-[0.21875rem]"
+        className="mt-[0.15625rem]"
         aria-label="Toggle bullet visibility"
       />
       <AppTooltip content={bullet.text ? 'Click to edit' : undefined} shouldFollowPointer>
@@ -232,7 +232,7 @@ export function BulletItem({
           <span
             onClick={(event) => event.stopPropagation()}
             className={cn(
-              'relative z-10 float-right -mt-0.5 -mr-0.5 ml-2 flex rounded-[0.4375rem] border border-line-strong bg-pane-raised p-0.5 shadow-md',
+              'relative z-10 float-right -mt-0.5 -mr-0.5 ml-2 flex rounded-[0.4375rem] border border-line-strong bg-pane-raised p-0.5 shadow-floating',
               actionsOpen
                 ? 'visible'
                 : 'invisible group-focus-within/bullet:visible group-hover/bullet:visible'

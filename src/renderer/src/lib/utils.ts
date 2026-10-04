@@ -26,7 +26,7 @@ export const cn = createCn({
         },
       ],
       'font-weight': [{ font: ['regular', 'control', 'strong', 'tag'] }],
-      shadow: [{ shadow: ['overlay', 'lifted'] }],
+      shadow: [{ shadow: ['overlay', 'lifted', 'floating'] }],
     },
   },
 });

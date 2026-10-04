@@ -2,6 +2,7 @@ import { useRef, useState } from 'react';
 import { ArrowDown, ArrowUp, Ellipsis, Eye, EyeOff, Pencil, Plus, Trash2 } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
 import { AppTooltip } from '@/components/AppTooltip';
+import { Text } from '@/components/Text';
 import { AppCollapsible, AppCollapsibleTrigger } from '@/components/AppCollapsible';
 import { useListMotion } from '@/lib/motion/useListMotion';
 import {
@@ -96,7 +97,7 @@ export function SectionItem({
       {/* The whole row opens and closes the section; its buttons do their own thing. */}
       <div
         onClick={() => !isRenaming && setOpen(section.id, !open)}
-        className="group/section flex h-9 cursor-pointer dense:h-7.5 items-center gap-2 rounded-md px-1.5 hover:bg-line"
+        className="group/section flex h-9 cursor-pointer dense:h-7.5 items-center gap-2 rounded-sm px-1.5 hover:bg-line"
       >
         <SortGripHandle
           grip={grip}
@@ -126,31 +127,33 @@ export function SectionItem({
               openAtStart
               label="Section name"
               placeholder="Section name"
-              inputClassName="text-[0.96875rem] font-semibold"
+              variant="editor"
             />
           </div>
         ) : (
-          <span
+          <Text
+            variant="editor"
             className={cn(
-              'min-w-0 truncate text-[0.96875rem] font-semibold tracking-[-0.012em] line-through transition-[color,text-decoration-color] duration-200',
-              isHidden
-                ? 'text-ink-faint decoration-line-heavy'
-                : 'text-foreground decoration-transparent'
+              'min-w-0 truncate line-through transition-[color,text-decoration-color] duration-200',
+              isHidden ? 'text-ink-faint decoration-line-heavy' : 'decoration-transparent'
             )}
           >
             {section.label || <span className="text-ink-faint">Untitled section</span>}
-          </span>
+          </Text>
         )}
         {isHidden ? (
           <AppTooltip content="This whole section is left off the resume">
-            <span className="shrink-0 rounded-[0.3125rem] border border-line-strong bg-line px-1.5 py-px text-[0.6875rem] font-semibold tracking-[0.02em] text-ink-muted">
+            <Text
+              variant="meta"
+              className="shrink-0 rounded-[0.3125rem] border border-line-strong bg-line px-1.5 py-px font-sans font-strong tracking-[0.02em] text-ink-muted"
+            >
               not on resume
-            </span>
+            </Text>
           </AppTooltip>
         ) : (
-          <span className="shrink-0 font-mono text-xs text-ink-faint">
+          <Text variant="meta" className="shrink-0">
             {shownCount}/{section.items.length}
-          </span>
+          </Text>
         )}
         <div
           onClick={(event) => event.stopPropagation()}
@@ -245,9 +248,13 @@ export function SectionItem({
       <EditorFold>
         <div ref={entriesRef} className="relative">
           {section.items.length === 0 ? (
-            <p className="ml-3.5 border-l border-line py-1.5 pl-2.25 text-[0.775rem] text-ink-faint">
+            <Text
+              as="p"
+              variant="secondary"
+              className="ml-3.5 border-l border-line py-1.5 pl-2.25 text-ink-faint"
+            >
               No entries yet. Add one with +.
-            </p>
+            </Text>
           ) : (
             <SortList
               ids={entryIds}
