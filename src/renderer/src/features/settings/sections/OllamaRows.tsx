@@ -9,6 +9,8 @@ import {
   AppSelectTrigger,
   AppSelectValue,
 } from '@/components/AppSelect';
+import { textVariantClasses } from '@/components/textVariants';
+import { cn } from '@/lib/utils';
 import {
   DEFAULT_OLLAMA_ADDRESS,
   isLocalOllamaAddress,
@@ -24,7 +26,12 @@ function gigabytes(bytes: number): string | null {
 
 function Command({ children }: { children: ReactNode }) {
   return (
-    <code className="rounded-xs bg-line px-1 font-mono text-[0.95em] whitespace-nowrap text-foreground">
+    <code
+      className={cn(
+        textVariantClasses('key'),
+        'rounded-xs bg-line px-1 whitespace-nowrap text-foreground'
+      )}
+    >
       {children}
     </code>
   );

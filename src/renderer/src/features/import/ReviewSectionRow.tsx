@@ -2,6 +2,8 @@ import { useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { AlertTriangle } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
 import { AppCollapsible, AppCollapsibleTrigger } from '@/components/AppCollapsible';
+import { Text } from '@/components/Text';
+import { textVariantClasses } from '@/components/textVariants';
 import { recordPlaces, slideFromRecordedPlaces } from '@/lib/motion/slideToNewPlaces';
 import { cn } from '@/lib/utils';
 import type { ResumeEntry, ResumeSection } from '@shared/types/resume';
@@ -38,7 +40,8 @@ function SourceLines({ lines }: { lines: SourceLine[] }) {
   return (
     <div
       className={cn(
-        'py-1 font-mono text-[0.6875rem] leading-[1.55] wrap-break-word whitespace-pre-wrap text-ink-muted',
+        textVariantClasses('meta'),
+        'py-1 wrap-break-word whitespace-pre-wrap text-ink-muted',
         ARRIVES
       )}
     >
@@ -46,7 +49,7 @@ function SourceLines({ lines }: { lines: SourceLine[] }) {
         'pageBreak' in line ? (
           <div
             key={index}
-            className="my-0.5 flex items-center gap-1.5 font-sans text-[0.65625rem] text-amber-600 before:flex-1 before:border-t before:border-dashed before:border-current after:flex-1 after:border-t after:border-dashed after:border-current dark:text-amber-400"
+            className="my-0.5 flex items-center gap-1.5 font-sans text-amber before:flex-1 before:border-t before:border-dashed before:border-current after:flex-1 after:border-t after:border-dashed after:border-current"
           >
             page break
           </div>
@@ -60,10 +63,14 @@ function SourceLines({ lines }: { lines: SourceLine[] }) {
 
 function Doubt({ children }: { children: ReactNode }) {
   return (
-    <em className="mt-0.5 flex items-center gap-1.25 text-[0.71875rem] text-amber-600 not-italic dark:text-amber-400">
+    <Text
+      as="em"
+      variant="secondary"
+      className="mt-0.5 flex items-center gap-1.25 text-amber not-italic"
+    >
       <AlertTriangle className="size-2.75 shrink-0" />
       {children}
-    </em>
+    </Text>
   );
 }
 
@@ -137,7 +144,8 @@ export function ReviewSectionRow({
     <div
       {...{ [PLACE_KEY]: id }}
       className={cn(
-        'flex items-start gap-2 py-0.75 text-[0.78125rem] leading-normal text-ink-soft',
+        textVariantClasses('secondary'),
+        'flex items-start gap-2 py-0.75 text-ink-soft',
         options.isBullet && 'pl-4.75'
       )}
     >
@@ -171,25 +179,26 @@ export function ReviewSectionRow({
             label={isMixed ? `Keep everything in ${section.label}` : `Import ${section.label}`}
           />
           <AppCollapsibleTrigger asChild>
-            <AppButton variant="plain" className="h-5.5 min-w-0 gap-1.5 px-0 text-[0.8125rem]">
+            <AppButton variant="plain" className="h-5.5 min-w-0 gap-1.5 px-0">
               <RowCaret />
               <span className={cn('truncate', !isOn && 'text-ink-faint')}>{section.label}</span>
             </AppButton>
           </AppCollapsibleTrigger>
           {placedCount > 0 && (
-            <span className="rounded-md border border-emerald-300 bg-emerald-50 px-1.5 text-[0.6875rem] leading-4 font-medium text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-400">
+            <Text
+              variant="meta"
+              className="rounded-[0.3125rem] border border-add-line bg-add-soft px-1.5 font-control text-add"
+            >
               +{placedCount}
-            </span>
+            </Text>
           )}
-          <span
-            className={cn(
-              'ml-auto shrink-0 text-right text-xs',
-              isOn ? 'text-ink-muted' : 'text-ink-faint'
-            )}
+          <Text
+            variant="secondary"
+            className={cn('ml-auto shrink-0 text-right', !isOn && 'text-ink-faint')}
           >
             {describeKept(section, dropped)}
             {isMixed && <span className="text-ink-faint"> of {total}</span>}
-          </span>
+          </Text>
           {isOpen && hasSource && (
             <AppButton
               variant="ghost"
@@ -204,25 +213,28 @@ export function ReviewSectionRow({
           )}
         </div>
         {read?.doubts.map((doubt) => (
-          <p
+          <Text
+            as="p"
             key={doubt}
-            className="-mt-0.75 flex items-start gap-1.5 pr-2.75 pb-1.75 pl-10.25 text-xs text-pretty text-amber-600 dark:text-amber-400"
+            variant="secondary"
+            className="-mt-0.75 flex items-start gap-1.5 pr-2.75 pb-1.75 pl-10.25 text-pretty text-amber"
           >
             <AlertTriangle className="mt-0.5 size-3 shrink-0" />
             {doubt}
-          </p>
+          </Text>
         ))}
         {section.kind === 'custom' && (
-          <p className="-mt-0.75 pr-2.75 pb-1.75 pl-10.25 text-xs text-ink-muted">
+          <Text as="p" variant="secondary" className="-mt-0.75 pr-2.75 pb-1.75 pl-10.25">
             Comes in as a custom {section.layout === 'lines' ? 'list' : 'section'}.
-          </p>
+          </Text>
         )}
         <ReviewFold>
           <div className="mt-0.5 border-t border-dashed border-line bg-pane pt-0.5 pr-2.75 pb-2.25 pl-6.5">
             {withSource && (
               <div
                 className={cn(
-                  'grid grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)] gap-4 border-b border-line pt-1.25 pb-0.75 text-[0.6875rem] text-ink-faint',
+                  textVariantClasses('meta'),
+                  'grid grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)] gap-4 border-b border-line pt-1.25 pb-0.75 font-sans',
                   ARRIVES
                 )}
               >
@@ -271,8 +283,8 @@ export function ReviewSectionRow({
                           isEntryOff,
                           `Keep ${title || 'this entry'}`,
                           <>
-                            <b className="font-semibold text-foreground">{title}</b>
-                            <span className="ml-2 text-xs text-ink-muted">{entryMeta(entry)}</span>
+                            <b className="font-strong text-foreground">{title}</b>
+                            <span className="ml-2 text-ink-muted">{entryMeta(entry)}</span>
                             {doubtsOf(entry.id).map((doubt) => (
                               <Doubt key={doubt}>{doubt}</Doubt>
                             ))}

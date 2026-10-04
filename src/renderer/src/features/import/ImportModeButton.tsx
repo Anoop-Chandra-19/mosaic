@@ -1,6 +1,7 @@
 import { Check, ChevronDown } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
 import { AppMenu, AppMenuContent, AppMenuItem, AppMenuTrigger } from '@/components/AppMenu';
+import { Text } from '@/components/Text';
 import type { ImportMode } from './buildImportedResume';
 
 const MODES: { id: ImportMode; label: string; hint: string }[] = [
@@ -79,11 +80,11 @@ export function ImportModeButton({
               <span className="grid place-items-center text-foreground">
                 {option.id === mode && <Check className="size-3" />}
               </span>
-              <span className="font-medium text-foreground">{option.label}</span>
+              <span className="font-control text-foreground">{option.label}</span>
               <span />
-              <span className="text-[0.71875rem] leading-[1.45] text-pretty text-ink-muted">
+              <Text variant="secondary" className="text-pretty">
                 {option.hint}
-              </span>
+              </Text>
             </AppMenuItem>
           ))}
         </AppMenuContent>

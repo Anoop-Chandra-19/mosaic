@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { Check, ChevronDown, Copy } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
 import { AppCollapsible, AppCollapsibleTrigger } from '@/components/AppCollapsible';
+import { Text } from '@/components/Text';
+import { cn } from '@/lib/utils';
 import {
   AppMenu,
   AppMenuContent,
@@ -110,29 +112,29 @@ export function LeftOutLines({
         key={index}
         className="flex min-h-7 items-center gap-2.5 border-b border-line py-0.5 last:border-b-0"
       >
-        <span
-          className={
-            target || !line.canPlace
-              ? 'min-w-0 flex-1 truncate font-mono text-[0.71875rem] text-ink-muted'
-              : 'min-w-0 flex-1 truncate font-mono text-[0.71875rem] text-foreground'
-          }
+        <Text
+          variant="meta"
+          className={cn(
+            'min-w-0 flex-1 truncate',
+            target || !line.canPlace ? 'text-ink-muted' : 'text-foreground'
+          )}
         >
           {line.text}
-        </span>
+        </Text>
         {target ? (
           <>
-            <span className="shrink-0 text-[0.71875rem] text-emerald-700 dark:text-emerald-400">
+            <Text variant="secondary" className="shrink-0 text-add">
               → {placedLabel(line, target)}
-            </span>
+            </Text>
             <AppButton variant="ghost" size="xs" onClick={() => onUnplace(index)}>
               Undo
             </AppButton>
           </>
         ) : (
           <>
-            <span className="shrink-0 text-[0.71875rem] text-ink-faint">
+            <Text variant="secondary" className="shrink-0 text-ink-faint">
               {REASONS[line.reason]}
-            </span>
+            </Text>
             {line.canPlace && (
               <PlaceLineMenu
                 sections={sections}
@@ -149,7 +151,9 @@ export function LeftOutLines({
   const group = (title: string, rows: typeof indexed) =>
     rows.length > 0 && (
       <div className="not-first:mt-2.5">
-        <p className="border-b border-line pb-0.75 text-[0.71875rem] text-ink-muted">{title}</p>
+        <Text as="p" variant="secondary" className="border-b border-line pb-0.75">
+          {title}
+        </Text>
         {rows.map(row)}
       </div>
     );
@@ -161,13 +165,13 @@ export function LeftOutLines({
     >
       <div className="flex items-center justify-between gap-2 py-1.25 pr-1.75 pl-2.25">
         <AppCollapsibleTrigger asChild>
-          <AppButton variant="plain" className="h-5.5 gap-1.5 px-0 text-[0.8125rem]">
+          <AppButton variant="plain" className="h-5.5 gap-1.5 px-0">
             <RowCaret />
             Left out
-            <span className="text-xs font-normal text-ink-muted">
+            <Text variant="secondary">
               {count(unplaced.length, 'line')}
               {placed.size > 0 && ` · ${placed.size} placed`}
-            </span>
+            </Text>
           </AppButton>
         </AppCollapsibleTrigger>
         <AppButton variant="ghost" size="xs" onClick={() => void copy()}>

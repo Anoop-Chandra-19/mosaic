@@ -2,6 +2,8 @@ import { useState, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } fr
 import { Search } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
 import { AppInput } from '@/components/AppInput';
+import { Text } from '@/components/Text';
+import { textVariantClasses } from '@/components/textVariants';
 import { formatShortcutKeys, isSameShortcut, readShortcutCombo } from '@/lib/keyboardShortcuts';
 import { cn } from '@/lib/utils';
 import { useAiStore } from '@/stores/aiStore';
@@ -19,7 +21,10 @@ export function ShortcutKeys({ combo, alt }: { combo: string; alt?: string }) {
     formatShortcutKeys(keys).map((key, index) => (
       <kbd
         key={`${keys}-${index}`}
-        className="inline-flex h-4.75 min-w-4.75 items-center justify-center rounded-sm border border-line-strong bg-line px-1.25 font-mono text-[0.6875rem] text-ink-soft"
+        className={cn(
+          textVariantClasses('meta'),
+          'inline-flex h-4.75 min-w-4.75 items-center justify-center rounded-[0.25rem] border border-line-strong bg-line px-1.25 text-ink-soft'
+        )}
       >
         {key}
       </kbd>
@@ -29,7 +34,9 @@ export function ShortcutKeys({ combo, alt }: { combo: string; alt?: string }) {
       {caps(combo)}
       {alt && (
         <>
-          <span className="mx-px text-[0.6875rem] text-ink-faint">/</span>
+          <Text variant="meta" className="mx-px">
+            /
+          </Text>
           {caps(alt)}
         </>
       )}
@@ -44,7 +51,7 @@ function MarkedLabel({ label, query }: { label: string; query: string }) {
   return (
     <>
       {label.slice(0, at)}
-      <em className="rounded-xs bg-amber-soft px-px text-amber-600 not-italic dark:text-amber-400">
+      <em className="rounded-xs bg-amber-soft px-px text-amber not-italic">
         {label.slice(at, at + query.length)}
       </em>
       {label.slice(at + query.length)}
@@ -65,7 +72,7 @@ function ShortcutRowView({
   return (
     <div
       className={cn(
-        'flex h-7 items-center gap-2.5 rounded-md px-1.75 text-[0.8rem] hover:bg-line hover:text-foreground dense:h-6.25',
+        'flex h-7 items-center gap-2.5 rounded-sm px-1.75 text-body hover:bg-line hover:text-foreground dense:h-6.25',
         row.isUnavailable ? 'text-ink-faint' : 'text-ink-soft'
       )}
     >
@@ -73,17 +80,19 @@ function ShortcutRowView({
         <MarkedLabel label={row.label} query={query} />
       </span>
       {(groupTitle || row.isUnavailable) && (
-        <span className="shrink-0 rounded-sm border border-line px-1.25 py-px font-mono text-[0.65625rem] text-ink-faint">
+        <Text
+          variant="meta"
+          className="shrink-0 rounded-[0.25rem] border border-line px-1.25 py-px"
+        >
           {row.isUnavailable ? row.unavailableNote : groupTitle}
-        </span>
+        </Text>
       )}
       <ShortcutKeys combo={row.combo} alt={row.alt} />
     </div>
   );
 }
 
-const GROUP_HEADING =
-  'mb-1.25 flex items-center gap-1.5 text-[0.65625rem] font-semibold tracking-[0.09em] text-ink-faint uppercase';
+const GROUP_HEADING = 'mb-1.25 flex items-center gap-1.5';
 
 /**
  * The shortcut sheet: every binding by group, a search over their names, and a lookup:
@@ -175,15 +184,19 @@ export function ShortcutsPanel({
       >
         {pressed && (
           <section aria-label="You pressed" className="mb-3.5 max-w-130">
-            <h4 className={GROUP_HEADING}>You pressed</h4>
-            <div className="flex items-center gap-2.75 rounded-lg border border-line bg-pane-raised px-3.25 py-3">
+            <Text as="h4" variant="eyebrow" className={GROUP_HEADING}>
+              You pressed
+            </Text>
+            <div className="flex items-center gap-2.75 rounded-[0.5625rem] border border-line bg-pane-raised px-3.25 py-3">
               <ShortcutKeys combo={pressed} />
               {found ? (
                 <>
-                  <div className="min-w-0 flex-1 text-[0.8rem] leading-normal">
-                    is <b className="font-semibold">{found.row.label}</b>
-                    <div className="text-[0.74rem] text-ink-muted">{found.group}</div>
-                  </div>
+                  <Text as="div" variant="body" className="min-w-0 flex-1">
+                    is <b className="font-strong text-foreground">{found.row.label}</b>
+                    <Text as="div" variant="secondary">
+                      {found.group}
+                    </Text>
+                  </Text>
                   <AppButton
                     variant="ghost"
                     size="xs"
@@ -196,7 +209,9 @@ export function ShortcutsPanel({
                   </AppButton>
                 </>
               ) : (
-                <div className="flex-1 text-[0.8rem]">isn’t bound to anything.</div>
+                <Text as="div" variant="body" className="flex-1">
+                  isn’t bound to anything.
+                </Text>
               )}
             </div>
           </section>
@@ -204,14 +219,16 @@ export function ShortcutsPanel({
 
         {matches && (
           <section aria-label="Matching shortcuts" className="max-w-130">
-            <h4 className={GROUP_HEADING}>
+            <Text as="h4" variant="eyebrow" className={GROUP_HEADING}>
               {matches.length} {matches.length === 1 ? 'action' : 'actions'}
-            </h4>
+            </Text>
             {matches.map(({ row, group }) => (
               <ShortcutRowView key={row.id} row={row} query={trimmed} groupTitle={group} />
             ))}
             {matches.length === 0 && (
-              <p className="mx-0.5 my-1 text-xs text-ink-muted">Nothing matches “{trimmed}”.</p>
+              <Text as="p" variant="secondary" className="mx-0.5 my-1">
+                Nothing matches “{trimmed}”.
+              </Text>
             )}
           </section>
         )}
@@ -220,14 +237,17 @@ export function ShortcutsPanel({
           <div className="grid grid-cols-1 content-start gap-x-4 @[36rem]/shortcuts:grid-cols-2">
             {groups.map((group) => (
               <section key={group.title} aria-label={group.title} className="mb-3.5">
-                <h4 className={GROUP_HEADING}>
+                <Text as="h4" variant="eyebrow" className={GROUP_HEADING}>
                   {group.title}
                   {group.note && (
-                    <span className="inline-flex h-3.75 items-center rounded-sm border border-line-strong px-1 text-[0.625rem] font-semibold tracking-[0.04em] normal-case">
+                    <Text
+                      variant="tag"
+                      className="inline-flex h-3.75 items-center rounded-[0.25rem] border border-line-strong px-1 text-ink-faint normal-case"
+                    >
                       {group.note}
-                    </span>
+                    </Text>
                   )}
-                </h4>
+                </Text>
                 {group.rows.map((row) => (
                   <ShortcutRowView key={row.id} row={row} />
                 ))}
@@ -239,8 +259,9 @@ export function ShortcutsPanel({
 
       <div
         className={cn(
-          'flex shrink-0 items-center gap-2.5 border-t border-line text-[0.7625rem] text-ink-faint',
-          isEmbedded ? 'pt-2.5' : 'h-11 bg-card px-3.5'
+          textVariantClasses('secondary'),
+          'flex shrink-0 items-center gap-2.5 border-t border-line text-ink-faint',
+          isEmbedded ? 'pt-2.5' : 'h-11 bg-chrome px-3.5'
         )}
       >
         <span className="flex-1">

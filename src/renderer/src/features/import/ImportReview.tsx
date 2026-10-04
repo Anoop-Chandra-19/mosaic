@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { AlertTriangle, FileText, Info, Upload } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
 import { DialogFrameFooter, DialogFrameHeader } from '@/components/DialogFrame';
+import { Note } from '@/components/Note';
+import { Text } from '@/components/Text';
 import { getPrintableHeaderLines } from '@shared/resume/resumeHeader';
 import { getResumeSnapshot, useResumeStore } from '@/stores/resumeStore';
 import { attempt, showToast, useOverlayStore } from '@/stores/overlayStore';
@@ -165,28 +167,29 @@ export function ImportReview({
         <div className="mb-2.25 flex items-center justify-between gap-2">
           <p className="flex min-w-0 items-center gap-2">
             <FileText className="size-3.5 shrink-0 text-ink-muted" />
-            <span className="truncate font-mono text-[0.71875rem] text-foreground">{source}</span>
-            {kind && <span className="shrink-0 text-xs text-ink-muted">{kind}</span>}
+            <Text variant="meta" className="truncate text-foreground">
+              {source}
+            </Text>
+            {kind && (
+              <Text variant="secondary" className="shrink-0">
+                {kind}
+              </Text>
+            )}
           </p>
           <AppButton variant="ghost" size="xs" onClick={onBack}>
             Choose another
           </AppButton>
         </div>
 
-        <p className="mb-2.25 flex gap-2.5 rounded-[0.5625rem] border border-line-strong bg-pane px-3 py-2.75 text-[0.8rem] leading-relaxed text-ink-soft">
-          <Info className="mt-0.5 size-3.5 shrink-0 text-ink-muted" />
+        <Note icon={Info} className="mb-2.25">
           This is what Mosaic read. Untick anything you don’t want, and open a row to check it;
           Source shows the lines it came from. Nothing is written until you import.
-        </p>
+        </Note>
 
         {parsed.warnings.map((warning) => (
-          <p
-            key={warning}
-            className="mb-2.25 flex gap-2.5 rounded-[0.5625rem] border border-amber-300 bg-amber-50 px-3 py-2.75 text-[0.8rem] leading-relaxed text-amber-900 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-200"
-          >
-            <AlertTriangle className="mt-0.5 size-3.5 shrink-0 text-amber-600 dark:text-amber-400" />
+          <Note key={warning} icon={AlertTriangle} tone="amber" className="mb-2.25">
             {warning}
-          </p>
+          </Note>
         ))}
 
         <ul className="divide-y divide-line overflow-hidden rounded-[0.5625rem] border border-line">
