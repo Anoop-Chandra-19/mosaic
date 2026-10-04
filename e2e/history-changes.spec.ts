@@ -209,7 +209,7 @@ test('the page marks what changed in place, and an export from it carries no mar
   await expect(view).toBeVisible();
 
   // The clean page has neither.
-  await reading.getByRole('button', { name: 'Hide the marks, read the clean page' }).click();
+  await reading.getByRole('button', { name: 'Hide the change marks' }).click();
   await expect(sheet).not.toContainText('Built REST APIs');
   await expect(sheet.getByText('hidden', { exact: true })).toHaveCount(0);
   expect(errors).toEqual([]);

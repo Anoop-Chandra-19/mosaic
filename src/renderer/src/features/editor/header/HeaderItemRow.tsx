@@ -30,7 +30,7 @@ import { useUiStore } from '@/stores/uiStore';
 import type { HeaderItem, HeaderLine } from '@shared/types/resume';
 import { HIDDEN_WHILE_READING } from '../editorClasses';
 import { HEADER_ICONS } from './headerIcons';
-import { HeaderItemEditor, type HeaderItemField } from './HeaderItemEditor';
+import { HeaderItemEditor, LEAVE_OFF_HINT, type HeaderItemField } from './HeaderItemEditor';
 
 /** A link as a short label: no scheme, no "www.", no trailing slash. */
 const shortLink = (link: string) =>
@@ -116,7 +116,7 @@ export function HeaderItemRow({
         size="sm"
         shape="text"
         onClick={() => setEditing('text')}
-        title="Click to edit text and link"
+        title="Edit text and link"
         className={cn(
           // Sized by its words, so a short item keeps them whole beside a long link.
           // Struck through either way, so the line fades in and out with the colour.
@@ -163,7 +163,7 @@ export function HeaderItemRow({
       )}
 
       {isUnprinted && item.url && (
-        <AppTooltip content="No text, so nothing prints for it. The link is kept.">
+        <AppTooltip content="Nothing prints without text. The link is kept.">
           <Badge size="sm">no text</Badge>
         </AppTooltip>
       )}
@@ -174,11 +174,7 @@ export function HeaderItemRow({
         shape="square"
         onClick={toggleShown}
         aria-label={item.shown ? 'Leave off the page' : 'Put back on the page'}
-        title={
-          item.shown
-            ? 'On the page. Click to keep it but leave it off.'
-            : 'Left off the page. Click to put it back.'
-        }
+        title={item.shown ? LEAVE_OFF_HINT : undefined}
       >
         {item.shown ? <Eye /> : <EyeOff />}
       </AppButton>

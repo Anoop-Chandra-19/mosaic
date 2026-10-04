@@ -240,7 +240,7 @@ export function ChangeList({
                 return (
                   <div
                     key={`${change.setting}:${change.lineId}`}
-                    title={`${wording.row}. Not marked on the page, not counted as a change.`}
+                    title={`${wording.row}. Formatting isn’t marked on the page or counted as a change.`}
                     className={CHANGE_ROW}
                   >
                     <span aria-hidden />

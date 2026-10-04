@@ -300,7 +300,7 @@ export function TemplateCard({ template, active, expanded, onToggle }: TemplateC
                   aria-label="What your draft is doing"
                   title={
                     dirty
-                      ? 'Working draft, saved as you type. Name it to keep this point in history.'
+                      ? 'Saved as you type. Name a version to keep this point in history.'
                       : `Your draft matches ${versionLabel(versions[0])}.`
                   }
                 >
@@ -332,8 +332,8 @@ export function TemplateCard({ template, active, expanded, onToggle }: TemplateC
             <Note icon={Eye} tone="amber" size="sm" className="mt-2">
               <span className="flex items-start gap-2">
                 <span className="flex-1">
-                  Showing {preview.label} in the sheet. Your draft is untouched. Restore from the
-                  banner if you want this version back.
+                  Previewing {preview.label}. Your draft is untouched. Restore from the banner if
+                  you want this version back.
                 </span>
                 <AppButton variant="outline" size="xs" onClick={() => setPreview(null)}>
                   Exit
@@ -349,7 +349,7 @@ export function TemplateCard({ template, active, expanded, onToggle }: TemplateC
               className="mt-1.5"
               title={
                 previewId && preview
-                  ? `Export ${preview.label}, the version in the sheet`
+                  ? `Export ${preview.label}, the version you're previewing`
                   : `Export ${versionLabel(versions[0])}, the newest version`
               }
               onClick={() => void exportVersion()}

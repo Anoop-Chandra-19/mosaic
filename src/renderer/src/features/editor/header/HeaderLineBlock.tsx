@@ -68,8 +68,8 @@ export function HeaderLineBlock({ line, lines }: HeaderLineBlockProps) {
             <AppButton
               variant="outline"
               size="chip"
-              title="Between items"
-              aria-label={`Between items: ${separator.label.toLowerCase()}`}
+              title="Separator between items"
+              aria-label={`Separator between items: ${separator.label.toLowerCase()}`}
             >
               {separator.label.toLowerCase()}
             </AppButton>

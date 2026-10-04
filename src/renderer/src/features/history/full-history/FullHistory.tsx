@@ -303,7 +303,7 @@ function FullHistoryFrame({
           </Text>
         )}
         <span className="flex-1" />
-        <AppTooltip content="The months index, symbol counts, and line numbers in Changes only">
+        <AppTooltip content="Show months in the index, change counts, and line numbers">
           <label
             className={cn(
               textVariantClasses('secondary'),

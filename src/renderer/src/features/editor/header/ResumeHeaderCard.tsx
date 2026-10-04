@@ -134,7 +134,7 @@ export function ResumeHeaderCard({ contact: shown }: { contact?: ContactInfo }) 
       </div>
 
       {/* The header as it prints, so a collapsed card still says what is on the page. */}
-      <AppTooltip content="Exactly how the header is written on the page">
+      <AppTooltip content="How the header prints">
         <div
           ref={printedRef}
           className={cn(

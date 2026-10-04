@@ -108,7 +108,7 @@ export function ReadPaneControls({
         <AppTooltip
           content={
             canCompareWithParent
-              ? 'Only what this version did, against the one before it'
+              ? 'What changed in this version since the one before'
               : 'The first version has nothing before it'
           }
         >
@@ -116,7 +116,7 @@ export function ReadPaneControls({
             Changes in {versionLabel}
           </AppToggleGroupItem>
         </AppTooltip>
-        <AppTooltip content="What Restore would do">
+        <AppTooltip content="What restoring this version would change">
           <AppToggleGroupItem value="draft">Against your draft</AppToggleGroupItem>
         </AppTooltip>
       </AppToggleGroup>
@@ -167,9 +167,7 @@ export function ReadPaneControls({
           size="2xs"
           shape="square"
           aria-pressed={isMarked}
-          aria-label={
-            isMarked ? 'Hide the marks, read the clean page' : 'Mark the changes on the page'
-          }
+          aria-label={isMarked ? 'Hide the change marks' : 'Show the change marks'}
           onClick={() => onMarkedChange(!isMarked)}
           className={cn(isMarked && 'bg-line-strong text-foreground')}
         >

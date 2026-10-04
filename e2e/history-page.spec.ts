@@ -89,7 +89,7 @@ test('stepping to another version shows its page laid out, never the old text re
   // would tell them apart.
   await history
     .getByRole('complementary')
-    .getByRole('button', { name: 'Hide the marks, read the clean page' })
+    .getByRole('button', { name: 'Hide the change marks' })
     .click();
 
   // The page it was showing, then the new one: nothing in between. It opens on Long.

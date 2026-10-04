@@ -4,6 +4,7 @@ import { AppButton } from '@/components/AppButton';
 import { AppInput } from '@/components/AppInput';
 import { AppTextarea } from '@/components/AppTextarea';
 import { AppTooltip } from '@/components/AppTooltip';
+import { Text } from '@/components/Text';
 import { textVariantClasses } from '@/components/textVariants';
 import { cn } from '@/lib/utils';
 import { resolveHeaderItemHref, getHeaderKindInfo } from '@shared/resume/resumeHeader';
@@ -22,6 +23,9 @@ interface HeaderItemEditorProps {
   onSave: (patch: Pick<HeaderItem, 'text' | 'url'>) => void;
   onCancel: () => void;
 }
+
+/** The eye's hint while the item prints; once it is off, the button's name says enough. */
+export const LEAVE_OFF_HINT = 'Leave off the page. You can put it back any time.';
 
 const FIELD_LABEL = cn(
   textVariantClasses('tag'),
@@ -77,11 +81,7 @@ export function HeaderItemEditor({
           shape="square"
           onClick={onToggleShown}
           aria-label={item.shown ? 'Leave off the page' : 'Put back on the page'}
-          title={
-            item.shown
-              ? 'On the page. Click to keep it but leave it off.'
-              : 'Left off the page. Click to put it back.'
-          }
+          title={item.shown ? LEAVE_OFF_HINT : undefined}
         >
           {item.shown ? <Eye /> : <EyeOff />}
         </AppButton>
@@ -120,17 +120,17 @@ export function HeaderItemEditor({
       <div className="mt-0.5 flex items-center gap-[0.3125rem]">
         {/* Worth saying only when the file gets something other than what was typed with
             https:// in front: a mail or phone link. */}
-        <AppTooltip content="How the link is written into exported files. The field keeps what you typed.">
-          <span className="min-w-0 flex-1 truncate font-mono text-meta text-ink-faint">
+        <AppTooltip content="The link as exported files write it. What you typed is unchanged.">
+          <Text variant="meta" className="min-w-0 flex-1 truncate">
             {/^(?:mailto|tel):/i.test(href) ? href : ''}
-          </span>
+          </Text>
         </AppTooltip>
         {text && (
           <AppButton
             variant="ghost"
             size="xs"
             onClick={() => setText('')}
-            title="Keeps the link, prints nothing"
+            title="Clear the text and keep the link"
           >
             Clear text
           </AppButton>

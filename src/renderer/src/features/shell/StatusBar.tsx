@@ -113,7 +113,7 @@ export function StatusBar() {
     saveState = (
       <AppTooltip
         side="top"
-        content="The edits are still in the editor; Mosaic tries again with your next change."
+        content="Your edits are safe in the editor. Mosaic will try again with your next change."
       >
         <span className="text-del">Couldn’t save the last change</span>
       </AppTooltip>

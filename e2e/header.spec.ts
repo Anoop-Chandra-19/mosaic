@@ -61,7 +61,7 @@ test('header items take text and a link, hide, and move between lines', async ()
   await itemAction(page, 'github.com/ada', 'GitHub', 'Move to line 2');
   await page
     .getByRole('region', { name: 'Line 2' })
-    .getByRole('button', { name: /^Between items/ })
+    .getByRole('button', { name: /^Separator between items/ })
     .click();
   await page.getByRole('menuitemradio', { name: 'Separated by ·' }).click();
 
