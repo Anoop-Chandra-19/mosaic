@@ -1,4 +1,4 @@
-import { expect, type Page } from '@playwright/test';
+import { expect, type Locator, type Page } from '@playwright/test';
 import { test, withApp } from './launch';
 
 const mosaic = withApp();
@@ -37,6 +37,14 @@ async function startWithVersions(page: Page) {
   const view = page.getByRole('region', { name: /^History of/ });
   await expect(view).toBeVisible();
   return view;
+}
+
+async function showAllDetails(page: Page, view: Locator) {
+  await view.getByRole('button', { name: 'History settings' }).click();
+  const settings = page.getByRole('dialog', { name: 'History settings' });
+  await settings.getByRole('radio', { name: 'All details' }).click();
+  await page.keyboard.press('Escape');
+  await expect(settings).toBeHidden();
 }
 
 test('the read pane says what a version changed, against the one before it or the draft', async () => {
@@ -127,7 +135,7 @@ test('Changes only steps through with n, and the details add line numbers', asyn
   await page.keyboard.press('n');
   await expect(header.locator('[aria-current="true"]')).toHaveCount(1);
 
-  await view.getByText('Show all details').click();
+  await showAllDetails(page, view);
   await expect(header).toContainText('@@');
   await expect(view.getByRole('navigation', { name: 'History index' })).toContainText('Months');
 
@@ -144,11 +152,7 @@ test('the comparison and the details are remembered, and Settings shows the deta
   const view = await startWithVersions(page);
   const reading = view.getByRole('complementary');
   await reading.getByRole('radio', { name: 'Against your draft' }).click();
-  await view.getByText('Show all details').click();
-  // Away from the checkbox, so its tooltip doesn't take the Escape before the view does.
-  await view.focus();
-  await page.mouse.move(0, 0);
-  await expect(page.getByRole('tooltip')).toHaveCount(0);
+  await showAllDetails(page, view);
   await page.keyboard.press('Escape');
   await expect(view).toBeHidden();
 

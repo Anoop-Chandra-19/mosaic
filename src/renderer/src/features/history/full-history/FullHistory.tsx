@@ -10,10 +10,7 @@ import {
 } from 'react';
 import { Clock, List, X } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
-import { AppCheckbox } from '@/components/AppCheckbox';
-import { AppTooltip } from '@/components/AppTooltip';
 import { Text } from '@/components/Text';
-import { textVariantClasses } from '@/components/textVariants';
 import { PAPER_DIMENSIONS_PT } from '@/features/preview/pageGeometry';
 import {
   SLIDE_AWAY_MOTION,
@@ -34,7 +31,7 @@ import { VersionList, type HistoryReveal } from '../version-list/VersionList';
 import { useTemplateVersions, versionLabel } from '../useTemplateVersions';
 import { HistoryIndex } from './HistoryIndex';
 import { HistoryReadPane, LEGIBLE_PAGE_SCALE } from './HistoryReadPane';
-import { SnapshotSettingsPopover } from './SnapshotSettingsPopover';
+import { HistorySettingsPopover } from './HistorySettingsPopover';
 import { useVersionComparison } from './useVersionComparison';
 import {
   chooseOpeningVersion,
@@ -122,7 +119,6 @@ function FullHistoryFrame({
   const openExport = useOverlayStore((s) => s.openExport);
   const paperSize = useUiStore((s) => s.paperSize);
   const isDetailed = useUiStore((s) => s.shouldShowHistoryDetails);
-  const setIsDetailed = useUiStore((s) => s.setShouldShowHistoryDetails);
   const storedComparison = useUiStore((s) => s.historyComparison);
   const setStoredComparison = useUiStore((s) => s.setHistoryComparison);
   // Opened from a version being read, the view keeps to that comparison until one is picked.
@@ -136,7 +132,7 @@ function FullHistoryFrame({
     () => window.innerWidth >= INDEX_OPEN_MIN_WINDOW_PX
   );
   const [selectedId, setSelectedId] = useState(versionId ?? null);
-  const [isSnapshotsOpen, setIsSnapshotsOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [reveal, setReveal] = useState<HistoryReveal | null>(versionId ? { versionId } : null);
   const rootRef = useRef<HTMLDivElement>(null);
 
@@ -308,22 +304,7 @@ function FullHistoryFrame({
           </Text>
         )}
         <span className="flex-1" />
-        <AppTooltip content="Show months in the index, change counts, and line numbers">
-          <label
-            className={cn(
-              textVariantClasses('secondary'),
-              'flex cursor-pointer items-center gap-1.5 px-1.5 select-none'
-            )}
-          >
-            <AppCheckbox
-              size="sm"
-              checked={isDetailed}
-              onCheckedChange={(checked) => setIsDetailed(checked === true)}
-            />
-            Show all details
-          </label>
-        </AppTooltip>
-        <SnapshotSettingsPopover isOpen={isSnapshotsOpen} onOpenChange={setIsSnapshotsOpen} />
+        <HistorySettingsPopover isOpen={isSettingsOpen} onOpenChange={setIsSettingsOpen} />
         <AppButton
           variant="ghost"
           size="sm"
@@ -383,7 +364,7 @@ function FullHistoryFrame({
                 onPreview={select}
                 onRestore={(version) => void restore(version)}
                 onDuplicate={(version) => void duplicate(version)}
-                onChangeFolding={() => setIsSnapshotsOpen(true)}
+                onChangeFolding={() => setIsSettingsOpen(true)}
                 selectedCounts={
                   isDetailed && !versionComparison.isAgainstDraft && versionComparison.diff
                     ? countChangesByTone(versionComparison.diff.changes)

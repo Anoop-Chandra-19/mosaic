@@ -23,6 +23,55 @@ const SOURCE_TAGS: Partial<Record<VersionSource, string>> = {
   closed: 'left off',
 };
 
+/**
+ * The row's mark on the rail. Each fills the same 12px slot, and only named versions are
+ * nodes; the rest sit across the line, so it reads unbroken.
+ */
+type RailMark = 'tick' | 'newest' | 'named' | 'leftOff' | 'event';
+
+function chooseRailMark(version: VersionMeta, isHead: boolean): RailMark {
+  if (version.kind === 'named') return 'named';
+  if (isHead) return 'newest';
+  if (version.source === 'switched' || version.source === 'closed') return 'leftOff';
+  return version.source === 'edit' ? 'tick' : 'event';
+}
+
+const RAIL_MARKS: Record<RailMark, string> = {
+  tick: 'mx-[0.09375rem] mt-[0.5625rem] h-px w-[0.5625rem] rounded-[0.0625rem] bg-ink-muted',
+  newest: 'mx-[0.03125rem] mt-2 h-[0.1875rem] w-[0.6875rem] rounded-[0.0625rem] bg-ink-soft',
+  named:
+    'mx-[0.109375rem] mt-[0.328125rem] size-[0.53125rem] rotate-45 rounded-[0.09375rem] bg-foreground shadow-[0_0_0_2.5px_var(--background)]',
+  leftOff:
+    'mx-[0.15625rem] mt-1.5 size-[0.4375rem] rounded-[0.09375rem] bg-ink-muted shadow-[0_0_0_2px_var(--background)]',
+  event:
+    'mx-[0.15625rem] mt-1.5 size-[0.4375rem] rounded-[0.09375rem] bg-background shadow-[inset_0_0_0_1.5px_var(--ink-faint),0_0_0_2px_var(--background)]',
+};
+
+/** Amber is only ever the version being read. */
+const SELECTED_RAIL_MARKS: Record<RailMark, string> = {
+  tick: 'bg-amber',
+  newest: 'bg-amber',
+  named: 'shadow-[0_0_0_2px_var(--background),0_0_0_3.5px_var(--amber)]',
+  leftOff: 'bg-background shadow-[inset_0_0_0_1.5px_var(--amber),0_0_0_2px_var(--background)]',
+  event: 'shadow-[inset_0_0_0_1.5px_var(--amber),0_0_0_2px_var(--background)]',
+};
+
+function railMarkClasses(
+  mark: RailMark,
+  isHead: boolean,
+  isSelected: boolean,
+  isConfirming: boolean
+) {
+  if (isConfirming) return cn(RAIL_MARKS[mark], 'bg-del shadow-[0_0_0_2.5px_var(--del-soft)]');
+  if (isSelected) return cn(RAIL_MARKS[mark], SELECTED_RAIL_MARKS[mark]);
+  return cn(
+    RAIL_MARKS[mark],
+    mark === 'named' &&
+      isHead &&
+      'shadow-[0_0_0_2px_var(--background),0_0_0_3.25px_var(--ink-muted)]'
+  );
+}
+
 /** A named version's summary carries the row; a row inside a run is a step smaller. */
 function summaryVariant(isNamed: boolean, isNested: boolean): TextVariant {
   if (isNamed) return 'strong';
@@ -117,15 +166,17 @@ export function VersionRow({
         })
       }
       className={cn(
-        'group relative flex items-start gap-2.5 rounded-md hover:bg-pane',
+        'group relative flex items-start gap-2.5 rounded-md hover:bg-row-hover',
         onSelect && !mode && 'cursor-pointer',
+        // A nested row's tick crosses its run's line, as the marks cross the rail.
         isNested
-          ? 'py-0.75 before:absolute before:top-2.75 before:-left-3 before:h-px before:w-1.75 before:bg-line'
-          : 'py-1.25',
+          ? 'py-[0.21875rem] before:absolute before:top-3 before:-left-4 before:h-px before:w-1.75 before:bg-ink-faint'
+          : // Tints start left of the slot, so a row's box never cuts its mark.
+            '-ml-1.5 py-1.25 pl-1.5',
         isPreviewing &&
           (isWide
-            ? 'bg-amber-soft shadow-[inset_0_0_0_1px_var(--amber-line)] hover:bg-amber-soft'
-            : 'bg-amber-soft ring-4 ring-amber-soft hover:bg-amber-soft'),
+            ? 'bg-amber-wash shadow-[inset_0_0_0_1px_var(--amber-line)] hover:bg-amber-wash'
+            : 'bg-amber-wash ring-4 ring-amber-wash hover:bg-amber-wash'),
         isConfirming &&
           'bg-del-soft pr-1.5 shadow-[inset_0_0_0_1px_var(--del-line)] hover:bg-del-soft',
         isJustNamed && 'animate-named-wash motion-reduce:animate-none'
@@ -135,20 +186,10 @@ export function VersionRow({
         <span
           aria-hidden
           className={cn(
-            'relative z-1 shrink-0 rounded-full border-2 border-background',
-            isNamed ? 'mt-[0.21875rem] size-3' : 'mt-1.25 ml-[0.09375rem] size-2.25',
-            isJustNamed && 'animate-marker-pop motion-reduce:animate-none',
-            isConfirming
-              ? 'bg-del'
-              : isHead
-                ? 'bg-amber ring-3 ring-amber-soft'
-                : isNamed
-                  ? 'bg-ink-muted'
-                  : isStop
-                    ? 'bg-ink-muted shadow-[0_0_0_1px_var(--line-heavy)]'
-                    : version.source === 'edit'
-                      ? 'bg-line-heavy'
-                      : 'bg-ink-faint'
+            // The rail is 1px on a whole pixel, centred at 5.5px; the slot's centre is 6px.
+            'relative z-1 shrink-0 -translate-x-[0.03125rem]',
+            railMarkClasses(chooseRailMark(version, isHead), isHead, isPreviewing, isConfirming),
+            isJustNamed && 'animate-marker-pop motion-reduce:animate-none'
           )}
         />
       )}

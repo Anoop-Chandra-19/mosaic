@@ -120,6 +120,7 @@
   --color-line: var(--line);
   --color-line-strong: var(--line-strong);
   --color-line-heavy: var(--line-heavy);
+  --color-row-hover: var(--row-hover);
   --color-ink-soft: var(--ink-soft);
   --color-ink-muted: var(--ink-muted);
   --color-ink-faint: var(--ink-faint);
@@ -130,6 +131,7 @@
   --color-scrim: var(--scrim);
   --color-veil: var(--veil);
   --color-amber-soft: var(--amber-soft);
+  --color-amber-wash: var(--amber-wash);
   --color-amber-line: var(--amber-line);
   --color-info: var(--info);
   --color-info-line: var(--info-line);
@@ -367,6 +369,8 @@
   --line: oklch(0.2 0.01 286 / 14%);
   --line-strong: oklch(0.2 0.01 286 / 22%);
   --line-heavy: oklch(0.2 0.01 286 / 32%);
+  /* A wash, not a fill: a timeline drawn under the rows still shows through. */
+  --row-hover: oklch(0.2 0.01 286 / 4%);
   --ink-soft: oklch(0.36 0.01 286);
   --ink-muted: oklch(0.48 0.013 286);
   --ink-faint: oklch(0.53 0.013 286);
@@ -378,6 +382,8 @@
   /* What sits on amber: a switch's knob, a chosen option's check. */
   --amber-ink: oklch(0.17 0.02 60);
   --amber-soft: oklch(0.948 0.02 69);
+  /* amber-soft as a wash, for a row a timeline runs behind. */
+  --amber-wash: oklch(0.78 0.155 72 / 14%);
   /* An editor's edge. Translucent, as the design's is in both themes. */
   --amber-line: oklch(0.78 0.155 72 / 34%);
   --info: oklch(0.52 0.13 240);
@@ -479,6 +485,7 @@
   --line: oklch(1 0 0 / 12%);
   --line-strong: oklch(1 0 0 / 20%);
   --line-heavy: oklch(1 0 0 / 30%);
+  --row-hover: oklch(1 0 0 / 3%);
   --ink-soft: oklch(0.82 0.008 286);
   --ink-muted: oklch(0.67 0.012 286);
   --ink-faint: oklch(0.6 0.012 286);
@@ -487,6 +494,7 @@
   --solid-hover: oklch(0.88 0 0);
   --amber-ink: oklch(0.17 0.02 60);
   --amber-soft: oklch(0.26 0.019 66);
+  --amber-wash: oklch(0.78 0.155 72 / 14%);
   --info: oklch(0.74 0.11 235);
   --info-line: oklch(0.36 0.045 235);
   --info-soft: oklch(0.74 0.11 235 / 13%);
