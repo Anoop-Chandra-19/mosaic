@@ -245,7 +245,7 @@ export function VersionList({
         {groups.length > 0 && (
           <span
             aria-hidden
-            className="absolute top-2 bottom-2.5 left-[0.34rem] w-px bg-line-strong"
+            className="absolute top-2.5 bottom-3 left-[0.3125rem] w-px bg-line-strong"
           />
         )}
         {groups.map((group, index) => (

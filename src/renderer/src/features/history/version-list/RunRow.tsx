@@ -26,10 +26,15 @@ const TITLES: Record<HeldKind, (count: number) => string> = {
   fold: (count) => `${count} automatic snapshots`,
 };
 
-/** A run's bead stack, or a fold's dashed ring: rows held, or rows folded away by age. */
-const DOTS: Record<HeldKind, string> = {
-  run: 'shadow-[inset_0_0_0_1.5px_var(--line-heavy)] before:absolute before:-top-1.25 before:left-0.5 before:h-0.5 before:w-1.5 before:rounded-full before:bg-line-heavy after:absolute after:-bottom-1.25 after:left-0.5 after:h-0.5 after:w-1.5 after:rounded-full after:bg-line-heavy',
-  fold: 'border-[1.5px] border-dashed border-line-heavy bg-background',
+/** The rail thickens for the row: solid for a run, dotted for a fold, held rather than continuous. */
+const RAIL_STRETCHES: Record<HeldKind, string> = {
+  run: 'bg-line-heavy group-hover/held:bg-ink-faint',
+  fold: 'bg-[repeating-linear-gradient(to_bottom,var(--line-heavy)_0_3px,transparent_3px_6px)] group-hover/held:bg-[repeating-linear-gradient(to_bottom,var(--ink-faint)_0_3px,transparent_3px_6px)]',
+};
+
+const OPEN_RAIL_STRETCHES: Record<HeldKind, string> = {
+  run: 'bg-ink-faint',
+  fold: 'bg-[repeating-linear-gradient(to_bottom,var(--ink-faint)_0_3px,transparent_3px_6px)]',
 };
 
 interface RunRowProps {
@@ -57,11 +62,15 @@ export function RunRow({ kind, run, isOpen, onToggle, children }: RunRowProps) {
         shape="text"
         aria-expanded={isOpen}
         onClick={onToggle}
-        className="flex w-full items-start gap-2.5 px-0 py-1.25"
+        className="group/held flex w-full items-start gap-2.5 px-0 py-1.25"
       >
         <span
           aria-hidden
-          className={cn('relative mt-1 ml-px size-2.75 shrink-0 rounded-full', DOTS[kind])}
+          className={cn(
+            // Half a pixel back, onto the rail's centre, as the row marks are.
+            'relative z-1 mx-[0.28125rem] -my-1.25 w-[0.1875rem] shrink-0 -translate-x-[0.03125rem] self-stretch',
+            isOpen ? OPEN_RAIL_STRETCHES[kind] : RAIL_STRETCHES[kind]
+          )}
         />
         <span className="min-w-0 flex-1">
           <Text
