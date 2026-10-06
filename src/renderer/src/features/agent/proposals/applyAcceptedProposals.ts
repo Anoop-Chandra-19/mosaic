@@ -1,4 +1,4 @@
-import type { Proposal } from '@shared/types/agent';
+import type { Proposal } from '@shared/types/agentProposal';
 import { getDb } from '@/lib/storage/mosaicDb';
 import { useProposalStore } from '@/stores/proposalStore';
 import { flushDraft, getResumeSnapshot, useResumeStore } from '@/stores/resumeStore';

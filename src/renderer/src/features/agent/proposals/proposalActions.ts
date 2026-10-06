@@ -1,4 +1,4 @@
-import type { Proposal, ProposalChange, ProposalSource } from '@shared/types/agent';
+import type { Proposal, ProposalChange, ProposalSource } from '@shared/types/agentProposal';
 import { useProposalStore } from '@/stores/proposalStore';
 import { getResumeSnapshot, useResumeStore } from '@/stores/resumeStore';
 import { checkProposal } from './checkProposal';

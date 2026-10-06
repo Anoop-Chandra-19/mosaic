@@ -1,4 +1,4 @@
-import type { ProposalFlag } from '@shared/types/agent';
+import type { ProposalFlag } from '@shared/types/agentProposal';
 import { readNumbers } from './readNumbers';
 
 /** A word, keeping the dots and signs inside names: Node.js, C++, C#, gRPC-Web. */

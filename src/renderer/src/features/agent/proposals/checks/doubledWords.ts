@@ -1,4 +1,4 @@
-import type { ProposalFlag } from '@shared/types/agent';
+import type { ProposalFlag } from '@shared/types/agentProposal';
 import { diffWords } from '../diffWords';
 
 interface PlacedWord {

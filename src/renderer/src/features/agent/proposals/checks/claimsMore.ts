@@ -1,4 +1,4 @@
-import type { ProposalFlag } from '@shared/types/agent';
+import type { ProposalFlag } from '@shared/types/agentProposal';
 
 const SUPPORTING_ROLE =
   /\b(assisted|helped|participated|contributed|supported|was part of|part of the team|worked with|worked on|collaborated)\b/i;

@@ -1,4 +1,4 @@
-import type { ProposalChange } from '@shared/types/agent';
+import type { ProposalChange } from '@shared/types/agentProposal';
 import type { Bullet, ResumeData, ResumeEntry, ResumeSection } from '@shared/types/resume';
 
 export type AnchorMismatch = 'unknown-target' | 'changed-since-read';

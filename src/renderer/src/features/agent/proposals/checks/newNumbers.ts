@@ -1,4 +1,4 @@
-import type { ProposalFlag } from '@shared/types/agent';
+import type { ProposalFlag } from '@shared/types/agentProposal';
 import { readNumbers } from './readNumbers';
 
 /** What a number could have been worked out from, given two numbers the text already had. */
