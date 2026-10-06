@@ -29,7 +29,8 @@ export type VersionSource =
   | 'restore' // taken before, or produced by, restoring an older version
   | 'edit' // editing alone, kept for the user as they go
   | 'switched' // where the draft stood when another template took the editor
-  | 'closed'; // where the draft stood when the window closed
+  | 'closed' // where the draft stood when the window closed
+  | 'assistant'; // the draft right after accepted suggestions were applied
 
 export type SnapshotOccasion = Extract<VersionSource, 'edit' | 'switched' | 'closed'>;
 
@@ -132,6 +133,8 @@ export interface MosaicDb {
     name(templateId: string, name: string): Promise<VersionMeta>;
     /** Keeps the draft as an auto version, unless the newest version already holds it. */
     snapshot(templateId: string, occasion: SnapshotOccasion): Promise<VersionMeta>;
+    /** Keeps the draft as it stands after applying `applied` of `proposed` suggestions. */
+    snapshotApplied(templateId: string, applied: number, proposed: number): Promise<VersionMeta>;
     /**
      * Puts a version back as its template's draft. Template-scoped: the version must be
      * one of that template's own, so each template's history stays self-contained.

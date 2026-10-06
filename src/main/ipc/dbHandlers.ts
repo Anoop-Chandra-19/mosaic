@@ -32,6 +32,7 @@ import {
   listVersions,
   nameDraft,
   restoreVersion,
+  snapshotAppliedSuggestions,
   snapshotEditedDraft,
 } from '../db/versions';
 
@@ -118,6 +119,17 @@ function snapshotOccasion(value: unknown): SnapshotOccasion {
   return value as SnapshotOccasion;
 }
 
+/** At least one suggestion applied, and no more than were proposed. */
+function suggestionCounts(applied: unknown, proposed: unknown) {
+  if (!Number.isSafeInteger(applied) || !Number.isSafeInteger(proposed)) {
+    throw new InvalidArgumentError('counts must be whole numbers');
+  }
+  if ((applied as number) < 1 || (applied as number) > (proposed as number)) {
+    throw new InvalidArgumentError('applied must be between 1 and proposed');
+  }
+  return { applied: applied as number, proposed: proposed as number };
+}
+
 /** A backup file's text, checked the same way whoever sent it already should have. */
 function bundle(value: unknown): MosaicBundle {
   if (typeof value !== 'string') throw new InvalidArgumentError('text must be a backup file');
@@ -164,6 +176,15 @@ export function createDbHandlers(db: Database): Handlers<MosaicDb> {
       name: (templateId, name) => nameDraft(db, text(templateId, 'templateId'), text(name, 'name')),
       snapshot: (templateId, occasion) =>
         snapshotEditedDraft(db, text(templateId, 'templateId'), snapshotOccasion(occasion)),
+      snapshotApplied: (templateId, applied, proposed) => {
+        const counts = suggestionCounts(applied, proposed);
+        return snapshotAppliedSuggestions(
+          db,
+          text(templateId, 'templateId'),
+          counts.applied,
+          counts.proposed
+        );
+      },
       restore: (templateId, versionId, shouldKeepDraft) =>
         restoreVersion(
           db,

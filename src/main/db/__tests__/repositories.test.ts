@@ -23,6 +23,7 @@ import {
   listVersions,
   nameDraft,
   restoreVersion,
+  snapshotAppliedSuggestions,
   snapshotDraft,
   snapshotEditedDraft,
 } from '../versions';
@@ -258,6 +259,27 @@ describe('versions', () => {
       source: 'closed',
       summary: 'Where you left it',
     });
+  });
+
+  it('applied suggestions are counted in the summary, and the section is what changed', () => {
+    const { id } = createTemplate(db, 'CV', resumeFor('A'));
+    const edited = resumeFor('A');
+    const experience = edited.sections.find((s) => s.kind === 'experience')!;
+    experience.items[0].bullets[0].text = 'Led the migration to Postgres';
+    saveDraft(db, id, edited, 1);
+
+    expect(snapshotAppliedSuggestions(db, id, 3, 5)).toMatchObject({
+      kind: 'auto',
+      source: 'assistant',
+      summary: 'Applied 3 of 5 suggestions',
+      section: experience.label,
+    });
+    expect(isClean(id)).toBe(true);
+
+    saveDraft(db, id, resumeFor('B'), 2);
+    expect(snapshotAppliedSuggestions(db, id, 1, 1).summary).toBe('Applied a suggestion');
+    // Nothing changed since: the newest version already holds the draft.
+    expect(snapshotAppliedSuggestions(db, id, 2, 2).summary).toBe('Applied a suggestion');
   });
 
   it('restore keeps unsaved edits, writes the draft, records the restore, and moves the rev', () => {

@@ -6,7 +6,7 @@ import { flushDraft, saveDraftOrStop, useResumeStore } from '@/stores/resumeStor
 import { useUiStore } from '@/stores/uiStore';
 import type { ImportMode, MosaicBundle } from '@shared/types/bundle';
 import type { Draft, SnapshotOccasion, TemplateSummary, VersionMeta } from '@shared/types/db';
-import type { PendingTextAiChange, ResumeData } from '@shared/types/resume';
+import type { ResumeData } from '@shared/types/resume';
 import { formatBundleText } from '@shared/vault/formatBundle';
 
 /** A deleted template, kept in memory as a backup of just itself so it can be put back. */
@@ -30,7 +30,6 @@ interface TemplateState {
    * version renamed), so a loaded history knows to read itself again.
    */
   historyEdits: number;
-  pendingAiChanges: PendingTextAiChange[];
 
   load: (templates: TemplateSummary[]) => void;
   refresh: () => Promise<void>;
@@ -76,14 +75,6 @@ interface TemplateState {
   /** Deletes a version other than the newest. `putBackVersion` undoes it. */
   removeVersion: (version: VersionMeta) => Promise<void>;
   putBackVersion: (versionId: string) => Promise<void>;
-
-  // AI queue (T3, exposed now for interface stability)
-  enqueueAiChange: (change: PendingTextAiChange) => void;
-  keepAiChange: (changeId: string) => void;
-  undoAiChange: (changeId: string) => void;
-  keepAllAiChanges: () => void;
-  undoAllAiChanges: () => void;
-  clearAiChanges: () => void;
 }
 
 function openTemplateId(): string | null {
@@ -96,27 +87,14 @@ function requireOpenTemplate(): string {
   return id;
 }
 
-function revertAiChange(change: PendingTextAiChange) {
-  const { target, before } = change;
-  const resume = useResumeStore.getState();
-  if (target.kind === 'bullet-text') {
-    resume.updateBullet(target.sectionId, target.entryId, target.bulletId, before);
-  } else {
-    resume.updateEntry(target.sectionId, target.entryId, { text: before });
-  }
-}
-
 export const useTemplateStore = create<TemplateState>()(
   immer((set, get) => {
     /**
-     * Put a draft from main in the editor. Staged AI changes and a version preview were
-     * about the draft being replaced, so they go. `asStep` names a replacement of the same
-     * template's draft as one undoable step — see `loadDraft`.
+     * Put a draft from main in the editor. A version preview was about the draft being
+     * replaced, so it goes. `asStep` names a replacement of the same template's draft as
+     * one undoable step — see `loadDraft`.
      */
     const showDraft = (draft: Draft | null, asStep?: string) => {
-      set((state) => {
-        state.pendingAiChanges = [];
-      });
       useOverlayStore.getState().setPreview(null);
       useResumeStore.getState().loadDraft(draft, asStep ? { asStep } : undefined);
     };
@@ -132,7 +110,6 @@ export const useTemplateStore = create<TemplateState>()(
     return {
       templates: [],
       historyEdits: 0,
-      pendingAiChanges: [],
 
       load: (templates) =>
         set((state) => {
@@ -287,44 +264,6 @@ export const useTemplateStore = create<TemplateState>()(
         await getDb().versions.putBack(versionId);
         await refreshHistory();
       },
-
-      // AI queue (T3, stubs wired for interface stability)
-
-      enqueueAiChange: (change) =>
-        set((state) => {
-          state.pendingAiChanges.push(change);
-        }),
-
-      keepAiChange: (changeId) =>
-        set((state) => {
-          state.pendingAiChanges = state.pendingAiChanges.filter((c) => c.id !== changeId);
-        }),
-
-      undoAiChange: (changeId) => {
-        const change = get().pendingAiChanges.find((c) => c.id === changeId);
-        if (!change) return;
-        revertAiChange(change);
-        set((state) => {
-          state.pendingAiChanges = state.pendingAiChanges.filter((c) => c.id !== changeId);
-        });
-      },
-
-      keepAllAiChanges: () =>
-        set((state) => {
-          state.pendingAiChanges = [];
-        }),
-
-      undoAllAiChanges: () => {
-        for (const change of [...get().pendingAiChanges].reverse()) revertAiChange(change);
-        set((state) => {
-          state.pendingAiChanges = [];
-        });
-      },
-
-      clearAiChanges: () =>
-        set((state) => {
-          state.pendingAiChanges = [];
-        }),
     };
   })
 );
