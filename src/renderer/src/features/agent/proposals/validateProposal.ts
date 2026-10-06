@@ -1,4 +1,4 @@
-import type { ProposalChange, ProposalChangeKind } from '@shared/types/agent';
+import type { ProposalChange, ProposalChangeKind } from '@shared/types/agentProposal';
 import type { ResumeData } from '@shared/types/resume';
 import { findAnchorMismatch, findEntry, type AnchorMismatch } from './proposalAnchor';
 

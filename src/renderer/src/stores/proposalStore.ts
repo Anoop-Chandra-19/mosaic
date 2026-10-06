@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
-import type { Proposal, ProposalStatus } from '@shared/types/agent';
+import type { Proposal, ProposalStatus } from '@shared/types/agentProposal';
 
 /*
  * The staging layer: the assistant's suggestions, waiting over each template's draft and

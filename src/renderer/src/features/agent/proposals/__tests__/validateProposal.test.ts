@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { ProposalChange } from '@shared/types/agent';
+import type { ProposalChange } from '@shared/types/agentProposal';
 import { validateProposal } from '../validateProposal';
 import { makeResume, rewrite } from './proposalFixtures';
 

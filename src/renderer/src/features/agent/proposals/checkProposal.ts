@@ -1,4 +1,4 @@
-import type { ProposalChange, ProposalFlag } from '@shared/types/agent';
+import type { ProposalChange, ProposalFlag } from '@shared/types/agentProposal';
 import { checkClaimsMore } from './checks/claimsMore';
 import { checkDoubledWords } from './checks/doubledWords';
 import { checkNewNumbers } from './checks/newNumbers';

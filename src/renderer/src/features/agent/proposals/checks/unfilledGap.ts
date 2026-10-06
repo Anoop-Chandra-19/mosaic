@@ -1,4 +1,4 @@
-import type { ProposalFlag } from '@shared/types/agent';
+import type { ProposalFlag } from '@shared/types/agentProposal';
 
 /** Where a rewrite wants a number only the user knows. */
 export const GAP_MARK = '{{?}}';
