@@ -96,6 +96,8 @@ interface ResumeState extends ResumeData {
    * of it. The undo stack is untouched: a snapshot records history, it does not end it.
    */
   markVersionSaved: (rev: number) => void;
+  /** Puts a whole document in as one edit, so one undo takes it all back: applied suggestions. */
+  applyDocument: (label: string, doc: ResumeData) => void;
 
   setName: (name: string) => void;
   setLinkStyle: (linkStyle: LinkStyle) => void;
@@ -309,6 +311,9 @@ export const useResumeStore = create<ResumeState>()(
           state.baselineRev = rev;
           state.baselineReachable = true;
         }),
+
+      applyDocument: (label, doc) =>
+        edit(label, (state) => putDocument(state, structuredClone(doc))),
 
       // Name and header
 

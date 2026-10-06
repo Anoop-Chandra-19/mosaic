@@ -125,17 +125,6 @@ export interface ResumeData {
   sections: ResumeSection[];
 }
 
-export interface PendingTextAiChange {
-  id: string;
-  createdAt: string;
-  target:
-    | { kind: 'entry-text'; sectionId: string; entryId: string }
-    | { kind: 'bullet-text'; sectionId: string; entryId: string; bulletId: string };
-  before: string;
-  after: string;
-  reason?: string;
-}
-
 export type AiProvider = 'openai' | 'anthropic' | 'gemini' | 'ollama' | 'openrouter';
 
 export interface AiSettings {

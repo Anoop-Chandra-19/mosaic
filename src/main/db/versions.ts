@@ -239,6 +239,44 @@ export function snapshotEditedDraft(
   })();
 }
 
+function describeAppliedSuggestions(applied: number, proposed: number): string {
+  if (applied === proposed) {
+    return applied === 1 ? 'Applied a suggestion' : `Applied ${applied} suggestions`;
+  }
+  return `Applied ${applied} of ${proposed} suggestions`;
+}
+
+/**
+ * Keep the draft as it stands after a batch of accepted suggestions. The counts are the
+ * summary; the section comes from what actually changed.
+ */
+export function snapshotAppliedSuggestions(
+  db: Database,
+  templateId: string,
+  applied: number,
+  proposed: number
+): VersionMeta {
+  return db.transaction(() => {
+    const draft = readDraft(db, templateId);
+    const head = headVersion(db, templateId);
+    const kept = headHoldingDraft(db, head, draft);
+    if (kept) return kept;
+    const section = head
+      ? describeDraftChanges(getVersion(db, head.id).doc, draft.doc).section
+      : null;
+    return insertVersion(db, {
+      templateId,
+      parentId: head?.id ?? null,
+      kind: 'auto',
+      source: 'assistant',
+      summary: describeAppliedSuggestions(applied, proposed),
+      section,
+      doc: draft.doc,
+      rev: draft.rev,
+    });
+  })();
+}
+
 /**
  * Name what is in the editor. A draft the head already holds renames that version instead
  * of minting a duplicate.

@@ -31,6 +31,7 @@ const VERSION_SOURCES: ReadonlySet<string> = new Set<VersionSource>([
   'edit',
   'switched',
   'closed',
+  'assistant',
 ]);
 
 class BundleError extends Error {
