@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { MOTION_EASE, MOTION_EASE_IN } from '../motionTiming';
-import { pop, readPresenceFrame, type PresenceFrame } from '../presenceMotions';
+import { fade, pop, readPresenceFrame, type PresenceFrame } from '../presenceMotions';
 
 function mockBrowser(resting: PresenceFrame = { opacity: '1', transform: 'none' }) {
   class FakeAnimation {
@@ -56,7 +56,7 @@ describe('pop', () => {
       const base = { opacity: '0.9', transform: 'matrix(1, 0, 0, 1, 12, 3)' };
       const from = { opacity: '0.4', transform: 'translateY(2px) scale(0.99)' };
       const browser = mockBrowser(base);
-      pop(browser.element, phase, from);
+      pop(browser.element, phase, new Map([[browser.element, from]]));
       const target =
         phase === 'enter'
           ? base
@@ -100,6 +100,48 @@ describe('pop', () => {
       const browser = mockBrowser();
       browser.matchMedia.mockReturnValue({ matches: true });
       expect(pop(browser.element, phase)).toBeNull();
+      expect(browser.getStyle).not.toHaveBeenCalled();
+      expect(browser.animate).not.toHaveBeenCalled();
+    }
+  );
+});
+
+describe('fade', () => {
+  it.each([
+    ['enter', 200, MOTION_EASE],
+    ['exit', 150, MOTION_EASE_IN],
+  ] as const)('animates an opacity-only %s', (phase, duration, easing) => {
+    const browser = mockBrowser({ opacity: '0.8', transform: 'scale(1.1)' });
+    expect(fade(browser.element, phase)).toBe(browser.animation);
+    expect(browser.animate).toHaveBeenCalledExactlyOnceWith(
+      phase === 'enter'
+        ? [{ opacity: '0' }, { opacity: '0.8' }]
+        : [{ opacity: '0.8' }, { opacity: '0' }],
+      { duration, easing, fill: 'both' }
+    );
+    expect(browser.animation.id).toBe(`presence-${phase}`);
+    expect(browser.matchMedia).toHaveBeenCalledExactlyOnceWith('(prefers-reduced-motion: reduce)');
+  });
+
+  it.each(['enter', 'exit'] as const)(
+    'resumes an interrupted %s from its current opacity',
+    (phase) => {
+      const browser = mockBrowser({ opacity: '0.9', transform: 'scale(1.1)' });
+      const frame = { opacity: '0.4', transform: 'translateY(2px) scale(0.99)' };
+      fade(browser.element, phase, new Map([[browser.element, frame]]));
+      expect(browser.animate).toHaveBeenCalledExactlyOnceWith(
+        [{ opacity: '0.4' }, { opacity: phase === 'enter' ? '0.9' : '0' }],
+        expect.any(Object)
+      );
+    }
+  );
+
+  it.each(['enter', 'exit'] as const)(
+    'skips measuring and animating %s with reduced motion',
+    (phase) => {
+      const browser = mockBrowser();
+      browser.matchMedia.mockReturnValue({ matches: true });
+      expect(fade(browser.element, phase)).toBeNull();
       expect(browser.getStyle).not.toHaveBeenCalled();
       expect(browser.animate).not.toHaveBeenCalled();
     }

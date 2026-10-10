@@ -277,10 +277,7 @@ export function VersionList({
       )}
       <div className="relative mt-1.5">
         {groups.length > 0 && (
-          <span
-            aria-hidden
-            className="absolute top-2.5 bottom-3 left-[0.3125rem] w-px bg-line-strong"
-          />
+          <span aria-hidden className="absolute top-2.5 bottom-3 left-1.25 w-px bg-line-strong" />
         )}
         {groups.map((group, index) => (
           <section
@@ -314,7 +311,7 @@ export function VersionList({
               variant="eyebrow"
               className={cn(
                 'sticky z-3 flex items-center gap-2 bg-background pt-2.75 pb-1.25 pl-5.5',
-                !hasFilterBar ? 'top-0' : isSearching ? 'top-[5.125rem]' : 'top-10.5',
+                !hasFilterBar ? 'top-0' : isSearching ? 'top-20.5' : 'top-10.5',
                 group.isToday ? 'text-ink-soft' : 'text-ink-muted'
               )}
             >

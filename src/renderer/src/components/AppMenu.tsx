@@ -28,10 +28,7 @@ export function AppMenuContent({
   ...props
 }: ComponentProps<typeof DropdownMenuContent>) {
   return (
-    <DropdownMenuContent
-      className={cn(FLOATING_SURFACE_CLASSES, 'p-[0.3125rem]', className)}
-      {...props}
-    />
+    <DropdownMenuContent className={cn(FLOATING_SURFACE_CLASSES, 'p-1.25', className)} {...props} />
   );
 }
 
@@ -40,7 +37,7 @@ export function AppMenuItem({ className, ...props }: ComponentProps<typeof Dropd
     <DropdownMenuItem
       className={cn(
         LIST_ROW_CLASSES,
-        'data-[variant=destructive]:text-del data-[variant=destructive]:focus:bg-del-soft data-[variant=destructive]:focus:text-del dark:data-[variant=destructive]:focus:bg-del-soft data-[variant=destructive]:*:[svg]:!text-del',
+        'data-[variant=destructive]:text-del data-[variant=destructive]:focus:bg-del-soft data-[variant=destructive]:focus:text-del dark:data-[variant=destructive]:focus:bg-del-soft data-[variant=destructive]:*:[svg]:text-del!',
         className
       )}
       {...props}
@@ -60,7 +57,7 @@ export function AppMenuCheckboxItem({
       className={cn(
         LIST_ROW_CLASSES,
         CHECKED_ROW_CLASSES,
-        '[&>span:first-child_svg]:size-[0.8125rem]',
+        '[&>span:first-child_svg]:size-3.25',
         className
       )}
       {...props}
@@ -84,10 +81,7 @@ export function AppMenuRadioItem({
 export function AppMenuLabel({ className, ...props }: ComponentProps<typeof DropdownMenuLabel>) {
   return (
     <DropdownMenuLabel
-      className={cn(
-        'pt-[0.3125rem] pr-2.5 pb-[0.1875rem] pl-[1.9375rem] text-support text-ink-faint',
-        className
-      )}
+      className={cn('pt-1.25 pr-2.5 pb-0.75 pl-7.75 text-support text-ink-faint', className)}
       {...props}
     />
   );

@@ -34,9 +34,9 @@ export function DialogFrameHeader({
   onClose: () => void;
 }) {
   return (
-    <header className="flex items-center justify-between gap-3 border-b border-line px-3.5 py-[0.8125rem]">
+    <header className="flex items-center justify-between gap-3 border-b border-line px-3.5 py-3.25">
       <AppDialogTitle className="flex min-w-0 items-center gap-2.25">
-        <Icon className={cn('size-[0.9375rem] shrink-0', ICON_TONE[tone])} />
+        <Icon className={cn('size-3.75 shrink-0', ICON_TONE[tone])} />
         {title}
       </AppDialogTitle>
       {description && (

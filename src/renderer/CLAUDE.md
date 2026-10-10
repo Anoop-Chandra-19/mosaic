@@ -26,6 +26,9 @@ For resume content, preview, or exports, also read `docs/resume-format.md` (repo
   the dialog's scrim). Variants only where the design has them (`size="sm"`), never a
   restyle at the call site.
 - Use the appropriate primitive for tabs, toggles, and other non-button semantics.
+- Conditional notices use `Note isShown={…}`, kept mounted so its exit can finish. The
+  note owns opt-in fade presence and retains its content on its own root; don't add a
+  motion wrapper at the call site. Omit `isShown` for a static note.
 - Never edit `src/components/ui/` (shadcn-managed). Customize app wrappers, usage, or theme
   tokens instead. Lucide supplies icons.
 - `bunx shadcn@latest add <component>` keeps upstream imports, including `cn` from `cn`
@@ -101,89 +104,13 @@ that wants it passes `withApp({ showTour: true })`.
   use exact point dimensions as pixels. Scale the container with `transform: scale()`;
   never CSS `zoom` or relative page dimensions, which can change line wraps versus PDF.
 
-## View transitions
+## Motion
 
-`features/view-transitions/` is the layer; features import from it, and it imports no
-feature. An element joins with `className={cn(…, transitionClasses({ name, motion,
-isActive }))}`:
-
-- **name**: which element it is, on one element at a time;
-- **motion**: how it moves (a `view-transition-class`), styled in `viewTransitions.css`,
-  which names motions and directions only, never an element or a feature;
-- **isActive**: which of two elements sharing a name holds it now, decided by the component;
-- a **direction** (`TRANSITION_TYPE`, via `addTransitionType`) varies a motion.
-
-A new name or motion is one entry in `transitionClasses.ts`, written out whole (Tailwind
-only generates classes it finds spelled out). `useShownSurface` and `pageHandoff` list the
-surfaces that replace the workspace and take the page; a new surface joins by being added.
-Use a motion that exists before inventing one:
-
-| Motion                              | For                                                 | Used by                     |
-| ----------------------------------- | --------------------------------------------------- | --------------------------- |
-| `surface-in`, `surface-out`         | A view fading in over the workspace, and out        | The history view            |
-| `recede`                            | Stepping back behind a view, unchanged, returning   | The workspace               |
-| `handoff`                           | The same thing moving between two boxes showing it  | The page: preview ↔ history |
-| `step` + `step-back`/`step-forward` | Sliding the way a sequence runs, back from the left | The page between versions   |
-| `slide-in`, `slide-away`            | Leaving to the edge, the space reclaimed, and back  | The sidebar, history index  |
-| `reclaim`                           | A box easing into space given up beside it          | The history list            |
-
-- A view transition blocks input while it runs: use one for whole-view changes and moves
-  between boxes; keep frequent or interruptible changes local (CSS or `lib/motion/`).
-- Grow `lib/motion/` as the app's small, shared local-animation foundation. Before adding
-  an animation, check its existing motions and lifecycle hooks. When a capability is
-  missing, extend the library with the smallest reusable behavior the feature needs,
-  built on native browser animation APIs, rather than duplicating it in the feature or
-  adding an animation dependency. Components own content and visible state; the library
-  owns programmatic motion, interruption, cancellation, and exit retention. New motions
-  must respect reduced motion, clean up on unmount, and handle rapid changes safely.
-  Test shared behavior with unit tests; use focused browser tests for lifecycle behavior
-  that requires real animation APIs. Expand from actual use, not a speculative framework,
-  and migrate existing custom motion when that area is reworked, not in unrelated sweeps.
-  Simple CSS transitions and Radix-owned presence stay with their appropriate primitives;
-  don't add feature-specific tokens or keyframes to `index.css` for behavior the library
-  can own.
-- Inside a box, `lib/motion/` instead. It knows boxes and rows, never features; every
-  duration is in `motionTiming.ts`. Use what exists before adding a motion:
-  - `useListMotion(signature, attribute)` for any list: rows marked with `attribute` slide,
-    arrive, and leave through each change to `signature`, and the box eases to its height.
-    `expect` swaps in another motion for the next change (a split's row travels from the
-    text it came from); `useSwapMotion` covers a row changing what it shows, such as an
-    editor opening. Typing never animates.
-  - `rowMotions.ts`: the motions themselves (slide, appear, leave, travel, fold, height,
-    tint), for `expect` or a one-off.
-  - `usePresenceMotion(value, key)` for a single box that comes and goes: render `shown`,
-    key its div, attach `ref`, and make it inert while `isLeaving`. It retains content
-    through exit and cancels stale exits on replacement. `presenceMotions.ts` supplies
-    the reusable `pop` motion; interrupted motion resumes from its visible frame.
-  - `easeHeightChanges` (a ref callback) eases a box whose height follows its content, such
-    as a dialog changing step; `recordPlaces` then `slideFromRecordedPlaces` slide items
-    to where a layout switch put them.
-  - Folds are Radix collapsibles (`EditorFold`, `ReviewFold`); fixed motions, such as a
-    split's seam, are CSS keyframes in `index.css`.
-
-  All stay inside the box's clipping, finish before the next change measures, and never
-  block input. With reduced motion nothing moves; colour fades stay.
-
-- A name sits on one element at a time, or the browser skips the transition.
-- A named element draws unclipped while it moves: name the clipped box that shows a thing,
-  not a thing taller than its box.
-- The old and new images add their light: fade them in lockstep, or give offset images
-  `mix-blend-mode: normal`, or the frame dims or washes out mid-way.
-- Zustand renders at once and only a transition's render animates: state from a store
-  reaches a transition through a deferred value (`useShownSurface`), or local state is set
-  inside `startTransition`.
-- Load what the new state shows before it commits (`use()` or read first), or the
-  transition lands on an empty frame.
-- An element named in every state animates on unrelated transitions too. Give its motion
-  only to leaving and arriving with `:only-child` (the image has no pair); `:not()` isn't
-  allowed after these pseudo-elements, so set the in-place default first and override it.
-  For something that mounts and unmounts, React's `<ViewTransition enter exit>` names it
-  only when it comes or goes.
-- Reduced motion turns off every animation; the transition still happens.
-
-Check one in two ways. `e2e/view-transitions.spec.ts` counts transitions, their types, and
-that none was skipped; add to it for a new one. For how it looks, run it in the built app
-(never `electron-vite dev`) with each animation's `playbackRate` at 0.1, screenshot at
-fixed points, and chart each frame's mean brightness: a dip or spike is a flash the eye
-catches at full speed. Slowing doesn't reach nested groups, and the preview's own timers
-aren't slowed, so film those at full speed.
+- For local animation, check `lib/motion/` first and extend it from actual needs rather
+  than duplicating lifecycle code or adding an animation dependency. Before changing
+  the library or using its APIs, read `src/lib/motion/CLAUDE.md` (renderer-relative).
+- Whole-view changes and moves between boxes use `features/view-transitions/`; read
+  `src/features/view-transitions/CLAUDE.md` before changing or using that layer. View
+  transitions block input, so keep frequent or interruptible changes local.
+- Simple CSS transitions and Radix-owned presence stay with their appropriate primitives.
+  Respect reduced motion, clean up on unmount, and handle rapid changes safely.

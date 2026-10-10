@@ -79,7 +79,7 @@ export function SectionList({
                 <span
                   aria-hidden="true"
                   className={cn(
-                    'flex size-3 shrink-0 items-center justify-center transition-transform duration-180 ease-(--ease-settle) motion-reduce:transition-none',
+                    'flex size-3 shrink-0 items-center justify-center transition-transform duration-180 ease-settle motion-reduce:transition-none',
                     isAddSectionMenuOpen && 'rotate-45'
                   )}
                 >
