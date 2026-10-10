@@ -1,11 +1,13 @@
 import { AlertTriangle, Check, X } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
 import { useOverlayStore } from '@/stores/overlayStore';
+import { usePresenceMotion } from '@/lib/motion/usePresenceMotion';
 
 /** A short confirmation, or a failure, at the foot of the workspace. It clears itself. */
 export function Toast() {
   const toast = useOverlayStore((s) => s.toast);
   const dismiss = useOverlayStore((s) => s.dismissToast);
+  const { shown: shownToast, isLeaving, ref } = usePresenceMotion(toast, toast?.id ?? null);
 
   return (
     <div
@@ -13,28 +15,32 @@ export function Toast() {
       aria-live="polite"
       className="pointer-events-none absolute inset-x-0 bottom-11 z-50 flex justify-center px-4"
     >
-      {toast && (
+      {shownToast && (
         <div
-          key={toast.id}
-          className="pointer-events-auto flex max-w-full items-center gap-2.5 rounded-full border border-line-strong bg-pane-raised py-2.5 pr-2.75 pl-3.5 text-body text-foreground shadow-overlay duration-200 animate-in fade-in-0 slide-in-from-bottom-1 motion-reduce:animate-none"
+          key={shownToast.id}
+          ref={ref}
+          data-state={isLeaving ? 'closed' : 'open'}
+          inert={isLeaving}
+          aria-hidden={isLeaving || undefined}
+          className="pointer-events-auto flex max-w-full items-center gap-2.5 rounded-full border border-line-strong bg-pane-raised py-2.5 pr-2.75 pl-3.5 text-body text-foreground shadow-overlay"
         >
-          {toast.tone === 'success' ? (
+          {shownToast.tone === 'success' ? (
             <Check className="size-3.25 shrink-0 text-add" />
           ) : (
             <AlertTriangle className="size-3.25 shrink-0 text-del" />
           )}
-          <span className="min-w-0">{toast.message}</span>
-          {toast.action && (
+          <span className="min-w-0">{shownToast.message}</span>
+          {shownToast.action && (
             <AppButton
               variant="ghost"
               size="sm"
               className="h-6 shrink-0 rounded-full px-2.5 font-strong text-amber hover:text-amber"
               onClick={() => {
                 dismiss();
-                toast.action?.run();
+                shownToast.action?.run();
               }}
             >
-              {toast.action.label}
+              {shownToast.action.label}
             </AppButton>
           )}
           <AppButton

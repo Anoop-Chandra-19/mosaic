@@ -128,7 +128,20 @@ Use a motion that exists before inventing one:
 | `reclaim`                           | A box easing into space given up beside it          | The history list            |
 
 - A view transition blocks input while it runs: use one for whole-view changes and moves
-  between boxes; keep frequent or interruptible changes (zoom, folds, hovers) CSS.
+  between boxes; keep frequent or interruptible changes local (CSS or `lib/motion/`).
+- Grow `lib/motion/` as the app's small, shared local-animation foundation. Before adding
+  an animation, check its existing motions and lifecycle hooks. When a capability is
+  missing, extend the library with the smallest reusable behavior the feature needs,
+  built on native browser animation APIs, rather than duplicating it in the feature or
+  adding an animation dependency. Components own content and visible state; the library
+  owns programmatic motion, interruption, cancellation, and exit retention. New motions
+  must respect reduced motion, clean up on unmount, and handle rapid changes safely.
+  Test shared behavior with unit tests; use focused browser tests for lifecycle behavior
+  that requires real animation APIs. Expand from actual use, not a speculative framework,
+  and migrate existing custom motion when that area is reworked, not in unrelated sweeps.
+  Simple CSS transitions and Radix-owned presence stay with their appropriate primitives;
+  don't add feature-specific tokens or keyframes to `index.css` for behavior the library
+  can own.
 - Inside a box, `lib/motion/` instead. It knows boxes and rows, never features; every
   duration is in `motionTiming.ts`. Use what exists before adding a motion:
   - `useListMotion(signature, attribute)` for any list: rows marked with `attribute` slide,
@@ -138,6 +151,10 @@ Use a motion that exists before inventing one:
     editor opening. Typing never animates.
   - `rowMotions.ts`: the motions themselves (slide, appear, leave, travel, fold, height,
     tint), for `expect` or a one-off.
+  - `usePresenceMotion(value, key)` for a single box that comes and goes: render `shown`,
+    key its div, attach `ref`, and make it inert while `isLeaving`. It retains content
+    through exit and cancels stale exits on replacement. `presenceMotions.ts` supplies
+    the reusable `pop` motion; interrupted motion resumes from its visible frame.
   - `easeHeightChanges` (a ref callback) eases a box whose height follows its content, such
     as a dialog changing step; `recordPlaces` then `slideFromRecordedPlaces` slide items
     to where a layout switch put them.

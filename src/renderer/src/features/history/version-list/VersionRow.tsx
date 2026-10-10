@@ -1,4 +1,4 @@
-import { ChevronDown, ChevronRight, Save } from 'lucide-react';
+import { ChevronDown, ChevronRight, Save, Sparkles } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
 import { Text } from '@/components/Text';
 import type { TextVariant } from '@/components/textVariants';
@@ -317,7 +317,7 @@ export function VersionRow({
             aria-hidden
             className={cn(
               // The rail is 1px on a whole pixel, centred at 5.5px; the slot's centre is 6px.
-              'relative z-1 shrink-0 -translate-x-[0.03125rem]',
+              'relative z-1 shrink-0 translate-x-[0.03125rem]',
               railMarkClasses(railMark, isHead, isPreviewing, isConfirming),
               isJustNamed && 'animate-marker-pop motion-reduce:animate-none'
             )}
@@ -354,6 +354,9 @@ export function VersionRow({
                       isJustNamed && 'animate-marker-pop motion-reduce:animate-none'
                     )}
                   />
+                )}
+                {version.source === 'assistant' && (
+                  <Sparkles className="mr-1.25 inline size-2.5 align-[-1px] text-amber" />
                 )}
                 {number && !isNamed ? number.title : version.summary}
               </Text>
