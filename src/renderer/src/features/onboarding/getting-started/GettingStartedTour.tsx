@@ -10,10 +10,11 @@ import { cn } from '@/lib/utils';
 import { showToast, useOverlayStore } from '@/stores/overlayStore';
 import { useResumeStore } from '@/stores/resumeStore';
 import { useUiStore, type SidebarTab } from '@/stores/uiStore';
-import { placeTourCard, type Size } from './placeTourCard';
-import { SIDEBAR_TAB_TARGET, TOUR_STEPS, tourTargetSelector } from './tourSteps';
-import { useIsAppCovered } from './useIsAppCovered';
-import { useTargetRect } from './useTargetRect';
+import { placeTourCard, type Size } from '../placeTourCard';
+import { SIDEBAR_TAB_TARGET, tourTargetSelector } from '../tourTargets';
+import { useIsAppCovered } from '../useIsAppCovered';
+import { useTargetRect } from '../useTargetRect';
+import { GETTING_STARTED_STEPS as TOUR_STEPS } from './gettingStartedSteps';
 
 /** The card's size before it has been measured, as the design lays it out. */
 const CARD_BEFORE_MEASURED: Size = { width: 316, height: 230 };
@@ -50,7 +51,7 @@ function useStartTourOnFirstResume() {
  * The first-run tour: each step dims the app around one live element, which stays usable,
  * and a card beside it says what it is for. It waits under dialogs and surfaces.
  */
-export function Tour() {
+export function GettingStartedTour() {
   useStartTourOnFirstResume();
   const stepIndex = useOverlayStore((s) => s.tourStep);
   if (stepIndex === null) return null;

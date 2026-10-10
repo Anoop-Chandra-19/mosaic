@@ -19,7 +19,7 @@ import { useTemplateStore } from '@/stores/templateStore';
 import { useUiStore, type SidebarTab, SIDEBAR_WIDTH } from '@/stores/uiStore';
 import { ContentTab } from '@/features/editor/ContentTab';
 import { TemplatesTab } from '@/features/templates/TemplatesTab';
-import { SIDEBAR_TAB_TARGET, tourTargetProps } from '@/features/onboarding/tourSteps';
+import { SIDEBAR_TAB_TARGET, tourTargetProps } from '@/features/onboarding/tourTargets';
 import { formatPaneWidth, startPaneResize } from './paneResize';
 
 const tabs: { id: SidebarTab; label: string; caption: string; icon: React.ReactNode }[] = [

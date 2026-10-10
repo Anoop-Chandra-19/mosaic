@@ -1,35 +1,7 @@
 import type { ShortcutId } from '@/lib/shortcutCatalog';
 import type { SidebarTab } from '@/stores/uiStore';
-
-/** The elements the tour points at, each marked with `tourTargetProps` where it renders. */
-export const TOUR_TARGET = {
-  content: 'content',
-  preview: 'preview',
-  history: 'history',
-  nameVersion: 'name-version',
-  templates: 'templates',
-  export: 'export',
-  settings: 'settings',
-  contentTab: 'content-tab',
-  templatesTab: 'templates-tab',
-} as const;
-
-export type TourTarget = keyof typeof TOUR_TARGET;
-
-/** Where the spotlight goes on its way to a step on another sidebar tab. */
-export const SIDEBAR_TAB_TARGET: Record<SidebarTab, TourTarget> = {
-  content: 'contentTab',
-  templates: 'templatesTab',
-};
-export type TourSide = 'top' | 'right' | 'bottom' | 'left';
-
-export function tourTargetProps(target: TourTarget) {
-  return { 'data-tour': TOUR_TARGET[target] };
-}
-
-export function tourTargetSelector(target: TourTarget): string {
-  return `[data-tour="${TOUR_TARGET[target]}"]`;
-}
+import type { TourSide } from '../placeTourCard';
+import type { TourTarget } from '../tourTargets';
 
 export interface TourStep {
   id: string;
@@ -46,7 +18,7 @@ export interface TourStep {
   body: string;
 }
 
-export const TOUR_STEPS: readonly TourStep[] = [
+export const GETTING_STARTED_STEPS: readonly TourStep[] = [
   {
     id: 'welcome',
     title: 'Welcome to Mosaic',

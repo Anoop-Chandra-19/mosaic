@@ -1,4 +1,5 @@
-import type { TourSide } from './tourSteps';
+/** Which side of its target a tour card sits on, when there is room. */
+export type TourSide = 'top' | 'right' | 'bottom' | 'left';
 
 export interface Box {
   top: number;

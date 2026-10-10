@@ -36,7 +36,7 @@ import { formatRelativeTime } from './formatRelativeTime';
 import type { HistoryFilter } from '@/types/history';
 import { useTemplateVersions, versionLabel } from '@/features/history/useTemplateVersions';
 import { VersionList } from '@/features/history/version-list/VersionList';
-import { tourTargetProps } from '@/features/onboarding/tourSteps';
+import { tourTargetProps } from '@/features/onboarding/tourTargets';
 
 interface TemplateCardProps {
   template: TemplateSummary;
