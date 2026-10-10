@@ -7,7 +7,7 @@ import { isTypingField } from '@/lib/keyboardShortcuts';
 import { fade } from '@/lib/motion/presenceMotions';
 import { usePresenceMotion } from '@/lib/motion/usePresenceMotion';
 import { cn } from '@/lib/utils';
-import { useOverlayStore } from '@/stores/overlayStore';
+import { selectTourStep, useOverlayStore } from '@/stores/overlayStore';
 import { useUiStore } from '@/stores/uiStore';
 import { CARD_BEFORE_MEASURED, measureTourCard, placeTourCard, spotAround } from '../placeTourCard';
 import { TourCard } from '../TourCard';
@@ -29,7 +29,7 @@ import { HISTORY_TOUR_STEPS } from './historyTourSteps';
  * with the view under it. Nothing of one run, such as its last card, outlives it.
  */
 export function HistoryTour() {
-  const stepIndex = useOverlayStore((s) => s.historyTourStep);
+  const stepIndex = useOverlayStore(selectTourStep('history'));
   return stepIndex === null ? null : <RunningHistoryTour stepIndex={stepIndex} />;
 }
 
@@ -51,7 +51,7 @@ interface HistoryTourStepViewProps {
 }
 
 function HistoryTourStepView({ stepIndex, isLeaving, overlayRef }: HistoryTourStepViewProps) {
-  const setStep = useOverlayStore((s) => s.setHistoryTourStep);
+  const setStep = useOverlayStore((s) => s.setTourStep);
   const isRestoreKept = useUiStore((s) => s.snapshotTriggers.beforeRestore);
   const step = HISTORY_TOUR_STEPS[stepIndex];
   const context = { isRestoreKept };

@@ -2,14 +2,15 @@ import { Keyboard } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
 import { DialogFrameHeader } from '@/components/DialogFrame';
 import { AppDialog, AppDialogContent } from '@/components/AppDialog';
-import { useOverlayStore } from '@/stores/overlayStore';
+import { useDialog, useOverlayStore } from '@/stores/overlayStore';
 import { ShortcutsPanel } from './ShortcutsPanel';
 
 /** The shortcut sheet on its own, from Ctrl/⌘+/ anywhere. Mounted once, in the app shell. */
 export function ShortcutsDialog() {
-  const open = useOverlayStore((s) => s.shortcutsOpen);
-  const place = useOverlayStore((s) => s.shortcutsPlace);
-  const close = useOverlayStore((s) => s.closeShortcuts);
+  const { isOpen: open, request } = useDialog('shortcuts');
+  const place = request?.place ?? null;
+  const closeDialog = useOverlayStore((s) => s.closeDialog);
+  const close = () => closeDialog('shortcuts');
 
   return (
     <AppDialog open={open} onOpenChange={(isOpen) => !isOpen && close()}>

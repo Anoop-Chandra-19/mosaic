@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { attempt, showToast } from '@/stores/overlayStore';
+import { attempt, showToast } from '@/stores/toastStore';
 import { useTemplateStore } from '@/stores/templateStore';
 import type { VersionMeta } from '@shared/types/db';
 import { versionLabel } from '../useTemplateVersions';

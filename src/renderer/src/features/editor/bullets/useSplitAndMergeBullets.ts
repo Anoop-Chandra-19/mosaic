@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
 import { findFirstLineTop, foldOnto, leaveInPlace, travelFrom } from '@/lib/motion/rowMotions';
 import { useListMotion, useSwapMotion } from '@/lib/motion/useListMotion';
-import { showToast } from '@/stores/overlayStore';
+import { showToast } from '@/stores/toastStore';
 import { useResumeStore } from '@/stores/resumeStore';
 import type { Bullet, ResumeEntry } from '@shared/types/resume';
 import type { BulletMerge } from './BulletEditor';

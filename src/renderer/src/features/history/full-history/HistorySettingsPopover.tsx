@@ -162,7 +162,7 @@ function SnapshotSettings() {
 function HelpSettings({ onStartTour }: { onStartTour: () => void }) {
   const tips = useUiStore((s) => s.historyTips);
   const setTipsOn = useUiStore((s) => s.setHistoryTipsOn);
-  const isTouring = useOverlayStore((s) => s.historyTourStep !== null);
+  const isTouring = useOverlayStore((s) => s.tour?.kind === 'history');
   return (
     <>
       <Text as="h3" variant="strong">

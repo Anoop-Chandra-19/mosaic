@@ -5,7 +5,7 @@ import { DbError, getDb } from '@/lib/storage/mosaicDb';
 import { createEmptyResume } from '@shared/resume/defaultResume';
 import { createHeaderItem, createHeaderLine } from '@shared/resume/resumeHeader';
 import type { Draft } from '@shared/types/db';
-import { ExplainedError } from './overlayStore';
+import { ExplainedError } from './toastStore';
 import { useUiStore } from './uiStore';
 import type {
   HeaderItem,

@@ -10,7 +10,7 @@ import { fileFailure } from '@/features/backup/backupFiles';
 import { easeHeightChanges } from '@/lib/motion/easeHeightChanges';
 
 import { cn } from '@/lib/utils';
-import { useOverlayStore } from '@/stores/overlayStore';
+import { useDialog, useOverlayStore } from '@/stores/overlayStore';
 import { MAX_FILE_BYTES } from '@shared/types/files';
 import { ImportReview, type ReadResume } from './ImportReview';
 import { parseResumeText } from './parsing/parseResume';
@@ -32,8 +32,9 @@ Acme Corp - 2021 to Present
  * (handed on to Restore). What Mosaic found is shown for review before anything is written.
  */
 export function ImportResumeDialog() {
-  const open = useOverlayStore((s) => s.importOpen);
-  const closeImport = useOverlayStore((s) => s.closeImport);
+  const { isOpen: open } = useDialog('import');
+  const closeDialog = useOverlayStore((s) => s.closeDialog);
+  const closeImport = () => closeDialog('import');
 
   return (
     <AppDialog open={open} onOpenChange={(next) => !next && closeImport()}>
@@ -58,7 +59,7 @@ function ImportFlow({ onDone }: { onDone: () => void }) {
   const [read, setRead] = useState<ReadResume | null>(null);
   // A file that couldn't be read: said under the drop zone until the next try.
   const [fileError, setFileError] = useState<string | null>(null);
-  const setPendingRestore = useOverlayStore((s) => s.setPendingRestore);
+  const openDialog = useOverlayStore((s) => s.openDialog);
 
   /** A file from the picker or a drop: a resume to review, or a backup to restore. */
   const readFile = async (name: string, bytes: Uint8Array) => {
@@ -71,8 +72,7 @@ function ImportFlow({ onDone }: { onDone: () => void }) {
     }
     setFileError(null);
     if (result.type === 'backup') {
-      onDone();
-      setPendingRestore(result.backup);
+      openDialog({ kind: 'restoreBackup', backup: result.backup });
       return;
     }
     setRead({ source: result.source, parsed: result.parsed });

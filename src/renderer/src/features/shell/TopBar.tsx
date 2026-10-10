@@ -3,7 +3,9 @@ import { AppButton } from '@/components/AppButton';
 import { MosaicMark } from '@/components/MosaicMark';
 import { Text } from '@/components/Text';
 import { redoShortcutLabel, shortcutLabel } from '@/lib/keyboardShortcuts';
-import { showToast, useOverlayStore } from '@/stores/overlayStore';
+import { useOverlayStore } from '@/stores/overlayStore';
+import { usePreviewStore } from '@/stores/previewStore';
+import { showToast } from '@/stores/toastStore';
 import { useResumeStore } from '@/stores/resumeStore';
 import { useIsDarkTheme } from './useAppearance';
 import { useUiStore } from '@/stores/uiStore';
@@ -20,18 +22,16 @@ export function TopBar() {
   const isDark = useIsDarkTheme();
   const setTheme = useUiStore((s) => s.setTheme);
   const openSettings = useOverlayStore((s) => s.openSettings);
-  const openExport = useOverlayStore((s) => s.openExport);
+  const openDialog = useOverlayStore((s) => s.openDialog);
   const activeTemplate = useActiveTemplate();
   const templateStatus = useTemplateStatus();
-  const openImport = useOverlayStore((s) => s.openImport);
-  const setNameVersionOpen = useOverlayStore((s) => s.setNameVersionOpen);
   const undoLabel = useResumeStore((s) => s.undoLabel);
   const redoLabel = useResumeStore((s) => s.redoLabel);
   const undo = useResumeStore((s) => s.undo);
   const redo = useResumeStore((s) => s.redo);
   const nameVersionKeys = useShortcutLabel('nameVersion');
   const settingsKeys = useShortcutLabel('openSettings');
-  const previewing = useOverlayStore((s) => s.preview !== null);
+  const previewing = usePreviewStore((s) => s.preview !== null);
 
   return (
     <header className="flex h-[3.125rem] shrink-0 items-center justify-between gap-3 border-b border-line bg-background pr-2.5 pl-3">
@@ -50,7 +50,7 @@ export function TopBar() {
             <AppButton
               variant="outline"
               size="xs"
-              onClick={() => setNameVersionOpen(true)}
+              onClick={() => openDialog({ kind: 'nameVersion' })}
               {...tourTargetProps('nameVersion')}
               title={`${
                 templateStatus === 'edited'
@@ -127,7 +127,7 @@ export function TopBar() {
         <AppButton
           variant="outline"
           size="sm"
-          onClick={() => openImport(!activeTemplate)}
+          onClick={() => openDialog({ kind: 'import', asNewOnly: !activeTemplate })}
           aria-label="Import resume"
         >
           <Upload />
@@ -136,7 +136,11 @@ export function TopBar() {
 
         <AppButton
           size="sm"
-          onClick={() => (activeTemplate ? openExport() : showToast('Nothing to export yet'))}
+          onClick={() =>
+            activeTemplate
+              ? openDialog({ kind: 'export', version: null })
+              : showToast('Nothing to export yet')
+          }
           aria-label="Open export dialog"
           {...tourTargetProps('export')}
         >

@@ -128,8 +128,15 @@ test('the app’s own keys reach it: export, import, zoom and a new section', as
   await page.keyboard.press('Control+0');
   await expect(zoom).toHaveText('100%');
 
+  // From another tab the menu isn't drawn yet: the keys switch tabs and it opens there.
+  await page.getByRole('tab', { name: 'Templates' }).click();
   await page.keyboard.press('Control+Shift+N');
-  await expect(page.getByRole('menuitem', { name: /Projects/ })).toBeVisible();
+  const projects = page.getByRole('menuitem', { name: /Projects/ });
+  await expect(projects).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(projects).toHaveCount(0);
+  await page.keyboard.press('Control+Shift+N');
+  await expect(projects).toBeVisible();
   expect(errors).toEqual([]);
 });
 

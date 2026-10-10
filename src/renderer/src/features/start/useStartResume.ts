@@ -1,5 +1,6 @@
 import { useRef } from 'react';
-import { attempt, showToast, useOverlayStore } from '@/stores/overlayStore';
+import { useOverlayStore } from '@/stores/overlayStore';
+import { attempt, showToast } from '@/stores/toastStore';
 import { useTemplateStore } from '@/stores/templateStore';
 import { useUiStore } from '@/stores/uiStore';
 import type { ResumeData } from '@shared/types/resume';

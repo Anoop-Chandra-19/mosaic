@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
 import { getDb } from '@/lib/storage/mosaicDb';
-import { useOverlayStore } from '@/stores/overlayStore';
+import { usePreviewStore } from '@/stores/previewStore';
 import { flushDraft, saveDraftOrStop, useResumeStore } from '@/stores/resumeStore';
 import { useUiStore } from '@/stores/uiStore';
 import type { ImportMode, MosaicBundle } from '@shared/types/bundle';
@@ -101,7 +101,7 @@ export const useTemplateStore = create<TemplateState>()(
      * one undoable step — see `loadDraft`.
      */
     const showDraft = (draft: Draft | null, asStep?: string) => {
-      useOverlayStore.getState().setPreview(null);
+      usePreviewStore.getState().setPreview(null);
       useResumeStore.getState().loadDraft(draft, asStep ? { asStep } : undefined);
     };
 
@@ -260,8 +260,8 @@ export const useTemplateStore = create<TemplateState>()(
 
       removeVersion: async (version) => {
         await getDb().versions.remove(version.id);
-        if (useOverlayStore.getState().preview?.version.id === version.id) {
-          useOverlayStore.getState().setPreview(null);
+        if (usePreviewStore.getState().preview?.version.id === version.id) {
+          usePreviewStore.getState().setPreview(null);
         }
         await refreshHistory();
       },

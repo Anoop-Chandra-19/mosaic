@@ -23,7 +23,8 @@ import { matchesAction } from '@/features/shortcuts/shortcutBindings';
 import { isTypingField } from '@/lib/keyboardShortcuts';
 import type { ShortcutId } from '@/lib/shortcutCatalog';
 import { cn } from '@/lib/utils';
-import { attempt, showToast, useOverlayStore } from '@/stores/overlayStore';
+import { useOverlayStore } from '@/stores/overlayStore';
+import { attempt, showToast } from '@/stores/toastStore';
 import { useTemplateStore } from '@/stores/templateStore';
 import { useUiStore } from '@/stores/uiStore';
 import { countChangesByTone } from '@shared/resume/changes/resumeChange';
@@ -92,7 +93,7 @@ export function FullHistory({
   const prepared = use(prepareHistoryOpening(opening, templateId, versionId));
   const template = useTemplateStore((s) => s.templates.find((t) => t.id === templateId));
   const closeSurface = useOverlayStore((s) => s.closeSurface);
-  const isTouring = useOverlayStore((s) => s.historyTourStep !== null);
+  const isTouring = useOverlayStore((s) => s.tour?.kind === 'history');
 
   // The template went away under the view, as a restore of all templates can do.
   useEffect(() => {
@@ -177,7 +178,7 @@ function FullHistoryFrame({
   const closeSurface = useOverlayStore((s) => s.closeSurface);
   const restoreVersion = useTemplateStore((s) => s.restoreVersion);
   const duplicateVersion = useTemplateStore((s) => s.duplicateVersion);
-  const openExport = useOverlayStore((s) => s.openExport);
+  const openDialog = useOverlayStore((s) => s.openDialog);
   const paperSize = useUiStore((s) => s.paperSize);
   const isDetailed = useUiStore((s) => s.shouldShowHistoryDetails);
   const storedComparison = useUiStore((s) => s.historyComparison);
@@ -343,7 +344,7 @@ function FullHistoryFrame({
   };
 
   const exportVersion = (version: Version, label: string) =>
-    openExport({ version, label, templateName: source.name });
+    openDialog({ kind: 'export', version: { version, label, templateName: source.name } });
 
   const namedCount = versions?.filter((version) => version.kind === 'named').length ?? 0;
 

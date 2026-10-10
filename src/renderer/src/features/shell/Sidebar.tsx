@@ -13,7 +13,8 @@ import { AppTooltip } from '@/components/AppTooltip';
 import { Text } from '@/components/Text';
 import { cn } from '@/lib/utils';
 import { HEADER_OUTLINE_ID, useOutlineStore } from '@/stores/outlineStore';
-import { attempt, showToast, useOverlayStore, type VersionPreview } from '@/stores/overlayStore';
+import { usePreviewStore, type VersionPreview } from '@/stores/previewStore';
+import { attempt, showToast } from '@/stores/toastStore';
 import { useResumeStore } from '@/stores/resumeStore';
 import { useTemplateStore } from '@/stores/templateStore';
 import { useUiStore, type SidebarTab, SIDEBAR_WIDTH } from '@/stores/uiStore';
@@ -50,7 +51,7 @@ export function Sidebar() {
   const widthPx = useUiStore((s) => s.sidebarWidthPx);
   const setWidthPx = useUiStore((s) => s.setSidebarWidthPx);
   const shouldShowPreview = useUiStore((s) => s.shouldShowPreview);
-  const preview = useOverlayStore((s) => s.preview);
+  const preview = usePreviewStore((s) => s.preview);
   const sidebarRef = useRef<HTMLElement>(null);
 
   const active = tabs.find((tab) => tab.id === activeSidebarTab) ?? tabs[0];
@@ -142,7 +143,7 @@ export function Sidebar() {
  * version up as the draft, or leave it and go back to the draft as it was left.
  */
 function ReadingVersionNote({ preview }: { preview: VersionPreview }) {
-  const setPreview = useOverlayStore((s) => s.setPreview);
+  const setPreview = usePreviewStore((s) => s.setPreview);
   const restoreVersion = useTemplateStore((s) => s.restoreVersion);
   const { version, label } = preview;
 

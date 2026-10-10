@@ -9,5 +9,5 @@ import { HISTORY_TOUR_EXPLAINS } from './historyTourSteps';
  */
 export function endHistoryTour(isComplete = false): void {
   if (isComplete) useUiStore.getState().markHistoryTipsSeen(HISTORY_TOUR_EXPLAINS);
-  changeInViewTransition(() => useOverlayStore.getState().setHistoryTourStep(null));
+  changeInViewTransition(() => useOverlayStore.getState().endTour('history'));
 }

@@ -11,7 +11,8 @@ import {
 } from '@/components/AppSelect';
 import { backUpNow, chooseBackup, fileFailure } from '@/features/backup/backupFiles';
 import { formatRelativeTime } from '@/features/templates/formatRelativeTime';
-import { explainFailure, showToast, useOverlayStore } from '@/stores/overlayStore';
+import { useOverlayStore } from '@/stores/overlayStore';
+import { explainFailure, showToast } from '@/stores/toastStore';
 import { saveDraftOrStop, useResumeStore } from '@/stores/resumeStore';
 import type { BackupFrequency, BackupStatus } from '@shared/types/backup';
 import { Note } from '@/components/Note';
@@ -35,9 +36,7 @@ function formatSize(bytes: number): string {
 /** Export and Import open their own dialogs, so Settings steps out of the way first. */
 export function ImportExportSection({ onCloseSettings }: { onCloseSettings: () => void }) {
   const hasOpenTemplate = useResumeStore((s) => s.templateId !== null);
-  const openExport = useOverlayStore((s) => s.openExport);
-  const openImport = useOverlayStore((s) => s.openImport);
-  const setPendingRestore = useOverlayStore((s) => s.setPendingRestore);
+  const openDialog = useOverlayStore((s) => s.openDialog);
   const [backup, setBackup] = useState<BackupStatus | null>(null);
   const [backingUp, setBackingUp] = useState(false);
 
@@ -84,7 +83,7 @@ export function ImportExportSection({ onCloseSettings }: { onCloseSettings: () =
       const backup = await chooseBackup();
       if (!backup) return;
       onCloseSettings();
-      setPendingRestore(backup);
+      openDialog({ kind: 'restoreBackup', backup });
     } catch (error) {
       showToast(fileFailure(error, 'Could not open the file'), 'error');
     }
@@ -106,7 +105,7 @@ export function ImportExportSection({ onCloseSettings }: { onCloseSettings: () =
           size="sm"
           onClick={() => {
             onCloseSettings();
-            if (hasOpenTemplate) openExport();
+            if (hasOpenTemplate) openDialog({ kind: 'export', version: null });
             else showToast('Nothing to export yet');
           }}
         >
@@ -124,7 +123,7 @@ export function ImportExportSection({ onCloseSettings }: { onCloseSettings: () =
           size="sm"
           onClick={() => {
             onCloseSettings();
-            openImport(!hasOpenTemplate);
+            openDialog({ kind: 'import', asNewOnly: !hasOpenTemplate });
           }}
         >
           <Upload />

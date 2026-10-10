@@ -31,7 +31,10 @@ import { matchesAction } from '@/features/shortcuts/shortcutBindings';
 import { isRedoKey, isTypingField, isUndoKey } from '@/lib/keyboardShortcuts';
 import { SHORTCUT_PLACES, type ShortcutId, type ShortcutPlace } from '@/lib/shortcutCatalog';
 import { useAiStore } from '@/stores/aiStore';
-import { showToast, useOverlayStore } from '@/stores/overlayStore';
+import { useOverlayStore } from '@/stores/overlayStore';
+import { usePreviewStore } from '@/stores/previewStore';
+import { useTargetStore } from '@/stores/targetStore';
+import { showToast } from '@/stores/toastStore';
 import { useResumeStore } from '@/stores/resumeStore';
 import { useTemplateStore } from '@/stores/templateStore';
 import { PREVIEW_DEFAULT_ZOOM, useUiStore, type SidebarTab } from '@/stores/uiStore';
@@ -155,7 +158,8 @@ const GLOBAL_SHORTCUTS: { id: ShortcutId; run: () => void; worksOverSurface?: tr
   },
   {
     id: 'showShortcuts',
-    run: () => useOverlayStore.getState().openShortcuts(findShortcutPlace()),
+    run: () =>
+      useOverlayStore.getState().openDialog({ kind: 'shortcuts', place: findShortcutPlace() }),
     worksOverSurface: true,
   },
   {
@@ -174,7 +178,7 @@ const GLOBAL_SHORTCUTS: { id: ShortcutId; run: () => void; worksOverSurface?: tr
     id: 'nameVersion',
     run: () => {
       if (useResumeStore.getState().templateId === null) showToast(NOTHING_OPEN);
-      else useOverlayStore.getState().setNameVersionOpen(true);
+      else useOverlayStore.getState().openDialog({ kind: 'nameVersion' });
     },
   },
   // Opens the open template's history, and closes it again: a view you toggle, like a pane.
@@ -201,25 +205,29 @@ const GLOBAL_SHORTCUTS: { id: ShortcutId; run: () => void; worksOverSurface?: tr
     id: 'exportResume',
     run: () => {
       if (useResumeStore.getState().templateId === null) showToast(NOTHING_OPEN);
-      else useOverlayStore.getState().openExport();
+      else useOverlayStore.getState().openDialog({ kind: 'export', version: null });
     },
   },
   {
     id: 'importResume',
-    run: () => useOverlayStore.getState().openImport(useResumeStore.getState().templateId === null),
+    run: () =>
+      useOverlayStore.getState().openDialog({
+        kind: 'import',
+        asNewOnly: useResumeStore.getState().templateId === null,
+      }),
     worksOverSurface: true,
   },
   {
     id: 'newSection',
     run: () => {
       if (useResumeStore.getState().templateId === null) return showToast(NOTHING_OPEN);
-      if (useOverlayStore.getState().preview) return showToast(READING_A_VERSION);
+      if (usePreviewStore.getState().preview) return showToast(READING_A_VERSION);
       showSidebarTab('content');
       // An empty resume suggests its sections in place of the menu, so those are shown.
       const isEmpty = useResumeStore
         .getState()
         .sections.every((section) => section.items.length === 0);
-      if (!isEmpty) useOverlayStore.getState().setAddSectionMenuOpen(true);
+      if (!isEmpty) useTargetStore.getState().requestTarget('addSectionMenu');
     },
   },
   { id: 'zoomIn', run: () => useUiStore.getState().zoomPreviewIn() },
@@ -246,7 +254,7 @@ function useShortcuts() {
         if (isTypingField(event.target) || isSurfaceUp) return;
         event.preventDefault();
         // Reading an older version changes nothing, least of all out of sight.
-        if (useOverlayStore.getState().preview) {
+        if (usePreviewStore.getState().preview) {
           showToast(READING_A_VERSION);
           return;
         }

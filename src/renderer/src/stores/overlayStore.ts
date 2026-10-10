@@ -1,36 +1,45 @@
 import { create } from 'zustand';
 import type { ShortcutPlace } from '@/lib/shortcutCatalog';
 import type { HistoryComparison, HistoryFilter } from '@/types/history';
-import type { ResumePreviewMeta } from '@/types/preview';
 import type { SettingsSectionId } from '@/types/settings';
 import type { OpenedBackup } from '@shared/types/bundle';
-import type { Version } from '@shared/types/db';
+import type { VersionPreview } from './previewStore';
 
-/** What is showing over the app right now. Never persisted. */
-
-export interface ToastAction {
-  label: string;
-  run: () => void;
-}
-
-export interface Toast {
-  id: number;
-  message: string;
-  tone: 'success' | 'error';
-  /** One follow-up, such as Undo. Running it dismisses the toast. */
-  action?: ToastAction;
-}
-
-/** A version being read in the sheet instead of the draft. */
-export interface VersionPreview {
-  version: Version;
-  /** "v3" — its place in the template's history. */
-  label: string;
-}
+/**
+ * What covers the app right now: a surface over the workspace, Settings, one dialog, and
+ * one tour. Never persisted. Toasts are `toastStore`'s, the version being read in the sheet
+ * is `previewStore`'s, and shortcuts that open something inside a feature use `targetStore`.
+ */
 
 /** A version to export instead of the open draft. */
 export interface ExportVersion extends VersionPreview {
   templateName: string;
+}
+
+/**
+ * A dialog to open, with what it needs. One at a time: opening one replaces another.
+ * Settings is not one of them; a dialog can open over it.
+ */
+export type DialogRequest =
+  /** `asNewOnly`: the import can only become a new template (nothing is open, or Start). */
+  | { kind: 'import'; asNewOnly: boolean }
+  /** `version`: what to export instead of the open draft. */
+  | { kind: 'export'; version: ExportVersion | null }
+  | { kind: 'nameVersion' }
+  /** `place`: where the sheet was opened from; that place's keys are listed first. */
+  | { kind: 'shortcuts'; place: ShortcutPlace | null }
+  /** A backup file chosen for restoring, waiting for the user to confirm. */
+  | { kind: 'restoreBackup'; backup: OpenedBackup };
+
+export type DialogKind = DialogRequest['kind'];
+
+/**
+ * The dialog showing. A closed one keeps its request until another opens, so it animates
+ * out unchanged.
+ */
+interface ShownDialog {
+  request: DialogRequest;
+  isOpen: boolean;
 }
 
 /**
@@ -56,162 +65,84 @@ export type WorkspaceSurface =
       comparison?: HistoryComparison;
     };
 
+/**
+ * `gettingStarted`: the first-run tour over the editor. `history`: the history tour, over
+ * the full history, which shows the example history meanwhile.
+ */
+export type TourKind = 'gettingStarted' | 'history';
+
+/**
+ * The tour running, one at a time: starting one replaces another. A dialog or surface over
+ * the app hides a tour without ending it; it comes back on its step.
+ */
+export interface RunningTour {
+  kind: TourKind;
+  step: number;
+}
+
 interface OverlayState {
   surface: WorkspaceSurface | null;
   /** The Settings section showing, or null while Settings is closed. */
   settingsSection: SettingsSectionId | null;
-  importOpen: boolean;
-  /** The import can only become a new template (nothing is open, or it came from Start). */
-  importAsNewOnly: boolean;
-  nameVersionOpen: boolean;
-  /** The keyboard shortcut sheet, opened on its own with Ctrl/⌘+/. */
-  shortcutsOpen: boolean;
-  /** Where the sheet was opened from: that place's keys are listed first. */
-  shortcutsPlace: ShortcutPlace | null;
-  /** The sidebar's Add section menu, which Ctrl/⌘+Shift+N opens too. */
-  addSectionMenuOpen: boolean;
-  exportOpen: boolean;
-  /** What the Export dialog exports: this version, or the open draft when null. */
-  exportVersion: ExportVersion | null;
-  /** A backup file chosen for restoring, waiting for the user to confirm. */
-  pendingRestore: OpenedBackup | null;
-  /**
-   * Reading a version before deciding to restore it. The draft is never touched; the
-   * preview ends on Back to draft, a restore, or when a different draft is loaded.
-   */
-  preview: VersionPreview | null;
-  /** Whether the version being read has its differences from the draft marked. */
-  arePreviewMarksShown: boolean;
-  /** How the sheet paginated, as the preview measured it; the status bar repeats it. */
-  previewMeta: ResumePreviewMeta;
-  toast: Toast | null;
-  /**
-   * The first-run tour's step while it runs, else null. A dialog or surface over the app
-   * hides the tour without ending it; it comes back on this step.
-   */
-  tourStep: number | null;
-  /**
-   * The history tour's step while it runs, else null. It runs over the full history, which
-   * shows the example history meanwhile; a dialog hides it without ending it.
-   */
-  historyTourStep: number | null;
+  dialog: ShownDialog | null;
+  tour: RunningTour | null;
   openSurface: (surface: WorkspaceSurface) => void;
   /** Closes the surface showing, if it is a `kind` one; any other is left alone. */
   closeSurface: (kind: WorkspaceSurface['kind']) => void;
   /** Opens Settings at `section`, General unless told otherwise. */
   openSettings: (section?: SettingsSectionId) => void;
   closeSettings: () => void;
-  openImport: (asNewOnly: boolean) => void;
-  closeImport: () => void;
-  setNameVersionOpen: (open: boolean) => void;
-  openShortcuts: (place: ShortcutPlace | null) => void;
-  closeShortcuts: () => void;
-  setAddSectionMenuOpen: (open: boolean) => void;
-  /** Opens Export for the open draft, or for `version`. */
-  openExport: (version?: ExportVersion) => void;
-  closeExport: () => void;
-  setPendingRestore: (backup: OpenedBackup | null) => void;
-  setPreview: (preview: VersionPreview | null) => void;
-  togglePreviewMarks: () => void;
-  setPreviewMeta: (meta: ResumePreviewMeta) => void;
-  dismissToast: () => void;
-  setTourStep: (step: number | null) => void;
-  setHistoryTourStep: (step: number | null) => void;
+  /** Opens `request`'s dialog, closing any other. */
+  openDialog: (request: DialogRequest) => void;
+  /** Closes the dialog showing, if it is a `kind` one; any other is left alone. */
+  closeDialog: (kind: DialogKind) => void;
+  /** Starts `kind`'s tour on its first step, ending any other. */
+  startTour: (kind: TourKind) => void;
+  /** Moves the running tour to `step`. */
+  setTourStep: (step: number) => void;
+  /** Ends the tour running, if it is a `kind` one; any other is left alone. */
+  endTour: (kind: TourKind) => void;
 }
 
 export const useOverlayStore = create<OverlayState>()((set) => ({
   surface: null,
   settingsSection: null,
-  importOpen: false,
-  importAsNewOnly: false,
-  nameVersionOpen: false,
-  shortcutsOpen: false,
-  shortcutsPlace: null,
-  addSectionMenuOpen: false,
-  exportOpen: false,
-  exportVersion: null,
-  pendingRestore: null,
-  preview: null,
-  arePreviewMarksShown: true,
-  previewMeta: { totalPages: 1, hasMorePages: false },
-  toast: null,
-  tourStep: null,
-  historyTourStep: null,
+  dialog: null,
+  tour: null,
   openSurface: (surface) => set({ surface }),
   // The history tour runs on the full history, so closing it ends the tour too.
   closeSurface: (kind) =>
     set((state) => {
       if (state.surface?.kind !== kind) return state;
-      return kind === 'history' ? { surface: null, historyTourStep: null } : { surface: null };
+      const isHistoryTourOn = kind === 'history' && state.tour?.kind === 'history';
+      return isHistoryTourOn ? { surface: null, tour: null } : { surface: null };
     }),
   openSettings: (section = 'general') => set({ settingsSection: section }),
   closeSettings: () => set({ settingsSection: null }),
-  openImport: (importAsNewOnly) => set({ importOpen: true, importAsNewOnly }),
-  closeImport: () => set({ importOpen: false }),
-  setNameVersionOpen: (nameVersionOpen) => set({ nameVersionOpen }),
-  openShortcuts: (shortcutsPlace) => set({ shortcutsOpen: true, shortcutsPlace }),
-  // The place stays until the next opening, so the closing sheet does not change.
-  closeShortcuts: () => set({ shortcutsOpen: false }),
-  setAddSectionMenuOpen: (addSectionMenuOpen) => set({ addSectionMenuOpen }),
-  openExport: (version) => set({ exportOpen: true, exportVersion: version ?? null }),
-  // The target stays until the next opening, so the closing dialog does not change.
-  closeExport: () => set({ exportOpen: false }),
-  setPendingRestore: (pendingRestore) => set({ pendingRestore }),
-  setPreview: (preview) => set({ preview }),
-  togglePreviewMarks: () => set((state) => ({ arePreviewMarksShown: !state.arePreviewMarksShown })),
-  // The preview reports after every render; only a different count is news. Storing an
-  // equal copy would re-render the preview, which reports again — a loop.
-  setPreviewMeta: (meta) =>
+  openDialog: (request) => set({ dialog: { request, isOpen: true } }),
+  closeDialog: (kind) =>
     set((state) =>
-      state.previewMeta.totalPages === meta.totalPages &&
-      state.previewMeta.hasMorePages === meta.hasMorePages
-        ? state
-        : { previewMeta: meta }
+      state.dialog?.request.kind === kind ? { dialog: { ...state.dialog, isOpen: false } } : state
     ),
-  dismissToast: () => set({ toast: null }),
-  setTourStep: (tourStep) => set({ tourStep }),
-  setHistoryTourStep: (historyTourStep) => set({ historyTourStep }),
+  startTour: (kind) => set({ tour: { kind, step: 0 } }),
+  setTourStep: (step) => set((state) => (state.tour ? { tour: { ...state.tour, step } } : state)),
+  endTour: (kind) => set((state) => (state.tour?.kind === kind ? { tour: null } : state)),
 }));
 
-const TOAST_MS = 5000;
-/** Long enough to read the message and reach the button. */
-const TOAST_WITH_ACTION_MS = 10000;
-let nextToastId = 1;
-
-export function showToast(
-  message: string,
-  tone: Toast['tone'] = 'success',
-  action?: ToastAction
-): void {
-  const id = nextToastId++;
-  useOverlayStore.setState({ toast: { id, message, tone, action } });
-  setTimeout(
-    () => {
-      if (useOverlayStore.getState().toast?.id === id) useOverlayStore.setState({ toast: null });
-    },
-    action ? TOAST_WITH_ACTION_MS : TOAST_MS
-  );
-}
-
-/** A failure whose message is written for the user, so it is shown as it is. */
-export class ExplainedError extends Error {}
-
-/** What to tell the user about `error`: its own words if it has them, else `fallback`. */
-export function explainFailure(error: unknown, fallback: string): string {
-  console.error(fallback, error);
-  return error instanceof ExplainedError ? error.message : fallback;
-}
+/** For reading one tour: its step while it runs, else null. */
+export const selectTourStep =
+  (kind: TourKind) =>
+  (state: OverlayState): number | null =>
+    state.tour?.kind === kind ? state.tour.step : null;
 
 /**
- * Run a store action the user started, and say so if it fails — main refused it or the
- * disk did, and either way nothing was written.
+ * For a dialog to read itself: whether it is open, and its request while it is the one
+ * showing (open, or animating out).
  */
-export async function attempt(action: Promise<unknown>, failure: string): Promise<boolean> {
-  try {
-    await action;
-    return true;
-  } catch (error) {
-    showToast(explainFailure(error, failure), 'error');
-    return false;
-  }
+export function useDialog<K extends DialogKind>(kind: K) {
+  const dialog = useOverlayStore((s) => (s.dialog?.request.kind === kind ? s.dialog : null));
+  return {
+    isOpen: dialog?.isOpen ?? false,
+    request: (dialog?.request ?? null) as Extract<DialogRequest, { kind: K }> | null,
+  };
 }
