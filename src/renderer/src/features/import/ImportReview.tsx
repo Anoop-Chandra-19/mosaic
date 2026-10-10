@@ -164,7 +164,7 @@ export function ImportReview({
         onClose={onDone}
       />
 
-      <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3.5">
+      <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3.5 [scrollbar-gutter:stable]">
         <div className="mb-2.25 flex items-center justify-between gap-2">
           <p className="flex min-w-0 items-center gap-2">
             <FileText className="size-3.5 shrink-0 text-ink-muted" />

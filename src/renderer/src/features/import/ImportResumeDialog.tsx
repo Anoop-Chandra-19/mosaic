@@ -138,7 +138,7 @@ function PickStep({
         onClose={onCancel}
       />
 
-      <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3.5">
+      <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3.5 [scrollbar-gutter:stable]">
         <div
           onDragOver={(event) => {
             event.preventDefault();

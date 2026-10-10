@@ -53,7 +53,9 @@ Use what exists before adding a motion:
 All motions stay inside the box's clipping, finish before the next change measures,
 and never block input. With reduced motion nothing moves; colour fades stay. New
 motions must respect reduced motion, clean up on unmount, and handle rapid changes
-safely.
+safely. When an animated box contains an `overflow-y-auto` body, reserve its scrollbar
+space with `[scrollbar-gutter:stable]`: transient overflow must not narrow the text and
+make it rewrap during the animation.
 
 Test shared behavior with unit tests beside the library. Use focused browser tests
 for lifecycle behavior that requires real animation APIs: exit retention, interrupted

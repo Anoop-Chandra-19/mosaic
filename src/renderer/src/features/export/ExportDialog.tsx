@@ -23,6 +23,7 @@ import { useActiveTemplate } from '@/features/templates/useActiveTemplate';
 import { buildExportName, toFileName } from '@/lib/files/fileNames';
 import { HeaderLinkControls } from '@/components/HeaderLinkControls';
 import { describeLinkLook } from '@shared/resume/resumeHeader';
+import { easeHeightChanges } from '@/lib/motion/easeHeightChanges';
 import { cn } from '@/lib/utils';
 import { useDialog, useOverlayStore, type ExportVersion } from '@/stores/overlayStore';
 import { explainFailure, showToast } from '@/stores/toastStore';
@@ -59,6 +60,7 @@ export function ExportDialog() {
   return (
     <AppDialog open={open} onOpenChange={(next) => !next && closeExport()}>
       <AppDialogContent
+        ref={easeHeightChanges}
         showCloseButton={false}
         className="flex max-h-[90vh] w-[min(40rem,96vw)] max-w-none flex-col gap-0 overflow-hidden p-0 sm:max-w-none"
       >
@@ -161,7 +163,7 @@ function ExportForm({ version, onDone }: { version: ExportVersion | null; onDone
         onClose={onDone}
       />
 
-      <div className="min-h-0 flex-1 overflow-y-auto px-4 pt-3.5 pb-1">
+      <div className="min-h-0 flex-1 overflow-y-auto px-4 pt-3.5 pb-1 [scrollbar-gutter:stable]">
         {version && (
           <Text as="p" variant="secondary" className="mb-3">
             {version.label} of {version.templateName}, “{version.version.summary}”, as it was then
@@ -179,13 +181,15 @@ function ExportForm({ version, onDone }: { version: ExportVersion | null; onDone
             <FormatOption key={option.id} format={option} selected={option.id === formatId} />
           ))}
         </AppRadioGroup>
-        {format.id === 'pdf' && (
-          <PdfFontNote
-            characters={findCharactersPdfCannotDraw(
-              normalizeResumeForExport(source().doc, { includeHidden })
-            )}
-          />
-        )}
+        <PdfFontNote
+          characters={
+            format.id === 'pdf'
+              ? findCharactersPdfCannotDraw(
+                  normalizeResumeForExport(source().doc, { includeHidden })
+                )
+              : []
+          }
+        />
 
         <div className="mt-2">
           <Row
@@ -243,8 +247,8 @@ function ExportForm({ version, onDone }: { version: ExportVersion | null; onDone
                 />
               ))}
           </Row>
-          <Row label="File name">
-            <div className="flex w-[min(18rem,100%)]">
+          <Row label="File name" className="grid grid-cols-[minmax(5rem,1fr)_minmax(0,26rem)]">
+            <div className="flex min-w-0">
               <AppInput
                 value={name}
                 onChange={(event) => setName(event.target.value)}
@@ -287,11 +291,17 @@ const LISTED_CHARACTERS = 8;
 
 /** The PDF's built-in font draws Western European text only; it says so before saving. */
 function PdfFontNote({ characters }: { characters: string[] }) {
-  if (characters.length === 0) return null;
   const listed = characters.slice(0, LISTED_CHARACTERS).join(' ');
   const more = characters.length - LISTED_CHARACTERS;
   return (
-    <Note icon={TriangleAlert} tone="warn" size="sm" role="status" className="mt-2">
+    <Note
+      isShown={characters.length > 0}
+      icon={TriangleAlert}
+      tone="warn"
+      size="sm"
+      role="status"
+      className="mt-2"
+    >
       The PDF can’t show <span className="font-strong text-foreground">{listed}</span>
       {more > 0 && ` and ${more} more`}. Its built-in font doesn’t have them, so they would print as
       other characters. The Word export shows them.
@@ -343,14 +353,21 @@ function FormatOption({ format, selected }: { format: ExportFormatInfo; selected
 function Row({
   label,
   description,
+  className,
   children,
 }: {
   label: string;
   description?: string;
+  className?: string;
   children?: ReactNode;
 }) {
   return (
-    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line py-2.5 last:border-b-0">
+    <div
+      className={cn(
+        'flex flex-wrap items-center justify-between gap-2 border-b border-line py-2.5 last:border-b-0',
+        className
+      )}
+    >
       <span className="min-w-0 flex-1 basis-60">
         <Text variant="body" className="block font-control text-foreground">
           {label}
