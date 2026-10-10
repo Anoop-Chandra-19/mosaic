@@ -1,10 +1,11 @@
+import { useState } from 'react';
 import { Plus } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
 import { AppMenu, AppMenuContent, AppMenuSeparator, AppMenuTrigger } from '@/components/AppMenu';
 import { BUILT_IN_KINDS, SECTION_PRESETS } from '@shared/resume/sectionPresets';
 import type { ResumeSection } from '@shared/types/resume';
-import { useOverlayStore } from '@/stores/overlayStore';
 import { useResumeStore } from '@/stores/resumeStore';
+import { useTargetRequest } from '@/stores/targetStore';
 import { useListMotion } from '@/lib/motion/useListMotion';
 import { SectionItem } from './SectionItem';
 import { cn } from '@/lib/utils';
@@ -32,8 +33,8 @@ export function SectionList({
   const addSection = useResumeStore((s) => s.addSection);
   const reorderSections = useResumeStore((s) => s.reorderSections);
   const custom = useAddCustomSection(onCustomAdded);
-  const isAddSectionMenuOpen = useOverlayStore((s) => s.addSectionMenuOpen);
-  const setAddSectionMenuOpen = useOverlayStore((s) => s.setAddSectionMenuOpen);
+  const [isAddSectionMenuOpen, setAddSectionMenuOpen] = useState(false);
+  useTargetRequest('addSectionMenu', () => setAddSectionMenuOpen(true));
 
   const sorted = [...sections].sort((a, b) => a.order - b.order);
   const sectionIds = sorted.map((section) => section.id);

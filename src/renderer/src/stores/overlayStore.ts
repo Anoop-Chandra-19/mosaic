@@ -65,8 +65,6 @@ interface OverlayState {
   shortcutsOpen: boolean;
   /** Where the sheet was opened from: that place's keys are listed first. */
   shortcutsPlace: ShortcutPlace | null;
-  /** The sidebar's Add section menu, which Ctrl/⌘+Shift+N opens too. */
-  addSectionMenuOpen: boolean;
   exportOpen: boolean;
   /** What the Export dialog exports: this version, or the open draft when null. */
   exportVersion: ExportVersion | null;
@@ -84,7 +82,6 @@ interface OverlayState {
   setNameVersionOpen: (open: boolean) => void;
   openShortcuts: (place: ShortcutPlace | null) => void;
   closeShortcuts: () => void;
-  setAddSectionMenuOpen: (open: boolean) => void;
   /** Opens Export for the open draft, or for `version`. */
   openExport: (version?: ExportVersion) => void;
   closeExport: () => void;
@@ -105,7 +102,6 @@ export const useOverlayStore = create<OverlayState>()((set) => ({
   nameVersionOpen: false,
   shortcutsOpen: false,
   shortcutsPlace: null,
-  addSectionMenuOpen: false,
   exportOpen: false,
   exportVersion: null,
   pendingRestore: null,
@@ -126,7 +122,6 @@ export const useOverlayStore = create<OverlayState>()((set) => ({
   openShortcuts: (shortcutsPlace) => set({ shortcutsOpen: true, shortcutsPlace }),
   // The place stays until the next opening, so the closing sheet does not change.
   closeShortcuts: () => set({ shortcutsOpen: false }),
-  setAddSectionMenuOpen: (addSectionMenuOpen) => set({ addSectionMenuOpen }),
   openExport: (version) => set({ exportOpen: true, exportVersion: version ?? null }),
   // The target stays until the next opening, so the closing dialog does not change.
   closeExport: () => set({ exportOpen: false }),

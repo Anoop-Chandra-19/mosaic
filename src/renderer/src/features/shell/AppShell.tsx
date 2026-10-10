@@ -33,6 +33,7 @@ import { SHORTCUT_PLACES, type ShortcutId, type ShortcutPlace } from '@/lib/shor
 import { useAiStore } from '@/stores/aiStore';
 import { useOverlayStore } from '@/stores/overlayStore';
 import { usePreviewStore } from '@/stores/previewStore';
+import { useTargetStore } from '@/stores/targetStore';
 import { showToast } from '@/stores/toastStore';
 import { useResumeStore } from '@/stores/resumeStore';
 import { useTemplateStore } from '@/stores/templateStore';
@@ -221,7 +222,7 @@ const GLOBAL_SHORTCUTS: { id: ShortcutId; run: () => void; worksOverSurface?: tr
       const isEmpty = useResumeStore
         .getState()
         .sections.every((section) => section.items.length === 0);
-      if (!isEmpty) useOverlayStore.getState().setAddSectionMenuOpen(true);
+      if (!isEmpty) useTargetStore.getState().requestTarget('addSectionMenu');
     },
   },
   { id: 'zoomIn', run: () => useUiStore.getState().zoomPreviewIn() },
