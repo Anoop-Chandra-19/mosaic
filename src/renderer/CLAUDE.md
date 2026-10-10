@@ -83,8 +83,9 @@ share at its root. Tours point at live elements marked with `tourTargetProps(...
 `tourTargets.ts`: the app's landmarks, named for the element and marked once, which every
 tour's steps pick from. Features import the markers; onboarding imports no feature.
 Moving, renaming, or removing a marked element changes the tours: keep each step's copy
-true and run `e2e/tour.spec.ts`. e2e launches store the tour as seen; a spec that wants it
-passes `withApp({ showTour: true })`.
+true and run `e2e/tour.spec.ts`. e2e launches store the tour as seen and the history tips
+off; a spec that wants them passes `withApp({ showTour: true })` or
+`withApp({ showHistoryTips: true })`.
 
 ## Keyboard shortcuts
 

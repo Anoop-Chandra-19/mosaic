@@ -58,6 +58,8 @@ export function useVersionEdits() {
 
   return {
     modeOf,
+    /** A row is being named, or asked about before a delete. */
+    isEditing: openRow !== null,
     setMode,
     justNamedId,
     name: (version: VersionMeta, newName: string) => void name(version, newName),

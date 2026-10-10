@@ -52,8 +52,11 @@ test('Blank resume creates the first template and opens it', async () => {
 });
 
 test('the bridge reaches the database, and main checks what it is sent', async ({ launchApp }) => {
-  // Launched as it ships, without the launcher storing the tour as seen.
-  const { app, page, userDataDir } = await launchApp(undefined, { showTour: true });
+  // Launched as it ships, without the launcher storing the tour as seen or the tips as off.
+  const { app, page, userDataDir } = await launchApp(undefined, {
+    showTour: true,
+    showHistoryTips: true,
+  });
   try {
     const calls = await page.evaluate(async () => ({
       boot: await window.mosaic.db.boot(),

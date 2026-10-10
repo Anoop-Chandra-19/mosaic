@@ -4,6 +4,7 @@ import { AppButton } from '@/components/AppButton';
 import { AppTooltip } from '@/components/AppTooltip';
 import { Text } from '@/components/Text';
 import { ChangeList } from '@/features/document-diff/ChangeList';
+import { tourTargetProps } from '@/features/onboarding/tourTargets';
 import { MarkedVersionText } from '@/features/document-diff/MarkedVersionText';
 import { collectPageMarks, putGoneBack } from '@/features/document-diff/pageMarks';
 import { revealChangeMark } from '@/features/document-diff/revealChangeMark';
@@ -36,6 +37,8 @@ export const LEGIBLE_PAGE_SCALE = 0.66;
 /** The body's padding either side of the page. */
 const PAGE_GUTTER_PX = 24;
 
+const EXAMPLE_HINT = 'An example history: it can be read, not changed.';
+
 const AUTOMATIC_REASONS: Partial<Record<VersionSource, string>> = {
   import: 'import',
   'before-import': 'before import',
@@ -55,6 +58,8 @@ interface HistoryReadPaneProps {
   /** "v11" when the version is one of a number's revisions, for "All of v11". */
   numberLabel: string | null;
   isHead: boolean;
+  /** The tour's example: read, compared, never restored or copied. */
+  isReadOnly: boolean;
   /** The version against the one before it or the draft, as picked; the list shares it. */
   comparison: VersionComparison;
   onComparisonChange: (comparison: HistoryComparison) => void;
@@ -165,6 +170,7 @@ export function HistoryReadPane({
   label,
   numberLabel,
   isHead,
+  isReadOnly,
   comparison,
   onComparisonChange,
   maxWidthCss,
@@ -440,17 +446,24 @@ export function HistoryReadPane({
 
       <footer className="flex gap-1.5 border-t border-line bg-background px-3 py-2.25">
         <AppButton
+          {...tourTargetProps('historyRestore')}
           variant="outline"
           size="sm"
           className="flex-1"
-          disabled={isHead || isIdentical}
-          title={describeRestore(isHead, isIdentical)}
+          disabled={isReadOnly || isHead || isIdentical}
+          title={isReadOnly ? EXAMPLE_HINT : describeRestore(isHead, isIdentical)}
           onClick={() => onRestore(version)}
         >
           <History />
           Restore
         </AppButton>
-        <AppButton variant="outline" size="sm" onClick={() => onDuplicate(version)}>
+        <AppButton
+          variant="outline"
+          size="sm"
+          disabled={isReadOnly}
+          title={isReadOnly ? EXAMPLE_HINT : undefined}
+          onClick={() => onDuplicate(version)}
+        >
           <Copy />
           Duplicate
         </AppButton>
@@ -459,7 +472,7 @@ export function HistoryReadPane({
           size="sm"
           shape="square"
           aria-label="Export this version"
-          disabled={!loaded}
+          disabled={!loaded || isReadOnly}
           onClick={() => loaded && onExport(loaded, label)}
         >
           <Download />

@@ -1,25 +1,20 @@
 import { useEffect, useRef, useState } from 'react';
-import { ChevronRight, X } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
-import { Text } from '@/components/Text';
 import { useShortcutLabel } from '@/features/shortcuts/shortcutBindings';
 import { isTypingField } from '@/lib/keyboardShortcuts';
 import type { ShortcutId } from '@/lib/shortcutCatalog';
 import { prefersReducedMotion } from '@/lib/motion/motionTiming';
-import { cn } from '@/lib/utils';
 import { showToast, useOverlayStore } from '@/stores/overlayStore';
 import { useResumeStore } from '@/stores/resumeStore';
 import { useUiStore, type SidebarTab } from '@/stores/uiStore';
-import { placeTourCard, type Size } from '../placeTourCard';
+import { CARD_BEFORE_MEASURED, measureTourCard, placeTourCard, spotAround } from '../placeTourCard';
+import { TourCard } from '../TourCard';
 import { SIDEBAR_TAB_TARGET, tourTargetSelector } from '../tourTargets';
+import { TourVeil } from '../TourVeil';
 import { useIsAppCovered } from '../useIsAppCovered';
 import { useTargetRect } from '../useTargetRect';
 import { GETTING_STARTED_STEPS as TOUR_STEPS } from './gettingStartedSteps';
 
-/** The card's size before it has been measured, as the design lays it out. */
-const CARD_BEFORE_MEASURED: Size = { width: 316, height: 230 };
-/** How far the spotlight stands off its target. */
-const SPOT_OUTSET_PX = 4;
 /** The spotlight's move from one element to the next (its `duration-160`). */
 const SPOT_GLIDE_MS = 160;
 /** The tab's one ping (`animate-attention-ping`), which starts once the spotlight lands. */
@@ -167,125 +162,38 @@ function TourStepView({ stepIndex }: { stepIndex: number }) {
     return () => window.removeEventListener('keydown', onKeyDown, true);
   });
 
-  const measureCard = (card: HTMLDivElement | null) => {
-    if (!card) return;
-    const observer = new ResizeObserver(() =>
-      setCardSize({ width: card.offsetWidth, height: card.offsetHeight })
-    );
-    observer.observe(card);
-    return () => observer.disconnect();
-  };
-
-  const spot = rect && {
-    top: rect.top - SPOT_OUTSET_PX,
-    left: rect.left - SPOT_OUTSET_PX,
-    width: rect.width + SPOT_OUTSET_PX * 2,
-    height: rect.height + SPOT_OUTSET_PX * 2,
-  };
   const cardPosition =
     rect &&
     placeTourCard(rect, step.side ?? 'bottom', cardSize, {
       width: window.innerWidth,
       height: window.innerHeight,
     });
-  const titleId = `tour-title-${step.id}`;
 
   return (
     <div className="pointer-events-none fixed inset-0 z-40" data-tour-overlay>
-      {/* Four panels rather than a spread shadow: they catch clicks around the target and
-          leave the target itself usable. */}
-      {spot ? (
-        <>
-          <div
-            className={VEIL}
-            style={{ top: 0, left: 0, right: 0, height: Math.max(0, spot.top) }}
-          />
-          <div
-            className={VEIL}
-            style={{ top: spot.top + spot.height, left: 0, right: 0, bottom: 0 }}
-          />
-          <div
-            className={VEIL}
-            style={{ top: spot.top, left: 0, width: Math.max(0, spot.left), height: spot.height }}
-          />
-          <div
-            className={VEIL}
-            style={{ top: spot.top, left: spot.left + spot.width, right: 0, height: spot.height }}
-          />
-          <div
-            aria-hidden
-            data-tour-spot
-            className={cn(
-              'pointer-events-none absolute rounded-[0.625rem] border border-amber-line transition-[top,left,width,height] duration-160 ease-out motion-reduce:transition-none',
-              isLeading &&
-                'animate-attention-ping [animation-delay:160ms] motion-reduce:animate-none'
-            )}
-            style={spot}
-          />
-        </>
-      ) : (
-        <div className={cn(VEIL, 'inset-0')} />
-      )}
-
-      <div
-        ref={measureCard}
-        role="dialog"
-        aria-labelledby={titleId}
-        data-tour-card
-        className={cn(
-          'pointer-events-auto absolute w-79 rounded-[0.8125rem] border border-line-strong bg-pane-raised px-3.5 pt-3.5 pb-3 shadow-overlay',
-          !cardPosition && 'top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2',
-          isCardWaiting && 'invisible'
-        )}
-        style={cardPosition ?? undefined}
-      >
-        <div className="mb-1.75 flex items-center justify-between">
-          <Text variant="eyebrow">
-            {isWelcome ? 'Getting started' : `Step ${stepIndex} of ${TOUR_STEPS.length - 1}`}
-          </Text>
-          <AppButton
-            variant="ghost"
-            size="2xs"
-            shape="square"
-            aria-label="Close the tour"
-            title="Close the tour  Esc"
-            onClick={() => finishTour(false)}
-          >
-            <X />
-          </AppButton>
-        </div>
-        <Text as="h4" id={titleId} variant="editor" className="mb-1.25 block">
-          {step.title}
-          {step.titleShortcut && <TitleShortcut id={step.titleShortcut} />}
-        </Text>
-        <Text as="p" variant="body" className="text-pretty">
-          {step.body}
-        </Text>
-        <div className="mt-3.25 flex items-center gap-1.5">
-          <div className="mr-auto flex gap-1.25">
-            {TOUR_STEPS.map((dotStep, index) => (
-              <AppButton
-                key={dotStep.id}
-                variant="dot"
-                size="dot"
-                shape="pill"
-                aria-label={`Step ${index + 1}: ${dotStep.title}`}
-                aria-current={index === stepIndex ? 'step' : undefined}
-                onClick={() => goTo(index)}
-              />
-            ))}
-          </div>
-          {stepIndex > 0 && (
-            <AppButton variant="ghost" size="xs" onClick={() => goTo(stepIndex - 1)}>
-              Back
-            </AppButton>
-          )}
-          <AppButton ref={primaryRef} size="xs" onClick={goNext}>
-            {isLast ? 'Got it' : isWelcome ? 'Show me' : 'Next'}
-            {!isLast && <ChevronRight />}
-          </AppButton>
-        </div>
-      </div>
+      <TourVeil spot={rect && spotAround(rect)} isPinging={isLeading} />
+      <TourCard
+        stepId={step.id}
+        eyebrow={isWelcome ? 'Getting started' : `Step ${stepIndex} of ${TOUR_STEPS.length - 1}`}
+        title={
+          <>
+            {step.title}
+            {step.titleShortcut && <TitleShortcut id={step.titleShortcut} />}
+          </>
+        }
+        body={step.body}
+        stepTitles={TOUR_STEPS.map((dotStep) => dotStep.title)}
+        stepIndex={stepIndex}
+        position={cardPosition}
+        isWaiting={isCardWaiting}
+        primaryLabel={isLast ? 'Got it' : isWelcome ? 'Show me' : 'Next'}
+        isPrimaryOnward={!isLast}
+        cardRef={measureTourCard(setCardSize)}
+        primaryRef={primaryRef}
+        onGoTo={goTo}
+        onPrimary={goNext}
+        onClose={() => finishTour(false)}
+      />
 
       {/* Under the card, not the design's window edge: the toast for the resume just made
           sits there as the tour begins. */}
@@ -303,8 +211,6 @@ function TourStepView({ stepIndex }: { stepIndex: number }) {
     </div>
   );
 }
-
-const VEIL = 'pointer-events-auto absolute bg-veil';
 
 function TitleShortcut({ id }: { id: ShortcutId }) {
   const keys = useShortcutLabel(id);

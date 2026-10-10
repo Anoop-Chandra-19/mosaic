@@ -3,6 +3,7 @@ import { AppButton } from '@/components/AppButton';
 import { Text } from '@/components/Text';
 import type { TextVariant } from '@/components/textVariants';
 import { ChangeCounts } from '@/features/document-diff/ChangeCounts';
+import { tourTargetProps } from '@/features/onboarding/tourTargets';
 import { cn } from '@/lib/utils';
 import type { ChangeTone } from '@shared/resume/changes/resumeChange';
 import type { VersionMeta, VersionSource } from '@shared/types/db';
@@ -225,6 +226,8 @@ interface VersionRowProps extends VersionRowActions {
   number?: NumberRowInfo | null;
   /** An earlier revision, listed under its number. */
   isRevision?: boolean;
+  /** The history tour's example: read, never restored, named or deleted. */
+  isReadOnly?: boolean;
   /** In the full view, reading shows the version beside the list, not in the sheet. */
   isWide: boolean;
   label: string;
@@ -246,6 +249,7 @@ export function VersionRow({
   isNested,
   number = null,
   isRevision = false,
+  isReadOnly = false,
   isWide,
   label,
   time,
@@ -272,6 +276,11 @@ export function VersionRow({
   return (
     <li
       data-version-id={version.id}
+      // Landmarks of the full history only: the sidebar's rows stay in the tree behind it.
+      {...tourTargetProps(
+        isWide && isNamed && 'namedVersion',
+        isWide && isPreviewing && 'readVersion'
+      )}
       // A pointer shortcut for the Read button, which is what the keyboard reaches.
       onClick={
         onSelect &&
@@ -406,7 +415,7 @@ export function VersionRow({
               {!mode && counts && <ChangeCounts counts={counts} />}
             </Text>
           </div>
-          {!mode && (
+          {!mode && !isReadOnly && (
             <VersionActions
               version={version}
               label={label}

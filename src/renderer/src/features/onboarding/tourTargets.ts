@@ -18,6 +18,13 @@ export const TOUR_TARGET = {
   // Templates: the list, and the open template's history in it.
   templates: 'templates',
   history: 'history',
+  // The full history: its list, the rows in it, the read pane and the settings.
+  historyList: 'history-list',
+  namedVersion: 'named-version',
+  readVersion: 'read-version',
+  historyCompare: 'history-compare',
+  historyRestore: 'history-restore',
+  historySettings: 'history-settings',
 } as const;
 
 export type TourTarget = keyof typeof TOUR_TARGET;
@@ -28,10 +35,12 @@ export const SIDEBAR_TAB_TARGET: Record<SidebarTab, TourTarget> = {
   templates: 'templatesTab',
 };
 
-export function tourTargetProps(target: TourTarget) {
-  return { 'data-tour': TOUR_TARGET[target] };
+/** Marks an element as one landmark or more: a named row can also be the one being read. */
+export function tourTargetProps(...targets: (TourTarget | false)[]) {
+  const names = targets.filter((target) => target !== false).map((target) => TOUR_TARGET[target]);
+  return names.length ? { 'data-tour': names.join(' ') } : {};
 }
 
 export function tourTargetSelector(target: TourTarget): string {
-  return `[data-tour="${TOUR_TARGET[target]}"]`;
+  return `[data-tour~="${TOUR_TARGET[target]}"]`;
 }

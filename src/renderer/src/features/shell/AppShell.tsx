@@ -14,6 +14,7 @@ import { StartPanel } from '@/features/start/StartPanel';
 import { NameVersionDialog } from '@/features/templates/NameVersionDialog';
 import { useAutoSnapshot } from '@/features/templates/useAutoSnapshot';
 import { GettingStartedTour } from '@/features/onboarding/getting-started/GettingStartedTour';
+import { HistoryTour } from '@/features/onboarding/history/HistoryTour';
 import {
   SLIDE_AWAY_MOTION,
   SURFACE_MOTION,
@@ -106,6 +107,7 @@ export function AppShell() {
       <NameVersionDialog />
       <ShortcutsDialog />
       <GettingStartedTour />
+      <HistoryTour />
     </div>
   );
 }

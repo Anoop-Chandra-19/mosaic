@@ -17,9 +17,14 @@ function subscribeToDialogs(onChange: () => void) {
 
 const isDialogOpen = () => document.querySelector(OPEN_DIALOG) !== null;
 
+/** A dialog is open over the app: a tour waits under it. */
+export function useIsDialogOpen(): boolean {
+  return useSyncExternalStore(subscribeToDialogs, isDialogOpen);
+}
+
 /** Something is over the app: a dialog, or a surface such as the Start panel or full history. */
 export function useIsAppCovered(): boolean {
   const hasSurface = useOverlayStore((s) => s.surface !== null);
-  const hasDialog = useSyncExternalStore(subscribeToDialogs, isDialogOpen);
+  const hasDialog = useIsDialogOpen();
   return hasSurface || hasDialog;
 }

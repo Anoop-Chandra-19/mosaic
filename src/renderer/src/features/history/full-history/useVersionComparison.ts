@@ -11,7 +11,7 @@ import type { ResumeData } from '@shared/types/resume';
  * The draft a version is compared with: the editor's, as typed, for the open template;
  * the stored one for any other, read without opening it.
  */
-function useComparedDraft(templateId: string) {
+function useComparedDraft(templateId: string, fixedDraft: ResumeData | null) {
   const isOpen = useResumeStore((s) => s.templateId === templateId);
   const schemaVersion = useResumeStore((s) => s.schemaVersion);
   const contact = useResumeStore((s) => s.contact);
@@ -19,7 +19,7 @@ function useComparedDraft(templateId: string) {
   const [stored, setStored] = useState<Draft | null>(null);
 
   useEffect(() => {
-    if (isOpen) return;
+    if (isOpen || fixedDraft) return;
     let isCurrent = true;
     getDb()
       .drafts.get(templateId)
@@ -30,8 +30,9 @@ function useComparedDraft(templateId: string) {
     return () => {
       isCurrent = false;
     };
-  }, [templateId, isOpen]);
+  }, [templateId, isOpen, fixedDraft]);
 
+  if (fixedDraft) return fixedDraft;
   if (isOpen) return { schemaVersion, contact, sections };
   return stored?.templateId === templateId ? stored.doc : null;
 }
@@ -43,6 +44,8 @@ function compareResumes(before: ResumeData | null, after: ResumeData | null) {
 
 interface ComparedVersion {
   templateId: string;
+  /** The draft to compare with instead of the template's, as the example history has. */
+  fixedDraft: ResumeData | null;
   /** The version's document, once read. */
   version: Version | null;
   /** What it is compared with unless that is the draft: the version before it, or its number's. */
@@ -65,6 +68,7 @@ export type VersionComparison = ReturnType<typeof useVersionComparison>;
  */
 export function useVersionComparison({
   templateId,
+  fixedDraft,
   version,
   base: baseMeta,
   baseVersion,
@@ -72,7 +76,7 @@ export function useVersionComparison({
   comparison,
   hasParent,
 }: ComparedVersion) {
-  const draft = useComparedDraft(templateId);
+  const draft = useComparedDraft(templateId, fixedDraft);
   const isAgainstDraft = comparison === 'draft' || !baseMeta;
   const versionDoc = version?.doc ?? null;
   const base = isAgainstDraft ? draft : (baseVersion?.doc ?? null);

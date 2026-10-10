@@ -1,6 +1,9 @@
-import { useLayoutEffect, useRef, useState } from 'react';
+import { Fragment, useLayoutEffect, useRef, useState } from 'react';
+import { ChevronRight } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
 import { Text } from '@/components/Text';
+import { startHistoryTour } from '@/features/onboarding/history/startHistoryTour';
+import { usePresenceMotion } from '@/lib/motion/usePresenceMotion';
 import { cn } from '@/lib/utils';
 import { useOverlayStore } from '@/stores/overlayStore';
 import { useUiStore } from '@/stores/uiStore';
@@ -21,6 +24,8 @@ import {
   groupVersionHistory,
   type HistoryGroup,
 } from '../groupVersionHistory';
+import { HistoryTip } from '../learning/HistoryTip';
+import { historyItemKey, useHistoryTip } from '../learning/useHistoryTip';
 import { versionLabel } from '../useTemplateVersions';
 import { HistoryFilterBar, type HistoryMonth } from './HistoryFilterBar';
 import { HISTORY_LINK, HistoryCount, HistoryHandoff, HistoryRangeEdge } from './HistoryListEdges';
@@ -64,10 +69,14 @@ interface VersionListProps extends VersionRowActions {
   onChangeFolding?: () => void;
   /** Shown on the row being read: what it changed from the one before it. */
   selectedCounts?: Record<ChangeTone, number> | null;
+  /** The history tour's example: rows read, nothing on them changes, no tips. */
+  isReadOnly?: boolean;
 }
 
 /** A template's history until the count line is worth its row. */
 const SHORT_HISTORY = 8;
+/** Under this many versions there is little to explain: a line under the list, not tips. */
+const JUST_STARTED_HISTORY = 4;
 /** A list this long has scrolled far enough that its end is worth saying. */
 const END_LINE_ROWS = 60;
 
@@ -96,6 +105,26 @@ function findHolderKeys(groups: HistoryGroup[], versionId: string): string[] {
   return [];
 }
 
+/** Under a history just started, in place of tips: what will collect here, and the tour. */
+function JustStartedNote() {
+  return (
+    <Text
+      as="div"
+      variant="secondary"
+      className="mx-0.5 mt-3 flex flex-col items-start gap-2 rounded-[0.5625rem] border border-dashed border-line-strong p-3 text-pretty text-ink-muted"
+    >
+      <span>
+        Versions collect here as you work: the ones you name, and snapshots Mosaic keeps on its own.
+        Your draft is saved as you type either way.
+      </span>
+      <AppButton variant="ghost" size="xs" onClick={startHistoryTour} className="-ml-1.5">
+        <ChevronRight />
+        How history works
+      </AppButton>
+    </Text>
+  );
+}
+
 /**
  * One history, two layers: auto versions Mosaic takes on its own (import, restore) sit
  * quiet; named versions are the user's own bookmarks — bold, with the amber mark.
@@ -110,6 +139,7 @@ export function VersionList({
   onOpenFullHistory,
   onChangeFolding,
   selectedCounts,
+  isReadOnly = false,
   ...rowProps
 }: VersionListProps) {
   const [filter, setFilterOnly] = useState(initialFilter);
@@ -161,6 +191,35 @@ export function VersionList({
     byMonth: isFiltering && !isWide,
     foldBefore: isFiltering ? -Infinity : findFoldCutoff(foldDays),
   });
+
+  const isJustStarted = versions.length < JUST_STARTED_HISTORY;
+  const tip = useHistoryTip({
+    listRef: rootRef,
+    items: groups.flatMap((group) => group.items),
+    isEnabled: !isCompact && !isReadOnly && !isJustStarted,
+    isBusy: edits.isEditing,
+  });
+  const shownTip = usePresenceMotion(tip.chosen, tip.chosen && historyItemKey(tip.chosen.item));
+  const tipKey = shownTip.shown && historyItemKey(shownTip.shown.item);
+  const renderTip = () => {
+    const chosen = shownTip.shown;
+    if (!chosen) return null;
+    return (
+      <HistoryTip
+        key="history-tip"
+        title={chosen.tip.title}
+        body={chosen.tip.body(chosen.item, { foldDays })}
+        tourLabel={isWide ? 'How history works' : 'How it works'}
+        isInline={!isWide}
+        // Within this list: the sidebar's copy of the row stays in the tree behind the view.
+        rowSelector={`[data-full-history-list] [data-version-id="${tipKey}"], [data-full-history-list] [data-version-ids~="${tipKey}"]`}
+        isLeaving={shownTip.isLeaving}
+        tipRef={shownTip.ref}
+        onGot={tip.got}
+        onTour={startHistoryTour}
+      />
+    );
+  };
 
   // A version asked for that sits in a fold or among a number's earlier revisions opens
   // them, so the row itself shows.
@@ -214,11 +273,25 @@ export function VersionList({
       mode={edits.modeOf(version)}
       counts={version.id === rowProps.previewId ? selectedCounts : null}
       isJustNamed={edits.justNamedId === version.id}
-      onModeChange={(mode) => edits.setMode(version, mode)}
+      isReadOnly={isReadOnly}
+      onModeChange={(mode) => {
+        if (mode === 'name') tip.noteActedOn(version.id);
+        edits.setMode(version, mode);
+      }}
       onName={edits.name}
       onDelete={edits.remove}
-      onSelect={onSelect}
+      onSelect={
+        onSelect &&
+        ((selected) => {
+          tip.noteActedOn(selected.id);
+          onSelect(selected);
+        })
+      }
       {...rowProps}
+      onPreview={(previewed, label) => {
+        tip.noteActedOn(previewed.id);
+        rowProps.onPreview(previewed, label);
+      }}
     />
   );
   // A number with one revision is a plain row. One with more opens on its own, as well as
@@ -233,7 +306,10 @@ export function VersionList({
         revisions={revisions}
         isNested={isNested}
         isOpen={openHolders.has(key) || isReadingEarlier}
-        onToggle={() => toggleHolder(key)}
+        onToggle={() => {
+          tip.noteActedOn(revisions[0].id);
+          toggleHolder(key);
+        }}
         renderRow={(version, place) => renderRow(version, isNested, place)}
       />
     );
@@ -245,7 +321,7 @@ export function VersionList({
     requestAnimationFrame(() => rootRef.current?.scrollIntoView({ block: 'start' }));
   };
   return (
-    <div ref={rootRef} className="@container/history">
+    <div ref={rootRef} data-full-history-list={isWide || undefined} className="@container/history">
       {isLong && (
         <HistoryCount
           versions={versions}
@@ -323,23 +399,40 @@ export function VersionList({
             </Text>
             <ol>
               {group.items.map((item) => {
-                if (item.kind === 'number') return renderNumber(item.revisions, false);
+                // In the sidebar a tip sits under its row, in the list; in the full view it floats.
+                const itemTip = !isWide && historyItemKey(item) === tipKey && renderTip();
+                if (item.kind === 'number') {
+                  return (
+                    // Keyed as NumberRow is, by its first revision: a new one keeps the row.
+                    <Fragment key={numberKey(item.revisions)}>
+                      {renderNumber(item.revisions, false)}
+                      {itemTip}
+                    </Fragment>
+                  );
+                }
                 const key = foldKey(item.numbers);
                 return (
-                  <FoldRow
-                    key={key}
-                    numbers={item.numbers.map((revisions) => revisions[0])}
-                    isOpen={openHolders.has(key)}
-                    onToggle={() => toggleHolder(key)}
-                  >
-                    {item.numbers.map((revisions) => renderNumber(revisions, true))}
-                  </FoldRow>
+                  <Fragment key={key}>
+                    <FoldRow
+                      numbers={item.numbers.map((revisions) => revisions[0])}
+                      isOpen={openHolders.has(key)}
+                      onToggle={() => {
+                        tip.noteActedOn(historyItemKey(item));
+                        toggleHolder(key);
+                      }}
+                    >
+                      {item.numbers.map((revisions) => renderNumber(revisions, true))}
+                    </FoldRow>
+                    {itemTip}
+                  </Fragment>
                 );
               })}
             </ol>
           </section>
         ))}
       </div>
+      {isWide && renderTip()}
+      {isJustStarted && !isCompact && !isReadOnly && <JustStartedNote />}
       {groups.length === 0 && (
         <Text as="p" variant="secondary" className="mt-3.5 mb-1.5 ml-5.5">
           Nothing matches {filter.query.trim() ? `“${filter.query.trim()}”` : 'that filter'}.

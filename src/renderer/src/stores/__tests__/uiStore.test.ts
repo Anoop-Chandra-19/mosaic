@@ -10,10 +10,31 @@ const {
   clampPaneWidth,
   DEFAULT_INTERFACE,
   nextPreviewZoomStep,
+  pickHistoryTips,
   PREVIEW_ZOOM_STEPS,
   SIDEBAR_WIDTH,
   useUiStore,
 } = await import('../uiStore');
+
+describe('history tips', () => {
+  it('keeps only known tips and counts that make sense from what was stored', () => {
+    expect(
+      pickHistoryTips({ isOn: false, seen: { named: 'got', auto: 2, fold: -1, rev: 'x', old: 1 } })
+    ).toEqual({ isOn: false, seen: { named: 'got', auto: 2 } });
+    expect(pickHistoryTips('nonsense')).toEqual({ isOn: true, seen: {} });
+  });
+
+  it('counts showings up to seen, and a reset brings every tip back', () => {
+    const ui = useUiStore.getState();
+    for (let shown = 0; shown < 5; shown += 1) useUiStore.getState().countHistoryTipShown('auto');
+    expect(useUiStore.getState().historyTips.seen.auto).toBe(3);
+    ui.markHistoryTipsSeen(['named']);
+    useUiStore.getState().resetInterface();
+    expect(useUiStore.getState().historyTips.seen.named).toBe('got');
+    useUiStore.getState().resetHistoryTips();
+    expect(useUiStore.getState().historyTips.seen).toEqual({});
+  });
+});
 
 describe('resetting the interface', () => {
   it('puts the chrome back and keeps the preferences', () => {

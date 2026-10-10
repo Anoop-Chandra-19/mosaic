@@ -26,6 +26,11 @@ export interface LaunchOptions {
    * of every test; only the tour's own tests want it.
    */
   showTour?: boolean;
+  /**
+   * History tips come up beside rows a moment after a list opens, and would cover what a
+   * test clicks next; only the tips' own tests want them.
+   */
+  showHistoryTips?: boolean;
 }
 
 type LaunchApp = (existingUserDataDir?: string, options?: LaunchOptions) => Promise<LaunchedApp>;
@@ -70,7 +75,7 @@ export const test = base.extend<object, WorkerFixtures>({
 async function launchApp(
   workerDisplay: string | undefined,
   existingUserDataDir?: string,
-  { showTour = false }: LaunchOptions = {}
+  { showTour = false, showHistoryTips = false }: LaunchOptions = {}
 ): Promise<LaunchedApp> {
   if (process.platform === 'linux' && !workerDisplay) {
     throw new Error(
@@ -106,17 +111,27 @@ async function launchApp(
   });
   page.on('pageerror', (error) => errors.push(error.message));
   await page.waitForLoadState('domcontentloaded');
-  if (!existingUserDataDir && !showTour) await markTourSeen(page);
+  if (!existingUserDataDir && (!showTour || !showHistoryTips)) {
+    await seedLearning(page, { hasSeenTour: !showTour, areTipsOn: showHistoryTips });
+  }
   return { app, page, userDataDir, errors };
 }
 
-/** Stores the tour as seen, as finishing it would, and reloads so the app reads it. */
-async function markTourSeen(page: Page) {
-  await page.evaluate(() =>
-    window.mosaic.db.settings.set(
-      'ui',
-      JSON.stringify({ state: { hasSeenTour: true }, version: 0 })
-    )
+/**
+ * Stores the tour as seen, as finishing it would, and the history tips as off, as their
+ * switch would, then reloads so the app reads them.
+ */
+async function seedLearning(page: Page, seed: { hasSeenTour: boolean; areTipsOn: boolean }) {
+  await page.evaluate(
+    ({ hasSeenTour, areTipsOn }) =>
+      window.mosaic.db.settings.set(
+        'ui',
+        JSON.stringify({
+          state: { hasSeenTour, historyTips: { isOn: areTipsOn, seen: {} } },
+          version: 0,
+        })
+      ),
+    seed
   );
   await page.reload();
   await page.waitForLoadState('domcontentloaded');
