@@ -22,11 +22,9 @@ export function TopBar() {
   const isDark = useIsDarkTheme();
   const setTheme = useUiStore((s) => s.setTheme);
   const openSettings = useOverlayStore((s) => s.openSettings);
-  const openExport = useOverlayStore((s) => s.openExport);
+  const openDialog = useOverlayStore((s) => s.openDialog);
   const activeTemplate = useActiveTemplate();
   const templateStatus = useTemplateStatus();
-  const openImport = useOverlayStore((s) => s.openImport);
-  const setNameVersionOpen = useOverlayStore((s) => s.setNameVersionOpen);
   const undoLabel = useResumeStore((s) => s.undoLabel);
   const redoLabel = useResumeStore((s) => s.redoLabel);
   const undo = useResumeStore((s) => s.undo);
@@ -52,7 +50,7 @@ export function TopBar() {
             <AppButton
               variant="outline"
               size="xs"
-              onClick={() => setNameVersionOpen(true)}
+              onClick={() => openDialog({ kind: 'nameVersion' })}
               {...tourTargetProps('nameVersion')}
               title={`${
                 templateStatus === 'edited'
@@ -129,7 +127,7 @@ export function TopBar() {
         <AppButton
           variant="outline"
           size="sm"
-          onClick={() => openImport(!activeTemplate)}
+          onClick={() => openDialog({ kind: 'import', asNewOnly: !activeTemplate })}
           aria-label="Import resume"
         >
           <Upload />
@@ -138,7 +136,11 @@ export function TopBar() {
 
         <AppButton
           size="sm"
-          onClick={() => (activeTemplate ? openExport() : showToast('Nothing to export yet'))}
+          onClick={() =>
+            activeTemplate
+              ? openDialog({ kind: 'export', version: null })
+              : showToast('Nothing to export yet')
+          }
           aria-label="Open export dialog"
           {...tourTargetProps('export')}
         >

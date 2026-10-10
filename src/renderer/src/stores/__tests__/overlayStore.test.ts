@@ -3,6 +3,34 @@ import { selectTourStep, useOverlayStore } from '../overlayStore';
 
 const overlay = () => useOverlayStore.getState();
 
+describe('dialogs', () => {
+  beforeEach(() => useOverlayStore.setState({ dialog: null }));
+
+  it('shows one dialog at a time: opening one replaces another', () => {
+    overlay().openDialog({ kind: 'export', version: null });
+    overlay().openDialog({ kind: 'import', asNewOnly: true });
+    expect(overlay().dialog).toEqual({
+      request: { kind: 'import', asNewOnly: true },
+      isOpen: true,
+    });
+  });
+
+  it('a closed dialog keeps its request, so it animates out unchanged', () => {
+    overlay().openDialog({ kind: 'shortcuts', place: 'history' });
+    overlay().closeDialog('shortcuts');
+    expect(overlay().dialog).toEqual({
+      request: { kind: 'shortcuts', place: 'history' },
+      isOpen: false,
+    });
+  });
+
+  it('closes a dialog only by its own kind', () => {
+    overlay().openDialog({ kind: 'nameVersion' });
+    overlay().closeDialog('export');
+    expect(overlay().dialog?.isOpen).toBe(true);
+  });
+});
+
 describe('tours', () => {
   beforeEach(() => useOverlayStore.setState({ tour: null, surface: null }));
 

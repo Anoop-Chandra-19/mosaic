@@ -56,8 +56,7 @@ export function TemplateCard({ template, active, expanded, onToggle }: TemplateC
   const deleteTemplate = useTemplateStore((s) => s.deleteTemplate);
   const restoreDeleted = useTemplateStore((s) => s.restoreDeleted);
   const restoreVersion = useTemplateStore((s) => s.restoreVersion);
-  const setNameVersionOpen = useOverlayStore((s) => s.setNameVersionOpen);
-  const openExport = useOverlayStore((s) => s.openExport);
+  const openDialog = useOverlayStore((s) => s.openDialog);
   const preview = usePreviewStore((s) => s.preview);
   const setPreview = usePreviewStore((s) => s.setPreview);
   const openSurface = useOverlayStore((s) => s.openSurface);
@@ -96,7 +95,7 @@ export function TemplateCard({ template, active, expanded, onToggle }: TemplateC
     if (!active && !(await attempt(openTemplate(template.id), 'Could not open that template'))) {
       return;
     }
-    openExport();
+    openDialog({ kind: 'export', version: null });
   };
 
   /** The version in the sheet, or else the newest one. */
@@ -110,7 +109,7 @@ export function TemplateCard({ template, active, expanded, onToggle }: TemplateC
               version: await getDb().versions.get(versions[0].id),
               label: versionLabel(versions[0]),
             };
-      openExport({ ...target, templateName: template.name });
+      openDialog({ kind: 'export', version: { ...target, templateName: template.name } });
     } catch (error) {
       console.error(error);
       showToast('Could not read that version', 'error');
@@ -225,7 +224,7 @@ export function TemplateCard({ template, active, expanded, onToggle }: TemplateC
               variant={dirty ? 'accent' : 'outline'}
               title="Give this state a name so you can find it in history"
               aria-label="Name version"
-              onClick={() => setNameVersionOpen(true)}
+              onClick={() => openDialog({ kind: 'nameVersion' })}
             >
               <Save className="size-3" />
               {/* In a narrow sidebar the template's name needs the room more. */}

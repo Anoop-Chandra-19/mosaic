@@ -158,7 +158,8 @@ const GLOBAL_SHORTCUTS: { id: ShortcutId; run: () => void; worksOverSurface?: tr
   },
   {
     id: 'showShortcuts',
-    run: () => useOverlayStore.getState().openShortcuts(findShortcutPlace()),
+    run: () =>
+      useOverlayStore.getState().openDialog({ kind: 'shortcuts', place: findShortcutPlace() }),
     worksOverSurface: true,
   },
   {
@@ -177,7 +178,7 @@ const GLOBAL_SHORTCUTS: { id: ShortcutId; run: () => void; worksOverSurface?: tr
     id: 'nameVersion',
     run: () => {
       if (useResumeStore.getState().templateId === null) showToast(NOTHING_OPEN);
-      else useOverlayStore.getState().setNameVersionOpen(true);
+      else useOverlayStore.getState().openDialog({ kind: 'nameVersion' });
     },
   },
   // Opens the open template's history, and closes it again: a view you toggle, like a pane.
@@ -204,12 +205,16 @@ const GLOBAL_SHORTCUTS: { id: ShortcutId; run: () => void; worksOverSurface?: tr
     id: 'exportResume',
     run: () => {
       if (useResumeStore.getState().templateId === null) showToast(NOTHING_OPEN);
-      else useOverlayStore.getState().openExport();
+      else useOverlayStore.getState().openDialog({ kind: 'export', version: null });
     },
   },
   {
     id: 'importResume',
-    run: () => useOverlayStore.getState().openImport(useResumeStore.getState().templateId === null),
+    run: () =>
+      useOverlayStore.getState().openDialog({
+        kind: 'import',
+        asNewOnly: useResumeStore.getState().templateId === null,
+      }),
     worksOverSurface: true,
   },
   {

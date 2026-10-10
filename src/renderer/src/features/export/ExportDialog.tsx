@@ -24,7 +24,7 @@ import { buildExportName, toFileName } from '@/lib/files/fileNames';
 import { HeaderLinkToggles } from '@/features/editor/header/HeaderLinkToggles';
 import { describeLinkLook } from '@shared/resume/resumeHeader';
 import { cn } from '@/lib/utils';
-import { useOverlayStore, type ExportVersion } from '@/stores/overlayStore';
+import { useDialog, useOverlayStore, type ExportVersion } from '@/stores/overlayStore';
 import { explainFailure, showToast } from '@/stores/toastStore';
 import { getResumeSnapshot, useResumeStore } from '@/stores/resumeStore';
 import { useUiStore } from '@/stores/uiStore';
@@ -50,9 +50,10 @@ const FORMAT_ICONS: Record<ExportFormat, LucideIcon> = {
 
 /** Save the open draft, or one version, as a file — or copy it as text. */
 export function ExportDialog() {
-  const open = useOverlayStore((s) => s.exportOpen);
-  const version = useOverlayStore((s) => s.exportVersion);
-  const closeExport = useOverlayStore((s) => s.closeExport);
+  const { isOpen: open, request } = useDialog('export');
+  const version = request?.version ?? null;
+  const closeDialog = useOverlayStore((s) => s.closeDialog);
+  const closeExport = () => closeDialog('export');
 
   return (
     <AppDialog open={open} onOpenChange={(next) => !next && closeExport()}>

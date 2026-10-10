@@ -6,7 +6,7 @@ import { Note } from '@/components/Note';
 import { Text } from '@/components/Text';
 import { getPrintableHeaderLines } from '@shared/resume/resumeHeader';
 import { getResumeSnapshot, useResumeStore } from '@/stores/resumeStore';
-import { useOverlayStore } from '@/stores/overlayStore';
+import { useDialog, useOverlayStore } from '@/stores/overlayStore';
 import { attempt, showToast } from '@/stores/toastStore';
 import { useTemplateStore } from '@/stores/templateStore';
 import { useUiStore } from '@/stores/uiStore';
@@ -72,7 +72,7 @@ export function ImportReview({
   onBack: () => void;
   onDone: () => void;
 }) {
-  const asNewOnly = useOverlayStore((s) => s.importAsNewOnly);
+  const asNewOnly = useDialog('import').request?.asNewOnly ?? false;
   const closeSurface = useOverlayStore((s) => s.closeSurface);
   const createTemplate = useTemplateStore((s) => s.createTemplate);
   const importIntoDraft = useTemplateStore((s) => s.importIntoDraft);

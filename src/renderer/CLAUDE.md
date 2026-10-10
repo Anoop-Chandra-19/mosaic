@@ -12,6 +12,19 @@ For resume content, preview, or exports, also read `docs/resume-format.md` (repo
 - `src/components/` is feature-independent UI; `src/stores/` is shared renderer state;
   `src/types/` is renderer-only types. Keep components small and focused.
 
+## Shared state
+
+Each store holds one kind of state; put new state with its kind, not in the nearest store.
+
+- `overlayStore`: what covers the app. A surface over the workspace, Settings, one
+  `dialog` (`openDialog({ kind, … })`, `closeDialog(kind)`; a dialog reads itself with
+  `useDialog(kind)`), and one `tour`. A new dialog is a `DialogRequest` kind, never a flag.
+- `previewStore`: the version being read in the sheet, its marks, and the page count.
+- `toastStore`: `showToast`, and `attempt` for an action that may fail.
+- `targetStore`: a shortcut that opens or focuses something drawn inside a feature is a
+  keyboard target (`requestTarget`, answered by `useTargetRequest` where it is drawn),
+  never a store flag.
+
 ## UI foundation
 
 - Use Radix/shadcn primitives (new-york, zinc base), not hand-rolled equivalents, through

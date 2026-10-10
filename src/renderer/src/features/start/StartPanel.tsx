@@ -35,7 +35,7 @@ export function StartPanel({ closable }: StartPanelProps) {
   const first = useTemplateStore((s) => s.templates.length === 0);
   const closeSurface = useOverlayStore((s) => s.closeSurface);
   const close = () => closeSurface('start');
-  const openImport = useOverlayStore((s) => s.openImport);
+  const openDialog = useOverlayStore((s) => s.openDialog);
   const start = useStartResume();
   const newTemplateKeys = useShortcutLabel('newTemplate');
 
@@ -92,7 +92,7 @@ export function StartPanel({ closable }: StartPanelProps) {
                 icon={Upload}
                 title="Import what you have"
                 description="Word, Markdown, plain text, or a Mosaic backup from another computer."
-                onClick={() => openImport(true)}
+                onClick={() => openDialog({ kind: 'import', asNewOnly: true })}
               />
               <StartRoute
                 icon={Sparkles}

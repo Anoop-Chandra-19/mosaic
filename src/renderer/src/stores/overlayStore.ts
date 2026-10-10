@@ -6,13 +6,40 @@ import type { OpenedBackup } from '@shared/types/bundle';
 import type { VersionPreview } from './previewStore';
 
 /**
- * What is showing over the app right now. Never persisted. Toasts are `toastStore`'s, and
- * the version being read in the sheet is `previewStore`'s.
+ * What covers the app right now: a surface over the workspace, Settings, one dialog, and
+ * one tour. Never persisted. Toasts are `toastStore`'s, the version being read in the sheet
+ * is `previewStore`'s, and shortcuts that open something inside a feature use `targetStore`.
  */
 
 /** A version to export instead of the open draft. */
 export interface ExportVersion extends VersionPreview {
   templateName: string;
+}
+
+/**
+ * A dialog to open, with what it needs. One at a time: opening one replaces another.
+ * Settings is not one of them; a dialog can open over it.
+ */
+export type DialogRequest =
+  /** `asNewOnly`: the import can only become a new template (nothing is open, or Start). */
+  | { kind: 'import'; asNewOnly: boolean }
+  /** `version`: what to export instead of the open draft. */
+  | { kind: 'export'; version: ExportVersion | null }
+  | { kind: 'nameVersion' }
+  /** `place`: where the sheet was opened from; that place's keys are listed first. */
+  | { kind: 'shortcuts'; place: ShortcutPlace | null }
+  /** A backup file chosen for restoring, waiting for the user to confirm. */
+  | { kind: 'restoreBackup'; backup: OpenedBackup };
+
+export type DialogKind = DialogRequest['kind'];
+
+/**
+ * The dialog showing. A closed one keeps its request until another opens, so it animates
+ * out unchanged.
+ */
+interface ShownDialog {
+  request: DialogRequest;
+  isOpen: boolean;
 }
 
 /**
@@ -57,19 +84,7 @@ interface OverlayState {
   surface: WorkspaceSurface | null;
   /** The Settings section showing, or null while Settings is closed. */
   settingsSection: SettingsSectionId | null;
-  importOpen: boolean;
-  /** The import can only become a new template (nothing is open, or it came from Start). */
-  importAsNewOnly: boolean;
-  nameVersionOpen: boolean;
-  /** The keyboard shortcut sheet, opened on its own with Ctrl/⌘+/. */
-  shortcutsOpen: boolean;
-  /** Where the sheet was opened from: that place's keys are listed first. */
-  shortcutsPlace: ShortcutPlace | null;
-  exportOpen: boolean;
-  /** What the Export dialog exports: this version, or the open draft when null. */
-  exportVersion: ExportVersion | null;
-  /** A backup file chosen for restoring, waiting for the user to confirm. */
-  pendingRestore: OpenedBackup | null;
+  dialog: ShownDialog | null;
   tour: RunningTour | null;
   openSurface: (surface: WorkspaceSurface) => void;
   /** Closes the surface showing, if it is a `kind` one; any other is left alone. */
@@ -77,15 +92,10 @@ interface OverlayState {
   /** Opens Settings at `section`, General unless told otherwise. */
   openSettings: (section?: SettingsSectionId) => void;
   closeSettings: () => void;
-  openImport: (asNewOnly: boolean) => void;
-  closeImport: () => void;
-  setNameVersionOpen: (open: boolean) => void;
-  openShortcuts: (place: ShortcutPlace | null) => void;
-  closeShortcuts: () => void;
-  /** Opens Export for the open draft, or for `version`. */
-  openExport: (version?: ExportVersion) => void;
-  closeExport: () => void;
-  setPendingRestore: (backup: OpenedBackup | null) => void;
+  /** Opens `request`'s dialog, closing any other. */
+  openDialog: (request: DialogRequest) => void;
+  /** Closes the dialog showing, if it is a `kind` one; any other is left alone. */
+  closeDialog: (kind: DialogKind) => void;
   /** Starts `kind`'s tour on its first step, ending any other. */
   startTour: (kind: TourKind) => void;
   /** Moves the running tour to `step`. */
@@ -97,14 +107,7 @@ interface OverlayState {
 export const useOverlayStore = create<OverlayState>()((set) => ({
   surface: null,
   settingsSection: null,
-  importOpen: false,
-  importAsNewOnly: false,
-  nameVersionOpen: false,
-  shortcutsOpen: false,
-  shortcutsPlace: null,
-  exportOpen: false,
-  exportVersion: null,
-  pendingRestore: null,
+  dialog: null,
   tour: null,
   openSurface: (surface) => set({ surface }),
   // The history tour runs on the full history, so closing it ends the tour too.
@@ -116,16 +119,11 @@ export const useOverlayStore = create<OverlayState>()((set) => ({
     }),
   openSettings: (section = 'general') => set({ settingsSection: section }),
   closeSettings: () => set({ settingsSection: null }),
-  openImport: (importAsNewOnly) => set({ importOpen: true, importAsNewOnly }),
-  closeImport: () => set({ importOpen: false }),
-  setNameVersionOpen: (nameVersionOpen) => set({ nameVersionOpen }),
-  openShortcuts: (shortcutsPlace) => set({ shortcutsOpen: true, shortcutsPlace }),
-  // The place stays until the next opening, so the closing sheet does not change.
-  closeShortcuts: () => set({ shortcutsOpen: false }),
-  openExport: (version) => set({ exportOpen: true, exportVersion: version ?? null }),
-  // The target stays until the next opening, so the closing dialog does not change.
-  closeExport: () => set({ exportOpen: false }),
-  setPendingRestore: (pendingRestore) => set({ pendingRestore }),
+  openDialog: (request) => set({ dialog: { request, isOpen: true } }),
+  closeDialog: (kind) =>
+    set((state) =>
+      state.dialog?.request.kind === kind ? { dialog: { ...state.dialog, isOpen: false } } : state
+    ),
   startTour: (kind) => set({ tour: { kind, step: 0 } }),
   setTourStep: (step) => set((state) => (state.tour ? { tour: { ...state.tour, step } } : state)),
   endTour: (kind) => set((state) => (state.tour?.kind === kind ? { tour: null } : state)),
@@ -136,3 +134,15 @@ export const selectTourStep =
   (kind: TourKind) =>
   (state: OverlayState): number | null =>
     state.tour?.kind === kind ? state.tour.step : null;
+
+/**
+ * For a dialog to read itself: whether it is open, and its request while it is the one
+ * showing (open, or animating out).
+ */
+export function useDialog<K extends DialogKind>(kind: K) {
+  const dialog = useOverlayStore((s) => (s.dialog?.request.kind === kind ? s.dialog : null));
+  return {
+    isOpen: dialog?.isOpen ?? false,
+    request: (dialog?.request ?? null) as Extract<DialogRequest, { kind: K }> | null,
+  };
+}

@@ -11,7 +11,7 @@ import { formatRelativeTime } from '@/features/templates/formatRelativeTime';
 import { easeHeightChanges } from '@/lib/motion/easeHeightChanges';
 
 import { cn } from '@/lib/utils';
-import { useOverlayStore } from '@/stores/overlayStore';
+import { useDialog, useOverlayStore } from '@/stores/overlayStore';
 import { attempt, showToast } from '@/stores/toastStore';
 import { useTemplateStore } from '@/stores/templateStore';
 import type { ImportMode, OpenedBackup } from '@shared/types/bundle';
@@ -28,15 +28,16 @@ function listNames(names: string[], shown = 3): string {
 /**
  * Confirm what a backup holds before anything is written. With templates already here,
  * the user chooses: add the backup's beside them, or replace everything with it. Open
- * while `pendingRestore` holds a file — from Settings, the Import dialog, or Start.
+ * once a file is chosen — from Settings, the Import dialog, or Start.
  */
 export function RestoreBackupDialog() {
-  const backup = useOverlayStore((s) => s.pendingRestore);
-  const setPendingRestore = useOverlayStore((s) => s.setPendingRestore);
-  const close = () => setPendingRestore(null);
+  const { isOpen, request } = useDialog('restoreBackup');
+  const closeDialog = useOverlayStore((s) => s.closeDialog);
+  const close = () => closeDialog('restoreBackup');
+  const backup = isOpen ? (request?.backup ?? null) : null;
 
   return (
-    <AppDialog open={backup !== null} onOpenChange={(open) => !open && close()}>
+    <AppDialog open={isOpen} onOpenChange={(open) => !open && close()}>
       <AppDialogContent
         ref={easeHeightChanges}
         showCloseButton={false}

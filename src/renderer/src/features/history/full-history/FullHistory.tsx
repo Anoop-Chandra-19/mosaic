@@ -178,7 +178,7 @@ function FullHistoryFrame({
   const closeSurface = useOverlayStore((s) => s.closeSurface);
   const restoreVersion = useTemplateStore((s) => s.restoreVersion);
   const duplicateVersion = useTemplateStore((s) => s.duplicateVersion);
-  const openExport = useOverlayStore((s) => s.openExport);
+  const openDialog = useOverlayStore((s) => s.openDialog);
   const paperSize = useUiStore((s) => s.paperSize);
   const isDetailed = useUiStore((s) => s.shouldShowHistoryDetails);
   const storedComparison = useUiStore((s) => s.historyComparison);
@@ -344,7 +344,7 @@ function FullHistoryFrame({
   };
 
   const exportVersion = (version: Version, label: string) =>
-    openExport({ version, label, templateName: source.name });
+    openDialog({ kind: 'export', version: { version, label, templateName: source.name } });
 
   const namedCount = versions?.filter((version) => version.kind === 'named').length ?? 0;
 

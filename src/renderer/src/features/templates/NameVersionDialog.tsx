@@ -10,7 +10,7 @@ import { Text } from '@/components/Text';
 import { versionLabel } from '@/features/history/useTemplateVersions';
 import { DbError } from '@/lib/storage/mosaicDb';
 import { cn } from '@/lib/utils';
-import { useOverlayStore } from '@/stores/overlayStore';
+import { useDialog, useOverlayStore } from '@/stores/overlayStore';
 import { attempt, showToast } from '@/stores/toastStore';
 import { useTemplateStore } from '@/stores/templateStore';
 import { canAddToVersion } from '@shared/history/canAddToVersion';
@@ -25,14 +25,15 @@ import { useTemplateStatus } from './useTemplateStatus';
  * version (v13.1), which leaves that version exactly as it was.
  */
 export function NameVersionDialog() {
-  const open = useOverlayStore((s) => s.nameVersionOpen);
-  const setOpen = useOverlayStore((s) => s.setNameVersionOpen);
+  const { isOpen: open } = useDialog('nameVersion');
+  const closeDialog = useOverlayStore((s) => s.closeDialog);
+  const close = () => closeDialog('nameVersion');
 
   return (
-    <AppDialog open={open} onOpenChange={setOpen}>
+    <AppDialog open={open} onOpenChange={(next) => !next && close()}>
       <AppDialogContent showCloseButton={false} className="w-[min(35rem,96vw)] gap-0 p-0">
         {/* Remounted per opening, so the name starts empty each time. */}
-        {open && <NameVersionForm onDone={() => setOpen(false)} />}
+        {open && <NameVersionForm onDone={close} />}
       </AppDialogContent>
     </AppDialog>
   );
