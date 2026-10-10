@@ -16,7 +16,7 @@ const SOURCE_URL = 'https://github.com/Anoop-Chandra-19/mosaic';
 export function AboutSection() {
   const hasResume = useResumeStore((s) => s.templateId !== null);
   const closeSettings = useOverlayStore((s) => s.closeSettings);
-  const setTourStep = useOverlayStore((s) => s.setTourStep);
+  const startTour = useOverlayStore((s) => s.startTour);
   return (
     <>
       <div className="mt-3.5 mb-2 flex items-center gap-3">
@@ -61,7 +61,7 @@ export function AboutSection() {
           disabled={!hasResume}
           onClick={() => {
             closeSettings();
-            setTourStep(0);
+            startTour('gettingStarted');
           }}
         >
           Replay

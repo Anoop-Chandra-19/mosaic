@@ -4,7 +4,7 @@ import { useShortcutLabel } from '@/features/shortcuts/shortcutBindings';
 import { isTypingField } from '@/lib/keyboardShortcuts';
 import type { ShortcutId } from '@/lib/shortcutCatalog';
 import { prefersReducedMotion } from '@/lib/motion/motionTiming';
-import { useOverlayStore } from '@/stores/overlayStore';
+import { selectTourStep, useOverlayStore } from '@/stores/overlayStore';
 import { showToast } from '@/stores/toastStore';
 import { useResumeStore } from '@/stores/resumeStore';
 import { useUiStore, type SidebarTab } from '@/stores/uiStore';
@@ -39,7 +39,7 @@ function useStartTourOnFirstResume() {
   const hasResume = useResumeStore((s) => s.templateId !== null);
   useEffect(() => {
     const overlay = useOverlayStore.getState();
-    if (!hasSeenTour && hasResume && overlay.tourStep === null) overlay.setTourStep(0);
+    if (!hasSeenTour && hasResume && overlay.tour === null) overlay.startTour('gettingStarted');
   }, [hasSeenTour, hasResume]);
 }
 
@@ -49,7 +49,7 @@ function useStartTourOnFirstResume() {
  */
 export function GettingStartedTour() {
   useStartTourOnFirstResume();
-  const stepIndex = useOverlayStore((s) => s.tourStep);
+  const stepIndex = useOverlayStore(selectTourStep('gettingStarted'));
   if (stepIndex === null) return null;
   return <RunningTour stepIndex={stepIndex} />;
 }
@@ -61,7 +61,7 @@ function RunningTour({ stepIndex }: { stepIndex: number }) {
 }
 
 function finishTour(isComplete: boolean) {
-  useOverlayStore.getState().setTourStep(null);
+  useOverlayStore.getState().endTour('gettingStarted');
   useUiStore.getState().markTourSeen();
   if (isComplete) showToast('Tour finished. Replay it any time from Settings › About.');
 }

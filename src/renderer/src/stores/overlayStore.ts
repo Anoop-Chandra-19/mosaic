@@ -38,6 +38,21 @@ export type WorkspaceSurface =
       comparison?: HistoryComparison;
     };
 
+/**
+ * `gettingStarted`: the first-run tour over the editor. `history`: the history tour, over
+ * the full history, which shows the example history meanwhile.
+ */
+export type TourKind = 'gettingStarted' | 'history';
+
+/**
+ * The tour running, one at a time: starting one replaces another. A dialog or surface over
+ * the app hides a tour without ending it; it comes back on its step.
+ */
+export interface RunningTour {
+  kind: TourKind;
+  step: number;
+}
+
 interface OverlayState {
   surface: WorkspaceSurface | null;
   /** The Settings section showing, or null while Settings is closed. */
@@ -57,16 +72,7 @@ interface OverlayState {
   exportVersion: ExportVersion | null;
   /** A backup file chosen for restoring, waiting for the user to confirm. */
   pendingRestore: OpenedBackup | null;
-  /**
-   * The first-run tour's step while it runs, else null. A dialog or surface over the app
-   * hides the tour without ending it; it comes back on this step.
-   */
-  tourStep: number | null;
-  /**
-   * The history tour's step while it runs, else null. It runs over the full history, which
-   * shows the example history meanwhile; a dialog hides it without ending it.
-   */
-  historyTourStep: number | null;
+  tour: RunningTour | null;
   openSurface: (surface: WorkspaceSurface) => void;
   /** Closes the surface showing, if it is a `kind` one; any other is left alone. */
   closeSurface: (kind: WorkspaceSurface['kind']) => void;
@@ -83,8 +89,12 @@ interface OverlayState {
   openExport: (version?: ExportVersion) => void;
   closeExport: () => void;
   setPendingRestore: (backup: OpenedBackup | null) => void;
-  setTourStep: (step: number | null) => void;
-  setHistoryTourStep: (step: number | null) => void;
+  /** Starts `kind`'s tour on its first step, ending any other. */
+  startTour: (kind: TourKind) => void;
+  /** Moves the running tour to `step`. */
+  setTourStep: (step: number) => void;
+  /** Ends the tour running, if it is a `kind` one; any other is left alone. */
+  endTour: (kind: TourKind) => void;
 }
 
 export const useOverlayStore = create<OverlayState>()((set) => ({
@@ -99,14 +109,14 @@ export const useOverlayStore = create<OverlayState>()((set) => ({
   exportOpen: false,
   exportVersion: null,
   pendingRestore: null,
-  tourStep: null,
-  historyTourStep: null,
+  tour: null,
   openSurface: (surface) => set({ surface }),
   // The history tour runs on the full history, so closing it ends the tour too.
   closeSurface: (kind) =>
     set((state) => {
       if (state.surface?.kind !== kind) return state;
-      return kind === 'history' ? { surface: null, historyTourStep: null } : { surface: null };
+      const isHistoryTourOn = kind === 'history' && state.tour?.kind === 'history';
+      return isHistoryTourOn ? { surface: null, tour: null } : { surface: null };
     }),
   openSettings: (section = 'general') => set({ settingsSection: section }),
   closeSettings: () => set({ settingsSection: null }),
@@ -121,6 +131,13 @@ export const useOverlayStore = create<OverlayState>()((set) => ({
   // The target stays until the next opening, so the closing dialog does not change.
   closeExport: () => set({ exportOpen: false }),
   setPendingRestore: (pendingRestore) => set({ pendingRestore }),
-  setTourStep: (tourStep) => set({ tourStep }),
-  setHistoryTourStep: (historyTourStep) => set({ historyTourStep }),
+  startTour: (kind) => set({ tour: { kind, step: 0 } }),
+  setTourStep: (step) => set((state) => (state.tour ? { tour: { ...state.tour, step } } : state)),
+  endTour: (kind) => set((state) => (state.tour?.kind === kind ? { tour: null } : state)),
 }));
+
+/** For reading one tour: its step while it runs, else null. */
+export const selectTourStep =
+  (kind: TourKind) =>
+  (state: OverlayState): number | null =>
+    state.tour?.kind === kind ? state.tour.step : null;

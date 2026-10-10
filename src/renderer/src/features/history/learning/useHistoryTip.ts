@@ -64,7 +64,7 @@ interface HistoryTipOptions {
 export function useHistoryTip({ listRef, items, isEnabled, isBusy }: HistoryTipOptions) {
   const [chosen, setChosen] = useState<ChosenHistoryTip | null>(null);
   const hasLooked = useRef(false);
-  const isTouring = useOverlayStore((s) => s.historyTourStep !== null);
+  const isTouring = useOverlayStore((s) => s.tour?.kind === 'history');
   const hasItems = items.length > 0;
 
   // Reads the rows as they are when the list has settled, not as they were when it opened.
@@ -72,7 +72,7 @@ export function useHistoryTip({ listRef, items, isEnabled, isBusy }: HistoryTipO
     hasLooked.current = true;
     const root = listRef.current;
     const ui = useUiStore.getState();
-    if (!root || isBusy || isDialogOpen() || useOverlayStore.getState().historyTourStep !== null) {
+    if (!root || isBusy || isDialogOpen() || useOverlayStore.getState().tour?.kind === 'history') {
       return;
     }
     const inView = items.filter((item) => {

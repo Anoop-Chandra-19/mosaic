@@ -11,5 +11,5 @@ export function startHistoryTour(): void {
   const overlay = useOverlayStore.getState();
   overlay.closeSettings();
   if (overlay.surface?.kind !== 'history') overlay.openSurface({ kind: 'history', templateId });
-  overlay.setHistoryTourStep(0);
+  overlay.startTour('history');
 }

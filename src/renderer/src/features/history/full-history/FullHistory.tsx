@@ -93,7 +93,7 @@ export function FullHistory({
   const prepared = use(prepareHistoryOpening(opening, templateId, versionId));
   const template = useTemplateStore((s) => s.templates.find((t) => t.id === templateId));
   const closeSurface = useOverlayStore((s) => s.closeSurface);
-  const isTouring = useOverlayStore((s) => s.historyTourStep !== null);
+  const isTouring = useOverlayStore((s) => s.tour?.kind === 'history');
 
   // The template went away under the view, as a restore of all templates can do.
   useEffect(() => {
