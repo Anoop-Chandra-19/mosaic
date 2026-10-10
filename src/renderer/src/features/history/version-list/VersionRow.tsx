@@ -326,7 +326,7 @@ export function VersionRow({
             aria-hidden
             className={cn(
               // The rail is 1px on a whole pixel, centred at 5.5px; the slot's centre is 6px.
-              'relative z-1 shrink-0 translate-x-[0.03125rem]',
+              'relative z-1 shrink-0 translate-x-[-0.03125rem]',
               railMarkClasses(railMark, isHead, isPreviewing, isConfirming),
               isJustNamed && 'animate-marker-pop motion-reduce:animate-none'
             )}
