@@ -21,7 +21,7 @@ import { Note } from '@/components/Note';
 import { Text } from '@/components/Text';
 import { useActiveTemplate } from '@/features/templates/useActiveTemplate';
 import { buildExportName, toFileName } from '@/lib/files/fileNames';
-import { HeaderLinkToggles } from '@/features/editor/header/HeaderLinkToggles';
+import { HeaderLinkControls } from '@/components/HeaderLinkControls';
 import { describeLinkLook } from '@shared/resume/resumeHeader';
 import { cn } from '@/lib/utils';
 import { useDialog, useOverlayStore, type ExportVersion } from '@/stores/overlayStore';
@@ -29,6 +29,7 @@ import { explainFailure, showToast } from '@/stores/toastStore';
 import { getResumeSnapshot, useResumeStore } from '@/stores/resumeStore';
 import { useUiStore } from '@/stores/uiStore';
 import type { PaperSize } from '@/types/paper';
+import type { LinkColor, LinkStyle } from '@shared/types/resume';
 import {
   copyText,
   EXPORT_FORMATS,
@@ -72,8 +73,13 @@ function ExportForm({ version, onDone }: { version: ExportVersion | null; onDone
   const draftContactName = useResumeStore((s) => s.contact.name);
   const templateId = useResumeStore((s) => s.templateId);
   const activeTemplate = useActiveTemplate();
-  const paperSize = useUiStore((s) => s.paperSize);
-  const setPaperSize = useUiStore((s) => s.setPaperSize);
+  const [paperSize, setPaperSize] = useState(() => useUiStore.getState().paperSize);
+  const [linkStyle, setLinkStyle] = useState<LinkStyle>(
+    () => (version?.version.doc ?? getResumeSnapshot()).contact.header.linkStyle
+  );
+  const [linkColor, setLinkColor] = useState<LinkColor>(
+    () => (version?.version.doc ?? getResumeSnapshot()).contact.header.linkColor ?? 'ink'
+  );
 
   // A version is exported as it was; Mosaic JSON is a template's whole history, so it only
   // goes with the draft.
@@ -97,7 +103,11 @@ function ExportForm({ version, onDone }: { version: ExportVersion | null; onDone
   // Mosaic JSON is a backup: it holds the whole template either way.
   const [includeHidden, setIncludeHidden] = useState(false);
   const holdsEverything = format.id === 'mosaic-json';
-  const options = { paperSize, includeHidden: includeHidden && !holdsEverything };
+  const options = {
+    paperSize,
+    includeHidden: includeHidden && !holdsEverything,
+    headerLinks: { linkStyle, linkColor },
+  };
 
   const source = () => ({
     doc: version ? version.version.doc : getResumeSnapshot(),
@@ -199,7 +209,7 @@ function ExportForm({ version, onDone }: { version: ExportVersion | null; onDone
             )}
           </Row>
           {format.isPaged && (
-            <Row label="Paper">
+            <Row label="Paper" description="For this export only; your preview stays unchanged.">
               <AppToggleGroup
                 type="single"
                 value={paperSize}
@@ -211,8 +221,27 @@ function ExportForm({ version, onDone }: { version: ExportVersion | null; onDone
               </AppToggleGroup>
             </Row>
           )}
-          <Row label="Header links" description={format.headerLinkNote}>
-            {format.isPaged && <HeaderLinksControl version={version} />}
+          <Row
+            label="Header links"
+            description={
+              format.isPaged && !version
+                ? `${format.headerLinkNote} Changes apply to this export only.`
+                : format.headerLinkNote
+            }
+          >
+            {format.isPaged &&
+              (version ? (
+                <Text variant="body" className="text-ink-muted">
+                  {describeLinkLook(version.version.doc.contact.header)}
+                </Text>
+              ) : (
+                <HeaderLinkControls
+                  linkStyle={linkStyle}
+                  linkColor={linkColor}
+                  onLinkStyleChange={setLinkStyle}
+                  onLinkColorChange={setLinkColor}
+                />
+              ))}
           </Row>
           <Row label="File name">
             <div className="flex w-[min(18rem,100%)]">
@@ -335,19 +364,4 @@ function Row({
       {children}
     </div>
   );
-}
-
-/**
- * How the header's links look in the PDF and the Word file. It is the resume's own setting, so the draft's
- * can be changed here; a version shows the one it was saved with.
- */
-function HeaderLinksControl({ version }: { version: ExportVersion | null }) {
-  if (version) {
-    return (
-      <span className="text-body text-ink-muted">
-        {describeLinkLook(version.version.doc.contact.header)}
-      </span>
-    );
-  }
-  return <HeaderLinkToggles />;
 }

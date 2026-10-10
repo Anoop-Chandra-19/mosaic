@@ -1,7 +1,5 @@
-import { AppToggleGroup, AppToggleGroupItem } from '@/components/AppToggleGroup';
-import { LINK_COLORS, LINK_STYLES } from '@shared/resume/resumeHeader';
+import { HeaderLinkControls } from '@/components/HeaderLinkControls';
 import { useResumeStore } from '@/stores/resumeStore';
-import type { LinkColor, LinkStyle } from '@shared/types/resume';
 
 /**
  * How the open resume's header links print: underlined or not, black or blue. They are the
@@ -14,32 +12,11 @@ export function HeaderLinkToggles() {
   const setLinkColor = useResumeStore((s) => s.setLinkColor);
 
   return (
-    <div className="flex flex-wrap items-center gap-2">
-      <AppToggleGroup
-        type="single"
-        value={linkStyle}
-        // A single-choice group reports '' when the pressed item is pressed again.
-        onValueChange={(value) => value && setLinkStyle(value as LinkStyle)}
-        aria-label="Header links"
-      >
-        {LINK_STYLES.map(({ value, label }) => (
-          <AppToggleGroupItem key={value} value={value}>
-            {label}
-          </AppToggleGroupItem>
-        ))}
-      </AppToggleGroup>
-      <AppToggleGroup
-        type="single"
-        value={linkColor}
-        onValueChange={(value) => value && setLinkColor(value as LinkColor)}
-        aria-label="Header link color"
-      >
-        {LINK_COLORS.map(({ value, label }) => (
-          <AppToggleGroupItem key={value} value={value}>
-            {label}
-          </AppToggleGroupItem>
-        ))}
-      </AppToggleGroup>
-    </div>
+    <HeaderLinkControls
+      linkStyle={linkStyle}
+      linkColor={linkColor}
+      onLinkStyleChange={setLinkStyle}
+      onLinkColorChange={setLinkColor}
+    />
   );
 }

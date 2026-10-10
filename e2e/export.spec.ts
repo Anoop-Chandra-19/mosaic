@@ -30,6 +30,40 @@ async function nameVersion(page: Page, name: string) {
   await expect(page.getByText(`Named “${name}”`)).toBeVisible();
 }
 
+test('export appearance starts from document settings and cancelling leaves them unchanged', async () => {
+  const { page, errors } = mosaic();
+  await startFromSample(page);
+  await page.getByRole('button', { name: 'Open settings' }).click();
+  const settings = page.getByRole('dialog', { name: 'Settings' });
+  await settings.getByRole('navigation').getByRole('button', { name: 'Document' }).click();
+  await settings.getByRole('radio', { name: 'US Letter' }).click();
+  await settings.getByRole('radio', { name: 'Underlined' }).click();
+  await settings.getByRole('radio', { name: 'Blue' }).click();
+  await settings.getByRole('button', { name: 'Close settings' }).click();
+
+  const exporting = await openExport(page, /^PDF/);
+  await expect(exporting.getByRole('radio', { name: 'Letter', exact: true })).toBeChecked();
+  await expect(exporting.getByRole('radio', { name: 'Underlined' })).toBeChecked();
+  await expect(exporting.getByRole('radio', { name: 'Blue' })).toBeChecked();
+  await exporting.getByRole('radio', { name: 'A4' }).click();
+  await exporting.getByRole('radio', { name: 'Plain', exact: true }).click();
+  await exporting.getByRole('radio', { name: 'Black' }).click();
+  const linkedIn = page.locator('[data-preview-header] a', { hasText: 'LinkedIn' }).first();
+  await expect(linkedIn).toHaveCSS('text-decoration-line', 'underline');
+  await expect(linkedIn).toHaveCSS('color', 'rgb(5, 99, 193)');
+  await exporting.getByRole('button', { name: 'Cancel' }).click();
+
+  const again = await openExport(page, /^PDF/);
+  await expect(again.getByRole('radio', { name: 'Letter', exact: true })).toBeChecked();
+  await expect(again.getByRole('radio', { name: 'Underlined' })).toBeChecked();
+  await expect(again.getByRole('radio', { name: 'Blue' })).toBeChecked();
+  await again.getByRole('button', { name: 'Close export' }).click();
+  const boot = await page.evaluate(() => window.mosaic.db.boot());
+  if (!boot.ok) throw new Error(boot.message);
+  expect(JSON.parse(boot.value.settings.ui).state.paperSize).toBe('letter');
+  expect(errors).toEqual([]);
+});
+
 test('Markdown can be copied or saved, and reads back in through Import', async () => {
   const { app, page, userDataDir } = mosaic();
   await saveInto(app, userDataDir);
@@ -121,11 +155,18 @@ test('Mosaic JSON holds the template’s history and restores like a backup', as
   await page.getByPlaceholder('Your name').press('Enter');
   await nameVersion(page, 'Sent to Acme');
 
-  await (await openExport(page, /^Mosaic JSON/)).getByRole('button', { name: 'Save JSON' }).click();
+  const exporting = await openExport(page, /^PDF/);
+  await exporting.getByRole('radio', { name: 'Underlined' }).click();
+  await exporting.getByRole('radio', { name: 'Blue' }).click();
+  await exporting.getByRole('radio', { name: /^Mosaic JSON/ }).click();
+  await exporting.getByRole('button', { name: 'Save JSON' }).click();
   await expect(page.getByText('Saved Ada Lovelace - Example resume.json')).toBeVisible();
   const file = path.join(userDataDir, 'Ada Lovelace - Example resume.json');
   const bundle = JSON.parse(fs.readFileSync(file, 'utf8'));
   expect(bundle.bundleVersion).toBe(3);
+  const draft = bundle.docs[bundle.templates[0].draftDocId];
+  expect(draft.contact.header.linkStyle).toBe('plain');
+  expect(draft.contact.header.linkColor ?? 'ink').toBe('ink');
   expect(bundle.templates[0].versions.map((v: { summary: string }) => v.summary)).toEqual([
     'Created',
     'Sent to Acme',
@@ -160,6 +201,8 @@ test('a version exports as it was, not as the draft', async () => {
   const dialog = page.getByRole('dialog', { name: 'Export v1' });
   // A single version has no history to carry, so there is no Mosaic JSON for it.
   await expect(dialog.getByRole('radio', { name: /^Mosaic JSON/ })).toHaveCount(0);
+  await expect(dialog.getByRole('radio', { name: 'Underlined' })).toHaveCount(0);
+  await expect(dialog.getByRole('radio', { name: 'Blue' })).toHaveCount(0);
   await expect(dialog.getByLabel('File name')).toHaveValue('Your Name - Example resume (v1)');
   await dialog.getByRole('radio', { name: /^Plain text/ }).click();
   await dialog.getByRole('button', { name: 'Copy to clipboard' }).click();
@@ -177,14 +220,13 @@ test('Save PDF writes the resume as a real PDF, which reads back in through Impo
 
   await page.getByRole('button', { name: 'Open export dialog' }).click();
   const exporting = page.getByRole('dialog', { name: 'Export' });
-  // How the header's links look is the resume's own setting, so the preview follows it.
   await exporting.getByRole('radio', { name: 'Underlined' }).click();
   await exporting.getByRole('radio', { name: 'Blue' }).click();
-  // Found by its text: behind an open dialog, the page is hidden from role queries.
+  await exporting.getByRole('radio', { name: 'Letter', exact: true }).click();
+  // Export-only overrides must not restyle the preview behind the dialog.
   const linkedIn = page.locator('[data-preview-header] a', { hasText: 'LinkedIn' }).first();
-  await expect(linkedIn).toHaveCSS('text-decoration-line', 'underline');
-  // Word's hyperlink blue, #0563C1.
-  await expect(linkedIn).toHaveCSS('color', 'rgb(5, 99, 193)');
+  await expect(linkedIn).toHaveCSS('text-decoration-line', 'none');
+  await expect(linkedIn).toHaveCSS('color', 'rgb(0, 0, 0)');
   await exporting.getByRole('button', { name: 'Save PDF' }).click();
 
   // Named for the person and the template. If PDF generation breaks (e.g. the CSP blocks
@@ -196,9 +238,17 @@ test('Save PDF writes the resume as a real PDF, which reads back in through Impo
 
   const pdf = fs.readFileSync(file);
   expect(pdf.subarray(0, 5).toString()).toBe('%PDF-');
+  expect(pdf.toString('latin1')).toMatch(/\/MediaBox\s*\[0 0 612 792\]/);
   const text = extractPdfText(pdf);
   expect(text).toContain('Your Name');
   expect(text).toContain('Work History');
+  await expect(linkedIn).toHaveCSS('text-decoration-line', 'none');
+  await expect(linkedIn).toHaveCSS('color', 'rgb(0, 0, 0)');
+  const again = await openExport(page, /^PDF/);
+  await expect(again.getByRole('radio', { name: 'A4' })).toBeChecked();
+  await expect(again.getByRole('radio', { name: 'Plain', exact: true })).toBeChecked();
+  await expect(again.getByRole('radio', { name: 'Black' })).toBeChecked();
+  await again.getByRole('button', { name: 'Close export' }).click();
 
   // pdf.js reads in a worker, which the content security policy has to let load.
   await openWith(app, file);
@@ -235,7 +285,7 @@ test('Save DOCX writes a Word file, which reads back in through Import', async (
   await startFromSample(page);
 
   const exporting = await openExport(page, /^Word/);
-  // A Word file is laid out on paper too, so it takes the same paper and link settings.
+  // Word shares PDF's export-only paper and link appearance options.
   await expect(exporting.getByRole('radio', { name: 'Letter' })).toBeVisible();
   await exporting.getByRole('radio', { name: 'Underlined' }).click();
   await exporting.getByRole('button', { name: 'Save DOCX' }).click();

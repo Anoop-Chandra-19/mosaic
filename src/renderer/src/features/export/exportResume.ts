@@ -1,7 +1,7 @@
 import { getDb } from '@/lib/storage/mosaicDb';
 import { saveDraftOrStop } from '@/stores/resumeStore';
 import type { FileType } from '@shared/types/files';
-import type { ResumeData } from '@shared/types/resume';
+import type { LinkColor, LinkStyle, ResumeData } from '@shared/types/resume';
 import { formatBundleText } from '@shared/vault/formatBundle';
 import type { PaperSize } from '@/types/paper';
 import { createDocxExport } from './docx/createDocxExport';
@@ -97,6 +97,12 @@ export const EXPORT_FORMATS: ExportFormatInfo[] = [
   },
 ];
 
+export interface ExportOptions extends ExportContentOptions {
+  paperSize: PaperSize;
+  /** PDF/Word appearance only; never changes the source resume or JSON exports. */
+  headerLinks?: { linkStyle: LinkStyle; linkColor: LinkColor };
+}
+
 /** What is being exported: the open draft (with its template), or one version's document. */
 export interface ExportSource {
   doc: ResumeData;
@@ -112,9 +118,12 @@ export interface ExportSource {
 export async function renderExport(
   format: ExportFormat,
   { doc, templateId }: ExportSource,
-  { paperSize, includeHidden }: { paperSize: PaperSize } & ExportContentOptions
+  { paperSize, includeHidden, headerLinks }: ExportOptions
 ): Promise<string | Uint8Array> {
   const data = normalizeResumeForExport(doc, { includeHidden });
+  if (headerLinks && (format === 'pdf' || format === 'docx')) {
+    data.contact = { ...data.contact, ...headerLinks };
+  }
   switch (format) {
     case 'pdf':
       return renderResumePdf({ data, paperSize });
