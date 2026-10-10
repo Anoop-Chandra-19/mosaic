@@ -11,7 +11,8 @@ import { formatRelativeTime } from '@/features/templates/formatRelativeTime';
 import { easeHeightChanges } from '@/lib/motion/easeHeightChanges';
 
 import { cn } from '@/lib/utils';
-import { attempt, showToast, useOverlayStore } from '@/stores/overlayStore';
+import { useOverlayStore } from '@/stores/overlayStore';
+import { attempt, showToast } from '@/stores/toastStore';
 import { useTemplateStore } from '@/stores/templateStore';
 import type { ImportMode, OpenedBackup } from '@shared/types/bundle';
 import { countBundle } from './backupFiles';

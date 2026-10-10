@@ -24,12 +24,8 @@ import { buildExportName, toFileName } from '@/lib/files/fileNames';
 import { HeaderLinkToggles } from '@/features/editor/header/HeaderLinkToggles';
 import { describeLinkLook } from '@shared/resume/resumeHeader';
 import { cn } from '@/lib/utils';
-import {
-  explainFailure,
-  showToast,
-  useOverlayStore,
-  type ExportVersion,
-} from '@/stores/overlayStore';
+import { useOverlayStore, type ExportVersion } from '@/stores/overlayStore';
+import { explainFailure, showToast } from '@/stores/toastStore';
 import { getResumeSnapshot, useResumeStore } from '@/stores/resumeStore';
 import { useUiStore } from '@/stores/uiStore';
 import type { PaperSize } from '@/types/paper';

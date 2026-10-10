@@ -11,7 +11,8 @@ import {
 } from '@/components/AppSelect';
 import { backUpNow, chooseBackup, fileFailure } from '@/features/backup/backupFiles';
 import { formatRelativeTime } from '@/features/templates/formatRelativeTime';
-import { explainFailure, showToast, useOverlayStore } from '@/stores/overlayStore';
+import { useOverlayStore } from '@/stores/overlayStore';
+import { explainFailure, showToast } from '@/stores/toastStore';
 import { saveDraftOrStop, useResumeStore } from '@/stores/resumeStore';
 import type { BackupFrequency, BackupStatus } from '@shared/types/backup';
 import { Note } from '@/components/Note';

@@ -1,12 +1,12 @@
 import { AlertTriangle, Check, X } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
-import { useOverlayStore } from '@/stores/overlayStore';
+import { useToastStore } from '@/stores/toastStore';
 import { usePresenceMotion } from '@/lib/motion/usePresenceMotion';
 
 /** A short confirmation, or a failure, at the foot of the workspace. It clears itself. */
 export function Toast() {
-  const toast = useOverlayStore((s) => s.toast);
-  const dismiss = useOverlayStore((s) => s.dismissToast);
+  const toast = useToastStore((s) => s.toast);
+  const dismiss = useToastStore((s) => s.dismissToast);
   const { shown: shownToast, isLeaving, ref } = usePresenceMotion(toast, toast?.id ?? null);
 
   return (

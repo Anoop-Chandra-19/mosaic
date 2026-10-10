@@ -4,7 +4,8 @@ import { AppButton } from '@/components/AppButton';
 import { Text } from '@/components/Text';
 import { revealChangeMark } from '@/features/document-diff/revealChangeMark';
 import { cn } from '@/lib/utils';
-import { attempt, showToast, useOverlayStore } from '@/stores/overlayStore';
+import { useOverlayStore } from '@/stores/overlayStore';
+import { attempt, showToast } from '@/stores/toastStore';
 import { useTemplateStore } from '@/stores/templateStore';
 import {
   describeDifference,

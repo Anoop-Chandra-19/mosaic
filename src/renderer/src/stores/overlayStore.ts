@@ -6,20 +6,7 @@ import type { SettingsSectionId } from '@/types/settings';
 import type { OpenedBackup } from '@shared/types/bundle';
 import type { Version } from '@shared/types/db';
 
-/** What is showing over the app right now. Never persisted. */
-
-export interface ToastAction {
-  label: string;
-  run: () => void;
-}
-
-export interface Toast {
-  id: number;
-  message: string;
-  tone: 'success' | 'error';
-  /** One follow-up, such as Undo. Running it dismisses the toast. */
-  action?: ToastAction;
-}
+/** What is showing over the app right now. Never persisted. Toasts are `toastStore`'s. */
 
 /** A version being read in the sheet instead of the draft. */
 export interface VersionPreview {
@@ -84,7 +71,6 @@ interface OverlayState {
   arePreviewMarksShown: boolean;
   /** How the sheet paginated, as the preview measured it; the status bar repeats it. */
   previewMeta: ResumePreviewMeta;
-  toast: Toast | null;
   /**
    * The first-run tour's step while it runs, else null. A dialog or surface over the app
    * hides the tour without ending it; it comes back on this step.
@@ -114,7 +100,6 @@ interface OverlayState {
   setPreview: (preview: VersionPreview | null) => void;
   togglePreviewMarks: () => void;
   setPreviewMeta: (meta: ResumePreviewMeta) => void;
-  dismissToast: () => void;
   setTourStep: (step: number | null) => void;
   setHistoryTourStep: (step: number | null) => void;
 }
@@ -134,7 +119,6 @@ export const useOverlayStore = create<OverlayState>()((set) => ({
   preview: null,
   arePreviewMarksShown: true,
   previewMeta: { totalPages: 1, hasMorePages: false },
-  toast: null,
   tourStep: null,
   historyTourStep: null,
   openSurface: (surface) => set({ surface }),
@@ -168,50 +152,6 @@ export const useOverlayStore = create<OverlayState>()((set) => ({
         ? state
         : { previewMeta: meta }
     ),
-  dismissToast: () => set({ toast: null }),
   setTourStep: (tourStep) => set({ tourStep }),
   setHistoryTourStep: (historyTourStep) => set({ historyTourStep }),
 }));
-
-const TOAST_MS = 5000;
-/** Long enough to read the message and reach the button. */
-const TOAST_WITH_ACTION_MS = 10000;
-let nextToastId = 1;
-
-export function showToast(
-  message: string,
-  tone: Toast['tone'] = 'success',
-  action?: ToastAction
-): void {
-  const id = nextToastId++;
-  useOverlayStore.setState({ toast: { id, message, tone, action } });
-  setTimeout(
-    () => {
-      if (useOverlayStore.getState().toast?.id === id) useOverlayStore.setState({ toast: null });
-    },
-    action ? TOAST_WITH_ACTION_MS : TOAST_MS
-  );
-}
-
-/** A failure whose message is written for the user, so it is shown as it is. */
-export class ExplainedError extends Error {}
-
-/** What to tell the user about `error`: its own words if it has them, else `fallback`. */
-export function explainFailure(error: unknown, fallback: string): string {
-  console.error(fallback, error);
-  return error instanceof ExplainedError ? error.message : fallback;
-}
-
-/**
- * Run a store action the user started, and say so if it fails — main refused it or the
- * disk did, and either way nothing was written.
- */
-export async function attempt(action: Promise<unknown>, failure: string): Promise<boolean> {
-  try {
-    await action;
-    return true;
-  } catch (error) {
-    showToast(explainFailure(error, failure), 'error');
-    return false;
-  }
-}
