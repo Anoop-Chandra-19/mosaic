@@ -53,10 +53,12 @@ describe('chooseHistoryTip', () => {
     expect(chooseHistoryTip([named, snapshot], tips({ auto: 2 }), FOLDING)?.tip.id).toBe('auto');
   });
 
-  it('names the row in the words: the named label, and a session by its number', () => {
-    expect(chooseHistoryTip([named], tips(), FOLDING)?.tip.body(named, FOLDING)).toContain('v5');
-    const body = chooseHistoryTip([session], tips(), FOLDING)?.tip.body(session, FOLDING);
-    expect(body).toMatch(/^v4 is one editing session.*the newest, v4\.2/);
+  it('explains the kind of row, never the row: no label in the words', () => {
+    for (const item of [named, session, snapshot]) {
+      const body = chooseHistoryTip([item], tips(), FOLDING)?.tip.body(item, FOLDING);
+      expect(body).toBeTruthy();
+      expect(body).not.toMatch(/\bv\d/);
+    }
   });
 
   it('leaves "Created" alone: the hollow square’s words are about imports and before rows', () => {
