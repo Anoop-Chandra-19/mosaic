@@ -64,6 +64,165 @@ test('export appearance starts from document settings and cancelling leaves them
   expect(errors).toEqual([]);
 });
 
+test('export eases format-driven height changes and skips them with reduced motion', async () => {
+  const { page, errors } = mosaic();
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await page.setViewportSize({ width: 1280, height: 1100 });
+  await startFromSample(page);
+  const exporting = await openExport(page, /^PDF/);
+  // Record native height animations instead of asserting intermediate pixels or timing.
+  const tracked = await exporting.evaluateHandle((element) => {
+    const animations: Animation[] = [];
+    const animate = element.animate.bind(element);
+    element.animate = (keyframes, options) => {
+      const animation = animate(keyframes, options);
+      if (
+        animation.effect instanceof KeyframeEffect &&
+        animation.effect.getKeyframes().some((frame) => 'height' in frame)
+      ) {
+        animations.push(animation);
+      }
+      return animation;
+    };
+    return { animations, restore: () => (element.animate = animate) };
+  });
+
+  await exporting.getByRole('radio', { name: /^Markdown/ }).click();
+  await expect
+    .poll(() => tracked.evaluate(({ animations }) => animations.length))
+    .toBeGreaterThan(0);
+  await expect(exporting.getByRole('button', { name: 'Copy to clipboard' })).toBeVisible();
+  await expect(exporting.getByRole('radio', { name: 'A4' })).toHaveCount(0);
+  await tracked.evaluate(async ({ animations }) => {
+    for (const animation of animations) {
+      if (animation.playState === 'running') animation.finish();
+    }
+    await new Promise<void>((resolve) =>
+      requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
+    );
+  });
+  const previousCount = await tracked.evaluate(({ animations }) => animations.length);
+  await exporting.getByRole('radio', { name: /^PDF/ }).click();
+  await expect
+    .poll(() => tracked.evaluate(({ animations }) => animations.length))
+    .toBeGreaterThan(previousCount);
+  await tracked.evaluate(async ({ animations }) => {
+    await Promise.all(animations.map((animation) => animation.finished));
+  });
+
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  const reducedCount = await tracked.evaluate(({ animations }) => animations.length);
+  await exporting.getByRole('radio', { name: /^Markdown/ }).click();
+  await expect(exporting.getByRole('button', { name: 'Copy to clipboard' })).toBeVisible();
+  await exporting.evaluate(
+    () =>
+      new Promise<void>((resolve) =>
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
+      )
+  );
+  expect(await tracked.evaluate(({ animations }) => animations.length)).toBe(reducedCount);
+  await tracked.evaluate(({ restore }) => restore());
+
+  await page.setViewportSize({ width: 720, height: 650 });
+  for (const format of [/^PDF/, /^Markdown/, /^Mosaic JSON/]) {
+    await exporting.getByRole('radio', { name: format }).click();
+    await expect(exporting.getByRole('button', { name: /^Save / })).toBeVisible();
+    await expect
+      .poll(() =>
+        exporting.evaluate((element) => {
+          const bounds = element.getBoundingClientRect();
+          const body = element.querySelector('.overflow-y-auto')!;
+          return {
+            isInViewport: bounds.top >= 0 && bounds.bottom <= innerHeight,
+            hasHorizontalOverflow: body.scrollWidth > body.clientWidth,
+          };
+        })
+      )
+      .toEqual({ isInViewport: true, hasHorizontalOverflow: false });
+  }
+  await exporting.getByRole('button', { name: 'Close export' }).click();
+  expect(errors).toEqual([]);
+});
+
+test('export keeps text width stable while its height changes', async () => {
+  const { page, errors } = mosaic();
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await page.setViewportSize({ width: 1280, height: 1100 });
+  await startFromSample(page);
+  const exporting = await openExport(page, /^Markdown/);
+  await exporting.evaluate(async (element) => {
+    await Promise.all(element.getAnimations().map((animation) => animation.finished));
+  });
+  const body = exporting.locator('.overflow-y-auto');
+  const widthBefore = await body.evaluate((element) => element.clientWidth);
+  const held = await exporting.evaluateHandle((element) => {
+    const animations: Animation[] = [];
+    const animate = element.animate.bind(element);
+    element.animate = (keyframes, options) => {
+      const animation = animate(keyframes, options);
+      if (
+        animation.effect instanceof KeyframeEffect &&
+        animation.effect.getKeyframes().some((frame) => 'height' in frame)
+      ) {
+        animation.pause();
+        animation.currentTime = 0;
+        animations.push(animation);
+      }
+      return animation;
+    };
+    return { animations, restore: () => (element.animate = animate) };
+  });
+  await exporting.getByRole('radio', { name: /^Word/ }).click();
+  await expect.poll(() => held.evaluate(({ animations }) => animations.length)).toBeGreaterThan(0);
+  // New content overflows the old height while the dialog is still growing.
+  await expect
+    .poll(() => body.evaluate((element) => element.scrollHeight > element.clientHeight))
+    .toBe(true);
+  expect(await body.evaluate((element) => element.clientWidth)).toBe(widthBefore);
+  await held.evaluate(async ({ animations, restore }) => {
+    restore();
+    animations.forEach((animation) => animation.finish());
+    await Promise.all(animations.map((animation) => animation.finished));
+  });
+  await expect
+    .poll(() => body.evaluate((element) => element.scrollHeight > element.clientHeight))
+    .toBe(false);
+  expect(await body.evaluate((element) => element.clientWidth)).toBe(widthBefore);
+  expect(errors).toEqual([]);
+});
+
+test('the filename uses spare row width without wrapping its label or extension', async () => {
+  const { page, errors } = mosaic();
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await startFromSample(page);
+  const exporting = await openExport(page, /^PDF/);
+  const filename = exporting.getByLabel('File name');
+  await filename.fill('Maren Rowan Vale - Dispatch Analyst - Lantern Works');
+
+  for (const width of [1280, 720]) {
+    await page.setViewportSize({ width, height: 700 });
+    await expect
+      .poll(() =>
+        filename.evaluate((element) => {
+          const field = element.parentElement!.getBoundingClientRect();
+          const row = element.parentElement!.parentElement!;
+          const label = row.firstElementChild!.getBoundingClientRect();
+          const input = element.getBoundingClientRect();
+          const extension = element.nextElementSibling!.getBoundingClientRect();
+          const rem = parseFloat(getComputedStyle(document.documentElement).fontSize);
+          return {
+            isWider: field.width > 18 * rem && field.width <= 26 * rem,
+            isAligned: Math.abs(label.top + label.height / 2 - (field.top + field.height / 2)) < 1,
+            isExtensionAttached: Math.abs(input.right - extension.left) < 1,
+            hasOverflow: row.scrollWidth > row.clientWidth,
+          };
+        })
+      )
+      .toEqual({ isWider: true, isAligned: true, isExtensionAttached: true, hasOverflow: false });
+  }
+  expect(errors).toEqual([]);
+});
+
 test('Markdown can be copied or saved, and reads back in through Import', async () => {
   const { app, page, userDataDir } = mosaic();
   await saveInto(app, userDataDir);

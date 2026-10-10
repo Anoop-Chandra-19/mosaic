@@ -7,6 +7,60 @@ import { test, withApp } from './launch';
 
 const mosaic = withApp();
 
+test('import review keeps text width stable when a section starts and stops overflowing', async () => {
+  const { page, errors } = mosaic();
+  await page.setViewportSize({ width: 1280, height: 700 });
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.getByRole('button', { name: /Blank resume/ }).click();
+  await page.getByRole('button', { name: 'Import resume' }).click();
+  const importing = page.getByRole('dialog', { name: 'Import' });
+  await importing
+    .getByLabel('Or paste the text')
+    .fill(
+      [
+        'Maren Vale',
+        'maren@example.com',
+        '',
+        'EXPERIENCE',
+        'Dispatch Analyst | 2022 to Present',
+        ...Array.from(
+          { length: 20 },
+          (_, index) =>
+            `- Checked dispatch queue ${index + 1} and wrote a clear handover for the next shift.`
+        ),
+      ].join('\n')
+    );
+  await importing.getByRole('button', { name: 'Read pasted text' }).click();
+  const section = importing.getByRole('button', { name: 'Experience', exact: true });
+  await expect(section).toHaveAttribute('aria-expanded', 'false');
+  const body = importing.locator('.overflow-y-auto');
+  await expect
+    .poll(() => body.evaluate((element) => element.scrollHeight > element.clientHeight))
+    .toBe(false);
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  const tracked = await body.evaluateHandle((element) => {
+    const widths = [element.clientWidth];
+    const observer = new ResizeObserver(() => widths.push(element.clientWidth));
+    observer.observe(element);
+    return { widths, observer };
+  });
+
+  await section.click();
+  await expect
+    .poll(() => body.evaluate((element) => element.scrollHeight > element.clientHeight))
+    .toBe(true);
+  await section.click();
+  await expect
+    .poll(() => body.evaluate((element) => element.scrollHeight > element.clientHeight))
+    .toBe(false);
+  const widths = await tracked.evaluate(({ widths, observer }) => {
+    observer.disconnect();
+    return widths;
+  });
+  expect([...new Set(widths)]).toHaveLength(1);
+  expect(errors).toEqual([]);
+});
+
 test('the review lists what Mosaic found no place for, ready to copy', async () => {
   const { app, page } = mosaic();
   await page.getByRole('button', { name: /Blank resume/ }).click();

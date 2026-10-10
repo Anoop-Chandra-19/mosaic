@@ -128,6 +128,56 @@ test('earlier revisions retain all exits, cancel on reopen, and skip reduced-mot
   expect(errors).toEqual([]);
 });
 
+test('the PDF warning retains its content through exit and reverses on a quick format change', async () => {
+  const { page, errors } = mosaic();
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await page.getByRole('button', { name: /Blank resume/ }).click();
+  await setName(page, 'Your name', 'Maren Ł Vale');
+  await page.getByRole('button', { name: 'Open export dialog' }).click();
+  const exporting = page.getByRole('dialog', { name: 'Export', exact: true });
+  const warning = exporting.locator('div[role="status"]');
+  await expectPresence(warning, true);
+  await expect(warning).toContainText('The PDF can’t show Ł.');
+  const mounted = await warning.elementHandle();
+  const held = await holdExits(warning);
+
+  await exporting.getByRole('radio', { name: /^Word/ }).click();
+  await expectPresence(warning, false);
+  await expect(exporting.getByRole('status')).toHaveCount(0);
+  await expect(warning).toContainText('The PDF can’t show Ł.');
+  await expect.poll(() => held.evaluate(({ exits }) => exits.length)).toBeGreaterThan(0);
+  await exporting.getByRole('radio', { name: /^PDF/ }).click();
+  await expectPresence(warning, true);
+  expect(await warning.evaluate((element, previous) => element === previous, mounted!)).toBe(true);
+  await expect
+    .poll(() => held.evaluate(({ exits }) => exits.every((exit) => exit.playState === 'idle')))
+    .toBe(true);
+
+  await exporting.getByRole('radio', { name: /^Markdown/ }).click();
+  await expectPresence(warning, false);
+  await expect(warning).toContainText('The PDF can’t show Ł.');
+  await held.evaluate(({ exits, observer }) => {
+    observer.disconnect();
+    exits.filter((exit) => exit.playState !== 'idle').forEach((exit) => exit.finish());
+  });
+  await expect(warning).toHaveCount(0);
+
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await exporting.getByRole('radio', { name: /^PDF/ }).click();
+  await expectPresence(warning, true);
+  expect(
+    await warning.evaluate((element) =>
+      element.getAnimations().some(({ id }) => id.startsWith('presence-'))
+    )
+  ).toBe(false);
+  const reduced = await holdExits(warning);
+  await exporting.getByRole('radio', { name: /^Word/ }).click();
+  await expect(warning).toHaveCount(0);
+  expect(await reduced.evaluate(({ exits }) => exits.length)).toBe(0);
+  await reduced.evaluate(({ observer }) => observer.disconnect());
+  expect(errors).toEqual([]);
+});
+
 test('the backup replacement warning stays hidden through exit and reverses rapid changes', async () => {
   const { app, page, userDataDir, errors } = mosaic();
   await page.emulateMedia({ reducedMotion: 'no-preference' });
