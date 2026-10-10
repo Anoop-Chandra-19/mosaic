@@ -36,5 +36,9 @@ export const FOLD_OPTIONS: { days: SnapshotFoldDays; label: string }[] = [
   { days: null, label: 'Never' },
 ];
 
+export const HISTORY_TIPS_LABEL = 'Explain new kinds of rows';
+export const HISTORY_TIPS_NOTE =
+  'A short tip the first time each kind of row is on screen. Off stops new ones; seen ones stay seen.';
+
 export const FOLD_NOTE =
   'Folded rows open in place. Named versions never fold. Nothing is deleted.';

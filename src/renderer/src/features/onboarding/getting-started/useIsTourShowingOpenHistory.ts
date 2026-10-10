@@ -1,9 +1,10 @@
 import { useOverlayStore } from '@/stores/overlayStore';
-import { TOUR_STEPS } from './tourSteps';
+import { GETTING_STARTED_STEPS } from './gettingStartedSteps';
 
 /** The tour's step points at the open template's history, which unfolds for it. */
 export function useIsTourShowingOpenHistory(): boolean {
   return useOverlayStore(
-    (s) => s.tourStep !== null && TOUR_STEPS[s.tourStep]?.showsOpenTemplateHistory === true
+    (s) =>
+      s.tourStep !== null && GETTING_STARTED_STEPS[s.tourStep]?.showsOpenTemplateHistory === true
   );
 }

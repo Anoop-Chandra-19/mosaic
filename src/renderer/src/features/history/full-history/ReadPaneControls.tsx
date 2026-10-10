@@ -4,6 +4,7 @@ import { AppTooltip } from '@/components/AppTooltip';
 import { AppMenu, AppMenuContent, AppMenuItem, AppMenuTrigger } from '@/components/AppMenu';
 import { AppToggleGroup, AppToggleGroupItem } from '@/components/AppToggleGroup';
 import { Text } from '@/components/Text';
+import { tourTargetProps } from '@/features/onboarding/tourTargets';
 import { cn } from '@/lib/utils';
 import { PREVIEW_ZOOM_RANGE } from '@/stores/uiStore';
 import type { HistoryComparison } from '@/types/history';
@@ -101,6 +102,7 @@ export function ReadPaneControls({
   return (
     <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
       <AppToggleGroup
+        {...tourTargetProps('historyCompare')}
         type="single"
         size="sm"
         value={comparedWith}

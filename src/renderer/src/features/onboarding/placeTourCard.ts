@@ -1,4 +1,5 @@
-import type { TourSide } from './tourSteps';
+/** Which side of its target a tour card sits on, when there is room. */
+export type TourSide = 'top' | 'right' | 'bottom' | 'left';
 
 export interface Box {
   top: number;
@@ -10,6 +11,34 @@ export interface Box {
 export interface Size {
   width: number;
   height: number;
+}
+
+/** A tour card's size before it has been measured, as the design lays it out. */
+export const CARD_BEFORE_MEASURED: Size = { width: 316, height: 230 };
+
+/** How far the spotlight stands off its target. */
+const SPOT_OUTSET_PX = 4;
+
+/** The spotlight's box around a target's. */
+export function spotAround(target: Box): Box {
+  return {
+    top: target.top - SPOT_OUTSET_PX,
+    left: target.left - SPOT_OUTSET_PX,
+    width: target.width + SPOT_OUTSET_PX * 2,
+    height: target.height + SPOT_OUTSET_PX * 2,
+  };
+}
+
+/** A ref for a tour card that reports its size as it lays out, for placing it. */
+export function measureTourCard(onSize: (size: Size) => void) {
+  return (card: HTMLDivElement | null) => {
+    if (!card) return;
+    const observer = new ResizeObserver(() =>
+      onSize({ width: card.offsetWidth, height: card.offsetHeight })
+    );
+    observer.observe(card);
+    return () => observer.disconnect();
+  };
 }
 
 /** Room kept between the card and what it points at, and the window's edges. */

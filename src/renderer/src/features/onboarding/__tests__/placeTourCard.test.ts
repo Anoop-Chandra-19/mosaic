@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { placeTourCard } from '../placeTourCard';
-import { TOUR_STEPS, TOUR_TARGET } from '../tourSteps';
+import { GETTING_STARTED_STEPS as TOUR_STEPS } from '../getting-started/gettingStartedSteps';
+import { TOUR_TARGET } from '../tourTargets';
 
 const WINDOW = { width: 1440, height: 900 };
 const CARD = { width: 316, height: 200 };

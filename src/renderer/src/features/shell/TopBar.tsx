@@ -10,7 +10,7 @@ import { useUiStore } from '@/stores/uiStore';
 import { useActiveTemplate } from '@/features/templates/useActiveTemplate';
 import { useTemplateStatus } from '@/features/templates/useTemplateStatus';
 import { TemplateStatusBadge } from '@/features/templates/TemplateStatusBadge';
-import { tourTargetProps } from '@/features/onboarding/tourSteps';
+import { tourTargetProps } from '@/features/onboarding/tourTargets';
 import { useShortcutLabel } from '@/features/shortcuts/shortcutBindings';
 
 /** Reading an older version is a read mode: the draft is left where it is. */

@@ -6,8 +6,8 @@ import { Text } from '@/components/Text';
 import { useOverlayStore } from '@/stores/overlayStore';
 import { useResumeStore } from '@/stores/resumeStore';
 import { useTemplateStore } from '@/stores/templateStore';
-import { useIsTourShowingOpenHistory } from '@/features/onboarding/useIsTourShowingOpenHistory';
-import { tourTargetProps } from '@/features/onboarding/tourSteps';
+import { useIsTourShowingOpenHistory } from '@/features/onboarding/getting-started/useIsTourShowingOpenHistory';
+import { tourTargetProps } from '@/features/onboarding/tourTargets';
 import { NoTemplates } from './NoTemplates';
 import { TemplateCard } from './TemplateCard';
 

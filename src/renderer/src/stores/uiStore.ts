@@ -9,7 +9,15 @@ import {
   type ShortcutId,
 } from '@/lib/shortcutCatalog';
 import { settingsStorage } from '@/lib/storage/settingsStorage';
-import type { HistoryComparison, SnapshotFoldDays, SnapshotTrigger } from '@/types/history';
+import {
+  HISTORY_TIP_IDS,
+  type HistoryComparison,
+  type HistoryTipId,
+  type HistoryTips,
+  type HistoryTipSeen,
+  type SnapshotFoldDays,
+  type SnapshotTrigger,
+} from '@/types/history';
 import type { PaperSize } from '@/types/paper';
 
 export type SidebarTab = 'content' | 'templates';
@@ -36,6 +44,29 @@ const DEFAULT_SNAPSHOT_TRIGGERS: Record<SnapshotTrigger, boolean> = {
   whileWorking: false,
   afterAiEdits: true,
 };
+
+/** A tip shown this many times and left is seen: it stops coming back. */
+export const HISTORY_TIP_MAX_SHOWINGS = 3;
+
+export function isHistoryTipSeen(seen: HistoryTipSeen | undefined): boolean {
+  return seen === 'got' || (seen ?? 0) >= HISTORY_TIP_MAX_SHOWINGS;
+}
+
+/** The stored tips, keeping only known tips and counts that make sense. */
+export function pickHistoryTips(stored: unknown): HistoryTips {
+  const tips: HistoryTips = { isOn: true, seen: {} };
+  if (typeof stored !== 'object' || stored === null) return tips;
+  const { isOn, seen } = stored as { isOn?: unknown; seen?: unknown };
+  if (typeof isOn === 'boolean') tips.isOn = isOn;
+  if (typeof seen !== 'object' || seen === null) return tips;
+  for (const id of HISTORY_TIP_IDS) {
+    const value = (seen as Record<string, unknown>)[id];
+    if (value === 'got' || (Number.isSafeInteger(value) && (value as number) > 0)) {
+      tips.seen[id] = value as HistoryTipSeen;
+    }
+  }
+  return tips;
+}
 
 function pickSnapshotTriggers(stored: unknown): Record<SnapshotTrigger, boolean> {
   const triggers = { ...DEFAULT_SNAPSHOT_TRIGGERS };
@@ -148,6 +179,8 @@ export const DEFAULT_PREFERENCES = {
   undoHistorySteps: 200 as UndoHistorySteps,
   paperSize: 'a4' as PaperSize,
   hasSeenTour: false,
+  /** Explaining each kind of history row the first time it is on screen. */
+  historyTips: { isOn: true, seen: {} } as HistoryTips,
   snapshotTriggers: DEFAULT_SNAPSHOT_TRIGGERS,
   foldSnapshotsAfterDays: 30 as SnapshotFoldDays,
   /** Only the keys the person changed; every other action keeps its default. */
@@ -173,6 +206,7 @@ interface UiState {
   shouldShowHistoryDetails: boolean;
   shouldShowHeaderIcons: boolean;
   hasSeenTour: boolean;
+  historyTips: HistoryTips;
   snapshotTriggers: Record<SnapshotTrigger, boolean>;
   foldSnapshotsAfterDays: SnapshotFoldDays;
   shortcutBindings: ShortcutBindings;
@@ -198,6 +232,11 @@ interface UiState {
   setSnapshotTrigger: (trigger: SnapshotTrigger, isOn: boolean) => void;
   setFoldSnapshotsAfterDays: (days: SnapshotFoldDays) => void;
   markTourSeen: () => void;
+  setHistoryTipsOn: (isOn: boolean) => void;
+  /** A tip was shown and left: one showing, unless it is already seen. */
+  countHistoryTipShown: (id: HistoryTipId) => void;
+  markHistoryTipsSeen: (ids: readonly HistoryTipId[]) => void;
+  resetHistoryTips: () => void;
   /** `id` on `combo` (null for none); `displaced`, whose key that was, is left without one. */
   bindShortcut: (id: ShortcutId, combo: string | null, displaced?: ShortcutId) => void;
   restoreDefaultShortcuts: () => void;
@@ -297,6 +336,23 @@ export const useUiStore = create<UiState>()(
         set((state) => {
           state.hasSeenTour = true;
         }),
+      setHistoryTipsOn: (isOn) =>
+        set((state) => {
+          state.historyTips.isOn = isOn;
+        }),
+      countHistoryTipShown: (id) =>
+        set((state) => {
+          const seen = state.historyTips.seen[id];
+          if (!isHistoryTipSeen(seen)) state.historyTips.seen[id] = ((seen as number) ?? 0) + 1;
+        }),
+      markHistoryTipsSeen: (ids) =>
+        set((state) => {
+          for (const id of ids) state.historyTips.seen[id] = 'got';
+        }),
+      resetHistoryTips: () =>
+        set((state) => {
+          state.historyTips.seen = {};
+        }),
       bindShortcut: (id, combo, displaced) =>
         set((state) => {
           state.shortcutBindings = assignShortcut(state.shortcutBindings, id, combo, displaced);
@@ -343,6 +399,7 @@ export const useUiStore = create<UiState>()(
             DEFAULT_PREFERENCES.undoHistorySteps
           ),
           hasSeenTour: stored.hasSeenTour === true,
+          historyTips: pickHistoryTips(stored.historyTips),
           snapshotTriggers: pickSnapshotTriggers(stored.snapshotTriggers),
           shortcutBindings: sanitizeShortcutBindings(stored.shortcutBindings),
           foldSnapshotsAfterDays: pickChoice(

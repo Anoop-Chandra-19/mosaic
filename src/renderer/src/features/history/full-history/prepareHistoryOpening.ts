@@ -49,18 +49,23 @@ export function findComparedBase(
   return versions[oldest + 1] ?? null;
 }
 
+/** How the view reads a version's document: from the database, or the example's memory. */
+export type VersionReader = (id: string) => Promise<Version>;
+
+export const readStoredVersion: VersionReader = (id) => getDb().versions.get(id);
+
 /** Reads the version `id` and the one it is compared with. */
 export async function readVersionPair(
   versions: VersionMeta[],
   id: string,
-  comparison: HistoryComparison = 'parent'
+  comparison: HistoryComparison = 'parent',
+  readVersion: VersionReader = readStoredVersion
 ): Promise<VersionPair> {
-  const db = getDb();
   const index = versions.findIndex((version) => version.id === id);
   const baseMeta = findComparedBase(versions, index, comparison);
   const [version, base] = await Promise.all([
-    db.versions.get(id),
-    baseMeta ? db.versions.get(baseMeta.id) : null,
+    readVersion(id),
+    baseMeta ? readVersion(baseMeta.id) : null,
   ]);
   return { version, base };
 }

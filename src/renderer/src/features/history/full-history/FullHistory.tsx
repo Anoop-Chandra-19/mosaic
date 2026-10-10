@@ -17,6 +17,7 @@ import {
   TRANSITION_TYPE,
   transitionClasses,
 } from '@/features/view-transitions/transitionClasses';
+import { tourTargetProps } from '@/features/onboarding/tourTargets';
 import { matchesAction } from '@/features/shortcuts/shortcutBindings';
 import { isTypingField } from '@/lib/keyboardShortcuts';
 import type { ShortcutId } from '@/lib/shortcutCatalog';
@@ -26,9 +27,16 @@ import { useTemplateStore } from '@/stores/templateStore';
 import { useUiStore } from '@/stores/uiStore';
 import { countChangesByTone } from '@shared/resume/changes/resumeChange';
 import type { TemplateSummary, Version, VersionMeta } from '@shared/types/db';
+import type { ResumeData } from '@shared/types/resume';
 import type { HistoryComparison, HistoryFilter } from '@/types/history';
 import { VersionList, type HistoryReveal } from '../version-list/VersionList';
 import { useTemplateVersions, versionLabel } from '../useTemplateVersions';
+import {
+  buildExampleHistory,
+  EXAMPLE_OPENING_ID,
+  EXAMPLE_TEMPLATE_ID,
+  EXAMPLE_TEMPLATE_NAME,
+} from './exampleHistory';
 import { HistoryIndex } from './HistoryIndex';
 import { HistoryReadPane, LEGIBLE_PAGE_SCALE } from './HistoryReadPane';
 import { HistorySettingsPopover } from './HistorySettingsPopover';
@@ -38,8 +46,10 @@ import {
   findComparedBase,
   hasRevisions,
   prepareHistoryOpening,
+  readStoredVersion,
   readVersionPair,
   resolveComparison,
+  type VersionReader,
   type PreparedHistory,
   type VersionPair,
 } from './prepareHistoryOpening';
@@ -81,6 +91,7 @@ export function FullHistory({
   const prepared = use(prepareHistoryOpening(opening, templateId, versionId));
   const template = useTemplateStore((s) => s.templates.find((t) => t.id === templateId));
   const closeSurface = useOverlayStore((s) => s.closeSurface);
+  const isTouring = useOverlayStore((s) => s.historyTourStep !== null);
 
   // The template went away under the view, as a restore of all templates can do.
   useEffect(() => {
@@ -88,8 +99,10 @@ export function FullHistory({
   }, [template, closeSurface]);
 
   if (!template) return null;
+  // The history tour shows the example; leaving the tour brings this template's back.
+  if (isTouring) return <ExampleHistoryFrame key="example" />;
   return (
-    <FullHistoryFrame
+    <TemplateHistoryFrame
       key={templateId}
       template={template}
       filter={filter}
@@ -100,7 +113,18 @@ export function FullHistory({
   );
 }
 
-interface FullHistoryFrameProps {
+/** Where the view's versions come from: a template's history, or the tour's example. */
+interface HistorySource {
+  templateId: string;
+  name: string;
+  /** Newest first; null while they load. */
+  versions: VersionMeta[] | null;
+  readVersion: VersionReader;
+  /** The example compares with its own draft, and nothing in it can be changed. */
+  example: { draft: ResumeData } | null;
+}
+
+interface TemplateHistoryFrameProps {
   template: TemplateSummary;
   filter?: HistoryFilter;
   versionId?: string;
@@ -108,15 +132,49 @@ interface FullHistoryFrameProps {
   prepared: PreparedHistory | null;
 }
 
+function TemplateHistoryFrame({ template, prepared, ...rest }: TemplateHistoryFrameProps) {
+  const versions = useTemplateVersions(template, true, prepared?.versions);
+  const source: HistorySource = {
+    templateId: template.id,
+    name: template.name,
+    versions,
+    readVersion: readStoredVersion,
+    example: null,
+  };
+  return <FullHistoryFrame source={source} prepared={prepared} {...rest} />;
+}
+
+function ExampleHistoryFrame() {
+  const [example] = useState(() => buildExampleHistory());
+  const source: HistorySource = {
+    templateId: EXAMPLE_TEMPLATE_ID,
+    name: EXAMPLE_TEMPLATE_NAME,
+    versions: example.versions,
+    readVersion: async (id) => example.readVersion(id),
+    example: { draft: example.draft },
+  };
+  return <FullHistoryFrame source={source} versionId={EXAMPLE_OPENING_ID} prepared={null} />;
+}
+
+interface FullHistoryFrameProps {
+  source: HistorySource;
+  filter?: HistoryFilter;
+  versionId?: string;
+  comparison?: HistoryComparison;
+  prepared: PreparedHistory | null;
+}
+
 function FullHistoryFrame({
-  template,
+  source,
   filter,
   versionId,
   comparison,
   prepared,
 }: FullHistoryFrameProps) {
-  const versions = useTemplateVersions(template, true, prepared?.versions);
+  const { versions, readVersion } = source;
+  const isExample = source.example !== null;
   const closeSurface = useOverlayStore((s) => s.closeSurface);
+  const setHistoryTourStep = useOverlayStore((s) => s.setHistoryTourStep);
   const restoreVersion = useTemplateStore((s) => s.restoreVersion);
   const duplicateVersion = useTemplateStore((s) => s.duplicateVersion);
   const openExport = useOverlayStore((s) => s.openExport);
@@ -183,7 +241,8 @@ function FullHistoryFrame({
   const shownId = useRef(selected?.id);
   // Worked out once, for the read pane and the selected row's counts.
   const versionComparison = useVersionComparison({
-    templateId: template.id,
+    templateId: source.templateId,
+    fixedDraft: source.example?.draft ?? null,
     version: docs.version?.id === selected?.id ? docs.version : null,
     base,
     baseVersion: docs.base?.id === base?.id ? docs.base : null,
@@ -199,14 +258,14 @@ function FullHistoryFrame({
   useEffect(() => {
     if (!selected || !versions || isPairRead) return;
     let isCurrent = true;
-    readVersionPair(versions, selected.id, shownComparison).then(
+    readVersionPair(versions, selected.id, shownComparison, readVersion).then(
       (read) => isCurrent && setDocs(read),
       (error: unknown) => console.error('Could not read that version', error)
     );
     return () => {
       isCurrent = false;
     };
-  }, [selected, versions, isPairRead, shownComparison]);
+  }, [selected, versions, isPairRead, shownComparison, readVersion]);
   // A step through time: the page slides the way the history runs, older to the left. The
   // version is read first, so the slide lands on its page rather than an empty pane. Only
   // the latest step lands: reads can finish out of order, and a slower one must not win.
@@ -229,12 +288,15 @@ function FullHistoryFrame({
     };
     if (!versions) return;
     const stepComparison = resolveComparison(pickedComparison, versions, versions.indexOf(version));
-    readVersionPair(versions, version.id, stepComparison).then(show, (error: unknown) => {
-      // Still selected, so the list and the pane agree on which version this is.
-      console.error('Could not read that version', error);
-      showToast('Could not read that version', 'error');
-      show({ version: null, base: null });
-    });
+    readVersionPair(versions, version.id, stepComparison, readVersion).then(
+      show,
+      (error: unknown) => {
+        // Still selected, so the list and the pane agree on which version this is.
+        console.error('Could not read that version', error);
+        showToast('Could not read that version', 'error');
+        show({ version: null, base: null });
+      }
+    );
   };
   const select = (version: VersionMeta) => step(version, false);
   const goTo = (version: VersionMeta) => step(version, true);
@@ -259,7 +321,10 @@ function FullHistoryFrame({
   const pageNeedsPx = LEGIBLE_PAGE_SCALE * PAPER_DIMENSIONS_PT[paperSize].width + 48;
 
   const restore = async (version: VersionMeta) => {
-    if (await attempt(restoreVersion(template.id, version.id), 'Could not restore that version')) {
+    if (isExample) return;
+    if (
+      await attempt(restoreVersion(source.templateId, version.id), 'Could not restore that version')
+    ) {
       // What is behind the view just changed, so the view gives way to it.
       onClose();
       showToast(`Restored “${version.summary}”`);
@@ -267,6 +332,7 @@ function FullHistoryFrame({
   };
 
   const duplicate = async (version: VersionMeta) => {
+    if (isExample) return;
     try {
       const copy = await duplicateVersion(version.id);
       showToast(`Duplicated as “${copy.name}”`);
@@ -277,7 +343,7 @@ function FullHistoryFrame({
   };
 
   const exportVersion = (version: Version, label: string) =>
-    openExport({ version, label, templateName: template.name });
+    openExport({ version, label, templateName: source.name });
 
   const namedCount = versions?.filter((version) => version.kind === 'named').length ?? 0;
 
@@ -286,7 +352,7 @@ function FullHistoryFrame({
       ref={rootRef}
       tabIndex={-1}
       role="region"
-      aria-label={`History of ${template.name}`}
+      aria-label={`History of ${source.name}`}
       className="absolute inset-0 z-30 flex flex-col bg-background outline-none @container/full-history"
     >
       <header className="flex h-11.5 shrink-0 items-center gap-2.5 border-b border-line bg-chrome pr-2.5 pl-3.5">
@@ -298,7 +364,7 @@ function FullHistoryFrame({
           ·
         </span>
         <Text variant="body" className="min-w-0 truncate">
-          {template.name}
+          {source.name}
         </Text>
         {versions && (
           <Text
@@ -335,6 +401,27 @@ function FullHistoryFrame({
           <X className="size-3.5" />
         </AppButton>
       </header>
+      {isExample && (
+        <Text
+          as="div"
+          variant="secondary"
+          className="flex shrink-0 items-center gap-2.5 border-b border-line bg-pane-raised py-1.5 pr-2.5 pl-3.5 text-ink-soft"
+        >
+          <Text
+            variant="tag"
+            className="rounded-[0.25rem] border border-line-strong px-1.25 py-px text-ink-soft"
+          >
+            Example
+          </Text>
+          <span className="min-w-0 flex-1">
+            An example history, so every kind of row is there to see. Your own versions are
+            untouched.
+          </span>
+          <AppButton variant="ghost" size="xs" onClick={() => setHistoryTourStep(null)}>
+            Back to your history
+          </AppButton>
+        </Text>
+      )}
 
       <div className="flex min-h-0 flex-1">
         {isIndexOpen && versions && (
@@ -349,6 +436,7 @@ function FullHistoryFrame({
         )}
         {/* The same ground as the sidebar's history, which its sticky headers are painted in. */}
         <div
+          {...tourTargetProps('historyList')}
           className={cn(
             'min-w-80 flex-1 overflow-auto bg-background px-4 pb-6',
             transitionClasses({ name: 'history-list', motion: 'reclaim' })
@@ -361,6 +449,7 @@ function FullHistoryFrame({
               <VersionList
                 versions={versions}
                 isWide
+                isReadOnly={isExample}
                 initialFilter={filter}
                 reveal={reveal}
                 onSelect={select}
@@ -389,6 +478,7 @@ function FullHistoryFrame({
             label={versionLabel(selected)}
             numberLabel={hasRevisions(versions, selectedIndex) ? `v${selected.number}` : null}
             isHead={selected.id === versions[0].id}
+            isReadOnly={isExample}
             comparison={versionComparison}
             onComparisonChange={pickComparison}
             maxWidthCss={`calc(100vw - ${indexWidth + LIST_MIN_WIDTH_PX}px)`}

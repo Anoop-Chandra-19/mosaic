@@ -17,7 +17,7 @@ import {
 } from '@/features/history/useVersionPreviewComparison';
 import { VersionPreviewBanner } from '@/features/history/VersionPreviewBanner';
 import { useIsPageHandedOff } from '@/features/view-transitions/pageHandoff';
-import { tourTargetProps } from '@/features/onboarding/tourSteps';
+import { tourTargetProps } from '@/features/onboarding/tourTargets';
 import { transitionClasses } from '@/features/view-transitions/transitionClasses';
 import { useOverlayStore } from '@/stores/overlayStore';
 import { PREVIEW_ZOOM_RANGE, useUiStore } from '@/stores/uiStore';

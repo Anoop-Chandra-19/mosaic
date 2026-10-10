@@ -1,14 +1,19 @@
-import { Settings } from 'lucide-react';
+import { ChevronRight, Settings } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
 import { AppCheckbox } from '@/components/AppCheckbox';
 import { AppPopover, AppPopoverContent, AppPopoverTrigger } from '@/components/AppPopover';
 import { AppToggleGroup, AppToggleGroupItem } from '@/components/AppToggleGroup';
 import { Text } from '@/components/Text';
+import { startHistoryTour } from '@/features/onboarding/history/startHistoryTour';
+import { tourTargetProps } from '@/features/onboarding/tourTargets';
 import { useShortcutLabel } from '@/features/shortcuts/shortcutBindings';
+import { useOverlayStore } from '@/stores/overlayStore';
 import { useUiStore } from '@/stores/uiStore';
 import {
   FOLD_NOTE,
   FOLD_OPTIONS,
+  HISTORY_TIPS_LABEL,
+  HISTORY_TIPS_NOTE,
   SNAPSHOT_TRIGGER_OPTIONS,
   SNAPSHOTS_INTRO,
 } from '../snapshotSettings';
@@ -34,6 +39,7 @@ export function HistorySettingsPopover({ isOpen, onOpenChange }: HistorySettings
     <AppPopover open={isOpen} onOpenChange={onOpenChange}>
       <AppPopoverTrigger asChild>
         <AppButton
+          {...tourTargetProps('historySettings')}
           variant="ghost"
           size="xs"
           title={`How much the history shows, and when automatic snapshots happen. App settings: ${settingsKeys}`}
@@ -56,6 +62,8 @@ export function HistorySettingsPopover({ isOpen, onOpenChange }: HistorySettings
         <DetailSettings />
         <div aria-hidden className="my-3 h-px bg-line" />
         <SnapshotSettings />
+        <div aria-hidden className="my-3 h-px bg-line" />
+        <HelpSettings onStartTour={() => onOpenChange(false)} />
       </AppPopoverContent>
     </AppPopover>
   );
@@ -146,6 +154,49 @@ function SnapshotSettings() {
       <Text as="p" variant="secondary" className="mt-1.5 text-pretty text-ink-faint">
         {FOLD_NOTE}
       </Text>
+    </>
+  );
+}
+
+/** The tour, and whether each new kind of row is explained the first time it shows. */
+function HelpSettings({ onStartTour }: { onStartTour: () => void }) {
+  const tips = useUiStore((s) => s.historyTips);
+  const setTipsOn = useUiStore((s) => s.setHistoryTipsOn);
+  const isTouring = useOverlayStore((s) => s.historyTourStep !== null);
+  return (
+    <>
+      <Text as="h3" variant="strong">
+        Help
+      </Text>
+      <AppButton
+        variant="ghost"
+        size="xs"
+        disabled={isTouring}
+        onClick={() => {
+          onStartTour();
+          startHistoryTour();
+        }}
+        className="mt-1 -ml-1.5"
+      >
+        <ChevronRight />
+        How history works
+      </AppButton>
+      <label className="flex cursor-pointer items-start gap-2.25 py-1.5">
+        <AppCheckbox
+          size="sm"
+          checked={tips.isOn}
+          onCheckedChange={(checked) => setTipsOn(checked === true)}
+          className="mt-0.5"
+        />
+        <span>
+          <Text variant="secondary" className="block text-ink-soft">
+            {HISTORY_TIPS_LABEL}
+          </Text>
+          <Text variant="caption" className="mt-px block">
+            {HISTORY_TIPS_NOTE}
+          </Text>
+        </span>
+      </label>
     </>
   );
 }

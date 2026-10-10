@@ -90,6 +90,11 @@ interface OverlayState {
    * hides the tour without ending it; it comes back on this step.
    */
   tourStep: number | null;
+  /**
+   * The history tour's step while it runs, else null. It runs over the full history, which
+   * shows the example history meanwhile; a dialog hides it without ending it.
+   */
+  historyTourStep: number | null;
   openSurface: (surface: WorkspaceSurface) => void;
   /** Closes the surface showing, if it is a `kind` one; any other is left alone. */
   closeSurface: (kind: WorkspaceSurface['kind']) => void;
@@ -111,6 +116,7 @@ interface OverlayState {
   setPreviewMeta: (meta: ResumePreviewMeta) => void;
   dismissToast: () => void;
   setTourStep: (step: number | null) => void;
+  setHistoryTourStep: (step: number | null) => void;
 }
 
 export const useOverlayStore = create<OverlayState>()((set) => ({
@@ -130,9 +136,15 @@ export const useOverlayStore = create<OverlayState>()((set) => ({
   previewMeta: { totalPages: 1, hasMorePages: false },
   toast: null,
   tourStep: null,
+  historyTourStep: null,
   openSurface: (surface) => set({ surface }),
+  // The history tour runs on the full history, so closing it ends the tour too.
   closeSurface: (kind) =>
-    set((state) => (state.surface?.kind === kind ? { surface: null } : state)),
+    set((state) =>
+      state.surface?.kind === kind
+        ? { surface: null, historyTourStep: kind === 'history' ? null : state.historyTourStep }
+        : state
+    ),
   openSettings: (section = 'general') => set({ settingsSection: section }),
   closeSettings: () => set({ settingsSection: null }),
   openImport: (importAsNewOnly) => set({ importOpen: true, importAsNewOnly }),
@@ -159,6 +171,7 @@ export const useOverlayStore = create<OverlayState>()((set) => ({
     ),
   dismissToast: () => set({ toast: null }),
   setTourStep: (tourStep) => set({ tourStep }),
+  setHistoryTourStep: (historyTourStep) => set({ historyTourStep }),
 }));
 
 const TOAST_MS = 5000;
