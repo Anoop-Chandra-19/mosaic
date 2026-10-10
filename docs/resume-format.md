@@ -76,6 +76,10 @@ fit more on a line. Line heights are exact points everywhere (the Word file says
 ## Exports and round trips
 
 - PDF embeds links on printed text, underlined only when the header requests it.
+- Export's paper and header-link controls are local to that dialog opening: initialized from
+  the app's paper preference and the source resume's link appearance, never written back.
+  Link overrides apply only to PDF and DOCX; JSON Resume and Mosaic backups keep the source
+  settings. A saved version's link appearance stays read-only and exports as saved.
 - DOCX (`features/export/docx/`) is written by Mosaic itself, no library: its own zip
   writer and the Word XML parts. It prints the PDF's page (the layout's numbers came from
   the format's Word template) through named styles: Title, Contact, Heading 1, Entry
