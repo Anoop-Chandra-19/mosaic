@@ -20,6 +20,8 @@ export const MOTION_MS = {
   carryTint: 900,
   carryTintDelay: 140,
   changeFlash: 1300,
+  /** A number's earlier revisions folding away: the opening, reversed and quicker. */
+  revisionsClose: 130,
 } as const;
 
 /** With reduced motion nothing moves, so there is nothing to animate or wait for. */

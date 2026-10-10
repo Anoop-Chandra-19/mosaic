@@ -43,7 +43,10 @@ test('naming a version makes the draft up to date', async () => {
   await startBlank(page);
   await page.keyboard.press('Control+s');
   await page.getByLabel('Version name').fill('First draft');
-  await page.getByRole('dialog').getByRole('button', { name: 'Name version' }).click();
+  await page
+    .getByRole('dialog')
+    .getByRole('button', { name: /^(Save|Name) v\d/ })
+    .click();
   await expect(page.getByText('Named “First draft”')).toBeVisible();
 
   const banner = page.getByRole('banner');

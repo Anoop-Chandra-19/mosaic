@@ -38,16 +38,22 @@ const PAGE_GUTTER_PX = 24;
 
 const AUTOMATIC_REASONS: Partial<Record<VersionSource, string>> = {
   import: 'import',
-  restore: 'before restore',
+  'before-import': 'before import',
+  restore: 'restore',
+  'before-restore': 'before restore',
   create: 'new template',
   duplicate: 'duplicate',
   switched: 'left off',
   closed: 'left off',
+  assistant: 'assistant',
+  'before-apply': 'before apply',
 };
 
 interface HistoryReadPaneProps {
   version: VersionMeta;
   label: string;
+  /** "v11" when the version is one of a number's revisions, for "All of v11". */
+  numberLabel: string | null;
   isHead: boolean;
   /** The version against the one before it or the draft, as picked; the list shares it. */
   comparison: VersionComparison;
@@ -58,7 +64,7 @@ interface HistoryReadPaneProps {
   onRestore: (version: VersionMeta) => void;
   onDuplicate: (version: VersionMeta) => void;
   onExport: (version: Version, label: string) => void;
-  /** The version's document and its parent's, read by the view before it selected them. */
+  /** The version's document and the one it is compared with, read before it was selected. */
   docs: VersionPair;
 }
 
@@ -157,6 +163,7 @@ function VersionPage({
 export function HistoryReadPane({
   version,
   label,
+  numberLabel,
   isHead,
   comparison,
   onComparisonChange,
@@ -295,6 +302,14 @@ export function HistoryReadPane({
         <Text as="p" variant="meta" className="mt-1.25 flex flex-wrap items-center gap-x-2 gap-y-1">
           <span>{label}</span>
           <span aria-hidden>·</span>
+          {version.revision > 0 && (
+            <>
+              <span>
+                revision {version.revision} of v{version.number}
+              </span>
+              <span aria-hidden>·</span>
+            </>
+          )}
           {version.kind !== 'named' && (
             <>
               <span>automatic{reason ? `, ${reason}` : ''}</span>
@@ -316,7 +331,8 @@ export function HistoryReadPane({
         {loaded && (
           <ReadPaneControls
             versionLabel={label}
-            isAgainstDraft={comparison.isAgainstDraft}
+            numberLabel={numberLabel}
+            comparedWith={comparison.comparedWith}
             canCompareWithParent={comparison.canCompareWithParent}
             onComparisonChange={onComparisonChange}
             view={view}

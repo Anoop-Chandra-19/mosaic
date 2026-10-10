@@ -199,7 +199,7 @@ describe('versions', () => {
     const { id, head } = createTemplate(db, 'CV', resumeFor('A'));
 
     expect(
-      snapshotDraft(db, { templateId: id, source: 'import', summary: 'Before import' })
+      snapshotDraft(db, { templateId: id, source: 'before-import', summary: 'Before import' })
     ).toEqual(head);
     expect(listVersions(db, id)).toHaveLength(1);
   });
@@ -208,9 +208,13 @@ describe('versions', () => {
     const { id } = createTemplate(db, 'CV', resumeFor('A'));
     saveDraft(db, id, resumeFor('B'), 1);
 
-    const snap = snapshotDraft(db, { templateId: id, source: 'import', summary: 'Before import' });
+    const snap = snapshotDraft(db, {
+      templateId: id,
+      source: 'before-import',
+      summary: 'Before import',
+    });
 
-    expect(snap).toMatchObject({ kind: 'auto', source: 'import', rev: 1 });
+    expect(snap).toMatchObject({ kind: 'auto', source: 'before-import', rev: 1 });
     expect(getVersion(db, snap.id).doc).toEqual(resumeFor('B'));
     expect(isClean(id)).toBe(true);
   });
@@ -293,7 +297,7 @@ describe('versions', () => {
     expect(draft).toEqual({ templateId: id, doc: resumeFor('A'), rev: 3 });
     expect(readDraft(db, id)).toEqual(draft);
     const [restored, before] = listVersions(db, id);
-    expect(before).toMatchObject({ kind: 'auto', source: 'restore', rev: 2 });
+    expect(before).toMatchObject({ kind: 'auto', source: 'before-restore', rev: 2 });
     expect(getVersion(db, before.id).doc).toEqual(resumeFor('C, unsaved'));
     expect(restored).toMatchObject({
       kind: 'auto',
@@ -357,7 +361,7 @@ describe('versions', () => {
     expect(readDraft(db, id)).toEqual(draft);
     const [imported, before] = listVersions(db, id);
     expect(before).toMatchObject({
-      source: 'import',
+      source: 'before-import',
       summary: 'Before importing platform-resume.docx',
       rev: 4,
     });
@@ -391,6 +395,145 @@ describe('versions', () => {
     expect(draft).toEqual({ templateId: id, doc: resumeFor('Pasted'), rev: 5 });
     expect(listVersions(db, id)).toEqual([head]);
     expect(isClean(id)).toBe(false);
+  });
+});
+
+describe('revisions', () => {
+  const MINUTE = 60_000;
+  const label = (v: { number: number; revision: number }) =>
+    v.revision ? `v${v.number}.${v.revision}` : `v${v.number}`;
+  const labels = (templateId: string) => listVersions(db, templateId).map(label);
+
+  /** A template with one editing snapshot after its first version: v2 is an open session. */
+  function startSession() {
+    vi.useFakeTimers({ now: Date.UTC(2026, 9, 10, 9) });
+    const { id } = createTemplate(db, 'CV', resumeFor('A'));
+    saveDraft(db, id, resumeFor('B'), 1);
+    const first = snapshotEditedDraft(db, id, 'edit');
+    return { id, first };
+  }
+
+  it('an edit within the session gap adds a revision, chained to the one before', () => {
+    const { id, first } = startSession();
+    vi.advanceTimersByTime(10 * MINUTE);
+    saveDraft(db, id, resumeFor('C'), 2);
+
+    const second = snapshotEditedDraft(db, id, 'edit');
+
+    expect(second).toMatchObject({ number: first.number, revision: 1, parentId: first.id });
+    expect(labels(id)).toEqual(['v2.1', 'v2', 'v1']);
+    expect(headVersion(db, id)!.id).toBe(second.id);
+    expect(isClean(id)).toBe(true);
+  });
+
+  it('a revision describes the whole session, from what its number started at', () => {
+    const { id } = startSession();
+    const edited = resumeFor('B');
+    const experience = edited.sections.find((s) => s.kind === 'experience')!;
+    experience.items[0].bullets[0].text = 'Shipped the thing, twice';
+    saveDraft(db, id, edited, 2);
+
+    // Against v1 ("A"), the session renamed the contact and edited a bullet.
+    const second = snapshotEditedDraft(db, id, 'edit');
+    expect(second.revision).toBe(1);
+    expect(second.summary).not.toBe(`Edited a bullet in ${experience.label}`);
+  });
+
+  it('an edit after the session gap starts a new number', () => {
+    const { id } = startSession();
+    vi.advanceTimersByTime(45 * MINUTE);
+    saveDraft(db, id, resumeFor('C'), 2);
+
+    expect(snapshotEditedDraft(db, id, 'edit')).toMatchObject({ number: 3, revision: 0 });
+  });
+
+  it('switching template closes the session as its last revision, and the next edit starts anew', () => {
+    const { id } = startSession();
+    saveDraft(db, id, resumeFor('C'), 2);
+    expect(snapshotEditedDraft(db, id, 'switched')).toMatchObject({ number: 2, revision: 1 });
+
+    saveDraft(db, id, resumeFor('D'), 3);
+    expect(snapshotEditedDraft(db, id, 'edit')).toMatchObject({ number: 3, revision: 0 });
+  });
+
+  it('the draft kept before a restore closes an open session', () => {
+    const { id } = startSession();
+    saveDraft(db, id, resumeFor('C'), 2);
+
+    restoreVersion(db, id, listVersions(db, id).at(-1)!.id, true);
+
+    expect(listVersions(db, id).map((v) => [label(v), v.source])).toEqual([
+      ['v3', 'restore'],
+      ['v2.1', 'before-restore'],
+      ['v2', 'edit'],
+      ['v1', 'create'],
+    ]);
+  });
+
+  it('automatic work never adds to a named version', () => {
+    const { id } = startSession();
+    nameDraft(db, id, 'Sent to Northwind'); // names v2 in place
+    saveDraft(db, id, resumeFor('C'), 2);
+
+    expect(snapshotEditedDraft(db, id, 'edit')).toMatchObject({ number: 3, revision: 0 });
+  });
+
+  it('naming can add to the user’s own newest version, which stays as it was', () => {
+    vi.useFakeTimers({ now: Date.UTC(2026, 9, 10, 9) });
+    const { id } = createTemplate(db, 'CV', resumeFor('A'));
+    saveDraft(db, id, resumeFor('B'), 1);
+    const sent = nameDraft(db, id, 'Sent to Northwind');
+    vi.advanceTimersByTime(3 * 60 * MINUTE);
+    saveDraft(db, id, resumeFor('B, typo fixed'), 2);
+
+    const fixed = nameDraft(db, id, 'Sent to Northwind', 'add');
+
+    expect(fixed).toMatchObject({ number: sent.number, revision: 1, kind: 'named' });
+    expect(getVersion(db, sent.id).doc).toEqual(resumeFor('B'));
+  });
+
+  it('naming refuses to add to a version that isn’t the user’s own', () => {
+    const { id, head } = createTemplate(db, 'CV', resumeFor('A'));
+    saveDraft(db, id, resumeFor('B'), 1);
+
+    expect(() => nameDraft(db, id, 'Mine', 'add')).toThrow(
+      expect.objectContaining({ code: 'stale-rev' })
+    );
+    expect(listVersions(db, id).map((v) => v.id)).toEqual([head.id]);
+  });
+
+  it('applied suggestions add to the assistant’s newest version only', () => {
+    const { id } = createTemplate(db, 'CV', resumeFor('A'));
+    saveDraft(db, id, resumeFor('B'), 1);
+    expect(() => snapshotAppliedSuggestions(db, id, 1, 2, { mode: 'add' })).toThrow(
+      expect.objectContaining({ code: 'stale-rev' })
+    );
+
+    const first = snapshotAppliedSuggestions(db, id, 1, 2);
+    saveDraft(db, id, resumeFor('C'), 2);
+    expect(snapshotAppliedSuggestions(db, id, 1, 2, { mode: 'add' })).toMatchObject({
+      number: first.number,
+      revision: 1,
+      source: 'assistant',
+    });
+
+    saveDraft(db, id, resumeFor('D'), 3);
+    expect(
+      snapshotAppliedSuggestions(db, id, 1, 2, { mode: 'named', name: 'Tightened' })
+    ).toMatchObject({ number: first.number + 1, kind: 'named', summary: 'Tightened' });
+  });
+
+  it('deleting an older number’s newest revision leaves the one before it as the latest', () => {
+    const { id } = startSession();
+    saveDraft(db, id, resumeFor('C'), 2);
+    const second = snapshotEditedDraft(db, id, 'edit');
+    saveDraft(db, id, resumeFor('D'), 3);
+    nameDraft(db, id, 'Sent');
+
+    removeVersion(db, second.id);
+
+    expect(labels(id)).toEqual(['v3', 'v2', 'v1']);
+    expect(listVersions(db, id)[0].parentId).toBe(listVersions(db, id)[1].id);
   });
 });
 

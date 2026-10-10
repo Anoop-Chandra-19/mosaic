@@ -16,12 +16,12 @@ export function Toast() {
       {toast && (
         <div
           key={toast.id}
-          className="pointer-events-auto flex max-w-full items-center gap-2.5 rounded-full border border-line-strong bg-pane-raised py-2 pr-2 pl-3.5 text-body text-foreground shadow-overlay duration-200 animate-in fade-in-0 slide-in-from-bottom-1 motion-reduce:animate-none"
+          className="pointer-events-auto flex max-w-full items-center gap-2.5 rounded-full border border-line-strong bg-pane-raised py-2.5 pr-2.75 pl-3.5 text-body text-foreground shadow-overlay duration-200 animate-in fade-in-0 slide-in-from-bottom-1 motion-reduce:animate-none"
         >
           {toast.tone === 'success' ? (
-            <Check className="size-3.5 shrink-0 text-add" />
+            <Check className="size-3.25 shrink-0 text-add" />
           ) : (
-            <AlertTriangle className="size-3.5 shrink-0 text-del" />
+            <AlertTriangle className="size-3.25 shrink-0 text-del" />
           )}
           <span className="min-w-0">{toast.message}</span>
           {toast.action && (
@@ -41,7 +41,7 @@ export function Toast() {
             variant="ghost"
             size="sm"
             shape="square"
-            className="size-6 shrink-0 rounded-full"
+            className="size-6.25 shrink-0 rounded-[0.375rem]"
             onClick={dismiss}
             aria-label="Dismiss"
           >

@@ -3,9 +3,12 @@ import { getDb } from '@/lib/storage/mosaicDb';
 import { useTemplateStore } from '@/stores/templateStore';
 import type { TemplateSummary, VersionMeta } from '@shared/types/db';
 
-/** "v3": its place in the history when it was taken. Deleting another never changes it. */
+/**
+ * "v3": its place in the history when it was taken; "v3.1" for the first revision added to
+ * it. Deleting another never changes it.
+ */
 export function versionLabel(version: VersionMeta): string {
-  return `v${version.number}`;
+  return version.revision ? `v${version.number}.${version.revision}` : `v${version.number}`;
 }
 
 /**

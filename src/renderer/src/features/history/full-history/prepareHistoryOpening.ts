@@ -1,12 +1,13 @@
 import { whenPreviewSettled } from '@/features/view-transitions/pageHandoff';
 import { getDb } from '@/lib/storage/mosaicDb';
+import type { HistoryComparison } from '@/types/history';
 import type { Version, VersionMeta } from '@shared/types/db';
 
-/** A version's document and the one before it, read together so they land together. */
+/** A version's document and the one it is compared with, read together so they land together. */
 export interface VersionPair {
   version: Version | null;
   /** Null for the first version. */
-  parent: Version | null;
+  base: Version | null;
 }
 
 export interface PreparedHistory {
@@ -15,16 +16,53 @@ export interface PreparedHistory {
   opening: VersionPair;
 }
 
-/** Reads the version `id` and the one before it in `versions`, newest first. */
-export async function readVersionPair(versions: VersionMeta[], id: string): Promise<VersionPair> {
+/** Whether the version at `index` belongs to a number with more than one revision. */
+export function hasRevisions(versions: VersionMeta[], index: number): boolean {
+  const number = versions[index]?.number;
+  return versions[index - 1]?.number === number || versions[index + 1]?.number === number;
+}
+
+/** The comparison to show: "All of v11" stays picked, and reads as the version before for one with no revisions. */
+export function resolveComparison(
+  picked: HistoryComparison,
+  versions: VersionMeta[],
+  index: number
+): HistoryComparison {
+  return picked === 'number' && !hasRevisions(versions, index) ? 'parent' : picked;
+}
+
+/**
+ * The version the one at `index` is compared with, in `versions`, newest first: the one
+ * before it, or for `number`, the one before its number's first revision. Against the
+ * draft, the one before it still says whether there is anything to compare with.
+ */
+export function findComparedBase(
+  versions: VersionMeta[],
+  index: number,
+  comparison: HistoryComparison
+): VersionMeta | null {
+  if (index < 0) return null;
+  let oldest = index;
+  if (comparison === 'number') {
+    while (versions[oldest + 1]?.number === versions[index].number) oldest += 1;
+  }
+  return versions[oldest + 1] ?? null;
+}
+
+/** Reads the version `id` and the one it is compared with. */
+export async function readVersionPair(
+  versions: VersionMeta[],
+  id: string,
+  comparison: HistoryComparison = 'parent'
+): Promise<VersionPair> {
   const db = getDb();
   const index = versions.findIndex((version) => version.id === id);
-  const parentMeta = index >= 0 ? versions[index + 1] : undefined;
-  const [version, parent] = await Promise.all([
+  const baseMeta = findComparedBase(versions, index, comparison);
+  const [version, base] = await Promise.all([
     db.versions.get(id),
-    parentMeta ? db.versions.get(parentMeta.id) : null,
+    baseMeta ? db.versions.get(baseMeta.id) : null,
   ]);
-  return { version, parent };
+  return { version, base };
 }
 
 const openings = new WeakMap<object, Promise<PreparedHistory | null>>();
@@ -58,7 +96,7 @@ export function prepareHistoryOpening(
     prepared = (async () => {
       const versions = await getDb().versions.list(templateId);
       const id = chooseOpeningVersion(versions, versionId);
-      const opening = id ? await readVersionPair(versions, id) : { version: null, parent: null };
+      const opening = id ? await readVersionPair(versions, id) : { version: null, base: null };
       await settled;
       return { versions, opening };
     })().catch((error: unknown) => {

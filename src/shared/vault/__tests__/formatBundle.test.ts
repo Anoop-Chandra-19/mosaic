@@ -13,6 +13,7 @@ const resumeNamed = (name: string): ResumeData => {
 const version = (id: string, doc: ResumeData, number = 1): BundleVersion => ({
   id,
   number,
+  revision: 0,
   parentId: null,
   kind: 'auto',
   source: 'edit',

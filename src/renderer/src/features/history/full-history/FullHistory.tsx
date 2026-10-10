@@ -35,8 +35,11 @@ import { HistorySettingsPopover } from './HistorySettingsPopover';
 import { useVersionComparison } from './useVersionComparison';
 import {
   chooseOpeningVersion,
+  findComparedBase,
+  hasRevisions,
   prepareHistoryOpening,
   readVersionPair,
+  resolveComparison,
   type PreparedHistory,
   type VersionPair,
 } from './prepareHistoryOpening';
@@ -169,40 +172,41 @@ function FullHistoryFrame({
   const selected = found ?? versions?.[Math.min(lastIndex, versions.length - 1)];
   const selectedIndex = selected && versions ? versions.indexOf(selected) : -1;
   if (found && selectedIndex !== lastIndex) setLastIndex(selectedIndex);
-  const parent = (selectedIndex >= 0 && versions?.[selectedIndex + 1]) || null;
-  // The documents of the version being read and the one before it: the pair the view
-  // opened on, then each read before its step lands, so the page and what changed in it
-  // land together. Only ever the one pair, so nothing piles up while the view is open.
-  const [docs, setDocs] = useState<VersionPair>(
-    prepared?.opening ?? { version: null, parent: null }
-  );
+  const pickedComparison = openedComparison ?? storedComparison;
+  const shownComparison = resolveComparison(pickedComparison, versions ?? [], selectedIndex);
+  const base = versions ? findComparedBase(versions, selectedIndex, shownComparison) : null;
+  // The documents of the version being read and the one it is compared with: the pair the
+  // view opened on, then each read before its step lands, so the page and what changed in
+  // it land together. Only ever the one pair, so nothing piles up while the view is open.
+  const [docs, setDocs] = useState<VersionPair>(prepared?.opening ?? { version: null, base: null });
   const latestStep = useRef(0);
   const shownId = useRef(selected?.id);
   // Worked out once, for the read pane and the selected row's counts.
   const versionComparison = useVersionComparison({
     templateId: template.id,
     version: docs.version?.id === selected?.id ? docs.version : null,
-    parent,
-    parentVersion: docs.parent?.id === parent?.id ? docs.parent : null,
-    parentLabel: parent ? versionLabel(parent) : '',
-    comparison: openedComparison ?? storedComparison,
+    base,
+    baseVersion: docs.base?.id === base?.id ? docs.base : null,
+    baseLabel: base ? versionLabel(base) : '',
+    comparison: shownComparison,
+    hasParent: !!versions?.[selectedIndex + 1],
   });
 
-  // When the view couldn't read its first version ahead of opening, or the history list
-  // changed under it, read the selected one now.
+  // When the view couldn't read its first version ahead of opening, the history list
+  // changed under it, or another comparison was picked, read the selected one now.
   const isPairRead =
-    docs.version?.id === selected?.id && (docs.parent?.id ?? null) === (parent?.id ?? null);
+    docs.version?.id === selected?.id && (docs.base?.id ?? null) === (base?.id ?? null);
   useEffect(() => {
     if (!selected || !versions || isPairRead) return;
     let isCurrent = true;
-    readVersionPair(versions, selected.id).then(
+    readVersionPair(versions, selected.id, shownComparison).then(
       (read) => isCurrent && setDocs(read),
       (error: unknown) => console.error('Could not read that version', error)
     );
     return () => {
       isCurrent = false;
     };
-  }, [selected, versions, isPairRead]);
+  }, [selected, versions, isPairRead, shownComparison]);
   // A step through time: the page slides the way the history runs, older to the left. The
   // version is read first, so the slide lands on its page rather than an empty pane. Only
   // the latest step lands: reads can finish out of order, and a slower one must not win.
@@ -224,11 +228,12 @@ function FullHistoryFrame({
       });
     };
     if (!versions) return;
-    readVersionPair(versions, version.id).then(show, (error: unknown) => {
+    const stepComparison = resolveComparison(pickedComparison, versions, versions.indexOf(version));
+    readVersionPair(versions, version.id, stepComparison).then(show, (error: unknown) => {
       // Still selected, so the list and the pane agree on which version this is.
       console.error('Could not read that version', error);
       showToast('Could not read that version', 'error');
-      show({ version: null, parent: null });
+      show({ version: null, base: null });
     });
   };
   const select = (version: VersionMeta) => step(version, false);
@@ -382,6 +387,7 @@ function FullHistoryFrame({
           <HistoryReadPane
             version={selected}
             label={versionLabel(selected)}
+            numberLabel={hasRevisions(versions, selectedIndex) ? `v${selected.number}` : null}
             isHead={selected.id === versions[0].id}
             comparison={versionComparison}
             onComparisonChange={pickComparison}

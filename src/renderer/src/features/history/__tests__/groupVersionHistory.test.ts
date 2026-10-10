@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest';
 import type { VersionMeta, VersionSource } from '@shared/types/db';
 import {
   countFoldedByMonth,
-  describeRunSections,
   findFoldCutoff,
   formatTimeInDay,
   groupVersionHistory,
@@ -25,6 +24,7 @@ function version(
     id: `v${seq}`,
     templateId: 't',
     number: seq,
+    revision: 0,
     parentId: null,
     kind,
     source,
@@ -35,15 +35,25 @@ function version(
   };
 }
 
-/** Each group as its label, and each item as a version id, [ids of a run] or {fold: ids}. */
+/** The next revision of `previous`'s number. */
+function revisionOf(previous: VersionMeta, createdAt: number, source: VersionSource = 'edit') {
+  return {
+    ...version(createdAt, source),
+    id: `v${previous.number}.${previous.revision + 1}`,
+    number: previous.number,
+    revision: previous.revision + 1,
+  };
+}
+
+/** Each group as its label, each number as a version id or [ids of its revisions], and {fold}. */
 function shape(groups: HistoryGroup[]) {
+  const numberShape = (revisions: VersionMeta[]) =>
+    revisions.length === 1 ? revisions[0].id : revisions.map((version) => version.id);
   return groups.map((group) => [
     group.label,
-    group.items.map((item) => {
-      if (item.kind === 'version') return item.version.id;
-      const ids = item.versions.map((version) => version.id);
-      return item.kind === 'run' ? ids : { fold: ids };
-    }),
+    group.items.map((item) =>
+      item.kind === 'number' ? numberShape(item.revisions) : { fold: item.numbers.map(numberShape) }
+    ),
   ]);
 }
 
@@ -68,40 +78,31 @@ describe('groupVersionHistory', () => {
     ]);
   });
 
-  it('holds four or more edits in a row as a run, and leaves fewer as rows', () => {
+  it('holds a number’s revisions as one row, counted once, under the day of its newest', () => {
     seq = 0;
-    const long = [0, 10, 20, 30].map((m) => version(at(22, 9, m)));
-    const short = [0, 10, 20].map((m) => version(at(22, 14, m)));
-    const groups = groupVersionHistory(newestFirst([...long, ...short]), { now: NOW });
-    expect(shape(groups)).toEqual([['Today', ['v7', 'v6', 'v5', ['v4', 'v3', 'v2', 'v1']]]]);
-  });
-
-  it('breaks a run at a 45 minute gap, and at anything that is not plain editing', () => {
-    seq = 0;
-    const morning = [0, 10, 20, 30].map((m) => version(at(22, 8, m)));
-    const later = [15, 25, 35].map((m) => version(at(22, 9, m)));
-    const named = version(at(22, 9, 40), 'name', 'named');
-    const after = [45, 50, 55, 58].map((m) => version(at(22, 9, m)));
-    const stop = version(at(22, 10, 0), 'switched');
-    const groups = groupVersionHistory(newestFirst([...morning, ...later, named, ...after, stop]), {
+    const created = version(at(21, 9), 'create');
+    const session = version(at(21, 23, 50));
+    const first = revisionOf(session, at(22, 0, 10));
+    const second = revisionOf(first, at(22, 0, 30), 'switched');
+    const named = version(at(22, 9), 'name', 'named');
+    const groups = groupVersionHistory(newestFirst([created, session, first, second, named]), {
       now: NOW,
     });
     expect(shape(groups)).toEqual([
-      [
-        'Today',
-        ['v13', ['v12', 'v11', 'v10', 'v9'], 'v8', 'v7', 'v6', 'v5', ['v4', 'v3', 'v2', 'v1']],
-      ],
+      ['Today', ['v5', ['v2.2', 'v2.1', 'v2']]],
+      ['Yesterday', ['v1']],
     ]);
+    expect(groups.map((g) => g.count)).toEqual([2, 1]);
   });
 
-  it('groups a filtered list by month, with no runs', () => {
+  it('groups a filtered list by month, a row per number', () => {
     seq = 0;
     const versions = newestFirst([
       ...[0, 10, 20, 30].map((m) => version(at(22, 9, m))),
       version(new Date(2026, 7, 3).getTime()),
     ]);
     const groups = groupVersionHistory(versions, { now: NOW, byMonth: true });
-    expect(groups.map((g) => [g.count, g.items.every((item) => item.kind === 'version')])).toEqual([
+    expect(groups.map((g) => [g.count, g.items.every((item) => item.kind === 'number')])).toEqual([
       [4, true],
       [1, true],
     ]);
@@ -164,31 +165,6 @@ describe('listHistoryMonths', () => {
       [2, 'v4'],
       [2, 'v2'],
     ]);
-  });
-});
-
-describe('describeRunSections', () => {
-  const inSection = (section: string | null) => ({ ...version(NOW), section });
-
-  it('names the one or two sections most of the run was in', () => {
-    expect(describeRunSections([inSection('Projects'), inSection('Projects')])).toBe(
-      'mostly Projects'
-    );
-    expect(
-      describeRunSections([
-        inSection('Skills'),
-        inSection('Experience'),
-        inSection('Experience'),
-        inSection('Projects'),
-        inSection('Projects'),
-        inSection('Experience'),
-        inSection(null),
-      ])
-    ).toBe('mostly Experience and Projects');
-  });
-
-  it('says across the document when no edit was in one section', () => {
-    expect(describeRunSections([inSection(null), inSection(null)])).toBe('across the document');
   });
 });
 

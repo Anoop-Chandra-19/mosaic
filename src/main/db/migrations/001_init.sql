@@ -28,21 +28,26 @@ create table docs (
   doc  text not null check (json_valid(doc))
 ) strict;
 
--- Snapshots of a template's document. The head (highest seq) is the version the
--- draft was last in sync with: the draft is clean iff templates.rev = head.rev.
+-- Snapshots of a template's document. The head (highest seq, then highest revision) is
+-- the version the draft was last in sync with: the draft is clean iff templates.rev =
+-- head.rev. A number (seq, shown as v7) names one piece of work; adding to it while it is
+-- the head writes a new row with the next revision (v7.1), so no row is ever rewritten.
 create table versions (
   id          text primary key,
   template_id text not null references templates(id) on delete cascade,
-  seq         integer not null,             -- order within the template; head = max(seq)
+  seq         integer not null,             -- the version number
+  revision    integer not null default 0,   -- additions to that number; 0 is the first
   parent_id   text references versions(id) on delete set null,
   kind        text not null check (kind in ('auto', 'named')),
-  source      text not null,                -- create | duplicate | name | import | restore | edit | switched | closed
+  source      text not null check (source in ('create', 'duplicate', 'name', 'import',
+                'before-import', 'restore', 'before-restore', 'edit', 'switched', 'closed',
+                'assistant', 'before-apply')),
   summary     text not null,                -- the user's name, or "Before restoring …"
   section     text,                         -- label of the one section an edit touched
   rev         integer not null,             -- template rev at snapshot
   created_at  integer not null,
   doc_hash    text not null references docs(hash),
-  unique (template_id, seq)
+  unique (template_id, seq, revision)
 ) strict;
 -- Deleting a version nulls its children's parent_id; without this, that scans the table.
 create index versions_by_parent on versions (parent_id);

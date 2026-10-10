@@ -5,7 +5,13 @@ import { useOverlayStore } from '@/stores/overlayStore';
 import { flushDraft, saveDraftOrStop, useResumeStore } from '@/stores/resumeStore';
 import { useUiStore } from '@/stores/uiStore';
 import type { ImportMode, MosaicBundle } from '@shared/types/bundle';
-import type { Draft, SnapshotOccasion, TemplateSummary, VersionMeta } from '@shared/types/db';
+import type {
+  Draft,
+  NamingMode,
+  SnapshotOccasion,
+  TemplateSummary,
+  VersionMeta,
+} from '@shared/types/db';
 import type { ResumeData } from '@shared/types/resume';
 import { formatBundleText } from '@shared/vault/formatBundle';
 
@@ -56,7 +62,7 @@ interface TemplateState {
   importBundle: (text: string, mode: ImportMode) => Promise<string[]>;
 
   /** Names what is in the editor — see `MosaicDb['versions']['name']`. */
-  nameVersion: (name: string) => Promise<VersionMeta>;
+  nameVersion: (name: string, mode?: NamingMode) => Promise<VersionMeta>;
   /**
    * Keeps what is in the editor as an auto version, so this much survives quitting. Taken
    * while editing (`useAutoSnapshot`), when another template opens, and on the way out.
@@ -199,10 +205,10 @@ export const useTemplateStore = create<TemplateState>()(
         return templateIds;
       },
 
-      nameVersion: async (name) => {
+      nameVersion: async (name, mode = 'new') => {
         const templateId = requireOpenTemplate();
         await saveDraftOrStop();
-        const version = await getDb().versions.name(templateId, name);
+        const version = await getDb().versions.name(templateId, name, mode);
         // The draft is that version now, so the status bar counts changes from here.
         useResumeStore.getState().markVersionSaved(version.rev);
         await get().refresh();

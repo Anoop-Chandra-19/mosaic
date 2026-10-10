@@ -6,7 +6,10 @@ const mosaic = withApp();
 async function nameVersion(page: Page, version: string) {
   await page.keyboard.press('Control+s');
   await page.getByLabel('Version name').fill(version);
-  await page.getByRole('dialog').getByRole('button', { name: 'Name version' }).click();
+  await page
+    .getByRole('dialog')
+    .getByRole('button', { name: /^(Save|Name) v\d/ })
+    .click();
   await expect(page.getByText(`Named “${version}”`)).toBeVisible();
 }
 

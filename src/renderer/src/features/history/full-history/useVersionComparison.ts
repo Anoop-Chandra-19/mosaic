@@ -45,33 +45,37 @@ interface ComparedVersion {
   templateId: string;
   /** The version's document, once read. */
   version: Version | null;
-  /** The version before it; null for the first. */
-  parent: VersionMeta | null;
+  /** What it is compared with unless that is the draft: the version before it, or its number's. */
+  base: VersionMeta | null;
   /** Its document, once read. */
-  parentVersion: Version | null;
-  parentLabel: string;
+  baseVersion: Version | null;
+  baseLabel: string;
+  /** Picked, and possible for this version: `number` only for one with revisions. */
   comparison: HistoryComparison;
+  /** The first version has nothing before it. */
+  hasParent: boolean;
 }
 
 export type VersionComparison = ReturnType<typeof useVersionComparison>;
 
 /**
- * A version against the one before it, or against the draft, as picked; the first
- * version has nothing before it, so it is read against the draft. How far it is from the
- * draft is worked out either way, for Restore.
+ * A version against the one before it, against everything its number did, or against
+ * the draft, as picked; the first version has nothing before it, so it is read against
+ * the draft. How far it is from the draft is worked out either way, for Restore.
  */
 export function useVersionComparison({
   templateId,
   version,
-  parent,
-  parentVersion,
-  parentLabel,
+  base: baseMeta,
+  baseVersion,
+  baseLabel,
   comparison,
+  hasParent,
 }: ComparedVersion) {
   const draft = useComparedDraft(templateId);
-  const isAgainstDraft = comparison === 'draft' || !parent;
+  const isAgainstDraft = comparison === 'draft' || !baseMeta;
   const versionDoc = version?.doc ?? null;
-  const base = isAgainstDraft ? draft : (parentVersion?.doc ?? null);
+  const base = isAgainstDraft ? draft : (baseVersion?.doc ?? null);
   const againstDraft = compareResumes(draft, versionDoc);
   const shown = isAgainstDraft ? againstDraft : compareResumes(base, versionDoc);
   return {
@@ -79,9 +83,10 @@ export function useVersionComparison({
     base,
     diff: shown?.diff ?? null,
     formatting: shown?.formatting ?? [],
+    comparedWith: isAgainstDraft ? ('draft' as const) : comparison,
     isAgainstDraft,
-    canCompareWithParent: parent !== null,
-    otherSide: isAgainstDraft ? 'your draft' : parentLabel,
+    canCompareWithParent: hasParent,
+    otherSide: isAgainstDraft ? 'your draft' : baseLabel,
     /** How many changes stand between the version and the draft; null until both are read. */
     draftChangeCount: againstDraft?.diff.changes.length ?? null,
     hasDraftFormatting: (againstDraft?.formatting.length ?? 0) > 0,

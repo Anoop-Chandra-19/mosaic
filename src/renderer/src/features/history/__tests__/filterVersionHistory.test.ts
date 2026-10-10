@@ -16,6 +16,7 @@ function version(
     id,
     templateId: 't',
     number: Number(id.slice(1)),
+    revision: 0,
     parentId: null,
     kind: source === 'name' ? 'named' : 'auto',
     source,

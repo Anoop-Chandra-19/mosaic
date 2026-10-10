@@ -29,7 +29,10 @@ async function nameVersion(page: Page, name: string) {
   await page.getByRole('main').click({ position: { x: 20, y: 200 } });
   await page.keyboard.press('Control+s');
   await page.getByLabel('Version name').fill(name);
-  await page.getByRole('dialog').getByRole('button', { name: 'Name version' }).click();
+  await page
+    .getByRole('dialog')
+    .getByRole('button', { name: /^(Save|Name) v\d/ })
+    .click();
   await expect(page.getByText(`Named “${name}”`)).toBeVisible();
   await expect(page.getByRole('dialog')).toHaveCount(0);
 }

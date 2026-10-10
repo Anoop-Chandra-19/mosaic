@@ -1,14 +1,17 @@
 import { randomUUID } from 'node:crypto';
 import type { Database } from 'better-sqlite3';
 import type {
+  AppliedHistory,
   AutoSnapshot,
   Draft,
+  NamingMode,
   SnapshotOccasion,
   Version,
   VersionKind,
   VersionMeta,
   VersionSource,
 } from '@shared/types/db';
+import { canAddToVersion, type VersionWork } from '@shared/history/canAddToVersion';
 import { describeDraftChanges } from '@shared/resume/describeDraftChanges';
 import type { ResumeData } from '@shared/types/resume';
 import { hashDoc, readDoc, storeDoc } from './docs';
@@ -19,6 +22,7 @@ interface VersionRow {
   id: string;
   template_id: string;
   seq: number;
+  revision: number;
   parent_id: string | null;
   kind: VersionKind;
   source: VersionSource;
@@ -29,13 +33,17 @@ interface VersionRow {
 }
 
 const META_COLUMNS =
-  'id, template_id, seq, parent_id, kind, source, summary, section, rev, created_at';
+  'id, template_id, seq, revision, parent_id, kind, source, summary, section, rev, created_at';
+
+/** Oldest last. A revision is only ever added to the head, so this is the order of writing. */
+const NEWEST_FIRST = 'order by seq desc, revision desc';
 
 function toMeta(row: VersionRow): VersionMeta {
   return {
     id: row.id,
     templateId: row.template_id,
     number: row.seq,
+    revision: row.revision,
     parentId: row.parent_id,
     kind: row.kind,
     source: row.source,
@@ -52,7 +60,7 @@ export function headVersion(db: Database, templateId: string): VersionMeta | und
     .prepare<
       [string],
       VersionRow
-    >(`select ${META_COLUMNS} from versions where template_id = ? order by seq desc limit 1`)
+    >(`select ${META_COLUMNS} from versions where template_id = ? ${NEWEST_FIRST} limit 1`)
     .get(templateId);
   return row && toMeta(row);
 }
@@ -69,7 +77,7 @@ export function listVersions(db: Database, templateId: string): VersionMeta[] {
     .prepare<
       [string],
       VersionRow
-    >(`select ${META_COLUMNS} from versions where template_id = ? order by seq desc`)
+    >(`select ${META_COLUMNS} from versions where template_id = ? ${NEWEST_FIRST}`)
     .all(templateId)
     .map(toMeta);
 }
@@ -118,6 +126,8 @@ export interface NewVersion {
    */
   id?: string;
   number?: number;
+  /** Set with `number` to add to it; a new number starts at 0. */
+  revision?: number;
   createdAt?: number;
 }
 
@@ -136,6 +146,7 @@ export function insertVersion(db: Database, version: NewVersion): VersionMeta {
     id: version.id ?? randomUUID(),
     templateId: version.templateId,
     number: version.number ?? nextVersionNumber(db, version.templateId),
+    revision: version.revision ?? 0,
     parentId: version.parentId,
     kind: version.kind,
     source: version.source,
@@ -145,12 +156,13 @@ export function insertVersion(db: Database, version: NewVersion): VersionMeta {
     createdAt: version.createdAt ?? Date.now(),
   };
   db.prepare(
-    `insert into versions (id, template_id, seq, parent_id, kind, source, summary, section, rev, created_at, doc_hash)
-     values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    `insert into versions (id, template_id, seq, revision, parent_id, kind, source, summary, section, rev, created_at, doc_hash)
+     values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
   ).run(
     meta.id,
     meta.templateId,
     meta.number,
+    meta.revision,
     meta.parentId,
     meta.kind,
     meta.source,
@@ -180,9 +192,38 @@ function headHoldingDraft(
   return { ...head, rev: draft.rev };
 }
 
+/** Where a new version goes: a revision of the head when `work` adds to it, else a new number. */
+interface Placement {
+  parentId: string | null;
+  number?: number;
+  revision?: number;
+}
+
+function placeAfterHead(head: VersionMeta | undefined, isAdding: boolean): Placement {
+  if (!head) return { parentId: null };
+  if (!isAdding) return { parentId: head.id };
+  return { parentId: head.id, number: head.number, revision: head.revision + 1 };
+}
+
+function placeWork(head: VersionMeta | undefined, work: VersionWork): Placement {
+  return placeAfterHead(head, !!head && canAddToVersion(head, work, Date.now()));
+}
+
+/** What a number started from: the parent of its first revision still there. */
+function numberBase(db: Database, version: VersionMeta): VersionMeta | undefined {
+  const row = db
+    .prepare<
+      [string, number],
+      { parent_id: string | null }
+    >('select parent_id from versions where template_id = ? and seq = ? order by revision limit 1')
+    .get(version.templateId, version.number);
+  return row?.parent_id ? getVersionMeta(db, row.parent_id) : undefined;
+}
+
 /**
  * Keep the draft as an auto version — before an import or restore replaces it. A draft
- * the head already holds writes nothing, and that head is returned instead.
+ * the head already holds writes nothing, and that head is returned instead. An open
+ * editing session gets it as its last revision.
  */
 export function snapshotDraft(db: Database, input: AutoSnapshot): VersionMeta {
   return db.transaction(() => {
@@ -192,7 +233,7 @@ export function snapshotDraft(db: Database, input: AutoSnapshot): VersionMeta {
     if (kept) return kept;
     return insertVersion(db, {
       templateId: input.templateId,
-      parentId: head?.id ?? null,
+      ...placeWork(head, input.source),
       kind: 'auto',
       source: input.source,
       summary: input.summary,
@@ -205,11 +246,29 @@ export function snapshotDraft(db: Database, input: AutoSnapshot): VersionMeta {
 const STOP_SUMMARIES: Record<Exclude<SnapshotOccasion, 'edit'>, string> = {
   switched: 'Where you left it before switching templates',
   closed: 'Where you left it',
+  'before-apply': 'Before applying suggestions',
 };
 
 /**
- * Keep the draft as an auto version of editing itself. Only `edit` snapshots diff against
- * the newest version; where editing stopped gets a fixed summary, which keeps closing cheap.
+ * An edit describes its whole session: a revision against what its number started from,
+ * so the newest revision's summary is the session's.
+ */
+function describeEdit(
+  db: Database,
+  placement: Placement,
+  head: VersionMeta | undefined,
+  draft: Draft
+): { summary: string; section: string | null } {
+  const base = placement.revision ? head && numberBase(db, head) : head;
+  return base
+    ? describeDraftChanges(getVersion(db, base.id).doc, draft.doc)
+    : { summary: 'Edited the resume', section: null };
+}
+
+/**
+ * Keep the draft as an auto version of editing itself. Only `edit` snapshots diff; where
+ * editing stopped gets a fixed summary, which keeps closing cheap. Both add to an open
+ * editing session, and a stop ends it.
  */
 export function snapshotEditedDraft(
   db: Database,
@@ -221,15 +280,14 @@ export function snapshotEditedDraft(
     const head = headVersion(db, templateId);
     const kept = headHoldingDraft(db, head, draft);
     if (kept) return kept;
+    const placement = placeWork(head, occasion);
     const changes =
-      occasion !== 'edit'
-        ? { summary: STOP_SUMMARIES[occasion], section: null }
-        : head
-          ? describeDraftChanges(getVersion(db, head.id).doc, draft.doc)
-          : { summary: 'Edited the resume', section: null };
+      occasion === 'edit'
+        ? describeEdit(db, placement, head, draft)
+        : { summary: STOP_SUMMARIES[occasion], section: null };
     return insertVersion(db, {
       templateId,
-      parentId: head?.id ?? null,
+      ...placement,
       kind: 'auto',
       source: occasion,
       ...changes,
@@ -237,6 +295,14 @@ export function snapshotEditedDraft(
       rev: draft.rev,
     });
   })();
+}
+
+/** The head, when `work` may add to it; otherwise the user chose something no longer true. */
+function requireAddableHead(head: VersionMeta | undefined, work: VersionWork): VersionMeta {
+  if (!head || !canAddToVersion(head, work, Date.now())) {
+    throw new StorageError('stale-rev', 'The newest version can no longer be added to.');
+  }
+  return head;
 }
 
 function describeAppliedSuggestions(applied: number, proposed: number): string {
@@ -248,28 +314,35 @@ function describeAppliedSuggestions(applied: number, proposed: number): string {
 
 /**
  * Keep the draft as it stands after a batch of accepted suggestions. The counts are the
- * summary; the section comes from what actually changed.
+ * summary, unless the user named it; the section comes from what actually changed. `add`
+ * makes it a revision of the assistant's newest version.
  */
 export function snapshotAppliedSuggestions(
   db: Database,
   templateId: string,
   applied: number,
-  proposed: number
+  proposed: number,
+  history: AppliedHistory = { mode: 'new' }
 ): VersionMeta {
   return db.transaction(() => {
     const draft = readDraft(db, templateId);
     const head = headVersion(db, templateId);
     const kept = headHoldingDraft(db, head, draft);
     if (kept) return kept;
+    const placement =
+      history.mode === 'add'
+        ? placeAfterHead(requireAddableHead(head, 'assistant'), true)
+        : placeAfterHead(head, false);
     const section = head
       ? describeDraftChanges(getVersion(db, head.id).doc, draft.doc).section
       : null;
     return insertVersion(db, {
       templateId,
-      parentId: head?.id ?? null,
-      kind: 'auto',
+      ...placement,
+      kind: history.mode === 'named' ? 'named' : 'auto',
       source: 'assistant',
-      summary: describeAppliedSuggestions(applied, proposed),
+      summary:
+        history.mode === 'named' ? history.name : describeAppliedSuggestions(applied, proposed),
       section,
       doc: draft.doc,
       rev: draft.rev,
@@ -279,9 +352,14 @@ export function snapshotAppliedSuggestions(
 
 /**
  * Name what is in the editor. A draft the head already holds renames that version instead
- * of minting a duplicate.
+ * of minting a duplicate. `add` makes it a revision of the user's own newest version.
  */
-export function nameDraft(db: Database, templateId: string, name: string): VersionMeta {
+export function nameDraft(
+  db: Database,
+  templateId: string,
+  name: string,
+  mode: NamingMode = 'new'
+): VersionMeta {
   return db.transaction(() => {
     const draft = readDraft(db, templateId);
     const head = headVersion(db, templateId);
@@ -295,9 +373,13 @@ export function nameDraft(db: Database, templateId: string, name: string): Versi
       return { ...clean, kind: 'named' as const, summary: name };
     }
 
+    const placement =
+      mode === 'add'
+        ? placeAfterHead(requireAddableHead(head, 'name'), true)
+        : placeAfterHead(head, false);
     return insertVersion(db, {
       templateId,
-      parentId: head?.id ?? null,
+      ...placement,
       kind: 'named',
       source: 'name',
       summary: name,
@@ -308,7 +390,10 @@ export function nameDraft(db: Database, templateId: string, name: string): Versi
 }
 
 interface Replacement {
-  source: VersionSource;
+  /** What the new document's version is. */
+  source: Extract<VersionSource, 'restore' | 'import'>;
+  /** What the version keeping the replaced draft is. */
+  beforeSource: AutoSnapshot['source'];
   /** Summary for the auto version that keeps unsaved edits. */
   before: string;
   /** Summary for the version holding the new document. */
@@ -334,7 +419,11 @@ function replaceDraft(
 ): Draft {
   const draft = readDraft(db, templateId);
   const kept = replacement.shouldKeepDraft
-    ? snapshotDraft(db, { templateId, source: replacement.source, summary: replacement.before })
+    ? snapshotDraft(db, {
+        templateId,
+        source: replacement.beforeSource,
+        summary: replacement.before,
+      })
     : headVersion(db, templateId);
   const rev = draft.rev + 1;
   insertVersion(db, {
@@ -371,6 +460,7 @@ export function restoreVersion(
 
     return replaceDraft(db, templateId, version.doc, {
       source: 'restore',
+      beforeSource: 'before-restore',
       before: `Before restoring "${version.summary}"`,
       after: `Restored "${version.summary}"`,
       parentId: version.id,
@@ -396,6 +486,7 @@ export function importIntoDraft(
     if (!isRecorded) return writeNextDraft(db, templateId, doc);
     return replaceDraft(db, templateId, doc, {
       source: 'import',
+      beforeSource: 'before-import',
       before: `Before importing ${from}`,
       after: `Imported from ${from}`,
       shouldKeepDraft: true,

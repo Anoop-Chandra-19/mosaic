@@ -25,20 +25,34 @@ export type VersionSource =
   | 'create' // a new template's first version
   | 'duplicate' // copied from another template
   | 'name' // the user named the draft
-  | 'import' // a resume import (pasted text, later PDF/DOCX), or the draft it replaced
-  | 'restore' // taken before, or produced by, restoring an older version
+  | 'import' // a resume import (pasted text, later PDF/DOCX)
+  | 'before-import' // the draft an import replaced
+  | 'restore' // produced by restoring an older version
+  | 'before-restore' // the draft a restore replaced
   | 'edit' // editing alone, kept for the user as they go
   | 'switched' // where the draft stood when another template took the editor
   | 'closed' // where the draft stood when the window closed
-  | 'assistant'; // the draft right after accepted suggestions were applied
+  | 'assistant' // the draft right after accepted suggestions were applied
+  | 'before-apply'; // the draft just before accepted suggestions were applied
 
-export type SnapshotOccasion = Extract<VersionSource, 'edit' | 'switched' | 'closed'>;
+export type SnapshotOccasion = Extract<
+  VersionSource,
+  'edit' | 'switched' | 'closed' | 'before-apply'
+>;
+
+/** Naming the draft as a version of its own, or as a revision of the newest version. */
+export type NamingMode = 'new' | 'add';
+
+/** How applied suggestions go into history: their own version, added to the newest, or named. */
+export type AppliedHistory = { mode: 'new' } | { mode: 'add' } | { mode: 'named'; name: string };
 
 export interface VersionMeta {
   id: string;
   templateId: string;
   /** Its place in the template's history when it was taken: "v7". Deleting others never changes it. */
   number: number;
+  /** Additions to that number while it was the newest: 0 is v7 itself, 1 is v7.1. */
+  revision: number;
   parentId: string | null;
   kind: VersionKind;
   source: VersionSource;
@@ -85,9 +99,10 @@ export interface BootState {
   draft: Draft | null;
 }
 
+/** The draft kept just before something replaces it. */
 export interface AutoSnapshot {
   templateId: string;
-  source: VersionSource;
+  source: Extract<VersionSource, 'before-restore' | 'before-import'>;
   summary: string;
 }
 
@@ -129,12 +144,27 @@ export interface MosaicDb {
     /** Newest first, without documents. */
     list(templateId: string): Promise<VersionMeta[]>;
     get(versionId: string): Promise<Version>;
-    /** Renames the newest version if the draft matches it, otherwise adds a named one. */
-    name(templateId: string, name: string): Promise<VersionMeta>;
-    /** Keeps the draft as an auto version, unless the newest version already holds it. */
+    /**
+     * Renames the newest version if the draft matches it, otherwise adds a named one: a new
+     * number, or with `add` a revision of the newest. `add` is refused with `stale-rev` when
+     * the newest version isn't the user's own (`canAddToVersion`).
+     */
+    name(templateId: string, name: string, mode: NamingMode): Promise<VersionMeta>;
+    /**
+     * Keeps the draft as an auto version, unless the newest version already holds it. An
+     * open editing session gets a revision instead of a new number.
+     */
     snapshot(templateId: string, occasion: SnapshotOccasion): Promise<VersionMeta>;
-    /** Keeps the draft as it stands after applying `applied` of `proposed` suggestions. */
-    snapshotApplied(templateId: string, applied: number, proposed: number): Promise<VersionMeta>;
+    /**
+     * Keeps the draft as it stands after applying `applied` of `proposed` suggestions. `add`
+     * is refused with `stale-rev` unless the newest version is the assistant's.
+     */
+    snapshotApplied(
+      templateId: string,
+      applied: number,
+      proposed: number,
+      history: AppliedHistory
+    ): Promise<VersionMeta>;
     /**
      * Puts a version back as its template's draft. Template-scoped: the version must be
      * one of that template's own, so each template's history stays self-contained.

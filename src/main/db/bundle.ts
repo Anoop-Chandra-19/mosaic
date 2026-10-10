@@ -33,9 +33,21 @@ function exportTemplate(db: Database, id: string, docs: Map<string, ResumeData>)
     versions: listVersions(db, id)
       .reverse()
       .map(
-        ({ id: versionId, number, parentId, kind, source, summary, section, rev, createdAt }) => ({
+        ({
           id: versionId,
           number,
+          revision,
+          parentId,
+          kind,
+          source,
+          summary,
+          section,
+          rev,
+          createdAt,
+        }) => ({
+          id: versionId,
+          number,
+          revision,
           parentId,
           kind,
           source,
@@ -97,6 +109,7 @@ function importTemplate(
     insertVersion(db, {
       id: versionId,
       number: version.number,
+      revision: version.revision,
       templateId: id,
       parentId: version.parentId === null ? null : (versionIds.get(version.parentId) ?? null),
       kind: version.kind,

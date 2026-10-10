@@ -16,7 +16,10 @@ async function setName(page: Page, current: string, next: string) {
 async function nameVersion(page: Page, name: string) {
   await page.keyboard.press('Control+s');
   await page.getByLabel('Version name').fill(name);
-  await page.getByRole('dialog').getByRole('button', { name: 'Name version' }).click();
+  await page
+    .getByRole('dialog')
+    .getByRole('button', { name: /^(Save|Name) v\d/ })
+    .click();
   await expect(page.getByText(`Named “${name}”`)).toBeVisible();
 }
 
@@ -181,4 +184,26 @@ test('old automatic snapshots fold by month between named versions', async () =>
   await page.keyboard.press('Escape');
   await expect(page.getByRole('button', { name: /automatic snapshots$/ })).toHaveCount(0);
   await expect(row(page, 'v3')).toContainText('49 days ago');
+});
+
+test('naming can add to your own newest version as a revision, which keeps it as it was', async () => {
+  const { page, errors } = mosaic();
+  await startWithThree(page);
+  await setName(page, 'Grace Hopper', 'Grace B. Hopper');
+
+  await page.keyboard.press('Control+s');
+  const dialog = page.getByRole('dialog');
+  await dialog.getByRole('radio', { name: /Add to v3/ }).click();
+  // Adding to a named version starts from its name.
+  await expect(dialog.getByLabel('Version name')).toHaveValue('Second');
+  await dialog.getByRole('button', { name: 'Save v3.1' }).click();
+  await expect(page.getByText('Named “Second” as v3.1')).toBeVisible();
+
+  await page.getByRole('tab', { name: 'Templates' }).click();
+  await expect(row(page, 'v3')).toHaveCount(0);
+  await row(page, 'v3.1')
+    .getByRole('button', { name: /1 earlier/ })
+    .click();
+  await expect(row(page, 'v3')).toContainText('Second');
+  expect(errors).toEqual([]);
 });

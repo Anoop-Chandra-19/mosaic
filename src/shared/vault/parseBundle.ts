@@ -27,11 +27,14 @@ const VERSION_SOURCES: ReadonlySet<string> = new Set<VersionSource>([
   'duplicate',
   'name',
   'import',
+  'before-import',
   'restore',
+  'before-restore',
   'edit',
   'switched',
   'closed',
   'assistant',
+  'before-apply',
 ]);
 
 class BundleError extends Error {
@@ -105,6 +108,31 @@ function createDocReader(docs: Record<string, unknown>) {
 
 type DocReader = ReturnType<typeof createDocReader>;
 
+interface VersionLabel {
+  number: number;
+  revision: number;
+}
+
+/** "v7.1" as its two numbers. Files from before revisions have none: the version itself. */
+function requireLabel(raw: Record<string, unknown>, what: string): VersionLabel {
+  const revision = raw.revision ?? 0;
+  if (!Number.isSafeInteger(raw.number) || (raw.number as number) < 1) {
+    throw new BundleError('invalid-templates', `${what} has no version number`);
+  }
+  if (!Number.isSafeInteger(revision) || (revision as number) < 0) {
+    throw new BundleError('invalid-templates', `${what} has no revision number`);
+  }
+  return { number: raw.number as number, revision: revision as number };
+}
+
+/** Oldest first: a higher number, or a later revision of the same one. */
+function isLabelAfter(label: VersionLabel, previous: VersionLabel): boolean {
+  return (
+    label.number > previous.number ||
+    (label.number === previous.number && label.revision > previous.revision)
+  );
+}
+
 function parseVersions(
   value: unknown,
   templateName: string,
@@ -116,7 +144,7 @@ function parseVersions(
   }
 
   const earlier = new Set<string>();
-  let previousNumber = 0;
+  let previous = { number: 0, revision: 0 };
   return value.map((raw: unknown, index) => {
     const what = `version ${index + 1} of "${templateName}"`;
     if (!isRecord(raw)) throw new BundleError('invalid-templates', `${what} is malformed`);
@@ -132,14 +160,15 @@ function parseVersions(
       throw new BundleError('invalid-templates', `${what} has an unknown source`);
     }
 
-    if (!Number.isSafeInteger(raw.number) || (raw.number as number) <= previousNumber) {
+    const label = requireLabel(raw, what);
+    if (!isLabelAfter(label, previous)) {
       throw new BundleError('invalid-templates', `${what}'s number doesn't follow the one before`);
     }
-    previousNumber = raw.number as number;
+    previous = label;
 
     const version: BundleVersion = {
       id,
-      number: previousNumber,
+      ...label,
       // A parent outside this template, or not yet seen, cannot be linked on import.
       parentId: typeof raw.parentId === 'string' && earlier.has(raw.parentId) ? raw.parentId : null,
       kind: raw.kind as VersionKind,
