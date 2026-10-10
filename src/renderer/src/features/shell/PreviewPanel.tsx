@@ -19,7 +19,7 @@ import { VersionPreviewBanner } from '@/features/history/VersionPreviewBanner';
 import { useIsPageHandedOff } from '@/features/view-transitions/pageHandoff';
 import { tourTargetProps } from '@/features/onboarding/tourTargets';
 import { transitionClasses } from '@/features/view-transitions/transitionClasses';
-import { useOverlayStore } from '@/stores/overlayStore';
+import { usePreviewStore } from '@/stores/previewStore';
 import { PREVIEW_ZOOM_RANGE, useUiStore } from '@/stores/uiStore';
 
 /** The version's page, with what differs from the draft marked when marks are on. */
@@ -36,9 +36,9 @@ export function PreviewPanel() {
   const paperSize = useUiStore((s) => s.paperSize);
   const setPaperSize = useUiStore((s) => s.setPaperSize);
   const previewZoom = useUiStore((s) => s.previewZoom);
-  const meta = useOverlayStore((s) => s.previewMeta);
-  const setMeta = useOverlayStore((s) => s.setPreviewMeta);
-  const isMarked = useOverlayStore((s) => s.arePreviewMarksShown);
+  const meta = usePreviewStore((s) => s.previewMeta);
+  const setMeta = usePreviewStore((s) => s.setPreviewMeta);
+  const isMarked = usePreviewStore((s) => s.arePreviewMarksShown);
   const comparison = useVersionPreviewComparison();
   const preview = comparison?.preview;
   const scrollRef = useRef<HTMLDivElement | null>(null);

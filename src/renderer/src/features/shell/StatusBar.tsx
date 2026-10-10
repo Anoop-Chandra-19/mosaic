@@ -10,7 +10,7 @@ import { useShortcutLabel } from '@/features/shortcuts/shortcutBindings';
 import type { ShortcutId } from '@/lib/shortcutCatalog';
 import { cn } from '@/lib/utils';
 import { useAiStore } from '@/stores/aiStore';
-import { useOverlayStore } from '@/stores/overlayStore';
+import { usePreviewStore } from '@/stores/previewStore';
 import { useResumeStore } from '@/stores/resumeStore';
 import { useUiStore } from '@/stores/uiStore';
 import { countWords } from './wordCount';
@@ -99,7 +99,7 @@ export function StatusBar() {
   const distance = useVersionDistance();
   const savedAt = useResumeStore((s) => s.savedAt);
   const saveFailed = useResumeStore((s) => s.saveFailed);
-  const meta = useOverlayStore((s) => s.previewMeta);
+  const meta = usePreviewStore((s) => s.previewMeta);
   const paperSize = useUiStore((s) => s.paperSize);
   const sidebarCollapsed = useUiStore((s) => s.sidebarCollapsed);
   const shouldShowPreview = useUiStore((s) => s.shouldShowPreview);

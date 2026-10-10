@@ -32,6 +32,7 @@ import { isRedoKey, isTypingField, isUndoKey } from '@/lib/keyboardShortcuts';
 import { SHORTCUT_PLACES, type ShortcutId, type ShortcutPlace } from '@/lib/shortcutCatalog';
 import { useAiStore } from '@/stores/aiStore';
 import { useOverlayStore } from '@/stores/overlayStore';
+import { usePreviewStore } from '@/stores/previewStore';
 import { showToast } from '@/stores/toastStore';
 import { useResumeStore } from '@/stores/resumeStore';
 import { useTemplateStore } from '@/stores/templateStore';
@@ -214,7 +215,7 @@ const GLOBAL_SHORTCUTS: { id: ShortcutId; run: () => void; worksOverSurface?: tr
     id: 'newSection',
     run: () => {
       if (useResumeStore.getState().templateId === null) return showToast(NOTHING_OPEN);
-      if (useOverlayStore.getState().preview) return showToast(READING_A_VERSION);
+      if (usePreviewStore.getState().preview) return showToast(READING_A_VERSION);
       showSidebarTab('content');
       // An empty resume suggests its sections in place of the menu, so those are shown.
       const isEmpty = useResumeStore
@@ -247,7 +248,7 @@ function useShortcuts() {
         if (isTypingField(event.target) || isSurfaceUp) return;
         event.preventDefault();
         // Reading an older version changes nothing, least of all out of sight.
-        if (useOverlayStore.getState().preview) {
+        if (usePreviewStore.getState().preview) {
           showToast(READING_A_VERSION);
           return;
         }

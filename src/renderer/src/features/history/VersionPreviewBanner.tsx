@@ -5,6 +5,7 @@ import { Text } from '@/components/Text';
 import { revealChangeMark } from '@/features/document-diff/revealChangeMark';
 import { cn } from '@/lib/utils';
 import { useOverlayStore } from '@/stores/overlayStore';
+import { usePreviewStore } from '@/stores/previewStore';
 import { attempt, showToast } from '@/stores/toastStore';
 import { useTemplateStore } from '@/stores/templateStore';
 import {
@@ -85,8 +86,8 @@ interface PlaceStepperProps {
 
 /** Steps through the places the version differs, on the page. */
 function PlaceStepper({ comparison, pageRef }: PlaceStepperProps) {
-  const isMarked = useOverlayStore((s) => s.arePreviewMarksShown);
-  const toggleMarks = useOverlayStore((s) => s.togglePreviewMarks);
+  const isMarked = usePreviewStore((s) => s.arePreviewMarksShown);
+  const toggleMarks = usePreviewStore((s) => s.togglePreviewMarks);
   /** -1 until the first step. */
   const [stepped, setStepped] = useState(-1);
   const { changes } = comparison.diff;
@@ -161,7 +162,7 @@ interface VersionPreviewBannerProps {
  * where, and the ways out. Restoring is a decision made after reading, never before.
  */
 export function VersionPreviewBanner({ comparison, pageRef }: VersionPreviewBannerProps) {
-  const setPreview = useOverlayStore((s) => s.setPreview);
+  const setPreview = usePreviewStore((s) => s.setPreview);
   const openSurface = useOverlayStore((s) => s.openSurface);
   const restoreVersion = useTemplateStore((s) => s.restoreVersion);
   const { version, label } = comparison.preview;

@@ -28,6 +28,7 @@ import { Text } from '@/components/Text';
 import { getDb } from '@/lib/storage/mosaicDb';
 import { cn } from '@/lib/utils';
 import { useOverlayStore } from '@/stores/overlayStore';
+import { usePreviewStore } from '@/stores/previewStore';
 import { attempt, showToast } from '@/stores/toastStore';
 import { useResumeStore } from '@/stores/resumeStore';
 import { useTemplateStore } from '@/stores/templateStore';
@@ -57,8 +58,8 @@ export function TemplateCard({ template, active, expanded, onToggle }: TemplateC
   const restoreVersion = useTemplateStore((s) => s.restoreVersion);
   const setNameVersionOpen = useOverlayStore((s) => s.setNameVersionOpen);
   const openExport = useOverlayStore((s) => s.openExport);
-  const preview = useOverlayStore((s) => s.preview);
-  const setPreview = useOverlayStore((s) => s.setPreview);
+  const preview = usePreviewStore((s) => s.preview);
+  const setPreview = usePreviewStore((s) => s.setPreview);
   const openSurface = useOverlayStore((s) => s.openSurface);
   // The draft has moved on from the newest version.
   const dirty = useResumeStore((s) => active && s.rev !== template.head.rev);

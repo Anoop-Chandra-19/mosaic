@@ -1,19 +1,14 @@
 import { create } from 'zustand';
 import type { ShortcutPlace } from '@/lib/shortcutCatalog';
 import type { HistoryComparison, HistoryFilter } from '@/types/history';
-import type { ResumePreviewMeta } from '@/types/preview';
 import type { SettingsSectionId } from '@/types/settings';
 import type { OpenedBackup } from '@shared/types/bundle';
-import type { Version } from '@shared/types/db';
+import type { VersionPreview } from './previewStore';
 
-/** What is showing over the app right now. Never persisted. Toasts are `toastStore`'s. */
-
-/** A version being read in the sheet instead of the draft. */
-export interface VersionPreview {
-  version: Version;
-  /** "v3" — its place in the template's history. */
-  label: string;
-}
+/**
+ * What is showing over the app right now. Never persisted. Toasts are `toastStore`'s, and
+ * the version being read in the sheet is `previewStore`'s.
+ */
 
 /** A version to export instead of the open draft. */
 export interface ExportVersion extends VersionPreview {
@@ -63,15 +58,6 @@ interface OverlayState {
   /** A backup file chosen for restoring, waiting for the user to confirm. */
   pendingRestore: OpenedBackup | null;
   /**
-   * Reading a version before deciding to restore it. The draft is never touched; the
-   * preview ends on Back to draft, a restore, or when a different draft is loaded.
-   */
-  preview: VersionPreview | null;
-  /** Whether the version being read has its differences from the draft marked. */
-  arePreviewMarksShown: boolean;
-  /** How the sheet paginated, as the preview measured it; the status bar repeats it. */
-  previewMeta: ResumePreviewMeta;
-  /**
    * The first-run tour's step while it runs, else null. A dialog or surface over the app
    * hides the tour without ending it; it comes back on this step.
    */
@@ -97,9 +83,6 @@ interface OverlayState {
   openExport: (version?: ExportVersion) => void;
   closeExport: () => void;
   setPendingRestore: (backup: OpenedBackup | null) => void;
-  setPreview: (preview: VersionPreview | null) => void;
-  togglePreviewMarks: () => void;
-  setPreviewMeta: (meta: ResumePreviewMeta) => void;
   setTourStep: (step: number | null) => void;
   setHistoryTourStep: (step: number | null) => void;
 }
@@ -116,9 +99,6 @@ export const useOverlayStore = create<OverlayState>()((set) => ({
   exportOpen: false,
   exportVersion: null,
   pendingRestore: null,
-  preview: null,
-  arePreviewMarksShown: true,
-  previewMeta: { totalPages: 1, hasMorePages: false },
   tourStep: null,
   historyTourStep: null,
   openSurface: (surface) => set({ surface }),
@@ -141,17 +121,6 @@ export const useOverlayStore = create<OverlayState>()((set) => ({
   // The target stays until the next opening, so the closing dialog does not change.
   closeExport: () => set({ exportOpen: false }),
   setPendingRestore: (pendingRestore) => set({ pendingRestore }),
-  setPreview: (preview) => set({ preview }),
-  togglePreviewMarks: () => set((state) => ({ arePreviewMarksShown: !state.arePreviewMarksShown })),
-  // The preview reports after every render; only a different count is news. Storing an
-  // equal copy would re-render the preview, which reports again — a loop.
-  setPreviewMeta: (meta) =>
-    set((state) =>
-      state.previewMeta.totalPages === meta.totalPages &&
-      state.previewMeta.hasMorePages === meta.hasMorePages
-        ? state
-        : { previewMeta: meta }
-    ),
   setTourStep: (tourStep) => set({ tourStep }),
   setHistoryTourStep: (historyTourStep) => set({ historyTourStep }),
 }));

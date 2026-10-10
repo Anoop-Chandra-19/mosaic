@@ -4,6 +4,7 @@ import { MosaicMark } from '@/components/MosaicMark';
 import { Text } from '@/components/Text';
 import { redoShortcutLabel, shortcutLabel } from '@/lib/keyboardShortcuts';
 import { useOverlayStore } from '@/stores/overlayStore';
+import { usePreviewStore } from '@/stores/previewStore';
 import { showToast } from '@/stores/toastStore';
 import { useResumeStore } from '@/stores/resumeStore';
 import { useIsDarkTheme } from './useAppearance';
@@ -32,7 +33,7 @@ export function TopBar() {
   const redo = useResumeStore((s) => s.redo);
   const nameVersionKeys = useShortcutLabel('nameVersion');
   const settingsKeys = useShortcutLabel('openSettings');
-  const previewing = useOverlayStore((s) => s.preview !== null);
+  const previewing = usePreviewStore((s) => s.preview !== null);
 
   return (
     <header className="flex h-[3.125rem] shrink-0 items-center justify-between gap-3 border-b border-line bg-background pr-2.5 pl-3">
