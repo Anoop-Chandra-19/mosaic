@@ -25,7 +25,10 @@ test('a full backup restores every template with its history', async () => {
   await setName(page, 'Your name', 'Ada Lovelace');
   await page.keyboard.press('Control+s');
   await page.getByLabel('Version name').fill('Sent to Acme');
-  await page.getByRole('dialog').getByRole('button', { name: 'Name version' }).click();
+  await page
+    .getByRole('dialog')
+    .getByRole('button', { name: /^(Save|Name) v\d/ })
+    .click();
 
   await saveInto(app, userDataDir);
   const settings = await openImportExport(page);

@@ -12,6 +12,7 @@ import {
   type DifferencePhrase,
 } from '@shared/resume/changes/describeChanges';
 import type { ChangeTone } from '@shared/resume/changes/resumeChange';
+import { formatTimeOfDay } from './groupVersionHistory';
 import type { VersionPreviewComparison } from './useVersionPreviewComparison';
 
 /** Each swatch is drawn as the mark its phrase stands for on the page. */
@@ -199,6 +200,9 @@ export function VersionPreviewBanner({ comparison, pageRef }: VersionPreviewBann
           <span className="text-ink-soft italic">{version.summary}</span>
         </span>
         <span className="mt-px block text-pretty text-ink-soft">
+          {/* Placed in its number first, so "v11.2" never reads as a version of its own. */}
+          {version.revision > 0 &&
+            `Revision ${version.revision} of v${version.number}, saved at ${formatTimeOfDay(version.createdAt)}. `}
           <DifferenceSentence comparison={comparison} />
         </span>
       </span>

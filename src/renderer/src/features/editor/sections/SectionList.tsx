@@ -76,7 +76,15 @@ export function SectionList({
                 size="xs"
                 className={cn('mt-3 ml-1.5', HIDDEN_WHILE_READING)}
               >
-                <Plus />
+                <span
+                  aria-hidden="true"
+                  className={cn(
+                    'flex size-3 shrink-0 items-center justify-center transition-transform duration-180 ease-settle motion-reduce:transition-none',
+                    isAddSectionMenuOpen && 'rotate-45'
+                  )}
+                >
+                  <Plus className="size-3" />
+                </span>
                 Add section
               </AppButton>
             </AppMenuTrigger>

@@ -105,7 +105,10 @@ test('the status bar says when the draft has been undone past a named version', 
   await setName(page, 'Your name', 'Ada Lovelace');
   await page.keyboard.press('Control+s');
   await page.getByLabel('Version name').fill('Sent to Striped');
-  await page.getByRole('dialog').getByRole('button', { name: 'Name version' }).click();
+  await page
+    .getByRole('dialog')
+    .getByRole('button', { name: /^(Save|Name) v\d/ })
+    .click();
   await expect(bar.getByText('Matches v2')).toBeVisible();
 
   await setName(page, 'Ada Lovelace', 'Grace Hopper');
@@ -177,7 +180,10 @@ test('reading an older version stops the editor and undo until you come back', a
 
   await page.keyboard.press('Control+s');
   await page.getByLabel('Version name').fill('Sent to Striped');
-  await page.getByRole('dialog').getByRole('button', { name: 'Name version' }).click();
+  await page
+    .getByRole('dialog')
+    .getByRole('button', { name: /^(Save|Name) v\d/ })
+    .click();
   await setName(page, 'Ada Lovelace', 'Grace Hopper');
 
   await page.getByRole('tab', { name: 'Templates' }).click();

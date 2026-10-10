@@ -11,6 +11,7 @@ function history(count: number, spacingHours: number): VersionMeta[] {
     id: `v${count - i}`,
     templateId: 't',
     number: count - i,
+    revision: 0,
     parentId: null,
     kind: 'auto',
     source: 'edit',

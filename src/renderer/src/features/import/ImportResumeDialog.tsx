@@ -8,6 +8,7 @@ import { Note } from '@/components/Note';
 import { Text } from '@/components/Text';
 import { fileFailure } from '@/features/backup/backupFiles';
 import { easeHeightChanges } from '@/lib/motion/easeHeightChanges';
+
 import { cn } from '@/lib/utils';
 import { useOverlayStore } from '@/stores/overlayStore';
 import { MAX_FILE_BYTES } from '@shared/types/files';
@@ -164,11 +165,16 @@ function PickStep({
           </AppButton>
         </div>
 
-        {fileError && (
-          <Note icon={AlertTriangle} tone="error" size="sm" role="alert" className="mt-2.5">
-            {fileError}
-          </Note>
-        )}
+        <Note
+          isShown={fileError !== null}
+          icon={AlertTriangle}
+          tone="error"
+          size="sm"
+          role="alert"
+          className="mt-2.5"
+        >
+          {fileError}
+        </Note>
 
         <label
           htmlFor="import-paste"

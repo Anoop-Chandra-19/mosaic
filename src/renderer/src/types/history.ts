@@ -1,7 +1,10 @@
 export type HistoryKindFilter = 'all' | 'named' | 'events';
 
-/** What a version is read against: the version before it, or the draft. */
-export type HistoryComparison = 'parent' | 'draft';
+/**
+ * What a version is read against: the version before it, the version before its number
+ * (everything the number did, for one with revisions), or the draft.
+ */
+export type HistoryComparison = 'parent' | 'number' | 'draft';
 
 /**
  * The moments that get a history row of their own, besides naming one. The draft is saved

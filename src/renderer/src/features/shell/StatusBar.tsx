@@ -5,6 +5,7 @@ import { AppTooltip } from '@/components/AppTooltip';
 import { formatRelativeTime } from '@/features/templates/formatRelativeTime';
 import { useActiveTemplate } from '@/features/templates/useActiveTemplate';
 import { useVersionDistance, type VersionDistance } from '@/features/history/useVersionDistance';
+import { versionLabel } from '@/features/history/useTemplateVersions';
 import { useShortcutLabel } from '@/features/shortcuts/shortcutBindings';
 import type { ShortcutId } from '@/lib/shortcutCatalog';
 import { cn } from '@/lib/utils';
@@ -81,11 +82,11 @@ function Words() {
  * The draft against the newest version: how many steps away it is, and which way. A draft
  * that was opened with edits already in it has nothing to count, so it just says so.
  */
-function describeDistance({ matches, changes, undone, counted }: VersionDistance, version: number) {
-  if (matches) return `Matches v${version}`;
-  if (!counted) return `Edited since v${version}`;
+function describeDistance({ matches, changes, undone, counted }: VersionDistance, label: string) {
+  if (matches) return `Matches ${label}`;
+  if (!counted) return `Edited since ${label}`;
   const steps = `${changes} ${changes === 1 ? 'change' : 'changes'}`;
-  return `${steps} ${undone ? 'undone past' : 'since'} v${version}`;
+  return `${steps} ${undone ? 'undone past' : 'since'} ${label}`;
 }
 
 /**
@@ -151,10 +152,13 @@ export function StatusBar() {
         {template && (
           <>
             <Divider />
-            <AppTooltip side="top" content={`v${template.versionCount}: ${template.head.summary}`}>
+            <AppTooltip
+              side="top"
+              content={`${versionLabel(template.head)}: ${template.head.summary}`}
+            >
               <span className="truncate">
                 {/* Unlike the top bar's badge, this speaks even for a brand-new template's v1. */}
-                {describeDistance(distance, template.versionCount)}
+                {describeDistance(distance, versionLabel(template.head))}
               </span>
             </AppTooltip>
           </>

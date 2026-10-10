@@ -32,6 +32,8 @@ export interface BundleVersion {
   id: string;
   /** "v7", kept so a restored backup labels its versions as they were. Rises through the list. */
   number: number;
+  /** "v7.1": 1. Rises within a number; files from before revisions have none, read as 0. */
+  revision: number;
   /** Always an earlier version of the same template, or null. */
   parentId: string | null;
   kind: VersionKind;

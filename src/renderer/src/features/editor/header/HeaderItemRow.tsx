@@ -103,14 +103,12 @@ export function HeaderItemRow({
     <div
       data-motion-id={item.id}
       className={cn(
-        'flex min-h-[2.125rem] items-center gap-[0.4375rem] py-px',
+        'flex min-h-8.5 items-center gap-1.75 py-px',
         // The text's hover fill bleeds left, so its words line up with the caption above.
         !shouldShowIcon && '-ml-1.5'
       )}
     >
-      {shouldShowIcon && (
-        <Icon className="-mr-1.5 size-[0.8125rem] shrink-0 text-ink-faint" aria-hidden />
-      )}
+      {shouldShowIcon && <Icon className="-mr-1.5 size-3.25 shrink-0 text-ink-faint" aria-hidden />}
       <AppButton
         variant="ghost"
         size="sm"
@@ -138,9 +136,9 @@ export function HeaderItemRow({
           aria-label="Edit link"
           className={cn(
             // In a narrow pane the link shows as its glyph alone, so the text keeps its words.
-            'max-w-[7rem] min-w-[1.375rem] shrink-[8] font-regular text-ink-muted @max-[20rem]/pane:w-[1.375rem] @max-[20rem]/pane:px-0',
+            'max-w-28 min-w-5.5 shrink-8 font-regular text-ink-muted @max-[20rem]/pane:w-5.5 @max-[20rem]/pane:px-0',
             !item.shown && 'border-line text-ink-faint',
-            isLinkSameAsText && 'w-[1.375rem] px-0'
+            isLinkSameAsText && 'w-5.5 px-0'
           )}
         >
           <Link className="size-2.5" />

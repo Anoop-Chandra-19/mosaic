@@ -18,7 +18,8 @@ import { cn } from '@/lib/utils';
 import { useOutlineStore } from '@/stores/outlineStore';
 import { useResumeStore } from '@/stores/resumeStore';
 import type { ResumeSection } from '@shared/types/resume';
-import { HIDDEN_WHILE_READING } from '../editorClasses';
+import { EDITOR_CONTROL_REVEAL_CLASSES, HIDDEN_WHILE_READING } from '../editorClasses';
+import { useEditorMenu } from '../useEditorMenu';
 import { EditorFold, FoldChevron } from '../EditorFold';
 import { InlineEditField } from '../InlineEditField';
 import { swapNeighbours } from '../sort-list/listOrder';
@@ -61,7 +62,7 @@ export function SectionItem({
   const setOpen = useOutlineStore((s) => s.setOpen);
   const [isRenaming, setIsRenaming] = useState(nameAtStart);
   const [confirmOpen, setConfirmOpen] = useState(false);
-  const [actionsOpen, setActionsOpen] = useState(false);
+  const { isMenuOpen, isMenuVisible, setMenuOpen, finishMenuClose } = useEditorMenu();
   // "Rename section" opens the field once the menu has closed, so the field keeps focus.
   const renameAfterMenu = useRef(false);
 
@@ -103,7 +104,7 @@ export function SectionItem({
         <SortGripHandle
           grip={grip}
           label={`Drag ${section.label} to reorder`}
-          className="invisible group-focus-within/section:visible group-hover/section:visible"
+          className={EDITOR_CONTROL_REVEAL_CLASSES.section}
         />
         <AppCollapsibleTrigger asChild>
           <AppButton
@@ -158,9 +159,7 @@ export function SectionItem({
           onClick={(event) => event.stopPropagation()}
           className={cn(
             'ml-auto flex shrink-0 items-center gap-0.5',
-            actionsOpen
-              ? 'visible'
-              : 'invisible group-focus-within/section:visible group-hover/section:visible'
+            isMenuVisible ? 'visible' : EDITOR_CONTROL_REVEAL_CLASSES.section
           )}
         >
           <AppButton
@@ -188,7 +187,7 @@ export function SectionItem({
           >
             <Plus className="size-3" />
           </AppButton>
-          <AppMenu open={actionsOpen} onOpenChange={setActionsOpen}>
+          <AppMenu open={isMenuOpen} onOpenChange={setMenuOpen}>
             <AppMenuTrigger asChild>
               <AppButton
                 variant="ghost"
@@ -203,6 +202,7 @@ export function SectionItem({
             <AppMenuContent
               align="end"
               onCloseAutoFocus={(event) => {
+                finishMenuClose();
                 if (!renameAfterMenu.current) return;
                 renameAfterMenu.current = false;
                 event.preventDefault();

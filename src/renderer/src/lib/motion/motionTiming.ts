@@ -15,11 +15,19 @@ export const MOTION_MS = {
   /** An arrival waits for its space to open: a removal run backwards. */
   appearDelay: 170,
   leave: 140,
+  presenceEnter: 200,
+  presenceExit: 150,
   travel: 260,
   fold: 220,
   carryTint: 900,
   carryTintDelay: 140,
   changeFlash: 1300,
+  staggerEnter: 160,
+  staggerExit: 80,
+  staggerStep: 30,
+  staggerMaxDelay: 90,
+  stretchEnter: 180,
+  stretchExit: 120,
 } as const;
 
 /** With reduced motion nothing moves, so there is nothing to animate or wait for. */

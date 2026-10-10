@@ -32,7 +32,8 @@ import {
   showEarlierInVisibleRange,
   showNewerInVisibleRange,
 } from './moveVisibleRange';
-import { RunRow } from './RunRow';
+import { FoldRow } from './FoldRow';
+import { NumberRow, type NumberRowPlace } from './NumberRow';
 import { VersionRow, type VersionRowActions } from './VersionRow';
 
 /** A request to bring a version into view. A new object asks again, even for the same one. */
@@ -70,16 +71,29 @@ const SHORT_HISTORY = 8;
 /** A list this long has scrolled far enough that its end is worth saying. */
 const END_LINE_ROWS = 60;
 
-/** The run or fold holding a version, by the key it opens under: its oldest version's id. */
-function findHolderKey(groups: HistoryGroup[], versionId: string): string | null {
+/**
+ * What opens under a key: a number's earlier revisions under its first revision's id, which
+ * stays the same as revisions join it; a fold under its oldest number's.
+ */
+const numberKey = (revisions: VersionMeta[]) => revisions.at(-1)!.id;
+const foldKey = (numbers: VersionMeta[][]) => numberKey(numbers.at(-1)!);
+
+/** The keys to open so a version's row shows: its fold, and its number when it is an earlier revision. */
+function findHolderKeys(groups: HistoryGroup[], versionId: string): string[] {
+  const isEarlierIn = (revisions: VersionMeta[]) =>
+    revisions.slice(1).some((version) => version.id === versionId);
   for (const group of groups) {
     for (const item of group.items) {
-      if (item.kind !== 'version' && item.versions.some((version) => version.id === versionId)) {
-        return item.versions.at(-1)!.id;
-      }
+      const numbers = item.kind === 'fold' ? item.numbers : [item.revisions];
+      const holder = numbers.find((revisions) => revisions.some((v) => v.id === versionId));
+      if (!holder) continue;
+      return [
+        ...(item.kind === 'fold' ? [foldKey(item.numbers)] : []),
+        ...(isEarlierIn(holder) ? [numberKey(holder)] : []),
+      ];
     }
   }
-  return null;
+  return [];
 }
 
 /**
@@ -100,8 +114,7 @@ export function VersionList({
 }: VersionListProps) {
   const [filter, setFilterOnly] = useState(initialFilter);
   const [isSearching, setIsSearching] = useState(initialFilter.query !== '');
-  // Keyed by a run's oldest version, which stays the same as newer edits join the run.
-  const [openRuns, setOpenRuns] = useState<ReadonlySet<string>>(new Set());
+  const [openHolders, setOpenHolders] = useState<ReadonlySet<string>>(new Set());
   const [range, setRange] = useState(NEWEST_RANGE);
   const [handledReveal, setHandledReveal] = useState<HistoryReveal | null>(null);
   const [openedForReveal, setOpenedForReveal] = useState<HistoryReveal | null>(null);
@@ -149,15 +162,18 @@ export function VersionList({
     foldBefore: isFiltering ? -Infinity : findFoldCutoff(foldDays),
   });
 
-  // A version asked for that sits in a run or a fold opens it, so the row itself shows.
+  // A version asked for that sits in a fold or among a number's earlier revisions opens
+  // them, so the row itself shows.
   if (reveal !== openedForReveal) {
     setOpenedForReveal(reveal);
-    const holder = reveal && findHolderKey(groups, reveal.versionId);
-    if (holder && !openRuns.has(holder)) setOpenRuns(new Set(openRuns).add(holder));
+    const holders = reveal ? findHolderKeys(groups, reveal.versionId) : [];
+    if (holders.some((key) => !openHolders.has(key))) {
+      setOpenHolders(new Set([...openHolders, ...holders]));
+    }
   }
 
-  // Scroll once the revealed version is really in the tree. One held in a run scrolls to
-  // the run.
+  // Scroll once the revealed version is really in the tree. One held in a fold scrolls to
+  // the fold.
   useLayoutEffect(() => {
     if (!reveal) return;
     const root = rootRef.current;
@@ -179,18 +195,19 @@ export function VersionList({
   const jumpToMonth = (key: number) =>
     rootRef.current?.querySelector(`[data-group="${key}"]`)?.scrollIntoView({ block: 'start' });
 
-  const toggleRun = (key: string) =>
-    setOpenRuns((open) => {
+  const toggleHolder = (key: string) =>
+    setOpenHolders((open) => {
       const next = new Set(open);
       if (!next.delete(key)) next.add(key);
       return next;
     });
-  const renderRow = (version: VersionMeta, isNested = false) => (
+  const renderRow = (version: VersionMeta, isNested: boolean, place?: NumberRowPlace) => (
     <VersionRow
       key={version.id}
       version={version}
       isHead={version.id === versions[0].id}
       isNested={isNested}
+      {...place}
       isWide={isWide}
       label={versionLabel(version)}
       time={formatTimeInDay(version.createdAt)}
@@ -204,6 +221,23 @@ export function VersionList({
       {...rowProps}
     />
   );
+  // A number with one revision is a plain row. One with more opens on its own, as well as
+  // by its toggle, while one of its earlier revisions is being read.
+  const renderNumber = (revisions: VersionMeta[], isNested: boolean) => {
+    if (revisions.length === 1) return renderRow(revisions[0], isNested);
+    const key = numberKey(revisions);
+    const isReadingEarlier = revisions.slice(1).some((v) => v.id === rowProps.previewId);
+    return (
+      <NumberRow
+        key={key}
+        revisions={revisions}
+        isNested={isNested}
+        isOpen={openHolders.has(key) || isReadingEarlier}
+        onToggle={() => toggleHolder(key)}
+        renderRow={(version, place) => renderRow(version, isNested, place)}
+      />
+    );
+  };
   const foldNoteIndex = groups.findIndex((group) => group.isPastFold);
   const jumpToNewest = () => {
     setRange(NEWEST_RANGE);
@@ -243,10 +277,7 @@ export function VersionList({
       )}
       <div className="relative mt-1.5">
         {groups.length > 0 && (
-          <span
-            aria-hidden
-            className="absolute top-2.5 bottom-3 left-[0.3125rem] w-px bg-line-strong"
-          />
+          <span aria-hidden className="absolute top-2.5 bottom-3 left-1.25 w-px bg-line-strong" />
         )}
         {groups.map((group, index) => (
           <section
@@ -280,7 +311,7 @@ export function VersionList({
               variant="eyebrow"
               className={cn(
                 'sticky z-3 flex items-center gap-2 bg-background pt-2.75 pb-1.25 pl-5.5',
-                !hasFilterBar ? 'top-0' : isSearching ? 'top-[5.125rem]' : 'top-10.5',
+                !hasFilterBar ? 'top-0' : isSearching ? 'top-20.5' : 'top-10.5',
                 group.isToday ? 'text-ink-soft' : 'text-ink-muted'
               )}
             >
@@ -292,18 +323,17 @@ export function VersionList({
             </Text>
             <ol>
               {group.items.map((item) => {
-                if (item.kind === 'version') return renderRow(item.version);
-                const key = item.versions.at(-1)!.id;
+                if (item.kind === 'number') return renderNumber(item.revisions, false);
+                const key = foldKey(item.numbers);
                 return (
-                  <RunRow
+                  <FoldRow
                     key={key}
-                    kind={item.kind}
-                    run={item.versions}
-                    isOpen={openRuns.has(key)}
-                    onToggle={() => toggleRun(key)}
+                    numbers={item.numbers.map((revisions) => revisions[0])}
+                    isOpen={openHolders.has(key)}
+                    onToggle={() => toggleHolder(key)}
                   >
-                    {item.versions.map((version) => renderRow(version, true))}
-                  </RunRow>
+                    {item.numbers.map((revisions) => renderNumber(revisions, true))}
+                  </FoldRow>
                 );
               })}
             </ol>

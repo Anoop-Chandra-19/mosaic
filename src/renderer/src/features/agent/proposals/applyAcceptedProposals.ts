@@ -60,7 +60,7 @@ export async function applyAcceptedProposals(): Promise<ApplyOutcome> {
   const shouldKeepVersions = useUiStore.getState().snapshotTriggers.afterAiEdits;
   const db = getDb();
   if (shouldKeepVersions) {
-    await keepVersion(() => db.versions.snapshot(templateId, 'edit'), templateId);
+    await keepVersion(() => db.versions.snapshot(templateId, 'before-apply'), templateId);
   }
 
   const result = applyProposalsToResume(getResumeSnapshot(), ready);
@@ -74,7 +74,10 @@ export async function applyAcceptedProposals(): Promise<ApplyOutcome> {
   if (shouldKeepVersions) {
     const proposed = proposals.filter((p) => p.status !== 'applied').length;
     await keepVersion(
-      () => db.versions.snapshotApplied(templateId, result.appliedIds.length, proposed),
+      () =>
+        db.versions.snapshotApplied(templateId, result.appliedIds.length, proposed, {
+          mode: 'new',
+        }),
       templateId
     );
   }

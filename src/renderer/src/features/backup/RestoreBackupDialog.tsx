@@ -8,6 +8,8 @@ import { DialogFrameBody, DialogFrameFooter, DialogFrameHeader } from '@/compone
 import { Note } from '@/components/Note';
 import { Text } from '@/components/Text';
 import { formatRelativeTime } from '@/features/templates/formatRelativeTime';
+import { easeHeightChanges } from '@/lib/motion/easeHeightChanges';
+
 import { cn } from '@/lib/utils';
 import { attempt, showToast, useOverlayStore } from '@/stores/overlayStore';
 import { useTemplateStore } from '@/stores/templateStore';
@@ -34,7 +36,11 @@ export function RestoreBackupDialog() {
 
   return (
     <AppDialog open={backup !== null} onOpenChange={(open) => !open && close()}>
-      <AppDialogContent showCloseButton={false} className="w-[min(35rem,96vw)] gap-0 p-0">
+      <AppDialogContent
+        ref={easeHeightChanges}
+        showCloseButton={false}
+        className="w-[min(35rem,96vw)] gap-0 p-0"
+      >
         {/* Mounted per file, so the choice starts on the safe option each time. */}
         {backup && <RestoreForm backup={backup} onDone={close} />}
       </AppDialogContent>
@@ -126,11 +132,9 @@ function RestoreForm({ backup, onDone }: { backup: OpenedBackup; onDone: () => v
           </AppRadioGroup>
         )}
 
-        {replacing && (
-          <Note icon={AlertTriangle} tone="warn" size="sm">
-            Replacing can’t be undone. Back up first if you might want what’s here.
-          </Note>
-        )}
+        <Note isShown={replacing} icon={AlertTriangle} tone="warn" size="sm">
+          Replacing can’t be undone. Back up first if you might want what’s here.
+        </Note>
       </DialogFrameBody>
 
       <DialogFrameFooter>

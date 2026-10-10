@@ -58,7 +58,7 @@ export function HeaderLineBlock({ line, lines }: HeaderLineBlockProps) {
       data-motion-id={line.id}
       className="border-t border-line pt-1.5 pb-0.5 first:border-t-0"
     >
-      <div className="flex items-center gap-1 pt-0.5 pb-[0.1875rem]">
+      <div className="flex items-center gap-1 pt-0.5 pb-0.75">
         <Text as="h4" variant="eyebrow" className="flex-1">
           Line {number}
         </Text>
@@ -164,7 +164,7 @@ export function HeaderLineBlock({ line, lines }: HeaderLineBlockProps) {
             variant="quiet"
             size="xs"
             className={cn(
-              'mt-0.5 mb-1.5 justify-start pr-[0.5625rem] pl-[0.4375rem] font-regular',
+              'mt-0.5 mb-1.5 justify-start pr-2.25 pl-1.75 font-regular',
               HIDDEN_WHILE_READING
             )}
           >

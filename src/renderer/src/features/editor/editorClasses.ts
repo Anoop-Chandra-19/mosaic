@@ -7,3 +7,15 @@
  * What only shows the version's state, such as an eye or a line's alignment, stays.
  */
 export const HIDDEN_WHILE_READING = 'in-data-reading:hidden';
+
+// ContentTab tracks keyboard navigation so mouse-restored focus cannot pin controls open.
+// Focused text fields still reveal them; each row also keeps its controls visible while
+// its menu is open. Keep focus-within for reliable Tab handoffs between the controls.
+export const EDITOR_CONTROL_REVEAL_CLASSES = {
+  bullet:
+    'invisible in-data-editor-keyboard:group-focus-within/bullet:visible group-has-[input:focus,textarea:focus]/bullet:visible group-hover/bullet:visible',
+  entry:
+    'invisible in-data-editor-keyboard:group-focus-within/entry:visible group-has-[input:focus,textarea:focus]/entry:visible group-hover/entry:visible',
+  section:
+    'invisible in-data-editor-keyboard:group-focus-within/section:visible group-has-[input:focus,textarea:focus]/section:visible group-hover/section:visible',
+};

@@ -5,8 +5,10 @@ import type { ImportMode, MosaicBundle } from '@shared/types/bundle';
 import {
   isDbText,
   MAX_DB_TEXT_LENGTH,
+  type AppliedHistory,
   type DbResult,
   type MosaicDb,
+  type NamingMode,
   type SnapshotOccasion,
 } from '@shared/types/db';
 import type { ResumeData } from '@shared/types/resume';
@@ -112,11 +114,30 @@ const SNAPSHOT_OCCASIONS: ReadonlySet<unknown> = new Set<SnapshotOccasion>([
   'edit',
   'switched',
   'closed',
+  'before-apply',
 ]);
 
 function snapshotOccasion(value: unknown): SnapshotOccasion {
   if (!SNAPSHOT_OCCASIONS.has(value)) throw new InvalidArgumentError('occasion is not known');
   return value as SnapshotOccasion;
+}
+
+const NAMING_MODES: ReadonlySet<unknown> = new Set<NamingMode>(['new', 'add']);
+
+function namingMode(value: unknown): NamingMode {
+  if (!NAMING_MODES.has(value)) throw new InvalidArgumentError('mode must be "new" or "add"');
+  return value as NamingMode;
+}
+
+/** `{ mode: 'new' }`, `{ mode: 'add' }`, or `{ mode: 'named', name }` with a name main accepts. */
+function appliedHistory(value: unknown): AppliedHistory {
+  if (typeof value !== 'object' || value === null) {
+    throw new InvalidArgumentError('history must say how the version is kept');
+  }
+  const { mode, name } = value as { mode?: unknown; name?: unknown };
+  if (mode === 'new' || mode === 'add') return { mode };
+  if (mode === 'named') return { mode, name: text(name, 'name') };
+  throw new InvalidArgumentError('history must say how the version is kept');
 }
 
 /** At least one suggestion applied, and no more than were proposed. */
@@ -173,16 +194,18 @@ export function createDbHandlers(db: Database): Handlers<MosaicDb> {
     versions: {
       list: (templateId) => listVersions(db, text(templateId, 'templateId')),
       get: (versionId) => getVersion(db, text(versionId, 'versionId')),
-      name: (templateId, name) => nameDraft(db, text(templateId, 'templateId'), text(name, 'name')),
+      name: (templateId, name, mode) =>
+        nameDraft(db, text(templateId, 'templateId'), text(name, 'name'), namingMode(mode)),
       snapshot: (templateId, occasion) =>
         snapshotEditedDraft(db, text(templateId, 'templateId'), snapshotOccasion(occasion)),
-      snapshotApplied: (templateId, applied, proposed) => {
+      snapshotApplied: (templateId, applied, proposed, history) => {
         const counts = suggestionCounts(applied, proposed);
         return snapshotAppliedSuggestions(
           db,
           text(templateId, 'templateId'),
           counts.applied,
-          counts.proposed
+          counts.proposed,
+          appliedHistory(history)
         );
       },
       restore: (templateId, versionId, shouldKeepDraft) =>

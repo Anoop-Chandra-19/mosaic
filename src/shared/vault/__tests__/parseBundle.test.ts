@@ -71,14 +71,26 @@ describe('parseBundle', () => {
         {
           template: TEMPLATE,
           draft: doc,
+          // A file from before revisions reads each version as its number's first.
           versions: [
-            { ...V1, doc },
-            { ...V2, doc },
+            { ...V1, revision: 0, doc },
+            { ...V2, revision: 0, doc },
           ],
         },
       ],
     } as MosaicBundle;
     expect(parse(createFile())).toEqual({ ok: true, bundle: expected });
+  });
+
+  it('reads revisions of a number, oldest first, and refuses them out of order', () => {
+    const file = createFile();
+    const [v1, v2] = templatesOf(file)[0].versions;
+    v2.number = v1.number;
+    v2.revision = 1;
+    expect(parse(file)).toMatchObject({ ok: true });
+
+    v2.revision = 0;
+    expect(parse(file)).toMatchObject({ ok: false, code: 'invalid-templates' });
   });
 
   it('reads a document once, however many versions name it', () => {

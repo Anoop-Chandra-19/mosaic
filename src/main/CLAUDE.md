@@ -38,6 +38,11 @@ Read with the root `CLAUDE.md`. This covers `src/main/` and its contract with pr
   auto version is taken (`useAutoSnapshot`, template switch, window close, each behind the
   user's snapshot settings); main writes it and describes what changed
   (`describeDraftChanges`).
+- A number can be added to while it is the newest: a new row with the next `revision`
+  (v7.1), never a rewrite. Main decides with `@shared/history/canAddToVersion`, by the
+  work writing it: an editing session gets revisions until 45 minutes pass or a stop or
+  "before" row closes it; the user's naming and the assistant's apply add only when asked.
+  A revision's parent is the revision before it.
 - `app.*` settings belong to main (`app.activeTemplateId`, `app.apiKeys`), and
   `db.settings` refuses them from the renderer. Boot sends every setting to the renderer,
   so none may hold a secret.

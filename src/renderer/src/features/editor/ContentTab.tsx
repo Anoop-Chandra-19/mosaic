@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { NoTemplates } from '@/features/templates/NoTemplates';
 import { useResumeStore } from '@/stores/resumeStore';
 import type { ResumeData } from '@shared/types/resume';
@@ -7,6 +7,27 @@ import { cn } from '@/lib/utils';
 import { EmptyContentHint } from './EmptyContentHint';
 import { HIDDEN_WHILE_READING } from './editorClasses';
 import { SectionList } from './sections/SectionList';
+
+// Track navigation before focus moves, including into portalled menus. A CSS-only
+// :has(:focus-visible) reveal can hide its target during Tab's focus handoff in Chromium.
+function useEditorKeyboardControls() {
+  const [hasKeyboardNavigation, setHasKeyboardNavigation] = useState(false);
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Tab' || event.key.startsWith('Arrow')) {
+        setHasKeyboardNavigation(true);
+      }
+    };
+    const handlePointerDown = () => setHasKeyboardNavigation(false);
+    window.addEventListener('keydown', handleKeyDown, true);
+    window.addEventListener('pointerdown', handlePointerDown, true);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown, true);
+      window.removeEventListener('pointerdown', handlePointerDown, true);
+    };
+  }, []);
+  return hasKeyboardNavigation;
+}
 
 /**
  * The draft, laid out to be worked on. `doc` shows another document instead — an older
@@ -17,6 +38,7 @@ export function ContentTab({ doc }: { doc?: ResumeData }) {
   const draftSections = useResumeStore((s) => s.sections);
   // A custom section just added from either menu, so its name opens for editing.
   const [namingId, setNamingId] = useState<string | null>(null);
+  const hasKeyboardNavigation = useEditorKeyboardControls();
 
   // Edits need a template to be saved into; with none open, offer to start one instead.
   if (!open) return <NoTemplates />;
@@ -26,7 +48,7 @@ export function ContentTab({ doc }: { doc?: ResumeData }) {
   const empty = sections.every((section) => section.items.length === 0);
 
   return (
-    <div>
+    <div data-editor-keyboard={hasKeyboardNavigation || undefined}>
       <ResumeHeaderCard contact={doc?.contact} />
       <SectionList
         sections={doc?.sections}

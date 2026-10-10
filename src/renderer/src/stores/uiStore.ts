@@ -25,7 +25,7 @@ const LAUNCH_VIEWS: readonly LaunchView[] = ['last', 'start', 'templates'];
 
 const INTERFACE_DENSITIES: readonly InterfaceDensity[] = ['comfortable', 'compact'];
 
-const HISTORY_COMPARISONS: readonly HistoryComparison[] = ['parent', 'draft'];
+const HISTORY_COMPARISONS: readonly HistoryComparison[] = ['parent', 'number', 'draft'];
 
 export const SNAPSHOT_FOLD_OPTIONS: readonly SnapshotFoldDays[] = [30, 90, null];
 

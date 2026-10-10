@@ -232,7 +232,7 @@ function TourStepView({ stepIndex }: { stepIndex: number }) {
         aria-labelledby={titleId}
         data-tour-card
         className={cn(
-          'pointer-events-auto absolute w-[19.75rem] rounded-[0.8125rem] border border-line-strong bg-pane-raised px-3.5 pt-3.5 pb-3 shadow-overlay',
+          'pointer-events-auto absolute w-79 rounded-[0.8125rem] border border-line-strong bg-pane-raised px-3.5 pt-3.5 pb-3 shadow-overlay',
           !cardPosition && 'top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2',
           isCardWaiting && 'invisible'
         )}

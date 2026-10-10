@@ -28,7 +28,8 @@ import { useResumeStore } from '@/stores/resumeStore';
 import type { Bullet } from '@shared/types/resume';
 import { BulletEditor, type BulletMerge } from './BulletEditor';
 import { EditorCheckbox } from '../EditorCheckbox';
-import { HIDDEN_WHILE_READING } from '../editorClasses';
+import { EDITOR_CONTROL_REVEAL_CLASSES, HIDDEN_WHILE_READING } from '../editorClasses';
+import { useEditorMenu } from '../useEditorMenu';
 import { showBulletText } from '../liveEdits';
 import { SortGripHandle, type SortGrip } from '../sort-list/SortList';
 import { canSplitText } from './splitAndMergeBullets';
@@ -92,7 +93,7 @@ export function BulletItem({
   const [editing, setEditingNow] = useState<EditorOpening | null>(
     opensAfterSplit ? { cursorAt: 'start' } : null
   );
-  const [actionsOpen, setActionsOpen] = useState(false);
+  const { isMenuOpen, isMenuVisible, setMenuOpen, finishMenuClose } = useEditorMenu();
   // Runs once the menu has closed, so the closing menu can't take focus from an editor.
   const afterMenu = useRef<(() => void) | null>(null);
   const motion = useContext(ListMotionContext);
@@ -206,7 +207,7 @@ export function BulletItem({
       <SortGripHandle
         grip={grip}
         label="Drag bullet to reorder"
-        className="invisible mt-px group-focus-within/bullet:visible group-hover/bullet:visible"
+        className={cn('mt-px', EDITOR_CONTROL_REVEAL_CLASSES.bullet)}
       />
       <EditorCheckbox
         small
@@ -230,12 +231,10 @@ export function BulletItem({
             onClick={(event) => event.stopPropagation()}
             className={cn(
               'relative z-10 float-right -mt-0.5 -mr-0.5 ml-2 flex rounded-[0.4375rem] border border-line-strong bg-pane-raised p-0.5 shadow-floating',
-              actionsOpen
-                ? 'visible'
-                : 'invisible group-focus-within/bullet:visible group-hover/bullet:visible'
+              isMenuVisible ? 'visible' : EDITOR_CONTROL_REVEAL_CLASSES.bullet
             )}
           >
-            <AppMenu open={actionsOpen} onOpenChange={setActionsOpen}>
+            <AppMenu open={isMenuOpen} onOpenChange={setMenuOpen}>
               <AppMenuTrigger asChild>
                 <AppButton
                   variant="ghost"
@@ -250,6 +249,7 @@ export function BulletItem({
               <AppMenuContent
                 align="end"
                 onCloseAutoFocus={(event) => {
+                  finishMenuClose();
                   const open = afterMenu.current;
                   if (!open) return;
                   afterMenu.current = null;

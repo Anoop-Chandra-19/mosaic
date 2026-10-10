@@ -60,7 +60,10 @@ async function editAndName(page: Page, person: string, version: string) {
   await page.getByPlaceholder('Your name').press('Enter');
   await page.keyboard.press('Control+s');
   await page.getByLabel('Version name').fill(version);
-  await page.getByRole('dialog').getByRole('button', { name: 'Name version' }).click();
+  await page
+    .getByRole('dialog')
+    .getByRole('button', { name: /^(Save|Name) v\d/ })
+    .click();
   await expect(page.getByText(`Named “${version}”`)).toBeVisible();
 }
 

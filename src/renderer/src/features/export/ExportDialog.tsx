@@ -330,7 +330,7 @@ function Row({
           {label}
         </Text>
         {description && (
-          <Text variant="secondary" className="mt-[0.1875rem] block">
+          <Text variant="secondary" className="mt-0.75 block">
             {description}
           </Text>
         )}

@@ -21,7 +21,9 @@ const VIEWS: { value: ReadPaneView; label: string; description: string }[] = [
 
 interface ReadPaneControlsProps {
   versionLabel: string;
-  isAgainstDraft: boolean;
+  /** "v11" for a revision of a number, which can be read as all the number did. */
+  numberLabel: string | null;
+  comparedWith: HistoryComparison;
   canCompareWithParent: boolean;
   onComparisonChange: (comparison: HistoryComparison) => void;
   view: ReadPaneView;
@@ -84,7 +86,8 @@ function ZoomControl({ value, isTextRead, onStep, onReset }: ReadPaneZoom) {
 /** What the version is read against, and how. */
 export function ReadPaneControls({
   versionLabel,
-  isAgainstDraft,
+  numberLabel,
+  comparedWith,
   canCompareWithParent,
   onComparisonChange,
   view,
@@ -100,7 +103,7 @@ export function ReadPaneControls({
       <AppToggleGroup
         type="single"
         size="sm"
-        value={isAgainstDraft ? 'draft' : 'parent'}
+        value={comparedWith}
         onValueChange={(value) => value && onComparisonChange(value as HistoryComparison)}
         aria-label="Compare with"
         className="p-0.5"
@@ -116,6 +119,11 @@ export function ReadPaneControls({
             Changes in {versionLabel}
           </AppToggleGroupItem>
         </AppTooltip>
+        {numberLabel && (
+          <AppTooltip content={`Everything ${numberLabel} did, over all its revisions`}>
+            <AppToggleGroupItem value="number">All of {numberLabel}</AppToggleGroupItem>
+          </AppTooltip>
+        )}
         <AppTooltip content="What restoring this version would change">
           <AppToggleGroupItem value="draft">Against your draft</AppToggleGroupItem>
         </AppTooltip>
