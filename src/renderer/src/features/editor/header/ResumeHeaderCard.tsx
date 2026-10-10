@@ -138,7 +138,7 @@ export function ResumeHeaderCard({ contact: shown }: { contact?: ContactInfo }) 
         <div
           ref={printedRef}
           className={cn(
-            'relative mt-2.5 rounded-sm border border-line bg-pane-sunken px-[0.6875rem] py-2.5 text-center text-support wrap-break-word text-ink-soft',
+            'relative mt-2.5 rounded-sm border border-line bg-pane-sunken px-2.75 py-2.5 text-center text-support wrap-break-word text-ink-soft',
             header.linkStyle === 'underline' &&
               '[&_a]:underline [&_a]:decoration-line-heavy [&_a]:underline-offset-2',
             header.linkColor === 'blue' && '[&_a]:text-print-link [&_a]:decoration-current'
@@ -186,7 +186,7 @@ export function ResumeHeaderCard({ contact: shown }: { contact?: ContactInfo }) 
               onClick={() => addLine()}
               data-motion-id="new-line"
               className={cn(
-                'mt-2.5 h-[2.125rem] w-full text-support font-strong text-ink-muted',
+                'mt-2.5 h-8.5 w-full text-support font-strong text-ink-muted',
                 HIDDEN_WHILE_READING
               )}
             >

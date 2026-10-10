@@ -65,11 +65,11 @@ export function HeaderItemEditor({
   return (
     // It replaces the row in place, so it says which item it is: the row's own text is in
     // a field by now, and the kind is the only handle left.
-    <div className="-mx-[0.5625rem] mt-1 mb-2 animate-ring-in rounded-sm border border-line-heavy bg-pane-sunken px-2.5 py-2 motion-reduce:animate-none">
+    <div className="-mx-2.25 mt-1 mb-2 animate-ring-in rounded-sm border border-line-heavy bg-pane-sunken px-2.5 py-2 motion-reduce:animate-none">
       <div
         className={cn(
           textVariantClasses('tag'),
-          'mb-[0.4375rem] flex items-center gap-[0.4375rem]',
+          'mb-1.75 flex items-center gap-1.75',
           item.shown ? 'text-ink-faint' : 'text-ink-muted'
         )}
       >
@@ -87,7 +87,7 @@ export function HeaderItemEditor({
         </AppButton>
       </div>
       <div className="mb-1.5 flex items-start gap-2">
-        <label htmlFor={`${fieldId}-text`} className={cn(FIELD_LABEL, 'mt-[0.4375rem]')}>
+        <label htmlFor={`${fieldId}-text`} className={cn(FIELD_LABEL, 'mt-1.75')}>
           Shows as
         </label>
         {/* A header item is often a whole clause, so the field grows instead of scrolling;
@@ -100,7 +100,7 @@ export function HeaderItemEditor({
           placeholder={placeholder}
           onChange={(event) => setText(event.target.value.replace(/\n/g, ' '))}
           onKeyDown={handleKeyDown}
-          className="min-h-7 min-w-0 flex-1 px-[0.4375rem] py-[0.3125rem] wrap-anywhere"
+          className="min-h-7 min-w-0 flex-1 px-1.75 py-1.25 wrap-anywhere"
         />
       </div>
       <div className="mb-1.5 flex items-center gap-2">
@@ -117,7 +117,7 @@ export function HeaderItemEditor({
           className="h-7 flex-1 px-2"
         />
       </div>
-      <div className="mt-0.5 flex items-center gap-[0.3125rem]">
+      <div className="mt-0.5 flex items-center gap-1.25">
         {/* Worth saying only when the file gets something other than what was typed with
             https:// in front: a mail or phone link. */}
         <AppTooltip content="The link as exported files write it. What you typed is unchanged.">
