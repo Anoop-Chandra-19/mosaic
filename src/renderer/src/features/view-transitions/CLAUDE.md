@@ -31,6 +31,8 @@ Use a motion that exists before inventing one:
 | `step` + `step-back`/`step-forward` | Sliding the way a sequence runs, back from the left | The page between versions   |
 | `slide-in`, `slide-away`            | Leaving to the edge, the space reclaimed, and back  | The sidebar, history index  |
 | `reclaim`                           | A box easing into space given up beside it          | The history list            |
+| `crossfade` (a type, on the root)   | A store change's before and after, as one image     | The history tour ending     |
+| `fade`                              | A layer over the app arriving or leaving whole      | The history tour's veil     |
 
 ## Correctness
 
@@ -49,6 +51,11 @@ Use a motion that exists before inventing one:
   allowed after these pseudo-elements, so set the in-place default first and override it.
   For something that mounts and unmounts, React's `<ViewTransition enter exit>` names it
   only when it comes or goes.
+- A layer painted over the app (a tour's veil) is caught in a running transition's images
+  and painted again when it ends, which flashes. One that arrives with a surface shows on
+  `useSettledSurface()`, the surface once its transition has finished, not on the store.
+  A store change that swaps what a layer covers goes through `changeInViewTransition`, so
+  the two cross-fade as one image instead of painting in turn.
 - Reduced motion turns off every animation; the transition still happens.
 
 ## Validation

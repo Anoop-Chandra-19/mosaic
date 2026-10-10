@@ -1,7 +1,11 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type Ref } from 'react';
 import { Sparkles } from 'lucide-react';
 import { Text } from '@/components/Text';
+import { transitionClasses } from '@/features/view-transitions/transitionClasses';
+import { useSettledSurface } from '@/features/view-transitions/useSettledSurface';
 import { isTypingField } from '@/lib/keyboardShortcuts';
+import { fade } from '@/lib/motion/presenceMotions';
+import { usePresenceMotion } from '@/lib/motion/usePresenceMotion';
 import { cn } from '@/lib/utils';
 import { useOverlayStore } from '@/stores/overlayStore';
 import { useUiStore } from '@/stores/uiStore';
@@ -11,7 +15,8 @@ import { tourTargetSelector } from '../tourTargets';
 import { TourVeil } from '../TourVeil';
 import { useIsDialogOpen } from '../useIsAppCovered';
 import { useTargetRect } from '../useTargetRect';
-import { HISTORY_TOUR_EXPLAINS, HISTORY_TOUR_STEPS } from './historyTourSteps';
+import { endHistoryTour } from './endHistoryTour';
+import { HISTORY_TOUR_STEPS } from './historyTourSteps';
 
 /*
  * The history tour, over the full history while it shows the example history. It is
@@ -19,21 +24,33 @@ import { HISTORY_TOUR_EXPLAINS, HISTORY_TOUR_STEPS } from './historyTourSteps';
  * full history shows the example for as long as the step is set.
  */
 
-/** Finishing marks what the tour explained as seen; closing early marks nothing. */
-function finishHistoryTour(isComplete: boolean) {
-  useOverlayStore.getState().setHistoryTourStep(null);
-  if (isComplete) useUiStore.getState().markHistoryTipsSeen(HISTORY_TOUR_EXPLAINS);
-}
-
+/**
+ * A run mounts fresh and is gone at once when it ends: `endHistoryTour` cross-fades it out
+ * with the view under it. Nothing of one run, such as its last card, outlives it.
+ */
 export function HistoryTour() {
   const stepIndex = useOverlayStore((s) => s.historyTourStep);
-  const isOverHistory = useOverlayStore((s) => s.surface?.kind === 'history');
-  const isDialogOpen = useIsDialogOpen();
-  if (stepIndex === null || !isOverHistory || isDialogOpen) return null;
-  return <HistoryTourStepView stepIndex={stepIndex} />;
+  return stepIndex === null ? null : <RunningHistoryTour stepIndex={stepIndex} />;
 }
 
-function HistoryTourStepView({ stepIndex }: { stepIndex: number }) {
+function RunningHistoryTour({ stepIndex }: { stepIndex: number }) {
+  // Only once the full history has arrived: the veil would flash through its transition.
+  const isOverHistory = useSettledSurface()?.kind === 'history';
+  const isDialogOpen = useIsDialogOpen();
+  const isShown = isOverHistory && !isDialogOpen;
+  // One key for the whole run: steps change in place, only arriving and leaving fade.
+  const { shown, isLeaving, ref } = usePresenceMotion(isShown ? stepIndex : null, 'tour', fade);
+  if (shown === null) return null;
+  return <HistoryTourStepView stepIndex={shown} isLeaving={isLeaving} overlayRef={ref} />;
+}
+
+interface HistoryTourStepViewProps {
+  stepIndex: number;
+  isLeaving: boolean;
+  overlayRef: Ref<HTMLDivElement>;
+}
+
+function HistoryTourStepView({ stepIndex, isLeaving, overlayRef }: HistoryTourStepViewProps) {
   const setStep = useOverlayStore((s) => s.setHistoryTourStep);
   const isRestoreKept = useUiStore((s) => s.snapshotTriggers.beforeRestore);
   const step = HISTORY_TOUR_STEPS[stepIndex];
@@ -45,7 +62,7 @@ function HistoryTourStepView({ stepIndex }: { stepIndex: number }) {
   const primaryRef = useRef<HTMLButtonElement>(null);
 
   const goTo = (index: number) => setStep(Math.max(0, index));
-  const goNext = () => (isLast ? finishHistoryTour(true) : goTo(stepIndex + 1));
+  const goNext = () => (isLast ? endHistoryTour(true) : goTo(stepIndex + 1));
 
   useEffect(() => {
     primaryRef.current?.focus({ preventScroll: true });
@@ -54,11 +71,11 @@ function HistoryTourStepView({ stepIndex }: { stepIndex: number }) {
   // Taken before the full history's own keys: Escape ends the tour, not the view.
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
-      if (isTypingField(event.target)) return;
+      if (isLeaving || isTypingField(event.target)) return;
       const isOnControl =
         event.target instanceof Element && event.target.closest('button, a') !== null;
       let handled = true;
-      if (event.key === 'Escape') finishHistoryTour(false);
+      if (event.key === 'Escape') endHistoryTour();
       else if (event.key === 'ArrowRight' || (event.key === 'Enter' && !isOnControl)) goNext();
       else if (event.key === 'ArrowLeft') goTo(stepIndex - 1);
       else handled = false;
@@ -79,7 +96,15 @@ function HistoryTourStepView({ stepIndex }: { stepIndex: number }) {
     });
 
   return (
-    <div className="pointer-events-none fixed inset-0 z-40" data-tour-overlay>
+    <div
+      ref={overlayRef}
+      inert={isLeaving}
+      className={cn(
+        'pointer-events-none fixed inset-0 z-40',
+        transitionClasses({ name: 'tour-overlay', motion: 'fade' })
+      )}
+      data-tour-overlay
+    >
       <TourVeil spot={rect && spotAround(rect)} />
       <TourCard
         stepId={`history-${step.id}`}
@@ -100,7 +125,7 @@ function HistoryTourStepView({ stepIndex }: { stepIndex: number }) {
         primaryRef={primaryRef}
         onGoTo={goTo}
         onPrimary={goNext}
-        onClose={() => finishHistoryTour(false)}
+        onClose={() => endHistoryTour()}
       />
     </div>
   );

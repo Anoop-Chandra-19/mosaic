@@ -6,6 +6,44 @@
   animation: none;
 }
 
+/* ---- crossfade: a store change outside React's transitions, before and after as one ----
+   In lockstep (one duration and curve), so the two images' light always adds to one. */
+:root:active-view-transition-type(crossfade)::view-transition-old(root) {
+  animation: crossfade-out 200ms var(--ease-settle) forwards;
+}
+
+:root:active-view-transition-type(crossfade)::view-transition-new(root) {
+  animation: crossfade-in 200ms var(--ease-settle);
+}
+
+/* ---- fade: a layer over the app arriving or leaving whole ----
+   Named, so it is drawn above every other named element rather than inside the root's
+   image under them: a veil leaving with the root alone would bare them from the start. */
+::view-transition-group(.fade) {
+  /* Over the app, so over every other motion's group too (handoff 1, slides 2). */
+  z-index: 3;
+}
+
+::view-transition-old(.fade):only-child {
+  animation: crossfade-out 200ms var(--ease-settle) forwards;
+}
+
+::view-transition-new(.fade):only-child {
+  animation: crossfade-in 200ms var(--ease-settle);
+}
+
+@keyframes crossfade-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes crossfade-in {
+  from {
+    opacity: 0;
+  }
+}
+
 /* ---- surface-in, surface-out: a view fading in over the workspace, and out ---- */
 
 /* Only arriving and leaving move; paired with itself, the view just changes. */

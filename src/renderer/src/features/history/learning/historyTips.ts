@@ -1,7 +1,6 @@
 import type { HistoryTipId, SnapshotFoldDays } from '@/types/history';
 import type { VersionMeta, VersionSource } from '@shared/types/db';
 import type { HistoryItem } from '../groupVersionHistory';
-import { versionLabel } from '../useTemplateVersions';
 
 /*
  * Learning the history: each kind of row is explained the first time it is on screen, one
@@ -46,39 +45,37 @@ const KEPT_BEFORE: readonly VersionSource[] = [
   'before-apply',
 ];
 
-const labelOf = (item: HistoryItem) => {
-  const newest = newestOf(item);
-  return newest ? versionLabel(newest) : '';
-};
+/*
+ * The words explain the kind of row, never the row: its label is on screen beside the tip,
+ * and an explanation built around one example reads as a rule about that example.
+ */
 
 /** First match wins, so the order is how basic the idea is. */
 export const HISTORY_TIPS: readonly HistoryTip[] = [
   {
     id: 'auto',
-    title: 'An automatic snapshot',
+    title: 'A copy Mosaic kept',
     matches: (item) => isAutomatic(singleVersion(item), ['edit']),
     body: () =>
-      'The tick is a snapshot Mosaic took on its own, at a moment set in History settings. Your draft is saved as you type either way.',
+      'Besides the versions you name, Mosaic keeps copies of your resume on its own, at moments you choose in History settings. You can read or restore one like any version. Your draft is saved as you type either way, so these are extra places to go back to.',
   },
   {
     id: 'named',
     title: 'A version you named',
     matches: (item) => newestOf(item)?.kind === 'named',
-    body: (item) =>
-      `The diamond marks ${labelOf(item)}, a version you named. Named versions are kept for good, and they are what the index lists.`,
+    body: () =>
+      'The diamond marks a version you named. Named versions are kept for good, and they are what the index lists.',
   },
   {
     id: 'rev',
-    title: 'A version with revisions',
+    title: 'One sitting of editing',
     matches: (item) =>
       item.kind === 'number' &&
       item.revisions.length > 1 &&
       item.revisions[0].kind === 'auto' &&
       item.revisions[0].source !== 'assistant',
-    body: (item) => {
-      const label = labelOf(item);
-      return `${label.split('.')[0]} is one editing session. Each pause added a revision, and the row shows the newest, ${label}. “earlier” opens the rest. Labels never change.`;
-    },
+    body: () =>
+      'While you edit, Mosaic keeps a copy two minutes after your last change. All the copies from one sitting share one version number, and each is a revision of it, labelled with a dot after the number. The row shows the newest revision; “earlier” lists the rest. A new number starts when you come back after 45 minutes, switch template, or close the app.',
   },
   {
     id: 'event',

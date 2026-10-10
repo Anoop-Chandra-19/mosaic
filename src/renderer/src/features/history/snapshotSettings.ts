@@ -26,7 +26,7 @@ export const SNAPSHOT_TRIGGER_OPTIONS: TriggerOption[] = [
     trigger: 'whileWorking',
     label: 'While you work',
     description:
-      'One version per editing session, with a revision each time you pause. A new version starts after 45 minutes without edits, or when you switch template or close the app.',
+      'One version per sitting, with a revision two minutes after your last change. A new version starts after 45 minutes without edits, or when you switch template or close the app.',
   },
 ];
 

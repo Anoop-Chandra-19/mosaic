@@ -40,7 +40,7 @@ test('a kind of row is explained once, and Got it sees it for good', async () =>
   await openHistory(page);
 
   const tip = page.getByRole('note', { name: 'A version you named' });
-  await expect(tip).toContainText('The diamond marks v4');
+  await expect(tip).toContainText('The diamond marks a version you named.');
   await tip.getByRole('button', { name: 'Got it' }).click();
   await expect(tip).toHaveCount(0);
 
@@ -73,7 +73,7 @@ test('the history tour runs on the example, and your own history comes back', as
   await card.getByRole('button', { name: 'Show me' }).click();
   for (const title of [
     'What the marks mean',
-    'One number per piece of work',
+    'One number per sitting',
     'Read before you restore',
     'Restoring loses nothing',
     'You decide what gets a row',

@@ -140,11 +140,10 @@ export const useOverlayStore = create<OverlayState>()((set) => ({
   openSurface: (surface) => set({ surface }),
   // The history tour runs on the full history, so closing it ends the tour too.
   closeSurface: (kind) =>
-    set((state) =>
-      state.surface?.kind === kind
-        ? { surface: null, historyTourStep: kind === 'history' ? null : state.historyTourStep }
-        : state
-    ),
+    set((state) => {
+      if (state.surface?.kind !== kind) return state;
+      return kind === 'history' ? { surface: null, historyTourStep: null } : { surface: null };
+    }),
   openSettings: (section = 'general') => set({ settingsSection: section }),
   closeSettings: () => set({ settingsSection: null }),
   openImport: (importAsNewOnly) => set({ importOpen: true, importAsNewOnly }),

@@ -5,6 +5,7 @@ const NAME_CLASS = {
   page: '[view-transition-name:page]',
   workspace: '[view-transition-name:workspace]',
   'history-list': '[view-transition-name:history-list]',
+  'tour-overlay': '[view-transition-name:tour-overlay]',
 } as const;
 
 // An element has one view-transition-class list, so motions that go together are one entry.
@@ -13,6 +14,7 @@ const MOTION_CLASS = {
   handoff: '[view-transition-class:handoff]',
   'handoff step': '[view-transition-class:handoff_step]',
   reclaim: '[view-transition-class:reclaim]',
+  fade: '[view-transition-class:fade]',
 } as const;
 
 // Classes for React's <ViewTransition enter exit>, for things that come and go.
@@ -20,7 +22,12 @@ export const SURFACE_MOTION = { in: 'surface-in', out: 'surface-out' } as const;
 export const SLIDE_AWAY_MOTION = { in: 'slide-in', out: 'slide-away' } as const;
 
 /** Directions for `addTransitionType`. */
-export const TRANSITION_TYPE = { stepBack: 'step-back', stepForward: 'step-forward' } as const;
+export const TRANSITION_TYPE = {
+  stepBack: 'step-back',
+  stepForward: 'step-forward',
+  /** The whole page fades from before to after: `changeInViewTransition`. */
+  crossfade: 'crossfade',
+} as const;
 
 /**
  * Puts an element in a view transition. Of two elements sharing a name, only the active

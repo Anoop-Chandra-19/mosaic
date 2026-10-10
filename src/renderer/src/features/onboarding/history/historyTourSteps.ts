@@ -4,8 +4,9 @@ import type { TourTarget } from '../tourTargets';
 
 /*
  * The history tour: six stops over the full history, always on its example history, so it
- * never depends on what someone's own history holds. The example reads the editing session
- * v11, closed by v11.3 just before an apply, so the stops can name them.
+ * never depends on what someone's own history holds. The words explain how history works,
+ * never the example's rows: their labels are on screen, and an explanation built around one
+ * example reads as a rule about that example.
  */
 
 /** What a stop's words depend on: the user's own settings. */
@@ -41,7 +42,7 @@ export const HISTORY_TOUR_STEPS: readonly HistoryTourStep[] = [
     side: 'right',
     title: fixed('Your draft, and its versions'),
     body: fixed(
-      'Your draft is what you see in the editor. It is saved as you type, always. This list holds versions: points you can read and go back to, newest at the top.'
+      'Your draft is what you see in the editor, saved as you type. This list holds versions: copies you can read and go back to, newest at the top. You make one by naming it. Mosaic keeps others on its own at moments you choose in History settings: before a restore or an import, and while you edit if you turn that on.'
     ),
   },
   {
@@ -56,9 +57,9 @@ export const HISTORY_TOUR_STEPS: readonly HistoryTourStep[] = [
     id: 'revisions',
     target: 'readVersion',
     side: 'right',
-    title: fixed('One number per piece of work'),
+    title: fixed('One number per sitting'),
     body: fixed(
-      'v11 is one editing session. Each pause added a revision, up to v11.3, and the row shows the newest. “earlier” opens the rest. Labels never change, so v11 always means the same page.'
+      'When Mosaic keeps copies while you edit, all the copies from one sitting share a version number, and each is a revision of it. The row shows the newest revision; “earlier” opens the rest. Labels never change, so a label always means the same page.'
     ),
   },
   {
@@ -67,7 +68,7 @@ export const HISTORY_TOUR_STEPS: readonly HistoryTourStep[] = [
     side: 'bottom',
     title: fixed('Read before you restore'),
     body: fixed(
-      'Click any row to read it here. “Changes in v11.3” shows what that one did. On a number with revisions, “All of v11” shows the whole session. “Against your draft” shows what Restore would do. Green is on this page, struck red is on the other side.'
+      'Click any row to read it here. “Changes in” shows what one version did. On a number with revisions, “All of” shows the whole sitting. “Against your draft” shows what Restore would do. Green is on this page, struck red is on the other side.'
     ),
   },
   {
@@ -78,8 +79,8 @@ export const HISTORY_TOUR_STEPS: readonly HistoryTourStep[] = [
       isRestoreKept ? 'Restoring loses nothing' : 'Restoring replaces your draft',
     body: ({ isRestoreKept }) =>
       isRestoreKept
-        ? 'Restore makes v11.3 your draft again. The draft you have now is kept first, as a “Before restoring” row, so you can always come back.'
-        : 'Restore makes v11.3 your draft again. “Before you restore a version” is off in History settings, so the draft you have now gets no row. Name it first if you want to keep it.',
+        ? 'Restore makes the version you are reading your draft again. The draft you have now is kept first, as a “Before restoring” row, so you can always come back.'
+        : 'Restore makes the version you are reading your draft again. “Before you restore a version” is off in History settings, so the draft you have now gets no row. Name it first if you want to keep it.',
   },
   {
     id: 'settings',
@@ -87,7 +88,7 @@ export const HISTORY_TOUR_STEPS: readonly HistoryTourStep[] = [
     side: 'bottom',
     title: fixed('You decide what gets a row'),
     body: fixed(
-      'Simple or All details, which moments take an automatic snapshot, and when old ones fold. This tour lives here too.'
+      'Simple or All details, the moments Mosaic keeps a copy on its own, and when old ones fold. This tour lives here too.'
     ),
   },
 ];

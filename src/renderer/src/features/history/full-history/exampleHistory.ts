@@ -10,7 +10,7 @@ import type { ResumeData } from '@shared/types/resume';
 
 export const EXAMPLE_TEMPLATE_ID = 'example-history';
 export const EXAMPLE_TEMPLATE_NAME = 'Senior SWE, Striped';
-/** The tour reads the editing session that ended before an apply: v11.3. */
+/** The tour opens on a sitting's last revision, the one kept just before an apply. */
 export const EXAMPLE_OPENING_ID = 'example-v11.3';
 
 const MINUTE = 60_000;

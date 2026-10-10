@@ -17,6 +17,7 @@ import {
   TRANSITION_TYPE,
   transitionClasses,
 } from '@/features/view-transitions/transitionClasses';
+import { endHistoryTour } from '@/features/onboarding/history/endHistoryTour';
 import { tourTargetProps } from '@/features/onboarding/tourTargets';
 import { matchesAction } from '@/features/shortcuts/shortcutBindings';
 import { isTypingField } from '@/lib/keyboardShortcuts';
@@ -174,7 +175,6 @@ function FullHistoryFrame({
   const { versions, readVersion } = source;
   const isExample = source.example !== null;
   const closeSurface = useOverlayStore((s) => s.closeSurface);
-  const setHistoryTourStep = useOverlayStore((s) => s.setHistoryTourStep);
   const restoreVersion = useTemplateStore((s) => s.restoreVersion);
   const duplicateVersion = useTemplateStore((s) => s.duplicateVersion);
   const openExport = useOverlayStore((s) => s.openExport);
@@ -417,7 +417,7 @@ function FullHistoryFrame({
             An example history, so every kind of row is there to see. Your own versions are
             untouched.
           </span>
-          <AppButton variant="ghost" size="xs" onClick={() => setHistoryTourStep(null)}>
+          <AppButton variant="ghost" size="xs" onClick={() => endHistoryTour()}>
             Back to your history
           </AppButton>
         </Text>
