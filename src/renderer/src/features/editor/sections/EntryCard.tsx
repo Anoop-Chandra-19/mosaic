@@ -24,7 +24,8 @@ import { BulletEditor } from '../bullets/BulletEditor';
 import { BulletItem } from '../bullets/BulletItem';
 import { useSplitAndMergeBullets } from '../bullets/useSplitAndMergeBullets';
 import { EditorCheckbox } from '../EditorCheckbox';
-import { HIDDEN_WHILE_READING } from '../editorClasses';
+import { EDITOR_CONTROL_REVEAL_CLASSES, HIDDEN_WHILE_READING } from '../editorClasses';
+import { useEditorMenu } from '../useEditorMenu';
 import { EditorFold } from '../EditorFold';
 import { InlineEditField } from '../InlineEditField';
 import { showEntryFields, showNewBullet } from '../liveEdits';
@@ -71,7 +72,7 @@ export function EntryCard({
   const addBullet = useResumeStore((s) => s.addBullet);
   const reorderBullets = useResumeStore((s) => s.reorderBullets);
   const [confirmOpen, setConfirmOpen] = useState(false);
-  const [actionsOpen, setActionsOpen] = useState(false);
+  const { isMenuOpen, isMenuVisible, setMenuOpen, finishMenuClose } = useEditorMenu();
   // Alt+Enter on a bullet: an empty editor under it, which adds a bullet there once saved.
   const [addingAfterId, setAddingAfterIdNow] = useState<string | null>(null);
   const isTextOnly = layout === 'lines';
@@ -121,7 +122,7 @@ export function EntryCard({
         <SortGripHandle
           grip={grip}
           label="Drag entry to reorder"
-          className="invisible mt-1 group-focus-within/entry:visible group-hover/entry:visible"
+          className={cn('mt-1', EDITOR_CONTROL_REVEAL_CLASSES.entry)}
         />
         <EditorCheckbox
           dimmed={isDimmed}
@@ -270,12 +271,10 @@ export function EntryCard({
         <div
           className={cn(
             'absolute top-1.25 right-1.25 z-10 flex rounded-[0.4375rem] border border-line-strong bg-pane-raised p-0.5 shadow-floating',
-            actionsOpen
-              ? 'visible'
-              : 'invisible group-focus-within/entry:visible group-hover/entry:visible'
+            isMenuVisible ? 'visible' : EDITOR_CONTROL_REVEAL_CLASSES.entry
           )}
         >
-          <AppMenu open={actionsOpen} onOpenChange={setActionsOpen}>
+          <AppMenu open={isMenuOpen} onOpenChange={setMenuOpen}>
             <AppMenuTrigger asChild>
               <AppButton
                 variant="ghost"
@@ -287,7 +286,7 @@ export function EntryCard({
                 <Ellipsis />
               </AppButton>
             </AppMenuTrigger>
-            <AppMenuContent align="end">
+            <AppMenuContent align="end" onCloseAutoFocus={finishMenuClose}>
               <AppMenuItem onSelect={() => toggleEntry(sectionId, entry.id)}>
                 {entry.selected ? <EyeOff /> : <Eye />}
                 {entry.selected ? 'Leave off the resume' : 'Put on the resume'}
