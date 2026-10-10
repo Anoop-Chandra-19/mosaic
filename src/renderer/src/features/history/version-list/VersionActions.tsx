@@ -67,7 +67,7 @@ export function VersionActions({
     <span
       className={cn(
         'pointer-events-none absolute right-1 z-2 flex gap-px rounded-[0.4375rem] bg-pane-raised p-0.5 opacity-0 shadow-floating ring-1 ring-line-strong transition-opacity duration-100',
-        'group-focus-within:pointer-events-auto group-focus-within:opacity-100 group-hover:pointer-events-auto group-hover:opacity-100 has-data-[state=open]:pointer-events-auto has-data-[state=open]:opacity-100 motion-reduce:transition-none',
+        'in-data-keyboard:group-focus-within:pointer-events-auto in-data-keyboard:group-focus-within:opacity-100 group-hover:pointer-events-auto group-hover:opacity-100 has-data-[state=open]:pointer-events-auto has-data-[state=open]:opacity-100 motion-reduce:transition-none',
         isNested ? 'top-0' : 'top-0.5',
         isPressed && 'pointer-events-auto opacity-100'
       )}

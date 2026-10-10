@@ -13,6 +13,7 @@ import { SettingsDialog } from '@/features/settings/SettingsDialog';
 import { StartPanel } from '@/features/start/StartPanel';
 import { NameVersionDialog } from '@/features/templates/NameVersionDialog';
 import { useAutoSnapshot } from '@/features/templates/useAutoSnapshot';
+import { useKeyboardNavigationMark } from '@/lib/hooks/useKeyboardNavigationMark';
 import { GettingStartedTour } from '@/features/onboarding/getting-started/GettingStartedTour';
 import { HistoryTour } from '@/features/onboarding/history/HistoryTour';
 import {
@@ -41,6 +42,7 @@ export function AppShell() {
   useApplyDensity();
   useShortcuts();
   useAutoSnapshot();
+  useKeyboardNavigationMark();
   const hasTemplates = useTemplateStore((s) => s.templates.length > 0);
   const surface = useOverlayStore((s) => s.surface);
   const shownSurface = useShownSurface();
