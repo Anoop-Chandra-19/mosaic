@@ -142,3 +142,24 @@ test('hiding and showing the sidebar each run one transition, and history still 
   expect(await transitions.take(1)).toEqual([{ types: [], ran: true }]);
   expect(errors).toEqual([]);
 });
+
+test('ending the history tour cross-fades its veil and the example out as one', async () => {
+  const { page, errors } = mosaic();
+  await startWithVersions(page);
+  await page.keyboard.press('Control+Shift+H');
+  const view = page.getByRole('region', { name: /^History of/ });
+  await expect(view).toBeVisible();
+  await view.getByRole('button', { name: 'History settings' }).click();
+  await page
+    .getByRole('dialog', { name: 'History settings' })
+    .getByRole('button', { name: 'How history works' })
+    .click();
+  await expect(page.locator('[data-tour-card]')).toBeVisible();
+  const transitions = await watchTransitions(page);
+
+  await page.keyboard.press('Escape');
+  expect(await transitions.take(1)).toEqual([{ types: ['crossfade'], ran: true }]);
+  await expect(page.locator('[data-tour-card]')).toHaveCount(0);
+  await expect(view).toContainText('Draft B');
+  expect(errors).toEqual([]);
+});
