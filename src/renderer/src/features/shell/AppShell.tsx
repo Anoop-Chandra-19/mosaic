@@ -5,6 +5,7 @@ import { StatusBar } from './StatusBar';
 import { PreviewPanel } from './PreviewPanel';
 import { Toast } from './Toast';
 import { AgentPane } from '@/features/agent/AgentPane';
+import { SuggestionReview } from '@/features/agent/review/SuggestionReview';
 import { RestoreBackupDialog } from '@/features/backup/RestoreBackupDialog';
 import { ExportDialog } from '@/features/export/ExportDialog';
 import { FullHistory } from '@/features/history/full-history/FullHistory';
@@ -61,48 +62,58 @@ export function AppShell() {
     // Editor and preview side by side, at every window size; the assistant joins them on
     // the right when AI is on.
     <div className="flex h-screen flex-col">
-      <TopBar />
-      <div className="relative flex flex-1 overflow-hidden">
-        {/* Under a surface the workspace stays mounted, as it was, but out of reach. */}
-        <div
-          // Hidden once replaced, or it shows through the view fading in over it.
-          className={cn(
-            'relative flex flex-1 overflow-hidden @container/workspace',
-            isWorkspaceReplaced
-              ? 'invisible'
-              : transitionClasses({ name: 'workspace', motion: 'recede' })
-          )}
-          inert={surface !== null}
-        >
-          {/* Without the preview beside it, the sidebar is the editor and never hides. */}
-          {!(isSidebarCollapsed && shouldShowPreview) && (
-            <ViewTransition enter={SLIDE_AWAY_MOTION.in} exit={SLIDE_AWAY_MOTION.out} update="none">
-              <Sidebar />
-            </ViewTransition>
-          )}
-          {shouldShowPreview && <PreviewPanel />}
-          {showAgentPane && <AgentPane />}
+      {/* The review covers the top bar too: it has its own. The status bar stays. */}
+      <div className="relative flex min-h-0 flex-1 flex-col">
+        <div inert={shownSurface?.kind === 'review'}>
+          <TopBar />
         </div>
-        {surface?.kind === 'start' && <StartPanel closable={hasTemplates} />}
-        {/* Mounted from the start, so a surface still loading keeps the one before on screen. */}
-        <Suspense fallback={null}>
-          {shownSurface?.kind === 'history' && (
-            <ViewTransition
-              enter={SURFACE_MOTION.in}
-              exit={SURFACE_MOTION.out}
-              update={SURFACE_MOTION.in}
-            >
-              <FullHistory
-                opening={shownSurface}
-                templateId={shownSurface.templateId}
-                filter={shownSurface.filter}
-                versionId={shownSurface.versionId}
-                comparison={shownSurface.comparison}
-              />
-            </ViewTransition>
-          )}
-        </Suspense>
-        <Toast />
+        <div className="relative flex flex-1 overflow-hidden">
+          {/* Under a surface the workspace stays mounted, as it was, but out of reach. */}
+          <div
+            // Hidden once replaced, or it shows through the view fading in over it.
+            className={cn(
+              'relative flex flex-1 overflow-hidden @container/workspace',
+              isWorkspaceReplaced
+                ? 'invisible'
+                : transitionClasses({ name: 'workspace', motion: 'recede' })
+            )}
+            inert={surface !== null}
+          >
+            {/* Without the preview beside it, the sidebar is the editor and never hides. */}
+            {!(isSidebarCollapsed && shouldShowPreview) && (
+              <ViewTransition
+                enter={SLIDE_AWAY_MOTION.in}
+                exit={SLIDE_AWAY_MOTION.out}
+                update="none"
+              >
+                <Sidebar />
+              </ViewTransition>
+            )}
+            {shouldShowPreview && <PreviewPanel />}
+            {showAgentPane && <AgentPane />}
+          </div>
+          {surface?.kind === 'start' && <StartPanel closable={hasTemplates} />}
+          {/* Mounted from the start, so a surface still loading keeps the one before on screen. */}
+          <Suspense fallback={null}>
+            {shownSurface?.kind === 'history' && (
+              <ViewTransition
+                enter={SURFACE_MOTION.in}
+                exit={SURFACE_MOTION.out}
+                update={SURFACE_MOTION.in}
+              >
+                <FullHistory
+                  opening={shownSurface}
+                  templateId={shownSurface.templateId}
+                  filter={shownSurface.filter}
+                  versionId={shownSurface.versionId}
+                  comparison={shownSurface.comparison}
+                />
+              </ViewTransition>
+            )}
+          </Suspense>
+          <Toast />
+        </div>
+        {shownSurface?.kind === 'review' && <SuggestionReview openOn={shownSurface.proposalId} />}
       </div>
       <StatusBar />
       <SettingsDialog />
@@ -125,7 +136,8 @@ const NOTHING_OPEN = 'Nothing is open. Start a resume first.';
  * sidebar around it), else the one under the pointer.
  */
 function findShortcutPlace(): ShortcutPlace | null {
-  if (useOverlayStore.getState().surface?.kind === 'history') return 'history';
+  const surface = useOverlayStore.getState().surface?.kind;
+  if (surface === 'history' || surface === 'review') return surface;
   const area =
     document.activeElement?.closest<HTMLElement>('[data-shortcut-place]') ??
     document.querySelector<HTMLElement>('[data-shortcut-place]:hover');

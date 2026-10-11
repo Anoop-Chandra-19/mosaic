@@ -32,6 +32,11 @@ const appButtonVariants = cva(
         // A row's name that opens it: no fill, even on hover.
         plain: 'text-foreground',
         destructive: 'border border-del-line bg-del-soft font-strong text-del hover:bg-del-line',
+        // A choice made and showing, as a suggestion kept or dropped: pressing it again undoes it.
+        kept: 'border border-add-line bg-add-soft text-add hover:bg-add-line',
+        dropped: 'border border-del-line bg-del-soft text-del hover:bg-del-line',
+        // Something waiting on the user, in the status bar: amber words that open it.
+        waiting: 'text-amber underline-offset-3 hover:underline',
         // The last step of asking: the answer that removes.
         danger: 'bg-del font-strong text-del-ink hover:bg-del-hover',
         link: 'text-foreground underline-offset-4 hover:underline',

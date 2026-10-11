@@ -1,14 +1,13 @@
 import { useEffect, useRef } from 'react';
-import { Minus, Plus, TriangleAlert } from 'lucide-react';
-import { AppButton } from '@/components/AppButton';
+import { TriangleAlert } from 'lucide-react';
 import { Text } from '@/components/Text';
 import { AppToggleGroup, AppToggleGroupItem } from '@/components/AppToggleGroup';
+import { PageZoomControl } from '@/features/preview/PageZoomControl';
 import { ResumePreview } from '@/features/preview/ResumePreview';
 import { useFitPreviewForHandoff } from '@/features/preview/useFitPreviewForHandoff';
 import { useStoredPreviewZoom } from '@/features/preview/pageZoom';
 import { usePreviewCanvas } from '@/features/preview/usePreviewCanvas';
 import { cn } from '@/lib/utils';
-import { shortcutLabel } from '@/lib/keyboardShortcuts';
 import type { PaperSize } from '@/types/paper';
 import { collectPageMarks, putGoneBack } from '@/features/document-diff/pageMarks';
 import {
@@ -20,7 +19,7 @@ import { useIsPageHandedOff } from '@/features/view-transitions/pageHandoff';
 import { tourTargetProps } from '@/features/onboarding/tourTargets';
 import { transitionClasses } from '@/features/view-transitions/transitionClasses';
 import { usePreviewStore } from '@/stores/previewStore';
-import { PREVIEW_ZOOM_RANGE, useUiStore } from '@/stores/uiStore';
+import { useUiStore } from '@/stores/uiStore';
 
 /** The version's page, with what differs from the draft marked when marks are on. */
 function readVersionPage({ preview, draft, diff }: VersionPreviewComparison, isMarked: boolean) {
@@ -88,37 +87,13 @@ export function PreviewPanel() {
 
         <div className="flex items-center gap-1.5">
           {/* A narrow window gives the page all the room it has; zooming can wait. */}
-          <div className="inline-flex items-center gap-1 @max-4xl/preview:hidden">
-            <AppButton
-              variant="ghost"
+          <div className="@max-4xl/preview:hidden">
+            <PageZoomControl
+              value={previewZoom}
               size="xs"
-              shape="square"
-              onClick={() => canvas.zoomByStep(-1)}
-              disabled={previewZoom <= PREVIEW_ZOOM_RANGE.min}
-              aria-label="Zoom preview out"
-            >
-              <Minus className="size-3.5" />
-            </AppButton>
-            <AppButton
-              variant="ghost"
-              size="xs"
-              className="min-w-9.5 px-0.5 font-regular text-ink-muted tabular-nums"
-              onClick={canvas.resetZoom}
-              aria-label="Reset zoom"
-              title={`Reset zoom. ${shortcutLabel('scroll')} zooms to the pointer, and Space drags the page.`}
-            >
-              {Math.round(previewZoom * 100)}%
-            </AppButton>
-            <AppButton
-              variant="ghost"
-              size="xs"
-              shape="square"
-              onClick={() => canvas.zoomByStep(1)}
-              disabled={previewZoom >= PREVIEW_ZOOM_RANGE.max}
-              aria-label="Zoom preview in"
-            >
-              <Plus className="size-3.5" />
-            </AppButton>
+              onStep={canvas.zoomByStep}
+              onReset={canvas.resetZoom}
+            />
           </div>
 
           <AppToggleGroup

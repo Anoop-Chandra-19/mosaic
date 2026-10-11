@@ -53,9 +53,13 @@ interface ShownDialog {
  *
  * `history`: one template's full history, opened on `filter` when the sidebar's was
  * carried over, and on `versionId` when one was asked for.
+ *
+ * `review`: the assistant's suggestions for the open template, over the app's top bar
+ * too, opened on `proposalId` when one was asked for.
  */
 export type WorkspaceSurface =
   | { kind: 'start' }
+  | { kind: 'review'; proposalId?: string }
   | {
       kind: 'history';
       templateId: string;

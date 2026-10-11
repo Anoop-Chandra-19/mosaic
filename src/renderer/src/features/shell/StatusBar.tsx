@@ -9,7 +9,10 @@ import { versionLabel } from '@/features/history/versionLabel';
 import { useShortcutLabel } from '@/features/shortcuts/shortcutBindings';
 import type { ShortcutId } from '@/lib/shortcutCatalog';
 import { cn } from '@/lib/utils';
+import { countSuggestions } from '@/features/agent/review/suggestionState';
 import { useAiStore } from '@/stores/aiStore';
+import { useOverlayStore } from '@/stores/overlayStore';
+import { selectTemplateProposals, useProposalStore } from '@/stores/proposalStore';
 import { usePreviewStore } from '@/stores/previewStore';
 import { useResumeStore } from '@/stores/resumeStore';
 import { useUiStore } from '@/stores/uiStore';
@@ -75,6 +78,27 @@ function Words() {
     <span>
       {words} {words === 1 ? 'word' : 'words'}
     </span>
+  );
+}
+
+/** The assistant's suggestions over the draft, apart from it: never in the file until applied. */
+function SuggestionsWaiting({ templateId }: { templateId: string }) {
+  const proposals = useProposalStore((s) => selectTemplateProposals(s, templateId));
+  const openSurface = useOverlayStore((s) => s.openSurface);
+  const { waiting, stale } = countSuggestions(proposals);
+  if (!waiting && !stale) return null;
+  return (
+    <AppButton
+      variant="waiting"
+      size="xs"
+      className="h-5 px-0"
+      title="Waiting over your draft. Nothing is on your page until you apply. Click to review."
+      onClick={() => openSurface({ kind: 'review' })}
+    >
+      <span className="size-1.5 rounded-full bg-amber shadow-[0_0_0_3px_var(--amber-soft)]" />
+      {waiting} {waiting === 1 ? 'suggestion' : 'suggestions'} waiting
+      {stale > 0 && <span className="text-ink-muted">· {stale} out of date</span>}
+    </AppButton>
   );
 }
 
@@ -166,6 +190,7 @@ export function StatusBar() {
       </div>
 
       <div className="flex shrink-0 items-center gap-2 whitespace-nowrap">
+        {template && aiEnabled && <SuggestionsWaiting templateId={template.id} />}
         {template && (
           <>
             <Words />

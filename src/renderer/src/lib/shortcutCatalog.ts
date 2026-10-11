@@ -47,6 +47,10 @@ export const DEFAULT_SHORTCUTS = {
   olderVersion: 'down',
   nextChange: 'N',
   previousChange: 'P',
+  nextSuggestion: 'J',
+  previousSuggestion: 'K',
+  keepSuggestion: 'A',
+  dropSuggestion: 'R',
 } as const;
 
 export type ShortcutId = keyof typeof DEFAULT_SHORTCUTS;
@@ -56,6 +60,8 @@ const SECOND_DEFAULTS: Partial<Record<ShortcutId, string>> = {
   toggleAssistant: 'mod+\\',
   nextChange: ']',
   previousChange: '[',
+  nextSuggestion: 'down',
+  previousSuggestion: 'up',
 };
 
 /**
@@ -73,7 +79,7 @@ const FIXED_SHORTCUTS: ReadonlySet<ShortcutId> = new Set<ShortcutId>([
 ]);
 
 /** Where an action's keys work. Keys that work anywhere must not take over typing. */
-type ShortcutScope = 'window' | 'editor' | 'history';
+type ShortcutScope = 'window' | 'editor' | 'history' | 'review';
 
 const LOCAL_SCOPES: Partial<Record<ShortcutId, ShortcutScope>> = {
   moveBulletUp: 'editor',
@@ -87,19 +93,24 @@ const LOCAL_SCOPES: Partial<Record<ShortcutId, ShortcutScope>> = {
   olderVersion: 'history',
   nextChange: 'history',
   previousChange: 'history',
+  nextSuggestion: 'review',
+  previousSuggestion: 'review',
+  keepSuggestion: 'review',
+  dropSuggestion: 'review',
 };
 
 /** The person's own keys: absent is the default, null is no key at all. */
 export type ShortcutBindings = Partial<Record<ShortcutId, string | null>>;
 
 /** Where the shortcut sheet was opened from, so it can show that place's keys first. */
-export type ShortcutPlace = 'bullet' | 'sidebar' | 'preview' | 'history';
+export type ShortcutPlace = 'bullet' | 'sidebar' | 'preview' | 'history' | 'review';
 
 export const SHORTCUT_PLACES: readonly ShortcutPlace[] = [
   'bullet',
   'sidebar',
   'preview',
   'history',
+  'review',
 ];
 
 export const SHORTCUT_IDS = Object.keys(DEFAULT_SHORTCUTS) as ShortcutId[];
