@@ -33,7 +33,7 @@ function withGaps(text: ReactNode): ReactNode {
     index > 0 && (
       <span
         key={index}
-        className="inline-block min-w-3.25 rounded-[0.125rem] border border-dashed border-paper-flag px-0.5 text-center leading-[0.6875rem] font-bold text-paper-flag"
+        className="inline-block min-w-3.25 rounded-[0.125rem] border border-dashed border-paper-flag px-0.5 text-center leading-2.75 font-bold text-paper-flag"
       >
         ?
       </span>

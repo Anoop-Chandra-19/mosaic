@@ -225,7 +225,7 @@ function SuggestionDetail({
           <ChevronDown />
         </AppButton>
       </div>
-      <Text as="p" variant="meta" className="px-3 pt-2 break-words text-ink-muted">
+      <Text as="p" variant="meta" className="px-3 pt-2 wrap-break-word text-ink-muted">
         {placeSuggestion(draft, proposal.change).join(' › ')}
       </Text>
       <div className="min-h-0 flex-1 overflow-y-auto px-3 pt-2.5 pb-3">
