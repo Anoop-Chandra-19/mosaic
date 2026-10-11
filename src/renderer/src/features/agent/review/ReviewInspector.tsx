@@ -1,25 +1,14 @@
+import { useState } from 'react';
 import {
-  Check,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
   ChevronUp,
-  EyeOff,
   Info,
-  List,
   Lock,
-  Move,
-  Plus,
-  Split,
-  Trash2,
   TriangleAlert,
-  Type,
-  Undo2,
-  X,
-  type LucideIcon,
 } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
-import { Chip } from '@/components/Chip';
 import { Text } from '@/components/Text';
 import { ShortcutKeys } from '@/features/shortcuts/ShortcutKeys';
 import { getShortcutCombos, useShortcutLabel } from '@/features/shortcuts/shortcutBindings';
@@ -27,9 +16,11 @@ import type { ShortcutId } from '@/lib/shortcutCatalog';
 import { cn } from '@/lib/utils';
 import type { Proposal, ProposalChange } from '@shared/types/agentProposal';
 import type { ResumeData } from '@shared/types/resume';
-import { acceptProposals, rejectProposals, returnProposals } from '../proposals/proposalActions';
 import { labelSuggestionKind, placeSuggestion } from '../proposals/describeSuggestion';
-import { findUnconfirmedFacts } from '../proposals/reviewedChange';
+import { DropReasons } from './suggestion/DropReasons';
+import { SuggestionActions } from './suggestion/SuggestionActions';
+import { SuggestionBody } from './suggestion/SuggestionBody';
+import { SuggestionKindChip } from './suggestion/SuggestionKindChip';
 import {
   countSuggestions,
   FLAG_LABELS,
@@ -39,39 +30,41 @@ import {
   STATE_TONES,
 } from './suggestionState';
 
-const KIND_ICONS: Record<ProposalChange['kind'], LucideIcon> = {
-  rewrite: Type,
-  split: Split,
-  merge: List,
-  reorder: Move,
-  select: EyeOff,
-  entry: Plus,
-};
+/** How the left side shows the suggestions, which the list's hint speaks to. */
+export type ReviewMode = 'page' | 'cards';
 
 interface ReviewInspectorProps {
   proposals: Proposal[];
   /** The draft the suggestions were made for, which names their places. */
   draft: ResumeData;
+  mode: ReviewMode;
   selectedId: string | null;
   onSelect: (id: string | null) => void;
+  editingId: string | null;
+  onEditingChange: (id: string | null) => void;
 }
 
 /** The right-hand column: every suggestion as a list, or the one being read. */
-export function ReviewInspector({ proposals, draft, selectedId, onSelect }: ReviewInspectorProps) {
+export function ReviewInspector({ proposals, selectedId, ...props }: ReviewInspectorProps) {
   const index = proposals.findIndex((proposal) => proposal.id === selectedId);
   return index < 0 ? (
-    <SuggestionList proposals={proposals} draft={draft} onSelect={onSelect} />
+    <SuggestionList proposals={proposals} {...props} />
   ) : (
-    <SuggestionDetail
-      proposals={proposals}
-      index={index}
-      place={placeSuggestion(draft, proposals[index].change)}
-      onSelect={onSelect}
-    />
+    <SuggestionDetail proposals={proposals} index={index} {...props} />
   );
 }
 
-function SuggestionList({ proposals, draft, onSelect }: Omit<ReviewInspectorProps, 'selectedId'>) {
+const LIST_HINTS: Record<ReviewMode, string> = {
+  page: 'Click a mark on the page to read it beside your words.',
+  cards: 'Pick one to read it beside your words.',
+};
+
+function SuggestionList({
+  proposals,
+  draft,
+  mode,
+  onSelect,
+}: Pick<ReviewInspectorProps, 'proposals' | 'draft' | 'mode' | 'onSelect'>) {
   const toLook = proposals.filter((p) => !p.isStale && p.status !== 'rejected' && p.flags.length);
   const { stale } = countSuggestions(proposals);
   const notes = [toLook.length && `${toLook.length} to look at`, stale && `${stale} out of date`];
@@ -83,7 +76,8 @@ function SuggestionList({ proposals, draft, onSelect }: Omit<ReviewInspectorProp
           {proposals.length} {proposals.length === 1 ? 'suggestion' : 'suggestions'}
         </Text>
         <Text as="p" variant="secondary" className="text-pretty text-ink-muted">
-          Click a mark on the page to read it beside your words.{note && ` ${note}.`}
+          {LIST_HINTS[mode]}
+          {note && ` ${note}.`}
         </Text>
       </div>
       <div className="min-h-0 flex-1 overflow-y-auto p-1.5">
@@ -103,7 +97,8 @@ function SuggestionList({ proposals, draft, onSelect }: Omit<ReviewInspectorProp
         className="flex shrink-0 flex-wrap items-center gap-1 border-t border-line px-3 py-2 text-ink-muted"
       >
         <KeyHint id="nextSuggestion" />/<KeyHint id="previousSuggestion" /> move ·{' '}
-        <KeyHint id="keepSuggestion" /> keep · <KeyHint id="dropSuggestion" /> drop
+        <KeyHint id="keepSuggestion" /> keep · <KeyHint id="dropSuggestion" /> drop ·{' '}
+        <KeyHint id="editSuggestion" /> edit
       </Text>
     </>
   );
@@ -170,21 +165,22 @@ function SuggestionRow({
 function SuggestionDetail({
   proposals,
   index,
-  place,
+  draft,
   onSelect,
-}: {
-  proposals: Proposal[];
-  index: number;
-  place: string[];
-  onSelect: (id: string | null) => void;
-}) {
+  editingId,
+  onEditingChange,
+}: Omit<ReviewInspectorProps, 'selectedId' | 'mode'> & { index: number }) {
   const proposal = proposals[index];
   const state = readSuggestionState(proposal);
-  const Icon = KIND_ICONS[proposal.change.kind];
   const previous = proposals[index - 1];
   const next = proposals[index + 1];
   const previousKeys = useShortcutLabel('previousSuggestion');
   const nextKeys = useShortcutLabel('nextSuggestion');
+  // The reasons row is offered once per drop; dismissed, it stays away for this suggestion.
+  const [dismissedIds, setDismissedIds] = useState<string[]>([]);
+  const isEditing = editingId === proposal.id;
+  const setEditing = (isOn: boolean) => onEditingChange(isOn ? proposal.id : null);
+  const isOfferingReasons = state === 'dropped' && !dismissedIds.includes(proposal.id);
   return (
     <>
       <div className="flex shrink-0 items-center gap-1.5 border-b border-line px-2.5 py-2.25">
@@ -198,10 +194,7 @@ function SuggestionDetail({
         >
           <ChevronLeft />
         </AppButton>
-        <Chip tone="amber">
-          <Icon />
-          {labelSuggestionKind(proposal.change)}
-        </Chip>
+        <SuggestionKindChip change={proposal.change} />
         <Text variant="secondary" className={cn('whitespace-nowrap', STATE_TONES[state].text)}>
           {labelSuggestionState(proposal)}
         </Text>
@@ -233,11 +226,18 @@ function SuggestionDetail({
         </AppButton>
       </div>
       <Text as="p" variant="meta" className="px-3 pt-2 break-words text-ink-muted">
-        {place.join(' › ')}
+        {placeSuggestion(draft, proposal.change).join(' › ')}
       </Text>
       <div className="min-h-0 flex-1 overflow-y-auto px-3 pt-2.5 pb-3">
+        <SuggestionBody
+          key={proposal.id}
+          proposal={proposal}
+          draft={draft}
+          isEditing={isEditing}
+          onEditingChange={setEditing}
+        />
         {proposal.reason && (
-          <div className="mt-1 flex items-start gap-2 border-t border-line pt-2.5">
+          <div className="mt-3 flex items-start gap-2 border-t border-line pt-2.5">
             <Info className="mt-0.75 size-3 shrink-0 text-ink-faint" />
             <Text variant="secondary" className="flex-1 text-ink-muted">
               {proposal.reason}
@@ -245,8 +245,16 @@ function SuggestionDetail({
           </div>
         )}
       </div>
+      {isOfferingReasons && (
+        <DropReasons
+          key={proposal.id}
+          proposals={[proposal]}
+          look="one"
+          onDismiss={() => setDismissedIds((ids) => [...ids, proposal.id])}
+        />
+      )}
       <div className="flex shrink-0 items-center gap-1.5 border-t border-line px-2.5 py-2.25">
-        <SuggestionActions proposal={proposal} />
+        <SuggestionActions proposal={proposal} isEditing={isEditing} onEditingChange={setEditing} />
         <span className="flex-1" />
         {state !== 'stale' && (
           <AppButton
@@ -254,6 +262,7 @@ function SuggestionDetail({
             size="sm"
             disabled={!next}
             onClick={() => next && onSelect(next.id)}
+            className="px-2"
           >
             Next
             <ChevronRight />
@@ -261,114 +270,5 @@ function SuggestionDetail({
         )}
       </div>
     </>
-  );
-}
-
-/** Keep and drop, each a toggle that names its state and, on hover, what pressing it does. */
-export function SuggestionActions({ proposal }: { proposal: Proposal }) {
-  const keepKeys = useShortcutLabel('keepSuggestion');
-  const dropKeys = useShortcutLabel('dropSuggestion');
-  if (proposal.isStale) {
-    const isDiscarded = proposal.status === 'rejected';
-    return (
-      <>
-        <AppButton
-          variant="outline"
-          size="sm"
-          disabled={isDiscarded}
-          onClick={() => rejectProposals([proposal.id])}
-        >
-          <Trash2 />
-          {isDiscarded ? 'Discarded' : 'Discard'}
-        </AppButton>
-        <Text variant="secondary" className="flex-1 text-ink-faint">
-          Can’t be kept while it’s out of date.
-        </Text>
-      </>
-    );
-  }
-  const factsLeft = findUnconfirmedFacts(proposal).length;
-  return (
-    <>
-      {proposal.status === 'rejected' ? (
-        <DecidedToggle
-          variant="dropped"
-          title={`Dropped. Click to put it back to waiting  ${dropKeys}`.trim()}
-          decided={{ icon: X, label: 'Dropped' }}
-          undo={{ icon: Undo2, label: 'Undo drop' }}
-          onClick={() => returnProposals([proposal.id])}
-        />
-      ) : (
-        <AppButton
-          variant="outline"
-          size="sm"
-          title={`Drop  ${dropKeys}`.trim()}
-          onClick={() => rejectProposals([proposal.id])}
-        >
-          <X />
-          Drop
-        </AppButton>
-      )}
-      {proposal.status === 'accepted' ? (
-        <DecidedToggle
-          variant="kept"
-          title={`Kept. Click to put it back to waiting  ${keepKeys}`.trim()}
-          decided={{ icon: Check, label: 'Kept' }}
-          undo={{ icon: Undo2, label: 'Undo keep' }}
-          onClick={() => returnProposals([proposal.id])}
-        />
-      ) : (
-        <AppButton
-          variant="outline"
-          size="sm"
-          disabled={factsLeft > 0}
-          title={factsLeft ? 'Confirm the facts first' : `Keep  ${keepKeys}`.trim()}
-          onClick={() => acceptProposals([proposal.id])}
-        >
-          <Check />
-          {factsLeft ? `Confirm ${factsLeft} more` : 'Keep'}
-        </AppButton>
-      )}
-    </>
-  );
-}
-
-interface ToggleFace {
-  icon: LucideIcon;
-  label: string;
-}
-
-/** Both faces share one cell, so swapping on hover never changes the button's width. */
-function DecidedToggle({
-  variant,
-  title,
-  decided,
-  undo,
-  onClick,
-}: {
-  variant: 'kept' | 'dropped';
-  title: string;
-  decided: ToggleFace;
-  undo: ToggleFace;
-  onClick: () => void;
-}) {
-  const face = (look: ToggleFace, className: string) => (
-    <span className={cn('col-start-1 row-start-1 inline-flex items-center gap-1.5', className)}>
-      <look.icon />
-      {look.label}
-    </span>
-  );
-  return (
-    <AppButton
-      variant={variant}
-      size="sm"
-      aria-pressed
-      title={title}
-      onClick={onClick}
-      className="group/toggle inline-grid"
-    >
-      {face(decided, 'group-hover/toggle:invisible group-focus-visible/toggle:invisible')}
-      {face(undo, 'invisible group-hover/toggle:visible group-focus-visible/toggle:visible')}
-    </AppButton>
   );
 }

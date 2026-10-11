@@ -45,3 +45,45 @@ test('suggestions are reviewed from the status bar, kept and dropped with the ke
   await expect(page.getByText('Assisted in migrating billing to Postgres').first()).toBeVisible();
   expect(errors).toEqual([]);
 });
+
+test('a number is filled in, a rewrite put in your words, and a new entry confirmed fact by fact', async () => {
+  const { page, errors } = mosaic();
+  await stageExampleSuggestions(page);
+  await page.getByRole('button', { name: '12 suggestions waiting' }).click();
+  const review = page.getByRole('region', { name: 'Suggestion review' });
+  const inspector = review.getByRole('complementary', { name: 'Suggestions' });
+  const status = inspector.getByText(/^(waiting|kept)/).first();
+
+  // The number only you know: typed into the sentence, it keeps the suggestion.
+  await inspector.getByRole('button', { name: 'All suggestions' }).click();
+  await inspector
+    .getByRole('button', { name: /^Rewrite, bullet 3/ })
+    .first()
+    .click();
+  await inspector.getByRole('textbox', { name: /number only you know/ }).fill('40');
+  await page.keyboard.press('Enter');
+  await expect(status).toHaveText('kept');
+
+  // In your words: Enter saves and keeps it, and the assistant's wording is one click back.
+  await page.keyboard.press('k');
+  await page.keyboard.press('k');
+  await page.keyboard.press('e');
+  const editor = inspector.getByRole('textbox', { name: 'The suggestion in your words' });
+  await editor.fill('Led the move of billing to Postgres');
+  await editor.press('Enter');
+  await expect(status).toHaveText('kept · edited');
+  await inspector.getByRole('button', { name: 'Back to the assistant’s wording' }).click();
+  await expect(status).toHaveText('kept');
+
+  // A new entry is kept only once each of its facts is confirmed.
+  await page.keyboard.press('Escape');
+  await inspector.getByRole('button', { name: /^New entry/ }).click();
+  const keep = inspector.getByRole('button', { name: 'Confirm 4 more' });
+  await expect(keep).toBeDisabled();
+  for (const fact of ['title', 'organization', 'place', 'dates']) {
+    await inspector.getByRole('button', { name: `Confirm ${fact}` }).click();
+  }
+  await inspector.getByRole('button', { name: 'Keep' }).click();
+  await expect(inspector.getByRole('button', { name: 'Kept' })).toBeVisible();
+  expect(errors).toEqual([]);
+});

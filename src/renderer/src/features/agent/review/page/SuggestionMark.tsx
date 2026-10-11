@@ -1,10 +1,10 @@
 import { use, type ReactNode } from 'react';
-import { GAP_MARK } from '../proposals/checks/unfilledGap';
-import { labelSuggestionKind } from '../proposals/describeSuggestion';
+import { GAP_MARK } from '../../proposals/checks/unfilledGap';
+import { labelSuggestionKind } from '../../proposals/describeSuggestion';
 import { cn } from '@/lib/utils';
 import type { SuggestionMark as Mark, SuggestionMove } from './suggestionPage';
-import { SuggestionSelection } from './suggestionSelection';
-import { needsNumber, readSuggestionState, type SuggestionState } from './suggestionState';
+import { SuggestionSelection } from '../suggestionSelection';
+import { needsNumber, readSuggestionState, type SuggestionState } from '../suggestionState';
 
 const LOOK_CLASSES: Record<Mark['look'], string> = {
   edit: 'bg-paper-suggested-soft border-paper-suggested hover:bg-paper-suggested-hover',

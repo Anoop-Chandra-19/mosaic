@@ -228,6 +228,16 @@
   }
 }
 
+/* A step moves only what steps: a column handed over stays where it is. */
+:root:active-view-transition-type(step-back, step-forward) {
+  &::view-transition-old(.handover) {
+    display: none;
+  }
+  &::view-transition-new(.handover) {
+    animation: none;
+  }
+}
+
 /* The incoming image is solid and covers the outgoing one, so their content never doubles. */
 @keyframes leave-right {
   to {

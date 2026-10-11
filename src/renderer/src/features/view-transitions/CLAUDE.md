@@ -28,7 +28,7 @@ Use a motion that exists before inventing one:
 | `surface-in`, `surface-out`         | A view fading in over the workspace, and out        | The history view            |
 | `recede`                            | Stepping back behind a view, unchanged, returning   | The workspace               |
 | `handoff`                           | The same thing moving between two boxes showing it  | The page: preview ↔ history |
-| `step` + `step-back`/`step-forward` | Sliding the way a sequence runs, back from the left | The page between versions   |
+| `step` + `step-back`/`step-forward` | Sliding the way a sequence runs, back from the left | Versions; page ↔ cards      |
 | `slide-in`, `slide-away`            | Leaving to the edge, the space reclaimed, and back  | The sidebar, history index  |
 | `reclaim`                           | A box easing into space given up beside it          | The history list            |
 | `crossfade` (a type, on the root)   | A store change's before and after, as one image     | The history tour ending     |
@@ -58,7 +58,10 @@ Use a motion that exists before inventing one:
   and painted again when it ends, which flashes. One that arrives with a surface shows on
   `useSettledSurface()`, the surface once its transition has finished, not on the store.
   A store change that swaps what a layer covers goes through `changeInViewTransition`, so
-  the two cross-fade as one image instead of painting in turn.
+  the two cross-fade as one image instead of painting in turn. It takes another type for a
+  change inside a surface whose own updates don't animate (the review's Compare all steps).
+- A step moves only what steps: a handed-over column (`handover`) in the same transition
+  holds still.
 - A pair's old and new images both carry the arriving element's classes, so a class can't
   say which image moves which way. Say it by which element arrives (`handover-lower`
   arriving is the review opening), or with a type.
