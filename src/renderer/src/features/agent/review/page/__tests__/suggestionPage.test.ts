@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Proposal, ProposalChange, ProposalStatus } from '@shared/types/agentProposal';
-import { makeProposal, makeResume, rewrite } from '../../proposals/__tests__/proposalFixtures';
+import { makeProposal, makeResume, rewrite } from '../../../proposals/__tests__/proposalFixtures';
 import { buildSuggestionPage } from '../suggestionPage';
 
 const B1 = 'Assisted in migrating billing to Postgres';

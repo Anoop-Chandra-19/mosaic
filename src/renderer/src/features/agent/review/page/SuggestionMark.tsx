@@ -1,10 +1,10 @@
 import { use, type ReactNode } from 'react';
-import { GAP_MARK } from '../proposals/checks/unfilledGap';
-import { labelSuggestionKind } from '../proposals/describeSuggestion';
+import { GAP_MARK } from '../../proposals/checks/unfilledGap';
+import { labelSuggestionKind } from '../../proposals/describeSuggestion';
 import { cn } from '@/lib/utils';
 import type { SuggestionMark as Mark, SuggestionMove } from './suggestionPage';
-import { SuggestionSelection } from './suggestionSelection';
-import { needsNumber, readSuggestionState, type SuggestionState } from './suggestionState';
+import { SuggestionSelection } from '../suggestionSelection';
+import { needsNumber, readSuggestionState, type SuggestionState } from '../suggestionState';
 
 const LOOK_CLASSES: Record<Mark['look'], string> = {
   edit: 'bg-paper-suggested-soft border-paper-suggested hover:bg-paper-suggested-hover',
@@ -33,7 +33,7 @@ function withGaps(text: ReactNode): ReactNode {
     index > 0 && (
       <span
         key={index}
-        className="inline-block min-w-3.25 rounded-[0.125rem] border border-dashed border-paper-flag px-0.5 text-center leading-[0.6875rem] font-bold text-paper-flag"
+        className="inline-block min-w-3.25 rounded-[0.125rem] border border-dashed border-paper-flag px-0.5 text-center leading-2.75 font-bold text-paper-flag"
       >
         ?
       </span>

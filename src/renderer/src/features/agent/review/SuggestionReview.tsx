@@ -1,11 +1,12 @@
-import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react';
-import { Check, ChevronLeft } from 'lucide-react';
+import { useEffect, useEffectEvent, useMemo, useRef, useState } from 'react';
+import { Check } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
 import { AppTooltip } from '@/components/AppTooltip';
 import { Text } from '@/components/Text';
 import { formatPaneWidth, startPaneResize } from '@/features/shell/paneResize';
 import { matchesAction } from '@/features/shortcuts/shortcutBindings';
-import { transitionClasses } from '@/features/view-transitions/transitionClasses';
+import { changeInViewTransition } from '@/features/view-transitions/changeInViewTransition';
+import { transitionClasses, TRANSITION_TYPE } from '@/features/view-transitions/transitionClasses';
 import { isTypingField } from '@/lib/keyboardShortcuts';
 import type { ShortcutId } from '@/lib/shortcutCatalog';
 import { cn } from '@/lib/utils';
@@ -16,16 +17,23 @@ import { useResumeStore } from '@/stores/resumeStore';
 import { AGENT_PANE_WIDTH, useUiStore } from '@/stores/uiStore';
 import type { Proposal } from '@shared/types/agentProposal';
 import { acceptProposals, rejectProposals, returnProposals } from '../proposals/proposalActions';
-import { ReviewInspector } from './ReviewInspector';
-import { ReviewPage } from './ReviewPage';
+import { ReviewPage } from './page/ReviewPage';
+import { buildSuggestionPage } from './page/suggestionPage';
+import { ReviewBar } from './ReviewBar';
+import { ReviewInspector, type ReviewMode } from './ReviewInspector';
+import { DropReasons } from './suggestion/DropReasons';
+import { SuggestionCards } from './SuggestionCards';
 import { SuggestionSelection } from './suggestionSelection';
-import { buildSuggestionPage } from './suggestionPage';
+import { canEditSuggestion } from './suggestionState';
 
 /*
  * The review of the assistant's suggestions: a surface over the whole window but the status
- * bar. The page as Apply would leave it on the left (`ReviewPage`, marks from
- * `suggestionPage.ts`), the inspector on the right at the assistant pane's width
- * (`ReviewInspector`), one selection between them. Opened from the status bar's count.
+ * bar. On the left, the page as Apply would leave it (`page/`: `ReviewPage`, its marks from
+ * `suggestionPage.ts`), or every suggestion as a card (`SuggestionCards`, "Compare all").
+ * On the right, the inspector at the assistant pane's width (`ReviewInspector`). One
+ * selection between them. `ReviewBar` sits on top. The inspector and the cards draw one
+ * suggestion from the same parts (`suggestion/`: its body per kind, actions, drop reasons).
+ * Opened from the status bar's count.
  */
 
 /** Long enough for the page to land and its marks to wash in (see `animate-mark-in`). */
@@ -76,10 +84,25 @@ export function SuggestionReview({ openOn }: { openOn?: string }) {
     return () => window.clearTimeout(timer);
   }, []);
 
+  const [mode, setMode] = useState<ReviewMode>('page');
+  const changeMode = (next: ReviewMode) =>
+    changeInViewTransition(
+      () => setMode(next),
+      next === 'cards' ? TRANSITION_TYPE.stepForward : TRANSITION_TYPE.stepBack
+    );
+  const [editingId, setEditingId] = useState<string | null>(null);
+  // Drop all offers one reason for everything it dropped, until dismissed.
+  const [droppedAllIds, setDroppedAllIds] = useState<string[] | null>(null);
+  const droppedAll = proposals.filter((p) => droppedAllIds?.includes(p.id));
+
   const selectedIndex = proposals.findIndex((p) => p.id === selectedId);
+  const select = (id: string | null) => {
+    setSelectedId(id);
+    setEditingId(null);
+  };
   const step = (offset: number) => {
     const next = proposals[Math.max(0, Math.min(proposals.length - 1, selectedIndex + offset))];
-    if (next) setSelectedId(next.id);
+    if (next) select(next.id);
   };
   const selected = proposals[selectedIndex];
   const KEYS: { id: ShortcutId; run: () => void }[] = [
@@ -94,20 +117,35 @@ export function SuggestionReview({ openOn }: { openOn?: string }) {
       },
     },
     { id: 'dropSuggestion', run: () => selected && toggleDecision(selected, 'rejected') },
+    {
+      id: 'editSuggestion',
+      run: () => selected && canEditSuggestion(selected) && setEditingId(selected.id),
+    },
   ];
-  const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+  const handleKey = (event: KeyboardEvent) => {
     if (event.defaultPrevented || isTypingField(event.target)) return;
     if (event.key === 'Escape') {
       event.preventDefault();
-      if (selectedId) setSelectedId(null);
+      if (editingId) setEditingId(null);
+      else if (selectedId) select(null);
       else close();
       return;
     }
-    const key = KEYS.find(({ id }) => matchesAction(event.nativeEvent, id));
+    const key = KEYS.find(({ id }) => matchesAction(event, id));
     if (!key) return;
     event.preventDefault();
     key.run();
   };
+
+  // A button that removes itself when pressed (a list row, "Back to the assistant's
+  // wording") leaves focus on nothing, with no blur to catch: the keys still answer.
+  const handleKeyAfterFocusLost = useEffectEvent((event: KeyboardEvent) => {
+    if (event.target === document.body) handleKey(event);
+  });
+  useEffect(() => {
+    window.addEventListener('keydown', handleKeyAfterFocusLost);
+    return () => window.removeEventListener('keydown', handleKeyAfterFocusLost);
+  }, []);
 
   return (
     <SuggestionSelection value={selection}>
@@ -118,18 +156,46 @@ export function SuggestionReview({ openOn }: { openOn?: string }) {
         aria-label="Suggestion review"
         data-shortcut-place="review"
         data-landing={isLanding || undefined}
-        onKeyDown={onKeyDown}
-        className="group/review absolute inset-0 z-20 flex flex-col bg-pane-sunken outline-none"
+        onKeyDown={(event) => handleKey(event.nativeEvent)}
+        className="group/review @container/review absolute inset-0 z-20 flex flex-col bg-pane-sunken outline-none"
       >
-        <ReviewBar proposals={proposals} onBack={close} />
-        <div className="grid min-h-0 flex-1 grid-cols-[minmax(20rem,1fr)_auto]">
-          <ReviewPage page={page} selectedId={selectedId} onBlank={() => setSelectedId(null)} />
+        <ReviewBar
+          proposals={proposals}
+          mode={mode}
+          onModeChange={changeMode}
+          onBack={close}
+          onDroppedAll={setDroppedAllIds}
+        />
+        {/* Narrow, the inspector docks under the page. */}
+        <div className="grid min-h-0 flex-1 grid-cols-[minmax(20rem,1fr)_auto] @max-[62.5rem]/review:grid-cols-1 @max-[62.5rem]/review:grid-rows-[minmax(10rem,1fr)_minmax(0,46%)]">
+          <div className="relative grid min-h-0 min-w-0">
+            {mode === 'cards' && proposals.length ? (
+              <SuggestionCards
+                proposals={proposals}
+                draft={draft}
+                selectedId={selectedId}
+                onSelect={select}
+                editingId={editingId}
+                onEditingChange={setEditingId}
+              />
+            ) : (
+              <ReviewPage page={page} selectedId={selectedId} onBlank={() => select(null)} />
+            )}
+            {droppedAll.length > 0 && (
+              <DropReasons
+                proposals={droppedAll}
+                look="batch"
+                onDismiss={() => setDroppedAllIds(null)}
+                className="absolute inset-x-0 bottom-0 z-6"
+              />
+            )}
+          </div>
           <aside
             ref={inspectorRef}
             aria-label="Suggestions"
             // Takes the assistant pane's column as it opens, and gives it back.
             className={cn(
-              'relative flex min-h-0 min-w-0 flex-col bg-pane',
+              'relative flex min-h-0 min-w-0 flex-col bg-pane @max-[62.5rem]/review:w-auto! @max-[62.5rem]/review:border-t @max-[62.5rem]/review:border-line-strong',
               transitionClasses({ name: 'assist', motion: 'handover-lower' })
             )}
             style={{ width: formatPaneWidth(widthPx, AGENT_PANE_WIDTH) }}
@@ -150,15 +216,18 @@ export function SuggestionReview({ openOn }: { openOn?: string }) {
                   })
                 }
                 onDoubleClick={() => setWidthPx(AGENT_PANE_WIDTH.defaultPx)}
-                className="absolute top-0 bottom-0 left-0 z-10 w-1 cursor-col-resize transition-colors hover:bg-amber active:bg-amber-hover"
+                className="absolute top-0 bottom-0 left-0 z-10 w-1 cursor-col-resize transition-colors hover:bg-amber active:bg-amber-hover @max-[62.5rem]/review:hidden"
               />
             </AppTooltip>
             {proposals.length ? (
               <ReviewInspector
                 proposals={proposals}
                 draft={draft}
+                mode={mode}
                 selectedId={selectedId}
-                onSelect={setSelectedId}
+                onSelect={select}
+                editingId={editingId}
+                onEditingChange={setEditingId}
               />
             ) : (
               <NothingWaiting onBack={close} />
@@ -167,63 +236,6 @@ export function SuggestionReview({ openOn }: { openOn?: string }) {
         </div>
       </div>
     </SuggestionSelection>
-  );
-}
-
-function ReviewBar({ proposals, onBack }: { proposals: Proposal[]; onBack: () => void }) {
-  const isEmpty = proposals.length === 0;
-  const request = proposals.at(-1)?.requestText.trim();
-  const current = proposals.filter((p) => !p.isStale);
-  return (
-    <header
-      className={cn(
-        'flex shrink-0 items-center justify-between gap-3.5 border-b border-line bg-background px-3 py-2.25',
-        transitionClasses({ name: 'bar', motion: 'lockstep' })
-      )}
-    >
-      <div className="flex min-w-0 items-center gap-2.5">
-        <AppButton
-          variant="ghost"
-          size="sm"
-          shape="square"
-          aria-label="Back to draft"
-          title="Back to draft  Esc"
-          onClick={onBack}
-        >
-          <ChevronLeft />
-        </AppButton>
-        <div className="min-w-0">
-          <Text as="h2" variant="title" className="whitespace-nowrap">
-            {isEmpty
-              ? 'Suggestions'
-              : `Reviewing ${proposals.length} ${proposals.length === 1 ? 'suggestion' : 'suggestions'}`}
-          </Text>
-          <Text as="p" variant="secondary" className="mt-0.5 truncate text-ink-muted">
-            {isEmpty
-              ? 'Nothing waiting for this template'
-              : `${request ? `“${request}” · ` : ''}your draft is unchanged until you apply`}
-          </Text>
-        </div>
-      </div>
-      {!isEmpty && (
-        <div className="flex shrink-0 items-center gap-1.5">
-          <AppButton
-            variant="outline"
-            size="sm"
-            onClick={() => rejectProposals(current.map((p) => p.id))}
-          >
-            Drop all
-          </AppButton>
-          <AppButton
-            variant="outline"
-            size="sm"
-            onClick={() => acceptProposals(current.map((p) => p.id))}
-          >
-            Keep all
-          </AppButton>
-        </div>
-      )}
-    </header>
   );
 }
 

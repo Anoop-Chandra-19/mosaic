@@ -132,6 +132,15 @@ test('the suggestion review opens and closes in one transition each, from the pa
   await page.getByRole('button', { name: /suggestions waiting/ }).click();
   await expect(review).toBeVisible();
   expect(await transitions.take(1)).toEqual([{ types: [], ran: true }]);
+
+  // Compare all steps the way the toggle runs; keeping and moving never start one.
+  await review.getByRole('radio', { name: 'Compare all' }).click();
+  expect(await transitions.take(1)).toEqual([{ types: ['step-forward'], ran: true }]);
+  await page.keyboard.press('a');
+  await page.keyboard.press('j');
+  await review.getByRole('radio', { name: 'On the page' }).click();
+  expect(await transitions.take(1)).toEqual([{ types: ['step-back'], ran: true }]);
+
   await page.keyboard.press('Escape');
   await page.keyboard.press('Escape');
   await expect(review).toBeHidden();

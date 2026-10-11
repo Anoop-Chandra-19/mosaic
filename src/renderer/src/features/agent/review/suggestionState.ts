@@ -24,6 +24,10 @@ export function readSuggestionState(proposal: Proposal): SuggestionState {
   return needsNumber(proposal) ? 'held' : 'kept';
 }
 
+/** Only a rewrite or a merge writes words the user can put in their own. */
+export const canEditSuggestion = (proposal: Proposal) =>
+  !proposal.isStale && (proposal.change.kind === 'rewrite' || proposal.change.kind === 'merge');
+
 /** The words a card or row shows for where it stands. */
 export function labelSuggestionState(proposal: Proposal): string {
   const state = readSuggestionState(proposal);

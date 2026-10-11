@@ -3,6 +3,7 @@ import type {
   EntryFact,
   Proposal,
   ProposalChange,
+  ProposalFlag,
   ProposalReview,
   ProposalSource,
   ProposalStatus,
@@ -137,6 +138,12 @@ const withReview =
 /** The user's own wording for a rewrite or merge. Editing is saying yes to it. */
 export function editProposal(id: string, text: string): boolean {
   return reviewProposal(id, withReview({ userText: text.trim() }, 'accepted'));
+}
+
+/** What the checks would say about the user's wording, as they type it. */
+export function checkProposalEdit(proposal: Proposal, text: string): ProposalFlag[] {
+  const edited = withReview({ userText: text.trim() })(proposal);
+  return checkProposal(resolveChange(edited), reviewedRequestText(edited));
 }
 
 /** Back to the assistant's wording. */

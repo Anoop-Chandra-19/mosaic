@@ -1,8 +1,8 @@
 import type { Proposal } from '@shared/types/agentProposal';
 import type { ResumeData } from '@shared/types/resume';
-import { applyProposalsToResume, sortForApply } from '../proposals/applyProposalsToResume';
-import { findEntry } from '../proposals/proposalAnchor';
-import { resolveChange } from '../proposals/reviewedChange';
+import { applyProposalsToResume, sortForApply } from '../../proposals/applyProposalsToResume';
+import { findEntry } from '../../proposals/proposalAnchor';
+import { resolveChange } from '../../proposals/reviewedChange';
 
 /** How a mark reads on the page: changed text, added text, or text leaving the page. */
 export type SuggestionLook = 'edit' | 'add' | 'hide';
