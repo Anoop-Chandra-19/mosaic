@@ -6,6 +6,7 @@ import { flushDraft, saveDraftOrStop, useResumeStore } from '@/stores/resumeStor
 import { useUiStore } from '@/stores/uiStore';
 import type { ImportMode, MosaicBundle } from '@shared/types/bundle';
 import type {
+  AppliedHistory,
   Draft,
   NamingMode,
   SnapshotOccasion,
@@ -70,8 +71,8 @@ interface TemplateState {
   snapshotOpenDraft: (occasion: SnapshotOccasion) => Promise<void>;
   /** Keeps the draft as it was before the assistant's suggestions land in it. */
   snapshotBeforeApply: (templateId: string) => Promise<void>;
-  /** Keeps the draft as it is after applying `applied` of `proposed` suggestions. */
-  snapshotApplied: (templateId: string, applied: number, proposed: number) => Promise<void>;
+  /** Keeps the draft as it is after applying suggestions; `summary` says what landed. */
+  snapshotApplied: (templateId: string, summary: string, history: AppliedHistory) => Promise<void>;
   /** Replaces the open draft, keeping unsaved edits in history first if the user wants it. */
   importIntoDraft: (doc: ResumeData, from: string) => Promise<void>;
   /**
@@ -254,10 +255,10 @@ export const useTemplateStore = create<TemplateState>()(
           return storage.versions.snapshot(templateId, 'before-apply');
         }),
 
-      snapshotApplied: (templateId, applied, proposed) =>
+      snapshotApplied: (templateId, summary, history) =>
         keepVersion(templateId, async () => {
           await flushDraft();
-          return storage.versions.snapshotApplied(templateId, applied, proposed);
+          return storage.versions.snapshotApplied(templateId, summary, history);
         }),
 
       importIntoDraft: async (doc, from) => {

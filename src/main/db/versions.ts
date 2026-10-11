@@ -305,23 +305,15 @@ function requireAddableHead(head: VersionMeta | undefined, work: VersionWork): V
   return head;
 }
 
-function describeAppliedSuggestions(applied: number, proposed: number): string {
-  if (applied === proposed) {
-    return applied === 1 ? 'Applied a suggestion' : `Applied ${applied} suggestions`;
-  }
-  return `Applied ${applied} of ${proposed} suggestions`;
-}
-
 /**
- * Keep the draft as it stands after a batch of accepted suggestions. The counts are the
- * summary, unless the user named it; the section comes from what actually changed. `add`
- * makes it a revision of the assistant's newest version.
+ * Keep the draft as it stands after a batch of accepted suggestions. The renderer's summary
+ * says what landed, unless the user named it; the section comes from what actually changed.
+ * `add` makes it a revision of the assistant's newest version.
  */
 export function snapshotAppliedSuggestions(
   db: Database,
   templateId: string,
-  applied: number,
-  proposed: number,
+  summary: string,
   history: AppliedHistory = { mode: 'new' }
 ): VersionMeta {
   return db.transaction(() => {
@@ -341,8 +333,7 @@ export function snapshotAppliedSuggestions(
       ...placement,
       kind: history.mode === 'named' ? 'named' : 'auto',
       source: 'assistant',
-      summary:
-        history.mode === 'named' ? history.name : describeAppliedSuggestions(applied, proposed),
+      summary: history.mode === 'named' ? history.name : summary,
       section,
       doc: draft.doc,
       rev: draft.rev,

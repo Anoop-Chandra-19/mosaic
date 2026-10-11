@@ -140,17 +140,6 @@ function appliedHistory(value: unknown): AppliedHistory {
   throw new InvalidArgumentError('history must say how the version is kept');
 }
 
-/** At least one suggestion applied, and no more than were proposed. */
-function suggestionCounts(applied: unknown, proposed: unknown) {
-  if (!Number.isSafeInteger(applied) || !Number.isSafeInteger(proposed)) {
-    throw new InvalidArgumentError('counts must be whole numbers');
-  }
-  if ((applied as number) < 1 || (applied as number) > (proposed as number)) {
-    throw new InvalidArgumentError('applied must be between 1 and proposed');
-  }
-  return { applied: applied as number, proposed: proposed as number };
-}
-
 /** A backup file's text, checked the same way whoever sent it already should have. */
 function bundle(value: unknown): MosaicBundle {
   if (typeof value !== 'string') throw new InvalidArgumentError('text must be a backup file');
@@ -198,16 +187,13 @@ export function createDbHandlers(db: Database): Handlers<MosaicDb> {
         nameDraft(db, text(templateId, 'templateId'), text(name, 'name'), namingMode(mode)),
       snapshot: (templateId, occasion) =>
         snapshotEditedDraft(db, text(templateId, 'templateId'), snapshotOccasion(occasion)),
-      snapshotApplied: (templateId, applied, proposed, history) => {
-        const counts = suggestionCounts(applied, proposed);
-        return snapshotAppliedSuggestions(
+      snapshotApplied: (templateId, summary, history) =>
+        snapshotAppliedSuggestions(
           db,
           text(templateId, 'templateId'),
-          counts.applied,
-          counts.proposed,
+          text(summary, 'summary'),
           appliedHistory(history)
-        );
-      },
+        ),
       restore: (templateId, versionId, shouldKeepDraft) =>
         restoreVersion(
           db,

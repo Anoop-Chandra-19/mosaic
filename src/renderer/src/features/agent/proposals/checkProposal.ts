@@ -1,6 +1,7 @@
 import type { ProposalChange, ProposalFlag } from '@shared/types/agentProposal';
 import { checkClaimsMore } from './checks/claimsMore';
 import { checkDoubledWords } from './checks/doubledWords';
+import { checkNewNames } from './checks/newNames';
 import { checkNewNumbers } from './checks/newNumbers';
 import { checkRemovedDetail } from './checks/removedDetail';
 import { checkUnfilledGap } from './checks/unfilledGap';
@@ -12,6 +13,7 @@ const TEXT_CHECKS: TextCheck[] = [
   checkClaimsMore,
   checkNewNumbers,
   checkRemovedDetail,
+  checkNewNames,
   checkUnfilledGap,
 ];
 
