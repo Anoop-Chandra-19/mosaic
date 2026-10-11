@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import type { EntryHeadingFields } from '@shared/resume/entryHeading';
 import type { SectionLayout } from '@shared/types/resume';
 import { MarkedDates, MarkedHeading, MarkedLine } from '@/features/document-diff/PageMarkParts';
@@ -32,10 +33,21 @@ export interface PreviewRenderableSection {
   isContinued?: boolean;
 }
 
+/**
+ * A surface's own marks around the page's text, as the suggestion review draws them; each
+ * wraps what would print, by the bullet's or entry's id. Exports never pass these.
+ */
+export interface PageDecorations {
+  bullet?: (bulletId: string, text: ReactNode) => ReactNode;
+  entryHeading?: (entryId: string, heading: ReactNode) => ReactNode;
+  entryDates?: (entryId: string, dates: ReactNode) => ReactNode;
+}
+
 interface PreviewSectionProps {
   section: PreviewRenderableSection;
   /** What changed against another version, marked on the page; exports never pass this. */
   marks?: PageMarks;
+  decorations?: PageDecorations;
 }
 
 const bodyText = {
@@ -43,13 +55,19 @@ const bodyText = {
   lineHeight: `${LYT.bodyLeading}px`,
 };
 
+const decorate = (
+  wrap: ((id: string, node: ReactNode) => ReactNode) | undefined,
+  id: string,
+  node: ReactNode
+) => (wrap ? wrap(id, node) : node);
+
 /** A bullet's marks sit past its marker, in the same margin as a heading's. */
 const BULLET_GUTTER = {
   barPx: LYT.bulletTextIndent + LINE_GUTTER.barPx,
   glyphPx: LYT.bulletTextIndent + LINE_GUTTER.glyphPx,
 };
 
-export function PreviewSection({ section, marks }: PreviewSectionProps) {
+export function PreviewSection({ section, marks, decorations }: PreviewSectionProps) {
   const isTextOnly = section.layout === 'lines';
   const otherSide = marks?.otherSide ?? '';
   const markLine = (changes: ReturnType<typeof findMarks>, text: string, gutter = LINE_GUTTER) =>
@@ -119,27 +137,35 @@ export function PreviewSection({ section, marks }: PreviewSectionProps) {
                   data-preview-entry-heading-key={`${section.id}::${entry.id}`}
                 >
                   <h3>
-                    {marks ? (
-                      <MarkedHeading
-                        changes={findMarks(marks, 'entry', entry.id)}
-                        heading={entry.heading ?? ''}
-                        fields={entry.fields ?? { title: '', organization: '', location: '' }}
-                        otherSide={otherSide}
-                      />
-                    ) : (
-                      entry.heading
+                    {decorate(
+                      decorations?.entryHeading,
+                      entry.id,
+                      marks ? (
+                        <MarkedHeading
+                          changes={findMarks(marks, 'entry', entry.id)}
+                          heading={entry.heading ?? ''}
+                          fields={entry.fields ?? { title: '', organization: '', location: '' }}
+                          otherSide={otherSide}
+                        />
+                      ) : (
+                        entry.heading
+                      )
                     )}
                   </h3>
                   {entry.dates && (
                     <p className="shrink-0 text-right">
-                      {marks ? (
-                        <MarkedDates
-                          changes={findMarks(marks, 'entry', entry.id)}
-                          dates={entry.dates}
-                          otherSide={otherSide}
-                        />
-                      ) : (
-                        entry.dates
+                      {decorate(
+                        decorations?.entryDates,
+                        entry.id,
+                        marks ? (
+                          <MarkedDates
+                            changes={findMarks(marks, 'entry', entry.id)}
+                            dates={entry.dates}
+                            otherSide={otherSide}
+                          />
+                        ) : (
+                          entry.dates
+                        )
                       )}
                     </p>
                   )}
@@ -162,7 +188,11 @@ export function PreviewSection({ section, marks }: PreviewSectionProps) {
                       className={cn(bullet.isContinued && 'list-none', marks && 'relative')}
                       data-preview-bullet-id={bullet.id}
                     >
-                      {markLine(findMarks(marks, 'bullet', bullet.id), bullet.text, BULLET_GUTTER)}
+                      {decorate(
+                        decorations?.bullet,
+                        bullet.id,
+                        markLine(findMarks(marks, 'bullet', bullet.id), bullet.text, BULLET_GUTTER)
+                      )}
                     </li>
                   ))}
                 </ul>

@@ -16,6 +16,11 @@ const APPLY_ORDER: Record<ProposalChangeKind, number> = {
   entry: 5,
 };
 
+/** In the order they apply, which is not the order they were suggested in. */
+export function sortForApply<T extends Pick<Proposal, 'change'>>(proposals: readonly T[]): T[] {
+  return [...proposals].sort((a, b) => APPLY_ORDER[a.change.kind] - APPLY_ORDER[b.change.kind]);
+}
+
 export interface AppliedProposals {
   doc: ResumeData;
   appliedIds: string[];
@@ -104,10 +109,7 @@ export function applyProposalsToResume(
   createId: () => string = () => crypto.randomUUID()
 ): AppliedProposals {
   const result: AppliedProposals = { doc: structuredClone(doc), appliedIds: [], skippedIds: [] };
-  const ordered = [...proposals].sort(
-    (a, b) => APPLY_ORDER[a.change.kind] - APPLY_ORDER[b.change.kind]
-  );
-  for (const proposal of ordered) {
+  for (const proposal of sortForApply(proposals)) {
     if (findAnchorMismatch(result.doc, proposal.change)) {
       result.skippedIds.push(proposal.id);
       continue;

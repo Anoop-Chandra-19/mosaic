@@ -50,6 +50,10 @@ const LABELS: Record<ShortcutId, string> = {
   olderVersion: 'Older version',
   nextChange: 'Next change',
   previousChange: 'Previous change',
+  nextSuggestion: 'Next suggestion',
+  previousSuggestion: 'Previous suggestion',
+  keepSuggestion: 'Keep',
+  dropSuggestion: 'Drop',
 };
 
 export function labelShortcut(id: ShortcutId): string {
@@ -115,8 +119,20 @@ export function listShortcutGroups(): ShortcutGroup[] {
       note: 'in the full history',
       rows: rowsFor(['newerVersion', 'olderVersion', 'nextChange', 'previousChange']),
     },
+    {
+      title: 'Suggestions',
+      note: 'while reviewing them',
+      rows: rowsFor(REVIEW_SHORTCUTS),
+    },
   ];
 }
+
+const REVIEW_SHORTCUTS: ShortcutId[] = [
+  'nextSuggestion',
+  'previousSuggestion',
+  'keepSuggestion',
+  'dropSuggestion',
+];
 
 /** The keys for where the sheet was opened from, shown first. */
 const PLACE_GROUPS: Record<ShortcutPlace, ShortcutGroup> = {
@@ -160,6 +176,10 @@ const PLACE_GROUPS: Record<ShortcutPlace, ShortcutGroup> = {
       'zoomOut',
       'fitPage',
     ]),
+  },
+  review: {
+    title: 'Reviewing suggestions',
+    rows: rowsFor([...REVIEW_SHORTCUTS, 'zoomToPointer', 'dragPage']),
   },
 };
 

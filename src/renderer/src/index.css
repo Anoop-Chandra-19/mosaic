@@ -157,6 +157,15 @@
   --color-paper-tag: var(--paper-tag);
   --color-paper-tag-line: var(--paper-tag-line);
   --color-paper-mark-hover: var(--paper-mark-hover);
+  --color-paper-suggested: var(--paper-suggested);
+  --color-paper-suggested-soft: var(--paper-suggested-soft);
+  --color-paper-suggested-hover: var(--paper-suggested-hover);
+  --color-paper-suggested-current: var(--paper-suggested-current);
+  --color-paper-add-current: var(--paper-add-current);
+  --color-paper-del-soft: var(--paper-del-soft);
+  --color-paper-flag: var(--paper-flag);
+  --color-paper-stale-line: var(--paper-stale-line);
+  --color-paper-stale-text: var(--paper-stale-text);
   --color-swatch-add: var(--swatch-add);
   --color-swatch-add-line: var(--swatch-add-line);
   --color-swatch-del: var(--swatch-del);
@@ -421,6 +430,19 @@
   --paper-tag: #6b6b6b;
   --paper-tag-line: #b9b9b9;
   --paper-mark-hover: oklch(0.6 0 0 / 18%);
+  /*
+   * The assistant's suggestions on the page: a warm wash for changed text, the green above
+   * for added text and kept ones, a dot in the margin for a check to look at.
+   */
+  --paper-suggested: #d18a1f;
+  --paper-suggested-soft: oklch(0.93 0.13 95 / 42%);
+  --paper-suggested-hover: oklch(0.93 0.13 95 / 62%);
+  --paper-suggested-current: oklch(0.93 0.13 95 / 78%);
+  --paper-add-current: oklch(0.86 0.14 150 / 58%);
+  --paper-del-soft: oklch(0.8 0.12 30 / 26%);
+  --paper-flag: #c2620f;
+  --paper-stale-line: #9a9a9a;
+  --paper-stale-text: #555;
   /* The version banner's swatches, each the mark its phrase stands for on the page. */
   --swatch-add: oklch(0.86 0.14 150 / 55%);
   --swatch-add-line: #3f8f5f;

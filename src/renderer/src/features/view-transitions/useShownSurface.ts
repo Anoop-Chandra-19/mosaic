@@ -11,7 +11,10 @@ export function useShownSurface() {
 }
 
 // Not the Start panel: it shows the workspace blurred behind it.
-const REPLACES_THE_WORKSPACE: ReadonlySet<WorkspaceSurface['kind']> = new Set(['history']);
+const REPLACES_THE_WORKSPACE: ReadonlySet<WorkspaceSurface['kind']> = new Set([
+  'history',
+  'review',
+]);
 
 export function useIsWorkspaceReplaced(): boolean {
   const shown = useShownSurface();
