@@ -1,10 +1,9 @@
-import { useEffect, useState } from 'react';
-import { getDb } from '@/lib/storage/mosaicDb';
 import { useResumeStore } from '@/stores/resumeStore';
+import { useStoredDraft } from '@/stores/templateStore';
 import type { HistoryComparison } from '@/types/history';
 import { diffFormatting } from '@shared/resume/changes/diffFormatting';
 import { diffResumes } from '@shared/resume/changes/diffResumes';
-import type { Draft, Version, VersionMeta } from '@shared/types/db';
+import type { Version, VersionMeta } from '@shared/types/db';
 import type { ResumeData } from '@shared/types/resume';
 
 /**
@@ -16,25 +15,11 @@ function useComparedDraft(templateId: string, fixedDraft: ResumeData | null) {
   const schemaVersion = useResumeStore((s) => s.schemaVersion);
   const contact = useResumeStore((s) => s.contact);
   const sections = useResumeStore((s) => s.sections);
-  const [stored, setStored] = useState<Draft | null>(null);
-
-  useEffect(() => {
-    if (isOpen || fixedDraft) return;
-    let isCurrent = true;
-    getDb()
-      .drafts.get(templateId)
-      .then(
-        (draft) => isCurrent && setStored(draft),
-        (error: unknown) => console.error('Could not read the draft', error)
-      );
-    return () => {
-      isCurrent = false;
-    };
-  }, [templateId, isOpen, fixedDraft]);
+  const stored = useStoredDraft(isOpen || fixedDraft ? null : templateId);
 
   if (fixedDraft) return fixedDraft;
   if (isOpen) return { schemaVersion, contact, sections };
-  return stored?.templateId === templateId ? stored.doc : null;
+  return stored?.doc ?? null;
 }
 
 function compareResumes(before: ResumeData | null, after: ResumeData | null) {

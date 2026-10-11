@@ -1,7 +1,6 @@
-import { useEffect, useState } from 'react';
-import { versionLabel } from '@/features/history/useTemplateVersions';
-import { getDb } from '@/lib/storage/mosaicDb';
+import { versionLabel } from '@/features/history/versionLabel';
 import { useResumeStore } from '@/stores/resumeStore';
+import { useVersion } from '@/stores/templateStore';
 import { describeChange, describeFormattingChange } from '@shared/resume/changes/describeChanges';
 import { diffFormatting } from '@shared/resume/changes/diffFormatting';
 import { diffResumes } from '@shared/resume/changes/diffResumes';
@@ -56,32 +55,15 @@ export function listChangesSinceVersion(
   };
 }
 
-/** The draft's changes since `version`; null until the version's document is read. */
+/** The draft's changes since `version`. Suspends until the version's document is read. */
 export function useChangesSinceVersion(
-  version: VersionMeta | undefined,
+  version: VersionMeta,
   isUndone: boolean
-): ChangesSinceVersion | null {
-  const [read, setRead] = useState<{ id: string; doc: ResumeData } | null>(null);
+): ChangesSinceVersion {
+  const { doc } = useVersion(version.id);
   const schemaVersion = useResumeStore((s) => s.schemaVersion);
   const contact = useResumeStore((s) => s.contact);
   const sections = useResumeStore((s) => s.sections);
-  const versionId = version?.id;
-
-  useEffect(() => {
-    if (!versionId) return;
-    let isCurrent = true;
-    getDb()
-      .versions.get(versionId)
-      .then(
-        (stored) => isCurrent && setRead({ id: versionId, doc: stored.doc }),
-        (error: unknown) => console.error('Could not read the newest version', error)
-      );
-    return () => {
-      isCurrent = false;
-    };
-  }, [versionId]);
-
-  if (!version || read?.id !== version.id) return null;
   const draft = { schemaVersion, contact, sections };
-  return listChangesSinceVersion(read.doc, draft, versionLabel(version), isUndone);
+  return listChangesSinceVersion(doc, draft, versionLabel(version), isUndone);
 }

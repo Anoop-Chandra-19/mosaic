@@ -49,6 +49,27 @@ const SHARED_LOOK_RULES = [
   },
 ];
 
+/** shadcn's parts are reached only through the App* wrappers in components/. */
+const UI_PRIMITIVE_IMPORTS = {
+  regex: '(^|/)components/ui/',
+  message: 'Use the App* wrapper from @/components (AppButton, AppMenu, AppInput, …), or add one.',
+};
+
+/** Stored data is read and written through its store; only stores reach the database. */
+const STORAGE_IMPORTS = {
+  regex: '(^|/)lib/storage/',
+  allowImportNames: ['DbError'],
+  message:
+    'Read and write stored data through its store (templateStore, …), which exports what features need.',
+};
+
+/** Stores reach the database through the storage service, which keeps its reads fresh. */
+const DB_CLIENT_IMPORTS = {
+  regex: '(^|/)lib/storage/(mosaicDb|readCache)$',
+  allowImportNames: ['DbError'],
+  message: 'Use `storage` from lib/storage/storageService, adding what it is missing there.',
+};
+
 /** One `no-restricted-syntax` entry per rule, for plain strings and template literals. */
 function restrictClassStrings(rules) {
   return rules.flatMap(({ pattern, message }) => [
@@ -73,22 +94,29 @@ export default defineConfig([
     },
   },
   {
-    // shadcn's parts are reached only through the App* wrappers in components/.
     files: ['src/renderer/src/**/*.{ts,tsx}'],
     ignores: ['src/renderer/src/components/ui/**', 'src/renderer/src/components/App*.tsx'],
     rules: {
-      'no-restricted-imports': [
-        'error',
-        {
-          patterns: [
-            {
-              regex: '(^|/)components/ui/',
-              message:
-                'Use the App* wrapper from @/components (AppButton, AppMenu, AppInput, …), or add one.',
-            },
-          ],
-        },
-      ],
+      'no-restricted-imports': ['error', { patterns: [UI_PRIMITIVE_IMPORTS] }],
+    },
+  },
+  {
+    // Rule options replace, never merge, so this list repeats the one above.
+    files: ['src/renderer/src/{features,components}/**/*.{ts,tsx}'],
+    ignores: [
+      'src/renderer/src/components/ui/**',
+      'src/renderer/src/components/App*.tsx',
+      '**/__tests__/**',
+    ],
+    rules: {
+      'no-restricted-imports': ['error', { patterns: [UI_PRIMITIVE_IMPORTS, STORAGE_IMPORTS] }],
+    },
+  },
+  {
+    files: ['src/renderer/src/stores/**/*.{ts,tsx}'],
+    ignores: ['**/__tests__/**'],
+    rules: {
+      'no-restricted-imports': ['error', { patterns: [UI_PRIMITIVE_IMPORTS, DB_CLIENT_IMPORTS] }],
     },
   },
   {

@@ -15,7 +15,7 @@ vi.mock('@/lib/storage/mosaicDb', async (importOriginal) => ({
 
 const { DbError, unwrapBridge } = await import('@/lib/storage/mosaicDb');
 const { flushDraft, UnsavedDraftError, useResumeStore } = await import('../resumeStore');
-const { useTemplateStore } = await import('../templateStore');
+const { readVersion, readVersionHistory, useTemplateStore } = await import('../templateStore');
 const { DEFAULT_PREFERENCES, useUiStore } = await import('../uiStore');
 
 let sqlite: Database;
@@ -377,15 +377,14 @@ describe('snapshot settings', () => {
 });
 
 describe('naming and deleting versions', () => {
-  const history = () => db.current!.versions.list(resume().templateId!);
+  // Through the store's cached read, so each step shows the history was read again.
+  const history = () => readVersionHistory(resume().templateId!);
 
   it('names an older version, deletes it, and puts it back, re-reading the history each time', async () => {
     await templates().createTemplate('Backend', createDefaultResume());
     const [created] = await history();
     resume().setName('Ada Lovelace');
     await templates().nameVersion('Second');
-    const edits = () => templates().historyEdits;
-    const before = edits();
 
     await templates().renameVersion(created.id, 'First');
     expect((await history()).at(-1)).toMatchObject({ kind: 'named', summary: 'First' });
@@ -395,6 +394,37 @@ describe('naming and deleting versions', () => {
 
     await templates().putBackVersion(created.id);
     expect((await history()).map((version) => version.number)).toEqual([2, 1]);
-    expect(edits()).toBe(before + 3);
+  });
+
+  it("naming reads that template's history again, and not another's", async () => {
+    await templates().createTemplate('Backend', createDefaultResume());
+    const backend = resume().templateId!;
+    await templates().createTemplate('Frontend', createDefaultResume());
+    const frontend = resume().templateId!;
+    await readVersionHistory(backend);
+    await readVersionHistory(frontend);
+    const list = vi.spyOn(db.current!.versions, 'list');
+
+    resume().setName('Ada Lovelace');
+    await templates().nameVersion('Sent');
+
+    expect(list.mock.calls).toEqual([[frontend]]);
+    expect((await readVersionHistory(frontend))[0]).toMatchObject({ summary: 'Sent' });
+  });
+
+  it('reads a renamed version again, with its new name', async () => {
+    await templates().createTemplate('Backend', createDefaultResume());
+    resume().setName('Ada Lovelace');
+    await templates().nameVersion('Second');
+    const [, created] = await history();
+    const get = vi.spyOn(db.current!.versions, 'get');
+
+    await readVersion(created.id);
+    await readVersion(created.id);
+    expect(get).toHaveBeenCalledTimes(1);
+
+    await templates().renameVersion(created.id, 'First');
+    await expect(readVersion(created.id)).resolves.toMatchObject({ summary: 'First' });
+    expect(get).toHaveBeenCalledTimes(2);
   });
 });

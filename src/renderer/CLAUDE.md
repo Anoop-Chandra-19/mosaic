@@ -25,6 +25,13 @@ Each store holds one kind of state; put new state with its kind, not in the near
   keyboard target (`requestTarget`, answered by `useTargetRequest` where it is drawn),
   never a store flag.
 
+Stored data goes features → stores → the storage service → main. Stores hold state and
+actions, and export their reads (`useVersion`, `readVersion`, …). Only stores use the
+service, and only `storage` and `useStored` from `lib/storage/storageService.ts`: where a
+read comes from (cache or main) and what a write makes stale are the service's concern,
+along with `getDb()` (ESLint refuses the rest, `DbError` aside). A component that reads
+as it renders sits inside a `ReadBoundary`.
+
 ## UI foundation
 
 - Use Radix/shadcn primitives (new-york, zinc base), not hand-rolled equivalents, through

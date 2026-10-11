@@ -1,5 +1,5 @@
-import { getDb } from '@/lib/storage/mosaicDb';
 import { saveDraftOrStop } from '@/stores/resumeStore';
+import { readTemplateBundle } from '@/stores/templateStore';
 import type { FileType } from '@shared/types/files';
 import type { LinkColor, LinkStyle, ResumeData } from '@shared/types/resume';
 import { formatBundleText } from '@shared/vault/formatBundle';
@@ -139,7 +139,7 @@ export async function renderExport(
       if (templateId === null) throw new Error('Only a template exports as Mosaic JSON');
       // The file should hold the edits still waiting to be saved.
       await saveDraftOrStop();
-      return formatBundleText(await getDb().bundle.export([templateId]));
+      return formatBundleText(await readTemplateBundle(templateId));
     }
   }
 }

@@ -1,5 +1,6 @@
 import { whenPreviewSettled } from '@/features/view-transitions/pageHandoff';
-import { getDb } from '@/lib/storage/mosaicDb';
+import { useResumeStore } from '@/stores/resumeStore';
+import { readStoredDraft, readVersion, readVersionHistory } from '@/stores/templateStore';
 import type { HistoryComparison } from '@/types/history';
 import type { Version, VersionMeta } from '@shared/types/db';
 
@@ -11,7 +12,6 @@ export interface VersionPair {
 }
 
 export interface PreparedHistory {
-  versions: VersionMeta[];
   /** The version the view opens on. */
   opening: VersionPair;
 }
@@ -52,21 +52,16 @@ export function findComparedBase(
 /** How the view reads a version's document: from the database, or the example's memory. */
 export type VersionReader = (id: string) => Promise<Version>;
 
-export const readStoredVersion: VersionReader = (id) => getDb().versions.get(id);
-
 /** Reads the version `id` and the one it is compared with. */
 export async function readVersionPair(
   versions: VersionMeta[],
   id: string,
   comparison: HistoryComparison = 'parent',
-  readVersion: VersionReader = readStoredVersion
+  reader: VersionReader = readVersion
 ): Promise<VersionPair> {
   const index = versions.findIndex((version) => version.id === id);
   const baseMeta = findComparedBase(versions, index, comparison);
-  const [version, base] = await Promise.all([
-    readVersion(id),
-    baseMeta ? readVersion(baseMeta.id) : null,
-  ]);
+  const [version, base] = await Promise.all([reader(id), baseMeta ? reader(baseMeta.id) : null]);
   return { version, base };
 }
 
@@ -87,8 +82,9 @@ export function chooseOpeningVersion(
 /**
  * What the history view first shows, loaded before it opens, so it opens with its page
  * drawn and the preview's page can move into it, once the preview has eased to fit. One
- * promise per opening, keyed by the surface object, as `use()` needs. On failure the view
- * loads as it would have anyway.
+ * promise per opening, keyed by the surface object, as `use()` needs. Another template's
+ * stored draft is read too, for the comparisons. On failure the view loads as it would
+ * have anyway.
  */
 export function prepareHistoryOpening(
   opening: object,
@@ -98,12 +94,14 @@ export function prepareHistoryOpening(
   let prepared = openings.get(opening);
   if (!prepared) {
     const settled = whenPreviewSettled();
+    const isOpen = useResumeStore.getState().templateId === templateId;
     prepared = (async () => {
-      const versions = await getDb().versions.list(templateId);
+      const draft = isOpen ? null : readStoredDraft(templateId);
+      const versions = await readVersionHistory(templateId);
       const id = chooseOpeningVersion(versions, versionId);
       const opening = id ? await readVersionPair(versions, id) : { version: null, base: null };
-      await settled;
-      return { versions, opening };
+      await Promise.all([draft, settled]);
+      return { opening };
     })().catch((error: unknown) => {
       console.error('Could not load the history ahead of opening it', error);
       return null;
