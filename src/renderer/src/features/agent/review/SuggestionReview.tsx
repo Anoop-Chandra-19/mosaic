@@ -5,8 +5,10 @@ import { AppTooltip } from '@/components/AppTooltip';
 import { Text } from '@/components/Text';
 import { formatPaneWidth, startPaneResize } from '@/features/shell/paneResize';
 import { matchesAction } from '@/features/shortcuts/shortcutBindings';
+import { transitionClasses } from '@/features/view-transitions/transitionClasses';
 import { isTypingField } from '@/lib/keyboardShortcuts';
 import type { ShortcutId } from '@/lib/shortcutCatalog';
+import { cn } from '@/lib/utils';
 import { useAiStore } from '@/stores/aiStore';
 import { useOverlayStore } from '@/stores/overlayStore';
 import { selectTemplateProposals, useProposalStore } from '@/stores/proposalStore';
@@ -25,6 +27,9 @@ import { buildSuggestionPage } from './suggestionPage';
  * `suggestionPage.ts`), the inspector on the right at the assistant pane's width
  * (`ReviewInspector`), one selection between them. Opened from the status bar's count.
  */
+
+/** Long enough for the page to land and its marks to wash in (see `animate-mark-in`). */
+const LANDING_MS = 600;
 
 /** A keep or drop pressed again takes it back. */
 function toggleDecision(proposal: Proposal, status: 'accepted' | 'rejected') {
@@ -63,6 +68,13 @@ export function SuggestionReview({ openOn }: { openOn?: string }) {
 
   // The keys work from the moment it opens.
   useEffect(() => rootRef.current?.focus(), []);
+
+  // The marks wash in as the page lands; after that, a mark that comes or changes just shows.
+  const [isLanding, setIsLanding] = useState(true);
+  useEffect(() => {
+    const timer = window.setTimeout(() => setIsLanding(false), LANDING_MS);
+    return () => window.clearTimeout(timer);
+  }, []);
 
   const selectedIndex = proposals.findIndex((p) => p.id === selectedId);
   const step = (offset: number) => {
@@ -105,8 +117,9 @@ export function SuggestionReview({ openOn }: { openOn?: string }) {
         role="region"
         aria-label="Suggestion review"
         data-shortcut-place="review"
+        data-landing={isLanding || undefined}
         onKeyDown={onKeyDown}
-        className="absolute inset-0 z-20 flex flex-col bg-pane-sunken outline-none"
+        className="group/review absolute inset-0 z-20 flex flex-col bg-pane-sunken outline-none"
       >
         <ReviewBar proposals={proposals} onBack={close} />
         <div className="grid min-h-0 flex-1 grid-cols-[minmax(20rem,1fr)_auto]">
@@ -114,7 +127,11 @@ export function SuggestionReview({ openOn }: { openOn?: string }) {
           <aside
             ref={inspectorRef}
             aria-label="Suggestions"
-            className="relative flex min-h-0 min-w-0 flex-col bg-pane"
+            // Takes the assistant pane's column as it opens, and gives it back.
+            className={cn(
+              'relative flex min-h-0 min-w-0 flex-col bg-pane',
+              transitionClasses({ name: 'assist', motion: 'handover-lower' })
+            )}
             style={{ width: formatPaneWidth(widthPx, AGENT_PANE_WIDTH) }}
           >
             {/* One width for the right-hand column: resizing here resizes the assistant too. */}
@@ -158,7 +175,12 @@ function ReviewBar({ proposals, onBack }: { proposals: Proposal[]; onBack: () =>
   const request = proposals.at(-1)?.requestText.trim();
   const current = proposals.filter((p) => !p.isStale);
   return (
-    <header className="flex shrink-0 items-center justify-between gap-3.5 border-b border-line bg-background px-3 py-2.25">
+    <header
+      className={cn(
+        'flex shrink-0 items-center justify-between gap-3.5 border-b border-line bg-background px-3 py-2.25',
+        transitionClasses({ name: 'bar', motion: 'lockstep' })
+      )}
+    >
       <div className="flex min-w-0 items-center gap-2.5">
         <AppButton
           variant="ghost"

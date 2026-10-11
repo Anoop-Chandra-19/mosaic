@@ -104,6 +104,54 @@ test('opening, stepping through, and closing the history each run one transition
   expect(errors).toEqual([]);
 });
 
+/** The example suggestions, staged through the developer tools, with AI on to see them. */
+async function stageSuggestions(page: Page) {
+  await page.getByRole('button', { name: 'Developer tools' }).click();
+  await page.getByRole('menuitem', { name: /Stage example suggestions/ }).click();
+  await page.getByRole('button', { name: 'Open settings' }).click();
+  const settings = page.getByRole('dialog', { name: 'Settings' });
+  await settings
+    .getByRole('navigation')
+    .getByRole('button', { name: /AI assistant/ })
+    .click();
+  await settings.getByRole('switch', { name: 'Enable AI assistant' }).click();
+  await page.keyboard.press('Escape');
+  await expect(settings).toBeHidden();
+}
+
+test('the suggestion review opens and closes in one transition each, from the pane or without it', async () => {
+  const { page, errors } = mosaic();
+  await stageSuggestions(page);
+  const review = page.getByRole('region', { name: 'Suggestion review' });
+  const assistant = page.getByRole('complementary', { name: 'Assistant' });
+
+  // With the assistant pane open, it hands its column to the review's inspector.
+  if (!(await assistant.isVisible())) await page.keyboard.press('Control+j');
+  await expect(assistant).toBeVisible();
+  const transitions = await watchTransitions(page);
+  await page.getByRole('button', { name: /suggestions waiting/ }).click();
+  await expect(review).toBeVisible();
+  expect(await transitions.take(1)).toEqual([{ types: [], ran: true }]);
+  await page.keyboard.press('Escape');
+  await page.keyboard.press('Escape');
+  await expect(review).toBeHidden();
+  expect(await transitions.take(1)).toEqual([{ types: [], ran: true }]);
+
+  // Without it, the inspector comes in from the edge, alone.
+  await page.keyboard.press('Control+j');
+  await expect(assistant).toBeHidden();
+  await transitions.take(0);
+  await page.getByRole('button', { name: /suggestions waiting/ }).click();
+  await expect(review).toBeVisible();
+  // A transition holds input while it runs, so the keys wait for it.
+  expect(await transitions.take(1)).toEqual([{ types: [], ran: true }]);
+  await page.keyboard.press('Escape');
+  await page.keyboard.press('Escape');
+  await expect(review).toBeHidden();
+  expect(await transitions.take(1)).toEqual([{ types: [], ran: true }]);
+  expect(errors).toEqual([]);
+});
+
 test('with reduced motion the transitions still run, only without moving', async () => {
   const { page, errors } = mosaic();
   await page.emulateMedia({ reducedMotion: 'reduce' });

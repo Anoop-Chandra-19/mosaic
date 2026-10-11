@@ -326,6 +326,28 @@
       opacity: 0;
     }
   }
+
+  /*
+   * The review's marks, arriving as the page lands in it: after the page has nearly
+   * settled, and ending just past the view transition, so they hold no input.
+   */
+  --animate-mark-in: mark-in 180ms ease-out 220ms both;
+  --animate-flag-in: flag-in 180ms var(--ease-settle) 260ms both;
+
+  @keyframes mark-in {
+    from {
+      background-color: transparent;
+      border-bottom-color: transparent;
+      text-decoration-color: transparent;
+      box-shadow: none;
+    }
+  }
+  @keyframes flag-in {
+    from {
+      opacity: 0;
+      transform: scale(0.4);
+    }
+  }
 }
 
 :root {

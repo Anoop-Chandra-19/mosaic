@@ -18,6 +18,7 @@ import { useKeyboardNavigationMark } from '@/lib/hooks/useKeyboardNavigationMark
 import { GettingStartedTour } from '@/features/onboarding/getting-started/GettingStartedTour';
 import { HistoryTour } from '@/features/onboarding/history/HistoryTour';
 import {
+  CUT_MOTION,
   SLIDE_AWAY_MOTION,
   SURFACE_MOTION,
   transitionClasses,
@@ -64,7 +65,15 @@ export function AppShell() {
     <div className="flex h-screen flex-col">
       {/* The review covers the top bar too: it has its own. The status bar stays. */}
       <div className="relative flex min-h-0 flex-1 flex-col">
-        <div inert={shownSurface?.kind === 'review'}>
+        <div
+          inert={shownSurface?.kind === 'review'}
+          // The review's own bar takes this one's place, in step.
+          className={transitionClasses({
+            name: 'bar',
+            motion: 'lockstep',
+            isActive: shownSurface?.kind !== 'review',
+          })}
+        >
           <TopBar />
         </div>
         <div className="relative flex flex-1 overflow-hidden">
@@ -113,7 +122,12 @@ export function AppShell() {
           </Suspense>
           <Toast />
         </div>
-        {shownSurface?.kind === 'review' && <SuggestionReview openOn={shownSurface.proposalId} />}
+        {shownSurface?.kind === 'review' && (
+          // Its bar, page and inspector move on their own; this only starts the transition.
+          <ViewTransition enter={CUT_MOTION} exit={CUT_MOTION} update="none">
+            <SuggestionReview openOn={shownSurface.proposalId} />
+          </ViewTransition>
+        )}
       </div>
       <StatusBar />
       <SettingsDialog />

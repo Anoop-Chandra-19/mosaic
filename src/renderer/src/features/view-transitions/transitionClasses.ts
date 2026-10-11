@@ -6,6 +6,9 @@ const NAME_CLASS = {
   workspace: '[view-transition-name:workspace]',
   'history-list': '[view-transition-name:history-list]',
   'tour-overlay': '[view-transition-name:tour-overlay]',
+  bar: '[view-transition-name:bar]',
+  assist: '[view-transition-name:assist]',
+  sidebar: '[view-transition-name:sidebar]',
 } as const;
 
 // An element has one view-transition-class list, so motions that go together are one entry.
@@ -15,10 +18,17 @@ const MOTION_CLASS = {
   'handoff step': '[view-transition-class:handoff_step]',
   reclaim: '[view-transition-class:reclaim]',
   fade: '[view-transition-class:fade]',
+  'slide-away slide-in': '[view-transition-class:slide-away_slide-in]',
+  lockstep: '[view-transition-class:lockstep]',
+  // A stack of two in one box: the upper leaves up as the lower rises in, and back down.
+  'handover-upper': '[view-transition-class:handover_upper]',
+  'handover-lower': '[view-transition-class:handover_lower]',
 } as const;
 
 // Classes for React's <ViewTransition enter exit>, for things that come and go.
 export const SURFACE_MOTION = { in: 'surface-in', out: 'surface-out' } as const;
+/** A surface whose parts all move on their own: what's left of it just appears and goes. */
+export const CUT_MOTION = 'cut';
 export const SLIDE_AWAY_MOTION = { in: 'slide-in', out: 'slide-away' } as const;
 
 /** Directions for `addTransitionType`. */

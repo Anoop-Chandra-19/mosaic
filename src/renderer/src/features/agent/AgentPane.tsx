@@ -6,6 +6,10 @@ import { Text } from '@/components/Text';
 import { AI_PROVIDER_BY_ID } from '@/features/settings/sections/aiProviderOptions';
 import { formatPaneWidth, startPaneResize } from '@/features/shell/paneResize';
 import { useShortcutLabel } from '@/features/shortcuts/shortcutBindings';
+import { useIsSideHandover } from '@/features/view-transitions/sideHandover';
+import { transitionClasses } from '@/features/view-transitions/transitionClasses';
+import { useIsWorkspaceReplaced } from '@/features/view-transitions/useShownSurface';
+import { cn } from '@/lib/utils';
 import { AI_PROVIDER_DEFAULT_MODEL, useAiStore } from '@/stores/aiStore';
 import { useOverlayStore } from '@/stores/overlayStore';
 import { AGENT_PANE_WIDTH, useUiStore } from '@/stores/uiStore';
@@ -32,12 +36,22 @@ export function AgentPane() {
   const openSettings = useOverlayStore((s) => s.openSettings);
   const paneRef = useRef<HTMLElement>(null);
   const closeKeys = useShortcutLabel('toggleAssistant');
+  const isSideHandover = useIsSideHandover();
+  const isWorkspaceReplaced = useIsWorkspaceReplaced();
 
   return (
     <aside
       ref={paneRef}
       aria-label="Assistant"
-      className="relative flex shrink-0 flex-col border-l border-line bg-pane @max-5xl/workspace:absolute @max-5xl/workspace:inset-y-0 @max-5xl/workspace:right-0 @max-5xl/workspace:z-20 @max-5xl/workspace:shadow-overlay"
+      className={cn(
+        'relative flex shrink-0 flex-col border-l border-line bg-pane @max-5xl/workspace:absolute @max-5xl/workspace:inset-y-0 @max-5xl/workspace:right-0 @max-5xl/workspace:z-20 @max-5xl/workspace:shadow-overlay',
+        // Hands its column to the suggestion review's inspector, and takes it back.
+        transitionClasses({
+          name: 'assist',
+          motion: 'handover-upper',
+          isActive: isSideHandover && !isWorkspaceReplaced,
+        })
+      )}
       style={{ width: formatPaneWidth(widthPx, AGENT_PANE_WIDTH) }}
     >
       <AppTooltip side="left" content="Drag to resize · double-click to reset" shouldFollowPointer>
