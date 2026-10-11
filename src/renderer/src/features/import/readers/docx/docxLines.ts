@@ -17,12 +17,11 @@ import {
   isCapitals,
   PAGE_NUMBER,
   removeLinkMarks,
-  sourceOf,
-  titleCase,
   type ImportLine,
   type LeftOutLine,
   type LeftOutReason,
 } from '../../parsing/importLines';
+import { findHeadingLooks, markHeading } from '../../parsing/headingLooks';
 import {
   isHeadingLength,
   matchSectionHeader,
@@ -384,18 +383,7 @@ export function docxLines(document: DocxDocument): DocxReading {
     !titlesAnEntry(piece) &&
     isHeadingLength(piece.line.text) &&
     standsOut(piece);
-  const tally = new Map<string, { known: number; other: number }>();
-  for (const piece of pieces) {
-    if (!couldHead(piece)) continue;
-    const count = tally.get(piece.look) ?? { known: 0, other: 0 };
-    count[isKnown(piece) ? 'known' : 'other']++;
-    tally.set(piece.look, count);
-  }
-  // Set the way the known headings are, and not outnumbered by lines that are something else.
-  const headingLook = (look: string) => {
-    const count = tally.get(look);
-    return count !== undefined && count.known > 0 && count.known >= count.other;
-  };
+  const headingLook = findHeadingLooks(pieces, couldHead, isKnown);
   const outlines = pieces.flatMap((piece) =>
     couldHead(piece) && piece.paragraph.outline !== undefined ? [piece.paragraph.outline] : []
   );
@@ -409,12 +397,7 @@ export function docxLines(document: DocxDocument): DocxReading {
   for (const piece of pieces) {
     const heading =
       isKnown(piece) || (couldHead(piece) && (headingLook(piece.look) || atSectionOutline(piece)));
-    if (!heading) continue;
-    piece.line.role = 'heading';
-    if (isCapitals(piece.line.text)) {
-      piece.line.source = sourceOf(piece.line);
-      piece.line.text = titleCase(piece.line.text);
-    }
+    if (heading) markHeading(piece.line);
   }
 
   // Entries, inside sections.

@@ -181,6 +181,12 @@ function moveBy<T>(list: T[], index: number, offset: -1 | 1) {
   [list[index], list[to]] = [list[to], list[index]];
 }
 
+/** `list` in the order of `orderedIds`. Ids it doesn't hold are skipped; items not named go. */
+function pickInOrder<T extends { id: string }>(list: T[], orderedIds: string[]): T[] {
+  const byId = new Map(list.map((item) => [item.id, item]));
+  return orderedIds.flatMap((id) => byId.get(id) ?? []);
+}
+
 /** The section as it stands, for a label that depends on it. */
 function findSection(sectionId: string) {
   return useResumeStore.getState().sections.find((s) => s.id === sectionId);
@@ -425,14 +431,8 @@ export const useResumeStore = create<ResumeState>()(
 
       reorderSections: (orderedIds) =>
         edit('reorder sections', (state) => {
-          const byId = new Map(state.sections.map((s) => [s.id, s]));
-          state.sections = orderedIds
-            .map((id, i) => {
-              const s = byId.get(id);
-              if (s) s.order = i;
-              return s;
-            })
-            .filter((s): s is (typeof state.sections)[number] => s != null);
+          state.sections = pickInOrder(state.sections, orderedIds);
+          for (const section of state.sections) section.order = orderedIds.indexOf(section.id);
         }),
 
       updateSectionLabel: (sectionId, label) =>
@@ -490,10 +490,7 @@ export const useResumeStore = create<ResumeState>()(
         edit('reorder entries', (state) => {
           const section = state.sections.find((s) => s.id === sectionId);
           if (!section) return;
-          const byId = new Map(section.items.map((e) => [e.id, e]));
-          section.items = orderedIds
-            .map((id) => byId.get(id))
-            .filter((e): e is (typeof section.items)[number] => e !== undefined);
+          section.items = pickInOrder(section.items, orderedIds);
         }),
 
       duplicateEntry: (sectionId, entryId) =>
@@ -573,10 +570,7 @@ export const useResumeStore = create<ResumeState>()(
             .find((s) => s.id === sectionId)
             ?.items.find((e) => e.id === entryId);
           if (!entry) return;
-          const byId = new Map(entry.bullets.map((b) => [b.id, b]));
-          entry.bullets = orderedIds
-            .map((id) => byId.get(id))
-            .filter((b): b is (typeof entry.bullets)[number] => b !== undefined);
+          entry.bullets = pickInOrder(entry.bullets, orderedIds);
         }),
 
       splitBullet: (sectionId, entryId, bulletId, text, at) => {
