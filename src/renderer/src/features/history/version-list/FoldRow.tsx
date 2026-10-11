@@ -46,8 +46,8 @@ export function FoldRow({ numbers, isOpen, onToggle, children }: FoldRowProps) {
         <span
           aria-hidden
           className={cn(
-            // Half a pixel back, onto the rail's centre, as the row marks are.
-            'relative z-1 mx-[0.28125rem] -my-1.25 w-0.75 shrink-0 translate-x-[-0.03125rem] self-stretch',
+            // Centred on the rail in whole pixels, as the row marks are.
+            'relative z-1 -my-1.25 mr-1.25 ml-1 w-0.75 shrink-0 self-stretch',
             isOpen
               ? 'bg-[repeating-linear-gradient(to_bottom,var(--ink-faint)_0_3px,transparent_3px_6px)]'
               : 'bg-[repeating-linear-gradient(to_bottom,var(--line-heavy)_0_3px,transparent_3px_6px)] group-hover/held:bg-[repeating-linear-gradient(to_bottom,var(--ink-faint)_0_3px,transparent_3px_6px)]'

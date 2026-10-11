@@ -193,7 +193,9 @@ test('naming can add to your own newest version as a revision, which keeps it as
 
   await page.keyboard.press('Control+s');
   const dialog = page.getByRole('dialog');
+  await expect(dialog.getByRole('list', { name: 'In this version' })).toContainText('Name');
   await dialog.getByRole('radio', { name: /Add to v3/ }).click();
+  await expect(dialog.getByRole('list', { name: 'Since v3' })).toBeVisible();
   // Adding to a named version starts from its name.
   await expect(dialog.getByLabel('Version name')).toHaveValue('Second');
   await dialog.getByRole('button', { name: 'Save v3.1' }).click();

@@ -7,7 +7,9 @@ import { AppRadioGroup, AppRadioGroupItem } from '@/components/AppRadioGroup';
 import { DialogFrameBody, DialogFrameFooter, DialogFrameHeader } from '@/components/DialogFrame';
 import { Note } from '@/components/Note';
 import { Text } from '@/components/Text';
+import { useVersionDistance } from '@/features/history/useVersionDistance';
 import { versionLabel } from '@/features/history/useTemplateVersions';
+import { easeHeightChanges } from '@/lib/motion/easeHeightChanges';
 import { DbError } from '@/lib/storage/mosaicDb';
 import { cn } from '@/lib/utils';
 import { useDialog, useOverlayStore } from '@/stores/overlayStore';
@@ -16,6 +18,7 @@ import { useTemplateStore } from '@/stores/templateStore';
 import { canAddToVersion } from '@shared/history/canAddToVersion';
 import type { NamingMode, VersionMeta } from '@shared/types/db';
 import { useActiveTemplate } from './useActiveTemplate';
+import { useChangesSinceVersion, type NamingChangeRow } from './useChangesSinceVersion';
 import { useTemplateStatus } from './useTemplateStatus';
 
 /**
@@ -31,7 +34,11 @@ export function NameVersionDialog() {
 
   return (
     <AppDialog open={open} onOpenChange={(next) => !next && close()}>
-      <AppDialogContent showCloseButton={false} className="w-[min(35rem,96vw)] gap-0 p-0">
+      <AppDialogContent
+        ref={easeHeightChanges}
+        showCloseButton={false}
+        className="w-[min(35rem,96vw)] gap-0 p-0"
+      >
         {/* Remounted per opening, so the name starts empty each time. */}
         {open && <NameVersionForm onDone={close} />}
       </AppDialogContent>
@@ -59,13 +66,25 @@ const TARGETS: Record<NamingAction, (targets: Targets) => string> = {
   add: (t) => t.revision,
 };
 
-const NOTES: Record<NamingAction, (targets: Targets) => string> = {
+/** What the dialog explains: the action, unless the draft has gone back behind the version. */
+type NamingNote = NamingAction | 'revert';
+
+const NOTES: Record<NamingNote, (targets: Targets) => string> = {
   rename: (t) =>
     `Nothing has changed since ${t.head}, so this names that version rather than making a new one. Its contents stay exactly as they are.`,
   new: () =>
     'Your draft is already saved. Naming keeps this point in history for good, so you can find it and go back to it. Nothing is overwritten.',
   add: (t) =>
     `${t.revision} is your draft as it is now, kept for good under this name. Restoring ${t.head} still brings back ${t.head} as it was.`,
+  revert: (t) =>
+    `You have undone work that ${t.head} contains. Naming records the draft as it stands now. ${t.head} itself is never altered, so you can always go back to it.`,
+};
+
+/** Above the change list. A matching draft has none, so `rename` has no heading. */
+const LIST_HEADINGS: Record<Exclude<NamingNote, 'rename'>, (targets: Targets) => string> = {
+  new: () => 'In this version',
+  add: (t) => `Since ${t.head}`,
+  revert: () => 'Undoing',
 };
 
 const isRefusedAdding = (error: unknown) => error instanceof DbError && error.code === 'stale-rev';
@@ -89,7 +108,10 @@ function NameVersionForm({ onDone }: { onDone: () => void }) {
   const setName = isAdding ? setAddName : setNewName;
   const trimmed = name.trim();
   const action: NamingAction = isClean ? 'rename' : isAdding ? 'add' : 'new';
+  const isUndone = useVersionDistance().undone && !isClean;
+  const note: NamingNote = isUndone ? 'revert' : action;
   const targets = head ? targetsOf(head) : null;
+  const changes = useChangesSinceVersion(isClean ? undefined : head, isUndone);
 
   const choose = (next: NamingMode) => {
     setMode(next);
@@ -203,9 +225,18 @@ function NameVersionForm({ onDone }: { onDone: () => void }) {
             </Text>
           )}
         </div>
+        {targets && changes && note !== 'rename' && (
+          <NamingChangeList
+            heading={LIST_HEADINGS[note](targets)}
+            changes={changes.changes}
+            formatting={changes.formatting}
+            headLabel={targets.head}
+            isUndone={isUndone}
+          />
+        )}
         {targets && (
           <Note icon={Info} size="sm">
-            {NOTES[action](targets)}
+            {NOTES[note](targets)}
           </Note>
         )}
       </DialogFrameBody>
@@ -219,6 +250,70 @@ function NameVersionForm({ onDone }: { onDone: () => void }) {
         </AppButton>
       </DialogFrameFooter>
     </form>
+  );
+}
+
+interface NamingChangeListProps {
+  heading: string;
+  changes: NamingChangeRow[];
+  formatting: NamingChangeRow[];
+  headLabel: string;
+  isUndone: boolean;
+}
+
+/**
+ * What naming records, in the full history's words. A draft that moved but prints the same
+ * words (an edit typed and deleted again) still says so, rather than showing an empty list.
+ */
+function NamingChangeList({
+  heading,
+  changes,
+  formatting,
+  headLabel,
+  isUndone,
+}: NamingChangeListProps) {
+  const sameWords: NamingChangeRow = {
+    key: 'same',
+    text: `Same words as ${headLabel}${formatting.length > 0 ? ', formatting differs' : ''}`,
+    place: null,
+  };
+  const listed = changes.length > 0 ? changes : [sameWords];
+  return (
+    <div className="mt-1">
+      <Text as="p" variant="eyebrow" className="mb-1.75">
+        {changes.length > 0 ? `${heading} · ${changes.length}` : heading}
+      </Text>
+      <ul
+        aria-label={heading}
+        className="max-h-43 overflow-y-auto rounded-md border border-line-strong bg-pane-sunken"
+      >
+        {listed.map((row) => (
+          <NamingChangeItem key={row.key} row={row} isStruck={isUndone && changes.length > 0} />
+        ))}
+        {formatting.map((row) => (
+          <NamingChangeItem key={row.key} row={row} isStruck={false} />
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function NamingChangeItem({ row, isStruck }: { row: NamingChangeRow; isStruck: boolean }) {
+  return (
+    <li className="flex items-center gap-2.25 border-b border-line px-2.5 py-1.75 last:border-b-0">
+      <span aria-hidden className="size-1.25 shrink-0 rounded-full bg-ink-faint" />
+      <Text
+        variant="secondary"
+        className={cn('min-w-0 truncate text-ink-soft', isStruck && 'text-ink-muted line-through')}
+      >
+        {row.text}
+      </Text>
+      {row.place && (
+        <Text variant="secondary" className="min-w-0 flex-1 truncate text-ink-faint">
+          {row.place}
+        </Text>
+      )}
+    </li>
   );
 }
 
