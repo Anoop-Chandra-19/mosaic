@@ -33,6 +33,9 @@ Use a motion that exists before inventing one:
 | `reclaim`                           | A box easing into space given up beside it          | The history list            |
 | `crossfade` (a type, on the root)   | A store change's before and after, as one image     | The history tour ending     |
 | `fade`                              | A layer over the app arriving or leaving whole      | The history tour's veil     |
+| `lockstep`                          | One box whose content changes, both images in step  | Top bar ↔ review bar        |
+| `handover-upper`, `handover-lower`  | Two stacked in one box: one leaves up, one rises    | Assistant pane ↔ inspector  |
+| `cut` (React enter/exit)            | What's left of a surface whose parts all move       | The suggestion review       |
 
 ## Correctness
 
@@ -56,6 +59,14 @@ Use a motion that exists before inventing one:
   `useSettledSurface()`, the surface once its transition has finished, not on the store.
   A store change that swaps what a layer covers goes through `changeInViewTransition`, so
   the two cross-fade as one image instead of painting in turn.
+- A pair's old and new images both carry the arriving element's classes, so a class can't
+  say which image moves which way. Say it by which element arrives (`handover-lower`
+  arriving is the review opening), or with a type.
+- A named box holding a `ResumePreview` needs `[contain:paint]`: the preview's measuring
+  copy is fixed far off-screen, and stretches the box's image until it draws blank.
+- `useIsSideHandover` names the sidebar and the assistant pane only while a surface that
+  takes the sides is coming or going, so the history (which takes the workspace whole)
+  never moves them.
 - Reduced motion turns off every animation; the transition still happens.
 
 ## Validation

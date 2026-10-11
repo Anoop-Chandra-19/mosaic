@@ -63,7 +63,7 @@ export function SuggestionMark({ mark, children }: { mark: Mark; children: React
         select(proposal.id);
       }}
       className={cn(
-        'relative cursor-pointer rounded-[0.125rem] border-b-[1.5px] px-px text-inherit transition-colors duration-100',
+        'relative cursor-pointer rounded-[0.125rem] border-b-[1.5px] px-px text-inherit transition-colors duration-100 group-data-landing/review:animate-mark-in motion-reduce:animate-none',
         LOOK_CLASSES[look],
         STATE_CLASSES[state],
         isCurrent && CURRENT_CLASSES[look],
@@ -74,7 +74,7 @@ export function SuggestionMark({ mark, children }: { mark: Mark; children: React
         <span
           aria-hidden
           className={cn(
-            'absolute top-1 -left-7.75 size-1.5',
+            'absolute top-1 -left-7.75 size-1.5 group-data-landing/review:animate-flag-in motion-reduce:animate-none',
             needsNumber(proposal)
               ? 'rounded-[0.0625rem] bg-white shadow-[inset_0_0_0_1.5px_var(--paper-flag)]'
               : 'rounded-full bg-paper-flag shadow-[0_0_0_2px_white]'

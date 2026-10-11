@@ -4,11 +4,17 @@ import { useShownSurface } from './useShownSurface';
 // A surface showing the resume's page takes it from the preview as it opens and gives it
 // back as it closes. Both sides meet here, so neither imports the other.
 
-const TAKES_THE_PAGE: ReadonlySet<WorkspaceSurface['kind']> = new Set(['history']);
+const TAKES_THE_PAGE: ReadonlySet<WorkspaceSurface['kind']> = new Set(['history', 'review']);
 
-/** From the moment the surface is asked for: the preview eases to fit before it's drawn. */
+/** Of those, the ones that read the page at their own zoom, starting at fit. */
+const READS_AT_FIT: ReadonlySet<WorkspaceSurface['kind']> = new Set(['history']);
+
+/**
+ * From the moment such a surface is asked for: the preview eases to fit before it's drawn,
+ * so the page that moves is the one the surface shows. The review shares the preview's zoom.
+ */
 export function useIsHandingOffPage(): boolean {
-  return useOverlayStore((s) => s.surface !== null && TAKES_THE_PAGE.has(s.surface.kind));
+  return useOverlayStore((s) => s.surface !== null && READS_AT_FIT.has(s.surface.kind));
 }
 
 /** While the surface is drawn, so the page's name moves sides in one commit. */

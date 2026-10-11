@@ -4,6 +4,7 @@ import { useStoredPreviewZoom } from '@/features/preview/pageZoom';
 import type { PageDecorations } from '@/features/preview/PreviewSection';
 import { ResumePreview } from '@/features/preview/ResumePreview';
 import { usePreviewCanvas } from '@/features/preview/usePreviewCanvas';
+import { transitionClasses } from '@/features/view-transitions/transitionClasses';
 import { cn } from '@/lib/utils';
 import { useUiStore } from '@/stores/uiStore';
 import { SuggestionMark, SuggestionMoveChip } from './SuggestionMark';
@@ -70,7 +71,11 @@ export function ReviewPage({ page, selectedId, onBlank }: ReviewPageProps) {
         onPointerDown={canvas.onPointerDown}
         onClick={onBlank}
         className={cn(
-          'min-h-0 flex-1 overflow-auto overscroll-contain bg-pane-sunken px-5 pt-4.5 pb-19',
+          // Paint contained: the preview's offscreen measuring copy is fixed far to the left,
+          // and would otherwise stretch this box's view-transition image until it draws blank.
+          'min-h-0 flex-1 overflow-auto overscroll-contain bg-pane-sunken px-5 pt-4.5 pb-19 [contain:paint]',
+          // The preview's page moves into this box as the review opens, and back as it closes.
+          transitionClasses({ name: 'page', motion: 'handoff step' }),
           canvas.panning ? 'cursor-grabbing select-none' : canvas.readyToPan && 'cursor-grab'
         )}
       >

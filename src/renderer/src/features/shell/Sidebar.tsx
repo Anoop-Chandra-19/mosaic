@@ -21,6 +21,9 @@ import { useUiStore, type SidebarTab, SIDEBAR_WIDTH } from '@/stores/uiStore';
 import { ContentTab } from '@/features/editor/ContentTab';
 import { TemplatesTab } from '@/features/templates/TemplatesTab';
 import { SIDEBAR_TAB_TARGET, tourTargetProps } from '@/features/onboarding/tourTargets';
+import { useIsSideHandover } from '@/features/view-transitions/sideHandover';
+import { transitionClasses } from '@/features/view-transitions/transitionClasses';
+import { useIsWorkspaceReplaced } from '@/features/view-transitions/useShownSurface';
 import { formatPaneWidth, startPaneResize } from './paneResize';
 
 const tabs: { id: SidebarTab; label: string; caption: string; icon: React.ReactNode }[] = [
@@ -53,6 +56,8 @@ export function Sidebar() {
   const shouldShowPreview = useUiStore((s) => s.shouldShowPreview);
   const preview = usePreviewStore((s) => s.preview);
   const sidebarRef = useRef<HTMLElement>(null);
+  const isSideHandover = useIsSideHandover();
+  const isWorkspaceReplaced = useIsWorkspaceReplaced();
 
   const active = tabs.find((tab) => tab.id === activeSidebarTab) ?? tabs[0];
 
@@ -69,7 +74,15 @@ export function Sidebar() {
       <AppTabs
         value={active.id}
         onValueChange={(value) => setActiveSidebarTab(value as SidebarTab)}
-        className="min-h-0 flex-1"
+        className={cn(
+          'min-h-0 flex-1',
+          // Steps aside to the left for a view that takes the sides, and comes back.
+          transitionClasses({
+            name: 'sidebar',
+            motion: 'slide-away slide-in',
+            isActive: isSideHandover && !isWorkspaceReplaced,
+          })
+        )}
       >
         <AppTabsList className="relative shrink-0 gap-0.75 px-2.25 pt-2.25 pb-1.75">
           <span

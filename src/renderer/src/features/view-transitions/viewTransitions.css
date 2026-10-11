@@ -255,6 +255,115 @@
   }
 }
 
+/* ---- lockstep: one box whose content changes, as one bar becomes another ----
+   The box glides at the page's pace; its two images, pinned to its corner at their own
+   size, swap in lockstep, so their light adds to one. */
+::view-transition-group(.lockstep) {
+  overflow: clip;
+  z-index: 2;
+  animation-duration: 340ms;
+  animation-timing-function: var(--ease-settle);
+}
+
+::view-transition-old(.lockstep),
+::view-transition-new(.lockstep) {
+  inline-size: auto;
+  block-size: auto;
+  inset: 0 auto auto 0;
+  animation-duration: 200ms;
+  animation-timing-function: var(--ease-settle);
+}
+
+/* ---- handover: a stack of two in one clipped box ----
+   The upper leaves upward as the lower rises in; back again, the mirror. Pushed solid,
+   never faded, so nothing dims mid-way. With nothing to hand over, the lower one comes
+   and goes alone, from the window's right edge. A pair's images both carry the arriving
+   element's classes, so `.lower` is the lower one arriving, and `.upper` the upper one. */
+::view-transition-group(.handover) {
+  overflow: clip;
+  z-index: 2;
+  animation-duration: 340ms;
+  animation-timing-function: var(--ease-settle);
+}
+
+::view-transition-old(.handover),
+::view-transition-new(.handover) {
+  inline-size: auto;
+  block-size: auto;
+  inset: 0 auto auto 0;
+  mix-blend-mode: normal;
+}
+
+::view-transition-old(.handover.lower) {
+  animation: push-up-out 340ms var(--ease-settle) both;
+}
+
+::view-transition-new(.handover.lower) {
+  animation: push-up-in 340ms var(--ease-settle) both;
+}
+
+::view-transition-old(.handover.upper) {
+  animation: push-down-out 300ms var(--ease-settle) both;
+}
+
+::view-transition-new(.handover.upper) {
+  animation: push-down-in 300ms var(--ease-settle) both;
+}
+
+::view-transition-new(.handover.lower):only-child {
+  animation: edge-in 260ms var(--ease-settle) both;
+}
+
+::view-transition-old(.handover.lower):only-child {
+  animation: edge-out 200ms ease-in both;
+}
+
+@keyframes push-up-out {
+  to {
+    transform: translateY(-100%);
+  }
+}
+
+@keyframes push-up-in {
+  from {
+    transform: translateY(100%);
+  }
+}
+
+@keyframes push-down-out {
+  to {
+    transform: translateY(100%);
+  }
+}
+
+@keyframes push-down-in {
+  from {
+    transform: translateY(-100%);
+  }
+}
+
+@keyframes edge-in {
+  from {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes edge-out {
+  to {
+    transform: translateX(100%);
+  }
+}
+
+/* ---- cut: what's left of a surface whose parts all move on their own ----
+   It is there at once, under them, and gone at once when they leave. */
+::view-transition-old(.cut) {
+  display: none;
+}
+
+::view-transition-new(.cut) {
+  animation: none;
+}
+
 /* ---- Reduced motion: every transition still happens, none of it moves ---- */
 
 @media (prefers-reduced-motion: reduce) {
