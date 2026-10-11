@@ -8,6 +8,16 @@ Setup and scripts are in the [README](../README.md).
 Development runs keep their data in the repo's gitignored `.dev-data/`, never an installed
 Mosaic's profile. Quit the app before `bun run dev:reset`, which deletes that data.
 
+## Developer tools
+
+Every build except a release has a wrench in the top bar. It lists tools for checking
+the app with fictional data, such as loading an example resume or staging the
+assistant's suggestions without a provider. Each tool is one entry in `DEV_TOOLS`
+(`features/dev-tools/devTools.ts`). e2e specs use the same menu.
+`bun run package` builds with `--mode release`, which leaves the tools out of the
+installer. Keep the data side-effect free (build it in a function), or the release
+bundle keeps it.
+
 ## React Compiler
 
 The renderer uses stable React Compiler through `@vitejs/plugin-react` in

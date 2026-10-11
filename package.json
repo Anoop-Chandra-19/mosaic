@@ -12,7 +12,7 @@
     "db:freeze": "node scripts/freeze-migrations.ts",
     "build": "tsc -b && electron-vite build",
     "preview": "electron-vite preview",
-    "package": "bun run build && electron-builder",
+    "package": "tsc -b && electron-vite build --mode release && electron-builder",
     "lint": "eslint .",
     "test": "vitest run",
     "test:watch": "vitest",
