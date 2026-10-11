@@ -53,15 +53,18 @@ function chooseRailMark(version: VersionMeta, isHead: boolean): RailMark {
   return CONTENT_SOURCES.has(version.source) ? 'tick' : 'event';
 }
 
+// The rail is 1px at 5px, so its centre is 5.5px. Each mark is an odd number of pixels wide
+// and its margins put its centre there in whole pixels. A fractional box or a half-pixel
+// transform is rounded when drawn, which blurs the mark or leans the diamond off the line.
 const RAIL_MARKS: Record<RailMark, string> = {
-  tick: 'mx-[0.09375rem] mt-[0.5625rem] h-px w-[0.5625rem] rounded-[0.0625rem] bg-ink-muted',
-  newest: 'mx-[0.03125rem] mt-2 h-[0.1875rem] w-[0.6875rem] rounded-[0.0625rem] bg-ink-soft',
+  tick: 'mt-[0.5625rem] mr-0.5 ml-px h-px w-[0.5625rem] rounded-[0.0625rem] bg-ink-muted',
+  newest: 'mt-2 mr-px h-[0.1875rem] w-[0.6875rem] rounded-[0.0625rem] bg-ink-soft',
   named:
-    'mx-[0.109375rem] mt-[0.328125rem] size-[0.53125rem] rotate-45 rounded-[0.09375rem] bg-foreground shadow-[0_0_0_2.5px_var(--background)]',
+    'mt-1.25 mr-0.5 ml-px size-[0.5625rem] rotate-45 rounded-[0.09375rem] bg-foreground shadow-[0_0_0_2.5px_var(--background)]',
   leftOff:
-    'mx-[0.15625rem] mt-1.5 size-[0.4375rem] rounded-[0.09375rem] bg-ink-muted shadow-[0_0_0_2px_var(--background)]',
+    'mt-1.5 mr-0.75 ml-0.5 size-[0.4375rem] rounded-[0.09375rem] bg-ink-muted shadow-[0_0_0_2px_var(--background)]',
   event:
-    'mx-[0.15625rem] mt-1.5 size-[0.4375rem] rounded-[0.09375rem] bg-background shadow-[inset_0_0_0_1.5px_var(--ink-faint),0_0_0_2px_var(--background)]',
+    'mt-1.5 mr-0.75 ml-0.5 size-[0.4375rem] rounded-[0.09375rem] bg-background shadow-[inset_0_0_0_1.5px_var(--ink-faint),0_0_0_2px_var(--background)]',
 };
 
 /** Amber is only ever the version being read. */
@@ -135,7 +138,7 @@ const REVISION_MARKS: Record<RailMark, string> = {
   tick: '-left-[1.375rem] top-[0.65625rem] h-px w-[0.3125rem] bg-ink-muted',
   newest: '-left-[1.375rem] top-[0.65625rem] h-px w-[0.3125rem] bg-ink-muted',
   named:
-    '-left-[1.484375rem] top-1.5 size-[0.53125rem] rotate-45 rounded-[0.09375rem] bg-foreground shadow-[0_0_0_2.5px_var(--background)]',
+    '-left-6 top-1.5 size-[0.5625rem] rotate-45 rounded-[0.09375rem] bg-foreground shadow-[0_0_0_2.5px_var(--background)]',
   leftOff:
     '-left-[1.4375rem] top-[0.46875rem] size-[0.4375rem] rounded-[0.09375rem] bg-ink-muted shadow-[0_0_0_2px_var(--background)]',
   event:
@@ -325,8 +328,7 @@ export function VersionRow({
           <span
             aria-hidden
             className={cn(
-              // The rail is 1px on a whole pixel, centred at 5.5px; the slot's centre is 6px.
-              'relative z-1 shrink-0 translate-x-[-0.03125rem]',
+              'relative z-1 shrink-0',
               railMarkClasses(railMark, isHead, isPreviewing, isConfirming),
               isJustNamed && 'animate-marker-pop motion-reduce:animate-none'
             )}
