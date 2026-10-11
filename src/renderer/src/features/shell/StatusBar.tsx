@@ -5,7 +5,7 @@ import { AppTooltip } from '@/components/AppTooltip';
 import { formatRelativeTime } from '@/features/templates/formatRelativeTime';
 import { useActiveTemplate } from '@/features/templates/useActiveTemplate';
 import { useVersionDistance, type VersionDistance } from '@/features/history/useVersionDistance';
-import { versionLabel } from '@/features/history/useTemplateVersions';
+import { versionLabel } from '@/features/history/versionLabel';
 import { useShortcutLabel } from '@/features/shortcuts/shortcutBindings';
 import type { ShortcutId } from '@/lib/shortcutCatalog';
 import { cn } from '@/lib/utils';

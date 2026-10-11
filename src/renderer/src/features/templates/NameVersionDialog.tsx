@@ -6,9 +6,10 @@ import { AppInput } from '@/components/AppInput';
 import { AppRadioGroup, AppRadioGroupItem } from '@/components/AppRadioGroup';
 import { DialogFrameBody, DialogFrameFooter, DialogFrameHeader } from '@/components/DialogFrame';
 import { Note } from '@/components/Note';
+import { ReadBoundary } from '@/components/ReadBoundary';
 import { Text } from '@/components/Text';
 import { useVersionDistance } from '@/features/history/useVersionDistance';
-import { versionLabel } from '@/features/history/useTemplateVersions';
+import { versionLabel } from '@/features/history/versionLabel';
 import { easeHeightChanges } from '@/lib/motion/easeHeightChanges';
 import { DbError } from '@/lib/storage/mosaicDb';
 import { cn } from '@/lib/utils';
@@ -111,7 +112,6 @@ function NameVersionForm({ onDone }: { onDone: () => void }) {
   const isUndone = useVersionDistance().undone && !isClean;
   const note: NamingNote = isUndone ? 'revert' : action;
   const targets = head ? targetsOf(head) : null;
-  const changes = useChangesSinceVersion(isClean ? undefined : head, isUndone);
 
   const choose = (next: NamingMode) => {
     setMode(next);
@@ -225,14 +225,15 @@ function NameVersionForm({ onDone }: { onDone: () => void }) {
             </Text>
           )}
         </div>
-        {targets && changes && note !== 'rename' && (
-          <NamingChangeList
-            heading={LIST_HEADINGS[note](targets)}
-            changes={changes.changes}
-            formatting={changes.formatting}
-            headLabel={targets.head}
-            isUndone={isUndone}
-          />
+        {head && targets && note !== 'rename' && (
+          <ReadBoundary key={head.id} failure="Could not read the newest version">
+            <NamingChangeList
+              heading={LIST_HEADINGS[note](targets)}
+              head={head}
+              headLabel={targets.head}
+              isUndone={isUndone}
+            />
+          </ReadBoundary>
         )}
         {targets && (
           <Note icon={Info} size="sm">
@@ -255,8 +256,7 @@ function NameVersionForm({ onDone }: { onDone: () => void }) {
 
 interface NamingChangeListProps {
   heading: string;
-  changes: NamingChangeRow[];
-  formatting: NamingChangeRow[];
+  head: VersionMeta;
   headLabel: string;
   isUndone: boolean;
 }
@@ -265,13 +265,8 @@ interface NamingChangeListProps {
  * What naming records, in the full history's words. A draft that moved but prints the same
  * words (an edit typed and deleted again) still says so, rather than showing an empty list.
  */
-function NamingChangeList({
-  heading,
-  changes,
-  formatting,
-  headLabel,
-  isUndone,
-}: NamingChangeListProps) {
+function NamingChangeList({ heading, head, headLabel, isUndone }: NamingChangeListProps) {
+  const { changes, formatting } = useChangesSinceVersion(head, isUndone);
   const sameWords: NamingChangeRow = {
     key: 'same',
     text: `Same words as ${headLabel}${formatting.length > 0 ? ', formatting differs' : ''}`,

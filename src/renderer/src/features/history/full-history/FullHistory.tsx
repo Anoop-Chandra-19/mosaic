@@ -10,6 +10,7 @@ import {
 } from 'react';
 import { Clock, List, X } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
+import { ReadBoundary } from '@/components/ReadBoundary';
 import { Text } from '@/components/Text';
 import { PAPER_DIMENSIONS_PT } from '@/features/preview/pageGeometry';
 import {
@@ -25,14 +26,14 @@ import type { ShortcutId } from '@/lib/shortcutCatalog';
 import { cn } from '@/lib/utils';
 import { useOverlayStore } from '@/stores/overlayStore';
 import { attempt, showToast } from '@/stores/toastStore';
-import { useTemplateStore } from '@/stores/templateStore';
+import { readVersion, useTemplateStore, useVersionHistory } from '@/stores/templateStore';
 import { useUiStore } from '@/stores/uiStore';
 import { countChangesByTone } from '@shared/resume/changes/resumeChange';
 import type { TemplateSummary, Version, VersionMeta } from '@shared/types/db';
 import type { ResumeData } from '@shared/types/resume';
 import type { HistoryComparison, HistoryFilter } from '@/types/history';
 import { VersionList, type HistoryReveal } from '../version-list/VersionList';
-import { useTemplateVersions, versionLabel } from '../useTemplateVersions';
+import { versionLabel } from '../versionLabel';
 import {
   buildExampleHistory,
   EXAMPLE_OPENING_ID,
@@ -48,7 +49,6 @@ import {
   findComparedBase,
   hasRevisions,
   prepareHistoryOpening,
-  readStoredVersion,
   readVersionPair,
   resolveComparison,
   type VersionReader,
@@ -104,14 +104,22 @@ export function FullHistory({
   // The history tour shows the example; leaving the tour brings this template's back.
   if (isTouring) return <ExampleHistoryFrame key="example" />;
   return (
-    <TemplateHistoryFrame
+    <ReadBoundary
       key={templateId}
-      template={template}
-      filter={filter}
-      versionId={versionId}
-      comparison={comparison}
-      prepared={prepared}
-    />
+      failure="Could not read the history"
+      onFailure={() => {
+        showToast('Could not open the history', 'error');
+        closeSurface('history');
+      }}
+    >
+      <TemplateHistoryFrame
+        template={template}
+        filter={filter}
+        versionId={versionId}
+        comparison={comparison}
+        prepared={prepared}
+      />
+    </ReadBoundary>
   );
 }
 
@@ -135,12 +143,12 @@ interface TemplateHistoryFrameProps {
 }
 
 function TemplateHistoryFrame({ template, prepared, ...rest }: TemplateHistoryFrameProps) {
-  const versions = useTemplateVersions(template, true, prepared?.versions);
+  const versions = useVersionHistory(template.id);
   const source: HistorySource = {
     templateId: template.id,
     name: template.name,
     versions,
-    readVersion: readStoredVersion,
+    readVersion,
     example: null,
   };
   return <FullHistoryFrame source={source} prepared={prepared} {...rest} />;

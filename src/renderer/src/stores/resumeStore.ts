@@ -1,7 +1,8 @@
 import { current } from 'immer';
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
-import { DbError, getDb } from '@/lib/storage/mosaicDb';
+import { DbError } from '@/lib/storage/mosaicDb';
+import { storage } from '@/lib/storage/storageService';
 import { createEmptyResume } from '@shared/resume/defaultResume';
 import { createHeaderItem, createHeaderLine } from '@shared/resume/resumeHeader';
 import type { Draft } from '@shared/types/db';
@@ -644,7 +645,7 @@ function cancelPendingSave() {
 
 async function save(templateId: string, doc: ResumeData, rev: number) {
   try {
-    await getDb().drafts.save(templateId, doc, rev);
+    await storage.drafts.save(templateId, doc, rev);
     useResumeStore.setState({ saveFailed: false, savedAt: Date.now() });
   } catch (error) {
     // A newer draft already came from main (an import or restore landed after this edit

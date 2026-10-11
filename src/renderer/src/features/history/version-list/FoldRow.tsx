@@ -4,7 +4,7 @@ import { AppButton } from '@/components/AppButton';
 import { Text } from '@/components/Text';
 import { cn } from '@/lib/utils';
 import type { VersionMeta } from '@shared/types/db';
-import { versionLabel } from '../useTemplateVersions';
+import { versionLabel } from '../versionLabel';
 
 function formatShortDate(ms: number): string {
   return new Date(ms).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type ComponentProps } from 'react';
 import {
   ChevronDown,
   ChevronRight,
@@ -24,19 +24,19 @@ import {
 } from '@/components/AppMenu';
 import { AppInput } from '@/components/AppInput';
 import { Note } from '@/components/Note';
+import { ReadBoundary } from '@/components/ReadBoundary';
 import { Text } from '@/components/Text';
-import { getDb } from '@/lib/storage/mosaicDb';
 import { cn } from '@/lib/utils';
 import { useOverlayStore } from '@/stores/overlayStore';
 import { usePreviewStore } from '@/stores/previewStore';
 import { attempt, showToast } from '@/stores/toastStore';
 import { useResumeStore } from '@/stores/resumeStore';
-import { useTemplateStore } from '@/stores/templateStore';
+import { readVersion, useTemplateStore, useVersionHistory } from '@/stores/templateStore';
 import type { TemplateSummary, VersionMeta } from '@shared/types/db';
 import { DeleteTemplateDialog } from './DeleteTemplateDialog';
 import { formatRelativeTime } from './formatRelativeTime';
 import type { HistoryFilter } from '@/types/history';
-import { useTemplateVersions, versionLabel } from '@/features/history/useTemplateVersions';
+import { versionLabel } from '@/features/history/versionLabel';
 import { VersionList } from '@/features/history/version-list/VersionList';
 import { tourTargetProps } from '@/features/onboarding/tourTargets';
 
@@ -62,7 +62,6 @@ export function TemplateCard({ template, active, expanded, onToggle }: TemplateC
   const openSurface = useOverlayStore((s) => s.openSurface);
   // The draft has moved on from the newest version.
   const dirty = useResumeStore((s) => active && s.rev !== template.head.rev);
-  const versions = useTemplateVersions(template, expanded);
   const [renaming, setRenaming] = useState(false);
   const [pendingDelete, setPendingDelete] = useState(false);
   const previewId = active && preview ? preview.version.id : null;
@@ -100,14 +99,13 @@ export function TemplateCard({ template, active, expanded, onToggle }: TemplateC
 
   /** The version in the sheet, or else the newest one. */
   const exportVersion = async () => {
-    if (!versions) return;
     try {
       const target =
         previewId && preview
           ? preview
           : {
-              version: await getDb().versions.get(versions[0].id),
-              label: versionLabel(versions[0]),
+              version: await readVersion(template.head.id),
+              label: versionLabel(template.head),
             };
       openDialog({ kind: 'export', version: { ...target, templateName: template.name } });
     } catch (error) {
@@ -122,7 +120,7 @@ export function TemplateCard({ template, active, expanded, onToggle }: TemplateC
       return;
     }
     try {
-      setPreview({ version: await getDb().versions.get(version.id), label });
+      setPreview({ version: await readVersion(version.id), label });
     } catch (error) {
       console.error(error);
       showToast('Could not read that version', 'error');
@@ -293,7 +291,7 @@ export function TemplateCard({ template, active, expanded, onToggle }: TemplateC
                 <Clock className="size-3" />
                 History
               </Text>
-              {active && versions && (
+              {active && (
                 <AppButton
                   variant="ghost"
                   size="xs"
@@ -302,7 +300,7 @@ export function TemplateCard({ template, active, expanded, onToggle }: TemplateC
                   title={
                     dirty
                       ? 'Saved as you type. Name a version to keep this point in history.'
-                      : `Your draft matches ${versionLabel(versions[0])}.`
+                      : `Your draft matches ${versionLabel(template.head)}.`
                   }
                 >
                   <Info className="size-3" />
@@ -312,9 +310,16 @@ export function TemplateCard({ template, active, expanded, onToggle }: TemplateC
             <Text variant="meta">newest first</Text>
           </div>
 
-          {versions ? (
-            <VersionList
-              versions={versions}
+          <ReadBoundary
+            failure="Could not load the history"
+            fallback={
+              <Text as="p" variant="secondary" className="mt-2 text-ink-faint">
+                Loading history…
+              </Text>
+            }
+          >
+            <TemplateVersionList
+              templateId={template.id}
               isCompact={!active}
               canPreview={active}
               previewId={previewId}
@@ -323,11 +328,7 @@ export function TemplateCard({ template, active, expanded, onToggle }: TemplateC
               onDuplicate={(version) => void duplicate(version)}
               onOpenFullHistory={openFullHistory}
             />
-          ) : (
-            <Text as="p" variant="secondary" className="mt-2 text-ink-faint">
-              Loading history…
-            </Text>
-          )}
+          </ReadBoundary>
 
           {previewId && preview && (
             <Note icon={Eye} tone="amber" size="sm" className="mt-2">
@@ -343,22 +344,20 @@ export function TemplateCard({ template, active, expanded, onToggle }: TemplateC
             </Note>
           )}
 
-          {versions && (
-            <AppButton
-              variant="ghost"
-              size="xs"
-              className="mt-1.5"
-              title={
-                previewId && preview
-                  ? `Export ${preview.label}, the version you're previewing`
-                  : `Export ${versionLabel(versions[0])}, the newest version`
-              }
-              onClick={() => void exportVersion()}
-            >
-              <Download className="size-3" />
-              Export this version
-            </AppButton>
-          )}
+          <AppButton
+            variant="ghost"
+            size="xs"
+            className="mt-1.5"
+            title={
+              previewId && preview
+                ? `Export ${preview.label}, the version you're previewing`
+                : `Export ${versionLabel(template.head)}, the newest version`
+            }
+            onClick={() => void exportVersion()}
+          >
+            <Download className="size-3" />
+            Export this version
+          </AppButton>
         </div>
       )}
 
@@ -372,4 +371,13 @@ export function TemplateCard({ template, active, expanded, onToggle }: TemplateC
       />
     </div>
   );
+}
+
+type TemplateVersionListProps = Omit<ComponentProps<typeof VersionList>, 'versions'> & {
+  templateId: string;
+};
+
+function TemplateVersionList({ templateId, ...listProps }: TemplateVersionListProps) {
+  const versions = useVersionHistory(templateId);
+  return <VersionList versions={versions} {...listProps} />;
 }

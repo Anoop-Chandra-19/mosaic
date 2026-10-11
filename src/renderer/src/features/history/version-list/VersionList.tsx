@@ -26,7 +26,7 @@ import {
 } from '../groupVersionHistory';
 import { HistoryTip } from '../learning/HistoryTip';
 import { historyItemKey, useHistoryTip } from '../learning/useHistoryTip';
-import { versionLabel } from '../useTemplateVersions';
+import { versionLabel } from '../versionLabel';
 import { HistoryFilterBar, type HistoryMonth } from './HistoryFilterBar';
 import { HISTORY_LINK, HistoryCount, HistoryHandoff, HistoryRangeEdge } from './HistoryListEdges';
 import { useVersionEdits } from './useVersionEdits';

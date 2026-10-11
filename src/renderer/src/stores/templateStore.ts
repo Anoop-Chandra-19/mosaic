@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
-import { getDb } from '@/lib/storage/mosaicDb';
+import { storage, useStored } from '@/lib/storage/storageService';
 import { usePreviewStore } from '@/stores/previewStore';
 import { flushDraft, saveDraftOrStop, useResumeStore } from '@/stores/resumeStore';
 import { useUiStore } from '@/stores/uiStore';
@@ -25,17 +25,16 @@ export interface DeletedTemplate {
 /*
  * Templates as main stores them. The list is summaries only — documents stay in the
  * database until a template is opened into the editor (`resumeStore`), which also knows
- * which template is open. Actions write through main and then re-read the list, so it
- * never drifts from what is on disk. They reject with a `DbError` if main refuses.
+ * which template is open. Actions write through the storage service and then re-read the
+ * list, so it never drifts from what is on disk. They reject with a `DbError` if main
+ * refuses.
+ *
+ * Versions, histories and other templates' drafts are read through the exports below,
+ * straight from the service rather than kept in this state.
  */
 
 interface TemplateState {
   templates: TemplateSummary[];
-  /**
-   * Counts renames and deletes in any history, which the summaries can miss (an older
-   * version renamed), so a loaded history knows to read itself again.
-   */
-  historyEdits: number;
 
   load: (templates: TemplateSummary[]) => void;
   refresh: () => Promise<void>;
@@ -69,6 +68,10 @@ interface TemplateState {
    * The undo stack stays as it is. Nothing to keep, or no template open, does nothing.
    */
   snapshotOpenDraft: (occasion: SnapshotOccasion) => Promise<void>;
+  /** Keeps the draft as it was before the assistant's suggestions land in it. */
+  snapshotBeforeApply: (templateId: string) => Promise<void>;
+  /** Keeps the draft as it is after applying `applied` of `proposed` suggestions. */
+  snapshotApplied: (templateId: string, applied: number, proposed: number) => Promise<void>;
   /** Replaces the open draft, keeping unsaved edits in history first if the user wants it. */
   importIntoDraft: (doc: ResumeData, from: string) => Promise<void>;
   /**
@@ -82,6 +85,23 @@ interface TemplateState {
   removeVersion: (version: VersionMeta) => Promise<void>;
   putBackVersion: (versionId: string) => Promise<void>;
 }
+
+/** A version with its document. Suspends until it is read. */
+export const useVersion = (versionId: string) => useStored(storage.versions.get, versionId);
+export const readVersion = storage.versions.get;
+/** A template's history, newest first, without documents. Suspends until it is read. */
+export const useVersionHistory = (templateId: string) =>
+  useStored(storage.versions.list, templateId);
+export const readVersionHistory = storage.versions.list;
+/**
+ * Another template's stored draft, read without opening it; null reads nothing. The open
+ * template's is the editor's (`resumeStore`).
+ */
+export const useStoredDraft = (templateId: string | null) =>
+  useStored(storage.drafts.get, templateId);
+export const readStoredDraft = storage.drafts.get;
+/** A template as a backup file holds it, with its draft and whole history. */
+export const readTemplateBundle = (templateId: string) => storage.bundles.export([templateId]);
 
 function openTemplateId(): string | null {
   return useResumeStore.getState().templateId;
@@ -105,17 +125,25 @@ export const useTemplateStore = create<TemplateState>()(
       useResumeStore.getState().loadDraft(draft, asStep ? { asStep } : undefined);
     };
 
-    /** After a rename or delete: summaries, and any history that is loaded, read again. */
-    const refreshHistory = async () => {
-      set((state) => {
-        state.historyEdits += 1;
-      });
-      await get().refresh();
+    /**
+     * Keeps a version the user didn't ask for. Failing one must not stop what they were
+     * doing: switching template, closing the window, or applying suggestions.
+     */
+    const keepVersion = async (templateId: string, write: () => Promise<VersionMeta>) => {
+      try {
+        const version = await write();
+        // Still the same draft? An open that overtook this one has its own baseline.
+        if (openTemplateId() === templateId) {
+          useResumeStore.getState().markVersionSaved(version.rev);
+        }
+        await get().refresh();
+      } catch (error) {
+        console.error('Could not keep a version of the draft', error);
+      }
     };
 
     return {
       templates: [],
-      historyEdits: 0,
 
       load: (templates) =>
         set((state) => {
@@ -123,7 +151,7 @@ export const useTemplateStore = create<TemplateState>()(
         }),
 
       refresh: async () => {
-        const templates = await getDb().templates.list();
+        const templates = await storage.templates.list();
         set((state) => {
           state.templates = templates;
         });
@@ -133,9 +161,8 @@ export const useTemplateStore = create<TemplateState>()(
         // The new one takes the editor, so the draft it displaces is kept first.
         await saveDraftOrStop();
         await get().snapshotOpenDraft('switched');
-        const db = getDb();
-        const created = await db.templates.create(name, doc, importedFrom);
-        showDraft(await db.templates.open(created.id));
+        const created = await storage.templates.create(name, doc, importedFrom);
+        showDraft(await storage.templates.open(created.id));
         await get().refresh();
       },
 
@@ -144,26 +171,26 @@ export const useTemplateStore = create<TemplateState>()(
         // Undo does not survive the switch, so what it could have taken back is kept.
         await saveDraftOrStop();
         await get().snapshotOpenDraft('switched');
-        showDraft(await getDb().templates.open(id));
+        showDraft(await storage.templates.open(id));
         // The template left behind may have just saved; its summary is out of date.
         await get().refresh();
       },
 
       renameTemplate: async (id, name) => {
-        await getDb().templates.rename(id, name);
+        await storage.templates.rename(id, name);
         await get().refresh();
       },
 
       duplicateTemplate: async (id) => {
         // The copy takes the draft as main has it, so send the latest edits first.
         await saveDraftOrStop();
-        const copy = await getDb().templates.duplicate(id);
+        const copy = await storage.templates.duplicate(id);
         await get().refresh();
         return copy;
       },
 
       duplicateVersion: async (versionId) => {
-        const copy = await getDb().versions.duplicate(versionId);
+        const copy = await storage.versions.duplicate(versionId);
         await get().refresh();
         return copy;
       },
@@ -172,16 +199,15 @@ export const useTemplateStore = create<TemplateState>()(
         const wasOpen = id === openTemplateId();
         // The copy kept for Undo should have the latest edits.
         if (wasOpen) await saveDraftOrStop();
-        const db = getDb();
-        const bundle = await db.bundle.export([id]);
-        await db.templates.remove(id);
+        const bundle = await readTemplateBundle(id);
+        await storage.templates.remove(id);
         await get().refresh();
         if (wasOpen) {
           const next = get().templates.reduce<TemplateSummary | undefined>(
             (latest, t) => (latest && latest.updatedAt >= t.updatedAt ? latest : t),
             undefined
           );
-          showDraft(next ? await db.templates.open(next.id) : null);
+          showDraft(next ? await storage.templates.open(next.id) : null);
         }
         return { bundle, wasOpen };
       },
@@ -193,13 +219,12 @@ export const useTemplateStore = create<TemplateState>()(
 
       importBundle: async (text, mode) => {
         await saveDraftOrStop();
-        const db = getDb();
-        const { templateIds } = await db.bundle.import(text, mode);
+        const { templateIds } = await storage.bundles.import(text, mode);
         const open = openTemplateId();
         if (open === null || mode === 'restore-all') {
           // A backup of this app brings the same ids back; keep the same template open.
           const id = open !== null && templateIds.includes(open) ? open : templateIds[0];
-          showDraft(await db.templates.open(id));
+          showDraft(await storage.templates.open(id));
         }
         await get().refresh();
         return templateIds;
@@ -208,7 +233,7 @@ export const useTemplateStore = create<TemplateState>()(
       nameVersion: async (name, mode = 'new') => {
         const templateId = requireOpenTemplate();
         await saveDraftOrStop();
-        const version = await getDb().versions.name(templateId, name, mode);
+        const version = await storage.versions.name(templateId, name, mode);
         // The draft is that version now, so the status bar counts changes from here.
         useResumeStore.getState().markVersionSaved(version.rev);
         await get().refresh();
@@ -220,55 +245,55 @@ export const useTemplateStore = create<TemplateState>()(
         await flushDraft();
         const templateId = openTemplateId();
         if (templateId === null) return;
-        try {
-          const version = await getDb().versions.snapshot(templateId, occasion);
-          // Still the same draft? An open that overtook this one has its own baseline.
-          if (openTemplateId() === templateId) {
-            useResumeStore.getState().markVersionSaved(version.rev);
-          }
-          await get().refresh();
-        } catch (error) {
-          // A snapshot is taken for the user, not asked for. Failing one must not stop
-          // them switching template or closing the window.
-          console.error('Could not keep a version of the draft', error);
-        }
+        await keepVersion(templateId, () => storage.versions.snapshot(templateId, occasion));
       },
+
+      snapshotBeforeApply: (templateId) =>
+        keepVersion(templateId, async () => {
+          await flushDraft();
+          return storage.versions.snapshot(templateId, 'before-apply');
+        }),
+
+      snapshotApplied: (templateId, applied, proposed) =>
+        keepVersion(templateId, async () => {
+          await flushDraft();
+          return storage.versions.snapshotApplied(templateId, applied, proposed);
+        }),
 
       importIntoDraft: async (doc, from) => {
         const templateId = requireOpenTemplate();
         await saveDraftOrStop();
         const { onImport } = useUiStore.getState().snapshotTriggers;
-        showDraft(await getDb().drafts.importInto(templateId, doc, from, onImport), 'import');
+        showDraft(await storage.drafts.importInto(templateId, doc, from, onImport), 'import');
         await get().refresh();
       },
 
       restoreVersion: async (templateId, versionId) => {
         await saveDraftOrStop();
-        const db = getDb();
         const { beforeRestore } = useUiStore.getState().snapshotTriggers;
-        const restored = await db.versions.restore(templateId, versionId, beforeRestore);
+        const restored = await storage.versions.restore(templateId, versionId, beforeRestore);
         // Restoring into the open draft is a step of it; another template is a fresh start.
         if (templateId === openTemplateId()) showDraft(restored, 'restore');
-        else showDraft(await db.templates.open(templateId));
+        else showDraft(await storage.templates.open(templateId));
         await get().refresh();
       },
 
       renameVersion: async (versionId, name) => {
-        await getDb().versions.rename(versionId, name);
-        await refreshHistory();
+        await storage.versions.rename(versionId, name);
+        await get().refresh();
       },
 
       removeVersion: async (version) => {
-        await getDb().versions.remove(version.id);
+        await storage.versions.remove(version);
         if (usePreviewStore.getState().preview?.version.id === version.id) {
           usePreviewStore.getState().setPreview(null);
         }
-        await refreshHistory();
+        await get().refresh();
       },
 
       putBackVersion: async (versionId) => {
-        await getDb().versions.putBack(versionId);
-        await refreshHistory();
+        await storage.versions.putBack(versionId);
+        await get().refresh();
       },
     };
   })
