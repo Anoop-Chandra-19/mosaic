@@ -17,8 +17,16 @@ const { flushDraft, useResumeStore } = await import('@/stores/resumeStore');
 const { useTemplateStore } = await import('@/stores/templateStore');
 const { DEFAULT_PREFERENCES, useUiStore } = await import('@/stores/uiStore');
 const { useProposalStore } = await import('@/stores/proposalStore');
-const { acceptProposals, editProposal, rejectProposals, stageProposals } =
-  await import('../proposalActions');
+const {
+  acceptProposals,
+  confirmProposalFact,
+  editProposal,
+  editProposalFact,
+  fillProposalNumber,
+  rejectProposals,
+  reviewStaleProposalAnyway,
+  stageProposals,
+} = await import('../proposalActions');
 const { applyAcceptedProposals } = await import('../applyAcceptedProposals');
 
 let sqlite: Database;
@@ -101,7 +109,7 @@ describe('a run of suggestions, start to finish', () => {
     expect(led.flags.map((flag) => flag.kind)).toEqual(['claimsMore']);
     expect(doubled.flags.map((flag) => flag.kind)).toEqual(['doubledWords']);
     expect(gap.flags.map((flag) => flag.kind)).toContain('unfilledGap');
-    expect(replace.flags).toEqual([]);
+    expect(replace.flags).toEqual([{ kind: 'newNames', words: ['Bergen'] }]);
     // Nothing touches the draft until it is applied.
     expect(bulletText('b1')).toBe(B1);
 
@@ -111,11 +119,11 @@ describe('a run of suggestions, start to finish', () => {
 
     const outcome = await applyAcceptedProposals();
 
-    expect(outcome).toEqual({
-      appliedIds: [doubled.id, replace.id],
-      skippedIds: [],
-      blockedIds: [gap.id],
-    });
+    expect(outcome.kind).toBe('applied');
+    const plan = outcome.kind === 'applied' ? outcome.plan : null;
+    expect(plan?.landed.map((p) => p.id)).toEqual([doubled.id, replace.id]);
+    expect(plan?.held.map((p) => p.id)).toEqual([gap.id]);
+    expect(plan?.skipped).toEqual([]);
     expect(bulletText('b1')).toBe(B1);
     expect(bulletText('b2')).toBe('Cut p99 latency from 18% to 3% of requests');
     expect(bulletText('b4')).toBe('Built tile caching for the Oslo and Bergen offices');
@@ -123,7 +131,7 @@ describe('a run of suggestions, start to finish', () => {
     const versions = await db.current!.versions.list(resume().templateId!);
     expect(versions[0]).toMatchObject({
       source: 'assistant',
-      summary: 'Applied 2 of 4 suggestions',
+      summary: '2 suggestions in Harbor Freight Labs and Lantern Maps',
     });
 
     resume().undo();
@@ -148,6 +156,71 @@ describe('a run of suggestions, start to finish', () => {
   });
 });
 
+describe('review', () => {
+  it('filling the number keeps it, and it lands with the number', async () => {
+    const [gap] = stageProposals('', [SPIKE_LIKE_CHANGES[2]]).proposals;
+
+    expect(fillProposalNumber(gap.id, '30')).toBe(true);
+    expect(proposals()[0]).toMatchObject({ status: 'accepted', flags: [] });
+    await applyAcceptedProposals();
+
+    expect(bulletText('b3')).toBe('Wrote the on-call runbook that cut pages by 30%');
+  });
+
+  it('a new entry is kept only once each of its facts is confirmed', () => {
+    const [entry] = stageProposals('add my mentoring', [
+      {
+        source: 'entry',
+        change: {
+          kind: 'entry',
+          sectionId: 's1',
+          frame: { title: 'Mentor', dates: '2021' },
+          bullets: ['Mentored new engineers'],
+        },
+      },
+    ]).proposals;
+
+    acceptProposals([entry.id]);
+    expect(proposals()[0].status).toBe('pending');
+    confirmProposalFact(entry.id, 'title', true);
+    editProposalFact(entry.id, 'dates', '2021 – Present');
+    acceptProposals([entry.id]);
+    expect(proposals()[0].status).toBe('accepted');
+
+    confirmProposalFact(entry.id, 'title', false);
+    expect(proposals()[0].status).toBe('pending');
+  });
+
+  it('an out-of-date rewrite can be reviewed against the edited bullet, and then replaces it', async () => {
+    const [led] = stageProposals('', [SPIKE_LIKE_CHANGES[0]]).proposals;
+    resume().updateBullet('s1', 'e1', 'b1', 'Moved billing to Postgres');
+    expect(proposals()[0].isStale).toBe(true);
+
+    expect(reviewStaleProposalAnyway(led.id)).toBe(true);
+    expect(proposals()[0]).toMatchObject({ isStale: false, status: 'pending' });
+    acceptProposals([led.id]);
+    await applyAcceptedProposals();
+
+    expect(bulletText('b1')).toBe('Led the billing migration to Postgres');
+  });
+
+  it('adds to the assistant’s version only while the draft still matches it', async () => {
+    const [led, doubled] = stageProposals('', [...SPIKE_LIKE_CHANGES.slice(0, 2)]).proposals;
+    acceptProposals([led.id]);
+    expect(await applyAcceptedProposals({ mode: 'add' })).toEqual({ kind: 'cannotAdd' });
+
+    await applyAcceptedProposals();
+    const [first] = await db.current!.versions.list(resume().templateId!);
+    editProposal(doubled.id, 'Cut p99 latency from 18% to 3% of requests');
+    expect((await applyAcceptedProposals({ mode: 'add' })).kind).toBe('applied');
+
+    expect((await db.current!.versions.list(resume().templateId!))[0]).toMatchObject({
+      number: first.number,
+      revision: 1,
+    });
+  });
+});
+
 describe('staleness', () => {
   it('goes stale when its bullet is edited, back to current on undo, and never applies stale', async () => {
     const { proposals: staged } = stageProposals('', [SPIKE_LIKE_CHANGES[0]]);
@@ -155,7 +228,7 @@ describe('staleness', () => {
 
     resume().updateBullet('s1', 'e1', 'b1', 'Moved billing to Postgres');
     expect(proposals()[0].isStale).toBe(true);
-    expect((await applyAcceptedProposals()).appliedIds).toEqual([]);
+    expect((await applyAcceptedProposals()).kind).toBe('nothing');
     expect(bulletText('b1')).toBe('Moved billing to Postgres');
 
     resume().undo();

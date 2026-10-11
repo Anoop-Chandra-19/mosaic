@@ -1,59 +1,70 @@
-import type { Proposal } from '@shared/types/agentProposal';
+import type { AppliedHistory } from '@shared/types/db';
+import { canAddToVersion } from '@shared/history/canAddToVersion';
 import { useProposalStore } from '@/stores/proposalStore';
 import { getResumeSnapshot, useResumeStore } from '@/stores/resumeStore';
 import { useTemplateStore } from '@/stores/templateStore';
 import { useUiStore } from '@/stores/uiStore';
-import { applyProposalsToResume } from './applyProposalsToResume';
+import { describeLandedSuggestions } from './describeSuggestion';
+import { planApply, type ApplyPlan } from './planApply';
 
-export interface ApplyOutcome {
-  appliedIds: string[];
-  /** Accepted, but the draft or an earlier change had moved past them. */
-  skippedIds: string[];
-  /** Accepted, but holding a gap only the user can fill. */
-  blockedIds: string[];
-}
-
-const isReady = (proposal: Proposal) =>
-  proposal.status === 'accepted' &&
-  !proposal.isStale &&
-  !proposal.flags.some((flag) => flag.kind === 'unfilledGap');
+export type ApplyOutcome =
+  | { kind: 'applied'; plan: ApplyPlan }
+  /** Nothing kept could land. */
+  | { kind: 'nothing'; plan: ApplyPlan }
+  /** "Add to" was chosen, but the newest version can't be added to any more. Nothing changed. */
+  | { kind: 'cannotAdd' };
 
 function undoLabel(count: number): string {
   return count === 1 ? 'apply a suggestion' : `apply ${count} suggestions`;
 }
 
 /**
- * Lands the open draft's accepted suggestions as one edit: one undo takes them all back.
- * History keeps the draft as it was before them and as it is after, unless the user turned
- * that off; undoing moves the draft, and both versions stay.
+ * Whether this apply can add to the newest version: it is the assistant's, and the draft
+ * still matches it, so the user's own edits never end up inside an assistant version.
  */
-export async function applyAcceptedProposals(): Promise<ApplyOutcome> {
+export function canAddToAppliedVersion(): boolean {
+  const { templateId, rev } = useResumeStore.getState();
+  const head = useTemplateStore.getState().templates.find((t) => t.id === templateId)?.head;
+  return !!head && head.rev === rev && canAddToVersion(head, 'assistant', Date.now());
+}
+
+/**
+ * Lands the open draft's kept suggestions as one edit: one undo takes them all back.
+ * History keeps the draft as it was before them and as it is after, as `history` says,
+ * unless the user turned those versions off; a name they gave is always kept.
+ */
+export async function applyAcceptedProposals(
+  history: AppliedHistory = { mode: 'new' }
+): Promise<ApplyOutcome> {
   const templateId = useResumeStore.getState().templateId;
-  const outcome: ApplyOutcome = { appliedIds: [], skippedIds: [], blockedIds: [] };
-  if (templateId === null) return outcome;
+  if (templateId === null) throw new Error('No template is open');
+  if (history.mode === 'add' && !canAddToAppliedVersion()) return { kind: 'cannotAdd' };
 
-  const proposals = useProposalStore.getState().byTemplate[templateId] ?? [];
-  const ready = proposals.filter(isReady);
-  outcome.blockedIds = proposals
-    .filter((p) => p.status === 'accepted' && !p.isStale && !isReady(p))
-    .map((p) => p.id);
-  if (!ready.length) return outcome;
+  const draft = getResumeSnapshot();
+  const plan = planApply(draft, useProposalStore.getState().byTemplate[templateId] ?? []);
+  if (!plan.landed.length) return { kind: 'nothing', plan };
 
-  const shouldKeepVersions = useUiStore.getState().snapshotTriggers.afterAiEdits;
+  const shouldKeepVersions =
+    useUiStore.getState().snapshotTriggers.afterAiEdits || history.mode === 'named';
   const { snapshotBeforeApply, snapshotApplied } = useTemplateStore.getState();
   if (shouldKeepVersions) await snapshotBeforeApply(templateId);
 
-  const result = applyProposalsToResume(getResumeSnapshot(), ready);
-  outcome.appliedIds = result.appliedIds;
-  outcome.skippedIds = result.skippedIds;
-  if (!result.appliedIds.length) return outcome;
-
-  useResumeStore.getState().applyDocument(undoLabel(result.appliedIds.length), result.doc);
-  useProposalStore.getState().setStatus(templateId, result.appliedIds, 'applied');
+  useResumeStore.getState().applyDocument(undoLabel(plan.landed.length), plan.doc);
+  const proposals = useProposalStore.getState();
+  proposals.setStatus(
+    templateId,
+    plan.landed.map((proposal) => proposal.id),
+    'applied'
+  );
+  // An earlier one changed their bullets first: they wait for the user to look again.
+  proposals.setStatus(
+    templateId,
+    plan.skipped.map(({ proposal }) => proposal.id),
+    'pending'
+  );
 
   if (shouldKeepVersions) {
-    const proposed = proposals.filter((p) => p.status !== 'applied').length;
-    await snapshotApplied(templateId, result.appliedIds.length, proposed);
+    await snapshotApplied(templateId, describeLandedSuggestions(draft, plan.landed), history);
   }
-  return outcome;
+  return { kind: 'applied', plan };
 }

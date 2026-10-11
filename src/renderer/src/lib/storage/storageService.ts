@@ -1,6 +1,6 @@
 import { use, useSyncExternalStore } from 'react';
 import type { ImportMode } from '@shared/types/bundle';
-import type { NamingMode, SnapshotOccasion, VersionMeta } from '@shared/types/db';
+import type { AppliedHistory, NamingMode, SnapshotOccasion, VersionMeta } from '@shared/types/db';
 import type { ResumeData } from '@shared/types/resume';
 import { getDb } from './mosaicDb';
 import { createReadCache, type Change } from './readCache';
@@ -89,10 +89,10 @@ export const storage = {
       writeAndRefresh(getDb().versions.name(templateId, name, mode), versionWritten),
     snapshot: (templateId: string, occasion: SnapshotOccasion) =>
       writeAndRefresh(getDb().versions.snapshot(templateId, occasion), versionWritten),
-    /** After the assistant's suggestions: always a version of its own. */
-    snapshotApplied: (templateId: string, applied: number, proposed: number) =>
+    /** After the assistant's suggestions: `summary` says what landed. */
+    snapshotApplied: (templateId: string, summary: string, history: AppliedHistory) =>
       writeAndRefresh(
-        getDb().versions.snapshotApplied(templateId, applied, proposed, { mode: 'new' }),
+        getDb().versions.snapshotApplied(templateId, summary, history),
         versionWritten
       ),
     restore: (templateId: string, versionId: string, shouldKeepDraft: boolean) =>

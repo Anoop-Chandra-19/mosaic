@@ -60,9 +60,38 @@ export type ProposalChange =
       /** Absent: the entry goes first. */
       afterEntryId?: string;
       /** Facts the user confirms field by field before it applies. */
-      frame: Pick<ResumeEntry, 'title' | 'organization' | 'location' | 'dates'>;
+      frame: Pick<ResumeEntry, EntryFact>;
       bullets: string[];
     };
+
+/** A new entry's facts, which only the user can vouch for. */
+export type EntryFact = 'title' | 'organization' | 'location' | 'dates';
+
+/** Why the user dropped a suggestion, for the assistant's next turn. */
+export type DropReason = 'inaccurate' | 'overstated' | 'wrongTone' | 'keepMyWording' | 'other';
+
+/**
+ * What the user did with a suggestion in review. The assistant's `change` stays as it was,
+ * so "back to the assistant's wording" and "use it anyway" can be undone.
+ */
+export interface ProposalReview {
+  /** Their own wording for a rewrite or merge. */
+  userText?: string;
+  /** The number they typed into the gap. */
+  filledNumber?: string;
+  /** They took the version that needs no number. */
+  isWithoutNumber?: boolean;
+  /** A new entry's facts they confirmed. */
+  confirmedFacts?: EntryFact[];
+  /** A new entry's facts as they corrected them. */
+  factEdits?: Partial<Record<EntryFact, string>>;
+  /**
+   * Out of date, but they chose to review it against their edited bullet: its text now
+   * (both texts for a merge), which the suggestion replaces instead.
+   */
+  rebasedBefore?: string | [string, string];
+  dropReasons?: { reasons: DropReason[]; note?: string };
+}
 
 export type ProposalChangeKind = ProposalChange['kind'];
 
@@ -78,6 +107,7 @@ export type ProposalFlagKind =
   | 'newNumbers'
   | 'calculatedNumbers'
   | 'removedDetail'
+  | 'newNames'
   | 'unfilledGap';
 
 export interface ProposalFlag {
@@ -92,6 +122,7 @@ export interface Proposal {
   source: ProposalSource;
   change: ProposalChange;
   status: ProposalStatus;
+  review: ProposalReview;
   /** Its anchor no longer matches the draft. Rechecked both ways: an undo can bring it back. */
   isStale: boolean;
   flags: ProposalFlag[];

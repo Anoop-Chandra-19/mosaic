@@ -55,6 +55,7 @@ export function makeProposal(change: ProposalChange, id: string): Proposal {
     source: change.kind,
     change,
     status: 'accepted',
+    review: {},
     isStale: false,
     flags: [],
     requestText: '',

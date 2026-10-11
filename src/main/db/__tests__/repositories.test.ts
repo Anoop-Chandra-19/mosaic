@@ -265,25 +265,25 @@ describe('versions', () => {
     });
   });
 
-  it('applied suggestions are counted in the summary, and the section is what changed', () => {
+  it('applied suggestions keep the summary they are given, and the section is what changed', () => {
     const { id } = createTemplate(db, 'CV', resumeFor('A'));
     const edited = resumeFor('A');
     const experience = edited.sections.find((s) => s.kind === 'experience')!;
     experience.items[0].bullets[0].text = 'Led the migration to Postgres';
     saveDraft(db, id, edited, 1);
 
-    expect(snapshotAppliedSuggestions(db, id, 3, 5)).toMatchObject({
+    expect(snapshotAppliedSuggestions(db, id, '3 suggestions in Acme')).toMatchObject({
       kind: 'auto',
       source: 'assistant',
-      summary: 'Applied 3 of 5 suggestions',
+      summary: '3 suggestions in Acme',
       section: experience.label,
     });
     expect(isClean(id)).toBe(true);
 
     saveDraft(db, id, resumeFor('B'), 2);
-    expect(snapshotAppliedSuggestions(db, id, 1, 1).summary).toBe('Applied a suggestion');
+    expect(snapshotAppliedSuggestions(db, id, 'Rewrite in Acme').summary).toBe('Rewrite in Acme');
     // Nothing changed since: the newest version already holds the draft.
-    expect(snapshotAppliedSuggestions(db, id, 2, 2).summary).toBe('Applied a suggestion');
+    expect(snapshotAppliedSuggestions(db, id, 'Split in Acme').summary).toBe('Rewrite in Acme');
   });
 
   it('restore keeps unsaved edits, writes the draft, records the restore, and moves the rev', () => {
@@ -505,13 +505,13 @@ describe('revisions', () => {
   it('applied suggestions add to the assistant’s newest version only', () => {
     const { id } = createTemplate(db, 'CV', resumeFor('A'));
     saveDraft(db, id, resumeFor('B'), 1);
-    expect(() => snapshotAppliedSuggestions(db, id, 1, 2, { mode: 'add' })).toThrow(
+    expect(() => snapshotAppliedSuggestions(db, id, 'Rewrite', { mode: 'add' })).toThrow(
       expect.objectContaining({ code: 'stale-rev' })
     );
 
-    const first = snapshotAppliedSuggestions(db, id, 1, 2);
+    const first = snapshotAppliedSuggestions(db, id, 'Rewrite');
     saveDraft(db, id, resumeFor('C'), 2);
-    expect(snapshotAppliedSuggestions(db, id, 1, 2, { mode: 'add' })).toMatchObject({
+    expect(snapshotAppliedSuggestions(db, id, 'Rewrite', { mode: 'add' })).toMatchObject({
       number: first.number,
       revision: 1,
       source: 'assistant',
@@ -519,7 +519,7 @@ describe('revisions', () => {
 
     saveDraft(db, id, resumeFor('D'), 3);
     expect(
-      snapshotAppliedSuggestions(db, id, 1, 2, { mode: 'named', name: 'Tightened' })
+      snapshotAppliedSuggestions(db, id, 'Rewrite', { mode: 'named', name: 'Tightened' })
     ).toMatchObject({ number: first.number + 1, kind: 'named', summary: 'Tightened' });
   });
 

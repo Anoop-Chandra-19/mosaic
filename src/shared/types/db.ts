@@ -156,13 +156,13 @@ export interface MosaicDb {
      */
     snapshot(templateId: string, occasion: SnapshotOccasion): Promise<VersionMeta>;
     /**
-     * Keeps the draft as it stands after applying `applied` of `proposed` suggestions. `add`
-     * is refused with `stale-rev` unless the newest version is the assistant's.
+     * Keeps the draft as it stands after applying suggestions. `summary` says what landed
+     * ("4 suggestions in Harbor Freight Labs"), unless the user named it. `add` is refused
+     * with `stale-rev` unless the newest version is the assistant's.
      */
     snapshotApplied(
       templateId: string,
-      applied: number,
-      proposed: number,
+      summary: string,
       history: AppliedHistory
     ): Promise<VersionMeta>;
     /**

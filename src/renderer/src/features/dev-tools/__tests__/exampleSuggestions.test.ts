@@ -28,6 +28,7 @@ describe('the example suggestions', () => {
       'calculatedNumbers',
       'claimsMore',
       'doubledWords',
+      'newNames',
       'newNumbers',
       'removedDetail',
       'unfilledGap',

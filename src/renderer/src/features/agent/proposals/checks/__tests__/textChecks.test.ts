@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { checkClaimsMore } from '../claimsMore';
 import { checkDoubledWords } from '../doubledWords';
+import { checkNewNames } from '../newNames';
 import { checkNewNumbers } from '../newNumbers';
 import { readNumbers } from '../readNumbers';
 import { checkRemovedDetail } from '../removedDetail';
@@ -77,6 +78,34 @@ describe('checkRemovedDetail', () => {
 
   it('ignores the first word and a change of case', () => {
     expect(checkRemovedDetail('Shipped with postgres', 'Delivered with Postgres')).toEqual([]);
+  });
+
+  it('ignores a word capitalised only because it starts a sentence', () => {
+    expect(
+      checkRemovedDetail('Moved to AWS. Wrote the plan', 'Moved to AWS and planned it')
+    ).toEqual([]);
+  });
+});
+
+describe('checkNewNames', () => {
+  it('flags names, places and tools that are in neither the bullet nor the request', () => {
+    expect(
+      checkNewNames(
+        'Built tile caching for the Oslo office',
+        'Built tile caching on Kafka for the Oslo and Bergen offices',
+        'Tighten my bullets'
+      )
+    ).toEqual([{ kind: 'newNames', words: ['Kafka', 'Bergen'] }]);
+  });
+
+  it('takes the request’s words as known, and ignores a sentence’s first word', () => {
+    expect(
+      checkNewNames(
+        'Mentored new engineers',
+        'Mentored engineers. Ran Code for Portland',
+        'add my Code for Portland work'
+      )
+    ).toEqual([]);
   });
 });
 

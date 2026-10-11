@@ -2,6 +2,7 @@ import type { ResumeData } from '@shared/types/resume';
 import { useProposalStore } from '@/stores/proposalStore';
 import { useResumeStore } from '@/stores/resumeStore';
 import { isProposalCurrent } from './proposalAnchor';
+import { resolveChange } from './reviewedChange';
 
 /**
  * Marks a template's waiting proposals stale where the draft has moved past their anchor,
@@ -11,7 +12,7 @@ export function recheckProposals(templateId: string, doc: ResumeData): void {
   const store = useProposalStore.getState();
   const changed = (store.byTemplate[templateId] ?? [])
     .filter((proposal) => proposal.status === 'pending' || proposal.status === 'accepted')
-    .map((proposal) => ({ proposal, isStale: !isProposalCurrent(doc, proposal.change) }))
+    .map((proposal) => ({ proposal, isStale: !isProposalCurrent(doc, resolveChange(proposal)) }))
     .filter(({ proposal, isStale }) => proposal.isStale !== isStale)
     .map(({ proposal, isStale }) => ({ ...proposal, isStale }));
   if (changed.length) store.replaceProposals(templateId, changed);
