@@ -9,6 +9,7 @@ const NAME_CLASS = {
   bar: '[view-transition-name:bar]',
   assist: '[view-transition-name:assist]',
   sidebar: '[view-transition-name:sidebar]',
+  applybar: '[view-transition-name:applybar]',
 } as const;
 
 // An element has one view-transition-class list, so motions that go together are one entry.
@@ -23,6 +24,8 @@ const MOTION_CLASS = {
   // A stack of two in one box: the upper leaves up as the lower rises in, and back down.
   'handover-upper': '[view-transition-class:handover_upper]',
   'handover-lower': '[view-transition-class:handover_lower]',
+  // Comes in at the bottom once what it sits on has nearly landed, and sinks away.
+  rise: '[view-transition-class:rise]',
 } as const;
 
 // Classes for React's <ViewTransition enter exit>, for things that come and go.

@@ -104,19 +104,11 @@ test('opening, stepping through, and closing the history each run one transition
   expect(errors).toEqual([]);
 });
 
-/** The example suggestions, staged through the developer tools, with AI on to see them. */
+/** The example suggestions, staged through the developer tools, which turn AI on to see them. */
 async function stageSuggestions(page: Page) {
   await page.getByRole('button', { name: 'Developer tools' }).click();
   await page.getByRole('menuitem', { name: /Stage example suggestions/ }).click();
-  await page.getByRole('button', { name: 'Open settings' }).click();
-  const settings = page.getByRole('dialog', { name: 'Settings' });
-  await settings
-    .getByRole('navigation')
-    .getByRole('button', { name: /AI assistant/ })
-    .click();
-  await settings.getByRole('switch', { name: 'Enable AI assistant' }).click();
-  await page.keyboard.press('Escape');
-  await expect(settings).toBeHidden();
+  await expect(page.getByText(/Turned the assistant on/)).toBeVisible();
 }
 
 test('the suggestion review opens and closes in one transition each, from the pane or without it', async () => {
@@ -125,8 +117,8 @@ test('the suggestion review opens and closes in one transition each, from the pa
   const review = page.getByRole('region', { name: 'Suggestion review' });
   const assistant = page.getByRole('complementary', { name: 'Assistant' });
 
-  // With the assistant pane open, it hands its column to the review's inspector.
-  if (!(await assistant.isVisible())) await page.keyboard.press('Control+j');
+  // With the assistant pane open (as it is once AI is on), it hands its column to the
+  // review's inspector.
   await expect(assistant).toBeVisible();
   const transitions = await watchTransitions(page);
   await page.getByRole('button', { name: /suggestions waiting/ }).click();
@@ -140,6 +132,12 @@ test('the suggestion review opens and closes in one transition each, from the pa
   await page.keyboard.press('j');
   await review.getByRole('radio', { name: 'On the page' }).click();
   expect(await transitions.take(1)).toEqual([{ types: ['step-back'], ran: true }]);
+
+  // Apply, and undoing it, each cross-fade the page and the inspector as one.
+  await page.keyboard.press('Control+Enter');
+  expect(await transitions.take(1)).toEqual([{ types: ['crossfade'], ran: true }]);
+  await page.keyboard.press('Control+z');
+  expect(await transitions.take(1)).toEqual([{ types: ['crossfade'], ran: true }]);
 
   await page.keyboard.press('Escape');
   await page.keyboard.press('Escape');

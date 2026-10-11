@@ -199,7 +199,7 @@ function SuggestionDetail({
           {labelSuggestionState(proposal)}
         </Text>
         <span className="flex-1" />
-        <Text variant="meta" className="text-ink-faint">
+        <Text variant="meta" className="whitespace-nowrap text-ink-faint">
           {index + 1} / {proposals.length}
         </Text>
         <AppButton

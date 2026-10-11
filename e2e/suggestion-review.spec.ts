@@ -3,19 +3,11 @@ import { test, withApp } from './launch';
 
 const mosaic = withApp();
 
-/** The example suggestions, staged through the developer tools, with AI on to see them. */
+/** The example suggestions, staged through the developer tools, which turn AI on to see them. */
 async function stageExampleSuggestions(page: Page) {
   await page.getByRole('button', { name: 'Developer tools' }).click();
   await page.getByRole('menuitem', { name: /Stage example suggestions/ }).click();
-  await page.getByRole('button', { name: 'Open settings' }).click();
-  const settings = page.getByRole('dialog', { name: 'Settings' });
-  await settings
-    .getByRole('navigation')
-    .getByRole('button', { name: /AI assistant/ })
-    .click();
-  await settings.getByRole('switch', { name: 'Enable AI assistant' }).click();
-  await page.keyboard.press('Escape');
-  await expect(settings).toBeHidden();
+  await expect(page.getByText(/Turned the assistant on/)).toBeVisible();
 }
 
 test('suggestions are reviewed from the status bar, kept and dropped with the keys', async () => {
@@ -27,6 +19,8 @@ test('suggestions are reviewed from the status bar, kept and dropped with the ke
   await expect(review.getByRole('heading', { name: 'Reviewing 12 suggestions' })).toBeVisible();
   const inspector = review.getByRole('complementary', { name: 'Suggestions' });
   await expect(inspector.getByText('1 / 12')).toBeVisible();
+  // The opening transition holds input while it runs, so the keys wait for it.
+  await page.waitForFunction(() => !document.documentElement.matches(':active-view-transition'));
 
   // Keep moves on to the next; drop stays.
   await page.keyboard.press('a');
@@ -85,5 +79,60 @@ test('a number is filled in, a rewrite put in your words, and a new entry confir
   }
   await inspector.getByRole('button', { name: 'Keep' }).click();
   await expect(inspector.getByRole('button', { name: 'Kept' })).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
+test('what was kept applies as one step, which undo takes back to review', async () => {
+  const { page, errors } = mosaic();
+  await stageExampleSuggestions(page);
+  await page.getByRole('button', { name: '12 suggestions waiting' }).click();
+  const review = page.getByRole('region', { name: 'Suggestion review' });
+  const inspector = review.getByRole('complementary', { name: 'Suggestions' });
+  await inspector.getByRole('button', { name: 'Keep', exact: true }).click();
+
+  await page.keyboard.press('Control+Enter');
+  await expect(
+    inspector.getByRole('heading', { name: 'Applied 1 of 12 suggestions' })
+  ).toBeVisible();
+  await inspector.getByRole('button', { name: 'Undo apply' }).click();
+  await expect(review.getByRole('heading', { name: 'Reviewing 12 suggestions' })).toBeVisible();
+  await expect(review.getByRole('button', { name: 'Apply 1 suggestion' })).toBeVisible();
+
+  await review.getByRole('button', { name: 'Apply 1 suggestion' }).click();
+  await inspector.getByRole('button', { name: 'Back to draft' }).click();
+  await expect(review).toBeHidden();
+  await expect(page.getByRole('button', { name: '11 suggestions waiting' })).toBeVisible();
+  await expect(
+    page.getByRole('complementary').getByText('Led the billing migration to Postgres')
+  ).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
+test('applying with a name keeps it in history under that name', async () => {
+  const { page, errors } = mosaic();
+  await stageExampleSuggestions(page);
+  await page.getByRole('button', { name: '12 suggestions waiting' }).click();
+  const review = page.getByRole('region', { name: 'Suggestion review' });
+  const inspector = review.getByRole('complementary', { name: 'Suggestions' });
+  await inspector.getByRole('button', { name: 'Keep', exact: true }).click();
+
+  await review.getByRole('button', { name: /New version/ }).click();
+  const menu = page.getByRole('dialog');
+  await menu.getByText('Name it', { exact: true }).click();
+  await menu.getByRole('textbox', { name: 'Version name' }).fill('Tightened for Northwind');
+  await menu.getByRole('button', { name: 'Done' }).click();
+  await expect(
+    review.getByRole('button', { name: 'Named “Tightened for Northwind”' })
+  ).toBeVisible();
+  await review.getByRole('button', { name: 'Apply 1 suggestion' }).click();
+  await inspector.getByRole('button', { name: 'Back to draft' }).click();
+  await expect(review).toBeHidden();
+
+  await page.keyboard.press('Control+Shift+H');
+  await expect(
+    page
+      .getByRole('region', { name: /^History of/ })
+      .getByRole('button', { name: /^Tightened for Northwind v2/ })
+  ).toBeVisible();
   expect(errors).toEqual([]);
 });

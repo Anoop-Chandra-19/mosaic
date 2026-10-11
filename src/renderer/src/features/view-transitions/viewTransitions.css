@@ -364,6 +364,60 @@
   }
 }
 
+/* ---- rise: a bar coming in at the bottom once the view it sits on has nearly landed ----
+   Only arriving and leaving move; changing in place, it just changes. */
+::view-transition-group(.rise) {
+  z-index: 4;
+}
+
+::view-transition-old(.rise) {
+  display: none;
+}
+
+::view-transition-new(.rise) {
+  animation: none;
+}
+
+::view-transition-new(.rise):only-child {
+  animation: rise 200ms var(--ease-settle) 140ms both;
+}
+
+::view-transition-old(.rise):only-child {
+  display: block;
+  animation: sink 120ms ease-in forwards;
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(0.75rem);
+  }
+}
+
+@keyframes sink {
+  to {
+    opacity: 0;
+    transform: translateY(0.5rem);
+  }
+}
+
+/* A cross-fade in place (after Apply): the page swaps a little slower, and a handed-over
+   column swaps in lockstep instead of pushing, both images adding to one. */
+:root:active-view-transition-type(crossfade) {
+  &::view-transition-old(.handoff),
+  &::view-transition-new(.handoff) {
+    animation-duration: 220ms;
+  }
+  &::view-transition-old(.handover) {
+    mix-blend-mode: plus-lighter;
+    animation: crossfade-out 160ms var(--ease-settle) both;
+  }
+  &::view-transition-new(.handover) {
+    mix-blend-mode: plus-lighter;
+    animation: crossfade-in 160ms var(--ease-settle) both;
+  }
+}
+
 /* ---- cut: what's left of a surface whose parts all move on their own ----
    It is there at once, under them, and gone at once when they leave. */
 ::view-transition-old(.cut) {

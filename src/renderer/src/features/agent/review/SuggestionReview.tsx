@@ -7,7 +7,7 @@ import { formatPaneWidth, startPaneResize } from '@/features/shell/paneResize';
 import { matchesAction } from '@/features/shortcuts/shortcutBindings';
 import { changeInViewTransition } from '@/features/view-transitions/changeInViewTransition';
 import { transitionClasses, TRANSITION_TYPE } from '@/features/view-transitions/transitionClasses';
-import { isTypingField } from '@/lib/keyboardShortcuts';
+import { isTypingField, isUndoKey } from '@/lib/keyboardShortcuts';
 import type { ShortcutId } from '@/lib/shortcutCatalog';
 import { cn } from '@/lib/utils';
 import { useAiStore } from '@/stores/aiStore';
@@ -17,6 +17,9 @@ import { useResumeStore } from '@/stores/resumeStore';
 import { AGENT_PANE_WIDTH, useUiStore } from '@/stores/uiStore';
 import type { Proposal } from '@shared/types/agentProposal';
 import { acceptProposals, rejectProposals, returnProposals } from '../proposals/proposalActions';
+import { ApplyBar } from './apply/ApplyBar';
+import { ApplyResult } from './apply/ApplyResult';
+import { useApplySuggestions } from './apply/useApplySuggestions';
 import { ReviewPage } from './page/ReviewPage';
 import { buildSuggestionPage } from './page/suggestionPage';
 import { ReviewBar } from './ReviewBar';
@@ -64,7 +67,13 @@ export function SuggestionReview({ openOn }: { openOn?: string }) {
     [schemaVersion, contact, sections]
   );
   const proposals = useMemo(() => stored.filter((p) => p.status !== 'applied'), [stored]);
-  const page = useMemo(() => buildSuggestionPage(draft, proposals), [draft, proposals]);
+  const applying = useApplySuggestions(proposals, draft);
+  const { result } = applying;
+  // Once applied, the page is the draft: no marks until reviewing goes on.
+  const page = useMemo(
+    () => buildSuggestionPage(draft, result ? [] : proposals),
+    [draft, proposals, result]
+  );
   const [selectedId, setSelectedId] = useState<string | null>(openOn ?? proposals[0]?.id ?? null);
   const selection = useMemo(() => ({ selectedId, select: setSelectedId }), [selectedId]);
   const close = () => closeSurface('review');
@@ -122,8 +131,28 @@ export function SuggestionReview({ openOn }: { openOn?: string }) {
       run: () => selected && canEditSuggestion(selected) && setEditingId(selected.id),
     },
   ];
+  /** After Apply only two keys mean anything: undo takes it back, Esc leaves. */
+  const handleResultKey = (event: KeyboardEvent) => {
+    if (isUndoKey(event)) {
+      event.preventDefault();
+      applying.undo();
+    } else if (event.key === 'Escape') {
+      event.preventDefault();
+      close();
+    }
+  };
   const handleKey = (event: KeyboardEvent) => {
+    // Apply works from a field too, as sending does.
+    if (!event.defaultPrevented && matchesAction(event, 'applySuggestions')) {
+      event.preventDefault();
+      if (!result) applying.apply();
+      return;
+    }
     if (event.defaultPrevented || isTypingField(event.target)) return;
+    if (result) {
+      handleResultKey(event);
+      return;
+    }
     if (event.key === 'Escape') {
       event.preventDefault();
       if (editingId) setEditingId(null);
@@ -161,6 +190,7 @@ export function SuggestionReview({ openOn }: { openOn?: string }) {
       >
         <ReviewBar
           proposals={proposals}
+          applied={result && { landed: result.plan.landed.length, total: result.total }}
           mode={mode}
           onModeChange={changeMode}
           onBack={close}
@@ -169,7 +199,7 @@ export function SuggestionReview({ openOn }: { openOn?: string }) {
         {/* Narrow, the inspector docks under the page. */}
         <div className="grid min-h-0 flex-1 grid-cols-[minmax(20rem,1fr)_auto] @max-[62.5rem]/review:grid-cols-1 @max-[62.5rem]/review:grid-rows-[minmax(10rem,1fr)_minmax(0,46%)]">
           <div className="relative grid min-h-0 min-w-0">
-            {mode === 'cards' && proposals.length ? (
+            {mode === 'cards' && proposals.length && !result ? (
               <SuggestionCards
                 proposals={proposals}
                 draft={draft}
@@ -181,12 +211,13 @@ export function SuggestionReview({ openOn }: { openOn?: string }) {
             ) : (
               <ReviewPage page={page} selectedId={selectedId} onBlank={() => select(null)} />
             )}
-            {droppedAll.length > 0 && (
+            {droppedAll.length > 0 && !result && (
               <DropReasons
                 proposals={droppedAll}
                 look="batch"
                 onDismiss={() => setDroppedAllIds(null)}
-                className="absolute inset-x-0 bottom-0 z-6"
+                // Stacked over the apply bar, which floats at the page's foot.
+                className="absolute inset-x-0 bottom-17.75 z-6 @max-[62.5rem]/review:bottom-0"
               />
             )}
           </div>
@@ -219,7 +250,20 @@ export function SuggestionReview({ openOn }: { openOn?: string }) {
                 className="absolute top-0 bottom-0 left-0 z-10 w-1 cursor-col-resize transition-colors hover:bg-amber active:bg-amber-hover @max-[62.5rem]/review:hidden"
               />
             </AppTooltip>
-            {proposals.length ? (
+            {result && (
+              <ApplyResult
+                result={result}
+                onUndo={applying.undo}
+                onReviewAgain={(id) =>
+                  applying.reviewAgain(() => {
+                    setMode('page');
+                    select(id ?? proposals[0]?.id ?? null);
+                  })
+                }
+                onDone={close}
+              />
+            )}
+            {!result && proposals.length > 0 && (
               <ReviewInspector
                 proposals={proposals}
                 draft={draft}
@@ -229,11 +273,31 @@ export function SuggestionReview({ openOn }: { openOn?: string }) {
                 editingId={editingId}
                 onEditingChange={setEditingId}
               />
-            ) : (
-              <NothingWaiting onBack={close} />
             )}
+            {!result && proposals.length === 0 && <NothingWaiting onBack={close} />}
           </aside>
         </div>
+        {!result && proposals.length > 0 && (
+          // Floats over the page's foot; narrow, a strip under everything.
+          <div
+            className="pointer-events-none absolute bottom-4 left-0 z-5 flex justify-center @max-[62.5rem]/review:static @max-[62.5rem]/review:block"
+            style={{ right: formatPaneWidth(widthPx, AGENT_PANE_WIDTH) }}
+          >
+            <ApplyBar
+              plan={applying.plan}
+              choice={applying.choice}
+              onChoiceChange={applying.setChoice}
+              offer={applying.offer}
+              rows={applying.rows}
+              isMenuOpen={applying.isMenuOpen}
+              onMenuOpenChange={applying.setIsMenuOpen}
+              isRefused={applying.isRefused}
+              onApply={applying.apply}
+              onLater={close}
+              name={applying.name}
+            />
+          </div>
+        )}
       </div>
     </SuggestionSelection>
   );

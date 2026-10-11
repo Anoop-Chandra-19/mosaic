@@ -52,6 +52,7 @@ export const DEFAULT_SHORTCUTS = {
   keepSuggestion: 'A',
   dropSuggestion: 'R',
   editSuggestion: 'E',
+  applySuggestions: 'mod+enter',
 } as const;
 
 export type ShortcutId = keyof typeof DEFAULT_SHORTCUTS;
@@ -99,6 +100,7 @@ const LOCAL_SCOPES: Partial<Record<ShortcutId, ShortcutScope>> = {
   keepSuggestion: 'review',
   dropSuggestion: 'review',
   editSuggestion: 'review',
+  applySuggestions: 'review',
 };
 
 /** The person's own keys: absent is the default, null is no key at all. */

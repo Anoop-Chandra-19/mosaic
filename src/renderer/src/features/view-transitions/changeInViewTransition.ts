@@ -9,15 +9,16 @@ type TransitionType = (typeof TRANSITION_TYPE)[keyof typeof TRANSITION_TYPE];
  * outside React's own transitions, such as a tour's veil leaving as the view under it
  * changes, or one inside a surface whose updates don't animate (the review's Compare all,
  * which steps). React renders the change inside the transition, so the after image is its
- * result.
+ * result. The change runs a frame later; the promise says when it has.
  */
 export function changeInViewTransition(
   update: () => void,
   type: TransitionType = TRANSITION_TYPE.crossfade
-): void {
+): Promise<void> {
   if (!document.startViewTransition) {
     update();
-    return;
+    return Promise.resolve();
   }
-  document.startViewTransition({ update: () => flushSync(update), types: [type] });
+  return document.startViewTransition({ update: () => flushSync(update), types: [type] })
+    .updateCallbackDone;
 }
