@@ -65,7 +65,7 @@ Use a motion that exists before inventing one:
 - A pair's old and new images both carry the arriving element's classes, so a class can't
   say which image moves which way. Say it by which element arrives (`handover-lower`
   arriving is the review opening), or with a type.
-- A named box holding a `ResumePreview` needs `[contain:paint]`: the preview's measuring
+- A named box holding a `ResumePreview` needs `contain-paint`: the preview's measuring
   copy is fixed far off-screen, and stretches the box's image until it draws blank.
 - `useIsSideHandover` names the sidebar and the assistant pane only while a surface that
   takes the sides is coming or going, so the history (which takes the workspace whole)
