@@ -9,11 +9,11 @@ import {
   PAGE_NUMBER,
   removeLinkMarks,
   sourceOf,
-  titleCase,
   type ImportLine,
   type LeftOutLine,
   type SourceLine,
 } from '../../parsing/importLines';
+import { findHeadingLooks, markHeading } from '../../parsing/headingLooks';
 import {
   isHeadingLength,
   matchSectionHeader,
@@ -739,25 +739,9 @@ function markRoles(pieces: Piece[]): boolean {
     !titlesAnEntry(piece) &&
     isHeadingLength(piece.line.text) &&
     standsOut(piece);
-  const tally = new Map<string, { known: number; other: number }>();
+  const headingLook = findHeadingLooks(pieces, couldHead, isKnown);
   for (const piece of pieces) {
-    if (!couldHead(piece)) continue;
-    const count = tally.get(piece.look) ?? { known: 0, other: 0 };
-    count[isKnown(piece) ? 'known' : 'other']++;
-    tally.set(piece.look, count);
-  }
-  // Set the way the known headings are, and not outnumbered by lines that are something else.
-  const headingLook = (look: string) => {
-    const count = tally.get(look);
-    return count !== undefined && count.known > 0 && count.known >= count.other;
-  };
-  for (const piece of pieces) {
-    if (!isKnown(piece) && !(couldHead(piece) && headingLook(piece.look))) continue;
-    piece.line.role = 'heading';
-    if (isCapitals(piece.line.text)) {
-      piece.line.source = sourceOf(piece.line);
-      piece.line.text = titleCase(piece.line.text);
-    }
+    if (isKnown(piece) || (couldHead(piece) && headingLook(piece.look))) markHeading(piece.line);
   }
 
   const first = pieces.findIndex((piece) => piece.line.role === 'heading');

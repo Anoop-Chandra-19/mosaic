@@ -459,6 +459,33 @@ function layoutOf(body: ImportLine[], marked: boolean): SectionLayout {
 }
 
 /**
+ * Below the contact block, a link reads as its words and then its address. Each written
+ * line's source is taken from the line before, so the review shows a link's words as the
+ * file did.
+ */
+function writeOutBodyLinks(lines: ImportLine[], contactEnd: number) {
+  const sources = new Map<ImportLine, SourceLine[]>();
+  const written = lines.map((line, index) => {
+    if (index < contactEnd) return line;
+    const writtenLine: ImportLine = {
+      ...line,
+      text: replaceMarkedLinksWithText(line.text),
+      ...(line.aside !== undefined && { aside: replaceMarkedLinksWithText(line.aside) }),
+      ...(line.fields && {
+        fields: {
+          title: replaceMarkedLinksWithText(line.fields.title),
+          organization: replaceMarkedLinksWithText(line.fields.organization),
+          location: replaceMarkedLinksWithText(line.fields.location),
+        },
+      }),
+    };
+    sources.set(writtenLine, sourceOf(line));
+    return writtenLine;
+  });
+  return { lines: written, sources };
+}
+
+/**
  * Build a resume from lines. Lines before the first heading are the contact block; each
  * heading starts a section — a built-in kind when its words are a name Mosaic knows,
  * otherwise a custom section keeping the heading as its name. Imperfect by design: the
@@ -477,25 +504,8 @@ export function parseResumeLines(
   const preamble = lines
     .slice(0, contactEnd)
     .flatMap((line) => textsOf(line).map((text) => ({ text, align: line.align })));
-  // Taken before links are written out, so the review shows a link's words as the file did.
-  const sources = new Map<ImportLine, SourceLine[]>();
-  lines = lines.map((line, index) => {
-    if (index < contactEnd) return line;
-    const written: ImportLine = {
-      ...line,
-      text: replaceMarkedLinksWithText(line.text),
-      ...(line.aside !== undefined && { aside: replaceMarkedLinksWithText(line.aside) }),
-      ...(line.fields && {
-        fields: {
-          title: replaceMarkedLinksWithText(line.fields.title),
-          organization: replaceMarkedLinksWithText(line.fields.organization),
-          location: replaceMarkedLinksWithText(line.fields.location),
-        },
-      }),
-    };
-    sources.set(written, sourceOf(line));
-    return written;
-  });
+  const { lines: linksWritten, sources } = writeOutBodyLinks(lines, contactEnd);
+  lines = linksWritten;
   const fullText = lines.flatMap(textsOf).map(replaceMarkedLinksWithText).join('\n');
   const { contact, underNoHeading } = parseContact(
     preamble,

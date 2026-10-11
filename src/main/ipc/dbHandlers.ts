@@ -40,7 +40,7 @@ import {
 
 /*
  * Main's side of `MosaicDb`, kept free of Electron so tests can drive it directly;
- * `./db.ts` wires it to IPC.
+ * `./registerDbHandlers.ts` wires it to IPC.
  */
 
 /** Synchronous, and every argument arrives unchecked. */

@@ -4,6 +4,7 @@ import { expect, type Page } from '@playwright/test';
 import { openWith, saveInto } from './dialogs';
 import { test, withApp } from './launch';
 import { extractPdfText } from './pdfText';
+import { recordHeightAnimations } from './recordHeightAnimations';
 
 const mosaic = withApp();
 
@@ -70,22 +71,7 @@ test('export eases format-driven height changes and skips them with reduced moti
   await page.setViewportSize({ width: 1280, height: 1100 });
   await startFromSample(page);
   const exporting = await openExport(page, /^PDF/);
-  // Record native height animations instead of asserting intermediate pixels or timing.
-  const tracked = await exporting.evaluateHandle((element) => {
-    const animations: Animation[] = [];
-    const animate = element.animate.bind(element);
-    element.animate = (keyframes, options) => {
-      const animation = animate(keyframes, options);
-      if (
-        animation.effect instanceof KeyframeEffect &&
-        animation.effect.getKeyframes().some((frame) => 'height' in frame)
-      ) {
-        animations.push(animation);
-      }
-      return animation;
-    };
-    return { animations, restore: () => (element.animate = animate) };
-  });
+  const tracked = await recordHeightAnimations(exporting);
 
   await exporting.getByRole('radio', { name: /^Markdown/ }).click();
   await expect
@@ -155,23 +141,7 @@ test('export keeps text width stable while its height changes', async () => {
   });
   const body = exporting.locator('.overflow-y-auto');
   const widthBefore = await body.evaluate((element) => element.clientWidth);
-  const held = await exporting.evaluateHandle((element) => {
-    const animations: Animation[] = [];
-    const animate = element.animate.bind(element);
-    element.animate = (keyframes, options) => {
-      const animation = animate(keyframes, options);
-      if (
-        animation.effect instanceof KeyframeEffect &&
-        animation.effect.getKeyframes().some((frame) => 'height' in frame)
-      ) {
-        animation.pause();
-        animation.currentTime = 0;
-        animations.push(animation);
-      }
-      return animation;
-    };
-    return { animations, restore: () => (element.animate = animate) };
-  });
+  const held = await recordHeightAnimations(exporting, { isHeldAtStart: true });
   await exporting.getByRole('radio', { name: /^Word/ }).click();
   await expect.poll(() => held.evaluate(({ animations }) => animations.length)).toBeGreaterThan(0);
   // New content overflows the old height while the dialog is still growing.
