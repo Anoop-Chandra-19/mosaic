@@ -1,3 +1,4 @@
+import type { Proposal } from '@shared/types/agentProposal';
 import type { AppliedHistory } from '@shared/types/db';
 import { canAddToVersion } from '@shared/history/canAddToVersion';
 import { useProposalStore } from '@/stores/proposalStore';
@@ -26,6 +27,23 @@ export function canAddToAppliedVersion(): boolean {
   const { templateId, rev } = useResumeStore.getState();
   const head = useTemplateStore.getState().templates.find((t) => t.id === templateId)?.head;
   return !!head && head.rev === rev && canAddToVersion(head, 'assistant', Date.now());
+}
+
+/**
+ * What the version an apply keeps will hold: what it lands, and when it adds to the
+ * assistant's newest version, what that version already held, so its title covers both.
+ */
+export function collectVersionSuggestions(
+  isAdding: boolean,
+  landed: readonly Proposal[]
+): Proposal[] {
+  if (!isAdding) return [...landed];
+  const { templateId } = useResumeStore.getState();
+  const head = useTemplateStore.getState().templates.find((t) => t.id === templateId)?.head;
+  const { byTemplate, idsByAppliedVersion } = useProposalStore.getState();
+  const heldIds = (head && idsByAppliedVersion[head.id]) ?? [];
+  const held = (byTemplate[templateId ?? ''] ?? []).filter((p) => heldIds.includes(p.id));
+  return [...held, ...landed];
 }
 
 /** Whether an apply with `history` keeps versions: always for a name, else as the user set. */
@@ -82,7 +100,15 @@ export async function applyAcceptedProposals(
   await landApply(() => landPlan(templateId, plan), plan);
 
   if (shouldKeepVersions) {
-    await snapshotApplied(templateId, describeLandedSuggestions(draft, plan.landed), history);
+    const held = collectVersionSuggestions(history.mode === 'add', plan.landed);
+    const title = describeLandedSuggestions(draft, held);
+    const version = await snapshotApplied(templateId, title, history);
+    if (version) {
+      useProposalStore.getState().recordAppliedVersion(
+        version.id,
+        held.map((proposal) => proposal.id)
+      );
+    }
   }
   return { kind: 'applied', plan };
 }

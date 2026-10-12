@@ -71,8 +71,15 @@ interface TemplateState {
   snapshotOpenDraft: (occasion: SnapshotOccasion) => Promise<void>;
   /** Keeps the draft as it was before the assistant's suggestions land in it. */
   snapshotBeforeApply: (templateId: string) => Promise<void>;
-  /** Keeps the draft as it is after applying suggestions; `summary` says what landed. */
-  snapshotApplied: (templateId: string, summary: string, history: AppliedHistory) => Promise<void>;
+  /**
+   * Keeps the draft as it is after applying suggestions; `summary` says what the version
+   * holds. Resolves to the version kept, or null when it couldn't be.
+   */
+  snapshotApplied: (
+    templateId: string,
+    summary: string,
+    history: AppliedHistory
+  ) => Promise<VersionMeta | null>;
   /** Replaces the open draft, keeping unsaved edits in history first if the user wants it. */
   importIntoDraft: (doc: ResumeData, from: string) => Promise<void>;
   /**
@@ -130,7 +137,10 @@ export const useTemplateStore = create<TemplateState>()(
      * Keeps a version the user didn't ask for. Failing one must not stop what they were
      * doing: switching template, closing the window, or applying suggestions.
      */
-    const keepVersion = async (templateId: string, write: () => Promise<VersionMeta>) => {
+    const keepVersion = async (
+      templateId: string,
+      write: () => Promise<VersionMeta>
+    ): Promise<VersionMeta | null> => {
       try {
         const version = await write();
         // Still the same draft? An open that overtook this one has its own baseline.
@@ -138,8 +148,10 @@ export const useTemplateStore = create<TemplateState>()(
           useResumeStore.getState().markVersionSaved(version.rev);
         }
         await get().refresh();
+        return version;
       } catch (error) {
         console.error('Could not keep a version of the draft', error);
+        return null;
       }
     };
 
@@ -249,11 +261,12 @@ export const useTemplateStore = create<TemplateState>()(
         await keepVersion(templateId, () => storage.versions.snapshot(templateId, occasion));
       },
 
-      snapshotBeforeApply: (templateId) =>
-        keepVersion(templateId, async () => {
+      snapshotBeforeApply: async (templateId) => {
+        await keepVersion(templateId, async () => {
           await flushDraft();
           return storage.versions.snapshot(templateId, 'before-apply');
-        }),
+        });
+      },
 
       snapshotApplied: (templateId, summary, history) =>
         keepVersion(templateId, async () => {

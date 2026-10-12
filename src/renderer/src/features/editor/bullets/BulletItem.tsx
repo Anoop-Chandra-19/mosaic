@@ -20,6 +20,8 @@ import {
   AppMenuSeparator,
   AppMenuTrigger,
 } from '@/components/AppMenu';
+import { BulletSuggestionDot } from '@/features/agent/review/BulletSuggestionDot';
+import { useBulletSuggestion } from '@/features/agent/review/useBulletSuggestion';
 import { matchesAction } from '@/features/shortcuts/shortcutBindings';
 import { carryTint, travelFrom } from '@/lib/motion/rowMotions';
 import { ListMotionContext, useSwapMotion } from '@/lib/motion/useListMotion';
@@ -98,6 +100,7 @@ export function BulletItem({
   const afterMenu = useRef<(() => void) | null>(null);
   const motion = useContext(ListMotionContext);
   const beginSwap = useSwapMotion(editing !== null);
+  const suggestion = useBulletSuggestion(bullet.id);
 
   const setEditing = (next: EditorOpening | null) => {
     if ((next === null) !== (editing === null)) beginSwap();
@@ -151,6 +154,11 @@ export function BulletItem({
         isOff={!bullet.selected}
         startsTinted={tint === 'carried'}
         livePreview={(text) => showBulletText(entryId, bullet.id, text)}
+        saveNote={
+          suggestion && !suggestion.isStale
+            ? 'A suggestion is waiting on this bullet. Saving your edit puts it out of date; an undo brings it back.'
+            : undefined
+        }
         onSave={saveText}
         onCancel={closeEditor}
         onAddBelow={(text) => {
@@ -309,6 +317,7 @@ export function BulletItem({
               </AppMenuContent>
             </AppMenu>
           </span>
+          {suggestion && <BulletSuggestionDot suggestion={suggestion} />}
           {bullet.text || <span className="text-ink-faint no-underline">Empty bullet</span>}
         </div>
       </AppTooltip>

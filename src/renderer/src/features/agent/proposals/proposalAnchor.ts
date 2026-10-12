@@ -73,6 +73,21 @@ export function findAnchorMismatch(doc: ResumeData, change: ProposalChange): Anc
   }
 }
 
+/** The bullets whose text a change was made against, which an edit to puts it out of date. */
+export function readAnchoredBulletIds(change: ProposalChange): string[] {
+  switch (change.kind) {
+    case 'rewrite':
+    case 'split':
+    case 'select':
+      return [change.bulletId];
+    case 'merge':
+      return [change.firstId, change.secondId];
+    case 'reorder':
+    case 'entry':
+      return [];
+  }
+}
+
 export function isProposalCurrent(doc: ResumeData, change: ProposalChange): boolean {
   return findAnchorMismatch(doc, change) === null;
 }

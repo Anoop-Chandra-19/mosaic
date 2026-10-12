@@ -21,8 +21,11 @@ interface HistoryRowsInput {
   head: VersionMeta | undefined;
   draftRev: number;
   choice: HistoryChoice;
-  /** What the landed suggestions are called: "4 suggestions in Harbor Freight Labs". */
-  landedTitle: string;
+  /**
+   * What the version will hold, "5 suggestions in Harbor Freight Labs": with Add to, what
+   * the version it adds to held as well.
+   */
+  versionTitle: string;
   /** Versions after the assistant's edits are on, or the user named this one. */
   keepsVersions: boolean;
   now: number;
@@ -38,7 +41,7 @@ export function planHistoryRows({
   head,
   draftRev,
   choice,
-  landedTitle,
+  versionTitle,
   keepsVersions,
   now,
 }: HistoryRowsInput): HistoryRow[] {
@@ -61,10 +64,10 @@ export function planHistoryRows({
   const isAdding = choice.mode === 'add' && !!head;
   const isNamed = choice.mode === 'named';
   // A named version's own line says what it holds.
-  const namedSub = isNamed ? landedTitle : undefined;
+  const namedSub = isNamed ? versionTitle : undefined;
   rows.unshift({
     label: isAdding ? `v${head.number}.${head.revision + 1}` : `v${nextNumber}`,
-    title: isNamed ? choice.name.trim() || 'Your name for it' : landedTitle,
+    title: isNamed ? choice.name.trim() || 'Your name for it' : versionTitle,
     sub: isAdding ? `Revision of v${head.number}` : namedSub,
     look: isNamed ? 'named' : 'assistant',
     isNew: true,
