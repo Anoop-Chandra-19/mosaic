@@ -307,7 +307,7 @@ function requireAddableHead(head: VersionMeta | undefined, work: VersionWork): V
 
 /**
  * Keep the draft as it stands after a batch of accepted suggestions. The renderer's summary
- * says what landed, unless the user named it; the section comes from what actually changed.
+ * says what the version holds, unless the user named it; the section comes from what actually changed.
  * `add` makes it a revision of the assistant's newest version.
  */
 export function snapshotAppliedSuggestions(

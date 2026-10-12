@@ -108,6 +108,29 @@ test('what was kept applies as one step, which undo takes back to review', async
   expect(errors).toEqual([]);
 });
 
+test('editing a bullet puts its suggestion out of date, undo brings it back, and its dot opens it', async () => {
+  const { page, errors } = mosaic();
+  await stageExampleSuggestions(page);
+  const editor = page.getByRole('complementary').first();
+
+  await editor.getByText('Assisted in migrating billing to Postgres').click();
+  await expect(editor.getByText(/Saving your edit puts it out of date/)).toBeVisible();
+  await page.keyboard.type(' quickly');
+  await page.keyboard.press('Enter');
+  await expect(
+    page.getByRole('button', { name: /11 suggestions waiting\s*· 1 out of date/ })
+  ).toBeVisible();
+  await page.keyboard.press('Control+z');
+  await expect(page.getByRole('button', { name: '12 suggestions waiting' })).toBeVisible();
+
+  await editor.getByRole('button', { name: 'Review its suggestion' }).nth(1).click();
+  const inspector = page
+    .getByRole('region', { name: 'Suggestion review' })
+    .getByRole('complementary', { name: 'Suggestions' });
+  await expect(inspector.getByText('2 / 12')).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
 test('applying with a name keeps it in history under that name', async () => {
   const { page, errors } = mosaic();
   await stageExampleSuggestions(page);

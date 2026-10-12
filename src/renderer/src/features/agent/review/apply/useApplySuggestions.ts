@@ -9,6 +9,7 @@ import type { Proposal } from '@shared/types/agentProposal';
 import type { ResumeData } from '@shared/types/resume';
 import {
   applyAcceptedProposals,
+  collectVersionSuggestions,
   undoAppliedProposals,
 } from '../../proposals/applyAcceptedProposals';
 import {
@@ -61,7 +62,10 @@ export function useApplySuggestions(proposals: Proposal[], draft: ResumeData) {
     head,
     draftRev: rev,
     choice,
-    landedTitle: describeLandedSuggestions(draft, plan.landed),
+    versionTitle: describeLandedSuggestions(
+      draft,
+      collectVersionSuggestions(choice.mode === 'add', plan.landed)
+    ),
     keepsVersions: isKeepingAfterAi || choice.mode === 'named',
     now: openedAt,
   });

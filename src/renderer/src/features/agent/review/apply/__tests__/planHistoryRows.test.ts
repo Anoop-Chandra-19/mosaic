@@ -30,7 +30,7 @@ const plan = (head: VersionMeta | undefined, draftRev: number, choice: HistoryCh
     head,
     draftRev,
     choice,
-    landedTitle: '3 suggestions in Lantern Geo',
+    versionTitle: '3 suggestions in Lantern Geo',
     keepsVersions: true,
     now: NOW,
   });
@@ -79,7 +79,7 @@ describe('planHistoryRows', () => {
       head: makeHead({}),
       draftRev: 41,
       choice: choose('new'),
-      landedTitle: 'x',
+      versionTitle: 'x',
       keepsVersions: false,
       now: NOW,
     });

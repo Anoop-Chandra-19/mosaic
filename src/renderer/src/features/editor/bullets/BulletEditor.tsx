@@ -62,6 +62,8 @@ interface BulletEditorProps {
   placeholder?: string;
   /** How the preview shows the text while it is typed. */
   livePreview?: (text: string) => LiveEdit;
+  /** What saving does beyond the text, said under the field. */
+  saveNote?: string;
 }
 
 type EditorMode = 'edit' | 'split' | 'merge';
@@ -94,6 +96,7 @@ export function BulletEditor({
   startsTinted = false,
   placeholder = 'Describe the outcome, then the method. Start with a verb.',
   livePreview,
+  saveNote,
 }: BulletEditorProps) {
   const paperSize = useUiStore((s) => s.paperSize);
   const splitCombo = useShortcutCombo('splitBullet');
@@ -392,6 +395,12 @@ export function BulletEditor({
           )}
         />
       </div>
+      {saveNote && mode === 'edit' && (
+        <div className={NOTE}>
+          <Info />
+          <span className={NOTE_TEXT}>{saveNote}</span>
+        </div>
+      )}
       {merge && merge.isFirstSelected !== merge.isSecondSelected && (
         <div className={NOTE}>
           <span className={NOTE_TEXT}>

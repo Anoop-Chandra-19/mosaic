@@ -18,6 +18,9 @@ interface ProposalState {
   setStatus: (templateId: string, ids: readonly string[], status: ProposalStatus) => void;
   /** All of a template's, or only these. */
   removeProposals: (templateId: string, ids?: readonly string[]) => void;
+  /** The suggestions each version an apply kept holds, by version id. */
+  idsByAppliedVersion: Record<string, string[]>;
+  recordAppliedVersion: (versionId: string, proposalIds: string[]) => void;
 }
 
 export const useProposalStore = create<ProposalState>()(
@@ -53,6 +56,13 @@ export const useProposalStore = create<ProposalState>()(
             (proposal) => !ids.includes(proposal.id)
           );
         }
+      }),
+
+    idsByAppliedVersion: {},
+
+    recordAppliedVersion: (versionId, proposalIds) =>
+      set((state) => {
+        state.idsByAppliedVersion[versionId] = proposalIds;
       }),
   }))
 );
