@@ -1,4 +1,5 @@
 import { stageProposals } from '@/features/agent/proposals/proposalActions';
+import { useAiStore } from '@/stores/aiStore';
 import { useOverlayStore } from '@/stores/overlayStore';
 import { getResumeSnapshot } from '@/stores/resumeStore';
 import { useTemplateStore } from '@/stores/templateStore';
@@ -28,11 +29,15 @@ async function loadExampleResume(): Promise<string> {
   return `Opened “${EXAMPLE_TEMPLATE_NAME}”`;
 }
 
+/** Suggestions show only while the assistant is on, so staging them turns it on. */
 async function stageExampleSuggestions(): Promise<string> {
   if (!isExampleOpen()) await loadExampleResume();
   const { proposals, refusals } = stageProposals(EXAMPLE_REQUEST, createExampleSuggestions());
   const refused = refusals.length ? `, ${refusals.length} refused` : '';
-  return `Staged ${proposals.length} example suggestions${refused}`;
+  const ai = useAiStore.getState();
+  const turnedOn = ai.enabled ? '' : '. Turned the assistant on to show them';
+  ai.setEnabled(true);
+  return `Staged ${proposals.length} example suggestions${refused}${turnedOn}`;
 }
 
 export const DEV_TOOLS: DevTool[] = [
@@ -44,7 +49,7 @@ export const DEV_TOOLS: DevTool[] = [
   {
     label: 'Stage example suggestions',
     description:
-      'Stages every kind of suggestion and check on the example resume, opening it first if needed.',
+      'Stages every kind of suggestion and check on the example resume, opening it first if needed, and turns the assistant on.',
     run: stageExampleSuggestions,
   },
 ];

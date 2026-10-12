@@ -31,11 +31,12 @@ Use a motion that exists before inventing one:
 | `step` + `step-back`/`step-forward` | Sliding the way a sequence runs, back from the left | Versions; page ↔ cards      |
 | `slide-in`, `slide-away`            | Leaving to the edge, the space reclaimed, and back  | The sidebar, history index  |
 | `reclaim`                           | A box easing into space given up beside it          | The history list            |
-| `crossfade` (a type, on the root)   | A store change's before and after, as one image     | The history tour ending     |
+| `crossfade` (a type, on the root)   | A store change's before and after, as one image     | Tour ending; Apply and undo |
 | `fade`                              | A layer over the app arriving or leaving whole      | The history tour's veil     |
 | `lockstep`                          | One box whose content changes, both images in step  | Top bar ↔ review bar        |
 | `handover-upper`, `handover-lower`  | Two stacked in one box: one leaves up, one rises    | Assistant pane ↔ inspector  |
 | `cut` (React enter/exit)            | What's left of a surface whose parts all move       | The suggestion review       |
+| `rise`                              | A bar coming in once the view under it has landed   | The review's apply bar      |
 
 ## Correctness
 
@@ -60,6 +61,9 @@ Use a motion that exists before inventing one:
   A store change that swaps what a layer covers goes through `changeInViewTransition`, so
   the two cross-fade as one image instead of painting in turn. It takes another type for a
   change inside a surface whose own updates don't animate (the review's Compare all steps).
+  The change runs a frame later: await its promise before anything that reads the result
+  (Apply writes its version after it lands). In a cross-fade, a handed-over column swaps in
+  lockstep rather than pushing.
 - A step moves only what steps: a handed-over column (`handover`) in the same transition
   holds still.
 - A pair's old and new images both carry the arriving element's classes, so a class can't

@@ -28,27 +28,13 @@ export function canAddToAppliedVersion(): boolean {
   return !!head && head.rev === rev && canAddToVersion(head, 'assistant', Date.now());
 }
 
-/**
- * Lands the open draft's kept suggestions as one edit: one undo takes them all back.
- * History keeps the draft as it was before them and as it is after, as `history` says,
- * unless the user turned those versions off; a name they gave is always kept.
- */
-export async function applyAcceptedProposals(
-  history: AppliedHistory = { mode: 'new' }
-): Promise<ApplyOutcome> {
-  const templateId = useResumeStore.getState().templateId;
-  if (templateId === null) throw new Error('No template is open');
-  if (history.mode === 'add' && !canAddToAppliedVersion()) return { kind: 'cannotAdd' };
+/** Whether an apply with `history` keeps versions: always for a name, else as the user set. */
+export function keepsAppliedVersions(history: AppliedHistory): boolean {
+  return useUiStore.getState().snapshotTriggers.afterAiEdits || history.mode === 'named';
+}
 
-  const draft = getResumeSnapshot();
-  const plan = planApply(draft, useProposalStore.getState().byTemplate[templateId] ?? []);
-  if (!plan.landed.length) return { kind: 'nothing', plan };
-
-  const shouldKeepVersions =
-    useUiStore.getState().snapshotTriggers.afterAiEdits || history.mode === 'named';
-  const { snapshotBeforeApply, snapshotApplied } = useTemplateStore.getState();
-  if (shouldKeepVersions) await snapshotBeforeApply(templateId);
-
+/** Lands a plan in the draft and marks its suggestions: the part of Apply the user sees. */
+function landPlan(templateId: string, plan: ApplyPlan): void {
   useResumeStore.getState().applyDocument(undoLabel(plan.landed.length), plan.doc);
   const proposals = useProposalStore.getState();
   proposals.setStatus(
@@ -62,9 +48,54 @@ export async function applyAcceptedProposals(
     plan.skipped.map(({ proposal }) => proposal.id),
     'pending'
   );
+}
+
+/**
+ * Runs the landing as it comes; a caller can wrap it, as one view transition, and say when
+ * it has run: the version after is written only then.
+ */
+export type LandApply = (land: () => void, plan: ApplyPlan) => void | Promise<void>;
+
+const landAtOnce: LandApply = (land) => land();
+
+/**
+ * Lands the open draft's kept suggestions as one edit: one undo takes them all back.
+ * History keeps the draft as it was before them and as it is after, as `history` says,
+ * unless the user turned those versions off; a name they gave is always kept.
+ */
+export async function applyAcceptedProposals(
+  history: AppliedHistory = { mode: 'new' },
+  landApply: LandApply = landAtOnce
+): Promise<ApplyOutcome> {
+  const templateId = useResumeStore.getState().templateId;
+  if (templateId === null) throw new Error('No template is open');
+  if (history.mode === 'add' && !canAddToAppliedVersion()) return { kind: 'cannotAdd' };
+
+  const draft = getResumeSnapshot();
+  const plan = planApply(draft, useProposalStore.getState().byTemplate[templateId] ?? []);
+  if (!plan.landed.length) return { kind: 'nothing', plan };
+
+  const shouldKeepVersions = keepsAppliedVersions(history);
+  const { snapshotBeforeApply, snapshotApplied } = useTemplateStore.getState();
+  if (shouldKeepVersions) await snapshotBeforeApply(templateId);
+
+  await landApply(() => landPlan(templateId, plan), plan);
 
   if (shouldKeepVersions) {
     await snapshotApplied(templateId, describeLandedSuggestions(draft, plan.landed), history);
   }
   return { kind: 'applied', plan };
+}
+
+/**
+ * Takes an apply back while it is the last edit: the draft steps back one undo, and what
+ * it landed or skipped is kept again, as it was before. The versions it wrote stay.
+ */
+export function undoAppliedProposals(plan: ApplyPlan): void {
+  const templateId = useResumeStore.getState().templateId;
+  if (templateId === null) return;
+  const ids = [...plan.landed, ...plan.skipped.map(({ proposal }) => proposal)].map((p) => p.id);
+  // Kept before the draft steps back, so the recheck finds them against their own text.
+  useProposalStore.getState().setStatus(templateId, ids, 'accepted');
+  useResumeStore.getState().undo();
 }
