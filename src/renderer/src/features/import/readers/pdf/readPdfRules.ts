@@ -60,7 +60,7 @@ function boxOfPath(path: ArrayLike<number>): [number, number, number, number] | 
   let minY = Infinity;
   let maxX = -Infinity;
   let maxY = -Infinity;
-  for (let i = 0; i < path.length; ) {
+  for (let i = 0; i < path.length;) {
     const size = PATH_COMMAND_SIZES[path[i]];
     if (size === undefined) return null;
     for (let j = i + 1; j < i + 1 + size; j += 2) {

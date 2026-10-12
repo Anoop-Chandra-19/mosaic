@@ -57,10 +57,9 @@ function toMeta(row: VersionRow): VersionMeta {
 /** The newest version — the one the draft was last in sync with. */
 export function headVersion(db: Database, templateId: string): VersionMeta | undefined {
   const row = db
-    .prepare<
-      [string],
-      VersionRow
-    >(`select ${META_COLUMNS} from versions where template_id = ? ${NEWEST_FIRST} limit 1`)
+    .prepare<[string], VersionRow>(
+      `select ${META_COLUMNS} from versions where template_id = ? ${NEWEST_FIRST} limit 1`
+    )
     .get(templateId);
   return row && toMeta(row);
 }
@@ -74,10 +73,9 @@ export function countVersions(db: Database, templateId: string): number {
 /** Newest first, without documents — cheap enough to list the whole history. */
 export function listVersions(db: Database, templateId: string): VersionMeta[] {
   return db
-    .prepare<
-      [string],
-      VersionRow
-    >(`select ${META_COLUMNS} from versions where template_id = ? ${NEWEST_FIRST}`)
+    .prepare<[string], VersionRow>(
+      `select ${META_COLUMNS} from versions where template_id = ? ${NEWEST_FIRST}`
+    )
     .all(templateId)
     .map(toMeta);
 }
@@ -100,10 +98,9 @@ export function getVersionMeta(db: Database, versionId: string): VersionMeta {
 
 export function getVersion(db: Database, versionId: string): Version {
   const row = db
-    .prepare<
-      [string],
-      VersionRow & { doc_hash: string }
-    >(`select ${META_COLUMNS}, doc_hash from versions where id = ?`)
+    .prepare<[string], VersionRow & { doc_hash: string }>(
+      `select ${META_COLUMNS}, doc_hash from versions where id = ?`
+    )
     .get(versionId);
   if (!row) throw new StorageError('not-found', `No version with id ${versionId}`);
   return { ...toMeta(row), doc: readDoc(db, row.doc_hash) };
@@ -133,10 +130,9 @@ export interface NewVersion {
 
 function nextVersionNumber(db: Database, templateId: string): number {
   return db
-    .prepare<
-      [string],
-      { next: number }
-    >('select coalesce(max(seq), 0) + 1 as next from versions where template_id = ?')
+    .prepare<[string], { next: number }>(
+      'select coalesce(max(seq), 0) + 1 as next from versions where template_id = ?'
+    )
     .get(templateId)!.next;
 }
 
@@ -212,10 +208,9 @@ function placeWork(head: VersionMeta | undefined, work: VersionWork): Placement 
 /** What a number started from: the parent of its first revision still there. */
 function numberBase(db: Database, version: VersionMeta): VersionMeta | undefined {
   const row = db
-    .prepare<
-      [string, number],
-      { parent_id: string | null }
-    >('select parent_id from versions where template_id = ? and seq = ? order by revision limit 1')
+    .prepare<[string, number], { parent_id: string | null }>(
+      'select parent_id from versions where template_id = ? and seq = ? order by revision limit 1'
+    )
     .get(version.templateId, version.number);
   return row?.parent_id ? getVersionMeta(db, row.parent_id) : undefined;
 }

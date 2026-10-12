@@ -131,15 +131,17 @@ end-to-end tests.
 
 ## Scripts
 
-| Command             | Description                                         |
-| ------------------- | --------------------------------------------------- |
-| `bun run dev`       | Launch the app with hot reload                      |
-| `bun run dev:reset` | Delete development data and start fresh             |
-| `bun run build`     | Type-check and build main, preload, and renderer    |
-| `bun run package`   | Build an installer into `release/`                  |
-| `bun run test`      | Unit tests                                          |
-| `bun run test:e2e`  | Build, then run end-to-end tests headlessly (Linux) |
-| `bun run lint`      | Run ESLint                                          |
+| Command                | Description                                         |
+| ---------------------- | --------------------------------------------------- |
+| `bun run dev`          | Launch the app with hot reload                      |
+| `bun run dev:reset`    | Delete development data and start fresh             |
+| `bun run build`        | Type-check and build main, preload, and renderer    |
+| `bun run package`      | Build an installer into `release/`                  |
+| `bun run test`         | Unit tests                                          |
+| `bun run test:e2e`     | Build, then run end-to-end tests headlessly (Linux) |
+| `bun run lint`         | Run ESLint                                          |
+| `bun run format`       | Format supported project files with Oxfmt           |
+| `bun run format:check` | Check formatting without changing files             |
 
 ## Commit Conventions
 
@@ -151,7 +153,12 @@ fix: correct preview pagination split behavior
 docs: align roadmap with implemented features
 ```
 
-`pre-commit` runs ESLint and Prettier through `lint-staged`.
+`pre-commit` runs ESLint and Oxfmt through `lint-staged`. Formatting preferences live in
+`.oxfmtrc.json`; package-key sorting is disabled. `eslint-config-prettier` remains only to
+turn off conflicting stylistic lint rules—it does not run Prettier.
+
+Zed's project settings use the locally installed Oxfmt CLI for formatting, without an
+extra extension. Other editors should use Oxfmt as well to avoid formatting churn.
 
 ## License
 

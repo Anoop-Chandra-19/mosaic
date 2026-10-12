@@ -105,17 +105,15 @@ function listEntryRows({ section, label, isOn }: SectionPlace, entry: ResumeEntr
     number: null,
     displayName: entryName || heading || label,
   };
-  const fieldRows = ENTRY_FIELDS.map(
-    (field): ChangeRow => ({
-      key: `${field}:${entry.id}`,
-      target: { type: 'entryField', ...ids, field },
-      text: fields[field],
-      isPrinted: isEntryOn,
-      hasText: true,
-      path,
-      number: null,
-    })
-  );
+  const fieldRows = ENTRY_FIELDS.map((field): ChangeRow => ({
+    key: `${field}:${entry.id}`,
+    target: { type: 'entryField', ...ids, field },
+    text: fields[field],
+    isPrinted: isEntryOn,
+    hasText: true,
+    path,
+    number: null,
+  }));
   let printedCount = 0;
   const bulletRows = bullets.map((bullet): ChangeRow => {
     if (bullet.isPrinted) printedCount++;

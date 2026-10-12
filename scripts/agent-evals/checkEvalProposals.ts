@@ -80,7 +80,11 @@ export function checkSegmentsProposal(
 }
 
 const loosenPhrase = (text: string) =>
-  text.replace(/[‘’]/g, "'").replace(/[“”]/g, '"').replace(/[–—]/g, '-').replace(/\s+/g, ' ');
+  text
+    .replace(/[‘’]/g, "'")
+    .replace(/[“”]/g, '"')
+    .replace(/[–—]/g, '-')
+    .replace(/\s+/g, ' ');
 
 /**
  * Where `find` sits in `text`: exact first, then forgiving of curly quotes, dashes, and runs

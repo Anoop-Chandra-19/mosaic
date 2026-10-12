@@ -130,7 +130,7 @@ function directoryOf(read: Reader, end: number): Entry[] | null {
     };
     // Zip64 puts the full value of each maxed-out field in an extra field, in this order.
     const extras = at + DIRECTORY_ENTRY_SIZE + nameLength;
-    for (let extra = extras; extra + 4 <= extras + extraLength; ) {
+    for (let extra = extras; extra + 4 <= extras + extraLength;) {
       const id = read.u16(extra);
       const length = read.u16(extra + 2);
       if (id === ZIP64_EXTRA) {

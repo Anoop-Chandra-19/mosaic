@@ -1,7 +1,69 @@
 {
   "languages": {
     "CSS": {
-      "language_servers": ["tailwindcss-intellisense-css", "!vscode-css-language-server", "..."]
+      "language_servers": ["tailwindcss-intellisense-css", "!vscode-css-language-server", "..."],
+      "formatter": {
+        "external": {
+          "command": "node",
+          "arguments": ["./node_modules/oxfmt/bin/oxfmt", "--stdin-filepath", "{buffer_path}"]
+        }
+      }
+    },
+    "JavaScript": {
+      "formatter": {
+        "external": {
+          "command": "node",
+          "arguments": ["./node_modules/oxfmt/bin/oxfmt", "--stdin-filepath", "{buffer_path}"]
+        }
+      }
+    },
+    "TypeScript": {
+      "formatter": {
+        "external": {
+          "command": "node",
+          "arguments": ["./node_modules/oxfmt/bin/oxfmt", "--stdin-filepath", "{buffer_path}"]
+        }
+      }
+    },
+    "TSX": {
+      "formatter": {
+        "external": {
+          "command": "node",
+          "arguments": ["./node_modules/oxfmt/bin/oxfmt", "--stdin-filepath", "{buffer_path}"]
+        }
+      }
+    },
+    "JSON": {
+      "formatter": {
+        "external": {
+          "command": "node",
+          "arguments": ["./node_modules/oxfmt/bin/oxfmt", "--stdin-filepath", "{buffer_path}"]
+        }
+      }
+    },
+    "Markdown": {
+      "formatter": {
+        "external": {
+          "command": "node",
+          "arguments": ["./node_modules/oxfmt/bin/oxfmt", "--stdin-filepath", "{buffer_path}"]
+        }
+      }
+    },
+    "YAML": {
+      "formatter": {
+        "external": {
+          "command": "node",
+          "arguments": ["./node_modules/oxfmt/bin/oxfmt", "--stdin-filepath", "{buffer_path}"]
+        }
+      }
+    },
+    "HTML": {
+      "formatter": {
+        "external": {
+          "command": "node",
+          "arguments": ["./node_modules/oxfmt/bin/oxfmt", "--stdin-filepath", "{buffer_path}"]
+        }
+      }
     }
   }
 }
