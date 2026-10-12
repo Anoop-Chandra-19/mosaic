@@ -44,6 +44,8 @@ Bun and npm both work (Node ≥ 22.18): `bun run <script>` = `npm run <script>`;
 
 - `bun run build` — type-check and build all three processes.
 - `bun run test` — Vitest. `bun run lint` — ESLint.
+- `bun run format` — Oxfmt. `bun run format:check` — check formatting without writing.
+  Preferences are in `.oxfmtrc.json`; package-key sorting stays off.
 - `bun run test:e2e` — build + Playwright. Linux needs `Xvfb`; each worker owns a separate
   virtual X11 desktop (no outer `xvfb-run`). Linux defaults to 4 workers, other platforms to 1;
   override with `--workers=N`. Each launch must use a throwaway `--user-data-dir` and no
@@ -58,7 +60,7 @@ Bun and npm both work (Node ≥ 22.18): `bun run <script>` = `npm run <script>`;
 - After dependency changes, run `bun install`, then `npm install --package-lock-only`;
   include both lockfiles. No install scripts are needed; npm 11 skipped-script notices
   are expected. Bun's `trustedDependencies` allows better-sqlite3 builds without prebuilds.
-- Hooks enforce ESLint + Prettier on staged files and conventional commit messages.
+- Hooks enforce ESLint + Oxfmt on staged files and conventional commit messages.
 
 ## Data safety
 

@@ -198,7 +198,9 @@ test('Markdown can be copied or saved, and reads back in through Import', async 
   await saveInto(app, userDataDir);
   await startFromSample(page);
 
-  await (await openExport(page, /^Markdown/))
+  await (
+    await openExport(page, /^Markdown/)
+  )
     .getByRole('button', { name: 'Copy to clipboard' })
     .click();
   await expect(page.getByText('Markdown copied')).toBeVisible();

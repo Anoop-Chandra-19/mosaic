@@ -394,7 +394,7 @@ function textOf(segment: Segment, row: Row, links: PdfLink[]): string {
   }
 
   let text = '';
-  for (let i = 0; i < words.length; ) {
+  for (let i = 0; i < words.length;) {
     const { url } = words[i];
     let j = i + 1;
     while (url && j < words.length && words[j].url === url) j++;

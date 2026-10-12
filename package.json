@@ -14,6 +14,8 @@
     "preview": "electron-vite preview",
     "package": "tsc -b && electron-vite build --mode release && electron-builder",
     "lint": "eslint .",
+    "format": "oxfmt --write .",
+    "format:check": "oxfmt --check .",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "electron-vite build && playwright test",
@@ -51,7 +53,7 @@
     "lint-staged": "^16.3.1",
     "lucide-react": "^0.575.0",
     "pdfjs-dist": "^6.3.289",
-    "prettier": "^3.8.1",
+    "oxfmt": "0.72.0",
     "radix-ui": "^1.4.3",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
@@ -67,10 +69,10 @@
   "lint-staged": {
     "*.{ts,tsx}": [
       "eslint --fix",
-      "prettier --write"
+      "oxfmt --write"
     ],
     "*.{json,css,md}": [
-      "prettier --write"
+      "oxfmt --write"
     ]
   },
   "trustedDependencies": [
