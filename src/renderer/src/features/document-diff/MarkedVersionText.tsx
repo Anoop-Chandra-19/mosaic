@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { AppTooltip } from '@/components/AppTooltip';
+import { ReadingColumn } from '@/components/ReadingColumn';
 import { Text } from '@/components/Text';
 import { textVariantClasses } from '@/components/textVariants';
 import { cn } from '@/lib/utils';
@@ -119,7 +120,7 @@ interface MarkedVersionTextProps {
  */
 export function MarkedVersionText({ diff, otherSide, note }: MarkedVersionTextProps) {
   return (
-    <Text as="div" variant="body" className="mx-auto block w-full max-w-105 px-4.5 text-ink-muted">
+    <ReadingColumn className="px-4.5 text-ink-muted">
       {note}
       {diff.lines.map((line, index) => {
         const key = `${line.row.key}:${index}`;
@@ -137,6 +138,6 @@ export function MarkedVersionText({ diff, otherSide, note }: MarkedVersionTextPr
         if (isUnchangedField) return null;
         return <MarkedRow key={key} line={line} otherSide={otherSide} />;
       })}
-    </Text>
+    </ReadingColumn>
   );
 }

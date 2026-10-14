@@ -49,20 +49,22 @@ export function SuggestionLines({
       {proposals.map((proposal) => {
         const { kind, where } = name(proposal);
         return (
-          <Text
-            key={proposal.id}
-            as="div"
-            variant="secondary"
-            className="grid grid-cols-[4.5rem_minmax(0,1fr)] gap-x-2 py-0.5"
-          >
-            <span className="text-ink-muted">{kind}</span>
-            <span className="truncate">{where}</span>
+          <div key={proposal.id} className="grid grid-cols-[4.5rem_minmax(0,1fr)] gap-x-2 py-0.5">
+            <Text variant="secondary" className="text-ink-muted">
+              {kind}
+            </Text>
+            <Text variant="secondary" className="truncate">
+              {where}
+            </Text>
             {detail && (
-              <span className={cn('col-start-2', tone === 'held' ? 'text-warn' : 'text-ink-muted')}>
+              <Text
+                variant="secondary"
+                className={cn('col-start-2', tone === 'held' ? 'text-warn' : 'text-ink-muted')}
+              >
                 {detail(proposal)}
-              </span>
+              </Text>
             )}
-          </Text>
+          </div>
         );
       })}
       {note && (

@@ -411,25 +411,21 @@ function FullHistoryFrame({
         </AppButton>
       </header>
       {isExample && (
-        <Text
-          as="div"
-          variant="secondary"
-          className="flex shrink-0 items-center gap-2.5 border-b border-line bg-pane-raised py-1.5 pr-2.5 pl-3.5 text-ink-soft"
-        >
+        <div className="flex shrink-0 items-center gap-2.5 border-b border-line bg-pane-raised py-1.5 pr-2.5 pl-3.5">
           <Text
             variant="tag"
             className="rounded-[0.25rem] border border-line-strong px-1.25 py-px text-ink-soft"
           >
             Example
           </Text>
-          <span className="min-w-0 flex-1">
+          <Text variant="secondary" className="min-w-0 flex-1 text-ink-soft">
             An example history, so every kind of row is there to see. Your own versions are
             untouched.
-          </span>
+          </Text>
           <AppButton variant="ghost" size="xs" onClick={() => endHistoryTour()}>
             Back to your history
           </AppButton>
-        </Text>
+        </div>
       )}
 
       <div className="flex min-h-0 flex-1">

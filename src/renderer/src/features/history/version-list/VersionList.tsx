@@ -108,20 +108,16 @@ function findHolderKeys(groups: HistoryGroup[], versionId: string): string[] {
 /** Under a history just started, in place of tips: what will collect here, and the tour. */
 function JustStartedNote() {
   return (
-    <Text
-      as="div"
-      variant="secondary"
-      className="mx-0.5 mt-3 flex flex-col items-start gap-2 rounded-[0.5625rem] border border-dashed border-line-strong p-3 text-pretty text-ink-muted"
-    >
-      <span>
+    <div className="mx-0.5 mt-3 flex flex-col items-start gap-2 rounded-[0.5625rem] border border-dashed border-line-strong p-3">
+      <Text as="p" variant="secondary" className="text-pretty">
         Versions collect here as you work: the ones you name, and snapshots Mosaic keeps on its own.
         Your draft is saved as you type either way.
-      </span>
+      </Text>
       <AppButton variant="ghost" size="xs" onClick={startHistoryTour} className="-ml-1.5">
         <ChevronRight />
         How history works
       </AppButton>
-    </Text>
+    </div>
   );
 }
 

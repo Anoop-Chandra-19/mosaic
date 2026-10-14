@@ -147,19 +147,19 @@ const LEGEND: { mark: string; label: string }[] = [
 
 function MarksLegend() {
   return (
-    <Text
-      as="div"
-      variant="secondary"
-      className="mt-2.5 mb-0.5 grid grid-cols-[1rem_1fr] items-center gap-x-2 gap-y-1.5 text-ink-soft"
-    >
+    <div className="mt-2.5 mb-0.5 grid grid-cols-[1rem_1fr] items-center gap-x-2 gap-y-1.5">
       {LEGEND.map(({ mark, label }) => (
         <span key={label} className="contents">
           <i aria-hidden className={cn('block justify-self-center', mark)} />
-          <span>{label}</span>
+          <Text variant="secondary" className="text-ink-soft">
+            {label}
+          </Text>
         </span>
       ))}
       <Sparkles aria-hidden className="size-2.75 justify-self-center text-amber" />
-      <span>Suggestions you applied</span>
-    </Text>
+      <Text variant="secondary" className="text-ink-soft">
+        Suggestions you applied
+      </Text>
+    </div>
   );
 }

@@ -3,6 +3,7 @@ import { Clock, Eye, EyeOff, Info, Move, Undo2 } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
 import { Chip } from '@/components/Chip';
 import { Text } from '@/components/Text';
+import type { TextVariant } from '@/components/textVariants';
 import { cn } from '@/lib/utils';
 import type { Proposal, ProposalChange, ProposalChangeKind } from '@shared/types/agentProposal';
 import type { ResumeData } from '@shared/types/resume';
@@ -51,7 +52,7 @@ const KIND_BODIES: Record<ProposalChangeKind, (props: SuggestionBodyProps) => Re
 
 function Caption({ children }: { children: ReactNode }) {
   return (
-    <Text as="div" variant="tag" className="mt-3 mb-1.5 flex items-center gap-1.75 first:mt-0.5">
+    <Text as="p" variant="tag" className="mt-3 mb-1.5 flex items-center gap-1.75 first:mt-0.5">
       {children}
     </Text>
   );
@@ -66,8 +67,15 @@ function CaptionTag({ children }: { children: ReactNode }) {
   );
 }
 
+interface LinesProps {
+  lines: ReactNode[];
+  isNumbered: boolean;
+  variant: TextVariant;
+  className?: string;
+}
+
 /** Lines of the user's own text, numbered when there are several. */
-function Lines({ lines, isNumbered }: { lines: ReactNode[]; isNumbered: boolean }) {
+function Lines({ lines, isNumbered, variant, className }: LinesProps) {
   return lines.map((line, index) => (
     <div key={index} className="flex items-start gap-1.75 [&+&]:mt-1">
       {isNumbered && (
@@ -75,7 +83,9 @@ function Lines({ lines, isNumbered }: { lines: ReactNode[]; isNumbered: boolean 
           {index + 1}
         </Text>
       )}
-      <span>{line}</span>
+      <Text variant={variant} className={className}>
+        {line}
+      </Text>
     </div>
   ));
 }
@@ -124,14 +134,16 @@ function RewriteBody({ proposal, isEditing, onEditingChange }: SuggestionBodyPro
     <>
       {isRebased && <RebasedNote proposal={proposal} />}
       <Caption>{isMerge ? 'Now, two bullets' : isRebased ? 'Your edited bullet' : 'Now'}</Caption>
-      <Text as="div" variant="secondary" className="text-ink-soft">
+      <div>
         <Lines
           isNumbered={isMerge}
+          variant="secondary"
+          className="text-ink-soft"
           lines={before.map((text) => (
             <FlaggedText key={text} text={text} words={lost} />
           ))}
         />
-      </Text>
+      </div>
       <Caption>
         {isMerge ? 'Suggested, one bullet' : 'Suggested'}
         {review.userText !== undefined && !isEditing && <CaptionTag>in your words</CaptionTag>}
@@ -141,7 +153,7 @@ function RewriteBody({ proposal, isEditing, onEditingChange }: SuggestionBodyPro
       ) : (
         <>
           <Text
-            as="div"
+            as="p"
             variant="body"
             className="text-pretty"
             onDoubleClick={() => onEditingChange(true)}
@@ -162,7 +174,7 @@ function RewriteBody({ proposal, isEditing, onEditingChange }: SuggestionBodyPro
             ) : (
               <div className="mt-2.5 rounded-sm border border-line-strong bg-pane-raised px-2.5 pt-2 pb-2.5">
                 <Caption>Or, with no number</Caption>
-                <Text as="div" variant="secondary" className="text-ink-soft">
+                <Text as="p" variant="secondary" className="text-ink-soft">
                   {withoutNumber}
                 </Text>
                 <AppButton
@@ -215,7 +227,7 @@ function SplitBody({ proposal }: SuggestionBodyProps) {
   return (
     <>
       <Caption>Now, one bullet</Caption>
-      <Text as="div" variant="secondary" className="text-ink-soft">
+      <Text as="p" variant="secondary" className="text-ink-soft">
         {parts[0]}
         <span
           title="Splits here"
@@ -226,9 +238,9 @@ function SplitBody({ proposal }: SuggestionBodyProps) {
       <Caption>
         Suggested, two bullets <CaptionTag>same words</CaptionTag>
       </Caption>
-      <Text as="div" variant="body">
-        <Lines isNumbered lines={parts.map((part) => part.trim())} />
-      </Text>
+      <div>
+        <Lines isNumbered variant="body" lines={parts.map((part) => part.trim())} />
+      </div>
     </>
   );
 }
@@ -293,18 +305,20 @@ function SelectBody({ proposal }: SuggestionBodyProps) {
     <>
       <Caption>Suggested</Caption>
       <Text
-        as="div"
+        as="p"
         variant="body"
         className={cn(!change.selected && 'text-ink-muted line-through decoration-del')}
       >
         {change.before}
       </Text>
-      <Text as="div" variant="secondary" className="mt-2 flex items-start gap-1.5 text-ink-muted">
+      <div className="mt-2 flex items-start gap-1.5 text-ink-muted">
         <Icon className="mt-0.75 size-3 shrink-0" />
-        {change.selected
-          ? 'Back on the page.'
-          : 'Off the page, still in your content. Show it again from the editor any time.'}
-      </Text>
+        <Text variant="secondary" className="text-ink-muted">
+          {change.selected
+            ? 'Back on the page.'
+            : 'Off the page, still in your content. Show it again from the editor any time.'}
+        </Text>
+      </div>
     </>
   );
 }
@@ -344,7 +358,7 @@ function StaleBody({ proposal, draft }: SuggestionBodyProps) {
       {now !== undefined && (
         <>
           <Caption>Your bullet now</Caption>
-          <Text as="div" variant="body">
+          <Text as="p" variant="body">
             {now}
           </Text>
         </>
@@ -352,7 +366,7 @@ function StaleBody({ proposal, draft }: SuggestionBodyProps) {
       {suggestedFor !== undefined && (
         <>
           <Caption>It was suggested for</Caption>
-          <Text as="div" variant="body" className="text-ink-muted">
+          <Text as="p" variant="body" className="text-ink-muted">
             {suggestedFor}
           </Text>
         </>
@@ -360,7 +374,7 @@ function StaleBody({ proposal, draft }: SuggestionBodyProps) {
       {canUseAnyway && (
         <>
           <Caption>Suggested</Caption>
-          <Text as="div" variant="body" className="text-ink-muted line-through">
+          <Text as="p" variant="body" className="text-ink-muted line-through">
             {change.after}
           </Text>
           <Text

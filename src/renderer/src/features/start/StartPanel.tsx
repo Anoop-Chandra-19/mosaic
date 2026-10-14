@@ -132,16 +132,15 @@ export function StartPanel({ closable }: StartPanelProps) {
                 More coming
               </div>
             </div>
-            <PanelFoot icon={Info}>
+            <PanelFoot
+              icon={Info}
+              action={
+                <AppButton variant="outline" size="xs" onClick={() => setView('routes')}>
+                  Back
+                </AppButton>
+              }
+            >
               One sample so far. More are being written.
-              <AppButton
-                variant="outline"
-                size="xs"
-                className="ml-auto"
-                onClick={() => setView('routes')}
-              >
-                Back
-              </AppButton>
             </PanelFoot>
           </>
         )}
@@ -181,16 +180,22 @@ function PanelHead({
   );
 }
 
-function PanelFoot({ icon: Icon, children }: { icon: typeof Lock; children: ReactNode }) {
+interface PanelFootProps {
+  icon: typeof Lock;
+  /** A button at the right end. */
+  action?: ReactNode;
+  children: ReactNode;
+}
+
+function PanelFoot({ icon: Icon, action, children }: PanelFootProps) {
   return (
-    <Text
-      as="div"
-      variant="secondary"
-      className="mt-4 flex items-center gap-1.75 border-t border-line pt-3 text-ink-faint"
-    >
+    <div className="mt-4 flex items-center gap-1.75 border-t border-line pt-3 text-ink-faint">
       <Icon className="size-3 shrink-0" />
-      {children}
-    </Text>
+      <Text variant="secondary" className="text-ink-faint">
+        {children}
+      </Text>
+      {action && <div className="ml-auto">{action}</div>}
+    </div>
   );
 }
 

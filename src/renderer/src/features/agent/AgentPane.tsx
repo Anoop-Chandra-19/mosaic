@@ -96,22 +96,20 @@ export function AgentPane() {
         </Text>
       </div>
 
-      <Text
-        as="footer"
-        variant="secondary"
-        className="block border-t border-line px-4 py-2.5 text-ink-faint"
-      >
-        {AI_PROVIDER_BY_ID[provider].label} ·{' '}
-        <Text variant="meta">{model || AI_PROVIDER_DEFAULT_MODEL[provider]}</Text>
-        {' · '}
-        <AppButton
-          variant="link"
-          onClick={() => openSettings('ai')}
-          className="h-auto p-0 align-baseline text-support text-amber underline-offset-2"
-        >
-          change
-        </AppButton>
-      </Text>
+      <footer className="border-t border-line px-4 py-2.5">
+        <Text as="p" variant="secondary" className="text-ink-faint">
+          {AI_PROVIDER_BY_ID[provider].label} ·{' '}
+          <Text variant="meta">{model || AI_PROVIDER_DEFAULT_MODEL[provider]}</Text>
+          {' · '}
+          <AppButton
+            variant="link"
+            onClick={() => openSettings('ai')}
+            className="h-auto p-0 align-baseline text-support text-amber underline-offset-2"
+          >
+            change
+          </AppButton>
+        </Text>
+      </footer>
     </aside>
   );
 }
