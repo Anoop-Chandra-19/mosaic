@@ -58,18 +58,16 @@ export function ReviewContactRow({
         )}
         <ReviewFold>
           <div className="mt-0.5 border-t border-dashed border-line bg-pane pt-0.5 pr-2.75 pb-2.25 pl-6.5">
-            <Text
-              as="div"
-              variant="secondary"
-              className="grid grid-cols-[5.25rem_minmax(0,1fr)] gap-x-3 gap-y-0.75 py-1.5 pl-4.75"
-            >
+            <div className="grid grid-cols-[5.25rem_minmax(0,1fr)] gap-x-3 gap-y-0.75 py-1.5 pl-4.75">
               {fields.map(([label, value], index) => (
                 <Fragment key={index}>
-                  <span>{label}</span>
-                  <span className="wrap-break-word text-foreground">{value}</span>
+                  <Text variant="secondary">{label}</Text>
+                  <Text variant="secondary" className="wrap-break-word text-foreground">
+                    {value}
+                  </Text>
                 </Fragment>
               ))}
-            </Text>
+            </div>
             {linkNote && (
               <Text as="p" variant="secondary" className="pt-0.5 pl-4.75">
                 {linkNote}

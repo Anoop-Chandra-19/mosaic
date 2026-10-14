@@ -204,12 +204,14 @@ export function ShortcutsPanel({ isEmbedded = false, place, footerAction }: Shor
               <ShortcutKeys combos={[pressed]} />
               {found ? (
                 <>
-                  <Text as="div" variant="body" className="min-w-0 flex-1">
-                    is <b className="font-strong text-foreground">{found.row.label}</b>
-                    <Text as="div" variant="secondary">
+                  <div className="min-w-0 flex-1">
+                    <Text as="p" variant="body">
+                      is <b className="font-strong text-foreground">{found.row.label}</b>
+                    </Text>
+                    <Text as="p" variant="secondary">
                       {found.group}
                     </Text>
-                  </Text>
+                  </div>
                   {!isFixedShortcut(found.row.id) && (
                     <AppButton
                       variant="ghost"
@@ -235,7 +237,7 @@ export function ShortcutsPanel({ isEmbedded = false, place, footerAction }: Shor
                   </AppButton>
                 </>
               ) : (
-                <Text as="div" variant="body" className="flex-1">
+                <Text as="p" variant="body" className="flex-1">
                   isn’t bound to anything.
                 </Text>
               )}

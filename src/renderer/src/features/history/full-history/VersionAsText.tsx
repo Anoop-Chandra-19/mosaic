@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { ReadingColumn } from '@/components/ReadingColumn';
 import { Text } from '@/components/Text';
 import { normalizeResumeForExport } from '@/features/export/normalizeResumeExport';
 import type { ResumeData } from '@shared/types/resume';
@@ -16,7 +17,7 @@ interface VersionAsTextProps {
 export function VersionAsText({ resume, note }: VersionAsTextProps) {
   const { contact, sections } = normalizeResumeForExport(resume);
   return (
-    <Text as="div" variant="body" className="mx-auto block w-full max-w-105 px-4">
+    <ReadingColumn>
       {note}
       <Text as="h4" variant="editor" className="mb-1.5 block">
         {contact.name}
@@ -56,6 +57,6 @@ export function VersionAsText({ resume, note }: VersionAsTextProps) {
           )}
         </section>
       ))}
-    </Text>
+    </ReadingColumn>
   );
 }

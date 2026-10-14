@@ -187,13 +187,13 @@ export function VersionPreviewBanner({ comparison, pageRef }: VersionPreviewBann
     });
 
   return (
-    <Text
-      as="div"
-      variant="secondary"
-      className="flex flex-wrap items-center gap-x-2.25 gap-y-1.5 border-b border-amber-line bg-amber-soft px-3.5 py-2 text-ink-soft"
-    >
+    <div className="flex flex-wrap items-center gap-x-2.25 gap-y-1.5 border-b border-amber-line bg-amber-soft px-3.5 py-2">
       <Eye className="size-3.5 shrink-0 text-amber" />
-      <span className="min-w-0 flex-[1_1_16.25rem] leading-normal">
+      <Text
+        as="p"
+        variant="secondary"
+        className="min-w-0 flex-[1_1_16.25rem] leading-normal text-ink-soft"
+      >
         <span className="text-ink-muted">
           Reading{' '}
           <span className="mr-1.5 ml-0.75 font-mono font-strong text-amber tabular-nums">
@@ -207,7 +207,7 @@ export function VersionPreviewBanner({ comparison, pageRef }: VersionPreviewBann
             `Revision ${version.revision} of v${version.number}, saved at ${formatTimeOfDay(version.createdAt)}. `}
           <DifferenceSentence comparison={comparison} />
         </span>
-      </span>
+      </Text>
       {comparison.diff.changes.length > 0 && (
         <PlaceStepper comparison={comparison} pageRef={pageRef} />
       )}
@@ -221,6 +221,6 @@ export function VersionPreviewBanner({ comparison, pageRef }: VersionPreviewBann
         <History />
         Restore this version
       </AppButton>
-    </Text>
+    </div>
   );
 }
