@@ -120,7 +120,7 @@ export function HeaderItemEditor({
       <div className="mt-0.5 flex items-center gap-1.25">
         {/* Worth saying only when the file gets something other than what was typed with
             https:// in front: a mail or phone link. */}
-        <AppTooltip content="The link as exported files write it. What you typed is unchanged.">
+        <AppTooltip content="How exported files write the link. Your text is unchanged.">
           <Text variant="meta" className="min-w-0 flex-1 truncate">
             {/^(?:mailto|tel):/i.test(href) ? href : ''}
           </Text>

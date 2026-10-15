@@ -35,7 +35,7 @@ export function SuggestionActions({
       {proposal.status === 'rejected' ? (
         <DecidedToggle
           variant="dropped"
-          title={`Dropped. Click to put it back to waiting  ${dropKeys}`.trim()}
+          title={`Dropped. Click to undo  ${dropKeys}`.trim()}
           decided={{ icon: X, label: 'Dropped' }}
           undo={{ icon: Undo2, label: 'Undo drop' }}
           onClick={() => returnProposals([proposal.id])}
@@ -67,7 +67,7 @@ export function SuggestionActions({
       {proposal.status === 'accepted' ? (
         <DecidedToggle
           variant="kept"
-          title={`Kept. Click to put it back to waiting  ${keepKeys}`.trim()}
+          title={`Kept. Click to undo  ${keepKeys}`.trim()}
           decided={{ icon: Check, label: 'Kept' }}
           undo={{ icon: Undo2, label: 'Undo keep' }}
           onClick={() => returnProposals([proposal.id])}
@@ -107,7 +107,7 @@ function StaleActions({ proposal }: { proposal: Proposal }) {
         <AppButton
           variant="outline"
           size="sm"
-          title="See it next to your edited bullet, then decide"
+          title="Compare with your edited bullet, then decide"
           onClick={() => reviewStaleProposalAnyway(proposal.id)}
         >
           <RotateCcw />

@@ -92,7 +92,7 @@ function SuggestionsWaiting({ templateId }: { templateId: string }) {
       variant="waiting"
       size="xs"
       className="h-5 px-0"
-      title="Waiting over your draft. Nothing is on your page until you apply. Click to review."
+      title="Suggestions are waiting. Nothing changes until you apply. Click to review."
       onClick={() => openSurface({ kind: 'review' })}
     >
       <span className="size-1.5 rounded-full bg-amber shadow-[0_0_0_3px_var(--amber-soft)]" />
@@ -138,10 +138,7 @@ export function StatusBar() {
     saveState = <span className="text-ink-faint">No resume open</span>;
   } else if (saveFailed) {
     saveState = (
-      <AppTooltip
-        side="top"
-        content="Your edits are safe in the editor. Mosaic will try again with your next change."
-      >
+      <AppTooltip side="top" content="Your edits are safe. Mosaic retries with your next change.">
         <span className="text-del">Couldn’t save the last change</span>
       </AppTooltip>
     );

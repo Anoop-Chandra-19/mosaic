@@ -214,7 +214,7 @@ function NameVersionForm({ onDone }: { onDone: () => void }) {
             id="version-name"
             value={name}
             onChange={(event) => setName(event.target.value)}
-            placeholder="A name you’ll recognise later, like “Sent to Striped”"
+            placeholder="A name you’ll recognise later, like “Sent to Acme”"
             aria-label="Version name"
             maxLength={200}
             autoFocus
