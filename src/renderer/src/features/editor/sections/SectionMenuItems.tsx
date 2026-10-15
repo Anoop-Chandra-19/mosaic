@@ -1,4 +1,5 @@
 import { AppMenuItem } from '@/components/AppMenu';
+import { Text } from '@/components/Text';
 import { SECTION_PRESETS } from '@shared/resume/sectionPresets';
 import type { BuiltInSectionKind, SectionLayout } from '@shared/types/resume';
 import { CUSTOM_ICONS, PRESET_ICONS } from './sectionIcons';
@@ -35,7 +36,9 @@ export function CustomMenuItems({ onChoose }: { onChoose: (layout: SectionLayout
       <AppMenuItem key={layout} onSelect={() => onChoose(layout)}>
         <Icon />
         {label}
-        <span className="ml-auto pl-4 text-support text-ink-faint">{hint}</span>
+        <Text variant="secondary" className="ml-auto pl-4 text-ink-faint">
+          {hint}
+        </Text>
       </AppMenuItem>
     );
   });

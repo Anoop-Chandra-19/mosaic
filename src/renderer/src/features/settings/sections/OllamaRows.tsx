@@ -9,6 +9,7 @@ import {
   AppSelectTrigger,
   AppSelectValue,
 } from '@/components/AppSelect';
+import { Text } from '@/components/Text';
 import { textVariantClasses } from '@/components/textVariants';
 import { cn } from '@/lib/utils';
 import {
@@ -207,14 +208,20 @@ export function OllamaModelRow({
           {!isPulled && (
             <AppSelectItem value={model}>
               {model}
-              {knownMissing && <span className="text-support text-ink-faint">not pulled</span>}
+              {knownMissing && (
+                <Text variant="secondary" className="text-ink-faint">
+                  not pulled
+                </Text>
+              )}
             </AppSelectItem>
           )}
           {pulled.map((option) => (
             <AppSelectItem key={option.name} value={option.name}>
               {option.name}
               {gigabytes(option.sizeBytes) && (
-                <span className="text-support text-ink-faint">{gigabytes(option.sizeBytes)}</span>
+                <Text variant="secondary" className="text-ink-faint">
+                  {gigabytes(option.sizeBytes)}
+                </Text>
               )}
             </AppSelectItem>
           ))}

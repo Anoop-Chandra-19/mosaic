@@ -25,6 +25,7 @@ import {
 import { AppInput } from '@/components/AppInput';
 import { Note } from '@/components/Note';
 import { ReadBoundary } from '@/components/ReadBoundary';
+import { Badge } from '@/components/Badge';
 import { Text } from '@/components/Text';
 import { cn } from '@/lib/utils';
 import { useOverlayStore } from '@/stores/overlayStore';
@@ -203,11 +204,7 @@ export function TemplateCard({ template, active, expanded, onToggle }: TemplateC
                 <span className="truncate">{template.name}</span>
               </AppButton>
             )}
-            {active && !renaming && (
-              <span className="inline-flex h-[1.1875rem] shrink-0 items-center rounded-[0.3125rem] bg-foreground px-[0.4375rem] text-support font-strong text-background">
-                open
-              </span>
-            )}
+            {active && !renaming && <Badge tone="solid">open</Badge>}
           </div>
           <Text as="p" variant="secondary" className="mt-[0.1875rem] tabular-nums">
             {template.versionCount} {template.versionCount === 1 ? 'version' : 'versions'} ·{' '}

@@ -12,6 +12,7 @@ import {
 } from '@/components/AppSelect';
 import { AppSwitch } from '@/components/AppSwitch';
 import { AppToggleGroup, AppToggleGroupItem } from '@/components/AppToggleGroup';
+import { Text } from '@/components/Text';
 import { isLocalOllamaAddress } from '@shared/ai/ollamaAddress';
 import { cn } from '@/lib/utils';
 import { AI_PROVIDER_DEFAULT_MODEL, useAiStore } from '@/stores/aiStore';
@@ -277,9 +278,9 @@ function ApiKeyRows({ provider, model }: { provider: KeyedProvider; model: strin
       >
         {status === null && !loadFailed ? null : savedIn ? (
           <>
-            <span className="text-support font-control text-ink-soft">
+            <Text variant="secondary" className="font-control text-ink-soft">
               {savedIn === 'keychain' ? 'Saved in the keychain' : 'Saved for this session'}
-            </span>
+            </Text>
             {testButton}
             <AppButton variant="outline" size="sm" onClick={() => void remove()}>
               Remove
