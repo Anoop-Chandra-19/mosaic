@@ -91,7 +91,7 @@ export function HistoryMenu({
         <AppInput
           autoFocus
           aria-label="Version name"
-          placeholder="e.g. Tightened for Northwind"
+          placeholder="e.g. Tightened for Acme"
           maxLength={60}
           value={choice.name}
           onChange={(event) => onChoiceChange({ ...choice, name: event.target.value })}

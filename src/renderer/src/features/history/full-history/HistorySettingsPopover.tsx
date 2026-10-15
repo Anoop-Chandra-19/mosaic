@@ -42,7 +42,7 @@ export function HistorySettingsPopover({ isOpen, onOpenChange }: HistorySettings
           {...tourTargetProps('historySettings')}
           variant="ghost"
           size="xs"
-          title={`How much the history shows, and when automatic snapshots happen. App settings: ${settingsKeys}`}
+          title={`What history shows and when snapshots happen. App settings: ${settingsKeys}`}
           className="data-[state=open]:bg-line-strong data-[state=open]:text-foreground"
         >
           <Settings />

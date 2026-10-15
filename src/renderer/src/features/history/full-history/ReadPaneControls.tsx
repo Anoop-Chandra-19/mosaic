@@ -76,7 +76,7 @@ export function ReadPaneControls({
           </AppToggleGroupItem>
         </AppTooltip>
         {numberLabel && (
-          <AppTooltip content={`Everything ${numberLabel} did, over all its revisions`}>
+          <AppTooltip content={`All changes in ${numberLabel}, across its revisions`}>
             <AppToggleGroupItem value="number">All of {numberLabel}</AppToggleGroupItem>
           </AppTooltip>
         )}
