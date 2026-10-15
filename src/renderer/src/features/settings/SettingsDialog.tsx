@@ -4,6 +4,7 @@ import { useOverlayStore } from '@/stores/overlayStore';
 import { AppButton } from '@/components/AppButton';
 import { AppDialog, AppDialogContent } from '@/components/AppDialog';
 import { DialogFrameHeader } from '@/components/DialogFrame';
+import { Chip } from '@/components/Chip';
 import { Text } from '@/components/Text';
 import { cn } from '@/lib/utils';
 import { useAiStore } from '@/stores/aiStore';
@@ -83,9 +84,9 @@ export function SettingsDialog() {
                       />
                       {item.label}
                       {item.id === 'ai' && !aiEnabled && (
-                        <span className="ml-auto inline-flex h-4 items-center rounded-sm border border-line bg-line px-1.5 text-tag font-control tracking-normal text-ink-soft normal-case">
+                        <Chip size="sm" className="ml-auto">
                           off
-                        </span>
+                        </Chip>
                       )}
                     </AppButton>
                   );

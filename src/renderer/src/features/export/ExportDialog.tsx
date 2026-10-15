@@ -18,6 +18,7 @@ import { AppRadioGroup, AppRadioGroupItem } from '@/components/AppRadioGroup';
 import { AppToggleGroup, AppToggleGroupItem } from '@/components/AppToggleGroup';
 import { CHOICE_CARD_CLASSES } from '@/components/controlStyles';
 import { Note } from '@/components/Note';
+import { Chip } from '@/components/Chip';
 import { Text } from '@/components/Text';
 import { useActiveTemplate } from '@/features/templates/useActiveTemplate';
 import { buildExportName, toFileName } from '@/lib/files/fileNames';
@@ -335,11 +336,7 @@ function FormatOption({ format, selected }: { format: ExportFormatInfo; selected
           <Text variant="secondary" className="font-strong text-foreground">
             {format.name}
           </Text>
-          {format.id === 'pdf' && (
-            <span className="inline-flex h-4 items-center rounded-sm border border-line bg-line px-1.5 text-tag font-control text-ink-soft">
-              default
-            </span>
-          )}
+          {format.id === 'pdf' && <Chip size="sm">default</Chip>}
         </span>
         <Text variant="secondary" className="mt-0.5 block">
           {format.description}

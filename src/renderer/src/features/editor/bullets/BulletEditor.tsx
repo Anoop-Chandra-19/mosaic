@@ -11,6 +11,8 @@ import {
 import { Info, Merge, Split } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
 import { AppToggleGroup, AppToggleGroupItem } from '@/components/AppToggleGroup';
+import { Chip } from '@/components/Chip';
+import { Text } from '@/components/Text';
 import { matchesAction, useShortcutCombo } from '@/features/shortcuts/shortcutBindings';
 import { formatShortcutKeys } from '@/lib/keyboardShortcuts';
 import { cn } from '@/lib/utils';
@@ -275,9 +277,9 @@ export function BulletEditor({
   const markAt = mode === 'merge' ? seam : cursor;
 
   const longChip = isLong && (
-    <span className="inline-flex h-4 shrink-0 items-center rounded-[0.3125rem] border border-warn-line bg-warn-soft px-2 text-tag font-control tracking-normal whitespace-nowrap text-warn">
+    <Chip size="sm" tone="warn">
       Long: will wrap to {lineCount} lines
-    </span>
+    </Chip>
   );
 
   let hints: KeyHint[];
@@ -454,7 +456,7 @@ export function BulletEditor({
       )}
       <div className="flex items-center gap-1.5 overflow-hidden border-t border-line pt-1 pr-1.5 pb-1.25 pl-2.25">
         {/* Shrinks first, so the buttons stay whole in a narrow sidebar. */}
-        <span className="min-w-0 truncate font-mono text-meta text-ink-faint tabular-nums">
+        <Text variant="meta" className="min-w-0 truncate">
           {mode === 'split' ? (
             <>
               {draft.slice(0, cursor).trim().length} + {draft.slice(cursor).trim().length}
@@ -463,7 +465,7 @@ export function BulletEditor({
           ) : (
             `${length} chars`
           )}
-        </span>
+        </Text>
         {!shouldNudgeSplit && mode !== 'split' && longChip}
         <span className="flex-1" />
         <KeyHints hints={hints} />
@@ -490,14 +492,18 @@ const KEEP_UNTIL = {
 function KeyHints({ hints }: { hints: KeyHint[] }) {
   const joiner = window.mosaic.platform === 'darwin' ? '' : '+';
   return (
-    <span className="flex items-center gap-2 text-meta whitespace-nowrap text-ink-muted">
+    <span className="flex items-center gap-2 whitespace-nowrap">
       {hints.map(({ combo, label, keep }) => (
-        <span key={label} className={KEEP_UNTIL[keep ?? 'normal']}>
+        <Text
+          key={label}
+          variant="caption"
+          className={cn('text-ink-muted', KEEP_UNTIL[keep ?? 'normal'])}
+        >
           <span className="font-control text-ink-soft">
             {formatShortcutKeys(combo).join(joiner)}
           </span>{' '}
           {label}
-        </span>
+        </Text>
       ))}
     </span>
   );
