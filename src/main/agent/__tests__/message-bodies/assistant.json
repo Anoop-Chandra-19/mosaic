@@ -1,0 +1,19 @@
+{
+  "type": "assistant",
+  "content": [
+    {
+      "type": "reasoning",
+      "text": "The third bullet repeats the first.",
+      "durationMs": 3400,
+      "providerState": { "signature": "c2lnbmVk" }
+    },
+    { "type": "text", "text": "Reading your experience first." },
+    {
+      "type": "toolCall",
+      "callId": "call-1",
+      "name": "read_document",
+      "args": { "sectionId": "s-exp" }
+    }
+  ],
+  "finish": "complete"
+}

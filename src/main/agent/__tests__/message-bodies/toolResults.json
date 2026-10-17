@@ -1,0 +1,7 @@
+{
+  "type": "toolResults",
+  "results": [
+    { "callId": "call-1", "content": "{\"rev\":12,\"sections\":[]}" },
+    { "callId": "call-2", "content": "No bullet b-9 in entry e-lumen.", "isError": true }
+  ]
+}

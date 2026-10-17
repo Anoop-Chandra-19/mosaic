@@ -1,0 +1,6 @@
+{
+  "type": "templateSwitched",
+  "templateId": "t-platform",
+  "label": "Platform, general",
+  "previousId": "t-data"
+}
