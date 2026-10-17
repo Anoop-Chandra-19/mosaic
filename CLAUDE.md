@@ -67,7 +67,7 @@ Bun and npm both work (Node ≥ 22.18): `bun run <script>` = `npm run <script>`;
 - Documents never use Zustand `persist`. `resumeStore` autosaves through `drafts.save`;
   `flushDraft()` saves immediately. Flush before any database read of the current draft
   (switch, duplicate, import, restore, backup). Window close waits for it, up to 2 seconds.
-- Preferences use `uiStore` / `aiStore` with `settingsStorage`; main seeds the settings
+- Preferences use `uiStore` / `agentSettingsStore` with `settingsStorage`; main seeds the settings
   before the stores hydrate and the first paint.
 - Bundles (`src/shared/types/bundle.ts`) are readable JSON: every template, its draft,
   and full history. Mosaic JSON exports the same for one template. Never include settings,

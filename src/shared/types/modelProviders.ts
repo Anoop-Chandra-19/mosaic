@@ -1,3 +1,5 @@
+export type ModelProviderId = 'openai' | 'anthropic' | 'gemini' | 'ollama' | 'openrouter';
+
 /** A model pulled into the local Ollama that can hold a conversation. */
 export interface OllamaModel {
   /** What Ollama calls it, tag included: `qwen3.5:9b`. */

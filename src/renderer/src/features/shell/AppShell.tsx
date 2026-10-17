@@ -32,7 +32,7 @@ import { ShortcutsDialog } from '@/features/shortcuts/ShortcutsDialog';
 import { matchesAction } from '@/features/shortcuts/shortcutBindings';
 import { isRedoKey, isTypingField, isUndoKey } from '@/lib/keyboardShortcuts';
 import { SHORTCUT_PLACES, type ShortcutId, type ShortcutPlace } from '@/lib/shortcutCatalog';
-import { useAiStore } from '@/stores/aiStore';
+import { useAgentSettingsStore } from '@/stores/agentSettingsStore';
 import { useOverlayStore } from '@/stores/overlayStore';
 import { usePreviewStore } from '@/stores/previewStore';
 import { useTargetStore } from '@/stores/targetStore';
@@ -52,9 +52,9 @@ export function AppShell() {
   const surface = useOverlayStore((s) => s.surface);
   const shownSurface = useShownSurface();
   const isWorkspaceReplaced = useIsWorkspaceReplaced();
-  const aiEnabled = useAiStore((s) => s.enabled);
+  const isAgentEnabled = useAgentSettingsStore((s) => s.enabled);
   const agentPaneOpen = useUiStore((s) => s.agentPaneOpen);
-  const showAgentPane = aiEnabled && agentPaneOpen;
+  const showAgentPane = isAgentEnabled && agentPaneOpen;
   const shouldShowPreview = useUiStore((s) => s.shouldShowPreview);
   // Deferred, like the surface, so hiding and showing it is a view transition.
   const isSidebarCollapsed = useDeferredValue(useUiStore((s) => s.sidebarCollapsed));
@@ -197,7 +197,7 @@ const GLOBAL_SHORTCUTS: { id: ShortcutId; run: () => void; worksOverSurface?: tr
   {
     id: 'toggleAssistant',
     run: () => {
-      if (useAiStore.getState().enabled) useUiStore.getState().toggleAgentPane();
+      if (useAgentSettingsStore.getState().enabled) useUiStore.getState().toggleAgentPane();
     },
   },
   {

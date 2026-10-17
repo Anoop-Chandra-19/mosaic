@@ -10,7 +10,7 @@ import { transitionClasses, TRANSITION_TYPE } from '@/features/view-transitions/
 import { isTypingField, isUndoKey } from '@/lib/keyboardShortcuts';
 import type { ShortcutId } from '@/lib/shortcutCatalog';
 import { cn } from '@/lib/utils';
-import { useAiStore } from '@/stores/aiStore';
+import { useAgentSettingsStore } from '@/stores/agentSettingsStore';
 import { useOverlayStore } from '@/stores/overlayStore';
 import { selectTemplateProposals, useProposalStore } from '@/stores/proposalStore';
 import { useResumeStore } from '@/stores/resumeStore';
@@ -55,7 +55,7 @@ export function SuggestionReview({ openOn }: { openOn?: string }) {
   const contact = useResumeStore((s) => s.contact);
   const sections = useResumeStore((s) => s.sections);
   const stored = useProposalStore((s) => selectTemplateProposals(s, templateId));
-  const isAiOn = useAiStore((s) => s.enabled);
+  const isAgentEnabled = useAgentSettingsStore((s) => s.enabled);
   const closeSurface = useOverlayStore((s) => s.closeSurface);
   const widthPx = useUiStore((s) => s.agentPaneWidthPx);
   const setWidthPx = useUiStore((s) => s.setAgentPaneWidthPx);
@@ -80,8 +80,8 @@ export function SuggestionReview({ openOn }: { openOn?: string }) {
 
   // Suggestions exist only while AI is on; turned off, there is nothing to review.
   useEffect(() => {
-    if (!isAiOn || templateId === null) closeSurface('review');
-  }, [isAiOn, templateId, closeSurface]);
+    if (!isAgentEnabled || templateId === null) closeSurface('review');
+  }, [isAgentEnabled, templateId, closeSurface]);
 
   // The keys work from the moment it opens.
   useEffect(() => rootRef.current?.focus(), []);

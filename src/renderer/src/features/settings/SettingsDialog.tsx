@@ -7,7 +7,7 @@ import { DialogFrameHeader } from '@/components/DialogFrame';
 import { Chip } from '@/components/Chip';
 import { Text } from '@/components/Text';
 import { cn } from '@/lib/utils';
-import { useAiStore } from '@/stores/aiStore';
+import { useAgentSettingsStore } from '@/stores/agentSettingsStore';
 import { ShortcutsIntro } from '@/features/shortcuts/ShortcutsIntro';
 import { ShortcutsPanel } from '@/features/shortcuts/ShortcutsPanel';
 import type { SettingsSectionId } from '@/types/settings';
@@ -30,7 +30,7 @@ export function SettingsDialog() {
   const [lastSection, setLastSection] = useState<SettingsSectionId>('general');
   if (showing !== null && showing !== lastSection) setLastSection(showing);
   const section = showing ?? lastSection;
-  const aiEnabled = useAiStore((s) => s.enabled);
+  const isAgentEnabled = useAgentSettingsStore((s) => s.enabled);
   const active = SETTINGS_SECTION_BY_ID[section];
 
   return (
@@ -83,7 +83,7 @@ export function SettingsDialog() {
                         className={cn('size-3.5', isActive ? 'text-ink-soft' : 'text-ink-faint')}
                       />
                       {item.label}
-                      {item.id === 'ai' && !aiEnabled && (
+                      {item.id === 'ai' && !isAgentEnabled && (
                         <Chip size="sm" className="ml-auto">
                           off
                         </Chip>

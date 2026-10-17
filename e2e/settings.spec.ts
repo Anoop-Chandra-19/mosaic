@@ -43,10 +43,13 @@ test('settings are grouped as the design has them, and take effect', async () =>
   const stored = await page.evaluate(async () => {
     const boot = await window.mosaic.db.boot();
     if (!boot.ok) throw new Error(boot.message);
-    return { ui: JSON.parse(boot.value.settings.ui), ai: JSON.parse(boot.value.settings.ai) };
+    return {
+      ui: JSON.parse(boot.value.settings.ui),
+      agentSettings: JSON.parse(boot.value.settings.agentSettings),
+    };
   });
   expect(stored.ui.state).toMatchObject({ paperSize: 'letter', theme: 'light' });
-  expect(stored.ai.state).toMatchObject({ enabled: true, provider: 'ollama' });
+  expect(stored.agentSettings.state).toMatchObject({ enabled: true, provider: 'ollama' });
   expect(errors).toEqual([]);
 });
 
@@ -84,7 +87,7 @@ test('Ollama’s model is picked from the chat models pulled on this machine', a
   const stored = await page.evaluate(async () => {
     const boot = await window.mosaic.db.boot();
     if (!boot.ok) throw new Error(boot.message);
-    return JSON.parse(boot.value.settings.ai);
+    return JSON.parse(boot.value.settings.agentSettings);
   });
   expect(stored.state.modelsByProvider.ollama).toBe('gemma4:12b');
 
@@ -145,7 +148,7 @@ test('Ollama can live elsewhere on the network, and Settings says where text goe
   const stored = await page.evaluate(async () => {
     const boot = await window.mosaic.db.boot();
     if (!boot.ok) throw new Error(boot.message);
-    return JSON.parse(boot.value.settings.ai);
+    return JSON.parse(boot.value.settings.agentSettings);
   });
   expect(stored.state.ollamaAddress).toBe('http://127.0.0.1:11434');
 });
