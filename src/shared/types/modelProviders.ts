@@ -15,8 +15,8 @@ export type OllamaModels =
    */
   | { ok: false; reason: 'unreachable' | 'failed' | 'invalid-address' };
 
-/** `window.mosaic.ai`: what main can find out about AI providers for the renderer. */
-export interface MosaicAI {
+/** `window.mosaic.modelProviders`: what main can find out about model providers for the renderer. */
+export interface MosaicModelProviders {
   /**
    * The chat models pulled into the Ollama at `address` — this machine's by default, or one
    * on the network. Embedding-only models are left out.

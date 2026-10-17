@@ -1,17 +1,17 @@
 import { contextBridge, ipcRenderer } from 'electron';
-import type { MosaicAI } from '@shared/types/ai';
 import type { MosaicBackup } from '@shared/types/backup';
 import type { MosaicDbBridge } from '@shared/types/db';
 import type { MosaicFiles } from '@shared/types/files';
+import type { MosaicModelProviders } from '@shared/types/modelProviders';
 import type { MosaicSecrets } from '@shared/types/secrets';
 import {
-  AI_OLLAMA_MODELS,
   BACKUP_CHANNELS,
   ERASE_ALL,
   FILES_OPEN,
   FILES_SAVE,
   FLUSH_DONE,
   FLUSH_REQUEST,
+  MODEL_PROVIDERS_CHANNELS,
   SECRETS_CHANNELS,
 } from '@shared/ipc/appChannels';
 import { DB_METHODS, dbChannel } from '@shared/ipc/dbMethods';
@@ -59,8 +59,8 @@ const secrets: MosaicSecrets = {
   test: (provider, model, key) => ipcRenderer.invoke(SECRETS_CHANNELS.test, provider, model, key),
 };
 
-const ai: MosaicAI = {
-  ollamaModels: (address) => ipcRenderer.invoke(AI_OLLAMA_MODELS, address),
+const modelProviders: MosaicModelProviders = {
+  ollamaModels: (address) => ipcRenderer.invoke(MODEL_PROVIDERS_CHANNELS.ollamaModels, address),
 };
 
 contextBridge.exposeInMainWorld('mosaic', {
@@ -69,7 +69,7 @@ contextBridge.exposeInMainWorld('mosaic', {
   files,
   backup,
   secrets,
-  ai,
+  modelProviders,
   app: {
     eraseAll: (): Promise<void> => ipcRenderer.invoke(ERASE_ALL),
     /** Main asks before the window closes; answer once pending saves have landed. */

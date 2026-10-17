@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
-import { DEFAULT_OLLAMA_ADDRESS } from '@shared/ai/ollamaAddress';
+import { DEFAULT_OLLAMA_ADDRESS } from '@shared/model-providers/ollamaAddress';
 import { settingsStorage } from '@/lib/storage/settingsStorage';
 import type { AiProvider } from '@shared/types/resume';
 

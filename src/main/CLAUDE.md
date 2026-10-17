@@ -76,7 +76,7 @@ Read with the root `CLAUDE.md`. This covers `src/main/` and its contract with pr
   e2e launches have no D-Bus session, so they never reach the desktop's keychain.
 - macOS ties keychain access to the code signature: release builds need a stable signing
   identity, or users are asked again after each update.
-- Test (`testApiKey.ts`) makes one request that costs no tokens. The key travels only in a
+- Test (`model-providers/testApiKey.ts`) makes one request that costs no tokens. The key travels only in a
   header, never in a URL, and no result or error repeats it.
 
 ## Planned with the agent layer

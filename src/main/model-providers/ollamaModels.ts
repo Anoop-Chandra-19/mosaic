@@ -1,5 +1,5 @@
-import { normalizeOllamaAddress } from '@shared/ai/ollamaAddress';
-import type { OllamaModel, OllamaModels } from '@shared/types/ai';
+import { normalizeOllamaAddress } from '@shared/model-providers/ollamaAddress';
+import type { OllamaModel, OllamaModels } from '@shared/types/modelProviders';
 
 const TIMEOUT_MS = 3000;
 

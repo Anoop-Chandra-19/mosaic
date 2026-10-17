@@ -434,8 +434,8 @@ credential cleanup and surface uncertainty instead of claiming complete deletion
 
 ### A19 — P2: Ollama default-port normalization changes the endpoint on a second pass
 
-**Locations:** [`ollamaAddress.ts:27–30`](../src/shared/ai/ollamaAddress.ts#L27),
-[`ollamaModels.ts:60–66`](../src/main/ai/ollamaModels.ts#L60),
+**Locations:** [`ollamaAddress.ts:27–30`](../src/shared/model-providers/ollamaAddress.ts#L27),
+[`ollamaModels.ts:60–66`](../src/main/model-providers/ollamaModels.ts#L60),
 [`OllamaRows.tsx:63–66,133`](../src/renderer/src/features/settings/sections/OllamaRows.tsx#L63).
 
 The renderer preserves an explicitly specified scheme-default port semantically, but

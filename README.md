@@ -71,13 +71,14 @@ src/
   main/           # Main process: window, database, IPC handlers, erase; see src/main/CLAUDE.md
     db/           # SQLite: connection, migrations, repositories
     ipc/          # Database and file-dialog handlers
+    model-providers/ # Ollama model list, API key tests
   preload/        # The only bridge to the renderer: window.mosaic
   shared/
     ipc/          # Channel names shared by main and preload
     types/        # Cross-process contracts and data types; db.ts is the database contract
     resume/       # Defaults, migration, validation, header logic, section presets
     vault/        # Bundle parsing, used by renderer and main
-    ai/           # Ollama address handling
+    model-providers/ # Ollama address handling
   renderer/
     index.html    # Renderer entry HTML
     public/       # Static assets
