@@ -124,12 +124,3 @@ export interface ResumeData {
   contact: ContactInfo;
   sections: ResumeSection[];
 }
-
-export type AiProvider = 'openai' | 'anthropic' | 'gemini' | 'ollama' | 'openrouter';
-
-export interface AiSettings {
-  enabled: boolean;
-  provider: AiProvider;
-  model: string;
-  keyStorageMode: 'session' | 'keychain';
-}

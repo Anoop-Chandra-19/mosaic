@@ -1,5 +1,5 @@
 import { stageProposals } from '@/features/agent/proposals/proposalActions';
-import { useAiStore } from '@/stores/aiStore';
+import { useAgentSettingsStore } from '@/stores/agentSettingsStore';
 import { useOverlayStore } from '@/stores/overlayStore';
 import { getResumeSnapshot } from '@/stores/resumeStore';
 import { useTemplateStore } from '@/stores/templateStore';
@@ -34,9 +34,9 @@ async function stageExampleSuggestions(): Promise<string> {
   if (!isExampleOpen()) await loadExampleResume();
   const { proposals, refusals } = stageProposals(EXAMPLE_REQUEST, createExampleSuggestions());
   const refused = refusals.length ? `, ${refusals.length} refused` : '';
-  const ai = useAiStore.getState();
-  const turnedOn = ai.enabled ? '' : '. Turned the assistant on to show them';
-  ai.setEnabled(true);
+  const agentSettings = useAgentSettingsStore.getState();
+  const turnedOn = agentSettings.enabled ? '' : '. Turned the assistant on to show them';
+  agentSettings.setEnabled(true);
   return `Staged ${proposals.length} example suggestions${refused}${turnedOn}`;
 }
 

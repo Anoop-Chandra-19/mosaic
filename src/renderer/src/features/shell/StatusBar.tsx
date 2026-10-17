@@ -10,7 +10,7 @@ import { useShortcutLabel } from '@/features/shortcuts/shortcutBindings';
 import type { ShortcutId } from '@/lib/shortcutCatalog';
 import { cn } from '@/lib/utils';
 import { countSuggestions } from '@/features/agent/review/suggestionState';
-import { useAiStore } from '@/stores/aiStore';
+import { useAgentSettingsStore } from '@/stores/agentSettingsStore';
 import { useOverlayStore } from '@/stores/overlayStore';
 import { selectTemplateProposals, useProposalStore } from '@/stores/proposalStore';
 import { usePreviewStore } from '@/stores/previewStore';
@@ -130,7 +130,7 @@ export function StatusBar() {
   const toggleSidebar = useUiStore((s) => s.toggleSidebarCollapsed);
   const agentPaneOpen = useUiStore((s) => s.agentPaneOpen);
   const toggleAgentPane = useUiStore((s) => s.toggleAgentPane);
-  const aiEnabled = useAiStore((s) => s.enabled);
+  const isAgentEnabled = useAgentSettingsStore((s) => s.enabled);
   const now = useNow(30_000);
 
   let saveState: ReactNode;
@@ -187,7 +187,7 @@ export function StatusBar() {
       </div>
 
       <div className="flex shrink-0 items-center gap-2 whitespace-nowrap">
-        {template && aiEnabled && <SuggestionsWaiting templateId={template.id} />}
+        {template && isAgentEnabled && <SuggestionsWaiting templateId={template.id} />}
         {template && (
           <>
             <Words />
@@ -202,7 +202,7 @@ export function StatusBar() {
             )}
           </>
         )}
-        {aiEnabled && (
+        {isAgentEnabled && (
           <PaneToggle
             label="Toggle assistant"
             shortcut="toggleAssistant"

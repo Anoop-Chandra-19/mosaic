@@ -3,14 +3,14 @@ import { Sparkles, X } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
 import { AppTooltip } from '@/components/AppTooltip';
 import { Text } from '@/components/Text';
-import { AI_PROVIDER_BY_ID } from '@/features/settings/sections/aiProviderOptions';
+import { MODEL_PROVIDER_OPTION_BY_ID } from '@/features/settings/sections/modelProviderOptions';
 import { formatPaneWidth, startPaneResize } from '@/features/shell/paneResize';
 import { useShortcutLabel } from '@/features/shortcuts/shortcutBindings';
 import { useIsSideHandover } from '@/features/view-transitions/sideHandover';
 import { transitionClasses } from '@/features/view-transitions/transitionClasses';
 import { useIsWorkspaceReplaced } from '@/features/view-transitions/useShownSurface';
 import { cn } from '@/lib/utils';
-import { AI_PROVIDER_DEFAULT_MODEL, useAiStore } from '@/stores/aiStore';
+import { DEFAULT_MODEL_BY_PROVIDER, useAgentSettingsStore } from '@/stores/agentSettingsStore';
 import { useOverlayStore } from '@/stores/overlayStore';
 import { AGENT_PANE_WIDTH, useUiStore } from '@/stores/uiStore';
 
@@ -31,8 +31,8 @@ export function AgentPane() {
   const widthPx = useUiStore((s) => s.agentPaneWidthPx);
   const setWidthPx = useUiStore((s) => s.setAgentPaneWidthPx);
   const close = useUiStore((s) => s.toggleAgentPane);
-  const provider = useAiStore((s) => s.provider);
-  const model = useAiStore((s) => s.modelsByProvider[s.provider]);
+  const provider = useAgentSettingsStore((s) => s.provider);
+  const model = useAgentSettingsStore((s) => s.modelsByProvider[s.provider]);
   const openSettings = useOverlayStore((s) => s.openSettings);
   const paneRef = useRef<HTMLElement>(null);
   const closeKeys = useShortcutLabel('toggleAssistant');
@@ -98,8 +98,8 @@ export function AgentPane() {
 
       <footer className="border-t border-line px-4 py-2.5">
         <Text as="p" variant="secondary" className="text-ink-faint">
-          {AI_PROVIDER_BY_ID[provider].label} ·{' '}
-          <Text variant="meta">{model || AI_PROVIDER_DEFAULT_MODEL[provider]}</Text>
+          {MODEL_PROVIDER_OPTION_BY_ID[provider].label} ·{' '}
+          <Text variant="meta">{model || DEFAULT_MODEL_BY_PROVIDER[provider]}</Text>
           {' · '}
           <AppButton
             variant="link"

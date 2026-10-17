@@ -1,15 +1,15 @@
-import type { AiProvider } from '@shared/types/resume';
+import type { ModelProviderId } from '@shared/types/modelProviders';
 
 export type ProviderTrust = 'Direct API' | 'Proxy' | 'Local';
 
-export interface ProviderOption {
-  id: AiProvider;
+export interface ModelProviderOption {
+  id: ModelProviderId;
   label: string;
   trust: ProviderTrust;
   hint: string;
 }
 
-export const AI_PROVIDER_OPTIONS: ProviderOption[] = [
+export const MODEL_PROVIDER_OPTIONS: ModelProviderOption[] = [
   {
     id: 'openai',
     label: 'OpenAI',
@@ -42,7 +42,7 @@ export const AI_PROVIDER_OPTIONS: ProviderOption[] = [
   },
 ];
 
-export const AI_PROVIDER_BY_ID = AI_PROVIDER_OPTIONS.reduce(
+export const MODEL_PROVIDER_OPTION_BY_ID = MODEL_PROVIDER_OPTIONS.reduce(
   (acc, provider) => ({ ...acc, [provider.id]: provider }),
-  {} as Record<AiProvider, ProviderOption>
+  {} as Record<ModelProviderId, ModelProviderOption>
 );

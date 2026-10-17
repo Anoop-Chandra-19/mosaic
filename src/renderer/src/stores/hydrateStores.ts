@@ -1,7 +1,7 @@
 import { applyDensityClass, applyThemeClass, isThemeDark } from '@/lib/appearance';
 import { seedSettings } from '@/lib/storage/settingsStorage';
 import type { BootState } from '@shared/types/db';
-import { useAiStore } from './aiStore';
+import { useAgentSettingsStore } from './agentSettingsStore';
 import { useOverlayStore } from './overlayStore';
 import { useResumeStore } from './resumeStore';
 import { useTemplateStore } from './templateStore';
@@ -14,7 +14,7 @@ import { useUiStore } from './uiStore';
 export function hydrateStores(boot: BootState): void {
   seedSettings(boot.settings);
   void useUiStore.persist.rehydrate();
-  void useAiStore.persist.rehydrate();
+  void useAgentSettingsStore.persist.rehydrate();
   useTemplateStore.getState().load(boot.templates);
   useResumeStore.getState().loadDraft(boot.draft);
   const { openOnLaunch, theme, interfaceDensity } = useUiStore.getState();

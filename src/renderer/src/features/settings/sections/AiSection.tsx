@@ -15,8 +15,8 @@ import { AppToggleGroup, AppToggleGroupItem } from '@/components/AppToggleGroup'
 import { Text } from '@/components/Text';
 import { isLocalOllamaAddress } from '@shared/model-providers/ollamaAddress';
 import { cn } from '@/lib/utils';
-import { AI_PROVIDER_DEFAULT_MODEL, useAiStore } from '@/stores/aiStore';
-import type { AiProvider } from '@shared/types/resume';
+import { DEFAULT_MODEL_BY_PROVIDER, useAgentSettingsStore } from '@/stores/agentSettingsStore';
+import type { ModelProviderId } from '@shared/types/modelProviders';
 import {
   isKeyedProvider,
   type KeyedProvider,
@@ -25,23 +25,23 @@ import {
 } from '@shared/types/secrets';
 import { SettingRow } from '../SettingRow';
 import { useSecretsStatus } from '../useSecretsStatus';
-import { AI_PROVIDER_BY_ID, AI_PROVIDER_OPTIONS } from './aiProviderOptions';
+import { MODEL_PROVIDER_OPTION_BY_ID, MODEL_PROVIDER_OPTIONS } from './modelProviderOptions';
 import { OllamaAddressRow, OllamaModelRow } from './OllamaRows';
 
 export function AiSection() {
-  const enabled = useAiStore((s) => s.enabled);
-  const provider = useAiStore((s) => s.provider);
-  const modelsByProvider = useAiStore((s) => s.modelsByProvider);
-  const setEnabled = useAiStore((s) => s.setEnabled);
-  const setProvider = useAiStore((s) => s.setProvider);
-  const setModel = useAiStore((s) => s.setModelForActiveProvider);
-  const resetModel = useAiStore((s) => s.resetModelForProvider);
-  const ollamaAddress = useAiStore((s) => s.ollamaAddress);
-  const setOllamaAddress = useAiStore((s) => s.setOllamaAddress);
+  const enabled = useAgentSettingsStore((s) => s.enabled);
+  const provider = useAgentSettingsStore((s) => s.provider);
+  const modelsByProvider = useAgentSettingsStore((s) => s.modelsByProvider);
+  const setEnabled = useAgentSettingsStore((s) => s.setEnabled);
+  const setProvider = useAgentSettingsStore((s) => s.setProvider);
+  const setModel = useAgentSettingsStore((s) => s.setModelForActiveProvider);
+  const resetModel = useAgentSettingsStore((s) => s.resetModelForProvider);
+  const ollamaAddress = useAgentSettingsStore((s) => s.ollamaAddress);
+  const setOllamaAddress = useAgentSettingsStore((s) => s.setOllamaAddress);
 
-  const active = AI_PROVIDER_BY_ID[provider];
-  const model = modelsByProvider[provider] ?? AI_PROVIDER_DEFAULT_MODEL[provider];
-  const suggested = AI_PROVIDER_DEFAULT_MODEL[provider];
+  const active = MODEL_PROVIDER_OPTION_BY_ID[provider];
+  const model = modelsByProvider[provider] ?? DEFAULT_MODEL_BY_PROVIDER[provider];
+  const suggested = DEFAULT_MODEL_BY_PROVIDER[provider];
 
   return (
     <>
@@ -72,12 +72,15 @@ export function AiSection() {
               : 'Bring your own key. Ollama runs entirely on your computer, so nothing leaves it.'
           }
         >
-          <AppSelect value={provider} onValueChange={(value) => setProvider(value as AiProvider)}>
+          <AppSelect
+            value={provider}
+            onValueChange={(value) => setProvider(value as ModelProviderId)}
+          >
             <AppSelectTrigger className="w-44" aria-label="Provider">
               <AppSelectValue />
             </AppSelectTrigger>
             <AppSelectContent>
-              {AI_PROVIDER_OPTIONS.map((option) => (
+              {MODEL_PROVIDER_OPTIONS.map((option) => (
                 <AppSelectItem key={option.id} value={option.id}>
                   {option.id === 'ollama' ? 'Ollama (local)' : option.label}
                 </AppSelectItem>
@@ -162,7 +165,7 @@ interface TestRun {
 
 function ApiKeyRows({ provider, model }: { provider: KeyedProvider; model: string }) {
   const { status, loadFailed, apply } = useSecretsStatus();
-  const label = AI_PROVIDER_BY_ID[provider].label;
+  const label = MODEL_PROVIDER_OPTION_BY_ID[provider].label;
   const [draft, setDraft] = useState('');
   const [reveal, setReveal] = useState(false);
   const [keyError, setKeyError] = useState<string | null>(null);

@@ -1,5 +1,5 @@
 import type { Proposal } from '@shared/types/agentProposal';
-import { useAiStore } from '@/stores/aiStore';
+import { useAgentSettingsStore } from '@/stores/agentSettingsStore';
 import { selectTemplateProposals, useProposalStore } from '@/stores/proposalStore';
 import { useResumeStore } from '@/stores/resumeStore';
 import { readAnchoredBulletIds } from '../proposals/proposalAnchor';
@@ -29,8 +29,8 @@ export function findBulletSuggestion(
 
 /** Only while AI is on, as the status bar's count. */
 export function useBulletSuggestion(bulletId: string): BulletSuggestion | null {
-  const isAiEnabled = useAiStore((s) => s.enabled);
+  const isAgentEnabled = useAgentSettingsStore((s) => s.enabled);
   const templateId = useResumeStore((s) => s.templateId);
   const proposals = useProposalStore((s) => selectTemplateProposals(s, templateId));
-  return isAiEnabled ? findBulletSuggestion(proposals, bulletId) : null;
+  return isAgentEnabled ? findBulletSuggestion(proposals, bulletId) : null;
 }
