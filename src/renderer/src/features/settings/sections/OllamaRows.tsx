@@ -17,8 +17,8 @@ import {
   isLocalOllamaAddress,
   normalizeOllamaAddress,
   ollamaHost,
-} from '@shared/ai/ollamaAddress';
-import type { OllamaModels } from '@shared/types/ai';
+} from '@shared/model-providers/ollamaAddress';
+import type { OllamaModels } from '@shared/types/modelProviders';
 import { SettingRow } from '../SettingRow';
 
 function gigabytes(bytes: number): string | null {
@@ -131,7 +131,7 @@ function useOllamaModels(active: boolean, address: string) {
     const answered = (result: OllamaModels) => {
       if (current) setAnswer({ key: `${address}#${asked}`, result });
     };
-    window.mosaic.ai.ollamaModels(address).then(answered, (error: unknown) => {
+    window.mosaic.modelProviders.ollamaModels(address).then(answered, (error: unknown) => {
       console.error('Could not list Ollama models', error);
       answered({ ok: false, reason: 'failed' });
     });

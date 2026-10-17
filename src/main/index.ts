@@ -13,8 +13,7 @@ import {
   type IpcMainInvokeEvent,
   type MenuItemConstructorOptions,
 } from 'electron';
-import { AI_OLLAMA_MODELS, ERASE_ALL } from '@shared/ipc/appChannels';
-import { listOllamaModels } from './ai/ollamaModels';
+import { ERASE_ALL, MODEL_PROVIDERS_CHANNELS } from '@shared/ipc/appChannels';
 import { openDatabase, type Database } from './db/connection';
 import { API_KEYS_KEY, getSetting, setSetting } from './db/settings';
 import { eraseAll } from './eraseAll';
@@ -24,9 +23,10 @@ import { registerDbHandlers } from './ipc/registerDbHandlers';
 import { registerFileHandlers } from './ipc/registerFileHandlers';
 import { registerSecretsHandlers } from './ipc/registerSecretsHandlers';
 import { createSecretsHandlers } from './ipc/secretsHandlers';
+import { listOllamaModels } from './model-providers/ollamaModels';
+import { testApiKey } from './model-providers/testApiKey';
 import { createApiKeys } from './secrets/apiKeys';
 import { osKeyring } from './secrets/osKeyring';
-import { testApiKey } from './secrets/testApiKey';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 
@@ -190,7 +190,7 @@ if (!app.requestSingleInstanceLock()) {
       ),
       isAppFrame
     );
-    ipcMain.handle(AI_OLLAMA_MODELS, (event, address: unknown) => {
+    ipcMain.handle(MODEL_PROVIDERS_CHANNELS.ollamaModels, (event, address: unknown) => {
       if (!isAppFrame(event)) throw new Error(`Refused model list from ${event.senderFrame?.url}`);
       return listOllamaModels(net.fetch, address);
     });

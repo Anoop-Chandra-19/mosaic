@@ -13,7 +13,7 @@ import {
 import { AppSwitch } from '@/components/AppSwitch';
 import { AppToggleGroup, AppToggleGroupItem } from '@/components/AppToggleGroup';
 import { Text } from '@/components/Text';
-import { isLocalOllamaAddress } from '@shared/ai/ollamaAddress';
+import { isLocalOllamaAddress } from '@shared/model-providers/ollamaAddress';
 import { cn } from '@/lib/utils';
 import { AI_PROVIDER_DEFAULT_MODEL, useAiStore } from '@/stores/aiStore';
 import type { AiProvider } from '@shared/types/resume';

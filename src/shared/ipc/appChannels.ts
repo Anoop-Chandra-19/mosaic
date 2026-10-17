@@ -1,4 +1,5 @@
 import type { MosaicBackup } from '../types/backup';
+import type { MosaicModelProviders } from '../types/modelProviders';
 import type { MosaicSecrets } from '../types/secrets';
 
 /** Main → renderer: the window is closing, save what is pending. */
@@ -19,8 +20,10 @@ export const BACKUP_CHANNELS = {
   chooseFolder: 'backup:choose-folder',
 } as const satisfies Record<keyof MosaicBackup, string>;
 
-/** Renderer → main: `MosaicAI` — the chat models pulled into the local Ollama. */
-export const AI_OLLAMA_MODELS = 'ai:ollama-models';
+/** Renderer → main: `MosaicModelProviders`, one channel per method. */
+export const MODEL_PROVIDERS_CHANNELS = {
+  ollamaModels: 'model-providers:ollama-models',
+} as const satisfies Record<keyof MosaicModelProviders, string>;
 
 /** Renderer → main: `MosaicSecrets`, one channel per method. */
 export const SECRETS_CHANNELS = {

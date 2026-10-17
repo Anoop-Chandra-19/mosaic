@@ -10,8 +10,22 @@ describe('normalizeOllamaAddress', () => {
   });
 
   it('keeps a port that happens to be the scheme’s default', () => {
-    expect(normalizeOllamaAddress('http://ollama.lan:80')).toBe('http://ollama.lan');
-    expect(normalizeOllamaAddress('https://ollama.lan:443/')).toBe('https://ollama.lan');
+    expect(normalizeOllamaAddress('http://ollama.lan:80')).toBe('http://ollama.lan:80');
+    expect(normalizeOllamaAddress('https://ollama.lan:443/')).toBe('https://ollama.lan:443');
+  });
+
+  it('gives the same address when normalizing its own answer', () => {
+    for (const input of [
+      'http://ollama.lan:80',
+      'https://ollama.lan:443',
+      'https://ollama.home.lan',
+      'gpu-box:8080',
+      '[::1]',
+    ]) {
+      const once = normalizeOllamaAddress(input);
+      expect(once, input).not.toBeNull();
+      expect(normalizeOllamaAddress(once!), input).toBe(once);
+    }
   });
 
   it('keeps only scheme, host, and port', () => {
