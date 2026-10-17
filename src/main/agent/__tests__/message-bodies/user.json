@@ -1,0 +1,14 @@
+{
+  "type": "user",
+  "text": "Tighten these for a platform role.",
+  "resume": [
+    { "sectionId": "s-exp", "label": "Experience" },
+    {
+      "sectionId": "s-exp",
+      "entryId": "e-lumen",
+      "bulletId": "b-3",
+      "label": "Experience › Lumen Freight, bullet 3"
+    }
+  ],
+  "isLimit": true
+}
