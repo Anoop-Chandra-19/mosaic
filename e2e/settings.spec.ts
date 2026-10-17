@@ -56,7 +56,7 @@ test('settings are grouped as the design has them, and take effect', async () =>
 test('Ollama’s model is picked from the chat models pulled on this machine', async () => {
   const { app, page, errors } = mosaic();
   // Main asks Ollama through net.fetch: stand in for an Ollama with two chat models and an
-  // embedding model, so the test never depends on what this machine has pulled.
+  // embedding model, gemma loaded, so the test never depends on what this machine has pulled.
   await app.evaluate(({ net }) => {
     net.fetch = async (input, init) => {
       if (String(input).endsWith('/api/tags')) {
@@ -68,9 +68,13 @@ test('Ollama’s model is picked from the chat models pulled on this machine', a
           ],
         });
       }
+      if (String(input).endsWith('/api/ps')) {
+        return Response.json({ models: [{ name: 'gemma4:12b', context_length: 8192 }] });
+      }
       const { model } = JSON.parse(String(init?.body)) as { model: string };
       return Response.json({
         capabilities: model.startsWith('nomic') ? ['embedding'] : ['completion'],
+        model_info: { 'gemma4.context_length': 131_072 },
       });
     };
   });
@@ -90,6 +94,31 @@ test('Ollama’s model is picked from the chat models pulled on this machine', a
     return JSON.parse(boot.value.settings.agentSettings);
   });
   expect(stored.state.modelsByProvider.ollama).toBe('gemma4:12b');
+
+  // The context window is Ollama's own until set, and Settings says what helps choose one.
+  const contextField = settings.getByRole('textbox', {
+    name: 'Ollama context window, in tokens',
+  });
+  await expect(contextField).toHaveValue('');
+  await expect(contextField).toHaveAttribute('placeholder', '8,192 · Ollama’s setting');
+  await expect(settings.getByText(/gemma4:12b supports up to 131,072 tokens/)).toBeVisible();
+  await contextField.fill('lots');
+  await contextField.press('Enter');
+  await expect(settings.getByText('That isn’t a number of tokens.')).toBeVisible();
+  // More than the model supports is the user's call: Settings says so, and keeps it.
+  await contextField.fill('200,000');
+  await contextField.press('Enter');
+  await expect(contextField).toHaveValue('200,000');
+  const storedWindow = () =>
+    page.evaluate(async () => {
+      const boot = await window.mosaic.db.boot();
+      if (!boot.ok) throw new Error(boot.message);
+      return JSON.parse(boot.value.settings.agentSettings).state.ollamaContextTokens;
+    });
+  expect(await storedWindow()).toBe(200_000);
+  await settings.getByRole('button', { name: 'Use Ollama’s setting' }).click();
+  await expect(contextField).toHaveValue('');
+  expect(await storedWindow()).toBeNull();
 
   // Ollama stops: Refresh says so, and the chosen model stays.
   await app.evaluate(({ net }) => {

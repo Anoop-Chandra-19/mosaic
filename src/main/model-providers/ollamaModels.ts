@@ -9,7 +9,14 @@ export type OllamaFetch = (
   init: { method?: 'POST'; body?: string; signal: AbortSignal }
 ) => Promise<Response>;
 
-function parseTags(body: unknown): OllamaModel[] {
+type PulledModel = Pick<OllamaModel, 'name' | 'sizeBytes' | 'parameterSize'>;
+
+interface ModelDetails {
+  canChat: boolean;
+  maxContextTokens: number | null;
+}
+
+function parseTags(body: unknown): PulledModel[] {
   const listed = (body as { models?: unknown } | null)?.models;
   if (!Array.isArray(listed)) throw new Error('No model list in the answer');
   return listed.flatMap((entry: unknown) => {
@@ -30,23 +37,60 @@ function parseTags(body: unknown): OllamaModel[] {
   });
 }
 
+function readPositiveNumber(value: unknown): number | null {
+  return typeof value === 'number' && value > 0 ? value : null;
+}
+
 /**
- * Whether a model can chat. Ollama lists embedding models alongside chat ones, and only
- * `/api/show` says which is which. An older Ollama without capabilities, or a lookup that
+ * What `/api/show` says about a model. Ollama lists embedding models alongside chat ones, and
+ * only this says which is which. An older Ollama without capabilities, or a lookup that
  * fails, keeps the model — better offered than hidden.
  */
-async function canChat(fetch: OllamaFetch, address: string, name: string): Promise<boolean> {
+async function readModelDetails(
+  fetch: OllamaFetch,
+  address: string,
+  name: string
+): Promise<ModelDetails> {
   try {
     const response = await fetch(`${address}/api/show`, {
       method: 'POST',
       body: JSON.stringify({ model: name }),
       signal: AbortSignal.timeout(TIMEOUT_MS),
     });
-    const { capabilities } = (await response.json()) as { capabilities?: unknown };
-    return !Array.isArray(capabilities) || capabilities.includes('completion');
+    const { capabilities, model_info: modelInfo = {} } = (await response.json()) as {
+      capabilities?: unknown;
+      model_info?: Record<string, unknown>;
+    };
+    // Keyed by the model's architecture: `qwen35.context_length`.
+    const contextKey = Object.keys(modelInfo).find((key) => key.endsWith('.context_length'));
+    return {
+      canChat: !Array.isArray(capabilities) || capabilities.includes('completion'),
+      maxContextTokens: contextKey ? readPositiveNumber(modelInfo[contextKey]) : null,
+    };
   } catch {
-    return true;
+    return { canChat: true, maxContextTokens: null };
   }
+}
+
+/** The window of each model Ollama has loaded now, from `/api/ps`. Empty if it won't say. */
+async function readLoadedContextTokens(
+  fetch: OllamaFetch,
+  address: string
+): Promise<Map<string, number>> {
+  const loaded = new Map<string, number>();
+  try {
+    const response = await fetch(`${address}/api/ps`, { signal: AbortSignal.timeout(TIMEOUT_MS) });
+    const { models } = (await response.json()) as {
+      models?: { name?: unknown; context_length?: unknown }[];
+    };
+    for (const model of models ?? []) {
+      const tokens = readPositiveNumber(model.context_length);
+      if (typeof model.name === 'string' && tokens !== null) loaded.set(model.name, tokens);
+    }
+  } catch {
+    // An older Ollama: nothing to say about what is loaded.
+  }
+  return loaded;
 }
 
 /**
@@ -68,7 +112,7 @@ export async function listOllamaModels(
     return { ok: false, reason: 'unreachable' };
   }
 
-  let pulled: OllamaModel[];
+  let pulled: PulledModel[];
   try {
     if (!response.ok) throw new Error(`Ollama answered ${response.status}`);
     pulled = parseTags(await response.json());
@@ -76,9 +120,17 @@ export async function listOllamaModels(
     return { ok: false, reason: 'failed' };
   }
 
-  const chat = await Promise.all(pulled.map((model) => canChat(fetch, address, model.name)));
+  const [details, loaded] = await Promise.all([
+    Promise.all(pulled.map((model) => readModelDetails(fetch, address, model.name))),
+    readLoadedContextTokens(fetch, address),
+  ]);
   const models = pulled
-    .filter((_, index) => chat[index])
+    .map((model, index) => ({
+      ...model,
+      maxContextTokens: details[index].maxContextTokens,
+      loadedContextTokens: loaded.get(model.name) ?? null,
+    }))
+    .filter((_, index) => details[index].canChat)
     .sort((a, b) => a.name.localeCompare(b.name));
   return { ok: true, models };
 }

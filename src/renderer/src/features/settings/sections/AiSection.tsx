@@ -26,7 +26,8 @@ import {
 import { SettingRow } from '../SettingRow';
 import { useSecretsStatus } from '../useSecretsStatus';
 import { MODEL_PROVIDER_OPTION_BY_ID, MODEL_PROVIDER_OPTIONS } from './modelProviderOptions';
-import { OllamaAddressRow, OllamaModelRow } from './OllamaRows';
+import { OllamaAddressRow, OllamaContextRow, OllamaModelRow } from './OllamaRows';
+import { useOllamaModels } from './useOllamaModels';
 
 export function AiSection() {
   const enabled = useAgentSettingsStore((s) => s.enabled);
@@ -38,10 +39,17 @@ export function AiSection() {
   const resetModel = useAgentSettingsStore((s) => s.resetModelForProvider);
   const ollamaAddress = useAgentSettingsStore((s) => s.ollamaAddress);
   const setOllamaAddress = useAgentSettingsStore((s) => s.setOllamaAddress);
+  const ollamaContextTokens = useAgentSettingsStore((s) => s.ollamaContextTokens);
+  const setOllamaContextTokens = useAgentSettingsStore((s) => s.setOllamaContextTokens);
 
   const active = MODEL_PROVIDER_OPTION_BY_ID[provider];
   const model = modelsByProvider[provider] ?? DEFAULT_MODEL_BY_PROVIDER[provider];
   const suggested = DEFAULT_MODEL_BY_PROVIDER[provider];
+  const ollamaModel = model.trim() || suggested;
+  const ollamaModels = useOllamaModels(enabled && provider === 'ollama', ollamaAddress);
+  const ollamaModelDetails = ollamaModels.result?.ok
+    ? ollamaModels.result.models.find((pulled) => pulled.name === ollamaModel)
+    : undefined;
 
   return (
     <>
@@ -95,8 +103,15 @@ export function AiSection() {
             <OllamaModelRow
               active={enabled}
               address={ollamaAddress}
-              model={model.trim() || suggested}
+              ollamaModels={ollamaModels}
+              model={ollamaModel}
               onChange={setModel}
+            />
+            <OllamaContextRow
+              model={ollamaModel}
+              details={ollamaModelDetails}
+              contextTokens={ollamaContextTokens}
+              onChange={setOllamaContextTokens}
             />
           </>
         ) : (

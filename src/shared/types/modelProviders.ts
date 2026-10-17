@@ -7,6 +7,10 @@ export interface OllamaModel {
   sizeBytes: number;
   /** "9.7B", when Ollama says. */
   parameterSize: string | null;
+  /** The most the model supports, when Ollama says. */
+  maxContextTokens: number | null;
+  /** The window Ollama has it loaded with now; null while it isn't loaded. */
+  loadedContextTokens: number | null;
 }
 
 export type OllamaModels =
