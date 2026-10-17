@@ -152,6 +152,8 @@ function DecidedToggle({
       variant={variant}
       size="sm"
       aria-pressed
+      // The visible face follows the pointer; the name mustn't.
+      aria-label={decided.label}
       title={title}
       onClick={onClick}
       className="group/toggle inline-grid"

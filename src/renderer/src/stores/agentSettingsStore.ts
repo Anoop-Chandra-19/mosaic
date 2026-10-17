@@ -23,6 +23,8 @@ const DEFAULT_AGENT_SETTINGS = {
   modelsByProvider: { ...DEFAULT_MODEL_BY_PROVIDER },
   /** Where Ollama is: this machine unless it runs somewhere on the network. */
   ollamaAddress: DEFAULT_OLLAMA_ADDRESS,
+  /** Null leaves the window to Ollama's own setting. */
+  ollamaContextTokens: null as number | null,
 };
 
 interface AgentSettingsState {
@@ -30,9 +32,11 @@ interface AgentSettingsState {
   provider: ModelProviderId;
   modelsByProvider: Record<ModelProviderId, string>;
   ollamaAddress: string;
+  ollamaContextTokens: number | null;
   setEnabled: (enabled: boolean) => void;
   /** Takes an address already checked with `normalizeOllamaAddress`. */
   setOllamaAddress: (address: string) => void;
+  setOllamaContextTokens: (tokens: number | null) => void;
   setProvider: (provider: ModelProviderId) => void;
   setModelForProvider: (provider: ModelProviderId, model: string) => void;
   setModelForActiveProvider: (model: string) => void;
@@ -45,6 +49,7 @@ export const useAgentSettingsStore = create<AgentSettingsState>()(
       ...DEFAULT_AGENT_SETTINGS,
       setEnabled: (enabled) => set({ enabled }),
       setOllamaAddress: (ollamaAddress) => set({ ollamaAddress }),
+      setOllamaContextTokens: (ollamaContextTokens) => set({ ollamaContextTokens }),
       setProvider: (provider) => set({ provider }),
       setModelForProvider: (provider, model) =>
         set((state) => ({

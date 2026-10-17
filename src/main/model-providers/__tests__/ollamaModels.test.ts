@@ -21,15 +21,25 @@ const TAGS = {
   ],
 };
 
-const CAPABILITIES: Record<string, unknown> = {
-  'qwen3.5:9b': ['completion', 'tools', 'thinking', 'vision'],
-  'nomic-embed-text:latest': ['embedding'],
-  'gemma4:12b': ['completion', 'vision'],
+const SHOW: Record<string, unknown> = {
+  'qwen3.5:9b': {
+    capabilities: ['completion', 'tools', 'thinking', 'vision'],
+    model_info: { 'qwen35.context_length': 262_144 },
+  },
+  'nomic-embed-text:latest': { capabilities: ['embedding'] },
+  'gemma4:12b': { capabilities: ['completion', 'vision'] },
 };
 
-/** An Ollama that answers `/api/tags` and `/api/show` from the tables above. */
+// Shaped like a real Ollama 0.40 answer: qwen is loaded, with a smaller window than it supports.
+const PS = { models: [{ name: 'qwen3.5:9b', context_length: 32_768 }] };
+
+/** An Ollama that answers `/api/tags`, `/api/show` and `/api/ps` from the tables above. */
 function ollama(
-  overrides: { tags?: () => Promise<Response>; show?: (model: string) => unknown } = {}
+  overrides: {
+    tags?: () => Promise<Response>;
+    show?: (model: string) => unknown;
+    ps?: () => Promise<Response>;
+  } = {}
 ) {
   const fetch: OllamaFetch = async (url, init) => {
     if (url === `${OLLAMA_URL}/api/tags`) {
@@ -37,8 +47,10 @@ function ollama(
     }
     if (url === `${OLLAMA_URL}/api/show` && init.method === 'POST') {
       const { model } = JSON.parse(init.body ?? '{}') as { model: string };
-      const capabilities = overrides.show ? overrides.show(model) : CAPABILITIES[model];
-      return Response.json({ capabilities });
+      return Response.json(overrides.show ? overrides.show(model) : SHOW[model]);
+    }
+    if (url === `${OLLAMA_URL}/api/ps`) {
+      return overrides.ps ? overrides.ps() : Response.json(PS);
     }
     return new Response(null, { status: 404 });
   };
@@ -50,10 +62,28 @@ describe('listOllamaModels', () => {
     expect(await listOllamaModels(ollama(), OLLAMA_URL)).toEqual({
       ok: true,
       models: [
-        { name: 'gemma4:12b', sizeBytes: 7_600_000_000, parameterSize: null },
-        { name: 'qwen3.5:9b', sizeBytes: 6_600_000_000, parameterSize: '9.7B' },
+        {
+          name: 'gemma4:12b',
+          sizeBytes: 7_600_000_000,
+          parameterSize: null,
+          maxContextTokens: null,
+          loadedContextTokens: null,
+        },
+        {
+          name: 'qwen3.5:9b',
+          sizeBytes: 6_600_000_000,
+          parameterSize: '9.7B',
+          maxContextTokens: 262_144,
+          loadedContextTokens: 32_768,
+        },
       ],
     });
+  });
+
+  it('still lists the models when Ollama won’t say what is loaded', async () => {
+    const olderOllama = ollama({ ps: async () => new Response(null, { status: 404 }) });
+    const result = await listOllamaModels(olderOllama, OLLAMA_URL);
+    expect(result.ok && result.models.map((m) => m.loadedContextTokens)).toEqual([null, null]);
   });
 
   it('keeps a model whose capabilities it cannot learn', async () => {
@@ -93,7 +123,9 @@ describe('listOllamaModels', () => {
     };
     await listOllamaModels(recording, '192.168.1.50');
     expect(asked[0]).toBe(`${OLLAMA_URL}/api/tags`);
-    expect(asked.slice(1).every((url) => url === `${OLLAMA_URL}/api/show`)).toBe(true);
+    expect(new Set(asked.slice(1))).toEqual(
+      new Set([`${OLLAMA_URL}/api/show`, `${OLLAMA_URL}/api/ps`])
+    );
   });
 
   it('sends nothing to an address that is not one', async () => {

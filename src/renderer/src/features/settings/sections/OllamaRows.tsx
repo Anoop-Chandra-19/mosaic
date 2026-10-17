@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { RotateCw } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
 import { AppInput } from '@/components/AppInput';
@@ -18,8 +18,9 @@ import {
   normalizeOllamaAddress,
   ollamaHost,
 } from '@shared/model-providers/ollamaAddress';
-import type { OllamaModels } from '@shared/types/modelProviders';
+import type { OllamaModel } from '@shared/types/modelProviders';
 import { SettingRow } from '../SettingRow';
+import type { OllamaModelsAnswer } from './useOllamaModels';
 
 function gigabytes(bytes: number): string | null {
   return bytes > 0 ? `${(bytes / 1e9).toFixed(1)} GB` : null;
@@ -116,53 +117,22 @@ export function OllamaAddressRow({
   );
 }
 
-/**
- * Asks main for the chat models at `address` while `active` — only once AI is on, so
- * Settings contacts nothing before then. A new address, or `refresh`, asks again.
- */
-function useOllamaModels(active: boolean, address: string) {
-  const [asked, setAsked] = useState(0);
-  const [answer, setAnswer] = useState<{ key: string; result: OllamaModels } | null>(null);
-  const key = `${address}#${asked}`;
-
-  useEffect(() => {
-    if (!active) return;
-    let current = true;
-    const answered = (result: OllamaModels) => {
-      if (current) setAnswer({ key: `${address}#${asked}`, result });
-    };
-    window.mosaic.modelProviders.ollamaModels(address).then(answered, (error: unknown) => {
-      console.error('Could not list Ollama models', error);
-      answered({ ok: false, reason: 'failed' });
-    });
-    return () => {
-      current = false;
-    };
-  }, [active, address, asked]);
-
-  // An answer about another address says nothing about this one.
-  const fresh = answer?.key.startsWith(`${address}#`) ? answer.result : null;
-  return {
-    result: fresh,
-    checking: active && answer?.key !== key,
-    refresh: () => setAsked((count) => count + 1),
-  };
-}
-
 /** Ollama's model: one of the chat models pulled where Ollama runs. */
 export function OllamaModelRow({
   active,
   address,
+  ollamaModels,
   model,
   onChange,
 }: {
   /** AI is on, so Ollama may be asked for its models. */
   active: boolean;
   address: string;
+  ollamaModels: OllamaModelsAnswer;
   model: string;
   onChange: (model: string) => void;
 }) {
-  const { result, checking, refresh } = useOllamaModels(active, address);
+  const { result, checking, refresh } = ollamaModels;
   const pulled = result?.ok ? result.models : [];
   const isPulled = pulled.some((m) => m.name === model);
   // Only a list from a running Ollama can say a model is missing.
@@ -238,6 +208,99 @@ export function OllamaModelRow({
       >
         <RotateCw />
       </AppButton>
+    </SettingRow>
+  );
+}
+
+const TOKEN_COUNT_FORMAT = new Intl.NumberFormat('en-US');
+
+/** A typed token count, grouping marks allowed; null unless it is a positive whole number. */
+function parseTokenCount(text: string): number | null {
+  const digits = text.replace(/[\s,_]/g, '');
+  if (!/^\d+$/.test(digits)) return null;
+  const tokens = Number(digits);
+  return tokens > 0 && Number.isSafeInteger(tokens) ? tokens : null;
+}
+
+/**
+ * The context window Ollama runs the model with. Empty leaves it to Ollama's own setting,
+ * shown as the placeholder while Ollama has the model loaded. Saved like the address: on
+ * Enter or when the field is left.
+ */
+export function OllamaContextRow({
+  model,
+  details,
+  contextTokens,
+  onChange,
+}: {
+  model: string;
+  /** What Ollama said about `model`, when it is pulled. */
+  details: OllamaModel | undefined;
+  contextTokens: number | null;
+  onChange: (tokens: number | null) => void;
+}) {
+  // What is being typed; null while the field shows the saved window.
+  const [draft, setDraft] = useState<string | null>(null);
+  const invalid = draft !== null && draft.trim() !== '' && parseTokenCount(draft) === null;
+  const maxTokens = details?.maxContextTokens ?? null;
+  const loadedTokens = details?.loadedContextTokens ?? null;
+
+  const commit = () => {
+    if (draft === null) return;
+    const tokens = draft.trim() === '' ? null : parseTokenCount(draft);
+    if (tokens === null && draft.trim() !== '') return;
+    onChange(tokens);
+    setDraft(null);
+  };
+
+  return (
+    <SettingRow
+      label="Context window"
+      description={
+        <>
+          Larger fits longer conversations but needs more memory.
+          {maxTokens !== null &&
+            ` ${model} supports up to ${TOKEN_COUNT_FORMAT.format(maxTokens)} tokens.`}
+          {invalid && (
+            <Note tone="error">
+              That isn’t a number of tokens. For example: <Command>32768</Command>
+            </Note>
+          )}
+        </>
+      }
+    >
+      <AppInput
+        value={draft ?? (contextTokens === null ? '' : TOKEN_COUNT_FORMAT.format(contextTokens))}
+        placeholder={
+          loadedTokens === null
+            ? 'Ollama’s setting'
+            : `${TOKEN_COUNT_FORMAT.format(loadedTokens)} · Ollama’s setting`
+        }
+        onChange={(event) => setDraft(event.target.value)}
+        onBlur={commit}
+        onKeyDown={(event) => {
+          if (event.key === 'Enter') commit();
+          if (event.key === 'Escape') setDraft(null);
+        }}
+        aria-label="Ollama context window, in tokens"
+        aria-invalid={invalid}
+        inputMode="numeric"
+        spellCheck={false}
+        autoComplete="off"
+        className="w-54 font-mono text-meta"
+      />
+      {contextTokens !== null && (
+        <AppButton
+          variant="ghost"
+          size="sm"
+          onClick={() => {
+            setDraft(null);
+            onChange(null);
+          }}
+        >
+          Use Ollama’s setting
+        </AppButton>
+      )}
     </SettingRow>
   );
 }
