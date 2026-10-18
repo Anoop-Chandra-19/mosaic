@@ -70,7 +70,7 @@ its lines already broken, header lines included, since react-pdf would squeeze s
 fit more on a line. Line heights are exact points everywhere (the Word file says "Exactly
 18 pt", not "1.5 lines", which Word rounds line by line).
 
-`e2e/pageBreaks.spec.ts` checks the preview against the PDF.
+`e2e/preview/page-breaks.spec.ts` checks the preview against the PDF.
 `scripts/page-break-sweep/` compares all three across a few hundred generated resumes.
 
 ## Exports and round trips

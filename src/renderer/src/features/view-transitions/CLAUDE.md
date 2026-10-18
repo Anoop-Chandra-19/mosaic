@@ -82,7 +82,7 @@ Use a motion that exists before inventing one:
 
 ## Validation
 
-Check one in two ways. `e2e/view-transitions.spec.ts` counts transitions, their types, and
+Check one in two ways. `e2e/motion/view-transitions.spec.ts` counts transitions, their types, and
 that none was skipped; add to it for a new one. For how it looks, run it in the built app
 (never `electron-vite dev`) with each animation's `playbackRate` at 0.1, screenshot at
 fixed points, and chart each frame's mean brightness: a dip or spike is a flash the eye

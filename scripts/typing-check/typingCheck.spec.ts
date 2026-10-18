@@ -3,7 +3,7 @@
  * and reports how the editor and the live preview kept up.
  */
 import { expect, type Page } from '@playwright/test';
-import { test, withApp } from '../../e2e/launch';
+import { test, withApp } from '../../e2e/harness/launch';
 
 const mosaic = withApp();
 

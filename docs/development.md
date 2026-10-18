@@ -50,7 +50,7 @@ Linux defaults to four workers; use `bun run test:e2e --workers=2` to reduce par
 `--workers=1` to run serially. macOS and Windows default to one worker because their
 desktops are not isolated. After building, `bunx playwright test` uses the same fixtures.
 
-E2E specs import `test` from `e2e/launch.ts`, not directly from Playwright. `withApp()`
+E2E specs import `test` from `e2e/harness/launch.ts`, not directly from Playwright. `withApp()`
 uses the worker's display automatically; tests that launch or relaunch manually take
 `launchApp` from their fixture argument: `async ({ launchApp }) => { … }`.
 Xvfb chooses free display numbers, signals readiness before launch, and is stopped at

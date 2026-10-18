@@ -7,7 +7,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { expect, type CDPSession, type ElectronApplication, type Page } from '@playwright/test';
 import type { DbResult } from '../../src/shared/types/db';
-import { test, withApp } from '../../e2e/launch';
+import { test, withApp } from '../../e2e/harness/launch';
 
 const mosaic = withApp();
 
