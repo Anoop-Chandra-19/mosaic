@@ -19,7 +19,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "electron-vite build && playwright test",
-    "check:typing": "electron-vite build && node scripts/typing-check/runTypingCheck.ts",
+    "check:typing": "electron-vite build && node scripts/run-under-load.ts scripts/typing-check/playwright.config.ts",
+    "check:speed": "electron-vite build && node scripts/run-under-load.ts scripts/speed-check/playwright.config.ts",
     "check:memory": "electron-vite build && playwright test -c scripts/memory-check/playwright.config.ts",
     "prepare": "husky"
   },

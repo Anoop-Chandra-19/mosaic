@@ -5,9 +5,10 @@ behind. In one app, it:
 
 1. launches to the Start panel;
 2. imports a fictional 130-bullet resume (about seven A4 pages);
-3. gives it 200 versions straight through the database (every tenth named), then reloads;
+3. gives it 200 versions straight through the database, each rewriting a few bullets and
+   every tenth named, then reloads;
 4. steps through 40 of them in the full history;
-5. opens and closes the full history, Settings, Export and the shortcuts sheet, ten rounds.
+5. opens and closes the full history, Settings, Export and the shortcuts sheet, twenty rounds.
 
 After each stage it collects the page's garbage and records:
 
@@ -18,9 +19,11 @@ After each stage it collects the page's garbage and records:
 - **total (PSS)**, on Linux: the same with memory the processes share (Chromium's own
   libraries) counted once. `total` counts it in every process, so PSS is the honest figure.
 
-It ends with what each round of step 5 left behind, from the second round to the last. A
-round that leaves DOM nodes or listeners behind is a leak; page JS that grows round after
-round is worth a heap snapshot.
+Page JS climbs over the first ten rounds of step 5 as caches fill and code is compiled, then
+levels off (over 50 rounds it stayed within 0.3 MB after round 25). So the check ends with
+what each of the last ten rounds left behind, once warmed up. Anything there above about
+zero is a leak: DOM nodes or listeners mean views left mounted or handlers never removed;
+page JS alone is worth a heap snapshot.
 
 Run by hand after changing what a view keeps (stores, caches, history reading, the preview)
 and compare with a run before. Never in CI.
