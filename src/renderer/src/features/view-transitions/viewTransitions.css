@@ -123,8 +123,10 @@
   z-index: 2;
 }
 
+/* Leaving on the same clock as `glide` and `reclaim`, which fill the space it gives up:
+   the edges stay together, so the space closes as the panel goes, not ahead of it. */
 ::view-transition-old(.slide-away) {
-  animation: slide-away 180ms ease-in both;
+  animation: slide-away 200ms var(--ease-settle) both;
 }
 
 ::view-transition-new(.slide-in) {
@@ -176,9 +178,12 @@
 
 /* ---- reclaim: a box easing into the space beside it given up, and giving it back ---- */
 
-/* Growing back past its narrower content, the box shows its own ground, not a gap. */
+/* Growing back past its narrower content, the box shows its own ground, not a gap. On the
+   slides' clock, so it fills the space as the panel leaves it. */
 ::view-transition-group(.reclaim) {
   background: var(--background);
+  animation-duration: 200ms;
+  animation-timing-function: var(--ease-settle);
 }
 
 /* The content keeps its natural size from the left edge, so only the box moves. */
