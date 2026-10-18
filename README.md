@@ -73,6 +73,7 @@ src/
       resumes/    # Templates, drafts, versions, bundles
       conversations/ # The assistant's conversations, runs and messages
     ipc/          # Database and file-dialog handlers
+    window/       # The window, its page and menu, and saving before it closes
     model-providers/ # Ollama model list, API key tests
   preload/        # The only bridge to the renderer: window.mosaic
   shared/
