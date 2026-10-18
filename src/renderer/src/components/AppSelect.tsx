@@ -37,8 +37,32 @@ export function AppSelectTrigger({
   );
 }
 
-export function AppSelectContent({ className, ...props }: ComponentProps<typeof SelectContent>) {
-  return <SelectContent className={cn(FLOATING_SURFACE_CLASSES, className)} {...props} />;
+/**
+ * Radix puts focus back on the trigger once the list has finished closing, even if it has
+ * since moved to another control: pick an option, click straight into the next field, and
+ * the typing went nowhere while Enter opened the list again. Focus left on a container
+ * (a dialog takes it while the list goes) still goes back to the trigger.
+ */
+function keepFocusMovedOn(event: Event) {
+  const active = document.activeElement;
+  if (active instanceof HTMLElement && active.tabIndex >= 0) event.preventDefault();
+}
+
+export function AppSelectContent({
+  className,
+  onCloseAutoFocus,
+  ...props
+}: ComponentProps<typeof SelectContent>) {
+  return (
+    <SelectContent
+      className={cn(FLOATING_SURFACE_CLASSES, className)}
+      onCloseAutoFocus={(event) => {
+        onCloseAutoFocus?.(event);
+        keepFocusMovedOn(event);
+      }}
+      {...props}
+    />
+  );
 }
 
 export function AppSelectItem({ className, ...props }: ComponentProps<typeof SelectItem>) {

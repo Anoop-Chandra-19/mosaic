@@ -88,6 +88,13 @@ test('Ollama’s model is picked from the chat models pulled on this machine', a
   await settings.getByRole('combobox', { name: 'Ollama model' }).click();
   await expect(page.getByRole('option')).toHaveText(['gemma4:12b7.6 GB', 'qwen3.5:9b6.6 GB']);
   await page.getByRole('option', { name: /gemma4:12b/ }).click();
+  // Straight on to the next field: focus stays there once the list has finished closing.
+  const contextField = settings.getByRole('textbox', {
+    name: 'Ollama context window, in tokens',
+  });
+  await contextField.focus();
+  await expect(page.getByRole('listbox')).toHaveCount(0);
+  await expect(contextField).toBeFocused();
   const stored = await page.evaluate(async () => {
     const boot = await window.mosaic.db.boot();
     if (!boot.ok) throw new Error(boot.message);
@@ -96,9 +103,6 @@ test('Ollama’s model is picked from the chat models pulled on this machine', a
   expect(stored.state.modelsByProvider.ollama).toBe('gemma4:12b');
 
   // The context window is Ollama's own until set, and Settings says what helps choose one.
-  const contextField = settings.getByRole('textbox', {
-    name: 'Ollama context window, in tokens',
-  });
   await expect(contextField).toHaveValue('');
   await expect(contextField).toHaveAttribute('placeholder', '8,192 · Ollama’s setting');
   await expect(settings.getByText(/gemma4:12b supports up to 131,072 tokens/)).toBeVisible();
