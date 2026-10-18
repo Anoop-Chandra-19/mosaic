@@ -1,7 +1,7 @@
 import type { Database } from 'better-sqlite3';
 import type { Version, VersionMeta } from '@shared/types/db';
 import { deleteUnusedDocs } from './docs';
-import { StorageError } from './storageError';
+import { StorageError } from '../storageError';
 import { getVersion, getVersionMeta, headVersion, insertVersion } from './versions';
 
 /*

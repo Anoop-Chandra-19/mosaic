@@ -1,7 +1,7 @@
 import type { Database } from 'better-sqlite3';
 import type { Draft } from '@shared/types/db';
 import type { ResumeData } from '@shared/types/resume';
-import { StorageError } from './storageError';
+import { StorageError } from '../storageError';
 import { encodeStoredResume, parseAndMigrateStoredResume } from './storedResume';
 
 interface DraftRow {

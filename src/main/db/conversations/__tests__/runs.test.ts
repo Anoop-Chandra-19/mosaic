@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { createDefaultResume } from '@shared/resume/defaultResume';
 import { openDatabase, type Database } from '../../connection';
-import { createTemplate, removeTemplate } from '../../templates';
+import { createTemplate, removeTemplate } from '../../resumes/templates';
 import { createConversation } from '../conversations';
 import { appendMessage, readMessagePage } from '../messages';
 import { finishRun, startRun } from '../runs';

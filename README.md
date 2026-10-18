@@ -69,7 +69,9 @@ controls, and how the printed resume's type stays separate.
 ```text
 src/
   main/           # Main process: window, database, IPC handlers, erase; see src/main/CLAUDE.md
-    db/           # SQLite: connection, migrations, repositories
+    db/           # SQLite: connection, migrations, settings, boot state
+      resumes/    # Templates, drafts, versions, bundles
+      conversations/ # The assistant's conversations, runs and messages
     ipc/          # Database and file-dialog handlers
     model-providers/ # Ollama model list, API key tests
   preload/        # The only bridge to the renderer: window.mosaic

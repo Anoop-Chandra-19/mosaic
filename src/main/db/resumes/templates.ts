@@ -4,8 +4,8 @@ import type { Draft, TemplateSummary, VersionSource } from '@shared/types/db';
 import type { ResumeData } from '@shared/types/resume';
 import { deleteUnusedDocs } from './docs';
 import { readDraft } from './drafts';
-import { ACTIVE_TEMPLATE_KEY, getSetting, removeSetting, setSetting } from './settings';
-import { StorageError } from './storageError';
+import { ACTIVE_TEMPLATE_KEY, getSetting, removeSetting, setSetting } from '../settings';
+import { StorageError } from '../storageError';
 import { encodeStoredResume } from './storedResume';
 import { countVersions, getVersion, headVersion, insertVersion } from './versions';
 

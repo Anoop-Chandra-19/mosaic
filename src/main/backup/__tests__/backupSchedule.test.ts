@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { createDefaultResume } from '@shared/resume/defaultResume';
 import { writeNewFileSafely } from '../../replaceFileSafely';
 import { openDatabase, type Database } from '../../db/connection';
-import { createTemplate } from '../../db/templates';
+import { createTemplate } from '../../db/resumes/templates';
 import {
   buildBackupFileName,
   BackupTooLargeError,
