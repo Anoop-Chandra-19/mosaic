@@ -6,7 +6,9 @@ Setup and scripts are in the [README](../README.md).
 ## Development data
 
 Development runs keep their data in the repo's gitignored `.dev-data/`, never an installed
-Mosaic's profile. Quit the app before `bun run dev:reset`, which deletes that data.
+Mosaic's profile. Quit the app before `bun run dev:reset`, which deletes that data and the
+API keys dev runs saved in the keychain (the `Mosaic (dev)` service, never an installed
+Mosaic's).
 
 ## Developer tools
 

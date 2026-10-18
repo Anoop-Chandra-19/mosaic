@@ -8,7 +8,7 @@
   "main": "./out/main/index.js",
   "scripts": {
     "dev": "electron-vite dev",
-    "dev:reset": "rm -rf .dev-data",
+    "dev:reset": "node scripts/reset-dev-data.ts",
     "db:freeze": "node scripts/freeze-migrations.ts",
     "build": "tsc -b && electron-vite build",
     "preview": "electron-vite preview",
