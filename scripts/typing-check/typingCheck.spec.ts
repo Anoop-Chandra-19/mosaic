@@ -4,6 +4,7 @@
  */
 import { expect, type Page } from '@playwright/test';
 import { test, withApp } from '../../e2e/harness/launch';
+import { importLargeResume } from '../large-resume';
 
 const mosaic = withApp();
 
@@ -13,25 +14,6 @@ const TYPED = ' and a few words more, typed quickly at the end';
 const KEY_DELAY_MS = 60;
 /** Past this, a key is late enough to feel. */
 const KEY_BUDGET_MS = 50;
-
-const bullet = (index: number) =>
-  `- Wrote program ${index} for the analytical engine, checking every step of it by hand against the tables computed the long way, and wrote down whatever differed.`;
-
-async function importResume(page: Page, bullets: number) {
-  await page.getByRole('button', { name: /Blank resume/ }).click();
-  await page.getByRole('button', { name: 'Import resume' }).click();
-  const importing = page.getByRole('dialog', { name: 'Import' });
-  const text = ['Ada Lovelace', 'ada@example.com', '', 'Experience', 'Analyst, Engine Works'];
-  await importing
-    .getByLabel('Or paste the text')
-    .fill([...text, ...Array.from({ length: bullets }, (_, i) => bullet(i))].join('\n'));
-  await importing.getByRole('button', { name: 'Read pasted text' }).click();
-  await importing
-    .getByRole('button', { name: /^Import/ })
-    .last()
-    .click();
-  await expect(page.getByText('Imported. Check the sections in the sidebar.')).toBeVisible();
-}
 
 /** A fixed loop in the page: how fast this run's renderer is, to compare runs by. */
 const timePageLoop = (page: Page) =>
@@ -51,7 +33,7 @@ interface TypingLog {
 for (const bullets of RESUME_SIZES) {
   test(`typing into a ${bullets}-bullet resume`, async () => {
     const { page } = mosaic();
-    await importResume(page, bullets);
+    await importLargeResume(page, bullets);
     const sheets = page.locator('[data-preview-page-content]');
     const pages = await sheets.count();
 

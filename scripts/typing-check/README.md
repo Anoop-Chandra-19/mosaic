@@ -25,7 +25,8 @@ bun run check:typing --load 6
 ```
 
 With npm, pass the option after `--`: `npm run check:typing -- --load 6`. To check the build
-already in `out/`, run `node scripts/typing-check/runTypingCheck.ts` directly.
+already in `out/`, run the shared runner directly:
+`node scripts/run-under-load.ts scripts/typing-check/playwright.config.ts --load 6`.
 
 Compare the page loop between runs to see how much slower a loaded run really was.
 

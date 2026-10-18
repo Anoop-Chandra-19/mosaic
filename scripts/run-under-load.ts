@@ -1,24 +1,32 @@
 /**
- * Runs the typing check, as is or on a loaded CPU: `--load N` pins the app to one core and
- * runs N busy loops beside it, so every app process gets about 1/(N+1) of that core.
- * Linux only, through `taskset`. Chromium's own CPU throttling slows only the page's
- * main thread, leaving the GPU and compositor at full speed, so it isn't used.
+ * Runs a hand-run check (its Playwright config, the first argument) as is or on a loaded
+ * CPU: `--load N` pins the app to one core and runs N busy loops beside it, so every app
+ * process gets about 1/(N+1) of that core. Linux only, through `taskset`. Chromium's own
+ * CPU throttling slows only the page's main thread, leaving the GPU and compositor at full
+ * speed, so it isn't used.
+ *
+ *   node scripts/run-under-load.ts scripts/speed-check/playwright.config.ts --load 6
  */
 import { spawn, type ChildProcess } from 'node:child_process';
 import path from 'node:path';
 import { parseArgs } from 'node:util';
 
-const { values } = parseArgs({ options: { load: { type: 'string', default: '0' } } });
+const { values, positionals } = parseArgs({
+  options: { load: { type: 'string', default: '0' } },
+  allowPositionals: true,
+});
+const [config] = positionals;
+if (!config) throw new Error('Name the check’s Playwright config first.');
 const load = Number(values.load);
 if (!Number.isInteger(load) || load < 0) throw new Error('--load takes a whole number.');
 if (load > 0 && process.platform !== 'linux') throw new Error('--load needs Linux (taskset).');
 
-const root = path.resolve(import.meta.dirname, '../..');
+const root = path.resolve(import.meta.dirname, '..');
 const playwright = [
   path.join(root, 'node_modules/.bin/playwright'),
   'test',
   '-c',
-  path.join(import.meta.dirname, 'playwright.config.ts'),
+  path.resolve(config),
 ];
 const pinned = (command: string[]) => (load > 0 ? ['taskset', '-c', '0', ...command] : command);
 

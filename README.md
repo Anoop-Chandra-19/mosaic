@@ -147,6 +147,7 @@ end-to-end tests.
 | `bun run test`         | Unit tests                                          |
 | `bun run test:e2e`     | Build, then run end-to-end tests headlessly (Linux) |
 | `bun run check:typing` | Build, then check the preview keeps up with typing  |
+| `bun run check:speed`  | Build, then time everyday flows on a long resume    |
 | `bun run check:memory` | Build, then measure memory and leaks from views     |
 | `bun run lint`         | Run ESLint                                          |
 | `bun run format`       | Format supported project files with Oxfmt           |
