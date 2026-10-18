@@ -140,7 +140,7 @@ end-to-end tests.
 | Command                | Description                                         |
 | ---------------------- | --------------------------------------------------- |
 | `bun run dev`          | Launch the app with hot reload                      |
-| `bun run dev:reset`    | Delete development data and start fresh             |
+| `bun run dev:reset`    | Delete development data and dev keys; start fresh   |
 | `bun run build`        | Type-check and build main, preload, and renderer    |
 | `bun run package`      | Build an installer into `release/`                  |
 | `bun run test`         | Unit tests                                          |

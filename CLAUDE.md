@@ -52,7 +52,8 @@ Bun and npm both work (Node ≥ 22.18): `bun run <script>` = `npm run <script>`;
   D-Bus session on Linux: never the real profile or keychain. Import `test` from
   `e2e/launch.ts`; manual launches use the `launchApp` fixture, not a standalone function.
 - `bun run dev` uses the gitignored `.dev-data/`, never installed Mosaic's profile.
-  Quit the app before `bun run dev:reset`, which deletes that development data.
+  Quit the app before `bun run dev:reset`, which deletes that development data and the dev
+  keychain's API keys.
 - `bun run db:freeze` is a release step, not validation; see `src/main/CLAUDE.md`.
 - Don't add dependencies without asking. Only main-process runtime modules belong in
   `dependencies` (`better-sqlite3`, `@napi-rs/keyring`); renderer modules go in
