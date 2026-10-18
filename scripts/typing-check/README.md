@@ -10,17 +10,22 @@ prints for each one:
 - **caught up**: how long after the last key the preview showed it.
 
 Run by hand when the editor, the preview, or pagination changes, and compare with a run
-before the change. Never in CI. Needs a build (`bun run build`).
+before the change. Never in CI.
 
 ## Runs
 
+Each builds first.
+
 ```sh
 # As this computer is
-node scripts/typing-check/runTypingCheck.ts
+bun run check:typing
 
 # One core shared with 6 busy loops: roughly a slow laptop (Linux only)
-node scripts/typing-check/runTypingCheck.ts --load 6
+bun run check:typing --load 6
 ```
+
+With npm, pass the option after `--`: `npm run check:typing -- --load 6`. To check the build
+already in `out/`, run `node scripts/typing-check/runTypingCheck.ts` directly.
 
 Compare the page loop between runs to see how much slower a loaded run really was.
 

@@ -1,0 +1,42 @@
+# Memory check
+
+How much memory the built app holds, and whether opening and closing views leaves anything
+behind. In one app, it:
+
+1. launches to the Start panel;
+2. imports a fictional 130-bullet resume (about seven A4 pages);
+3. gives it 200 versions straight through the database (every tenth named), then reloads;
+4. steps through 40 of them in the full history;
+5. opens and closes the full history, Settings, Export and the shortcuts sheet, ten rounds.
+
+After each stage it collects the page's garbage and records:
+
+- **page JS** and **main JS**: live JavaScript in the renderer and in main;
+- **DOM nodes** and **listeners**: what the page holds on to;
+- **renderer**, **main**, **GPU**, **other**: each process's resident memory, as the OS counts
+  it, and their **total**;
+- **total (PSS)**, on Linux: the same with memory the processes share (Chromium's own
+  libraries) counted once. `total` counts it in every process, so PSS is the honest figure.
+
+It ends with what each round of step 5 left behind, from the second round to the last. A
+round that leaves DOM nodes or listeners behind is a leak; page JS that grows round after
+round is worth a heap snapshot.
+
+Run by hand after changing what a view keeps (stores, caches, history reading, the preview)
+and compare with a run before. Never in CI.
+
+```sh
+bun run check:memory
+```
+
+It builds first. To measure the build already in `out/` as it is, run its Playwright config
+directly: `bunx playwright test -c scripts/memory-check/playwright.config.ts`.
+
+Each run is kept in `out/memory-check/last.json`, and the next prints its change against it
+in brackets.
+
+## Reading it
+
+Page JS, DOM nodes and listeners repeat exactly from run to run. Process sizes move by
+10–20 MB between runs, the GPU process most. On Linux the app runs on its own Xvfb desktop
+with no GPU, so the GPU process draws in software and holds more than it would on a desktop.
