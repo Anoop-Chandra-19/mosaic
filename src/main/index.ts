@@ -1,3 +1,4 @@
+import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
@@ -14,6 +15,7 @@ import {
   type MenuItemConstructorOptions,
 } from 'electron';
 import { ERASE_ALL, MODEL_PROVIDERS_CHANNELS } from '@shared/ipc/appChannels';
+import { chooseDatabaseFolder } from './databaseFolder';
 import { openDatabase, type Database } from './db/connection';
 import { recoverInterruptedRuns } from './db/conversations/recoverInterruptedRuns';
 import { API_KEYS_KEY, getSetting, setSetting } from './db/settings';
@@ -41,10 +43,24 @@ if (!app.isPackaged && !app.commandLine.hasSwitch('user-data-dir')) {
 
 let db: Database | undefined;
 
-const databaseFile = () => path.join(app.getPath('userData'), 'mosaic.db');
+const databaseFile = () =>
+  path.join(
+    chooseDatabaseFolder({
+      platform: process.platform,
+      env: process.env,
+      homeDir: app.getPath('home'),
+      appName: app.getName(),
+      userDataDir: app.getPath('userData'),
+      isUserDataRedirected: !app.isPackaged || app.commandLine.hasSwitch('user-data-dir'),
+    }),
+    'mosaic.db'
+  );
 
 function openAppDatabase(): Database {
-  const opened = openDatabase(databaseFile(), {
+  const file = databaseFile();
+  // userData exists from launch; the local data folder may not yet.
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  const opened = openDatabase(file, {
     // Dev stops on an edited migration (with a `dev:reset` hint); an installed build
     // warns and keeps going rather than lock anyone out of their resumes.
     tolerateEditedMigrations: app.isPackaged,

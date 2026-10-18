@@ -16,7 +16,10 @@ Read with the root `CLAUDE.md`. This covers `src/main/` and its contract with pr
 
 ## SQLite
 
-- One database, `userData/mosaic.db` (never a synced folder): better-sqlite3, synchronous,
+- One database, `mosaic.db`, in the OS's local data folder (`databaseFolder.ts`):
+  `%LOCALAPPDATA%\Mosaic` on Windows, `$XDG_DATA_HOME/Mosaic` (`~/.local/share/Mosaic`) on
+  Linux, Application Support on macOS. Never a roaming or synced folder. Dev and e2e keep
+  it in their own profile (`.dev-data/`, `--user-data-dir`). better-sqlite3, synchronous,
   WAL. Each `MosaicDb` call is one transaction, so a refusal writes nothing.
 - The document is a JSON blob in one column. Do not normalize sections, entries, or bullets
   into rows — the whole document is always loaded, nothing queries across bullets, and the
@@ -60,6 +63,12 @@ Read with the root `CLAUDE.md`. This covers `src/main/` and its contract with pr
 - Releasing: `bun run db:freeze` records the shipping migrations in
   `db/migrations/released.json`. After that, `bun run test` fails if a released migration is
   edited — users' databases already ran it, so the change goes in a new file.
+- Migrations run at boot, before the window exists, and block main: a slow one looks like
+  Mosaic not opening. Schema-only ones (tables, columns, indexes) take milliseconds and
+  need nothing more. One that rewrites data (every stored document, or a table rebuilt
+  because SQLite can't alter a column) must first show the window with a short "Updating
+  your data…" message, then run, and be timed against a heavy database before it ships.
+  Resumes are upgraded as they are read (`migrateResume`), never at boot.
 
 ## API keys (`secrets/`)
 

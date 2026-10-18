@@ -50,7 +50,7 @@ and the renderer receives it through `loadDraft` without saving it back.
 
 | What                                  | Where                                 | Owner |
 | ------------------------------------- | ------------------------------------- | ----- |
-| Templates, drafts, versions, settings | `userData/mosaic.db` (SQLite, WAL)    | main  |
+| Templates, drafts, versions, settings | `mosaic.db` in local data (SQLite)    | main  |
 | Each resume document                  | one JSON blob per row, not normalized | main  |
 | API keys                              | OS keychain, or main's memory         | main  |
 | Which providers have keys             | `app.apiKeys` setting (no key values) | main  |
