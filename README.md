@@ -104,7 +104,9 @@ remains in `out/`.
 
 ## Data and Privacy
 
-- One SQLite database, `mosaic.db`, in the app's user-data folder. Only the main process
+- One SQLite database, `mosaic.db`, in your computer's local app data: `%LOCALAPPDATA%\Mosaic`
+  on Windows, `~/.local/share/Mosaic` on Linux, `~/Library/Application Support/Mosaic` on
+  macOS. It never goes in a folder that roams or syncs. Only the main process
   opens it; the sandboxed renderer calls a small set of typed methods through the preload
   and never sees SQL, Node, or the file system.
 - Each resume document is stored as JSON; SQL tracks templates, drafts, and version history.
