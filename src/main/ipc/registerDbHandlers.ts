@@ -6,7 +6,7 @@ import { createDbHandlers, handlerFor, settle, type Handlers } from './dbHandler
 
 /**
  * Answer the preload's `db:*` calls. `isAppFrame` turns away anything but the app's own
- * page — a PDF preview popup shares the preload, but has no business in the database.
+ * page.
  * `currentDb` is asked on every call: Erase swaps the connection for a fresh file.
  */
 export function registerDbHandlers(

@@ -7,8 +7,9 @@ Read with the root `CLAUDE.md`. This covers `src/main/` and its contract with pr
 - The preload (`src/preload/`) is sandboxed and builds to CommonJS (`.cjs`). It is the only
   bridge: narrow, typed methods on `window.mosaic`, never raw IPC or Node. Channel names and
   the `MosaicDb` method list live in `src/shared/ipc/`, used by both sides.
-- Every IPC handler checks `isAppFrame`: a PDF preview popup shares the preload but has no
-  business in the database or the keys.
+- The window opens no popups (a child window would inherit the preload) and never navigates
+  away; links open in the browser. Every IPC handler still checks `isAppFrame`, which
+  refuses any frame but the app's own page.
 - Handlers come in two parts: argument checks with no Electron import
   (`ipc/dbHandlers.ts`, `ipc/secretsHandlers.ts` — unit tests drive these directly), and a
   thin `ipc/register*Handlers.ts` file that puts them on `ipcMain`.
