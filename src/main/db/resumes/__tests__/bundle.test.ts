@@ -5,7 +5,7 @@ import { parseBundle } from '@shared/vault/parseBundle';
 import type { MosaicBundle } from '@shared/types/bundle';
 import type { ResumeData } from '@shared/types/resume';
 import { exportBundle, importBundle } from '../bundle';
-import { openDatabase, type Database } from '../connection';
+import { openDatabase, type Database } from '../../connection';
 import { readDraft, saveDraft } from '../drafts';
 import { createTemplate, listTemplates } from '../templates';
 import { removeVersion } from '../versionEdits';

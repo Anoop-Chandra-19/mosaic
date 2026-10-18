@@ -13,12 +13,12 @@ import {
 } from '@shared/types/db';
 import type { ResumeData } from '@shared/types/resume';
 import type { DbMethod } from '@shared/ipc/dbMethods';
-import { exportBundle, importBundle } from '../db/bundle';
-import { readDraft, saveDraft } from '../db/drafts';
 import { readBootState } from '../db/readBootState';
+import { exportBundle, importBundle } from '../db/resumes/bundle';
+import { readDraft, saveDraft } from '../db/resumes/drafts';
+import { putBackVersion, removeVersion, renameVersion } from '../db/resumes/versionEdits';
 import { MAIN_SETTINGS_PREFIX, removeSetting, setSetting } from '../db/settings';
 import { StorageError } from '../db/storageError';
-import { putBackVersion, removeVersion, renameVersion } from '../db/versionEdits';
 import {
   createTemplate,
   duplicateTemplate,
@@ -27,7 +27,7 @@ import {
   openTemplate,
   removeTemplate,
   renameTemplate,
-} from '../db/templates';
+} from '../db/resumes/templates';
 import {
   getVersion,
   importIntoDraft,
@@ -36,7 +36,7 @@ import {
   restoreVersion,
   snapshotAppliedSuggestions,
   snapshotEditedDraft,
-} from '../db/versions';
+} from '../db/resumes/versions';
 
 /*
  * Main's side of `MosaicDb`, kept free of Electron so tests can drive it directly;

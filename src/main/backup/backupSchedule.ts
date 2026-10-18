@@ -6,7 +6,7 @@ import { BACKUP_FREQUENCIES } from '@shared/types/backup';
 import { MAX_TEXT_BYTES } from '@shared/types/files';
 import { formatBundle } from '@shared/vault/formatBundle';
 import { writeNewFileSafely } from '../replaceFileSafely';
-import { exportBundle } from '../db/bundle';
+import { exportBundle } from '../db/resumes/bundle';
 import { getSetting, removeSetting, setSetting } from '../db/settings';
 
 /** The schedule, and when it last wrote a backup: main's alone, like every `app.` setting. */

@@ -110,8 +110,8 @@ Background save failures must still be handled without unhandled promise rejecti
 
 ### A02 — P1: Equal revisions can suppress the only snapshot of different content
 
-**Locations:** [`drafts.ts:48–62`](../src/main/db/drafts.ts#L48),
-[`versions.ts:145–154,268–284`](../src/main/db/versions.ts#L145),
+**Locations:** [`drafts.ts:48–62`](../src/main/db/resumes/drafts.ts#L48),
+[`versions.ts:145–154,268–284`](../src/main/db/resumes/versions.ts#L145),
 [`parseBundle.ts:129–138`](../src/shared/vault/parseBundle.ts#L129).
 
 Saving rejects only revisions less than the stored revision. History treats equal
@@ -155,7 +155,7 @@ temporaries and test preservation of the original after partial-write failures.
 
 ### A05 — P2: The app can generate a backup it refuses to restore
 
-**Locations:** [`bundle.ts:28–40`](../src/main/db/bundle.ts#L28),
+**Locations:** [`bundle.ts:28–40`](../src/main/db/resumes/bundle.ts#L28),
 [`backupSchedule.ts:120–130`](../src/main/backup/backupSchedule.ts#L120),
 [`dbHandlers.ts:110–119`](../src/main/ipc/dbHandlers.ts#L110),
 [`registerFileHandlers.ts:81–84`](../src/main/ipc/registerFileHandlers.ts#L81).
@@ -175,7 +175,7 @@ history while ensuring the app can read what it writes. Add a boundary-size roun
 ### A06 — P2: Restore admits identifiers that normal operations reject
 
 **Locations:** [`parseBundle.ts:47–50,123–138`](../src/shared/vault/parseBundle.ts#L47),
-[`bundle.ts:55–69,96–103`](../src/main/db/bundle.ts#L55),
+[`bundle.ts:55–69,96–103`](../src/main/db/resumes/bundle.ts#L55),
 [`dbHandlers.ts:46–50,134–142`](../src/main/ipc/dbHandlers.ts#L46).
 
 Bundle IDs need only be strings, whereas IPC IDs must be nonblank and at most 200 characters.
@@ -193,7 +193,7 @@ and version IDs in refusal/rollback tests.
 
 **Locations:** [`validateResume.ts:46–60`](../src/shared/resume/validateResume.ts#L46),
 [`parseBundle.ts:67–73`](../src/shared/vault/parseBundle.ts#L67),
-[`storedResume.ts:6–11`](../src/main/db/storedResume.ts#L6).
+[`storedResume.ts:6–11`](../src/main/db/resumes/storedResume.ts#L6).
 
 The validator checks section order with `typeof === 'number'`. JSON's numeric token
 `1e999` parses to JavaScript `Infinity`; serializing it later yields `null`.
@@ -222,7 +222,7 @@ empty backup with an explanation before writing and recording success.
 ### A09 — P3: Stored reads silently downgrade a future schema marker
 
 **Locations:** [`validateResume.ts:108–112`](../src/shared/resume/validateResume.ts#L108),
-[`storedResume.ts:19–20`](../src/main/db/storedResume.ts#L19),
+[`storedResume.ts:19–20`](../src/main/db/resumes/storedResume.ts#L19),
 [`migrateResume.ts:9–15`](../src/shared/resume/migrateResume.ts#L9).
 
 **Reproduced:** pass a current-shaped resume marked `schemaVersion: 2` to the creation

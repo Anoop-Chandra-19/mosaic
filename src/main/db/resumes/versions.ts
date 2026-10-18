@@ -16,7 +16,7 @@ import { describeDraftChanges } from '@shared/resume/describeDraftChanges';
 import type { ResumeData } from '@shared/types/resume';
 import { hashDoc, readDoc, storeDoc } from './docs';
 import { readDraft, writeDraft } from './drafts';
-import { StorageError } from './storageError';
+import { StorageError } from '../storageError';
 
 interface VersionRow {
   id: string;

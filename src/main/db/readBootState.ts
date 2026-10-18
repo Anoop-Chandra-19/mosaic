@@ -1,7 +1,7 @@
 import type { Database } from 'better-sqlite3';
 import type { BootState } from '@shared/types/db';
 import { ACTIVE_TEMPLATE_KEY, allSettings, getSetting, removeSetting } from './settings';
-import { listTemplates, openTemplate } from './templates';
+import { listTemplates, openTemplate } from './resumes/templates';
 
 /**
  * Everything the renderer needs before its first paint. With no templates — a new

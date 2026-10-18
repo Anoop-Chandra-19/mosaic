@@ -1,10 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createDefaultResume } from '@shared/resume/defaultResume';
 import type { ResumeData } from '@shared/types/resume';
-import { openDatabase, type Database } from '../connection';
+import { openDatabase, type Database } from '../../connection';
+import { readBootState } from '../../readBootState';
+import { ACTIVE_TEMPLATE_KEY, getSetting, removeSetting, setSetting } from '../../settings';
 import { readDraft, saveDraft } from '../drafts';
-import { readBootState } from '../readBootState';
-import { ACTIVE_TEMPLATE_KEY, getSetting, removeSetting, setSetting } from '../settings';
 import {
   createTemplate,
   duplicateTemplate,

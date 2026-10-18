@@ -1,6 +1,6 @@
 import type { Database } from 'better-sqlite3';
 import type { ResumeData } from '@shared/types/resume';
-import { StorageError } from './storageError';
+import { StorageError } from '../storageError';
 import { encodeStoredResume, hashStoredResume, parseAndMigrateStoredResume } from './storedResume';
 
 /** Stores the resume if no version holds it yet; gives its hash either way. */
