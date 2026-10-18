@@ -62,6 +62,21 @@ test('a deleted bullet fades where it was, then goes; a moved one slides', async
   await openBulletMenu(page, FIRST);
   await page.getByRole('menuitem', { name: 'Move down' }).click();
   expect(await countRowMotions(page)).toBeGreaterThan(0);
+
+  // The next change finishes what is still moving. A leaving row stays listed, finished,
+  // until a frame later: waiting on it again froze the page before that frame came.
+  await openBulletMenu(page, FIRST);
+  await page.getByRole('menuitem', { name: 'Delete bullet' }).click();
+  const finished = await page.evaluate(() => {
+    const motions = document
+      .querySelector('aside')!
+      .getAnimations({ subtree: true })
+      .filter((animation) => animation.id === 'row-motion');
+    for (const animation of motions) animation.finish();
+    return motions.length;
+  });
+  expect(finished).toBeGreaterThan(0);
+  await expect.poll(() => countRowMotions(page), { timeout: 3000 }).toBe(0);
   expect(errors).toEqual([]);
 });
 

@@ -136,7 +136,10 @@ test('export keeps text width stable while its height changes', async () => {
   await page.setViewportSize({ width: 1280, height: 1100 });
   await startFromSample(page);
   const exporting = await openExport(page, /^Markdown/);
+  // The switch to Markdown eases the height from a resize observer, a frame after the click:
+  // wait for that easing to start, then to land, so it isn't the one held below.
   await exporting.evaluate(async (element) => {
+    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
     await Promise.all(element.getAnimations().map((animation) => animation.finished));
   });
   const body = exporting.locator('.overflow-y-auto');

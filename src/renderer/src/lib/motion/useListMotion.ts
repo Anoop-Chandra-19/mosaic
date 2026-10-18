@@ -195,7 +195,9 @@ class ListMotionController implements ListMotion {
   private record = () => {
     const box = this.box;
     if (!box) return;
-    const moving = listRowMotions(box);
+    // A finished motion stays listed until its finish event, a frame later, with its promise
+    // already settled: waiting on it again would loop before that frame could come.
+    const moving = listRowMotions(box).filter((animation) => animation.playState !== 'finished');
     if (moving.length === 0) {
       this.last = takeSnapshot(box, this.attribute);
       return;

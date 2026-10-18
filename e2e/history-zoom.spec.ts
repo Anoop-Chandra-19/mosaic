@@ -49,10 +49,10 @@ async function startWithTwoLengths(page: Page) {
   const firstBullets = sidebar.locator('.group\\/bullet:not([inert], [inert] *)', {
     hasText: BULLETS[0],
   });
+  // By keyboard: rows slide up after each delete, out from under a hovering pointer.
   for (let left = await firstBullets.count(); left > 0; left--) {
-    await firstBullets.first().hover();
-    await firstBullets.first().getByRole('button', { name: 'Bullet actions' }).click();
-    await page.getByRole('menuitem', { name: 'Delete bullet' }).click();
+    await firstBullets.first().getByRole('checkbox').focus();
+    await page.keyboard.press('Control+Shift+K');
     await expect(firstBullets).toHaveCount(left - 1);
   }
   for (const bullet of BULLETS.slice(1)) {
