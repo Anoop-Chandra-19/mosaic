@@ -37,7 +37,9 @@ Paths below are relative to the repository root. Read the relevant files before 
 - Keep feature code and tests together, folders flat until subfolders help navigation,
   and abstractions driven by actual reuse. Don't reorganize unrelated code.
 - Unit tests go in a `__tests__/` folder beside the code they cover, never directly beside
-  the module; test-only helpers and fixtures live there too. Root `e2e/` holds Playwright specs.
+  the module; test-only helpers and fixtures live there too. Root `e2e/` holds Playwright specs,
+  a folder for each area of the app (`editor/`, `history/`, …), with their shared launch
+  and helpers in `e2e/harness/`.
 
 ## Commands and dependencies
 
@@ -52,7 +54,8 @@ Bun and npm both work (Node ≥ 22.18): `bun run <script>` = `npm run <script>`;
   virtual X11 desktop (no outer `xvfb-run`). Linux defaults to 4 workers, other platforms to 1;
   override with `--workers=N`. Each launch must use a throwaway `--user-data-dir` and no
   D-Bus session on Linux: never the real profile or keychain. Import `test` from
-  `e2e/launch.ts`; manual launches use the `launchApp` fixture, not a standalone function.
+  `e2e/harness/launch.ts`; manual launches use the `launchApp` fixture, not a standalone
+  function.
 - `bun run dev` uses the gitignored `.dev-data/`, never installed Mosaic's profile.
   Quit the app before `bun run dev:reset`, which deletes that development data and the dev
   keychain's API keys.

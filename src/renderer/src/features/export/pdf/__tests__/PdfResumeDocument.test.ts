@@ -3,7 +3,7 @@ import { renderToBuffer } from '@react-pdf/renderer';
 import { describe, expect, it } from 'vitest';
 import { createDefaultResume } from '@shared/resume/defaultResume';
 import type { ResumeData } from '@shared/types/resume';
-import { extractPdfText } from '../../../../../../../e2e/pdfText';
+import { extractPdfText } from '../../../../../../../e2e/harness/pdfText';
 import { readPdfContent } from '@/features/import/readers/pdf/readPdf';
 import {
   createStyledHeaderResume,

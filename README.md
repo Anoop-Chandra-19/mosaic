@@ -95,7 +95,8 @@ src/
       App.tsx
       index.css
       main.tsx
-e2e/              # Playwright specs against the built app
+e2e/              # Playwright specs against the built app, a folder per area
+  harness/        # Launching the app on its own display, dialogs, PDF text
 ```
 
 `@/` maps to `src/renderer/src/`; `@shared/` maps to `src/shared/`. Shared modules are

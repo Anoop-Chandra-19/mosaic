@@ -5,8 +5,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { expect } from '@playwright/test';
-import { saveInto } from '../../e2e/dialogs';
-import { test, withApp } from '../../e2e/launch';
+import { saveInto } from '../../e2e/harness/dialogs';
+import { test, withApp } from '../../e2e/harness/launch';
 import { generateSweepResumes } from './generateSweepResumes';
 import { runDirectory, SWEEP_COUNT, SWEEP_SEED } from './sweepOptions';
 
