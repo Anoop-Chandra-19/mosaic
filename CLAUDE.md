@@ -131,5 +131,7 @@ Someone new should understand a module, and how its files connect, in about 30 m
 - Short names (`n`, `i`, `a`) only in a few lines or a math loop. Elsewhere, name what it
   holds: `printedBefore`, not `was`.
 - Write an algorithm once and share it.
+- Inputs are typed. `unknown` is only for data from outside (IPC arguments, parsed files
+  and settings, network replies, model output, caught errors); validate it there, once.
 - A readability refactor changes no behavior: prove it against the old code with the tests,
   or a before/after comparison of outputs where tests don't reach.

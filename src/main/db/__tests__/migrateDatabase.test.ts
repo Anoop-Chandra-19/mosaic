@@ -44,11 +44,16 @@ describe('migrateDatabase', () => {
     db = openDatabase(':memory:');
     expect(db.pragma('user_version', { simple: true })).toBe(bundledMigrations().length);
     expect(tableNames(db)).toEqual([
+      'conversations',
       'docs',
       'drafts',
+      'message_queue',
+      'messages',
+      'runs',
       'schema_migrations',
       'settings',
       'templates',
+      'tool_calls',
       'versions',
     ]);
   });

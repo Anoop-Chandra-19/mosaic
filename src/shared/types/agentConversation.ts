@@ -54,3 +54,20 @@ export type MessageBody =
   | AssistantMessageBody
   | ToolResultsMessageBody
   | TemplateSwitchedMessageBody;
+
+/**
+ * A body as the transcript reads it. Tool results come without their content, which can
+ * be large and shows only when the Trace view opens one.
+ */
+export type TranscriptMessageBody =
+  | Exclude<MessageBody, ToolResultsMessageBody>
+  | { type: 'toolResults'; results: Omit<ToolResult, 'content'>[] };
+
+export interface TranscriptMessage {
+  id: number;
+  seq: number;
+  /** Null for one written outside a run. */
+  runId: number | null;
+  body: TranscriptMessageBody;
+  createdAt: number;
+}

@@ -79,10 +79,29 @@ Read with the root `CLAUDE.md`. This covers `src/main/` and its contract with pr
 - Test (`model-providers/testApiKey.ts`) makes one request that costs no tokens. The key travels only in a
   header, never in a URL, and no result or error repeats it.
 
-## Planned with the agent layer
+## The assistant's tables (`db/conversations/`)
 
-In `plans/mosaic_sqlite_storage_plan.md`: conversations → runs → messages / tool_calls /
-ops, stored as provider-neutral content blocks, one write per assistant message. Staged
-suggestions persist and are revalidated against `rev`, and never enter `drafts` or
-`versions`. Deleting a conversation is a real `DELETE`, `VACUUM`, and WAL checkpoint, not
-a flag.
+A conversation is an append-only log of messages, each a JSON `MessageBody`
+(`src/shared/types/agentConversation.ts`) checked before it is written and never changed
+after. Bodies must stay readable forever: change them only by adding (new optional
+fields, new types), with a frozen fixture per type in its tests. The renderer reads the
+log in pages, never whole. At boot, a run still marked running failed, and its pending
+tool calls get error results. Deleting a conversation is a real `DELETE`, `VACUUM`, and
+WAL checkpoint, not a flag.
+
+## Words
+
+- **conversation:** the whole log. It isn't tied to a template; each run records the one
+  open when it was sent.
+- **run:** one ask and everything the assistant does for it, until it finishes, is
+  stopped, or fails. Numbered by `seq` within its conversation. Not "turn", which could
+  mean the user's, the assistant's, or a tool round.
+- **step:** one model request and the tool round after it. A run has many.
+- **message:** one entry in the log: the user's, the assistant's, tool results, or a note
+  the app writes.
+- **tool call:** one tool the model asked for in a step, with its own row for the trace.
+- **rev:** the draft's edit counter, bumped by every edit. Templates, versions, runs and
+  tool calls each record the rev they saw; comparing it with the draft's is how a clean
+  draft, a stale save, and a stale read are told apart. Never shown to the user.
+- **revision:** only on versions: the `.1` in v7.1, an addition to a version number
+  (`seq`). Unrelated to `rev`.
