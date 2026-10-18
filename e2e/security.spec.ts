@@ -31,8 +31,8 @@ test('the renderer runs with the Chromium OS sandbox enabled', async () => {
   }
 });
 
-test('preload is isolated from the page, which has no Node or raw IPC access', async () => {
-  const { page } = mosaic();
+test('preload is isolated from the page, which has no Node, raw IPC, popups or way to leave', async () => {
+  const { app, page } = mosaic();
   const session = await page.context().newCDPSession(page);
   const contexts: { id: number; name: string; auxData?: { frameId?: string } }[] = [];
   session.on('Runtime.executionContextCreated', ({ context }) => contexts.push(context));
@@ -76,6 +76,29 @@ test('preload is isolated from the page, which has no Node or raw IPC access', a
     expect(renderer.rawIpc).toEqual([]);
     expect(renderer.boot.ok).toBe(true);
     expect(renderer.isPopupOpened).toBe(false);
+
+    // Another page in the window would inherit the preload, and another local file would
+    // even pass isAppFrame. A file: URL also keeps main from opening it in the browser.
+    const probeUrl = 'file:///mosaic-navigation-probe.html';
+    const startUrl = page.url();
+    const win = await app.browserWindow(page);
+    await win.evaluate((win) => {
+      (globalThis as { navigationAttempt?: Promise<string> }).navigationAttempt = new Promise(
+        (resolve) =>
+          win.webContents.once('will-navigate', ({ url }: { url: string }) => resolve(url))
+      );
+    });
+    await page.evaluate((url) => {
+      document.body.dataset.navigationProbe = 'kept';
+      location.href = url;
+    }, probeUrl);
+    const attemptedUrl = await win.evaluate(
+      () => (globalThis as { navigationAttempt?: Promise<string> }).navigationAttempt
+    );
+    expect(attemptedUrl).toBe(probeUrl);
+    expect(page.url()).toBe(startUrl);
+    // The same document, not a reload of the same URL.
+    expect(await page.evaluate(() => document.body.dataset.navigationProbe)).toBe('kept');
   } finally {
     await session.detach();
   }
