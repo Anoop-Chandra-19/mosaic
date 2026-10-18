@@ -3,7 +3,8 @@
  * CPU: `--load N` pins the app to one core and runs N busy loops beside it, so every app
  * process gets about 1/(N+1) of that core. Linux only, through `taskset`. Chromium's own
  * CPU throttling slows only the page's main thread, leaving the GPU and compositor at full
- * speed, so it isn't used.
+ * speed, so it isn't used. `--profile` asks a check that can for CPU profiles too (it sets
+ * `MOSAIC_CHECK_PROFILE`).
  *
  *   node scripts/run-under-load.ts scripts/speed-check/playwright.config.ts --load 6
  */
@@ -12,7 +13,10 @@ import path from 'node:path';
 import { parseArgs } from 'node:util';
 
 const { values, positionals } = parseArgs({
-  options: { load: { type: 'string', default: '0' } },
+  options: {
+    load: { type: 'string', default: '0' },
+    profile: { type: 'boolean', default: false },
+  },
   allowPositionals: true,
 });
 const [config] = positionals;
@@ -44,7 +48,11 @@ console.log(
   load > 0 ? `One core shared with ${load} busy loop${load === 1 ? '' : 's'}.` : 'No added load.'
 );
 const [command, ...args] = pinned(playwright);
-const check = spawn(command, args, { cwd: root, stdio: 'inherit' });
+const check = spawn(command, args, {
+  cwd: root,
+  stdio: 'inherit',
+  env: values.profile ? { ...process.env, MOSAIC_CHECK_PROFILE: '1' } : process.env,
+});
 check.on('exit', (code) => {
   stopLoops();
   process.exitCode = code ?? 1;

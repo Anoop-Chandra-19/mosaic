@@ -11,6 +11,7 @@ import type { Page } from '@playwright/test';
 import { saveInto } from '../../e2e/harness/dialogs';
 import { test, withApp } from '../../e2e/harness/launch';
 import { reportAgainstLastRun, type ResultColumn } from '../compared-results';
+import { createFlowProfiler, type FlowProfiler } from './cpuProfile';
 import { growHistory, WORST_CASE_BULLETS, worstCaseResumeText } from '../large-resume';
 
 const mosaic = withApp();
@@ -32,6 +33,9 @@ const SWITCH_ROUND_TRIPS = 5;
 /** A frame this long missed at least one at 60 Hz. */
 const LATE_FRAME_MS = 25;
 const RESULTS = path.resolve(import.meta.dirname, '../../out/speed-check/last.json');
+/** Set by `--profile` (`run-under-load.ts`): a CPU profile of every flow, kept here. */
+const IS_PROFILING = process.env.MOSAIC_CHECK_PROFILE === '1';
+const PROFILES = path.resolve(import.meta.dirname, '../../out/speed-check/profiles');
 
 interface FlowLog {
   longTasks: number[];
@@ -141,28 +145,38 @@ function summarize(name: string, ms: number, log: FlowLog): FlowResult {
   };
 }
 
+/** The page being timed, and its profiler when the check runs with `--profile`. */
+interface Watch {
+  page: Page;
+  profiler: FlowProfiler | null;
+}
+
 /**
  * Runs `flow` from a settled page while watching it, until it has landed: its transition
  * finished and the next frame drawn.
  */
-async function timeFlow(page: Page, name: string, flow: () => Promise<void>) {
+async function timeFlow({ page, profiler }: Watch, name: string, flow: () => Promise<void>) {
   await settle(page);
   await startRecording(page);
+  await profiler?.start();
   const startedAt = Date.now();
   await flow();
   await settle(page);
   await nextFrames(page);
   const ms = Date.now() - startedAt;
+  await profiler?.stop(name);
   return summarize(name, ms, await stopRecording(page));
 }
 
 /** A reload loses what watched the page, so this one reads what the browser kept instead. */
-async function timeReload(page: Page, name: string) {
+async function timeReload({ page, profiler }: Watch, name: string) {
+  await profiler?.start();
   const startedAt = Date.now();
   await page.reload();
   await page.locator('[data-preview-page-content]').first().waitFor();
   await nextFrames(page);
   const ms = Date.now() - startedAt;
+  await profiler?.stop(name);
   await startRecording(page, true);
   return summarize(name, ms, await stopRecording(page));
 }
@@ -177,8 +191,6 @@ const COLUMNS: ResultColumn[] = [
   { key: 'longestFrameMs', label: 'longest frame' },
 ];
 
-// Timed flows wait with `waitFor`, which watches the page as it changes. `expect` retries
-// after 100, 250 and 500 ms, and a flow's time would be that schedule instead of the app's.
 const pause = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 /** The open template's name, as the top bar shows it. */
@@ -190,9 +202,15 @@ const readOpenTemplateName = (page: Page) =>
     return templates.find((template) => template.id === draft!.templateId)!.name;
   });
 
+// Timed flows wait with `waitFor`, which watches the page as it changes. `expect` retries
+// after 100, 250 and 500 ms, and a flow's time would be that schedule instead of the app's.
 test('the worst the app should see, and input faster than it keeps up', async () => {
   const { app, page, userDataDir } = mosaic();
   await saveInto(app, userDataDir);
+  const watch: Watch = {
+    page,
+    profiler: IS_PROFILING ? await createFlowProfiler(page, PROFILES) : null,
+  };
   const rows: FlowResult[] = [];
   const sidebar = page.getByRole('complementary');
   const history = page.getByRole('region', { name: /^History of / });
@@ -204,7 +222,7 @@ test('the worst the app should see, and input faster than it keeps up', async ()
   const importing = page.getByRole('dialog', { name: 'Import' });
   await importing.getByLabel('Or paste the text').fill(worstCaseResumeText());
   rows.push(
-    await timeFlow(page, `read ${WORST_CASE_BULLETS} pasted bullets`, async () => {
+    await timeFlow(watch, `read ${WORST_CASE_BULLETS} pasted bullets`, async () => {
       await importing.getByRole('button', { name: 'Read pasted text' }).click();
       await importing
         .getByRole('button', { name: /^Import/ })
@@ -213,7 +231,7 @@ test('the worst the app should see, and input faster than it keeps up', async ()
     })
   );
   rows.push(
-    await timeFlow(page, `import them, ${PREVIEW_PAGES} pages drawn`, async () => {
+    await timeFlow(watch, `import them, ${PREVIEW_PAGES} pages drawn`, async () => {
       await importing
         .getByRole('button', { name: /^Import/ })
         .last()
@@ -227,16 +245,16 @@ test('the worst the app should see, and input faster than it keeps up', async ()
     otherTemplates: OTHER_TEMPLATES,
     versionsPerOtherTemplate: VERSIONS_PER_OTHER_TEMPLATE,
   });
-  rows.push(await timeReload(page, `reload: ${OTHER_TEMPLATES + 1} templates`));
+  rows.push(await timeReload(watch, `reload: ${OTHER_TEMPLATES + 1} templates`));
 
   rows.push(
-    await timeFlow(page, `open a history of ${VERSIONS}`, async () => {
+    await timeFlow(watch, `open a history of ${VERSIONS}`, async () => {
       await page.keyboard.press('Control+Shift+H');
       await history.getByText(`Round ${VERSIONS}`).first().waitFor();
     })
   );
   rows.push(
-    await timeFlow(page, `step through ${STEPS} versions`, async () => {
+    await timeFlow(watch, `step through ${STEPS} versions`, async () => {
       for (let i = 0; i < STEPS; i++) {
         await page.keyboard.press('ArrowDown');
         await nextFrames(page);
@@ -244,7 +262,7 @@ test('the worst the app should see, and input faster than it keeps up', async ()
     })
   );
   rows.push(
-    await timeFlow(page, `hold ↓ past ${HELD_STEPS} versions`, async () => {
+    await timeFlow(watch, `hold ↓ past ${HELD_STEPS} versions`, async () => {
       for (let i = 0; i < HELD_STEPS; i++) {
         await page.keyboard.press('ArrowDown');
         await pause(KEY_REPEAT_MS);
@@ -252,7 +270,7 @@ test('the worst the app should see, and input faster than it keeps up', async ()
     })
   );
   rows.push(
-    await timeFlow(page, 'close the full history', async () => {
+    await timeFlow(watch, 'close the full history', async () => {
       await page.keyboard.press('Control+Shift+H');
       await history.waitFor({ state: 'detached' });
     })
@@ -263,7 +281,7 @@ test('the worst the app should see, and input faster than it keeps up', async ()
   const bulletText = sidebar.getByRole('textbox', { name: 'Bullet text' });
   await bulletText.press('End');
   rows.push(
-    await timeFlow(page, `type ${TYPED.length} keys fast`, async () => {
+    await timeFlow(watch, `type ${TYPED.length} keys fast`, async () => {
       await bulletText.pressSequentially(TYPED, { delay: TYPING_DELAY_MS });
       await sheets.filter({ hasText: TYPED.trim() }).waitFor();
     })
@@ -271,19 +289,19 @@ test('the worst the app should see, and input faster than it keeps up', async ()
   await page.keyboard.press('Escape');
 
   rows.push(
-    await timeFlow(page, 'hide the sidebar', async () => {
+    await timeFlow(watch, 'hide the sidebar', async () => {
       await page.keyboard.press('Control+b');
       await sidebar.waitFor({ state: 'detached' });
     })
   );
   rows.push(
-    await timeFlow(page, 'show the sidebar', async () => {
+    await timeFlow(watch, 'show the sidebar', async () => {
       await page.keyboard.press('Control+b');
       await sidebar.waitFor();
     })
   );
   rows.push(
-    await timeFlow(page, `flip the sidebar ${SIDEBAR_FLIPS} times`, async () => {
+    await timeFlow(watch, `flip the sidebar ${SIDEBAR_FLIPS} times`, async () => {
       for (let i = 0; i < SIDEBAR_FLIPS; i++) {
         await page.keyboard.press('Control+b');
         await pause(KEY_REPEAT_MS);
@@ -302,16 +320,16 @@ test('the worst the app should see, and input faster than it keeps up', async ()
     await topBar.getByText(name, { exact: true }).waitFor();
   };
   rows.push(
-    await timeFlow(page, `open a list of ${OTHER_TEMPLATES + 1} templates`, async () => {
+    await timeFlow(watch, `open a list of ${OTHER_TEMPLATES + 1} templates`, async () => {
       await page.getByRole('tab', { name: 'Templates' }).click();
       await sidebar
         .getByRole('button', { name: `Options for Tailored for company ${OTHER_TEMPLATES}` })
         .waitFor({ state: 'attached' });
     })
   );
-  rows.push(await timeFlow(page, 'find one and open it', () => openFromList(otherName)));
+  rows.push(await timeFlow(watch, 'find one and open it', () => openFromList(otherName)));
   rows.push(
-    await timeFlow(page, `switch back and forth ×${SWITCH_ROUND_TRIPS}`, async () => {
+    await timeFlow(watch, `switch back and forth ×${SWITCH_ROUND_TRIPS}`, async () => {
       for (let i = 0; i < SWITCH_ROUND_TRIPS; i++) {
         await openFromList(largeName);
         await openFromList(otherName);
@@ -323,7 +341,7 @@ test('the worst the app should see, and input faster than it keeps up', async ()
   await page.getByRole('tab', { name: 'Content' }).click();
 
   rows.push(
-    await timeFlow(page, 'open and close Settings', async () => {
+    await timeFlow(watch, 'open and close Settings', async () => {
       await page.getByRole('button', { name: 'Open settings' }).click();
       await settings.waitFor();
       await page.keyboard.press('Escape');
@@ -335,7 +353,7 @@ test('the worst the app should see, and input faster than it keeps up', async ()
   const exporting = page.getByRole('dialog', { name: 'Export' });
   await exporting.getByRole('radio', { name: /^PDF/ }).click();
   rows.push(
-    await timeFlow(page, `save the PDF of ${WORST_CASE_BULLETS} bullets`, async () => {
+    await timeFlow(watch, `save the PDF of ${WORST_CASE_BULLETS} bullets`, async () => {
       await exporting.getByRole('button', { name: 'Save PDF' }).click();
       await page.getByText(/^Saved .*\.pdf$/).waitFor();
     })
