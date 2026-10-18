@@ -5,10 +5,14 @@ import { AppButton } from '@/components/AppButton';
 import { cn } from '@/lib/utils';
 
 /*
- * Mosaic's dialog, the design's `.modal` over its dimmed, blurred `.scrim`. A plain dialog is
+ * Mosaic's dialog, the design's `.modal` over its dimmed `.scrim`. A plain dialog is
  * padded, with a close button in its corner; the larger ones (Settings, Export, Import) pass
  * `showCloseButton={false}` and no padding, and draw `DialogFrame`'s bars instead. Built on
  * Radix directly: shadcn's dialog fixes its own overlay and draws a plain close button.
+ *
+ * It appears at once, since it was opened to be used, and only its exit fades. The scrim
+ * isn't blurred: a backdrop blur stalls the first dialog while the GPU compiles its shader,
+ * and costs every frame of the fade after.
  */
 
 export const AppDialog = Dialog.Root;
@@ -22,10 +26,10 @@ export function AppDialogContent({
 }: ComponentProps<typeof Dialog.Content> & { showCloseButton?: boolean }) {
   return (
     <Dialog.Portal>
-      <Dialog.Overlay className="fixed inset-0 z-50 bg-scrim backdrop-blur-[2px] data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:animate-in data-[state=open]:fade-in-0" />
+      <Dialog.Overlay className="fixed inset-0 z-50 bg-scrim data-[state=closed]:animate-out data-[state=closed]:fade-out-0" />
       <Dialog.Content
         className={cn(
-          'fixed top-1/2 left-1/2 z-50 grid w-full max-w-[calc(100%-2rem)] -translate-1/2 gap-4 rounded-[0.875rem] border border-line-strong bg-background p-6 text-body text-ink-soft shadow-overlay duration-200 outline-none data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 sm:max-w-lg',
+          'fixed top-1/2 left-1/2 z-50 grid w-full max-w-[calc(100%-2rem)] -translate-1/2 gap-4 rounded-[0.875rem] border border-line-strong bg-background p-6 text-body text-ink-soft shadow-overlay duration-200 outline-none data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 sm:max-w-lg',
           className
         )}
         onEscapeKeyDown={(event) => {
