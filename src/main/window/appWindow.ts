@@ -1,4 +1,6 @@
 import { app, BrowserWindow, nativeTheme, screen, shell } from 'electron';
+import { getAppDatabase } from '../db/appDatabase';
+import { getSetting } from '../db/settings';
 import { loadAppPage, PRELOAD_FILE } from './appPage';
 import { flushBeforeClose } from './flushBeforeClose';
 
@@ -25,7 +27,13 @@ function readWindowBackground(storedUiSetting: string | null): string {
   return isDark ? '#09090b' : '#ffffff';
 }
 
-export function createWindow(storedUiSetting: string | null): BrowserWindow {
+/** The app window, drawn in the theme the renderer stored. */
+export function openAppWindow(): BrowserWindow {
+  const db = getAppDatabase();
+  return createWindow(db ? getSetting(db, 'ui') : null);
+}
+
+function createWindow(storedUiSetting: string | null): BrowserWindow {
   // Size from the display rather than fixed pixels; the floor keeps the editor usable.
   const { width, height } = screen.getPrimaryDisplay().workAreaSize;
 

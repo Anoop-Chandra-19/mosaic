@@ -2,6 +2,9 @@ import fs from 'node:fs';
 import { AsyncEntry } from '@napi-rs/keyring';
 import type { Keyring } from './apiKeys';
 
+/** The keychain service each build keeps its keys under, apart from the other's. */
+export const KEYCHAIN_SERVICE = { installed: 'Mosaic', dev: 'Mosaic (dev)' } as const;
+
 /**
  * The OS keychain: Keychain on macOS, Credential Manager on Windows, the Secret Service
  * (GNOME Keyring, KWallet) on Linux. Async, so a keychain prompt never blocks main.
