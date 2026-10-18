@@ -23,20 +23,20 @@ only generates classes it finds spelled out). `useShownSurface` and `pageHandoff
 surfaces that replace the workspace and take the page; a new surface joins by being added.
 Use a motion that exists before inventing one:
 
-| Motion                              | For                                                 | Used by                     |
-| ----------------------------------- | --------------------------------------------------- | --------------------------- |
-| `surface-in`, `surface-out`         | A view fading in over the workspace, and out        | The history view            |
-| `recede`                            | Stepping back behind a view, unchanged, returning   | The workspace               |
-| `handoff`                           | The same thing moving between two boxes showing it  | The page: preview ↔ history |
-| `step` + `step-back`/`step-forward` | Sliding the way a sequence runs, back from the left | Versions; page ↔ cards      |
-| `slide-in`, `slide-away`            | Leaving to the edge, the space reclaimed, and back  | The sidebar, history index  |
-| `reclaim`                           | A box easing into space given up beside it          | The history list            |
-| `crossfade` (a type, on the root)   | A store change's before and after, as one image     | Tour ending; Apply and undo |
-| `fade`                              | A layer over the app arriving or leaving whole      | The history tour's veil     |
-| `lockstep`                          | One box whose content changes, both images in step  | Top bar ↔ review bar        |
-| `handover-upper`, `handover-lower`  | Two stacked in one box: one leaves up, one rises    | Assistant pane ↔ inspector  |
-| `cut` (React enter/exit)            | What's left of a surface whose parts all move       | The suggestion review       |
-| `rise`                              | A bar coming in once the view under it has landed   | The review's apply bar      |
+| Motion                               | For                                                 | Used by                                                 |
+| ------------------------------------ | --------------------------------------------------- | ------------------------------------------------------- |
+| `surface-in`, `surface-out`          | A view fading in over the workspace, and out        | The history view                                        |
+| `recede`                             | Stepping back behind a view, unchanged, returning   | The workspace                                           |
+| `handoff`                            | The same thing moving between two boxes showing it  | The page: preview ↔ history                             |
+| `step` + `step-back`/`step-forward`  | Sliding the way a sequence runs, back from the left | Versions; page ↔ cards                                  |
+| `slide-in`, `slide-away` (+`at-end`) | Leaving to the edge, the space reclaimed, and back  | Sidebar, history index; the assistant pane at the right |
+| `reclaim`                            | A box easing into space given up beside it          | The history list                                        |
+| `crossfade` (a type, on the root)    | A store change's before and after, as one image     | Tour ending; Apply and undo                             |
+| `fade`                               | A layer over the app arriving or leaving whole      | The history tour's veil                                 |
+| `lockstep`                           | One box whose content changes, both images in step  | Top bar ↔ review bar                                    |
+| `handover-upper`, `handover-lower`   | Two stacked in one box: one leaves up, one rises    | Assistant pane ↔ inspector                              |
+| `cut` (React enter/exit)             | What's left of a surface whose parts all move       | The suggestion review                                   |
+| `rise`                               | A bar coming in once the view under it has landed   | The review's apply bar                                  |
 
 ## Correctness
 

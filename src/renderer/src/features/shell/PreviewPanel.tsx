@@ -87,7 +87,7 @@ export function PreviewPanel() {
 
         <div className="flex items-center gap-1.5">
           {/* A narrow window gives the page all the room it has; zooming can wait. */}
-          <div className="@max-4xl/preview:hidden">
+          <div className="@max-md/preview:hidden">
             <PageZoomControl
               value={previewZoom}
               size="xs"

@@ -32,7 +32,11 @@ const MOTION_CLASS = {
 export const SURFACE_MOTION = { in: 'surface-in', out: 'surface-out' } as const;
 /** A surface whose parts all move on their own: what's left of it just appears and goes. */
 export const CUT_MOTION = 'cut';
-export const SLIDE_AWAY_MOTION = { in: 'slide-in', out: 'slide-away' } as const;
+/** By the edge a panel sits on, which it leaves to and comes back from. */
+export const SLIDE_AWAY_MOTION = {
+  start: { in: 'slide-in', out: 'slide-away' },
+  end: { in: 'slide-in at-end', out: 'slide-away at-end' },
+} as const;
 
 /** Directions for `addTransitionType`. */
 export const TRANSITION_TYPE = {

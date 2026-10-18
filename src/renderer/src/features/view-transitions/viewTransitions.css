@@ -131,16 +131,22 @@
   animation: slide-in 200ms var(--ease-settle) both;
 }
 
+/* The left edge by default; `at-end` slides to and from the right one. */
+::view-transition-old(.at-end),
+::view-transition-new(.at-end) {
+  --slide-edge: 1;
+}
+
 /* Solid, so what's already laid out beneath doesn't show through. */
 @keyframes slide-away {
   to {
-    transform: translateX(-100%);
+    transform: translateX(calc(var(--slide-edge, -1) * 100%));
   }
 }
 
 @keyframes slide-in {
   from {
-    transform: translateX(-100%);
+    transform: translateX(calc(var(--slide-edge, -1) * 100%));
   }
 }
 

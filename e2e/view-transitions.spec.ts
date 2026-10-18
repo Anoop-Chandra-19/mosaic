@@ -175,7 +175,7 @@ test('with reduced motion the transitions still run, only without moving', async
   expect(errors).toEqual([]);
 });
 
-test('hiding and showing the sidebar each run one transition, and history still opens', async () => {
+test('hiding and showing the sidebar and the assistant each run one transition', async () => {
   const { page, errors } = mosaic();
   await startWithVersions(page);
   const transitions = await watchTransitions(page);
@@ -195,6 +195,26 @@ test('hiding and showing the sidebar each run one transition, and history still 
   await page.keyboard.press('Control+b');
   await expect(contentTab).toBeVisible();
   expect(await transitions.take(1)).toEqual([{ types: [], ran: true }]);
+
+  // The assistant pane slides the same way, from the right.
+  await page.evaluate(() =>
+    window.mosaic.db.settings.set(
+      'agentSettings',
+      JSON.stringify({ state: { enabled: true }, version: 0 })
+    )
+  );
+  await page.reload();
+  const pane = page.getByRole('complementary', { name: 'Assistant' });
+  await expect(pane).toBeVisible();
+  const paneTransitions = await watchTransitions(page);
+
+  await page.keyboard.press('Control+\\');
+  await expect(pane).toBeHidden();
+  expect(await paneTransitions.take(1)).toEqual([{ types: [], ran: true }]);
+
+  await page.keyboard.press('Control+\\');
+  await expect(pane).toBeVisible();
+  expect(await paneTransitions.take(1)).toEqual([{ types: [], ran: true }]);
   expect(errors).toEqual([]);
 });
 
