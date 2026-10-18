@@ -67,11 +67,15 @@ test('preload is isolated from the page, which has no Node or raw IPC access', a
       ].filter((name) => name in globalThis),
       rawIpc: ['invoke', 'send', 'on'].filter((name) => name in window.mosaic),
       boot: await window.mosaic.db.boot(),
+      // A popup would inherit the preload; even one of the page's own blobs is refused.
+      isPopupOpened:
+        window.open(URL.createObjectURL(new Blob(['probe'], { type: 'text/plain' }))) !== null,
     }));
     expect(renderer.platform).toBe(process.platform);
     expect(renderer.exposedGlobals).toEqual([]);
     expect(renderer.rawIpc).toEqual([]);
     expect(renderer.boot.ok).toBe(true);
+    expect(renderer.isPopupOpened).toBe(false);
   } finally {
     await session.detach();
   }

@@ -58,11 +58,8 @@ function createWindow(storedUiSetting: string | null): BrowserWindow {
   win.once('ready-to-show', () => win.show());
   flushBeforeClose(win);
 
+  // No popups: a child window would inherit the preload. Links go to the browser instead.
   win.webContents.setWindowOpenHandler(({ url }) => {
-    // PDF preview opens a blob: URL the renderer just created; it stays in the app.
-    if (url.startsWith('blob:')) {
-      return { action: 'allow', overrideBrowserWindowOptions: { autoHideMenuBar: true } };
-    }
     openExternally(url);
     return { action: 'deny' };
   });
