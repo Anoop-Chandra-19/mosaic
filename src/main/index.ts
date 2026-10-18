@@ -1,37 +1,30 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
-import {
-  app,
-  BrowserWindow,
-  dialog,
-  ipcMain,
-  Menu,
-  nativeTheme,
-  net,
-  screen,
-  shell,
-  type IpcMainInvokeEvent,
-  type MenuItemConstructorOptions,
-} from 'electron';
-import { ERASE_ALL, MODEL_PROVIDERS_CHANNELS } from '@shared/ipc/appChannels';
-import { chooseDatabaseFolder } from './databaseFolder';
+import { app, BrowserWindow, dialog, ipcMain, net } from 'electron';
+import { ERASE_ALL } from '@shared/ipc/appChannels';
 import { openDatabase, type Database } from './db/connection';
 import { recoverInterruptedRuns } from './db/conversations/recoverInterruptedRuns';
+import { chooseDatabaseFolder } from './db/databaseFolder';
 import { API_KEYS_KEY, getSetting, setSetting } from './db/settings';
 import { eraseAll } from './eraseAll';
-import { flushBeforeClose } from './flushBeforeClose';
 import { registerBackupHandlers } from './ipc/registerBackupHandlers';
 import { registerDbHandlers } from './ipc/registerDbHandlers';
 import { registerFileHandlers } from './ipc/registerFileHandlers';
+import { registerModelProviderHandlers } from './ipc/registerModelProviderHandlers';
 import { registerSecretsHandlers } from './ipc/registerSecretsHandlers';
 import { createSecretsHandlers } from './ipc/secretsHandlers';
-import { listOllamaModels } from './model-providers/ollamaModels';
 import { testApiKey } from './model-providers/testApiKey';
 import { createApiKeys } from './secrets/apiKeys';
 import { osKeyring } from './secrets/osKeyring';
+import { isAppFrame } from './window/appPage';
+import { setAppMenu } from './window/appMenu';
+import { createWindow } from './window/appWindow';
 
-const here = path.dirname(fileURLToPath(import.meta.url));
+/*
+ * Main's entry: the boot sequence. It points dev at its own profile, keeps to one instance,
+ * opens the database, registers the IPC handlers (`ipc/`), and opens the window
+ * (`window/`). It holds the database connection, which Erase closes and reopens.
+ */
 
 // Unpackaged runs (`bun run dev`, `preview`) keep their data in the repo's gitignored
 // .dev-data/, apart from an installed Mosaic's; `bun run dev:reset` wipes it. An explicit
@@ -69,108 +62,7 @@ function openAppDatabase(): Database {
   return opened;
 }
 
-/** Links the user clicks leave the app; nothing else is allowed to navigate it. */
-const EXTERNAL_PROTOCOLS = new Set(['http:', 'https:', 'mailto:', 'tel:']);
-
-function openExternally(url: string): void {
-  if (EXTERNAL_PROTOCOLS.has(new URL(url).protocol)) void shell.openExternal(url);
-}
-
-const devServerUrl = app.isPackaged ? undefined : process.env.ELECTRON_RENDERER_URL;
-
-/** The app's own page: the built index.html, or Vite's dev server during `bun run dev`. */
-function isAppFrame(event: IpcMainInvokeEvent): boolean {
-  const frame = event.senderFrame;
-  if (!frame || frame !== event.sender.mainFrame) return false;
-  const { protocol, origin } = new URL(frame.url);
-  return (
-    protocol === 'file:' || (devServerUrl !== undefined && origin === new URL(devServerUrl).origin)
-  );
-}
-
-/**
- * The window's colour before the page paints, matching the theme it is about to draw, so
- * there is no flash of the other one. The theme is the renderer's `ui` setting.
- */
-function readWindowBackground(): string {
-  let theme: unknown;
-  try {
-    theme = JSON.parse((db && getSetting(db, 'ui')) || '{}')?.state?.theme;
-  } catch {
-    theme = undefined;
-  }
-  const isDark =
-    theme === 'light' ? false : theme === 'system' ? nativeTheme.shouldUseDarkColors : true;
-  return isDark ? '#09090b' : '#ffffff';
-}
-
-/**
- * Electron's default menu without its View menu, whose zoom keys (Ctrl/⌘+0, +, −) would
- * zoom the whole window instead of the page in the preview. Edit keeps copy and paste
- * working on macOS. Development keeps reload and DevTools on their usual keys; a release
- * has neither.
- */
-function setAppMenu(): void {
-  const template: MenuItemConstructorOptions[] = [
-    ...(process.platform === 'darwin' ? [{ role: 'appMenu' as const }] : []),
-    { role: 'fileMenu' },
-    { role: 'editMenu' },
-    { role: 'windowMenu' },
-  ];
-  if (!app.isPackaged) {
-    template.push({ label: 'Develop', submenu: [{ role: 'reload' }, { role: 'toggleDevTools' }] });
-  }
-  Menu.setApplicationMenu(Menu.buildFromTemplate(template));
-}
-
-function createWindow(): BrowserWindow {
-  // Size from the display rather than fixed pixels; the floor keeps the editor usable.
-  const { width, height } = screen.getPrimaryDisplay().workAreaSize;
-
-  const win = new BrowserWindow({
-    width: Math.max(1024, Math.round(width * 0.8)),
-    height: Math.max(700, Math.round(height * 0.85)),
-    minWidth: 720,
-    minHeight: 540,
-    show: false,
-    title: 'Mosaic',
-    backgroundColor: readWindowBackground(),
-    autoHideMenuBar: true,
-    webPreferences: {
-      preload: path.join(here, '../preload/index.cjs'),
-      contextIsolation: true,
-      sandbox: true,
-      nodeIntegration: false,
-      devTools: !app.isPackaged,
-    },
-  });
-
-  win.once('ready-to-show', () => win.show());
-  flushBeforeClose(win);
-
-  win.webContents.setWindowOpenHandler(({ url }) => {
-    // PDF preview opens a blob: URL the renderer just created; it stays in the app.
-    if (url.startsWith('blob:')) {
-      return { action: 'allow', overrideBrowserWindowOptions: { autoHideMenuBar: true } };
-    }
-    openExternally(url);
-    return { action: 'deny' };
-  });
-
-  win.webContents.on('will-navigate', (event, url) => {
-    if (url === win.webContents.getURL()) return;
-    event.preventDefault();
-    openExternally(url);
-  });
-
-  if (devServerUrl) {
-    void win.loadURL(devServerUrl);
-  } else {
-    void win.loadFile(path.join(here, '../renderer/index.html'));
-  }
-
-  return win;
-}
+const openAppWindow = () => createWindow(db ? getSetting(db, 'ui') : null);
 
 // One instance only: SQLite will have a single writer, and a second window over the
 // same data would race it. A second launch focuses the existing window instead.
@@ -197,6 +89,7 @@ if (!app.requestSingleInstanceLock()) {
     registerDbHandlers(() => db, isAppFrame);
     registerFileHandlers(isAppFrame);
     registerBackupHandlers(() => db, isAppFrame);
+    registerModelProviderHandlers(isAppFrame);
     const apiKeys = createApiKeys(osKeyring(app.isPackaged ? 'Mosaic' : 'Mosaic (dev)'), {
       read: () => (db ? getSetting(db, API_KEYS_KEY) : null),
       write: (value) => {
@@ -209,10 +102,6 @@ if (!app.requestSingleInstanceLock()) {
       ),
       isAppFrame
     );
-    ipcMain.handle(MODEL_PROVIDERS_CHANNELS.ollamaModels, (event, address: unknown) => {
-      if (!isAppFrame(event)) throw new Error(`Refused model list from ${event.senderFrame?.url}`);
-      return listOllamaModels(net.fetch, address);
-    });
     ipcMain.handle(ERASE_ALL, (event) => {
       if (!isAppFrame(event)) throw new Error(`Refused erase from ${event.senderFrame?.url}`);
       return eraseAll({
@@ -228,9 +117,9 @@ if (!app.requestSingleInstanceLock()) {
       });
     });
     setAppMenu();
-    createWindow();
+    openAppWindow();
     app.on('activate', () => {
-      if (BrowserWindow.getAllWindows().length === 0) createWindow();
+      if (BrowserWindow.getAllWindows().length === 0) openAppWindow();
     });
   });
 
