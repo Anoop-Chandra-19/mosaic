@@ -69,8 +69,8 @@ export function AgentPane() {
         />
       </AppTooltip>
 
-      {/* Same padding and control size as the preview's header, so the two rules line up. */}
-      <header className="flex shrink-0 items-center justify-between gap-2 border-b border-line px-4 py-2.5">
+      {/* The preview bar's height, so the two rules line up. */}
+      <header className="flex h-10 shrink-0 items-center justify-between gap-2 border-b border-line px-4">
         <div className="flex items-center gap-2">
           <Spark />
           <Text as="h2" variant="title">

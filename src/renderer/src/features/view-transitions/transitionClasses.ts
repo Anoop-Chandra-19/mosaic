@@ -9,6 +9,8 @@ const NAME_CLASS = {
   bar: '[view-transition-name:bar]',
   assist: '[view-transition-name:assist]',
   sidebar: '[view-transition-name:sidebar]',
+  'preview-bar-start': '[view-transition-name:preview-bar-start]',
+  'preview-bar-end': '[view-transition-name:preview-bar-end]',
   applybar: '[view-transition-name:applybar]',
 } as const;
 
@@ -21,6 +23,10 @@ const MOTION_CLASS = {
   fade: '[view-transition-class:fade]',
   'slide-away slide-in': '[view-transition-class:slide-away_slide-in]',
   lockstep: '[view-transition-class:lockstep]',
+  // Moves to where the new layout puts it, unchanged on the way, held by its start edge or
+  // its end edge.
+  glide: '[view-transition-class:glide]',
+  'glide at-end': '[view-transition-class:glide_at-end]',
   // A stack of two in one box: the upper leaves up as the lower rises in, and back down.
   'handover-upper': '[view-transition-class:handover_upper]',
   'handover-lower': '[view-transition-class:handover_lower]',
@@ -32,7 +38,11 @@ const MOTION_CLASS = {
 export const SURFACE_MOTION = { in: 'surface-in', out: 'surface-out' } as const;
 /** A surface whose parts all move on their own: what's left of it just appears and goes. */
 export const CUT_MOTION = 'cut';
-export const SLIDE_AWAY_MOTION = { in: 'slide-in', out: 'slide-away' } as const;
+/** By the edge a panel sits on, which it leaves to and comes back from. */
+export const SLIDE_AWAY_MOTION = {
+  start: { in: 'slide-in', out: 'slide-away' },
+  end: { in: 'slide-in at-end', out: 'slide-away at-end' },
+} as const;
 
 /** Directions for `addTransitionType`. */
 export const TRANSITION_TYPE = {

@@ -123,32 +123,67 @@
   z-index: 2;
 }
 
+/* Leaving on the same clock as `glide` and `reclaim`, which fill the space it gives up:
+   the edges stay together, so the space closes as the panel goes, not ahead of it. */
 ::view-transition-old(.slide-away) {
-  animation: slide-away 180ms ease-in both;
+  animation: slide-away 200ms var(--ease-settle) both;
 }
 
 ::view-transition-new(.slide-in) {
   animation: slide-in 200ms var(--ease-settle) both;
 }
 
+/* The left edge by default; `at-end` slides to and from the right one. */
+::view-transition-old(.at-end),
+::view-transition-new(.at-end) {
+  --slide-edge: 1;
+}
+
 /* Solid, so what's already laid out beneath doesn't show through. */
 @keyframes slide-away {
   to {
-    transform: translateX(-100%);
+    transform: translateX(calc(var(--slide-edge, -1) * 100%));
   }
 }
 
 @keyframes slide-in {
   from {
-    transform: translateX(-100%);
+    transform: translateX(calc(var(--slide-edge, -1) * 100%));
   }
+}
+
+/* ---- glide: moving to where the new layout puts it, unchanged on the way ----
+   Only the new image is drawn, so the two never add their light; in the panels' timing. */
+::view-transition-group(.glide) {
+  animation-duration: 200ms;
+  animation-timing-function: var(--ease-settle);
+}
+
+::view-transition-old(.glide) {
+  display: none;
+}
+
+/* At its natural size, never stretched to the group's: from its start edge, or with
+   `at-end` from its end edge, so what sits against that edge stays against it. */
+::view-transition-new(.glide) {
+  inline-size: auto;
+  block-size: auto;
+  animation: none;
+}
+
+::view-transition-new(.glide.at-end) {
+  inset-inline-start: auto;
+  inset-inline-end: 0;
 }
 
 /* ---- reclaim: a box easing into the space beside it given up, and giving it back ---- */
 
-/* Growing back past its narrower content, the box shows its own ground, not a gap. */
+/* Growing back past its narrower content, the box shows its own ground, not a gap. On the
+   slides' clock, so it fills the space as the panel leaves it. */
 ::view-transition-group(.reclaim) {
   background: var(--background);
+  animation-duration: 200ms;
+  animation-timing-function: var(--ease-settle);
 }
 
 /* The content keeps its natural size from the left edge, so only the box moves. */

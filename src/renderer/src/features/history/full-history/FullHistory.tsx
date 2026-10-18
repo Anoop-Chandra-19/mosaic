@@ -430,7 +430,11 @@ function FullHistoryFrame({
 
       <div className="flex min-h-0 flex-1">
         {isIndexOpen && versions && (
-          <ViewTransition enter={SLIDE_AWAY_MOTION.in} exit={SLIDE_AWAY_MOTION.out} update="none">
+          <ViewTransition
+            enter={SLIDE_AWAY_MOTION.start.in}
+            exit={SLIDE_AWAY_MOTION.start.out}
+            update="none"
+          >
             <HistoryIndex
               versions={versions}
               selectedId={selected?.id ?? null}
