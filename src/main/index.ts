@@ -15,6 +15,7 @@ import {
 } from 'electron';
 import { ERASE_ALL, MODEL_PROVIDERS_CHANNELS } from '@shared/ipc/appChannels';
 import { openDatabase, type Database } from './db/connection';
+import { recoverInterruptedRuns } from './db/conversations/recoverInterruptedRuns';
 import { API_KEYS_KEY, getSetting, setSetting } from './db/settings';
 import { eraseAll } from './eraseAll';
 import { flushBeforeClose } from './flushBeforeClose';
@@ -43,11 +44,13 @@ let db: Database | undefined;
 const databaseFile = () => path.join(app.getPath('userData'), 'mosaic.db');
 
 function openAppDatabase(): Database {
-  return openDatabase(databaseFile(), {
+  const opened = openDatabase(databaseFile(), {
     // Dev stops on an edited migration (with a `dev:reset` hint); an installed build
     // warns and keeps going rather than lock anyone out of their resumes.
     tolerateEditedMigrations: app.isPackaged,
   });
+  recoverInterruptedRuns(opened);
+  return opened;
 }
 
 /** Links the user clicks leave the app; nothing else is allowed to navigate it. */
