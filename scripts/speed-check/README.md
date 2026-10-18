@@ -47,6 +47,17 @@ bun run check:speed --load 6
 Each builds first. Each run is kept in `out/speed-check/last.json`, and the next prints its
 change against it in brackets; compare runs made the same way, loaded or not.
 
+## Profiling
+
+`bun run check:speed --profile` also records a CPU profile of the page's main thread for
+each flow, kept in `out/speed-check/profiles/` (open one in Chrome's DevTools, Performance
+panel), and prints the functions that spent the most time themselves. Profiling slows the
+page a little, so compare its times only with other profiled runs.
+
+`(program)` is the browser's own work, such as style, layout and paint, which no JavaScript
+function owns. When it leads, a Chromium trace (`contentTracing`) shows which of those it
+was and what forced it. Names like `queryRole` are Playwright's locators polling the page.
+
 ## Reading it
 
 Times move by about 5% between runs and long tasks by a few ms, so compare against a run

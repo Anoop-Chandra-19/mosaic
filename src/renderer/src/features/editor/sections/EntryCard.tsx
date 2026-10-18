@@ -109,10 +109,13 @@ export function EntryCard({
   };
 
   return (
+    // Off screen, the browser skips the entry's style and layout: a long resume holds
+    // thousands of elements here, and a change that reaches the whole page (a dialog's
+    // pointer block) would otherwise visit every one. It keeps the height it last had.
     <div
       onKeyDown={handleKeyDown}
       className={cn(
-        'group/entry relative ml-3.5 rounded-sm border-l border-line pt-1.75 pr-1.5 pb-2.25 pl-2.25 hover:bg-line dense:px-2 dense:py-1.75',
+        'group/entry relative ml-3.5 rounded-sm border-l border-line pt-1.75 pr-1.5 pb-2.25 pl-2.25 [contain-intrinsic-size:auto_20rem] [content-visibility:auto] hover:bg-line dense:px-2 dense:py-1.75',
         isDimmed && '**:text-ink-faint'
       )}
     >
