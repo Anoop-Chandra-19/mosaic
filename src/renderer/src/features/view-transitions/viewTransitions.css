@@ -150,6 +150,30 @@
   }
 }
 
+/* ---- glide: moving to where the new layout puts it, unchanged on the way ----
+   Only the new image is drawn, so the two never add their light; in the panels' timing. */
+::view-transition-group(.glide) {
+  animation-duration: 200ms;
+  animation-timing-function: var(--ease-settle);
+}
+
+::view-transition-old(.glide) {
+  display: none;
+}
+
+/* At its natural size, never stretched to the group's: from its start edge, or with
+   `at-end` from its end edge, so what sits against that edge stays against it. */
+::view-transition-new(.glide) {
+  inline-size: auto;
+  block-size: auto;
+  animation: none;
+}
+
+::view-transition-new(.glide.at-end) {
+  inset-inline-start: auto;
+  inset-inline-end: 0;
+}
+
 /* ---- reclaim: a box easing into the space beside it given up, and giving it back ---- */
 
 /* Growing back past its narrower content, the box shows its own ground, not a gap. */

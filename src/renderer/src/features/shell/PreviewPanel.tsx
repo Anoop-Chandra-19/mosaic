@@ -17,9 +17,17 @@ import {
 import { VersionPreviewBanner } from '@/features/history/VersionPreviewBanner';
 import { useIsPageHandedOff } from '@/features/view-transitions/pageHandoff';
 import { tourTargetProps } from '@/features/onboarding/tourTargets';
+import { useIsSurfaceAround } from '@/features/view-transitions/surfaceAround';
 import { transitionClasses } from '@/features/view-transitions/transitionClasses';
 import { usePreviewStore } from '@/stores/previewStore';
 import { useUiStore } from '@/stores/uiStore';
+
+// A part of the bar that gives way as the preview narrows: it fades while its width (and
+// the margin after it) closes, so its neighbours slide over, then can't be focused.
+const COLLAPSIBLE =
+  'max-w-40 overflow-hidden transition-[max-width,margin,opacity,visibility] duration-180 ease-settle motion-reduce:transition-none';
+const COLLAPSE_BELOW_MD = `${COLLAPSIBLE} @max-md/preview:invisible @max-md/preview:mr-0 @max-md/preview:max-w-0 @max-md/preview:opacity-0`;
+const COLLAPSE_BELOW_SM = `${COLLAPSIBLE} @max-sm/preview:invisible @max-sm/preview:mr-0 @max-sm/preview:max-w-0 @max-sm/preview:opacity-0`;
 
 /** The version's page, with what differs from the draft marked when marks are on. */
 function readVersionPage({ preview, draft, diff }: VersionPreviewComparison, isMarked: boolean) {
@@ -44,6 +52,9 @@ export function PreviewPanel() {
   const canvas = usePreviewCanvas(scrollRef, useStoredPreviewZoom());
   const shown = useFitPreviewForHandoff(scrollRef);
   const isPageHandedOff = useIsPageHandedOff();
+  // The bar's two ends glide as the sidebar or the pane come and go; while a surface does,
+  // the bar moves with the workspace instead.
+  const isBarGliding = !useIsSurfaceAround(() => true);
 
   useEffect(() => {
     // Expose paper size to global CSS for page-specific print/preview styling.
@@ -67,8 +78,18 @@ export function PreviewPanel() {
         />
       )}
       <div className="flex h-10 shrink-0 items-center justify-between gap-2.5 border-b border-line bg-background px-3">
-        <div className="flex min-w-0 items-center gap-2">
-          <Text variant="eyebrow" className="truncate">
+        <div
+          className={cn(
+            'flex min-w-0 items-center',
+            transitionClasses({
+              name: 'preview-bar-start',
+              motion: 'glide',
+              isActive: isBarGliding,
+            })
+          )}
+        >
+          {/* "Reading v7" stays at any width: it's what says this isn't the draft. */}
+          <Text variant="eyebrow" className={cn('mr-2 truncate', !preview && COLLAPSE_BELOW_MD)}>
             {preview ? `Reading ${preview.label}` : 'Live Preview'}
           </Text>
           <span
@@ -85,9 +106,18 @@ export function PreviewPanel() {
           </span>
         </div>
 
-        <div className="flex items-center gap-1.5">
-          {/* A narrow window gives the page all the room it has; zooming can wait. */}
-          <div className="@max-md/preview:hidden">
+        <div
+          className={cn(
+            'flex items-center',
+            transitionClasses({
+              name: 'preview-bar-end',
+              motion: 'glide at-end',
+              isActive: isBarGliding,
+            })
+          )}
+        >
+          {/* A narrow preview gives the page all the room it has; zooming can wait. */}
+          <div className={cn('mr-1.5', COLLAPSE_BELOW_SM)}>
             <PageZoomControl
               value={previewZoom}
               size="xs"

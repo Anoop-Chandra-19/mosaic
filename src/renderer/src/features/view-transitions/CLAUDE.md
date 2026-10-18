@@ -31,6 +31,7 @@ Use a motion that exists before inventing one:
 | `step` + `step-back`/`step-forward`  | Sliding the way a sequence runs, back from the left | Versions; page ↔ cards                                  |
 | `slide-in`, `slide-away` (+`at-end`) | Leaving to the edge, the space reclaimed, and back  | Sidebar, history index; the assistant pane at the right |
 | `reclaim`                            | A box easing into space given up beside it          | The history list                                        |
+| `glide` (+`at-end`)                  | Moving to its new place, held by one edge, unscaled | The preview bar's two ends, as the side panels move     |
 | `crossfade` (a type, on the root)    | A store change's before and after, as one image     | Tour ending; Apply and undo                             |
 | `fade`                               | A layer over the app arriving or leaving whole      | The history tour's veil                                 |
 | `lockstep`                           | One box whose content changes, both images in step  | Top bar ↔ review bar                                    |
@@ -73,7 +74,10 @@ Use a motion that exists before inventing one:
   copy is fixed far off-screen, and stretches the box's image until it draws blank.
 - `useIsSideHandover` names the sidebar and the assistant pane only while a surface that
   takes the sides is coming or going, so the history (which takes the workspace whole)
-  never moves them.
+  never moves them. Both are `useIsSurfaceAround`, which the preview bar uses the other way
+  round: its ends glide only while no surface is around, so they never leave the workspace.
+- A bar with parts on both sides never moves as one image: its parts move in different
+  directions at once and it looks like jelly. Name each end, and let each `glide`.
 - Reduced motion turns off every animation; the transition still happens.
 
 ## Validation
