@@ -8,7 +8,7 @@
  */
 import path from 'node:path';
 import type { Page } from '@playwright/test';
-import { saveInto } from '../../e2e/harness/dialogs';
+import { openWith, saveInto } from '../../e2e/harness/dialogs';
 import { test, withApp } from '../../e2e/harness/launch';
 import { reportAgainstLastRun, type ResultColumn } from '../compared-results';
 import { createFlowProfiler, type FlowProfiler } from './cpuProfile';
@@ -356,6 +356,20 @@ test('the worst the app should see, and input faster than it keeps up', async ()
     await timeFlow(watch, `save the PDF of ${WORST_CASE_BULLETS} bullets`, async () => {
       await exporting.getByRole('button', { name: 'Save PDF' }).click();
       await page.getByText(/^Saved .*\.pdf$/).waitFor();
+    })
+  );
+
+  // The PDF just saved, read back: every bullet, laid out as Mosaic prints it.
+  const savedName = (await page.getByText(/^Saved .*\.pdf$/).textContent())!.slice('Saved '.length);
+  await openWith(app, path.join(userDataDir, savedName));
+  await page.getByRole('button', { name: 'Import resume' }).click();
+  rows.push(
+    await timeFlow(watch, `read the saved PDF of ${WORST_CASE_BULLETS} bullets`, async () => {
+      await importing.getByRole('button', { name: 'Choose a file…' }).click();
+      await importing
+        .getByRole('button', { name: /^Import/ })
+        .last()
+        .waitFor();
     })
   );
 
