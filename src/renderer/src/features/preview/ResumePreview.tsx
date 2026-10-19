@@ -228,7 +228,10 @@ export function ResumePreview({
     if (isMeasured) reportLaidOut();
   }, [isMeasured, paginated]);
 
-  const drawnPages = paginated.slice(0, MAX_PREVIEW_PAGES);
+  // Nothing is drawn before the first measure, which comes before paint: pages laid out from
+  // the fallback would only be thrown away, and on a long resume building them is most of
+  // what holds the window up as it opens.
+  const drawnPages = measured ? paginated.slice(0, MAX_PREVIEW_PAGES) : [];
 
   // Chrome's PDF viewer model: the page's layout never changes, it is just
   // drawn larger or smaller. transform (not CSS zoom) is what guarantees that,

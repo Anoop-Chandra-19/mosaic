@@ -1,4 +1,4 @@
-import { StrictMode } from 'react';
+import { StrictMode, startTransition } from 'react';
 import { createRoot } from 'react-dom/client';
 import './index.css';
 import App from './App.tsx';
@@ -21,10 +21,13 @@ getDb()
       await useTemplateStore.getState().snapshotOpenDraft('closed');
       return flushDraft();
     });
-    root.render(
-      <StrictMode>
-        <App />
-      </StrictMode>
+    // Built a slice at a time, so a long resume doesn't hold the window up while it mounts.
+    startTransition(() =>
+      root.render(
+        <StrictMode>
+          <App />
+        </StrictMode>
+      )
     );
   })
   .catch((error: unknown) => {
