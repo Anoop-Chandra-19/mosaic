@@ -13,6 +13,11 @@ export const SECTION_PRESETS: Record<BuiltInSectionKind, { label: string; layout
     projects: { label: 'Projects', layout: 'entries' },
     skills: { label: 'Skills', layout: 'lines' },
     certifications: { label: 'Certifications', layout: 'entries' },
+    volunteering: { label: 'Volunteering', layout: 'entries' },
+    awards: { label: 'Awards', layout: 'entries' },
+    publications: { label: 'Publications', layout: 'entries' },
+    languages: { label: 'Languages', layout: 'lines' },
+    interests: { label: 'Interests', layout: 'lines' },
   };
 
 /** Every built-in kind, in the order menus list them. */

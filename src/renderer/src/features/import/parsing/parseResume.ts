@@ -9,6 +9,7 @@ import {
   createHeaderLine,
   resolveHeaderItemHref,
 } from '@shared/resume/resumeHeader';
+import { SECTION_PRESETS } from '@shared/resume/sectionPresets';
 import type {
   Bullet,
   ContactInfo,
@@ -540,8 +541,8 @@ export function parseResumeLines(
       });
     }
     const known = matchSectionHeader(heading.text);
-    const kind: SectionKind = known?.kind ?? 'custom';
-    const layout = known && !marked ? known.layout : layoutOf(body, marked);
+    const kind: SectionKind = known ?? 'custom';
+    const layout = known && !marked ? SECTION_PRESETS[known].layout : layoutOf(body, marked);
     const items =
       layout === 'lines'
         ? parseLineSection(body, !marked && kind === 'summary', track)

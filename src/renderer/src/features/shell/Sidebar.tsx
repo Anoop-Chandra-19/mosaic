@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import {
   ChevronsDownUp,
   ChevronsUpDown,
@@ -6,6 +6,7 @@ import {
   FileText,
   History,
   LayoutTemplate,
+  Plus,
 } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
 import { AppTabs, AppTabsContent, AppTabsList, AppTabsTrigger } from '@/components/AppTabs';
@@ -14,11 +15,13 @@ import { Text } from '@/components/Text';
 import { cn } from '@/lib/utils';
 import { HEADER_OUTLINE_ID, useOutlineStore } from '@/stores/outlineStore';
 import { usePreviewStore, type VersionPreview } from '@/stores/previewStore';
+import { useTargetRequest } from '@/stores/targetStore';
 import { attempt, showToast } from '@/stores/toastStore';
 import { useResumeStore } from '@/stores/resumeStore';
 import { useTemplateStore } from '@/stores/templateStore';
 import { useUiStore, type SidebarTab, SIDEBAR_WIDTH } from '@/stores/uiStore';
 import { ContentTab } from '@/features/editor/ContentTab';
+import { AddSectionMenu } from '@/features/editor/sections/AddSectionMenu';
 import { TemplatesTab } from '@/features/templates/TemplatesTab';
 import { SIDEBAR_TAB_TARGET, tourTargetProps } from '@/features/onboarding/tourTargets';
 import { useIsSideHandover } from '@/features/view-transitions/sideHandover';
@@ -106,7 +109,12 @@ export function Sidebar() {
 
         <div className="flex min-h-6.25 shrink-0 items-center justify-between gap-2 px-3 pt-0.5 pb-2">
           <Text variant="eyebrow">{active.caption}</Text>
-          {active.id === 'content' && <CollapseAllButton />}
+          {active.id === 'content' && (
+            <div className="flex items-center gap-px">
+              {preview === null && <AddSectionButton />}
+              <CollapseAllButton />
+            </div>
+          )}
         </div>
 
         <AppTabsContent
@@ -190,6 +198,36 @@ function ReadingVersionNote({ preview }: { preview: VersionPreview }) {
         </AppButton>
       </div>
     </div>
+  );
+}
+
+/** Add section from the top of the pane, so a long resume doesn't need scrolling to its end. */
+function AddSectionButton() {
+  const isOpen = useResumeStore((s) => s.templateId !== null);
+  const [isMenuOpen, setMenuOpen] = useState(false);
+  // The shortcut opens it here, where it is always in view.
+  useTargetRequest('addSectionMenu', () => setMenuOpen(true));
+
+  if (!isOpen) return null;
+
+  return (
+    <AddSectionMenu isOpen={isMenuOpen} onOpenChange={setMenuOpen} align="start">
+      <AppButton
+        variant="ghost"
+        size="xs"
+        shape="square"
+        aria-label="Add section"
+        title="Add section"
+        className={cn(isMenuOpen && 'bg-line text-foreground')}
+      >
+        <Plus
+          className={cn(
+            'transition-transform duration-180 ease-settle motion-reduce:transition-none',
+            isMenuOpen && 'rotate-45'
+          )}
+        />
+      </AppButton>
+    </AddSectionMenu>
   );
 }
 

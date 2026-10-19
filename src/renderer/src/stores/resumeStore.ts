@@ -125,7 +125,11 @@ interface ResumeState extends ResumeData {
   removeHeaderItem: (itemId: string) => void;
 
   /** Adds an empty section at the end; returns its id. */
-  addSection: (section: Pick<ResumeSection, 'kind' | 'layout' | 'label'>) => string;
+  /** Adds it last, or right below `afterSectionId`; gives the new section's id. */
+  addSection: (
+    section: Pick<ResumeSection, 'kind' | 'layout' | 'label'>,
+    afterSectionId?: string
+  ) => string;
   removeSection: (sectionId: string) => void;
   reorderSections: (orderedIds: string[]) => void;
   updateSectionLabel: (sectionId: string, label: string) => void;
@@ -417,10 +421,15 @@ export const useResumeStore = create<ResumeState>()(
 
       // Section CRUD
 
-      addSection: ({ kind, layout, label }) => {
+      addSection: ({ kind, layout, label }, afterSectionId) => {
         const id = crypto.randomUUID();
         edit('add a section', (state) => {
-          state.sections.push({ id, kind, layout, label, items: [], order: state.sections.length });
+          const ordered = [...state.sections].sort((a, b) => a.order - b.order);
+          const after = ordered.findIndex((s) => s.id === afterSectionId);
+          const at = after < 0 ? ordered.length : after + 1;
+          ordered.splice(at, 0, { id, kind, layout, label, items: [], order: 0 });
+          ordered.forEach((section, order) => (section.order = order));
+          state.sections = ordered;
         });
         return id;
       },

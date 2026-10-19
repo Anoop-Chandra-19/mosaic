@@ -123,14 +123,14 @@ describe('readJsonResume', () => {
     expect(experience?.items.at(-1)?.title).toBe('Added elsewhere');
   });
 
-  it('keeps sections another tool added that Mosaic’s export never writes', () => {
-    const data = everything();
+  it('keeps sections another tool added where Mosaic’s export wrote none', () => {
+    const data = createDefaultResume();
     const file = exported(data);
     file.volunteer = [{ organization: 'Red Cross', position: 'Volunteer' }];
     file.languages = [{ language: 'French', fluency: 'Fluent' }];
 
     const parsed = readJsonResume(file);
-    expect(kinds(parsed.resume)).toEqual([...kinds(data), 'custom', 'custom']);
+    expect(kinds(parsed.resume)).toEqual([...kinds(data), 'volunteering', 'languages']);
     expect(parsed.resume.sections.slice(-2).map((s) => [s.label, s.items.length])).toEqual([
       ['Volunteering', 1],
       ['Languages', 1],
@@ -232,7 +232,7 @@ describe('readJsonResume', () => {
           ['Senior Mathematician', 'Remington Rand', none, '1949 to Jun 1967', []],
         ],
       ],
-      ['custom', 'entries', 'Volunteering', [['Lecturer', 'ACM', none, none, ['Talks']]]],
+      ['volunteering', 'entries', 'Volunteering', [['Lecturer', 'ACM', none, none, ['Talks']]]],
       [
         'education',
         'entries',
@@ -240,7 +240,7 @@ describe('readJsonResume', () => {
         [['Ph.D. in Mathematics', 'Yale University', none, '1934', ['Algebra', 'GPA: 4.0']]],
       ],
       [
-        'custom',
+        'awards',
         'entries',
         'Awards',
         [['National Medal of Technology', none, none, '1991', ['For languages.']]],
@@ -252,14 +252,14 @@ describe('readJsonResume', () => {
         [['Navigator', 'US Navy', none, 'Dec 1944', []]],
       ],
       [
-        'custom',
+        'publications',
         'entries',
         'Publications',
         [['The Education of a Computer', 'ACM', none, none, []]],
       ],
       ['skills', 'lines', 'Skills', ['Languages: COBOL, FLOW-MATIC']],
-      ['custom', 'lines', 'Languages', ['English — Native speaker']],
-      ['custom', 'lines', 'Interests', ['Clocks']],
+      ['languages', 'lines', 'Languages', ['English — Native speaker']],
+      ['interests', 'lines', 'Interests', ['Clocks']],
       [
         'projects',
         'entries',

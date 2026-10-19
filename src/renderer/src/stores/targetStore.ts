@@ -11,7 +11,7 @@ import { create } from 'zustand';
  * answered once the tab has drawn the target. Each is answered once, then cleared.
  */
 
-/** Every keyboard target in the app. `addSectionMenu`: the sidebar's Add section menu. */
+/** Every keyboard target in the app. `addSectionMenu`: Add section, from the content pane's +. */
 export type KeyboardTarget = 'addSectionMenu';
 
 interface TargetRequest {

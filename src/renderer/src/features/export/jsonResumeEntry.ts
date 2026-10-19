@@ -9,7 +9,20 @@
 import type { EntryHeadingFields } from '@shared/resume/entryHeading';
 
 /** The arrays an entry can go in. */
-export type ItemSource = 'work' | 'education' | 'projects' | 'skills' | 'certificates';
+export type ItemSource =
+  | 'work'
+  | 'education'
+  | 'projects'
+  | 'skills'
+  | 'certificates'
+  | 'volunteer'
+  | 'awards'
+  | 'publications'
+  | 'languages'
+  | 'interests';
+
+/** Between a language and how well it is spoken, on one line: "French — fluent". */
+const FLUENCY_SEPARATOR = ' — ';
 
 /** One item of a section array. Its fields depend on the array. */
 export type JsonResumeItem = Record<string, string | string[]>;
@@ -126,10 +139,17 @@ function degreeFields(title: string): JsonResumeItem {
   return itemOf(degree(studyType, area) === title ? { studyType, area } : { area: title });
 }
 
+/** One date, for an item that has one: when something was earned or came out. */
+function oneDate(dates: ReturnType<typeof datesOf>): string | undefined {
+  return dates && !dates.startDate ? dates.endDate : undefined;
+}
+
 /** An entry as an item of `source`. `type` names a project's section, when it has one. */
 export function toItem(source: ItemSource, entry: EntryParts, type?: string): JsonResumeItem {
   const { title, organization, location, bullets } = entry;
   const dates = datesOf(entry.dates);
+  // An award's or a publication's one line about it.
+  const [summary] = bullets;
   switch (source) {
     case 'work':
       return itemOf({
@@ -156,11 +176,25 @@ export function toItem(source: ItemSource, entry: EntryParts, type?: string): Js
       });
     case 'skills':
       return itemOf({ name: title, level: entry.dates, keywords: bullets });
-    case 'certificates': {
-      // One date is when it was earned.
-      const date = dates && !dates.startDate ? dates.endDate : undefined;
-      return itemOf({ name: title, issuer: organization, date });
+    case 'certificates':
+      return itemOf({ name: title, issuer: organization, date: oneDate(dates) });
+    case 'volunteer':
+      return itemOf({ position: title, organization, ...dates, highlights: bullets });
+    case 'awards':
+      return itemOf({ title, awarder: organization, date: oneDate(dates), summary });
+    case 'publications':
+      return itemOf({ name: title, publisher: organization, releaseDate: oneDate(dates), summary });
+    case 'languages': {
+      const at = title.indexOf(FLUENCY_SEPARATOR);
+      return at > 0
+        ? itemOf({
+            language: title.slice(0, at),
+            fluency: title.slice(at + FLUENCY_SEPARATOR.length),
+          })
+        : itemOf({ language: title });
     }
+    case 'interests':
+      return itemOf({ name: title, keywords: bullets });
   }
 }
 
@@ -210,6 +244,28 @@ export function fromItem(source: ItemSource, item: Record<string, unknown>): Ent
         dates: formatDate(field(item, 'date')),
         bullets: [],
       });
+    case 'volunteer':
+      return parts(field(item, 'position'), field(item, 'organization'), {
+        bullets: list(item, 'highlights'),
+      });
+    case 'awards':
+      return parts(field(item, 'title'), field(item, 'awarder'), {
+        dates: formatDate(field(item, 'date')),
+        bullets: [field(item, 'summary')].filter(Boolean),
+      });
+    case 'publications':
+      return parts(field(item, 'name'), field(item, 'publisher'), {
+        dates: formatDate(field(item, 'releaseDate')),
+        bullets: [field(item, 'summary')].filter(Boolean),
+      });
+    case 'languages':
+      return parts(
+        [field(item, 'language'), field(item, 'fluency')].filter(Boolean).join(FLUENCY_SEPARATOR),
+        '',
+        { bullets: [] }
+      );
+    case 'interests':
+      return parts(field(item, 'name'), '', { bullets: list(item, 'keywords') });
   }
 }
 

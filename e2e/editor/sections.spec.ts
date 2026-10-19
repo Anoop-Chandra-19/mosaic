@@ -65,28 +65,34 @@ test('custom sections and lists are named as they are added, as many as you like
   // While the resume is empty: from the suggestions' "Something else".
   await page.getByRole('button', { name: 'Something else' }).click();
   await page.getByRole('menuitem', { name: /Custom section/ }).click();
-  await nameNewSection(page, 'New section', 'Volunteering');
+  await nameNewSection(page, 'New section', 'Outreach');
 
   // Once it has content: from Add Section, which offers both shapes every time.
-  await page.getByText('Volunteering', { exact: true }).hover();
-  await page.getByRole('button', { name: 'Add entry to Volunteering' }).click();
-  await page.getByRole('button', { name: 'Add Section' }).click();
+  await page.getByText('Outreach', { exact: true }).hover();
+  await page.getByRole('button', { name: 'Add entry to Outreach' }).click();
+  // From the + at the top of the pane, which comes before the sections.
+  await page
+    .getByRole('complementary')
+    .getByRole('button', { name: 'Add section' })
+    .first()
+    .click();
   await page.getByRole('menuitem', { name: /Custom list/ }).click();
-  await nameNewSection(page, 'New list', 'Languages');
+  await nameNewSection(page, 'New list', 'Instruments');
 
-  // Built-in kinds are presets now: a second Experience is just another section.
-  await page.getByRole('button', { name: 'Add Section' }).click();
-  await page.getByRole('menuitem', { name: 'Experience' }).click();
+  // A kind the resume has is under "Another like…", and lands right below the first.
+  await page.getByRole('tabpanel').getByRole('button', { name: 'Add section' }).click();
+  await page.getByRole('menuitem', { name: 'Another like…' }).press('ArrowRight');
+  await page.getByRole('menu').last().getByRole('menuitem', { name: 'Experience' }).press('Enter');
 
   await expect
     .poll(() => storedSections(page))
     .toEqual([
       { kind: 'experience', layout: 'entries', label: 'Experience' },
+      { kind: 'experience', layout: 'entries', label: 'Experience' },
       { kind: 'education', layout: 'entries', label: 'Education' },
       { kind: 'skills', layout: 'lines', label: 'Skills' },
-      { kind: 'custom', layout: 'entries', label: 'Volunteering' },
-      { kind: 'custom', layout: 'lines', label: 'Languages' },
-      { kind: 'experience', layout: 'entries', label: 'Experience' },
+      { kind: 'custom', layout: 'entries', label: 'Outreach' },
+      { kind: 'custom', layout: 'lines', label: 'Instruments' },
     ]);
   expect(errors).toEqual([]);
 });

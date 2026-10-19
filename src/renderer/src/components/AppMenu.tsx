@@ -8,6 +8,9 @@ import {
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
   DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { FLOATING_SURFACE_CLASSES, LIST_ROW_CLASSES } from '@/components/controlStyles';
@@ -22,6 +25,7 @@ import { cn } from '@/lib/utils';
 export const AppMenu = DropdownMenu;
 export const AppMenuTrigger = DropdownMenuTrigger;
 export const AppMenuRadioGroup = DropdownMenuRadioGroup;
+export const AppMenuSub = DropdownMenuSub;
 
 export function AppMenuContent({
   className,
@@ -92,4 +96,38 @@ export function AppMenuSeparator({
   ...props
 }: ComponentProps<typeof DropdownMenuSeparator>) {
   return <DropdownMenuSeparator className={cn('mx-0.5 my-1 bg-line', className)} {...props} />;
+}
+
+/** A row that opens more rows beside it, its chevron quiet at the end. */
+export function AppMenuSubTrigger({
+  className,
+  ...props
+}: ComponentProps<typeof DropdownMenuSubTrigger>) {
+  return (
+    <DropdownMenuSubTrigger
+      className={cn(
+        LIST_ROW_CLASSES,
+        'data-[state=open]:bg-line data-[state=open]:text-foreground [&>svg:last-child]:size-3 [&>svg:last-child]:text-ink-faint',
+        className
+      )}
+      {...props}
+    />
+  );
+}
+
+/** A menu's padding and border: what a submenu clears to meet its edge, its first row level. */
+const MENU_INSET_PX = 6;
+
+export function AppMenuSubContent({
+  className,
+  ...props
+}: ComponentProps<typeof DropdownMenuSubContent>) {
+  return (
+    <DropdownMenuSubContent
+      sideOffset={MENU_INSET_PX}
+      alignOffset={-MENU_INSET_PX}
+      className={cn(FLOATING_SURFACE_CLASSES, 'p-1.25', className)}
+      {...props}
+    />
+  );
 }

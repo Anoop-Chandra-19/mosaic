@@ -1,15 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { SECTION_PRESETS } from '@shared/resume/sectionPresets';
-import { JSON_RESUME_CUSTOM_SECTIONS, matchSectionHeader } from '../sectionHeaders';
+import { BUILT_IN_KINDS, SECTION_PRESETS } from '@shared/resume/sectionPresets';
+import { matchSectionHeader } from '../sectionHeaders';
 
 describe('matchSectionHeader', () => {
   it('knows every section by the name Mosaic gives it, so a resume reads back as it was', () => {
-    for (const [kind, { label, layout }] of Object.entries(SECTION_PRESETS)) {
-      expect(matchSectionHeader(label)).toEqual({ kind, label, layout });
-    }
-    for (const { label, layout } of Object.values(JSON_RESUME_CUSTOM_SECTIONS)) {
-      expect(matchSectionHeader(label)).toEqual({ kind: 'custom', label, layout });
-      expect(matchSectionHeader(label.toUpperCase())).toEqual({ kind: 'custom', label, layout });
+    for (const kind of BUILT_IN_KINDS) {
+      const { label } = SECTION_PRESETS[kind];
+      expect(matchSectionHeader(label)).toBe(kind);
+      expect(matchSectionHeader(label.toUpperCase())).toBe(kind);
     }
   });
 

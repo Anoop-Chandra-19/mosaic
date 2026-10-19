@@ -1,40 +1,31 @@
 import { useDeferredValue, useState } from 'react';
 import { Plus } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
-import { AppMenu, AppMenuContent, AppMenuSeparator, AppMenuTrigger } from '@/components/AppMenu';
-import { BUILT_IN_KINDS, SECTION_PRESETS } from '@shared/resume/sectionPresets';
 import type { ResumeSection } from '@shared/types/resume';
+import { useOutlineStore } from '@/stores/outlineStore';
 import { useResumeStore } from '@/stores/resumeStore';
-import { useTargetRequest } from '@/stores/targetStore';
 import { useListMotion } from '@/lib/motion/useListMotion';
 import { SectionItem } from './SectionItem';
 import { cn } from '@/lib/utils';
 import { HIDDEN_WHILE_READING } from '../editorClasses';
 import { swapNeighbours } from '../sort-list/listOrder';
 import { SortList } from '../sort-list/SortList';
-import { CustomMenuItems, PresetMenuItems } from './SectionMenuItems';
-import { useAddCustomSection } from './useAddCustomSection';
+import { AddSectionMenu } from './AddSectionMenu';
 
 export function SectionList({
   sections: shown,
   showAddSection = true,
-  namingId,
-  onCustomAdded,
 }: {
   /** Sections of a document other than the draft, which is how an older version is read. */
   sections?: ResumeSection[];
   showAddSection?: boolean;
-  /** A custom section just added: it shows with its name open for editing. */
-  namingId: string | null;
-  onCustomAdded: (sectionId: string) => void;
 }) {
   const draftSections = useDraftSectionsBuiltInSlices();
   const sections = shown ?? draftSections;
-  const addSection = useResumeStore((s) => s.addSection);
   const reorderSections = useResumeStore((s) => s.reorderSections);
-  const custom = useAddCustomSection(onCustomAdded);
+  // A custom section just added shows with its name open for editing.
+  const namingId = useOutlineStore((s) => (s.addedSection?.isNaming ? s.addedSection.id : null));
   const [isAddSectionMenuOpen, setAddSectionMenuOpen] = useState(false);
-  useTargetRequest('addSectionMenu', () => setAddSectionMenuOpen(true));
 
   const sorted = [...sections].sort((a, b) => a.order - b.order);
   const sectionIds = sorted.map((section) => section.id);
@@ -70,34 +61,28 @@ export function SectionList({
       {showAddSection && (
         // Marked like a row, so it slides with them.
         <div data-sort-id="add-section">
-          <AppMenu open={isAddSectionMenuOpen} onOpenChange={setAddSectionMenuOpen}>
-            <AppMenuTrigger asChild>
-              <AppButton
-                variant="outline"
-                size="xs"
-                className={cn('mt-3 ml-1.5', HIDDEN_WHILE_READING)}
+          <AddSectionMenu
+            isOpen={isAddSectionMenuOpen}
+            onOpenChange={setAddSectionMenuOpen}
+            align="start"
+          >
+            <AppButton
+              variant="outline"
+              size="xs"
+              className={cn('mt-3 ml-1.5', HIDDEN_WHILE_READING)}
+            >
+              <span
+                aria-hidden="true"
+                className={cn(
+                  'flex size-3 shrink-0 items-center justify-center transition-transform duration-180 ease-settle motion-reduce:transition-none',
+                  isAddSectionMenuOpen && 'rotate-45'
+                )}
               >
-                <span
-                  aria-hidden="true"
-                  className={cn(
-                    'flex size-3 shrink-0 items-center justify-center transition-transform duration-180 ease-settle motion-reduce:transition-none',
-                    isAddSectionMenuOpen && 'rotate-45'
-                  )}
-                >
-                  <Plus className="size-3" />
-                </span>
-                Add section
-              </AppButton>
-            </AppMenuTrigger>
-            <AppMenuContent align="start" onCloseAutoFocus={custom.onCloseAutoFocus}>
-              <PresetMenuItems
-                kinds={BUILT_IN_KINDS}
-                onAdd={(kind) => addSection({ kind, ...SECTION_PRESETS[kind] })}
-              />
-              <AppMenuSeparator />
-              <CustomMenuItems onChoose={custom.choose} />
-            </AppMenuContent>
-          </AppMenu>
+                <Plus className="size-3" />
+              </span>
+              Add section
+            </AppButton>
+          </AddSectionMenu>
         </div>
       )}
     </div>

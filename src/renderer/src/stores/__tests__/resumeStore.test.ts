@@ -155,6 +155,24 @@ describe('resumeStore sections, entries, and bullets', () => {
   const section = (id: string) => store().sections.find((s) => s.id === id)!;
   const job = () => section('sec-experience').items[0];
 
+  it('adds a section last, or right below another, keeping the order whole', () => {
+    const inOrder = () =>
+      [...store().sections].sort((a, b) => a.order - b.order).map((s) => [s.label, s.order]);
+    const last = store().addSection({ kind: 'awards', layout: 'entries', label: 'Awards' });
+    store().addSection(
+      { kind: 'education', layout: 'entries', label: 'Education' },
+      'sec-education'
+    );
+    expect(inOrder()).toEqual([
+      ['Education & Certificates', 0],
+      ['Education', 1],
+      ['Work History', 2],
+      ['Projects', 3],
+      ['Awards', 4],
+    ]);
+    expect(store().sections.at(-1)!.id).toBe(last);
+  });
+
   it('leaves a whole section off and puts it back, keeping its entries’ choices', () => {
     store().toggleEntry('sec-education', 'edu2');
     store().toggleSection('sec-education');
