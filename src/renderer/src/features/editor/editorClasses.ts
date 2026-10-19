@@ -8,6 +8,9 @@
  */
 export const HIDDEN_WHILE_READING = 'in-data-reading:hidden';
 
+/** Where a row's ⋯ goes while the row is at rest and it isn't mounted: the same square. */
+export const MENU_BUTTON_SPACE = 'block size-[1.625rem] shrink-0 in-data-reading:hidden';
+
 // Focus reveals a row's controls only while moving by keyboard (`data-keyboard`, from
 // `useKeyboardNavigationMark`), so mouse-restored focus cannot pin them open. Focused text
 // fields still reveal them; each row also keeps its controls visible while its menu is

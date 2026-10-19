@@ -20,8 +20,13 @@ import { cn } from '@/lib/utils';
 import { useOutlineStore } from '@/stores/outlineStore';
 import { useResumeStore } from '@/stores/resumeStore';
 import type { ResumeSection } from '@shared/types/resume';
-import { EDITOR_CONTROL_REVEAL_CLASSES, HIDDEN_WHILE_READING } from '../editorClasses';
+import {
+  EDITOR_CONTROL_REVEAL_CLASSES,
+  HIDDEN_WHILE_READING,
+  MENU_BUTTON_SPACE,
+} from '../editorClasses';
 import { useEditorMenu } from '../useEditorMenu';
+import { useRowInUse } from '../useRowInUse';
 import { EditorFold, FoldChevron } from '../EditorFold';
 import { InlineEditField } from '../InlineEditField';
 import { swapNeighbours } from '../sort-list/listOrder';
@@ -76,7 +81,10 @@ export function SectionItem({
     clearAddedSection();
   }, [isLanding, clearAddedSection]);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  // Mounted once asked for, then kept so it can animate closed.
+  const [isConfirmMounted, setIsConfirmMounted] = useState(false);
   const { isMenuOpen, isMenuVisible, setMenuOpen, finishMenuClose } = useEditorMenu();
+  const { isInUse, rowProps } = useRowInUse(isMenuVisible || grip.lifted);
   // "Rename section" opens the field once the menu has closed, so the field keeps focus.
   const renameAfterMenu = useRef(false);
 
@@ -113,12 +121,14 @@ export function SectionItem({
       {/* The whole row opens and closes the section; its buttons do their own thing. */}
       <div
         ref={rowRef}
+        {...rowProps}
         onClick={() => !isRenaming && setOpen(section.id, !open)}
         className="group/section flex h-9 cursor-pointer dense:h-7.5 items-center gap-2 rounded-sm px-1.5 hover:bg-line"
       >
         <SortGripHandle
           grip={grip}
           label={`Drag ${section.label} to reorder`}
+          isInUse={isInUse}
           className={EDITOR_CONTROL_REVEAL_CLASSES.section}
         />
         <AppCollapsibleTrigger asChild aria-controls={foldId}>
@@ -202,60 +212,70 @@ export function SectionItem({
           >
             <Plus className="size-3" />
           </AppButton>
-          <AppMenu open={isMenuOpen} onOpenChange={setMenuOpen}>
-            <AppMenuTrigger asChild>
-              <AppButton
-                variant="ghost"
-                size="xs"
-                shape="square"
-                aria-label={`${section.label} actions`}
-                className={HIDDEN_WHILE_READING}
-              >
-                <Ellipsis />
-              </AppButton>
-            </AppMenuTrigger>
-            <AppMenuContent
-              align="end"
-              onCloseAutoFocus={(event) => {
-                finishMenuClose();
-                if (!renameAfterMenu.current) return;
-                renameAfterMenu.current = false;
-                event.preventDefault();
-                setIsRenaming(true);
-              }}
-            >
-              <AppMenuItem onSelect={() => toggleSection(section.id)}>
-                {isHidden ? <Eye /> : <EyeOff />}
-                {hiddenLabel}
-              </AppMenuItem>
-              <AppMenuItem
-                onSelect={() => {
-                  renameAfterMenu.current = true;
+          {isInUse ? (
+            <AppMenu open={isMenuOpen} onOpenChange={setMenuOpen}>
+              <AppMenuTrigger asChild>
+                <AppButton
+                  variant="ghost"
+                  size="xs"
+                  shape="square"
+                  aria-label={`${section.label} actions`}
+                  className={HIDDEN_WHILE_READING}
+                >
+                  <Ellipsis />
+                </AppButton>
+              </AppMenuTrigger>
+              <AppMenuContent
+                align="end"
+                onCloseAutoFocus={(event) => {
+                  finishMenuClose();
+                  if (!renameAfterMenu.current) return;
+                  renameAfterMenu.current = false;
+                  event.preventDefault();
+                  setIsRenaming(true);
                 }}
               >
-                <Pencil />
-                Rename section
-              </AppMenuItem>
-              <AppMenuItem onSelect={handleAddEntry}>
-                <Plus />
-                Add entry
-              </AppMenuItem>
-              <AppMenuSeparator />
-              <AppMenuItem disabled={isFirst} onSelect={onMoveUp}>
-                <ArrowUp />
-                Move up
-              </AppMenuItem>
-              <AppMenuItem disabled={isLast} onSelect={onMoveDown}>
-                <ArrowDown />
-                Move down
-              </AppMenuItem>
-              <AppMenuSeparator />
-              <AppMenuItem variant="destructive" onSelect={() => setConfirmOpen(true)}>
-                <Trash2 />
-                Delete section…
-              </AppMenuItem>
-            </AppMenuContent>
-          </AppMenu>
+                <AppMenuItem onSelect={() => toggleSection(section.id)}>
+                  {isHidden ? <Eye /> : <EyeOff />}
+                  {hiddenLabel}
+                </AppMenuItem>
+                <AppMenuItem
+                  onSelect={() => {
+                    renameAfterMenu.current = true;
+                  }}
+                >
+                  <Pencil />
+                  Rename section
+                </AppMenuItem>
+                <AppMenuItem onSelect={handleAddEntry}>
+                  <Plus />
+                  Add entry
+                </AppMenuItem>
+                <AppMenuSeparator />
+                <AppMenuItem disabled={isFirst} onSelect={onMoveUp}>
+                  <ArrowUp />
+                  Move up
+                </AppMenuItem>
+                <AppMenuItem disabled={isLast} onSelect={onMoveDown}>
+                  <ArrowDown />
+                  Move down
+                </AppMenuItem>
+                <AppMenuSeparator />
+                <AppMenuItem
+                  variant="destructive"
+                  onSelect={() => {
+                    setIsConfirmMounted(true);
+                    setConfirmOpen(true);
+                  }}
+                >
+                  <Trash2 />
+                  Delete section…
+                </AppMenuItem>
+              </AppMenuContent>
+            </AppMenu>
+          ) : (
+            <span className={MENU_BUTTON_SPACE} />
+          )}
         </div>
       </div>
 
@@ -295,13 +315,15 @@ export function SectionItem({
         </div>
       </EditorFold>
 
-      <ConfirmDeleteDialog
-        open={confirmOpen}
-        onOpenChange={setConfirmOpen}
-        title="Delete section?"
-        description={`This will permanently remove “${section.label}” and all its entries.`}
-        onConfirm={() => removeSection(section.id)}
-      />
+      {isConfirmMounted && (
+        <ConfirmDeleteDialog
+          open={confirmOpen}
+          onOpenChange={setConfirmOpen}
+          title="Delete section?"
+          description={`This will permanently remove “${section.label}” and all its entries.`}
+          onConfirm={() => removeSection(section.id)}
+        />
+      )}
     </AppCollapsible>
   );
 }
