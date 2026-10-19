@@ -93,5 +93,12 @@ test('an icon button says what it is, and its menu does not bring the hint back'
   await page.mouse.move(700, 500, { steps: 4 });
   await expect(options).toBeFocused();
   await expect(page.getByRole('tooltip')).toHaveCount(0);
+
+  // Reached by keyboard, it says it at once, as the button's description.
+  await page.keyboard.press('Shift+Tab');
+  await page.keyboard.press('Tab');
+  await expect(options).toBeFocused();
+  await expect(page.getByRole('tooltip', { name: 'Header options' })).toBeAttached();
+  await expect(options).toHaveAccessibleDescription('Header options');
   expect(errors).toEqual([]);
 });
