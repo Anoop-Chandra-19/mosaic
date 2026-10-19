@@ -25,6 +25,7 @@ import { useSplitAndMergeBullets } from '../bullets/useSplitAndMergeBullets';
 import { EditorCheckbox } from '../EditorCheckbox';
 import { EDITOR_CONTROL_REVEAL_CLASSES, HIDDEN_WHILE_READING } from '../editorClasses';
 import { useEditorMenu } from '../useEditorMenu';
+import { useRowInUse } from '../useRowInUse';
 import { EditorFold } from '../EditorFold';
 import { InlineEditField } from '../InlineEditField';
 import { showEntryFields, showNewBullet } from '../liveEdits';
@@ -71,7 +72,10 @@ export function EntryCard({
   const addBullet = useResumeStore((s) => s.addBullet);
   const reorderBullets = useResumeStore((s) => s.reorderBullets);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  // Mounted once asked for, then kept so it can animate closed.
+  const [isConfirmMounted, setIsConfirmMounted] = useState(false);
   const { isMenuOpen, isMenuVisible, setMenuOpen, finishMenuClose } = useEditorMenu();
+  const { isInUse, rowProps } = useRowInUse(isMenuVisible || grip.lifted);
   // Alt+Enter on a bullet: an empty editor under it, which adds a bullet there once saved.
   const [addingAfterId, setAddingAfterIdNow] = useState<string | null>(null);
   const isTextOnly = layout === 'lines';
@@ -113,6 +117,7 @@ export function EntryCard({
     // pointer block) would otherwise visit every one. It keeps the height it last had.
     <div
       onKeyDown={handleKeyDown}
+      {...rowProps}
       className={cn(
         'group/entry relative ml-3.5 rounded-sm border-l border-line pt-1.75 pr-1.5 pb-2.25 pl-2.25 [contain-intrinsic-size:auto_20rem] [content-visibility:auto] hover:bg-line dense:px-2 dense:py-1.75',
         isDimmed && '**:text-ink-faint'
@@ -124,6 +129,7 @@ export function EntryCard({
         <SortGripHandle
           grip={grip}
           label="Drag entry to reorder"
+          isInUse={isInUse}
           className={cn('mt-1', EDITOR_CONTROL_REVEAL_CLASSES.entry)}
         />
         <EditorCheckbox
@@ -268,59 +274,69 @@ export function EntryCard({
         </div>
 
         {/* Floats over the heading's top-right corner in a raised card, on hover. */}
-        <div
-          className={cn(
-            'absolute top-1.25 right-1.25 z-10 flex rounded-[0.4375rem] border border-line-strong bg-pane-raised p-0.5 shadow-floating',
-            isMenuVisible ? 'visible' : EDITOR_CONTROL_REVEAL_CLASSES.entry
-          )}
-        >
-          <AppMenu open={isMenuOpen} onOpenChange={setMenuOpen}>
-            <AppMenuTrigger asChild>
-              <AppButton
-                variant="ghost"
-                size="xs"
-                shape="square"
-                aria-label="Entry actions"
-                className={HIDDEN_WHILE_READING}
-              >
-                <Ellipsis />
-              </AppButton>
-            </AppMenuTrigger>
-            <AppMenuContent align="end" onCloseAutoFocus={finishMenuClose}>
-              <AppMenuItem onSelect={() => toggleEntry(sectionId, entry.id)}>
-                {entry.selected ? <EyeOff /> : <Eye />}
-                {entry.selected ? 'Leave off the resume' : 'Put on the resume'}
-              </AppMenuItem>
-              <AppMenuItem onSelect={() => duplicateEntry(sectionId, entry.id)}>
-                <Copy />
-                Duplicate entry
-              </AppMenuItem>
-              <AppMenuSeparator />
-              <AppMenuItem disabled={isFirst} onSelect={onMoveUp}>
-                <ArrowUp />
-                Move up
-              </AppMenuItem>
-              <AppMenuItem disabled={isLast} onSelect={onMoveDown}>
-                <ArrowDown />
-                Move down
-              </AppMenuItem>
-              <AppMenuSeparator />
-              <AppMenuItem variant="destructive" onSelect={() => setConfirmOpen(true)}>
-                <Trash2 />
-                Delete entry…
-              </AppMenuItem>
-            </AppMenuContent>
-          </AppMenu>
-        </div>
+        {isInUse && (
+          <div
+            className={cn(
+              'absolute top-1.25 right-1.25 z-10 flex rounded-[0.4375rem] border border-line-strong bg-pane-raised p-0.5 shadow-floating',
+              isMenuVisible ? 'visible' : EDITOR_CONTROL_REVEAL_CLASSES.entry
+            )}
+          >
+            <AppMenu open={isMenuOpen} onOpenChange={setMenuOpen}>
+              <AppMenuTrigger asChild>
+                <AppButton
+                  variant="ghost"
+                  size="xs"
+                  shape="square"
+                  aria-label="Entry actions"
+                  className={HIDDEN_WHILE_READING}
+                >
+                  <Ellipsis />
+                </AppButton>
+              </AppMenuTrigger>
+              <AppMenuContent align="end" onCloseAutoFocus={finishMenuClose}>
+                <AppMenuItem onSelect={() => toggleEntry(sectionId, entry.id)}>
+                  {entry.selected ? <EyeOff /> : <Eye />}
+                  {entry.selected ? 'Leave off the resume' : 'Put on the resume'}
+                </AppMenuItem>
+                <AppMenuItem onSelect={() => duplicateEntry(sectionId, entry.id)}>
+                  <Copy />
+                  Duplicate entry
+                </AppMenuItem>
+                <AppMenuSeparator />
+                <AppMenuItem disabled={isFirst} onSelect={onMoveUp}>
+                  <ArrowUp />
+                  Move up
+                </AppMenuItem>
+                <AppMenuItem disabled={isLast} onSelect={onMoveDown}>
+                  <ArrowDown />
+                  Move down
+                </AppMenuItem>
+                <AppMenuSeparator />
+                <AppMenuItem
+                  variant="destructive"
+                  onSelect={() => {
+                    setIsConfirmMounted(true);
+                    setConfirmOpen(true);
+                  }}
+                >
+                  <Trash2 />
+                  Delete entry…
+                </AppMenuItem>
+              </AppMenuContent>
+            </AppMenu>
+          </div>
+        )}
       </div>
 
-      <ConfirmDeleteDialog
-        open={confirmOpen}
-        onOpenChange={setConfirmOpen}
-        title="Delete entry?"
-        description={`This will permanently remove “${formatEntryHeading(entry) || entry.text || 'this entry'}” and all its bullets.`}
-        onConfirm={() => removeEntry(sectionId, entry.id)}
-      />
+      {isConfirmMounted && (
+        <ConfirmDeleteDialog
+          open={confirmOpen}
+          onOpenChange={setConfirmOpen}
+          title="Delete entry?"
+          description={`This will permanently remove “${formatEntryHeading(entry) || entry.text || 'this entry'}” and all its bullets.`}
+          onConfirm={() => removeEntry(sectionId, entry.id)}
+        />
+      )}
     </div>
   );
 }

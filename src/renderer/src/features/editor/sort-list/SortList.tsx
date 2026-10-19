@@ -182,16 +182,26 @@ export function SortList({ ids, kind, onReorder, className, renderRow }: SortLis
   );
 }
 
-/** The handle a row shows on hover. `className` places it; the look belongs here. */
+/** The grip's box, kept by its space while the row is at rest. */
+const GRIP_SIZE = 'h-5 w-3.25 shrink-0';
+
+/**
+ * The handle a row shows on hover. `className` places it; the look belongs here. While the
+ * row is at rest (`isInUse` false) only its space is drawn, so nothing moves when it comes.
+ */
 export function SortGripHandle({
   grip,
   label,
+  isInUse,
   className,
 }: {
   grip: SortGrip;
   label: string;
+  isInUse: boolean;
   className?: string;
 }) {
+  if (!isInUse)
+    return <span aria-hidden className={cn('block', GRIP_SIZE, HIDDEN_WHILE_READING, className)} />;
   return (
     <AppButton
       variant="ghost"
@@ -203,7 +213,8 @@ export function SortGripHandle({
       onPointerDown={grip.onPointerDown}
       onClick={(event) => event.stopPropagation()}
       className={cn(
-        'h-5 w-3.25 cursor-grab touch-none rounded-[0.25rem] px-0 text-ink-soft',
+        GRIP_SIZE,
+        'cursor-grab touch-none rounded-[0.25rem] px-0 text-ink-soft',
         HIDDEN_WHILE_READING,
         'hover:bg-amber-soft hover:text-amber active:cursor-grabbing',
         grip.lifted && 'cursor-grabbing',

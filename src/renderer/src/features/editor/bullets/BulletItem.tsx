@@ -30,8 +30,13 @@ import { useResumeStore } from '@/stores/resumeStore';
 import type { Bullet } from '@shared/types/resume';
 import { BulletEditor, type BulletMerge } from './BulletEditor';
 import { EditorCheckbox } from '../EditorCheckbox';
-import { EDITOR_CONTROL_REVEAL_CLASSES, HIDDEN_WHILE_READING } from '../editorClasses';
+import {
+  EDITOR_CONTROL_REVEAL_CLASSES,
+  HIDDEN_WHILE_READING,
+  MENU_BUTTON_SPACE,
+} from '../editorClasses';
 import { useEditorMenu } from '../useEditorMenu';
+import { useRowInUse } from '../useRowInUse';
 import { showBulletText } from '../liveEdits';
 import { SortGripHandle, type SortGrip } from '../sort-list/SortList';
 import { canSplitText } from './splitAndMergeBullets';
@@ -96,6 +101,7 @@ export function BulletItem({
     opensAfterSplit ? { cursorAt: 'start' } : null
   );
   const { isMenuOpen, isMenuVisible, setMenuOpen, finishMenuClose } = useEditorMenu();
+  const { isInUse, rowProps } = useRowInUse(isMenuVisible || grip.lifted);
   // Runs once the menu has closed, so the closing menu can't take focus from an editor.
   const afterMenu = useRef<(() => void) | null>(null);
   const motion = useContext(ListMotionContext);
@@ -205,6 +211,7 @@ export function BulletItem({
   return (
     <div
       onKeyDown={handleKeyDown}
+      {...rowProps}
       className={cn(
         'group/bullet relative flex items-start gap-2 py-(--density-bullet) text-body text-pretty',
         // Struck only while off: a selection paints even a transparent line.
@@ -215,6 +222,7 @@ export function BulletItem({
       <SortGripHandle
         grip={grip}
         label="Drag bullet to reorder"
+        isInUse={isInUse}
         className={cn('mt-px', EDITOR_CONTROL_REVEAL_CLASSES.bullet)}
       />
       <EditorCheckbox
@@ -242,80 +250,84 @@ export function BulletItem({
               isMenuVisible ? 'visible' : EDITOR_CONTROL_REVEAL_CLASSES.bullet
             )}
           >
-            <AppMenu open={isMenuOpen} onOpenChange={setMenuOpen}>
-              <AppMenuTrigger asChild>
-                <AppButton
-                  variant="ghost"
-                  size="xs"
-                  shape="square"
-                  aria-label="Bullet actions"
-                  className={HIDDEN_WHILE_READING}
-                >
-                  <Ellipsis />
-                </AppButton>
-              </AppMenuTrigger>
-              <AppMenuContent
-                align="end"
-                onCloseAutoFocus={(event) => {
-                  finishMenuClose();
-                  const open = afterMenu.current;
-                  if (!open) return;
-                  afterMenu.current = null;
-                  event.preventDefault();
-                  open();
-                }}
-              >
-                <AppMenuItem onSelect={toggle}>
-                  {bullet.selected ? <EyeOff /> : <Eye />}
-                  {bullet.selected ? 'Leave off the resume' : 'Put on the resume'}
-                </AppMenuItem>
-                <AppMenuItem
-                  onSelect={() => {
-                    afterMenu.current = () => setEditing({});
+            {isInUse ? (
+              <AppMenu open={isMenuOpen} onOpenChange={setMenuOpen}>
+                <AppMenuTrigger asChild>
+                  <AppButton
+                    variant="ghost"
+                    size="xs"
+                    shape="square"
+                    aria-label="Bullet actions"
+                    className={HIDDEN_WHILE_READING}
+                  >
+                    <Ellipsis />
+                  </AppButton>
+                </AppMenuTrigger>
+                <AppMenuContent
+                  align="end"
+                  onCloseAutoFocus={(event) => {
+                    finishMenuClose();
+                    const open = afterMenu.current;
+                    if (!open) return;
+                    afterMenu.current = null;
+                    event.preventDefault();
+                    open();
                   }}
                 >
-                  <Pencil />
-                  Edit text
-                </AppMenuItem>
-                <AppMenuItem onSelect={duplicate}>
-                  <Copy />
-                  Duplicate
-                </AppMenuItem>
-                <AppMenuSeparator />
-                <AppMenuItem
-                  disabled={!canSplitText(bullet.text)}
-                  onSelect={() => {
-                    afterMenu.current = () => setEditing({ startsSplitting: true });
-                  }}
-                >
-                  <Split />
-                  Split bullet
-                </AppMenuItem>
-                <AppMenuItem
-                  disabled={!startMerge}
-                  onSelect={() => {
-                    afterMenu.current = () => startMerge?.(bullet.text);
-                  }}
-                >
-                  <Merge />
-                  Merge with bullet below
-                </AppMenuItem>
-                <AppMenuSeparator />
-                <AppMenuItem disabled={isFirst} onSelect={onMoveUp}>
-                  <ArrowUp />
-                  Move up
-                </AppMenuItem>
-                <AppMenuItem disabled={isLast} onSelect={onMoveDown}>
-                  <ArrowDown />
-                  Move down
-                </AppMenuItem>
-                <AppMenuSeparator />
-                <AppMenuItem variant="destructive" onSelect={remove}>
-                  <Trash2 />
-                  Delete bullet
-                </AppMenuItem>
-              </AppMenuContent>
-            </AppMenu>
+                  <AppMenuItem onSelect={toggle}>
+                    {bullet.selected ? <EyeOff /> : <Eye />}
+                    {bullet.selected ? 'Leave off the resume' : 'Put on the resume'}
+                  </AppMenuItem>
+                  <AppMenuItem
+                    onSelect={() => {
+                      afterMenu.current = () => setEditing({});
+                    }}
+                  >
+                    <Pencil />
+                    Edit text
+                  </AppMenuItem>
+                  <AppMenuItem onSelect={duplicate}>
+                    <Copy />
+                    Duplicate
+                  </AppMenuItem>
+                  <AppMenuSeparator />
+                  <AppMenuItem
+                    disabled={!canSplitText(bullet.text)}
+                    onSelect={() => {
+                      afterMenu.current = () => setEditing({ startsSplitting: true });
+                    }}
+                  >
+                    <Split />
+                    Split bullet
+                  </AppMenuItem>
+                  <AppMenuItem
+                    disabled={!startMerge}
+                    onSelect={() => {
+                      afterMenu.current = () => startMerge?.(bullet.text);
+                    }}
+                  >
+                    <Merge />
+                    Merge with bullet below
+                  </AppMenuItem>
+                  <AppMenuSeparator />
+                  <AppMenuItem disabled={isFirst} onSelect={onMoveUp}>
+                    <ArrowUp />
+                    Move up
+                  </AppMenuItem>
+                  <AppMenuItem disabled={isLast} onSelect={onMoveDown}>
+                    <ArrowDown />
+                    Move down
+                  </AppMenuItem>
+                  <AppMenuSeparator />
+                  <AppMenuItem variant="destructive" onSelect={remove}>
+                    <Trash2 />
+                    Delete bullet
+                  </AppMenuItem>
+                </AppMenuContent>
+              </AppMenu>
+            ) : (
+              <span className={MENU_BUTTON_SPACE} />
+            )}
           </span>
           {suggestion && <BulletSuggestionDot suggestion={suggestion} />}
           {bullet.text || <span className="text-ink-faint no-underline">Empty bullet</span>}
