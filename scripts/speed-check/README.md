@@ -20,7 +20,7 @@ Then it times everyday flows on that, and input faster than the app can keep up 
 - opening the list of 50 templates, finding one and opening it, then switching back and
   forth 5 times;
 - opening and closing Settings;
-- saving the PDF of all 210 bullets.
+- saving the PDF of all 210 bullets, then reading that PDF back in Import.
 
 Each starts once any view transition still running has finished (one holds back the next
 change), and ends once its own has, so **time** is until the flow has landed, animation
