@@ -5,7 +5,6 @@ import { openWith, saveInto } from '../harness/dialogs';
 import { test, withApp } from '../harness/launch';
 
 const mosaic = withApp();
-const DAY_MS = 86_400_000;
 
 async function setName(page: Page, current: string, next: string) {
   await page.getByRole('complementary').getByText(current, { exact: true }).click();
@@ -128,7 +127,8 @@ test('old automatic snapshots fold by month between named versions', async () =>
   await setName(page, 'Your name', 'Ada Lovelace');
   await nameVersion(page, 'Kept');
 
-  // A backup, aged: Created two months back, and three automatic snapshots after it.
+  // A backup, aged: Created two months back, and three automatic snapshots after it, all in
+  // that one month, since the fold groups by month.
   await saveInto(app, userDataDir);
   await page.getByRole('button', { name: 'Open settings' }).click();
   const settings = page.getByRole('dialog', { name: 'Settings' });
@@ -141,18 +141,20 @@ test('old automatic snapshots fold by month between named versions', async () =>
   );
   const backup = JSON.parse(fs.readFileSync(file, 'utf8'));
   const [created, kept] = backup.templates[0].versions;
-  const longAgo = (days: number) => new Date(Date.now() - days * DAY_MS).toISOString();
-  const edits = [50, 49, 48].map((days, index) => ({
+  const now = new Date();
+  const twoMonthsBack = (day: number) =>
+    new Date(now.getFullYear(), now.getMonth() - 2, day, 12).toISOString();
+  const edits = [10, 11, 12].map((day, index) => ({
     ...created,
     id: `old-edit-${index}`,
     number: index + 2,
     parentId: null,
     source: 'edit',
-    summary: `Edited a bullet, ${days} days ago`,
-    createdAt: longAgo(days),
+    summary: `Edited a bullet on day ${day}`,
+    createdAt: twoMonthsBack(day),
   }));
   backup.templates[0].versions = [
-    { ...created, createdAt: longAgo(60) },
+    { ...created, createdAt: twoMonthsBack(3) },
     ...edits,
     { ...kept, number: 5, parentId: null },
   ];
@@ -183,7 +185,7 @@ test('old automatic snapshots fold by month between named versions', async () =>
   await page.getByRole('option', { name: 'Never' }).click();
   await page.keyboard.press('Escape');
   await expect(page.getByRole('button', { name: /automatic snapshots$/ })).toHaveCount(0);
-  await expect(row(page, 'v3')).toContainText('49 days ago');
+  await expect(row(page, 'v3')).toContainText('Edited a bullet on day 11');
 });
 
 test('naming can add to your own newest version as a revision, which keeps it as it was', async () => {
