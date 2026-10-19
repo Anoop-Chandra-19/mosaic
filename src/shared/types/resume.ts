@@ -12,6 +12,11 @@ export type SectionKind =
   | 'projects'
   | 'skills'
   | 'certifications'
+  | 'volunteering'
+  | 'awards'
+  | 'publications'
+  | 'languages'
+  | 'interests'
   | 'custom';
 
 export type BuiltInSectionKind = Exclude<SectionKind, 'custom'>;

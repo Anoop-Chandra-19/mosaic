@@ -1,15 +1,4 @@
-import { SECTION_PRESETS } from '@shared/resume/sectionPresets';
-import type { BuiltInSectionKind, SectionKind, SectionLayout } from '@shared/types/resume';
-
-/**
- * A section Mosaic knows by its heading: a built-in kind, or one of JSON Resume's other
- * sections, which import as a custom section of this name and shape.
- */
-export interface KnownSection {
-  kind: SectionKind;
-  label: string;
-  layout: SectionLayout;
-}
+import type { BuiltInSectionKind } from '@shared/types/resume';
 
 /**
  * Header phrases (normalized: lowercase, no surrounding punctuation) that map a resume
@@ -76,70 +65,29 @@ const HEADER_ALIASES: Record<BuiltInSectionKind, string[]> = {
     'certificates',
     'licenses',
   ],
+  volunteering: ['volunteer experience', 'volunteer work', 'volunteering', 'volunteer'],
+  awards: [
+    'honors and awards',
+    'awards and honors',
+    'honors & awards',
+    'awards & honors',
+    'honours & awards',
+    'awards & honours',
+    'awards',
+    'honors',
+    'honours',
+  ],
+  publications: ['selected publications', 'publications'],
+  languages: ['languages'],
+  interests: ['hobbies and interests', 'hobbies & interests', 'interests', 'hobbies'],
 };
 
-/** JSON Resume's sections that have no built-in kind, by their key in a JSON Resume file. */
-export type JsonResumeCustomSection =
-  | 'volunteer'
-  | 'awards'
-  | 'publications'
-  | 'languages'
-  | 'interests';
-
-/**
- * The rest of JSON Resume's sections, as custom sections: their name and shape, and the
- * headings that mean them. Its `references` have no place in a resume Mosaic prints.
- */
-export const JSON_RESUME_CUSTOM_SECTIONS: Record<
-  JsonResumeCustomSection,
-  { label: string; layout: SectionLayout; aliases: string[] }
-> = {
-  volunteer: {
-    label: 'Volunteering',
-    layout: 'entries',
-    aliases: ['volunteer experience', 'volunteer work', 'volunteering', 'volunteer'],
-  },
-  awards: {
-    label: 'Awards',
-    layout: 'entries',
-    aliases: [
-      'honors and awards',
-      'awards and honors',
-      'honors & awards',
-      'awards & honors',
-      'honours & awards',
-      'awards & honours',
-      'awards',
-      'honors',
-      'honours',
-    ],
-  },
-  publications: {
-    label: 'Publications',
-    layout: 'entries',
-    aliases: ['selected publications', 'publications'],
-  },
-  languages: { label: 'Languages', layout: 'lines', aliases: ['languages'] },
-  interests: {
-    label: 'Interests',
-    layout: 'lines',
-    aliases: ['hobbies and interests', 'hobbies & interests', 'interests', 'hobbies'],
-  },
-};
-
-// Every heading phrase with the section it names, longest first for greedy matching.
-const ALIAS_ENTRIES: { phrase: string; section: KnownSection }[] = [
-  ...Object.entries(HEADER_ALIASES).flatMap(([kind, phrases]) => {
-    const { label, layout } = SECTION_PRESETS[kind as BuiltInSectionKind];
-    return phrases.map((phrase) => ({
-      phrase,
-      section: { kind: kind as BuiltInSectionKind, label, layout },
-    }));
-  }),
-  ...Object.values(JSON_RESUME_CUSTOM_SECTIONS).flatMap(({ label, layout, aliases }) =>
-    aliases.map((phrase) => ({ phrase, section: { kind: 'custom' as const, label, layout } }))
-  ),
-].sort((a, b) => b.phrase.length - a.phrase.length);
+// Flattened alias → kind list, longest phrase first for greedy matching.
+const ALIAS_ENTRIES: { phrase: string; kind: BuiltInSectionKind }[] = Object.entries(HEADER_ALIASES)
+  .flatMap(([kind, phrases]) =>
+    phrases.map((phrase) => ({ phrase, kind: kind as BuiltInSectionKind }))
+  )
+  .sort((a, b) => b.phrase.length - a.phrase.length);
 
 function normalizeHeading(line: string): string {
   return line
@@ -159,11 +107,11 @@ export function isHeadingLength(line: string): boolean {
 }
 
 /**
- * If `line` looks like a section heading, return the section it names. A heading is a
- * short, standalone line whose normalized text exactly matches a known alias — this avoids
+ * If `line` looks like a section heading, return its kind. A heading is a short,
+ * standalone line whose normalized text exactly matches a known alias — this avoids
  * treating ordinary sentences that happen to contain "experience" as headings.
  */
-export function matchSectionHeader(line: string): KnownSection | null {
+export function matchSectionHeader(line: string): BuiltInSectionKind | null {
   const trimmed = line.trim();
   if (!isHeadingLength(trimmed)) return null;
 
@@ -171,5 +119,5 @@ export function matchSectionHeader(line: string): KnownSection | null {
   if (!normalized) return null;
 
   const match = ALIAS_ENTRIES.find((entry) => entry.phrase === normalized);
-  return match ? match.section : null;
+  return match ? match.kind : null;
 }

@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { NoTemplates } from '@/features/templates/NoTemplates';
 import { useResumeStore } from '@/stores/resumeStore';
 import type { ResumeData } from '@shared/types/resume';
@@ -15,8 +14,6 @@ import { SectionList } from './sections/SectionList';
 export function ContentTab({ doc }: { doc?: ResumeData }) {
   const open = useResumeStore((s) => s.templateId !== null);
   const draftSections = useResumeStore((s) => s.sections);
-  // A custom section just added from either menu, so its name opens for editing.
-  const [namingId, setNamingId] = useState<string | null>(null);
 
   // Edits need a template to be saved into; with none open, offer to start one instead.
   if (!open) return <NoTemplates />;
@@ -28,15 +25,10 @@ export function ContentTab({ doc }: { doc?: ResumeData }) {
   return (
     <div>
       <ResumeHeaderCard contact={doc?.contact} />
-      <SectionList
-        sections={doc?.sections}
-        showAddSection={!empty}
-        namingId={namingId}
-        onCustomAdded={setNamingId}
-      />
+      <SectionList sections={doc?.sections} showAddSection={!empty} />
       {empty && (
         <div className={cn('mt-3', HIDDEN_WHILE_READING)}>
-          <EmptyContentHint onCustomAdded={setNamingId} />
+          <EmptyContentHint />
         </div>
       )}
     </div>

@@ -101,6 +101,20 @@ export function flashChange(target: Element): void {
   );
 }
 
+/** A row just put somewhere holds a wash, then lets it go: "it went here". */
+export function washLanded(target: Element): void {
+  if (prefersReducedMotion()) return;
+  const wash = 'var(--line-strong)';
+  target.animate(
+    [
+      { backgroundColor: wash },
+      { backgroundColor: wash, offset: 0.3 },
+      { backgroundColor: 'transparent' },
+    ],
+    { duration: MOTION_MS.landWash, easing: 'ease-out' }
+  );
+}
+
 /** Puts a row that has left back where it was, over the list, for its way out. */
 function drawLeftRow(box: HTMLElement, place: RowPlace, keyframes: Keyframe[], ms: number) {
   if (prefersReducedMotion()) return;

@@ -200,7 +200,7 @@ describe('parseResumeText', () => {
     expect(warnings.length).toBeGreaterThan(0);
   });
 
-  it('knows JSON Resume’s other sections by their headings, as custom sections of their shape', () => {
+  it('knows JSON Resume’s other sections by their headings, in their shapes', () => {
     const { resume } = parseResumeText(
       [
         'Ada Lovelace',
@@ -224,11 +224,11 @@ describe('parseResumeText', () => {
       ].join('\n')
     );
     expect(resume.sections.map(({ kind, label, layout }) => [kind, label, layout])).toEqual([
-      ['custom', 'Volunteering', 'entries'],
-      ['custom', 'Honors & Awards', 'entries'],
-      ['custom', 'Publications', 'entries'],
-      ['custom', 'Languages', 'lines'],
-      ['custom', 'Hobbies', 'lines'],
+      ['volunteering', 'Volunteering', 'entries'],
+      ['awards', 'Honors & Awards', 'entries'],
+      ['publications', 'Publications', 'entries'],
+      ['languages', 'Languages', 'lines'],
+      ['interests', 'Hobbies', 'lines'],
     ]);
   });
 });

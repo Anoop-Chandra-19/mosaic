@@ -6,6 +6,11 @@ import {
   FolderKanban,
   Wrench,
   Award,
+  HandHeart,
+  Trophy,
+  BookOpen,
+  Languages,
+  Heart,
   LayoutList,
   List,
   type LucideIcon,
@@ -20,6 +25,11 @@ export const PRESET_ICONS: Record<BuiltInSectionKind, LucideIcon> = {
   projects: FolderKanban,
   skills: Wrench,
   certifications: Award,
+  volunteering: HandHeart,
+  awards: Trophy,
+  publications: BookOpen,
+  languages: Languages,
+  interests: Heart,
 };
 
 /** A custom section has no kind to go by, so its icon shows its shape. */

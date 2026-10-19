@@ -1,4 +1,10 @@
-import { AppMenuItem } from '@/components/AppMenu';
+import { Copy } from 'lucide-react';
+import {
+  AppMenuItem,
+  AppMenuSub,
+  AppMenuSubContent,
+  AppMenuSubTrigger,
+} from '@/components/AppMenu';
 import { Text } from '@/components/Text';
 import { SECTION_PRESETS } from '@shared/resume/sectionPresets';
 import type { BuiltInSectionKind, SectionLayout } from '@shared/types/resume';
@@ -21,6 +27,27 @@ export function PresetMenuItems({
       </AppMenuItem>
     );
   });
+}
+
+/** "Another like…": the kinds the resume has, to add another of one right below it. */
+export function AnotherLikeMenuItem({
+  kinds,
+  onAdd,
+}: {
+  kinds: BuiltInSectionKind[];
+  onAdd: (kind: BuiltInSectionKind) => void;
+}) {
+  return (
+    <AppMenuSub>
+      <AppMenuSubTrigger>
+        <Copy />
+        Another like…
+      </AppMenuSubTrigger>
+      <AppMenuSubContent className="min-w-42.5">
+        <PresetMenuItems kinds={kinds} onAdd={onAdd} />
+      </AppMenuSubContent>
+    </AppMenuSub>
+  );
 }
 
 const CUSTOM_ITEMS: { layout: SectionLayout; label: string; hint: string }[] = [

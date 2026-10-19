@@ -233,29 +233,98 @@ describe('createJsonResumeExport', () => {
   it('puts custom sections under projects, keeping the section’s name', () => {
     const data = createExportData();
     data.sections.push({
-      id: 'volunteering',
+      id: 'outreach',
       kind: 'custom',
       layout: 'entries',
-      label: 'Volunteering',
+      label: 'Outreach',
       entries: [entry({ title: 'Food bank', dates: '2022' }, ['Ran logistics'])],
     });
 
     data.sections.push({
-      id: 'languages',
+      id: 'instruments',
       kind: 'custom',
       layout: 'lines',
-      label: 'Languages',
-      entries: [line('English, Spanish')],
+      label: 'Instruments',
+      entries: [line('Piano, harp')],
     });
 
     const { projects } = parseExport(data);
     expect(projects).toContainEqual({
       name: 'Food bank',
       endDate: '2022',
-      type: 'Volunteering',
+      type: 'Outreach',
       highlights: ['Ran logistics'],
     });
-    expect(projects).toContainEqual({ name: 'English, Spanish', type: 'Languages' });
+    expect(projects).toContainEqual({ name: 'Piano, harp', type: 'Instruments' });
+  });
+
+  it('puts volunteering, awards, publications, languages, and interests in their own arrays', () => {
+    const data = createExportData();
+    const section = (
+      kind: NormalizedResumeExport['sections'][number]['kind'],
+      layout: 'entries' | 'lines',
+      label: string,
+      entries: ExportEntry[]
+    ) => data.sections.push({ id: label, kind, layout, label, entries });
+    section('volunteering', 'entries', 'Volunteering', [
+      entry({ title: 'Organizer', organization: 'Food bank', dates: 'Jan 2022 to Current' }, [
+        'Ran logistics',
+      ]),
+    ]);
+    section('awards', 'entries', 'Awards', [
+      entry({ title: 'Dean’s list', organization: 'State University', dates: 'May 2019' }, [
+        'Top 5% of the class',
+      ]),
+    ]);
+    section('publications', 'entries', 'Publications', [
+      entry({ title: 'Faster builds', organization: 'Tech Journal', dates: '2023' }),
+    ]);
+    section('languages', 'lines', 'Languages', [line('Spanish — fluent'), line('French')]);
+    section('interests', 'lines', 'Interests', [line('Chess')]);
+
+    const resume = parseExport(data);
+    expect(resume.volunteer).toEqual([
+      {
+        position: 'Organizer',
+        organization: 'Food bank',
+        startDate: '2022-01',
+        highlights: ['Ran logistics'],
+      },
+    ]);
+    expect(resume.awards).toEqual([
+      {
+        title: 'Dean’s list',
+        awarder: 'State University',
+        date: '2019-05',
+        summary: 'Top 5% of the class',
+      },
+    ]);
+    expect(resume.publications).toEqual([
+      { name: 'Faster builds', publisher: 'Tech Journal', releaseDate: '2023' },
+    ]);
+    expect(resume.languages).toEqual([
+      { language: 'Spanish', fluency: 'fluent' },
+      { language: 'French' },
+    ]);
+    expect(resume.interests).toEqual([{ name: 'Chess' }]);
+  });
+
+  it('puts an award with more to say than one line under projects, by its name', () => {
+    const data = createExportData();
+    data.sections.push({
+      id: 'honors',
+      kind: 'awards',
+      layout: 'entries',
+      label: 'Honors',
+      entries: [entry({ title: 'Medal' }, ['For the notes', 'And the tables'])],
+    });
+    const resume = parseExport(data);
+    expect(resume).not.toHaveProperty('awards');
+    expect(resume.projects).toContainEqual({
+      name: 'Medal',
+      type: 'Honors',
+      highlights: ['For the notes', 'And the tables'],
+    });
   });
 
   it('records the header whole in meta.mosaic, since basics can say only part of it', () => {

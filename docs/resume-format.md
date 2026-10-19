@@ -102,9 +102,11 @@ fit more on a line. Line heights are exact points everywhere (the Word file says
 - Entries: Markdown writes the entry's line as a `###` heading with a comma inside the
   title or organization escaped (`\,`), so its parts come back exactly — unless the title
   or organization is empty and a later part isn't, which moves the parts up a place; the
-  dates go on the line under it in italics. JSON Resume puts each part in its field (position/name,
-  institution, entity, issuer, ISO dates) and keeps what no field holds in
-  `meta.mosaic.sections[].exact`. Plain text, PDF, and DOCX carry only the printed line:
+  dates go on the line under it in italics. JSON Resume puts each kind in its array (work,
+  volunteer, education, awards, certificates, publications, skills, languages, interests,
+  projects), and a custom section, or one its array can't hold, under projects by name.
+  Each part goes in its field (position/name, institution, entity, issuer, awarder,
+  publisher, ISO dates), and what no field holds stays in `meta.mosaic.sections[].exact`. Plain text, PDF, and DOCX carry only the printed line:
   it reads back the same, but a comma inside a title or organization moves the parts.
 - Every export format needs a round-trip test: export, import, compare what the page shows.
   Mosaic's own PDF, DOCX, Markdown, and JSON come back exactly within each format's

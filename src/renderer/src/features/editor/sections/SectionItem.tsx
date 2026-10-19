@@ -1,10 +1,12 @@
-import { useId, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { ArrowDown, ArrowUp, Ellipsis, Eye, EyeOff, Pencil, Plus, Trash2 } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
 import { AppTooltip } from '@/components/AppTooltip';
 import { Badge } from '@/components/Badge';
 import { Text } from '@/components/Text';
 import { AppCollapsible, AppCollapsibleTrigger } from '@/components/AppCollapsible';
+import { prefersReducedMotion } from '@/lib/motion/motionTiming';
+import { washLanded } from '@/lib/motion/rowMotions';
 import { useListMotion } from '@/lib/motion/useListMotion';
 import {
   AppMenu,
@@ -62,6 +64,17 @@ export function SectionItem({
   const foldId = useId();
   const setOpen = useOutlineStore((s) => s.setOpen);
   const [isRenaming, setIsRenaming] = useState(nameAtStart);
+  const rowRef = useRef<HTMLDivElement>(null);
+  const isLanding = useOutlineStore((s) => s.addedSection?.id === section.id);
+  const clearAddedSection = useOutlineStore((s) => s.clearAddedSection);
+  // Just added from a menu: into view, and washed once, so it's clear where it went.
+  useEffect(() => {
+    const row = rowRef.current;
+    if (!isLanding || !row) return;
+    showInPane(row);
+    washLanded(row);
+    clearAddedSection();
+  }, [isLanding, clearAddedSection]);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const { isMenuOpen, isMenuVisible, setMenuOpen, finishMenuClose } = useEditorMenu();
   // "Rename section" opens the field once the menu has closed, so the field keeps focus.
@@ -99,6 +112,7 @@ export function SectionItem({
     >
       {/* The whole row opens and closes the section; its buttons do their own thing. */}
       <div
+        ref={rowRef}
         onClick={() => !isRenaming && setOpen(section.id, !open)}
         className="group/section flex h-9 cursor-pointer dense:h-7.5 items-center gap-2 rounded-sm px-1.5 hover:bg-line"
       >
@@ -289,5 +303,78 @@ export function SectionItem({
         onConfirm={() => removeSection(section.id)}
       />
     </AppCollapsible>
+  );
+}
+
+/** Room left above a row brought into its pane, so what's above it still shows. */
+const LANDING_OFFSET_PX = 56;
+/** How far inside the pane's edges a row counts as in view, and close enough to its place. */
+const IN_VIEW_MARGIN_PX = 8;
+/** How long a row brought into view is kept there while what the scroll passed is drawn. */
+const LANDING_SETTLE_MS = 1500;
+
+/**
+ * Scrolls the pane that holds `row` to it, when it is out of sight; nothing else moves.
+ * Entries off screen hold a guessed height until they are drawn (`EntryCard`), so as they
+ * come into view they take their real one and push the row on: while the pane's content
+ * keeps changing size, it aims again, once any smooth scroll has ended.
+ */
+function showInPane(row: HTMLElement) {
+  let pane = row.parentElement;
+  while (pane && !isScrollPane(pane)) pane = pane.parentElement;
+  const content = pane?.firstElementChild;
+  if (!pane || !content || isInView(row, pane)) return;
+  const isSmooth = !prefersReducedMotion();
+  const observer = new ResizeObserver(() => aim());
+  let isScrolling = false;
+  let settled = 0;
+  const aim = () => {
+    if (isScrolling) return;
+    window.clearTimeout(settled);
+    settled = window.setTimeout(() => observer.disconnect(), LANDING_SETTLE_MS);
+    const offset =
+      row.getBoundingClientRect().top - pane.getBoundingClientRect().top - LANDING_OFFSET_PX;
+    const top = Math.min(
+      Math.max(0, pane.scrollTop + offset),
+      pane.scrollHeight - pane.clientHeight
+    );
+    const distance = top - pane.scrollTop;
+    if (Math.abs(distance) <= IN_VIEW_MARGIN_PX) return;
+    if (!isSmooth) {
+      pane.scrollTo({ top });
+      return;
+    }
+    // A long way: jump to a pane short of it, rather than draw every entry on the way, and
+    // glide the rest.
+    if (Math.abs(distance) > pane.clientHeight) {
+      pane.scrollTo({ top: top - Math.sign(distance) * pane.clientHeight });
+      requestAnimationFrame(aim);
+      return;
+    }
+    pane.scrollTo({ top, behavior: 'smooth' });
+    isScrolling = true;
+    const finish = () => {
+      isScrolling = false;
+      aim();
+    };
+    pane.addEventListener('scrollend', finish, { once: true });
+  };
+  aim();
+  observer.observe(content);
+}
+
+function isInView(row: HTMLElement, pane: HTMLElement): boolean {
+  const rowBox = row.getBoundingClientRect();
+  const paneBox = pane.getBoundingClientRect();
+  return (
+    rowBox.top >= paneBox.top + IN_VIEW_MARGIN_PX &&
+    rowBox.bottom <= paneBox.bottom - IN_VIEW_MARGIN_PX
+  );
+}
+
+function isScrollPane(element: HTMLElement): boolean {
+  return (
+    element.scrollHeight > element.clientHeight &&
+    /auto|scroll/.test(getComputedStyle(element).overflowY)
   );
 }

@@ -22,6 +22,7 @@ export const MOTION_MS = {
   carryTint: 900,
   carryTintDelay: 140,
   changeFlash: 1300,
+  landWash: 1200,
   staggerEnter: 160,
   staggerExit: 80,
   staggerStep: 30,

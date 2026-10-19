@@ -93,6 +93,11 @@ interface JsonResume {
   projects?: JsonResumeItem[];
   skills?: JsonResumeItem[];
   certificates?: JsonResumeItem[];
+  volunteer?: JsonResumeItem[];
+  awards?: JsonResumeItem[];
+  publications?: JsonResumeItem[];
+  languages?: JsonResumeItem[];
+  interests?: JsonResumeItem[];
   meta: { mosaic: MosaicJsonResumeMeta };
 }
 
@@ -120,6 +125,16 @@ function sourceOf({ kind, layout, entries }: ExportSection): JsonResumeSource {
     case 'certifications':
       // A certificate has no field for bullets.
       return entries.some((entry) => entry.bullets.length > 0) ? 'projects' : 'certificates';
+    case 'volunteering':
+      return 'volunteer';
+    case 'awards':
+    case 'publications':
+      // An award or a publication has room for one line about it.
+      return entries.some((entry) => entry.bullets.length > 1) ? 'projects' : kind;
+    case 'languages':
+    case 'interests':
+      // A language or an interest is a line, not a title with bullets.
+      return layout === 'lines' ? kind : 'projects';
     case 'projects':
     case 'custom':
       return 'projects';
@@ -194,6 +209,11 @@ export function createJsonResumeExport(data: NormalizedResumeExport): string {
     projects: [],
     skills: [],
     certificates: [],
+    volunteer: [],
+    awards: [],
+    publications: [],
+    languages: [],
+    interests: [],
   };
   const sections: MosaicJsonResumeMeta['sections'] = [];
 

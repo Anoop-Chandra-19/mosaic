@@ -39,10 +39,6 @@ import type {
   SectionLayout,
 } from '@shared/types/resume';
 import type { LeftOutLine } from '../parsing/importLines';
-import {
-  JSON_RESUME_CUSTOM_SECTIONS,
-  type JsonResumeCustomSection,
-} from '../parsing/sectionHeaders';
 import type { ParsedResume } from '../parsing/parseResume';
 
 type Json = Record<string, unknown>;
@@ -70,9 +66,6 @@ const SOURCES: ReadonlySet<string> = new Set<JsonResumeSource>([
   'projects',
   'skills',
   'certificates',
-]);
-
-const NOT_EXPORTED: ReadonlySet<string> = new Set([
   'volunteer',
   'awards',
   'publications',
@@ -273,11 +266,18 @@ function ownSections(resume: Json, meta: MosaicJsonResumeMeta): ResumeSection[] 
     projects: items(resume.projects),
     skills: items(resume.skills),
     certificates: items(resume.certificates),
+    volunteer: items(resume.volunteer),
+    awards: items(resume.awards),
+    publications: items(resume.publications),
+    languages: items(resume.languages),
+    interests: items(resume.interests),
   };
   for (const source of SOURCES) {
     const wanted = meta.sections
       .filter((section) => section.from === source)
       .reduce((sum, section) => sum + section.count, 0);
+    // An array the export left empty may hold what another tool added, read after these.
+    if (wanted === 0 && source !== 'summary') continue;
     if (wanted !== queues[source as JsonResumeSource].length) return null;
   }
 
@@ -356,19 +356,16 @@ function educationEntry(item: Json): ResumeEntry {
 const preset = (kind: BuiltInSectionKind, entries: ResumeEntry[]) =>
   sectionOf(kind, SECTION_PRESETS[kind].layout, SECTION_PRESETS[kind].label, entries);
 
-const asLines = (lines: string[]) => lines.map((line) => entryOf({ line }));
-
 const customList = (label: string, lines: string[]) =>
-  sectionOf('custom', 'lines', label, asLines(lines));
+  sectionOf(
+    'custom',
+    'lines',
+    label,
+    lines.map((line) => entryOf({ line }))
+  );
 
 const customSection = (label: string, entries: ResumeEntry[]) =>
   sectionOf('custom', 'entries', label, entries);
-
-/** One of JSON Resume's sections with no built-in kind, named and shaped as import knows it. */
-function listedSection(key: JsonResumeCustomSection, entries: ResumeEntry[]): ResumeSection {
-  const { label, layout } = JSON_RESUME_CUSTOM_SECTIONS[key];
-  return sectionOf('custom', layout, label, entries);
-}
 
 /** Projects by `type`: untyped ones are Projects; each type is a section of that name. */
 function projectSections(projects: Json[]): ResumeSection[] {
@@ -426,8 +423,8 @@ function standardSections(resume: Json, only?: ReadonlySet<string>): ResumeSecti
         ];
       case 'volunteer':
         return [
-          listedSection(
-            'volunteer',
+          preset(
+            'volunteering',
             items(value).map((item) => roleEntry(item, 'position', 'organization'))
           ),
         ];
@@ -457,31 +454,32 @@ function standardSections(resume: Json, only?: ReadonlySet<string>): ResumeSecti
         ];
       case 'awards':
         return [
-          listedSection(
+          preset(
             'awards',
             items(value).map((item) => noteEntry(item, 'title', 'awarder', 'date'))
           ),
         ];
       case 'publications':
         return [
-          listedSection(
+          preset(
             'publications',
             items(value).map((item) => noteEntry(item, 'name', 'publisher', 'releaseDate'))
           ),
         ];
       case 'languages':
         return [
-          listedSection(
+          preset(
             'languages',
-            asLines(
-              items(value).map((item) =>
-                [text(item.language), text(item.fluency)].filter(Boolean).join(' — ')
-              )
-            )
+            items(value).map((item) => entryOf({ line: fromItem('languages', item).title }))
           ),
         ];
       case 'interests':
-        return [listedSection('interests', asLines(items(value).map(withKeywords)))];
+        return [
+          preset(
+            'interests',
+            items(value).map((item) => entryOf({ line: withKeywords(item) }))
+          ),
+        ];
       default:
         return [];
     }
@@ -499,6 +497,11 @@ function leftOutOf(resume: Json): LeftOutLine[] {
     .map((line) => ({ text: line, reason: 'not-held', canPlace: true }));
 }
 
+/** The section arrays Mosaic's export put nothing in, which another tool may have filled. */
+function arraysLeftEmpty(meta: MosaicJsonResumeMeta): ReadonlySet<string> {
+  return new Set(SECTION_ARRAYS.filter((key) => !meta.sections.some(({ from }) => from === key)));
+}
+
 /**
  * A JSON Resume file as a resume to review. Mosaic's own export comes back exactly, through
  * `meta.mosaic`; any other file is read from its standard fields, each array into the
@@ -510,7 +513,7 @@ export function readJsonResume(resume: Json): ParsedResume {
   const own = meta ? ownSections(resume, meta) : null;
   const warnings: string[] = [];
 
-  const added = own ? standardSections(resume, NOT_EXPORTED) : [];
+  const added = meta && own ? standardSections(resume, arraysLeftEmpty(meta)) : [];
   const sections = [...(own ?? standardSections(resume)), ...added]
     .map((section) => ({ ...section, items: section.items.filter((item) => !isEmpty(item)) }))
     .filter((section) => section.items.length > 0)

@@ -104,10 +104,40 @@ export function everything(): ResumeData {
       entry({ title: 'Engine operator', bullets: ['Renewed yearly'] }),
     ]),
     section('summary', 'entries', 'Highlights', [entry({ title: 'First programmer' })]),
-    section('custom', 'entries', 'Volunteering', [
+    section('custom', 'entries', 'Outreach', [
       entry({ title: 'Tutor', dates: '1850', bullets: ['Taught girls maths'] }),
     ]),
-    section('custom', 'lines', 'Languages', lines('English', 'French')),
+    section('custom', 'lines', 'Instruments', lines('Harp', 'Piano')),
+    section('volunteering', 'entries', 'Volunteering', [
+      entry({
+        title: 'Organizer',
+        organization: 'Night School',
+        location: 'London',
+        dates: 'Jan 1851 to Mar 1852',
+        bullets: ['Ran evening classes'],
+      }),
+    ]),
+    section('awards', 'entries', 'Awards', [
+      entry({
+        title: 'Honorary member',
+        organization: 'Royal Society',
+        dates: '1844',
+        bullets: ['For Note G'],
+      }),
+    ]),
+    section('awards', 'entries', 'Honors', [
+      entry({ title: 'Medal', bullets: ['For the notes', 'And the tables'] }),
+    ]),
+    section('publications', 'entries', 'Publications', [
+      entry({
+        title: 'Sketch of the Analytical Engine',
+        organization: 'Scientific Memoirs',
+        dates: '1843',
+        bullets: ['Translated, with notes'],
+      }),
+    ]),
+    section('languages', 'lines', 'Languages', lines('English — native', 'French')),
+    section('interests', 'lines', 'Interests', lines('Horses', 'Music')),
   ]);
 }
 
