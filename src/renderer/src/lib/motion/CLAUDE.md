@@ -45,8 +45,10 @@ Use what exists before adding a motion:
 - `easeHeightChanges` (a ref callback) eases a box whose height follows its content, such
   as a dialog changing step; `recordPlaces` then `slideFromRecordedPlaces` slide items
   to where a layout switch put them.
-- Folds are Radix collapsibles (`EditorFold`, `ReviewFold`); fixed motions, such as a
-  split's seam, are CSS keyframes in `index.css`.
+- Folds: `ReviewFold` is a Radix collapsible; the editor's `EditorFold` eases its height in
+  CSS (`interpolate-size`) instead, since Radix measures every fold as it mounts and a long
+  resume mounts dozens at once. Fixed motions, such as a split's seam, are CSS keyframes
+  in `index.css`.
 
 ## Safety and validation
 

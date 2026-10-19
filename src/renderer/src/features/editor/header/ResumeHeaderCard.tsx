@@ -1,4 +1,4 @@
-import { Fragment } from 'react';
+import { Fragment, useId } from 'react';
 import { ChevronsDownUp, ChevronsUpDown, Ellipsis, Plus, Shapes } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
 import { AppTooltip } from '@/components/AppTooltip';
@@ -42,6 +42,7 @@ export function ResumeHeaderCard({ contact: shown }: { contact?: ContactInfo }) 
   const shouldShowIcons = useUiStore((s) => s.shouldShowHeaderIcons);
   const toggleIcons = useUiStore((s) => s.toggleHeaderIcons);
   const open = useOutlineStore((s) => !s.collapsedIds.includes(HEADER_OUTLINE_ID));
+  const foldId = useId();
   const setOpen = useOutlineStore((s) => s.setOpen);
   const { header } = contact;
   const printed = getPrintableHeaderLines(header);
@@ -119,7 +120,7 @@ export function ResumeHeaderCard({ contact: shown }: { contact?: ContactInfo }) 
               </AppMenuItem>
             </AppMenuContent>
           </AppMenu>
-          <AppCollapsibleTrigger asChild>
+          <AppCollapsibleTrigger asChild aria-controls={foldId}>
             <AppButton
               variant="ghost"
               size="xs"
@@ -174,7 +175,7 @@ export function ResumeHeaderCard({ contact: shown }: { contact?: ContactInfo }) 
         </div>
       </AppTooltip>
 
-      <EditorFold>
+      <EditorFold isOpen={open} id={foldId}>
         <ListMotionContext value={linesMotion}>
           <div ref={linesRef} className="relative mt-2.5">
             {header.lines.map((line) => (

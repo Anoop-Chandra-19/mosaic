@@ -188,7 +188,10 @@ class ListMotionController implements ListMotion {
       }
       this.expected = {};
     }
-    this.record();
+    // Until the resize observer's first notice, which comes once the browser has laid the page
+    // out, there is no resting place to move from. Measuring here instead, each list mounting
+    // with many others (a long resume's editor) would force a layout of its own.
+    if (this.last) this.record();
   }
 
   /** While rows move, once they have landed. */
