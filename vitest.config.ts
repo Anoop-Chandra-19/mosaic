@@ -12,12 +12,7 @@ export default defineConfig({
   },
   test: {
     // Playwright specs that drive the built Electron app: `bun run test:e2e`, and the
-    // page-break sweep and typing check, run by hand.
-    exclude: [
-      ...configDefaults.exclude,
-      'e2e/**',
-      'scripts/page-break-sweep/**',
-      'scripts/typing-check/**',
-    ],
+    // checks in `scripts/`, run by hand.
+    exclude: [...configDefaults.exclude, 'e2e/**', 'scripts/**'],
   },
 });

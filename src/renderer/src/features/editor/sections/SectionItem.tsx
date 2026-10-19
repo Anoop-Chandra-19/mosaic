@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useId, useRef, useState } from 'react';
 import { ArrowDown, ArrowUp, Ellipsis, Eye, EyeOff, Pencil, Plus, Trash2 } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
 import { AppTooltip } from '@/components/AppTooltip';
@@ -59,6 +59,7 @@ export function SectionItem({
   const addEntry = useResumeStore((s) => s.addEntry);
   const reorderEntries = useResumeStore((s) => s.reorderEntries);
   const open = useOutlineStore((s) => !s.collapsedIds.includes(section.id));
+  const foldId = useId();
   const setOpen = useOutlineStore((s) => s.setOpen);
   const [isRenaming, setIsRenaming] = useState(nameAtStart);
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -106,7 +107,7 @@ export function SectionItem({
           label={`Drag ${section.label} to reorder`}
           className={EDITOR_CONTROL_REVEAL_CLASSES.section}
         />
-        <AppCollapsibleTrigger asChild>
+        <AppCollapsibleTrigger asChild aria-controls={foldId}>
           <AppButton
             variant="ghost"
             size="xs"
@@ -244,7 +245,7 @@ export function SectionItem({
         </div>
       </div>
 
-      <EditorFold>
+      <EditorFold isOpen={open} id={foldId}>
         <div ref={entriesRef} className="relative">
           {section.items.length === 0 ? (
             <Text

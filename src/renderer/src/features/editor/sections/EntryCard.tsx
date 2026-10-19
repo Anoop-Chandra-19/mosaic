@@ -9,7 +9,6 @@ import {
   AppMenuSeparator,
   AppMenuTrigger,
 } from '@/components/AppMenu';
-import { AppCollapsible } from '@/components/AppCollapsible';
 import { matchesAction } from '@/features/shortcuts/shortcutBindings';
 import { isTypingField } from '@/lib/keyboardShortcuts';
 import { ListMotionContext, useSwapMotion } from '@/lib/motion/useListMotion';
@@ -200,73 +199,71 @@ export function EntryCard({
 
           {/* A left-off entry keeps its bullets, but folded away until it is back on. */}
           {!isTextOnly && (
-            <AppCollapsible open={entry.selected}>
-              <EditorFold>
-                <ListMotionContext value={motion}>
-                  <div
-                    ref={listRef}
-                    className="relative mt-(--density-gap) flex flex-col gap-(--density-row)"
-                  >
-                    <SortList
-                      ids={shownIds}
-                      kind="bullet"
-                      className="flex flex-col gap-(--density-row)"
-                      // Mid-merge the list lacks the folded-in bullet, which an order would drop.
-                      onReorder={(ids) => isMerging || reorderBullets(sectionId, entry.id, ids)}
-                      renderRow={(id, grip) => {
-                        const index = entry.bullets.findIndex((bullet) => bullet.id === id);
-                        const row = (
-                          <BulletItem
-                            bullet={entry.bullets[index]}
-                            sectionId={sectionId}
-                            entryId={entry.id}
-                            grip={grip}
-                            isDimmed={isSectionHidden}
-                            isFirst={index === 0}
-                            isLast={index === entry.bullets.length - 1}
-                            onMoveUp={() => moveBullet(index, -1)}
-                            onMoveDown={() => moveBullet(index, 1)}
-                            onAddBelow={() => setAddingAfterId(id)}
-                            {...bulletRowProps(entry.bullets[index])}
+            <EditorFold isOpen={entry.selected}>
+              <ListMotionContext value={motion}>
+                <div
+                  ref={listRef}
+                  className="relative mt-(--density-gap) flex flex-col gap-(--density-row)"
+                >
+                  <SortList
+                    ids={shownIds}
+                    kind="bullet"
+                    className="flex flex-col gap-(--density-row)"
+                    // Mid-merge the list lacks the folded-in bullet, which an order would drop.
+                    onReorder={(ids) => isMerging || reorderBullets(sectionId, entry.id, ids)}
+                    renderRow={(id, grip) => {
+                      const index = entry.bullets.findIndex((bullet) => bullet.id === id);
+                      const row = (
+                        <BulletItem
+                          bullet={entry.bullets[index]}
+                          sectionId={sectionId}
+                          entryId={entry.id}
+                          grip={grip}
+                          isDimmed={isSectionHidden}
+                          isFirst={index === 0}
+                          isLast={index === entry.bullets.length - 1}
+                          onMoveUp={() => moveBullet(index, -1)}
+                          onMoveDown={() => moveBullet(index, 1)}
+                          onAddBelow={() => setAddingAfterId(id)}
+                          {...bulletRowProps(entry.bullets[index])}
+                        />
+                      );
+                      if (addingAfterId !== id) return row;
+                      return (
+                        <div className="flex flex-col gap-(--density-row)">
+                          {row}
+                          <BulletEditor
+                            initial=""
+                            livePreview={(text) => showNewBullet(entry.id, text, id)}
+                            onSave={(text) => {
+                              if (text) addBullet(sectionId, entry.id, text, id);
+                              setAddingAfterId(null);
+                            }}
+                            onCancel={() => setAddingAfterId(null)}
+                            onAddBelow={(text) => {
+                              setAddingAfterId(
+                                text ? addBullet(sectionId, entry.id, text, id) : null
+                              );
+                            }}
+                            onPasteLines={(lines) => {
+                              lines.reduce(
+                                (after, line) => addBullet(sectionId, entry.id, line, after),
+                                id
+                              );
+                              setAddingAfterId(null);
+                            }}
                           />
-                        );
-                        if (addingAfterId !== id) return row;
-                        return (
-                          <div className="flex flex-col gap-(--density-row)">
-                            {row}
-                            <BulletEditor
-                              initial=""
-                              livePreview={(text) => showNewBullet(entry.id, text, id)}
-                              onSave={(text) => {
-                                if (text) addBullet(sectionId, entry.id, text, id);
-                                setAddingAfterId(null);
-                              }}
-                              onCancel={() => setAddingAfterId(null)}
-                              onAddBelow={(text) => {
-                                setAddingAfterId(
-                                  text ? addBullet(sectionId, entry.id, text, id) : null
-                                );
-                              }}
-                              onPasteLines={(lines) => {
-                                lines.reduce(
-                                  (after, line) => addBullet(sectionId, entry.id, line, after),
-                                  id
-                                );
-                                setAddingAfterId(null);
-                              }}
-                            />
-                          </div>
-                        );
-                      }}
-                    />
-                    <AddBulletButton
-                      onAdd={(text) => addBullet(sectionId, entry.id, text)}
-                      livePreview={(text) => showNewBullet(entry.id, text)}
-                    />
-                  </div>
-                </ListMotionContext>
-              </EditorFold>
-            </AppCollapsible>
+                        </div>
+                      );
+                    }}
+                  />
+                  <AddBulletButton
+                    onAdd={(text) => addBullet(sectionId, entry.id, text)}
+                    livePreview={(text) => showNewBullet(entry.id, text)}
+                  />
+                </div>
+              </ListMotionContext>
+            </EditorFold>
           )}
         </div>
 
