@@ -1,4 +1,3 @@
-import { SECTION_PRESETS } from '@shared/resume/sectionPresets';
 import type { ResumeEntry, ResumeSection } from '@shared/types/resume';
 import type { LeftOutLine } from './parsing/importLines';
 import { removeRatingMarks, type ParsedResume } from './parsing/parseResume';
@@ -29,7 +28,7 @@ function placedItem(text: string, layout: ResumeSection['layout']): ResumeEntry 
 /** A known kind keeps its kind ("Skills"), when that kind holds lines. */
 function newSection(label: string): ResumeSection {
   const known = matchSectionHeader(label);
-  const kind = known && SECTION_PRESETS[known].layout === 'lines' ? known : 'custom';
+  const kind = known?.layout === 'lines' ? known.kind : 'custom';
   return { id: crypto.randomUUID(), kind, layout: 'lines', label, order: 0, items: [] };
 }
 
