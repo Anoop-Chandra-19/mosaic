@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils';
  * group draws separate buttons.
  *
  * The chosen option is styled by `aria-checked` (or `aria-pressed` for several at once), not
- * `data-state`: an `AppTooltip` around an option writes its own `data-state` over it.
+ * `data-state`, which other parts wrapped around an option can write over.
  */
 
 const SIZE_CLASSES = {
