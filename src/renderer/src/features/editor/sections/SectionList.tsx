@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useDeferredValue, useState } from 'react';
 import { Plus } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
 import { AppMenu, AppMenuContent, AppMenuSeparator, AppMenuTrigger } from '@/components/AppMenu';
@@ -28,7 +28,7 @@ export function SectionList({
   namingId: string | null;
   onCustomAdded: (sectionId: string) => void;
 }) {
-  const draftSections = useResumeStore((s) => s.sections);
+  const draftSections = useDraftSectionsBuiltInSlices();
   const sections = shown ?? draftSections;
   const addSection = useResumeStore((s) => s.addSection);
   const reorderSections = useResumeStore((s) => s.reorderSections);
@@ -102,4 +102,17 @@ export function SectionList({
       )}
     </div>
   );
+}
+
+/**
+ * The draft's sections. Edits show at once; a whole other document (an import, a template
+ * opened) is built in the background a slice at a time, so a long one doesn't hold the
+ * window up, and the sections shown until then stay a moment.
+ */
+function useDraftSectionsBuiltInSlices(): ResumeSection[] {
+  const templateId = useResumeStore((s) => s.templateId);
+  const sections = useResumeStore((s) => s.sections);
+  const builtTemplateId = useDeferredValue(templateId);
+  const builtSections = useDeferredValue(sections);
+  return templateId === builtTemplateId ? sections : builtSections;
 }
