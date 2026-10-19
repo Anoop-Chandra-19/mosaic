@@ -301,7 +301,7 @@ describe('docxLines', () => {
 
     it('keeps the content of a label table whose labels are not section names', () => {
       const table = rows(
-        [[p('Languages')], [p('English, French, and a little German')]],
+        [[p('Spoken languages')], [p('English, French, and a little German')]],
         [[p('Notation')], [p('The writing of operations as tables')]]
       );
       const { lines } = linesOf([p('Ada'), heading('Skills'), table]);

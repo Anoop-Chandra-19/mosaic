@@ -39,6 +39,10 @@ import type {
   SectionLayout,
 } from '@shared/types/resume';
 import type { LeftOutLine } from '../parsing/importLines';
+import {
+  JSON_RESUME_CUSTOM_SECTIONS,
+  type JsonResumeCustomSection,
+} from '../parsing/sectionHeaders';
 import type { ParsedResume } from '../parsing/parseResume';
 
 type Json = Record<string, unknown>;
@@ -352,16 +356,19 @@ function educationEntry(item: Json): ResumeEntry {
 const preset = (kind: BuiltInSectionKind, entries: ResumeEntry[]) =>
   sectionOf(kind, SECTION_PRESETS[kind].layout, SECTION_PRESETS[kind].label, entries);
 
+const asLines = (lines: string[]) => lines.map((line) => entryOf({ line }));
+
 const customList = (label: string, lines: string[]) =>
-  sectionOf(
-    'custom',
-    'lines',
-    label,
-    lines.map((line) => entryOf({ line }))
-  );
+  sectionOf('custom', 'lines', label, asLines(lines));
 
 const customSection = (label: string, entries: ResumeEntry[]) =>
   sectionOf('custom', 'entries', label, entries);
+
+/** One of JSON Resume's sections with no built-in kind, named and shaped as import knows it. */
+function listedSection(key: JsonResumeCustomSection, entries: ResumeEntry[]): ResumeSection {
+  const { label, layout } = JSON_RESUME_CUSTOM_SECTIONS[key];
+  return sectionOf('custom', layout, label, entries);
+}
 
 /** Projects by `type`: untyped ones are Projects; each type is a section of that name. */
 function projectSections(projects: Json[]): ResumeSection[] {
@@ -419,8 +426,8 @@ function standardSections(resume: Json, only?: ReadonlySet<string>): ResumeSecti
         ];
       case 'volunteer':
         return [
-          customSection(
-            'Volunteering',
+          listedSection(
+            'volunteer',
             items(value).map((item) => roleEntry(item, 'position', 'organization'))
           ),
         ];
@@ -450,29 +457,31 @@ function standardSections(resume: Json, only?: ReadonlySet<string>): ResumeSecti
         ];
       case 'awards':
         return [
-          customSection(
-            'Awards',
+          listedSection(
+            'awards',
             items(value).map((item) => noteEntry(item, 'title', 'awarder', 'date'))
           ),
         ];
       case 'publications':
         return [
-          customSection(
-            'Publications',
+          listedSection(
+            'publications',
             items(value).map((item) => noteEntry(item, 'name', 'publisher', 'releaseDate'))
           ),
         ];
       case 'languages':
         return [
-          customList(
-            'Languages',
-            items(value).map((item) =>
-              [text(item.language), text(item.fluency)].filter(Boolean).join(' — ')
+          listedSection(
+            'languages',
+            asLines(
+              items(value).map((item) =>
+                [text(item.language), text(item.fluency)].filter(Boolean).join(' — ')
+              )
             )
           ),
         ];
       case 'interests':
-        return [customList('Interests', items(value).map(withKeywords))];
+        return [listedSection('interests', asLines(items(value).map(withKeywords)))];
       default:
         return [];
     }

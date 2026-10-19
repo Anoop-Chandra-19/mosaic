@@ -15,13 +15,14 @@ export function largeResumeText(bullets: number): string {
   return [...text, ...Array.from({ length: bullets }, (_, i) => bullet(i))].join('\n');
 }
 
+/** Headings import knows, so each is a section of its own. */
 const WORST_CASE_SECTIONS = [
   'Experience',
+  'Internships',
   'Projects',
-  'Leadership',
   'Volunteering',
-  'Research',
-  'Teaching',
+  'Awards',
+  'Publications',
 ];
 const ENTRIES_PER_SECTION = 5;
 const BULLETS_PER_ENTRY = 7;

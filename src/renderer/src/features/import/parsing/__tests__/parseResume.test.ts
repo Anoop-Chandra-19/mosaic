@@ -199,6 +199,38 @@ describe('parseResumeText', () => {
     expect(resume.contact.name).toBe('');
     expect(warnings.length).toBeGreaterThan(0);
   });
+
+  it('knows JSON Resume’s other sections by their headings, as custom sections of their shape', () => {
+    const { resume } = parseResumeText(
+      [
+        'Ada Lovelace',
+        '',
+        'Volunteering',
+        'Tutor, Night School',
+        '- Taught arithmetic to adults.',
+        '',
+        'Honors & Awards',
+        'Medal, Royal Society',
+        '',
+        'Publications',
+        'Sketch of the Analytical Engine, Taylor’s Scientific Memoirs',
+        '',
+        'Languages',
+        'English',
+        'French',
+        '',
+        'Hobbies',
+        'Horses',
+      ].join('\n')
+    );
+    expect(resume.sections.map(({ kind, label, layout }) => [kind, label, layout])).toEqual([
+      ['custom', 'Volunteering', 'entries'],
+      ['custom', 'Honors & Awards', 'entries'],
+      ['custom', 'Publications', 'entries'],
+      ['custom', 'Languages', 'lines'],
+      ['custom', 'Hobbies', 'lines'],
+    ]);
+  });
 });
 
 describe('parseResumeLines', () => {
@@ -567,9 +599,7 @@ describe('textToLines', () => {
       )
     ).toEqual(['Work History', 'Volunteering and Outreach', 'Ai Research']);
     // Only where the headings Mosaic knows are in capitals too, and only after a gap.
-    expect(headings('ADA\n\nWork History\nAnalyst\n\nVOLUNTEERING\nTutor')).toEqual([
-      'Work History',
-    ]);
+    expect(headings('ADA\n\nWork History\nAnalyst\n\nOUTREACH\nTutor')).toEqual(['Work History']);
     expect(headings('ADA\n\nWORK HISTORY\nACME CORP\nAnalyst')).toEqual(['Work History']);
   });
 });
