@@ -7,7 +7,8 @@ const mosaic = withApp();
 test('a new install opens on the Start panel', async () => {
   const { page, errors } = mosaic();
 
-  await expect(page).toHaveTitle('Mosaic');
+  // e2e runs development builds; a release is titled plain Mosaic.
+  await expect(page).toHaveTitle('Mosaic DEV');
   await expect(page.getByRole('heading', { name: 'Start your first resume' })).toBeVisible();
   await expect(page.getByRole('button', { name: /Blank resume/ })).toBeFocused();
   expect(errors).toEqual([]);

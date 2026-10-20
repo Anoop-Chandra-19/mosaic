@@ -1,5 +1,6 @@
 import type { MosaicBackup } from '@shared/types/backup';
 import type { MosaicDbBridge } from '@shared/types/db';
+import type { MosaicDev } from '@shared/types/devTools';
 import type { MosaicFiles } from '@shared/types/files';
 import type { MosaicModelProviders } from '@shared/types/modelProviders';
 import type { MosaicSecrets } from '@shared/types/secrets';
@@ -14,6 +15,8 @@ declare global {
       backup: MosaicBackup;
       secrets: MosaicSecrets;
       modelProviders: MosaicModelProviders;
+      /** Development builds only. */
+      dev?: MosaicDev;
       app: {
         /**
          * Deletes the API keys, the database file, and everything the page stored. Reload

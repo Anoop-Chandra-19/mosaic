@@ -12,10 +12,14 @@ Mosaic's).
 
 ## Developer tools
 
-Every build except a release has a wrench in the top bar. It lists tools for checking
-the app with fictional data, such as loading an example resume or staging the
-assistant's suggestions without a provider. Each tool is one entry in `DEV_TOOLS`
-(`features/dev-tools/devTools.ts`). e2e specs use the same menu.
+Every build except a release has the developer tools: a palette opened with Ctrl+Shift+D
+(⇧⌘D on a Mac) from any screen, Develop › Developer tools… in the menu bar, or the wrench in
+the top bar's empty space. The window's title says `Mosaic DEV`. The tools check the app with
+fictional data, such as opening an example resume or staging the assistant's suggestions
+without a provider, and Recent (kept in `.dev-data/dev-tools.json`) runs the last one again
+with Enter. Each tool is one entry in `DEV_TOOLS` (`features/dev-tools/devTools.ts`).
+e2e runs the same tools for setup (`runDevTool` in `e2e/harness/devTools.ts`), so a spec
+clicks only what it tests; a setup a spec needs that no tool makes becomes a tool first.
 `bun run package` builds with `--mode release`, which leaves the tools out of the
 installer. Keep the data side-effect free (build it in a function), or the release
 bundle keeps it.

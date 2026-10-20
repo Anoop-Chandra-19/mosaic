@@ -1,4 +1,5 @@
 import { expect, type Page } from '@playwright/test';
+import { runDevTool } from '../harness/devTools';
 import { test, withApp } from '../harness/launch';
 
 const mosaic = withApp();
@@ -105,9 +106,7 @@ test('opening and closing the history each run one transition, and stepping runs
 
 /** The example suggestions, staged through the developer tools, which turn AI on to see them. */
 async function stageSuggestions(page: Page) {
-  await page.getByRole('button', { name: 'Developer tools' }).click();
-  await page.getByRole('menuitem', { name: /Stage example suggestions/ }).click();
-  await expect(page.getByText(/Turned the assistant on/)).toBeVisible();
+  await runDevTool(page, 'stageSuggestions');
 }
 
 test('the suggestion review opens and closes in one transition each, from the pane or without it', async () => {

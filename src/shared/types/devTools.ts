@@ -1,0 +1,22 @@
+/** A developer tool's choices: plain values, so tests can pass the same ones. */
+export type DevToolArgs = Record<string, string | number | boolean>;
+
+/** One run of a developer tool, as Recent keeps it: the tool and the choices it ran with. */
+export interface DevToolRun {
+  toolId: string;
+  args: DevToolArgs;
+}
+
+/** How many runs Recent keeps. */
+export const MAX_RECENT_DEV_RUNS = 4;
+
+/**
+ * Development builds only: `window.mosaic.dev`, which a release build doesn't have. Kept by
+ * main in the development data folder, never in the database, settings or a backup.
+ */
+export interface MosaicDev {
+  readRecent(): Promise<DevToolRun[]>;
+  saveRecent(runs: DevToolRun[]): Promise<void>;
+  /** Develop › Developer tools… was chosen in the menu bar. */
+  onOpenTools(open: () => void): void;
+}

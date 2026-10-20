@@ -17,19 +17,30 @@ import { cn } from '@/lib/utils';
 
 export const AppDialog = Dialog.Root;
 
+/** Centered; or near the top, for a dialog whose height changes as it is used (a palette). */
+const PLACEMENT_CLASSES = {
+  center: 'top-1/2 -translate-y-1/2',
+  top: 'top-13',
+} as const;
+
 export function AppDialogContent({
   className,
   children,
   showCloseButton = true,
+  placement = 'center',
   onEscapeKeyDown,
   ...props
-}: ComponentProps<typeof Dialog.Content> & { showCloseButton?: boolean }) {
+}: ComponentProps<typeof Dialog.Content> & {
+  showCloseButton?: boolean;
+  placement?: keyof typeof PLACEMENT_CLASSES;
+}) {
   return (
     <Dialog.Portal>
       <Dialog.Overlay className="fixed inset-0 z-50 bg-scrim data-[state=closed]:animate-out data-[state=closed]:fade-out-0" />
       <Dialog.Content
         className={cn(
-          'fixed top-1/2 left-1/2 z-50 grid w-full max-w-[calc(100%-2rem)] -translate-1/2 gap-4 rounded-[0.875rem] border border-line-strong bg-background p-6 text-body text-ink-soft shadow-overlay duration-200 outline-none data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 sm:max-w-lg',
+          'fixed left-1/2 z-50 grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 gap-4 rounded-[0.875rem] border border-line-strong bg-background p-6 text-body text-ink-soft shadow-overlay duration-200 outline-none data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 sm:max-w-lg',
+          PLACEMENT_CLASSES[placement],
           className
         )}
         onEscapeKeyDown={(event) => {

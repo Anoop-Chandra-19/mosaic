@@ -3,6 +3,7 @@ import { closeAppDatabase, getAppDatabase, openAppDatabaseOrQuit } from './db/ap
 import { redirectDevProfile } from './devProfile';
 import { registerBackupHandlers } from './ipc/registerBackupHandlers';
 import { registerDbHandlers } from './ipc/registerDbHandlers';
+import { registerDevHandlers } from './ipc/registerDevHandlers';
 import { registerEraseHandler } from './ipc/registerEraseHandler';
 import { registerFileHandlers } from './ipc/registerFileHandlers';
 import { registerModelProviderHandlers } from './ipc/registerModelProviderHandlers';
@@ -40,6 +41,7 @@ if (!app.requestSingleInstanceLock()) {
     registerModelProviderHandlers(isAppFrame);
     registerSecretsHandlers(apiKeys, isAppFrame);
     registerEraseHandler(apiKeys, isAppFrame);
+    if (!app.isPackaged) registerDevHandlers(isAppFrame);
     setAppMenu();
     openAppWindow();
     reopenWindowOnActivate();
