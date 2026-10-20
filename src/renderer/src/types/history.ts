@@ -6,6 +6,9 @@ export type HistoryKindFilter = 'all' | 'named' | 'events';
  */
 export type HistoryComparison = 'parent' | 'number' | 'draft';
 
+/** How the full history shows the version being read: as it prints, or only what changed. */
+export type ReadPaneView = 'page' | 'changes';
+
 /**
  * The moments that get a history row of their own, besides naming one. The draft is saved
  * as you type regardless.

@@ -16,10 +16,19 @@ Every build except a release has the developer tools: a palette opened with Ctrl
 (⇧⌘D on a Mac) from any screen, Develop › Developer tools… in the menu bar, or the wrench in
 the top bar's empty space. The window's title says `Mosaic DEV`. The tools check the app with
 fictional data, such as opening an example resume or staging the assistant's suggestions
-without a provider, and Recent (kept in `.dev-data/dev-tools.json`) runs the last one again
-with Enter. Each tool is one entry in `DEV_TOOLS` (`features/dev-tools/devTools.ts`).
-e2e runs the same tools for setup (`runDevTool` in `e2e/harness/devTools.ts`), so a spec
-clicks only what it tests; a setup a spec needs that no tool makes becomes a tool first.
+without a provider, and go to any view: a tool's choices (which template, which version) are
+made one step at a time, and Ctrl+Enter takes the defaults. Recent (kept in
+`.dev-data/dev-tools.json`) runs the last one again with Enter. Each tool is one entry in
+`DEV_TOOLS` (`features/dev-tools/devTools.ts`).
+
+Every view has an address, such as `history / Tailored for Kestrel / v12 vs v11 / changes`
+(`features/view-address/`). The palette shows where you are with Copy (Ctrl+Shift+C), and a
+pasted address goes there. Release builds have Help › Copy view address too, so a bug report
+can say where it happened.
+
+e2e runs the same tools for setup (`e2e/harness/devTools.ts`): `runDevTool`, `goToView` by
+address and `expectViewAt`, so a spec clicks only what it tests. A setup a spec needs that no
+tool makes becomes a tool first.
 `bun run package` builds with `--mode release`, which leaves the tools out of the
 installer. Keep the data side-effect free (build it in a function), or the release
 bundle keeps it.

@@ -7,9 +7,7 @@ import { Text } from '@/components/Text';
 import { tourTargetProps } from '@/features/onboarding/tourTargets';
 import { PageZoomControl, type PageZoomControlProps } from '@/features/preview/PageZoomControl';
 import { cn } from '@/lib/utils';
-import type { HistoryComparison } from '@/types/history';
-
-export type ReadPaneView = 'page' | 'changes';
+import type { HistoryComparison, ReadPaneView } from '@/types/history';
 
 const VIEWS: { value: ReadPaneView; label: string; description: string }[] = [
   { value: 'page', label: 'Page', description: 'The version as it prints, changes marked' },

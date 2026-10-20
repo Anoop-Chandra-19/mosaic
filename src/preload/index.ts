@@ -15,6 +15,9 @@ import {
   FILES_SAVE,
   FLUSH_DONE,
   FLUSH_REQUEST,
+  HELP_MENU_COMMAND,
+  HELP_MENU_COMMANDS,
+  type HelpMenuCommand,
   MODEL_PROVIDERS_CHANNELS,
   SECRETS_CHANNELS,
 } from '@shared/ipc/appChannels';
@@ -39,6 +42,7 @@ function dbBridge(): MosaicDbBridge {
 }
 
 let flushRegistered = false;
+let helpMenuRegistered = false;
 
 const files: MosaicFiles = {
   save: (type, suggestedName, content) =>
@@ -88,6 +92,16 @@ contextBridge.exposeInMainWorld('mosaic', {
   ...(dev && { dev }),
   app: {
     eraseAll: (): Promise<void> => ipcRenderer.invoke(ERASE_ALL),
+    /** A Help menu item was chosen. */
+    onHelpMenu: (answer: (command: HelpMenuCommand) => void) => {
+      if (helpMenuRegistered) return;
+      helpMenuRegistered = true;
+      ipcRenderer.on(HELP_MENU_COMMAND, (_event, command: unknown) => {
+        if (HELP_MENU_COMMANDS.includes(command as HelpMenuCommand)) {
+          answer(command as HelpMenuCommand);
+        }
+      });
+    },
     /** Main asks before the window closes; answer once pending saves have landed. */
     onFlushRequest: (flush: () => Promise<boolean>) => {
       if (flushRegistered) return;

@@ -1,4 +1,5 @@
 import type { MosaicBackup } from '@shared/types/backup';
+import type { HelpMenuCommand } from '@shared/ipc/appChannels';
 import type { MosaicDbBridge } from '@shared/types/db';
 import type { MosaicDev } from '@shared/types/devTools';
 import type { MosaicFiles } from '@shared/types/files';
@@ -28,6 +29,8 @@ declare global {
          * and asks first when it resolves false: the draft couldn't be saved.
          */
         onFlushRequest(flush: () => Promise<boolean>): void;
+        /** A Help menu item was chosen. */
+        onHelpMenu(answer: (command: HelpMenuCommand) => void): void;
       };
     };
   }

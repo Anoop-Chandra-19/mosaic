@@ -26,10 +26,11 @@ import { useOverlayStore } from '@/stores/overlayStore';
 import { attempt, showToast } from '@/stores/toastStore';
 import { readVersion, useTemplateStore, useVersionHistory } from '@/stores/templateStore';
 import { useUiStore } from '@/stores/uiStore';
+import { useViewPlaceStore } from '@/stores/viewPlaceStore';
 import { countChangesByTone } from '@shared/resume/changes/resumeChange';
 import type { TemplateSummary, Version, VersionMeta } from '@shared/types/db';
 import type { ResumeData } from '@shared/types/resume';
-import type { HistoryComparison, HistoryFilter } from '@/types/history';
+import type { HistoryComparison, HistoryFilter, ReadPaneView } from '@/types/history';
 import { VersionList, type HistoryReveal } from '../version-list/VersionList';
 import { versionLabel } from '../versionLabel';
 import {
@@ -81,6 +82,20 @@ interface FullHistoryProps {
   filter?: HistoryFilter;
   versionId?: string;
   comparison?: HistoryComparison;
+  view?: ReadPaneView;
+}
+
+const OPENING_KEYS = new WeakMap<object, number>();
+let nextOpeningKey = 0;
+
+/** Each opening, a jump to another version included, starts the view afresh. */
+function keyOpening(opening: object): number {
+  let key = OPENING_KEYS.get(opening);
+  if (key === undefined) {
+    key = nextOpeningKey++;
+    OPENING_KEYS.set(opening, key);
+  }
+  return key;
 }
 
 /**
@@ -95,6 +110,7 @@ export function FullHistory({
   filter,
   versionId,
   comparison,
+  view,
 }: FullHistoryProps) {
   const prepared = use(prepareHistoryOpening(opening, templateId, versionId));
   const template = useTemplateStore((s) => s.templates.find((t) => t.id === templateId));
@@ -111,7 +127,7 @@ export function FullHistory({
   if (isTouring) return <ExampleHistoryFrame key="example" />;
   return (
     <ReadBoundary
-      key={templateId}
+      key={`${templateId}-${keyOpening(opening)}`}
       failure="Could not read the history"
       onFailure={() => {
         showToast('Could not open the history', 'error');
@@ -123,6 +139,7 @@ export function FullHistory({
         filter={filter}
         versionId={versionId}
         comparison={comparison}
+        view={view}
         prepared={prepared}
       />
     </ReadBoundary>
@@ -145,6 +162,7 @@ interface TemplateHistoryFrameProps {
   filter?: HistoryFilter;
   versionId?: string;
   comparison?: HistoryComparison;
+  view?: ReadPaneView;
   prepared: PreparedHistory | null;
 }
 
@@ -177,6 +195,7 @@ interface FullHistoryFrameProps {
   filter?: HistoryFilter;
   versionId?: string;
   comparison?: HistoryComparison;
+  view?: ReadPaneView;
   prepared: PreparedHistory | null;
 }
 
@@ -185,6 +204,7 @@ function FullHistoryFrame({
   filter,
   versionId,
   comparison,
+  view,
   prepared,
 }: FullHistoryFrameProps) {
   const { versions, readVersion } = source;
@@ -209,6 +229,7 @@ function FullHistoryFrame({
   );
   const [selectedId, setSelectedId] = useState(versionId ?? null);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [readView, setReadView] = useState<ReadPaneView>(view ?? 'page');
   const [reveal, setReveal] = useState<HistoryReveal | null>(versionId ? { versionId } : null);
   const rootRef = useRef<HTMLDivElement>(null);
 
@@ -271,6 +292,17 @@ function FullHistoryFrame({
     comparison: shownComparison,
     hasParent: !!versions?.[selectedIndex + 1],
   });
+
+  // Where the reader is, for the view's address. The example's place is the tour's.
+  const baseLabel = shownComparison === 'draft' ? 'draft' : base ? versionLabel(base) : null;
+  const selectedLabel = selected ? versionLabel(selected) : null;
+  useEffect(() => {
+    if (isExample || !selectedLabel) return;
+    useViewPlaceStore.setState({
+      history: { version: selectedLabel, base: baseLabel, reading: readView },
+    });
+  }, [isExample, selectedLabel, baseLabel, readView]);
+  useEffect(() => () => useViewPlaceStore.setState({ history: null }), []);
 
   // When the view couldn't read its first version ahead of opening, the history list
   // changed under it, or another comparison was picked, read the selected one now.
@@ -513,6 +545,8 @@ function FullHistoryFrame({
             docs={docs}
             step={lastStep}
             isSkimming={isSkimming}
+            view={readView}
+            onViewChange={setReadView}
           />
         )}
       </div>

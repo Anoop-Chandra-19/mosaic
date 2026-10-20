@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import type { ShortcutPlace } from '@/lib/shortcutCatalog';
-import type { HistoryComparison, HistoryFilter } from '@/types/history';
+import type { HistoryComparison, HistoryFilter, ReadPaneView } from '@/types/history';
 import type { SettingsSectionId } from '@/types/settings';
 import type { OpenedBackup } from '@shared/types/bundle';
 import type { VersionPreview } from './previewStore';
@@ -67,6 +67,8 @@ export type WorkspaceSurface =
       versionId?: string;
       /** Opened from a version being read: kept to that comparison, not remembered. */
       comparison?: HistoryComparison;
+      /** Opened on Changes only rather than the page. */
+      view?: ReadPaneView;
     };
 
 /**

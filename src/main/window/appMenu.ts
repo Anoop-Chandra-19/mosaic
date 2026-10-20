@@ -1,10 +1,22 @@
 import { app, BrowserWindow, Menu, type MenuItemConstructorOptions } from 'electron';
-import { DEV_OPEN_TOOLS } from '@shared/ipc/appChannels';
+import { DEV_OPEN_TOOLS, HELP_MENU_COMMAND, type HelpMenuCommand } from '@shared/ipc/appChannels';
+
+/** A menu item the page answers: main only passes the choice on. */
+function askPage(label: string, command: HelpMenuCommand): MenuItemConstructorOptions {
+  return {
+    id: command,
+    label,
+    click: (_item, window) => {
+      if (window instanceof BrowserWindow) window.webContents.send(HELP_MENU_COMMAND, command);
+    },
+  };
+}
 
 /**
  * Electron's default menu without its View menu, whose zoom keys (Ctrl/⌘+0, +, −) would
  * zoom the whole window instead of the page in the preview. Edit keeps copy and paste
- * working on macOS. Development keeps reload and DevTools on their usual keys, and opens the
+ * working on macOS. Help opens the shortcuts and About, and copies the view's address for a
+ * bug report. Development keeps reload and DevTools on their usual keys, and opens the
  * developer tools; a release has none of them.
  */
 export function setAppMenu(): void {
@@ -13,6 +25,15 @@ export function setAppMenu(): void {
     { role: 'fileMenu' },
     { role: 'editMenu' },
     { role: 'windowMenu' },
+    {
+      role: 'help',
+      submenu: [
+        askPage('Keyboard shortcuts', 'shortcuts'),
+        askPage('Copy view address', 'copyViewAddress'),
+        { type: 'separator' },
+        askPage('About Mosaic', 'about'),
+      ],
+    },
   ];
   if (!app.isPackaged) {
     template.push({

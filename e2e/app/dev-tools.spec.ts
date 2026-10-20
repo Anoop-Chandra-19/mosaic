@@ -1,5 +1,5 @@
 import { expect } from '@playwright/test';
-import { runDevTool } from '../harness/devTools';
+import { expectViewAt, goToView, runDevTool } from '../harness/devTools';
 import { test, withApp } from '../harness/launch';
 
 const mosaic = withApp();
@@ -41,5 +41,53 @@ test('the developer tools open over the full history, run from the keyboard, and
   await page.keyboard.press('Escape');
   await expect(tools).toBeHidden();
   await expect(history).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
+test('views are reached by their address: by steps, pasted, from a test, and copied from Help', async () => {
+  const { app, page, errors } = mosaic();
+  await runDevTool(page, 'exampleResume');
+  const tools = page.getByRole('dialog', { name: 'Developer tools' });
+
+  // Steps, each a chip; Ctrl+Enter takes the defaults until one has none.
+  await page.keyboard.press('Control+Shift+D');
+  await page.keyboard.type('full history');
+  await page.keyboard.press('Enter');
+  await expect(tools.getByPlaceholder('Which template')).toBeVisible();
+  await page.keyboard.press('Control+Enter');
+  await expect(tools.getByPlaceholder('Compare with')).toBeVisible();
+  await expect(tools.getByText('history / Rowan Vale (example) / v1 vs …')).toBeVisible();
+  await page.keyboard.type('draft');
+  await page.keyboard.press('Enter');
+  await page.keyboard.press('Enter');
+  await expect(tools).toBeHidden();
+  await expect(page.getByRole('region', { name: /^History of/ })).toBeVisible();
+  await expectViewAt(page, 'history / Rowan Vale (example) / v1 vs draft / page');
+
+  // Pasted: one row that goes there, or one that says why it can't.
+  await page.keyboard.press('Control+Shift+D');
+  await expect(
+    tools.getByText('history / Rowan Vale (example) / v1 vs draft / page')
+  ).toBeVisible();
+  await page.keyboard.insertText('history / Northwind / v3');
+  await expect(tools.getByText('No template named “Northwind”.')).toBeVisible();
+  await page.keyboard.press('Control+A');
+  await page.keyboard.insertText('settings / history');
+  await page.keyboard.press('Enter');
+  await expectViewAt(page, 'settings / history');
+
+  // From a test, then copied from the menu bar's Help, as a bug report would.
+  await goToView(page, 'editor / Rowan Vale (example) + export');
+  await expect(page.getByRole('dialog', { name: 'Export' })).toBeVisible();
+  await app.evaluate(({ BrowserWindow, Menu }) => {
+    const item = Menu.getApplicationMenu()?.getMenuItemById('copyViewAddress');
+    item?.click(undefined, BrowserWindow.getAllWindows()[0]);
+  });
+  await expect(
+    page.getByText('Copied the view address: editor / Rowan Vale (example) + export')
+  ).toBeVisible();
+  expect(await app.evaluate(({ clipboard }) => clipboard.readText())).toBe(
+    'editor / Rowan Vale (example) + export'
+  );
   expect(errors).toEqual([]);
 });

@@ -24,6 +24,8 @@ Each store holds one kind of state; put new state with its kind, not in the near
 - `targetStore`: a shortcut that opens or focuses something drawn inside a feature is a
   keyboard target (`requestTarget`, answered by `useTargetRequest` where it is drawn),
   never a store flag.
+- `viewPlaceStore`: where the user is inside a surface (the version being read, the
+  suggestion chosen), reported by the surface while it is open, for the view's address.
 
 Stored data goes features → stores → the storage service → main. Stores hold state and
 actions, and export their reads (`useVersion`, `readVersion`, …). Only stores use the
