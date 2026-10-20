@@ -14,7 +14,7 @@ import { useTemplateStatus } from '@/features/templates/useTemplateStatus';
 import { TemplateStatusBadge } from '@/features/templates/TemplateStatusBadge';
 import { tourTargetProps } from '@/features/onboarding/tourTargets';
 import { useShortcutLabel } from '@/features/shortcuts/shortcutBindings';
-import { DevToolsMenu } from '@/features/dev-tools/DevToolsMenu';
+import { DevToolsWrench } from '@/features/dev-tools/DevToolsWrench';
 
 /** Reading an older version is a read mode: the draft is left where it is. */
 export const READING_A_VERSION = 'Go back to your draft to edit it.';
@@ -66,15 +66,11 @@ export function TopBar() {
         </div>
       </div>
 
+      {/* A constant per build, so a release build drops the tools entirely. */}
+      {import.meta.env.MODE !== 'release' && <DevToolsWrench />}
+
       {/* As in the design: undo and redo, Settings, then the theme and the file actions. */}
       <div className="flex shrink-0 items-center gap-1.5">
-        {/* A constant per build, so a release build drops the tools entirely. */}
-        {import.meta.env.MODE !== 'release' && (
-          <>
-            <DevToolsMenu />
-            <span aria-hidden className="mx-0.5 h-4.5 w-px bg-line-strong" />
-          </>
-        )}
         <AppButton
           variant="ghost"
           size="sm"

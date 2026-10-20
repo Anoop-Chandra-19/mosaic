@@ -11,8 +11,11 @@ import { create } from 'zustand';
  * answered once the tab has drawn the target. Each is answered once, then cleared.
  */
 
-/** Every keyboard target in the app. `addSectionMenu`: Add section, from the content pane's +. */
-export type KeyboardTarget = 'addSectionMenu';
+/**
+ * Every keyboard target in the app. `addSectionMenu`: Add section, from the content pane's +.
+ * `devTools`: the developer tools, in development builds.
+ */
+export type KeyboardTarget = 'addSectionMenu' | 'devTools';
 
 interface TargetRequest {
   target: KeyboardTarget;

@@ -1,4 +1,5 @@
 import { app, BrowserWindow, nativeTheme, screen, shell } from 'electron';
+import { DEV_BUILD_ARGUMENT } from '@shared/ipc/appChannels';
 import { getAppDatabase } from '../db/appDatabase';
 import { getSetting } from '../db/settings';
 import { loadAppPage, PRELOAD_FILE } from './appPage';
@@ -52,6 +53,7 @@ function createWindow(storedUiSetting: string | null): BrowserWindow {
       sandbox: true,
       nodeIntegration: false,
       devTools: !app.isPackaged,
+      additionalArguments: app.isPackaged ? [] : [DEV_BUILD_ARGUMENT],
     },
   });
 

@@ -5,6 +5,7 @@ import { StatusBar } from './StatusBar';
 import { PreviewPanel } from './PreviewPanel';
 import { Toast } from './Toast';
 import { AgentPane } from '@/features/agent/AgentPane';
+import { DevTools } from '@/features/dev-tools/DevTools';
 import { SuggestionReview } from '@/features/agent/review/SuggestionReview';
 import { RestoreBackupDialog } from '@/features/backup/RestoreBackupDialog';
 import { ExportDialog } from '@/features/export/ExportDialog';
@@ -146,6 +147,8 @@ export function AppShell() {
       <ShortcutsDialog />
       <GettingStartedTour />
       <HistoryTour />
+      {/* A constant per build, so a release build drops the tools entirely. */}
+      {import.meta.env.MODE !== 'release' && <DevTools />}
     </div>
   );
 }

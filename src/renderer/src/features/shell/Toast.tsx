@@ -1,5 +1,6 @@
 import { AlertTriangle, Check, X } from 'lucide-react';
 import { AppButton } from '@/components/AppButton';
+import { Chip } from '@/components/Chip';
 import { useToastStore } from '@/stores/toastStore';
 import { usePresenceMotion } from '@/lib/motion/usePresenceMotion';
 
@@ -24,10 +25,14 @@ export function Toast() {
           aria-hidden={isLeaving || undefined}
           className="pointer-events-auto flex max-w-full items-center gap-2.5 rounded-full border border-line-strong bg-pane-raised py-2.5 pr-2.75 pl-3.5 text-body text-foreground shadow-overlay"
         >
-          {shownToast.tone === 'success' ? (
-            <Check className="size-3.25 shrink-0 text-add" />
-          ) : (
+          {shownToast.tone === 'error' ? (
             <AlertTriangle className="size-3.25 shrink-0 text-del" />
+          ) : shownToast.tag ? (
+            <Chip size="sm" tone="info">
+              {shownToast.tag}
+            </Chip>
+          ) : (
+            <Check className="size-3.25 shrink-0 text-add" />
           )}
           <span className="min-w-0">{shownToast.message}</span>
           {shownToast.action && (

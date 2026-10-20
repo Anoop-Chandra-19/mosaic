@@ -17,6 +17,8 @@ const TONE_CLASSES = {
   amber: 'border-amber-line bg-amber-soft text-amber',
   add: 'border-add-line bg-add-soft text-add',
   warn: 'border-warn-line bg-warn-soft text-warn',
+  // Development builds' own marks, in a hue no user-facing UI uses.
+  info: 'border-info-line bg-info-soft text-info',
 } as const;
 
 interface ChipProps extends ComponentProps<'span'> {

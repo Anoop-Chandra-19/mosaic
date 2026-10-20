@@ -16,6 +16,8 @@ export interface Toast {
   tone: 'success' | 'error';
   /** One follow-up, such as Undo. Running it dismisses the toast. */
   action?: ToastAction;
+  /** Shown in place of a success's tick: `DEV` for the developer tools' news. */
+  tag?: 'DEV';
 }
 
 interface ToastState {
@@ -36,10 +38,11 @@ let nextToastId = 1;
 export function showToast(
   message: string,
   tone: Toast['tone'] = 'success',
-  action?: ToastAction
+  action?: ToastAction,
+  tag?: Toast['tag']
 ): void {
   const id = nextToastId++;
-  useToastStore.setState({ toast: { id, message, tone, action } });
+  useToastStore.setState({ toast: { id, message, tone, action, tag } });
   setTimeout(
     () => {
       if (useToastStore.getState().toast?.id === id) useToastStore.setState({ toast: null });

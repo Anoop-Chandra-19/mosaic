@@ -1,13 +1,12 @@
 import { expect, type Page } from '@playwright/test';
+import { runDevTool } from '../harness/devTools';
 import { test, withApp } from '../harness/launch';
 
 const mosaic = withApp();
 
 /** The example suggestions, staged through the developer tools, which turn AI on to see them. */
 async function stageExampleSuggestions(page: Page) {
-  await page.getByRole('button', { name: 'Developer tools' }).click();
-  await page.getByRole('menuitem', { name: /Stage example suggestions/ }).click();
-  await expect(page.getByText(/Turned the assistant on/)).toBeVisible();
+  await runDevTool(page, 'stageSuggestions');
 }
 
 test('suggestions are reviewed from the status bar, kept and dropped with the keys', async () => {

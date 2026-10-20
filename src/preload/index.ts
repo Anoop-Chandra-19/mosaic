@@ -1,11 +1,15 @@
 import { contextBridge, ipcRenderer } from 'electron';
 import type { MosaicBackup } from '@shared/types/backup';
 import type { MosaicDbBridge } from '@shared/types/db';
+import type { MosaicDev } from '@shared/types/devTools';
 import type { MosaicFiles } from '@shared/types/files';
 import type { MosaicModelProviders } from '@shared/types/modelProviders';
 import type { MosaicSecrets } from '@shared/types/secrets';
 import {
   BACKUP_CHANNELS,
+  DEV_BUILD_ARGUMENT,
+  DEV_CHANNELS,
+  DEV_OPEN_TOOLS,
   ERASE_ALL,
   FILES_OPEN,
   FILES_SAVE,
@@ -63,6 +67,17 @@ const modelProviders: MosaicModelProviders = {
   ollamaModels: (address) => ipcRenderer.invoke(MODEL_PROVIDERS_CHANNELS.ollamaModels, address),
 };
 
+/** Development builds only: main passes the argument to their page alone. */
+const dev: MosaicDev | undefined = process.argv.includes(DEV_BUILD_ARGUMENT)
+  ? {
+      readRecent: () => ipcRenderer.invoke(DEV_CHANNELS.readRecent),
+      saveRecent: (runs) => ipcRenderer.invoke(DEV_CHANNELS.saveRecent, runs),
+      onOpenTools: (open) => {
+        ipcRenderer.on(DEV_OPEN_TOOLS, () => open());
+      },
+    }
+  : undefined;
+
 contextBridge.exposeInMainWorld('mosaic', {
   platform: process.platform,
   db: dbBridge(),
@@ -70,6 +85,7 @@ contextBridge.exposeInMainWorld('mosaic', {
   backup,
   secrets,
   modelProviders,
+  ...(dev && { dev }),
   app: {
     eraseAll: (): Promise<void> => ipcRenderer.invoke(ERASE_ALL),
     /** Main asks before the window closes; answer once pending saves have landed. */

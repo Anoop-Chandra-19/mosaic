@@ -38,8 +38,9 @@ as it renders sits inside a `ReadBoundary`.
   their `App*` wrappers in `components/`: `AppButton`, `AppMenu`, `AppSelect`, `AppInput`,
   `AppTextarea`, `AppDialog` (with `DialogFrame` for the framed dialogs), `AppToggleGroup`,
   `AppTabs`, `AppRadioGroup`, `AppCheckbox`, `AppSwitch`, `AppPopover`, `AppCollapsible`,
-  `AppTooltip`. Each draws the design's control (`controlStyles.ts` holds the shared field,
-  floating surface and list row) and passes Radix props through. ESLint refuses
+  `AppTooltip`, `AppCommand` (a search field over a list, on shadcn's command). Each draws
+  the design's control (`controlStyles.ts` holds the shared field, floating surface and list
+  row) and passes Radix props through. ESLint refuses
   `components/ui/` anywhere else: a primitive with no wrapper gets one first.
 - A wrapper builds on the shadcn part when its markup fits, and on Radix directly when the
   design's anatomy differs (a switch's knob, a radio's check, a segmented strip, tabs,
