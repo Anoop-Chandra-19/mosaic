@@ -28,14 +28,25 @@ export function AppCommand({ className, ...props }: ComponentProps<typeof Comman
   );
 }
 
-/** The field across the top, its search icon first and `trailing` at its end. */
+/**
+ * The field across the top: its search icon first, or `leading` in its place (the choices
+ * made so far), and `trailing` at its end.
+ */
 export function AppCommandInput({
   className,
+  leading,
   trailing,
   ...props
-}: ComponentProps<typeof CommandInput> & { trailing?: ReactNode }) {
+}: ComponentProps<typeof CommandInput> & { leading?: ReactNode; trailing?: ReactNode }) {
   return (
-    <div className="flex min-h-12 items-center gap-1.25 border-b border-line pr-3 *:data-[slot=command-input-wrapper]:h-12 *:data-[slot=command-input-wrapper]:min-w-0 *:data-[slot=command-input-wrapper]:flex-1 *:data-[slot=command-input-wrapper]:gap-2 *:data-[slot=command-input-wrapper]:border-0 *:data-[slot=command-input-wrapper]:pr-0 [&>[data-slot=command-input-wrapper]>svg]:size-3.5 [&>[data-slot=command-input-wrapper]>svg]:text-ink-faint [&>[data-slot=command-input-wrapper]>svg]:opacity-100">
+    <div
+      className={cn(
+        'flex min-h-12 flex-wrap items-center gap-1.25 border-b border-line pr-3 *:data-[slot=command-input-wrapper]:h-12 *:data-[slot=command-input-wrapper]:min-w-35 *:data-[slot=command-input-wrapper]:flex-1 *:data-[slot=command-input-wrapper]:gap-2 *:data-[slot=command-input-wrapper]:border-0 *:data-[slot=command-input-wrapper]:pr-0 [&>[data-slot=command-input-wrapper]>svg]:size-3.5 [&>[data-slot=command-input-wrapper]>svg]:text-ink-faint [&>[data-slot=command-input-wrapper]>svg]:opacity-100',
+        leading &&
+          'py-2.25 pl-3 *:data-[slot=command-input-wrapper]:h-7 *:data-[slot=command-input-wrapper]:pl-0.5 [&>[data-slot=command-input-wrapper]>svg]:hidden'
+      )}
+    >
+      {leading}
       <CommandInput
         className={cn(
           'h-7 py-0 text-title font-regular text-foreground placeholder:text-ink-faint',

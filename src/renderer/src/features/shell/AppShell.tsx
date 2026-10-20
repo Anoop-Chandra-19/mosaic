@@ -42,6 +42,7 @@ import { useResumeStore } from '@/stores/resumeStore';
 import { useTemplateStore } from '@/stores/templateStore';
 import { PREVIEW_DEFAULT_ZOOM, useUiStore, type SidebarTab } from '@/stores/uiStore';
 import { useApplyDensity, useApplyTheme } from './useAppearance';
+import { useHelpMenu } from './useHelpMenu';
 
 export function AppShell() {
   useApplyTheme();
@@ -49,6 +50,7 @@ export function AppShell() {
   useShortcuts();
   useAutoSnapshot();
   useKeyboardNavigationMark();
+  useHelpMenu();
   const hasTemplates = useTemplateStore((s) => s.templates.length > 0);
   const surface = useOverlayStore((s) => s.surface);
   const shownSurface = useShownSurface();
@@ -125,6 +127,7 @@ export function AppShell() {
                   filter={shownSurface.filter}
                   versionId={shownSurface.versionId}
                   comparison={shownSurface.comparison}
+                  view={shownSurface.view}
                 />
               </ViewTransition>
             )}

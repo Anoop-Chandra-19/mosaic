@@ -3,7 +3,7 @@ import { AppDialog } from '@/components/AppDialog';
 import { useTargetRequest, useTargetStore } from '@/stores/targetStore';
 import type { DevToolRun } from '@shared/types/devTools';
 import { installDevTestHook } from './devTestHook';
-import { DevToolsPalette } from './DevToolsPalette';
+import { DevToolsPalette } from './palette/DevToolsPalette';
 import { addRecentRun } from './recentDevRuns';
 
 /** Ctrl+Shift+D (⇧⌘D on a Mac), here rather than in the shortcut catalog: users never have it. */

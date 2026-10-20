@@ -7,6 +7,10 @@ import type { MosaicSecrets } from '../types/secrets';
 export const FLUSH_REQUEST = 'app:flush';
 /** Renderer → main: pending saves have landed (or failed); the window may close. */
 export const FLUSH_DONE = 'app:flushed';
+/** Main → renderer: a Help menu item was chosen, one of `HELP_MENU_COMMANDS`. */
+export const HELP_MENU_COMMAND = 'app:help-menu';
+export const HELP_MENU_COMMANDS = ['shortcuts', 'copyViewAddress', 'about'] as const;
+export type HelpMenuCommand = (typeof HELP_MENU_COMMANDS)[number];
 /** Renderer → main: delete everything Mosaic stores on this machine. */
 export const ERASE_ALL = 'app:erase-all';
 /** Renderer → main: `MosaicFiles` — the system Save and Open dialogs. */

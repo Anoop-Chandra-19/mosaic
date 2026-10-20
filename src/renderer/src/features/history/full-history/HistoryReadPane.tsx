@@ -24,10 +24,10 @@ import { HISTORY_READ_WIDTH, PREVIEW_DEFAULT_ZOOM, useUiStore } from '@/stores/u
 import type { ResumeDiff } from '@shared/resume/changes/diffResumes';
 import type { Version, VersionMeta, VersionSource } from '@shared/types/db';
 import type { ResumeData } from '@shared/types/resume';
-import type { HistoryComparison } from '@/types/history';
+import type { HistoryComparison, ReadPaneView } from '@/types/history';
 import { formatHistoryDay, formatTimeOfDay } from '../groupVersionHistory';
 import type { VersionPair } from './prepareHistoryOpening';
-import { ReadPaneControls, type ReadPaneView } from './ReadPaneControls';
+import { ReadPaneControls } from './ReadPaneControls';
 import { findReadingPlace, restoreReadingPlace, type ReadingPlace } from './readingPlace';
 import type { VersionComparison } from './useVersionComparison';
 import { useVersionStepMotion, type VersionStep } from './useVersionStepMotion';
@@ -76,6 +76,9 @@ interface HistoryReadPaneProps {
   step: VersionStep | null;
   /** Stepping faster than a step can be watched: nothing moves, and the marks are off. */
   isSkimming: boolean;
+  /** The page, or only what changed; the view keeps it from one version to the next. */
+  view: ReadPaneView;
+  onViewChange: (view: ReadPaneView) => void;
 }
 
 const ignorePreviewMeta = () => {};
@@ -186,6 +189,8 @@ export function HistoryReadPane({
   docs,
   step,
   isSkimming,
+  view,
+  onViewChange,
 }: HistoryReadPaneProps) {
   const widthPx = useUiStore((s) => s.historyReadWidthPx);
   const setWidthPx = useUiStore((s) => s.setHistoryReadWidthPx);
@@ -194,7 +199,6 @@ export function HistoryReadPane({
   const paneRef = useRef<HTMLElement>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
   const [bodyWidth, setBodyWidth] = useState(0);
-  const [view, setView] = useState<ReadPaneView>('page');
   const [isMarked, setIsMarked] = useState(true);
   /** Chosen over the text read in a narrow pane. */
   const [isPageChosen, setIsPageChosen] = useState(false);
@@ -362,7 +366,7 @@ export function HistoryReadPane({
             canCompareWithParent={comparison.canCompareWithParent}
             onComparisonChange={onComparisonChange}
             view={view}
-            onViewChange={setView}
+            onViewChange={onViewChange}
             isMarked={isMarked}
             onMarkedChange={setIsMarked}
             canReadAsText={view === 'page' && !isLegible && isPageChosen}

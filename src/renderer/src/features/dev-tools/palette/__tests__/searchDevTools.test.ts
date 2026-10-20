@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { DevTool } from '../devTools';
+import type { DevTool } from '../../devTool';
 import { searchDevTools } from '../searchDevTools';
 
 const tool = (id: string, label: string, description: string): DevTool => ({

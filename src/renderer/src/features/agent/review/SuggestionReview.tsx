@@ -15,6 +15,7 @@ import { useOverlayStore } from '@/stores/overlayStore';
 import { selectTemplateProposals, useProposalStore } from '@/stores/proposalStore';
 import { useResumeStore } from '@/stores/resumeStore';
 import { AGENT_PANE_WIDTH, useUiStore } from '@/stores/uiStore';
+import { useViewPlaceStore } from '@/stores/viewPlaceStore';
 import type { Proposal } from '@shared/types/agentProposal';
 import { acceptProposals, rejectProposals, returnProposals } from '../proposals/proposalActions';
 import { ApplyBar } from './apply/ApplyBar';
@@ -105,6 +106,11 @@ export function SuggestionReview({ openOn }: { openOn?: string }) {
   const droppedAll = proposals.filter((p) => droppedAllIds?.includes(p.id));
 
   const selectedIndex = proposals.findIndex((p) => p.id === selectedId);
+  // Where the reader is, for the view's address.
+  useEffect(() => {
+    useViewPlaceStore.setState({ reviewSuggestion: selectedIndex >= 0 ? selectedIndex + 1 : null });
+  }, [selectedIndex]);
+  useEffect(() => () => useViewPlaceStore.setState({ reviewSuggestion: null }), []);
   const select = (id: string | null) => {
     setSelectedId(id);
     setEditingId(null);
