@@ -84,11 +84,12 @@ export function breakRunsLikeWord<Run extends { text: string }>(
 
 /**
  * Measures text at a size in the preview's font, which sets text as the PDF's Helvetica and
- * Word's Arial do. Null where there is no canvas, as in unit tests.
+ * Word's Arial do. An offscreen canvas, so it measures the same on the page and in the PDF
+ * export's worker. Null where there is none, as in unit tests.
  */
 export function createTextMeasurer(fontSize: number): MeasureTextWidth | null {
-  if (typeof document === 'undefined') return null;
-  const context = document.createElement('canvas').getContext('2d');
+  if (typeof OffscreenCanvas === 'undefined') return null;
+  const context = new OffscreenCanvas(1, 1).getContext('2d');
   if (!context) return null;
   context.font = `${fontSize}px ${HEADLESS_LAYOUT.fontStack}`;
   // Word doesn't kern, and neither does the preview.
