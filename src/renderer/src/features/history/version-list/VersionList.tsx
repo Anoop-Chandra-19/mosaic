@@ -44,6 +44,8 @@ import { VersionRow, type VersionRowActions } from './VersionRow';
 /** A request to bring a version into view. A new object asks again, even for the same one. */
 export interface HistoryReveal {
   versionId: string;
+  /** A step from the row beside it: scrolled only as far as keeps it in view, not centered. */
+  isNearby?: boolean;
 }
 
 interface VersionListProps extends VersionRowActions {
@@ -228,14 +230,14 @@ export function VersionList({
   }
 
   // Scroll once the revealed version is really in the tree. One held in a fold scrolls to
-  // the fold.
+  // the fold. Rows keep clear of the sticky headings by their scroll margin.
   useLayoutEffect(() => {
     if (!reveal) return;
     const root = rootRef.current;
     const target =
       root?.querySelector(`[data-version-id="${reveal.versionId}"]`) ??
       root?.querySelector(`[data-version-ids~="${reveal.versionId}"]`);
-    target?.scrollIntoView({ block: 'center' });
+    target?.scrollIntoView({ block: reveal.isNearby ? 'nearest' : 'center' });
   }, [reveal]);
   const isLong = versions.length > SHORT_HISTORY;
   const hasFilterBar = isLong && !isCompact;
@@ -245,8 +247,14 @@ export function VersionList({
     const label = formatHistoryMonth(group.key);
     if (months.at(-1)?.label !== label) months.push({ label, key: group.key });
   }
-  // The strip is sticky, so a scrolled-to heading stops below it rather than under it.
+  // The strip is sticky, so a scrolled-to heading stops below it rather than under it, and
+  // a row below the heading too (2rem).
   const scrollMargin = isSearching ? 'scroll-mt-[5.125rem]' : 'scroll-mt-10.5';
+  const rowScrollMargin = !hasFilterBar
+    ? '[&_li]:scroll-mt-8'
+    : isSearching
+      ? '[&_li]:scroll-mt-[7.125rem]'
+      : '[&_li]:scroll-mt-[4.625rem]';
   const jumpToMonth = (key: number) =>
     rootRef.current?.querySelector(`[data-group="${key}"]`)?.scrollIntoView({ block: 'start' });
 
@@ -393,7 +401,7 @@ export function VersionList({
               </Text>
               <i aria-hidden className="h-px min-w-2 flex-1 bg-line" />
             </Text>
-            <ol>
+            <ol className={rowScrollMargin}>
               {group.items.map((item) => {
                 // In the sidebar a tip sits under its row, in the list; in the full view it floats.
                 const itemTip = !isWide && historyItemKey(item) === tipKey && renderTip();
