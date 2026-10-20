@@ -30,6 +30,7 @@ import type { VersionPair } from './prepareHistoryOpening';
 import { ReadPaneControls, type ReadPaneView } from './ReadPaneControls';
 import { findReadingPlace, restoreReadingPlace, type ReadingPlace } from './readingPlace';
 import type { VersionComparison } from './useVersionComparison';
+import { useVersionStepMotion, type VersionStep } from './useVersionStepMotion';
 import { VersionAsText } from './VersionAsText';
 
 /** Below this the page is a thumbnail, not something to read, so the pane shows text. */
@@ -71,6 +72,10 @@ interface HistoryReadPaneProps {
   onExport: (version: Version, label: string) => void;
   /** The version's document and the one it is compared with, read before it was selected. */
   docs: VersionPair;
+  /** The step that brought this version, which its content comes in with. */
+  step: VersionStep | null;
+  /** Stepping faster than a step can be watched: nothing moves, and the marks are off. */
+  isSkimming: boolean;
 }
 
 const ignorePreviewMeta = () => {};
@@ -179,6 +184,8 @@ export function HistoryReadPane({
   onDuplicate,
   onExport,
   docs,
+  step,
+  isSkimming,
 }: HistoryReadPaneProps) {
   const widthPx = useUiStore((s) => s.historyReadWidthPx);
   const setWidthPx = useUiStore((s) => s.setHistoryReadWidthPx);
@@ -239,6 +246,7 @@ export function HistoryReadPane({
   const isLegible = bodyWidth === 0 || pageScale >= LEGIBLE_PAGE_SCALE;
   const isTextRead = view === 'page' && !isLegible && !isPageChosen;
   const isPageShown = loaded !== null && view === 'page' && !isTextRead;
+  const isMarkShown = isMarked && !isSkimming;
   const reason = AUTOMATIC_REASONS[version.source];
 
   const ownZoom = useOwnPageZoom();
@@ -278,6 +286,18 @@ export function HistoryReadPane({
     if (bodyRef.current && readingPlace.current) {
       restoreReadingPlace(bodyRef.current, readingPlace.current);
     }
+  };
+
+  // The page moves once laid out (`onLaidOut`); any other view once it has committed.
+  const stepMotion = useVersionStepMotion(bodyRef, step, isSkimming);
+  const onViewShown = useEffectEvent(() => {
+    if (loaded && !isPageShown)
+      stepMotion.onShown(loaded.id, false, view === 'page' && isMarkShown);
+  });
+  useLayoutEffect(() => onViewShown(), [loaded, view, isTextRead, isSkimming]);
+  const onPageLaidOut = () => {
+    keepReadingPlace();
+    if (loaded) stepMotion.onShown(loaded.id, true, isMarkShown);
   };
   return (
     <aside
@@ -403,6 +423,7 @@ export function HistoryReadPane({
 
       <div
         ref={bodyRef}
+        data-skimming={isSkimming || undefined}
         onScroll={noteReadingPlace}
         onPointerDown={isPageShown ? canvas.onPointerDown : undefined}
         className={cn(
@@ -410,7 +431,7 @@ export function HistoryReadPane({
           'min-h-0 flex-1 overflow-auto pt-3.5 pb-5 [overflow-anchor:none]',
           isPageShown && canvas.panning && 'cursor-grabbing select-none',
           isPageShown && !canvas.panning && canvas.readyToPan && 'cursor-grab',
-          transitionClasses({ name: 'page', motion: 'handoff step' })
+          transitionClasses({ name: 'page', motion: 'handoff' })
         )}
       >
         {loaded && view === 'changes' && diff && (
@@ -430,7 +451,7 @@ export function HistoryReadPane({
             base={comparison.base}
             diff={diff}
             otherSide={otherSide}
-            isMarked={isMarked}
+            isMarked={isMarkShown}
             isTextRead={isTextRead}
             textReadNote={
               canWidenToPage
@@ -439,7 +460,7 @@ export function HistoryReadPane({
             }
             onShowPage={() => setIsPageChosen(true)}
             zoom={ownZoom.zoom}
-            onLaidOut={keepReadingPlace}
+            onLaidOut={onPageLaidOut}
           />
         )}
       </div>

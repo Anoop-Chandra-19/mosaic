@@ -1,5 +1,4 @@
 import {
-  addTransitionType,
   startTransition,
   use,
   useEffect,
@@ -15,7 +14,6 @@ import { Text } from '@/components/Text';
 import { PAPER_DIMENSIONS_PT } from '@/features/preview/pageGeometry';
 import {
   SLIDE_AWAY_MOTION,
-  TRANSITION_TYPE,
   transitionClasses,
 } from '@/features/view-transitions/transitionClasses';
 import { endHistoryTour } from '@/features/onboarding/history/endHistoryTour';
@@ -43,7 +41,9 @@ import {
 import { HistoryIndex } from './HistoryIndex';
 import { HistoryReadPane, LEGIBLE_PAGE_SCALE } from './HistoryReadPane';
 import { HistorySettingsPopover } from './HistorySettingsPopover';
+import { useSkimming } from './useSkimming';
 import { useVersionComparison } from './useVersionComparison';
+import type { VersionStep } from './useVersionStepMotion';
 import {
   chooseOpeningVersion,
   findComparedBase,
@@ -248,6 +248,12 @@ function FullHistoryFrame({
   const [docs, setDocs] = useState<VersionPair>(prepared?.opening ?? { version: null, base: null });
   const latestStep = useRef(0);
   const shownId = useRef(selected?.id);
+  // The version last asked for, which keys step on from: the shown one changes only once
+  // its read lands, and counting from it would repeat or lose steps.
+  const askedId = useRef(selected?.id);
+  const [lastStep, setLastStep] = useState<VersionStep | null>(null);
+  const { isSkimming, noteStep } = useSkimming();
+  const drawNewest = useNewestEachFrame();
   // Worked out once, for the read pane and the selected row's counts.
   const versionComparison = useVersionComparison({
     templateId: source.templateId,
@@ -275,26 +281,28 @@ function FullHistoryFrame({
       isCurrent = false;
     };
   }, [selected, versions, isPairRead, shownComparison, readVersion]);
-  // A step through time: the page slides the way the history runs, older to the left. The
-  // version is read first, so the slide lands on its page rather than an empty pane. Only
-  // the latest step lands: reads can finish out of order, and a slower one must not win.
-  const step = (version: VersionMeta, shouldReveal: boolean) => {
+  // A step through time: the version is read first, then the list row, the header and the
+  // page change together, and the page's words come in the way the history runs (older from
+  // the left). Not a view transition, which would hold back the next key. The newest read
+  // to land is drawn, once a frame, so a held key passes over versions rather than queueing.
+  const step = (version: VersionMeta, shouldReveal: boolean, isRepeat = false) => {
     const ticket = ++latestStep.current;
-    const show = (read: VersionPair) => {
-      if (ticket !== latestStep.current || !versions) return;
-      const from = versions.findIndex(({ id }) => id === shownId.current);
-      const to = versions.indexOf(version);
-      shownId.current = version.id;
-      startTransition(() => {
+    askedId.current = version.id;
+    noteStep(isRepeat);
+    const show = (read: VersionPair) =>
+      drawNewest(ticket, () => {
+        if (!versions) return;
+        const from = versions.findIndex(({ id }) => id === shownId.current);
+        const to = versions.indexOf(version);
+        shownId.current = version.id;
+        // Newest first, so a version further down the list is older: a step back.
         if (from >= 0 && to >= 0 && from !== to) {
-          // Older versions sit back in time, so a step to one is a step back.
-          addTransitionType(to > from ? TRANSITION_TYPE.stepBack : TRANSITION_TYPE.stepForward);
+          setLastStep({ versionId: version.id, direction: to > from ? -1 : 1 });
         }
         setSelectedId(version.id);
         setDocs(read);
         if (shouldReveal) setReveal({ versionId: version.id });
       });
-    };
     if (!versions) return;
     const stepComparison = resolveComparison(pickedComparison, versions, versions.indexOf(version));
     readVersionPair(versions, version.id, stepComparison, readVersion).then(
@@ -315,10 +323,11 @@ function FullHistoryFrame({
     if (!versions || event.defaultPrevented || isTypingField(event.target)) return;
     const offset = VERSION_STEPS.find(({ id }) => matchesAction(event, id))?.offset;
     if (!offset) return;
-    const next = versions[selectedIndex + offset];
+    const asked = versions.findIndex(({ id }) => id === askedId.current);
+    const next = versions[(asked >= 0 ? asked : selectedIndex) + offset];
     if (!next) return;
     event.preventDefault();
-    goTo(next);
+    step(next, true, event.repeat);
   });
   useEffect(() => {
     window.addEventListener('keydown', onArrowKey);
@@ -496,11 +505,38 @@ function FullHistoryFrame({
             onDuplicate={(version) => void duplicate(version)}
             onExport={exportVersion}
             docs={docs}
+            step={lastStep}
+            isSkimming={isSkimming}
           />
         )}
       </div>
     </div>
   );
+}
+
+/**
+ * Draws the newest of what is offered, at most once a frame. Offers rank by `ticket`, and
+ * one older than what was last drawn is dropped: reads land out of order, and faster than
+ * a page can be drawn.
+ */
+function useNewestEachFrame() {
+  const pending = useRef<{ ticket: number; draw: () => void } | null>(null);
+  const drawnTicket = useRef(0);
+  const frame = useRef(0);
+  useEffect(() => () => cancelAnimationFrame(frame.current), []);
+  return (ticket: number, draw: () => void) => {
+    if (ticket <= drawnTicket.current || ticket < (pending.current?.ticket ?? 0)) return;
+    pending.current = { ticket, draw };
+    if (frame.current) return;
+    frame.current = requestAnimationFrame(() => {
+      frame.current = 0;
+      const next = pending.current;
+      pending.current = null;
+      if (!next) return;
+      drawnTicket.current = next.ticket;
+      next.draw();
+    });
+  };
 }
 
 function useWindowWidth(): number {

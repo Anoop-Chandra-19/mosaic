@@ -23,10 +23,18 @@ interface UnifiedDiffProps {
   isDetailed: boolean;
 }
 
-const DELETED_WORDS = 'rounded-xs bg-del-word text-foreground';
+/**
+ * Tints go quiet while the history is skimming (`data-skimming`, a held key): marks jumping
+ * many times a second strobe. They ease back when it stops.
+ */
+const QUIET_WHILE_SKIMMING =
+  'transition-[background-color] duration-120 in-data-skimming:bg-transparent motion-reduce:transition-none';
+const ADDED_LINE = cn('bg-add-soft text-foreground', QUIET_WHILE_SKIMMING);
+const REMOVED_LINE = cn('bg-del-soft text-ink-soft', QUIET_WHILE_SKIMMING);
+const DELETED_WORDS = cn('rounded-xs bg-del-word text-foreground', QUIET_WHILE_SKIMMING);
 /** The narrow label a field or setting names itself with, before its value. */
 const FIELD_LABEL = 'mr-2 inline-block min-w-18.5';
-const INSERTED_WORDS = 'rounded-xs bg-add-word text-foreground';
+const INSERTED_WORDS = cn('rounded-xs bg-add-word text-foreground', QUIET_WHILE_SKIMMING);
 
 /** Each line: before and after numbers when detailed, a sign, then the text. */
 function lineGrid(isDetailed: boolean) {
@@ -119,7 +127,7 @@ function ChangeLines({
           isDetailed={isDetailed}
           numbers={{ before: line.beforeNumber, after: null }}
           sign="−"
-          className="bg-del-soft text-ink-soft"
+          className={REMOVED_LINE}
           signClassName="text-del"
         >
           <FieldLabel change={change} />
@@ -135,7 +143,7 @@ function ChangeLines({
           isDetailed={isDetailed}
           numbers={{ before: null, after: line.afterNumber }}
           sign="+"
-          className="bg-add-soft text-foreground"
+          className={ADDED_LINE}
           signClassName="text-add"
         >
           <FieldLabel change={change} />
@@ -164,7 +172,7 @@ function ChangeLines({
           : { before: line.beforeNumber, after: null }
       }
       sign={isAdded ? '+' : '−'}
-      className={isAdded ? 'bg-add-soft text-foreground' : 'bg-del-soft text-ink-soft'}
+      className={isAdded ? ADDED_LINE : REMOVED_LINE}
       signClassName={isAdded ? 'text-add' : 'text-del'}
     >
       <FieldLabel change={change} />

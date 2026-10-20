@@ -28,7 +28,7 @@ Use a motion that exists before inventing one:
 | `surface-in`, `surface-out`          | A view fading in over the workspace, and out        | The history view                                        |
 | `recede`                             | Stepping back behind a view, unchanged, returning   | The workspace                                           |
 | `handoff`                            | The same thing moving between two boxes showing it  | The page: preview ↔ history                             |
-| `step` + `step-back`/`step-forward`  | Sliding the way a sequence runs, back from the left | Versions; page ↔ cards                                  |
+| `step` + `step-back`/`step-forward`  | Sliding the way a sequence runs, back from the left | Page ↔ cards                                            |
 | `slide-in`, `slide-away` (+`at-end`) | Leaving to the edge, the space reclaimed, and back  | Sidebar, history index; the assistant pane at the right |
 | `reclaim`                            | A box easing into space given up beside it          | The history list                                        |
 | `glide` (+`at-end`)                  | Moving to its new place, held by one edge, unscaled | The preview bar's two ends, as the side panels move     |
@@ -67,6 +67,8 @@ Use a motion that exists before inventing one:
   lockstep rather than pushing.
 - A step moves only what steps: a handed-over column (`handover`) in the same transition
   holds still.
+- Stepping through a sequence a key at a time (versions in the history) is local motion
+  (`lib/motion/stepIn.ts`), never a transition: a held key would wait on every one.
 - A pair's old and new images both carry the arriving element's classes, so a class can't
   say which image moves which way. Say it by which element arrives (`handover-lower`
   arriving is the review opening), or with a type.
