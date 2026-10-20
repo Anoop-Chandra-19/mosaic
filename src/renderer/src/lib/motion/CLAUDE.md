@@ -42,6 +42,10 @@ Use what exists before adding a motion:
   `staggerPresence.ts` supplies `stagger` for children of `data-presence-list` and
   an optional `data-presence-stretch`. Interrupted motions resume from each element's
   visible frame.
+- `stepIn(elements, direction, running, isSkimming)` for stepping through a sequence: only
+  the new content moves, a short way in from the side the sequence runs from, and a step
+  the same way cuts in from where the last one has got to. `fadeMarksIn` brings marks back
+  once fast stepping stops. The history's versions use it.
 - `easeHeightChanges` (a ref callback) eases a box whose height follows its content, such
   as a dialog changing step; `recordPlaces` then `slideFromRecordedPlaces` slide items
   to where a layout switch put them.

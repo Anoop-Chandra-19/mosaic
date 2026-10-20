@@ -166,7 +166,7 @@ export function ResumePreview({
   const activeSections = useMemo(() => normalizeSections(sections), [sections]);
 
   // Measured before paint, so a change shows once, already paginated: never first with
-  // the old heights and then again. Stepping between versions slides in a laid-out page.
+  // the old heights and then again. A version stepped to in the history moves in laid out.
   // Marks change the words drawn, so turning them on or off measures again.
   useLayoutEffect(() => {
     const root = measureRootRef.current;

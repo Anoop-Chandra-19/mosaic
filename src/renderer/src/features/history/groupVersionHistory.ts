@@ -44,26 +44,37 @@ function startOfMonth(ms: number): number {
   return date.setHours(0, 0, 0, 0);
 }
 
+// Made once: a formatter is slow to make, and every row on screen formats its time on each
+// step through the history.
+const DAY_FORMAT = new Intl.DateTimeFormat(undefined, {
+  weekday: 'short',
+  month: 'short',
+  day: 'numeric',
+});
+const DAY_IN_YEAR_FORMAT = new Intl.DateTimeFormat(undefined, {
+  weekday: 'short',
+  month: 'short',
+  day: 'numeric',
+  year: 'numeric',
+});
+const MONTH_FORMAT = new Intl.DateTimeFormat(undefined, { month: 'short', year: 'numeric' });
+const TIME_FORMAT = new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit' });
+
 export function formatHistoryDay(ms: number, now: number = Date.now()): string {
   const today = startOfDay(now);
   const day = startOfDay(ms);
   if (day === today) return 'Today';
   if (day === startOfDay(today - 1)) return 'Yesterday';
   const sameYear = new Date(ms).getFullYear() === new Date(now).getFullYear();
-  return new Date(ms).toLocaleDateString(undefined, {
-    weekday: 'short',
-    month: 'short',
-    day: 'numeric',
-    ...(sameYear ? {} : { year: 'numeric' }),
-  });
+  return (sameYear ? DAY_FORMAT : DAY_IN_YEAR_FORMAT).format(ms);
 }
 
 export function formatHistoryMonth(ms: number): string {
-  return new Date(ms).toLocaleDateString(undefined, { month: 'short', year: 'numeric' });
+  return MONTH_FORMAT.format(ms);
 }
 
 export function formatTimeOfDay(ms: number): string {
-  return new Date(ms).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+  return TIME_FORMAT.format(ms);
 }
 
 /** A row's time under its day's header: "12 min ago" or "3h ago" today, "9:12 PM" before. */

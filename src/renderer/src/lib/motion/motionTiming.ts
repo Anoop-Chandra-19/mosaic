@@ -29,6 +29,10 @@ export const MOTION_MS = {
   staggerMaxDelay: 90,
   stretchEnter: 180,
   stretchExit: 120,
+  /** A step to another version: its words settle in; one cut short takes at least the shortest. */
+  step: 200,
+  stepShortest: 90,
+  marksBack: 120,
 } as const;
 
 /** With reduced motion nothing moves, so there is nothing to animate or wait for. */

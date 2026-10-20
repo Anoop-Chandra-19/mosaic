@@ -82,7 +82,7 @@ const versionRow = (page: Page, name: string) =>
     .locator('li[data-version-id]')
     .filter({ hasText: name });
 
-test('opening, stepping through, and closing the history each run one transition', async () => {
+test('opening and closing the history each run one transition, and stepping runs none', async () => {
   const { page, errors } = mosaic();
   await startWithVersions(page);
   const transitions = await watchTransitions(page);
@@ -91,12 +91,11 @@ test('opening, stepping through, and closing the history each run one transition
   await expect(page.getByRole('region', { name: /^History of/ })).toBeVisible();
   expect(await transitions.take(1)).toEqual([{ types: [], ran: true }]);
 
-  // It opens on Draft A, the version before the newest. A newer version is a step forward
-  // in time; an older one, back.
+  // A step is ordinary animation, which never holds back the next key.
   await versionRow(page, 'Draft B').click();
-  expect(await transitions.take(1)).toEqual([{ types: ['step-forward'], ran: true }]);
+  await expect(page.getByRole('complementary', { name: /^Reading / })).toContainText('Draft B');
   await versionRow(page, 'Draft A').click();
-  expect(await transitions.take(1)).toEqual([{ types: ['step-back'], ran: true }]);
+  await expect(page.getByRole('complementary', { name: /^Reading / })).toContainText('Draft A');
 
   await page.keyboard.press('Control+Shift+H');
   await expect(page.getByRole('region', { name: /^History of/ })).toBeHidden();
@@ -167,11 +166,10 @@ test('with reduced motion the transitions still run, only without moving', async
 
   await page.keyboard.press('Control+Shift+H');
   await expect(page.getByRole('region', { name: /^History of/ })).toBeVisible();
-  await versionRow(page, 'Draft A').click();
   await page.keyboard.press('Control+Shift+H');
   await expect(page.getByRole('region', { name: /^History of/ })).toBeHidden();
-  const started = await transitions.take(3);
-  expect(started.map((s) => s.ran)).toEqual([true, true, true]);
+  const started = await transitions.take(2);
+  expect(started.map((s) => s.ran)).toEqual([true, true]);
   expect(errors).toEqual([]);
 });
 
