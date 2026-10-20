@@ -68,6 +68,12 @@ const VERSION_STEPS: { id: ShortcutId; offset: number }[] = [
   { id: 'newerVersion', offset: -1 },
 ];
 
+/**
+ * How a step brings its row into view: not at all (clicked, so already there), centered (a
+ * jump from the index), or just enough (↑/↓ to the row beside).
+ */
+type RevealKind = 'none' | 'jump' | 'nearby';
+
 interface FullHistoryProps {
   /** The surface that opened it: what it first shows is loaded once per opening. */
   opening: object;
@@ -285,7 +291,7 @@ function FullHistoryFrame({
   // page change together, and the page's words come in the way the history runs (older from
   // the left). Not a view transition, which would hold back the next key. The newest read
   // to land is drawn, once a frame, so a held key passes over versions rather than queueing.
-  const step = (version: VersionMeta, shouldReveal: boolean, isRepeat = false) => {
+  const step = (version: VersionMeta, reveal: RevealKind, isRepeat = false) => {
     const ticket = ++latestStep.current;
     askedId.current = version.id;
     noteStep(isRepeat);
@@ -301,7 +307,7 @@ function FullHistoryFrame({
         }
         setSelectedId(version.id);
         setDocs(read);
-        if (shouldReveal) setReveal({ versionId: version.id });
+        if (reveal !== 'none') setReveal({ versionId: version.id, isNearby: reveal === 'nearby' });
       });
     if (!versions) return;
     const stepComparison = resolveComparison(pickedComparison, versions, versions.indexOf(version));
@@ -315,8 +321,8 @@ function FullHistoryFrame({
       }
     );
   };
-  const select = (version: VersionMeta) => step(version, false);
-  const goTo = (version: VersionMeta) => step(version, true);
+  const select = (version: VersionMeta) => step(version, 'none');
+  const goTo = (version: VersionMeta) => step(version, 'jump');
 
   // ↑ and ↓ step through the versions, unless something else has the key.
   const onArrowKey = useEffectEvent((event: KeyboardEvent) => {
@@ -327,7 +333,7 @@ function FullHistoryFrame({
     const next = versions[(asked >= 0 ? asked : selectedIndex) + offset];
     if (!next) return;
     event.preventDefault();
-    step(next, true, event.repeat);
+    step(next, 'nearby', event.repeat);
   });
   useEffect(() => {
     window.addEventListener('keydown', onArrowKey);
