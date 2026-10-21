@@ -12,8 +12,13 @@ export function createSeededRandom(seed: number): SeededRandom {
   };
 }
 
+/** A place in a list `length` long. */
+export function pickIndex(random: SeededRandom, length: number): number {
+  return Math.floor(random() * length);
+}
+
 export function pickFrom<T>(random: SeededRandom, items: readonly T[]): T {
-  return items[Math.floor(random() * items.length)];
+  return items[pickIndex(random, items.length)];
 }
 
 /** A whole number from `min` to `max`, both included. */

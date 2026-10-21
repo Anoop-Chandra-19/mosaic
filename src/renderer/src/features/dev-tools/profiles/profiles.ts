@@ -1,6 +1,6 @@
 import { parseResumeText } from '@/features/import/parsing/parseResume';
 import { CURRENT_SCHEMA_VERSION } from '@shared/resume/migrateResume';
-import type { MosaicBundle } from '@shared/types/bundle';
+import type { BundleTemplate } from '@shared/types/bundle';
 import type { ResumeData } from '@shared/types/resume';
 import { createExampleResume } from '../tools/exampleResume';
 import { buildTemplateHistory, type PlannedVersion } from './buildTemplateHistory';
@@ -11,11 +11,12 @@ import { worstCaseResumeText } from './worstCaseResume';
 /*
  * Whole sets of development data, made up from a fixed seed so each is the same every time:
  * Fresh is none at all, Everyday what a few weeks of use leave, Heavy a long history on the
- * worst-case resume. Each but Fresh is generated here as a backup holds it, for
+ * worst-case resume, and Worst case the most the app should ever hold, which the speed check
+ * runs on. Each but Fresh is generated here a template at a time, as a backup holds it, for
  * `loadProfile.ts` to restore.
  */
 
-export const PROFILE_NAMES = ['Fresh', 'Everyday', 'Heavy'] as const;
+export const PROFILE_NAMES = ['Fresh', 'Everyday', 'Heavy', 'Worst case'] as const;
 export type ProfileName = (typeof PROFILE_NAMES)[number];
 export type GeneratedProfileName = Exclude<ProfileName, 'Fresh'>;
 
@@ -42,6 +43,11 @@ export const PROFILES: Record<ProfileName, Profile> = {
     leaves:
       'Writes 12 generated templates, with 600 versions on Tailored for Kestrel, the 210-bullet resume. Takes a second or so and can’t be stopped halfway; the window stays usable.',
   },
+  'Worst case': {
+    holds: '50 templates, 3,000 versions, 210 bullets in each',
+    leaves:
+      'Writes 50 generated templates of the 210-bullet resume, 3,000 versions on Tailored for Kestrel and 60 on each other. Written in parts, so a failure partway leaves the parts written. The window stays usable.',
+  },
 };
 
 interface TemplateShape {
@@ -65,6 +71,12 @@ const HEAVY_OTHERS: [string, number][] = [
   ['One page, short', 5],
 ];
 
+const WORST_CASE_OTHERS = Array.from({ length: 49 }, (_, index): TemplateShape => ({
+  name: `Tailored for company ${index + 1}`,
+  start: 'worstCase',
+  versions: 60,
+}));
+
 /** The first is the one left open. */
 const PROFILE_TEMPLATES: Record<GeneratedProfileName, TemplateShape[]> = {
   Everyday: [
@@ -80,9 +92,13 @@ const PROFILE_TEMPLATES: Record<GeneratedProfileName, TemplateShape[]> = {
       versions,
     })),
   ],
+  'Worst case': [
+    { name: 'Tailored for Kestrel', start: 'worstCase', versions: 3000 },
+    ...WORST_CASE_OTHERS,
+  ],
 };
 
-const SEEDS: Record<GeneratedProfileName, number> = { Everyday: 1, Heavy: 2 };
+const SEEDS: Record<GeneratedProfileName, number> = { Everyday: 1, Heavy: 2, 'Worst case': 3 };
 
 const VERSION_NAMES = [
   'First full draft',
@@ -187,30 +203,32 @@ function planVersions(
 
 const nextTask = () => new Promise<void>((resolve) => setTimeout(resolve));
 
+/** Every version a profile holds, for how far along it is. */
+export function countProfileVersions(name: GeneratedProfileName): number {
+  return PROFILE_TEMPLATES[name].reduce((sum, shape) => sum + shape.versions, 0);
+}
+
 /**
- * The profile as a backup of the whole app, the same for the same `now`. `onProgress` hears
- * how much is done, from 0 to 1, now and then while it works.
+ * The profile's templates as a backup holds them, one at a time, so a large profile is never
+ * held whole; the same for the same `now`. `onProgress` hears how many versions are made, now
+ * and then while it works.
  */
-export async function generateProfile(
+export async function* generateProfileTemplates(
   name: GeneratedProfileName,
   now: number,
-  onProgress?: (done: number) => void
-): Promise<MosaicBundle> {
+  onProgress?: (versionsMade: number) => void
+): AsyncGenerator<BundleTemplate> {
   const random = createSeededRandom(SEEDS[name]);
-  const shapes = PROFILE_TEMPLATES[name];
-  const total = shapes.reduce((sum, shape) => sum + shape.versions, 0);
-  let written = 0;
+  let made = 0;
   const afterEach = async () => {
-    written++;
-    if (written % VERSIONS_PER_REPORT > 0) return;
-    onProgress?.(written / total);
+    made++;
+    if (made % VERSIONS_PER_REPORT > 0) return;
+    onProgress?.(made);
     await nextTask();
   };
-  const templates = [];
-  for (const [index, shape] of shapes.entries()) {
-    const id = `${name.toLowerCase()}-t${index + 1}`;
+  for (const [index, shape] of PROFILE_TEMPLATES[name].entries()) {
+    const id = `${name.toLowerCase().replace(' ', '-')}-t${index + 1}`;
     const versions = planVersions(shape, id, random, now);
-    templates.push(await buildTemplateHistory({ id, name: shape.name, versions }, afterEach));
+    yield await buildTemplateHistory({ id, name: shape.name, versions }, afterEach);
   }
-  return { exportedAt: new Date(now).toISOString(), templates };
 }

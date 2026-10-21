@@ -1,13 +1,16 @@
 # Speed check
 
 How the built app holds up under the worst it should ever see, and where it holds up input
-or drops frames. It builds, straight through the database:
+or drops frames. After pasting it, it loads the developer tools' Worst case profile, the
+same every run:
 
 - a fictional resume with every section full: 6 sections, 5 entries each, 7 long bullets
   each (210 bullets), past the ten pages the preview draws;
-- 3,000 versions of it that really differ: each rewrites a few bullets in other words,
-  every ninth adds one, every thirteenth removes one, every tenth is named;
+- 3,000 versions of it that really differ: each rewords one to three bullets, now and then
+  one is added or dropped, about one in ten is named, and some are revisions of one session;
 - 49 more templates, copies of it with 60 versions each.
+
+The same data loads by hand from the palette (Replace all data with a profile › Worst case).
 
 Then it times everyday flows on that, and input faster than the app can keep up with:
 
