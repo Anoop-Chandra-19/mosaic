@@ -3,6 +3,7 @@ import { AppDialog } from '@/components/ui-kit';
 import { useTargetRequest, useTargetStore } from '@/stores/targetStore';
 import type { DevToolRun } from '@shared/types/devTools';
 import { installDevTestHook } from './devTestHook';
+import { showDevWindowTitle } from './devWindowTitle';
 import { DevToolsPalette } from './palette/DevToolsPalette';
 import { addRecentRun } from './recentDevRuns';
 
@@ -37,7 +38,7 @@ export function DevTools() {
   });
 
   useEffect(() => {
-    document.title = 'Mosaic DEV';
+    showDevWindowTitle();
     installDevTestHook();
     void window.mosaic.dev?.readRecent().then(setRecent);
     window.mosaic.dev?.onOpenTools(() => useTargetStore.getState().requestTarget('devTools'));

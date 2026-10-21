@@ -17,6 +17,8 @@ export const MAX_RECENT_DEV_RUNS = 4;
 export interface MosaicDev {
   readRecent(): Promise<DevToolRun[]>;
   saveRecent(runs: DevToolRun[]): Promise<void>;
+  /** The folder the development data is in, with the home folder as `~`. */
+  readDataFolder(): Promise<string>;
   /** Develop › Developer tools… was chosen in the menu bar. */
   onOpenTools(open: () => void): void;
 }

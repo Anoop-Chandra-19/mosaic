@@ -10,7 +10,8 @@ import { ADDRESS_TOOLS, GO_TO_TOOLS } from './tools/goToTools';
  * (`palette/`) lists `DEV_TOOLS`, takes a tool's choices one step at a time (`devTool.ts`'s
  * steps) and runs it with `runDevTool`, keeping it in Recent (`recentDevRuns.ts`). The tools
  * are in `tools/`: fictional data (`dataTools.ts`) and views by their address
- * (`goToTools.ts`). e2e runs the same table through `devTestHook.ts`.
+ * (`goToTools.ts`). Generated data, whole profiles and single histories, is made in
+ * `profiles/`. e2e runs the same table through `devTestHook.ts`.
  */
 
 export const DEV_TOOLS: DevTool[] = [...DATA_TOOLS, ...GO_TO_TOOLS, ...ADDRESS_TOOLS];

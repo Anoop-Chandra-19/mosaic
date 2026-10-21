@@ -21,14 +21,23 @@ made one step at a time, and Ctrl+Enter takes the defaults. Recent (kept in
 `.dev-data/dev-tools.json`) runs the last one again with Enter. Each tool is one entry in
 `DEV_TOOLS` (`features/dev-tools/devTools.ts`).
 
+Replace all data with a profile swaps the development data for a generated set, the same
+every time: Fresh (erased, as on first run, keys included, as `dev:reset` does), Everyday
+(3 templates, about 40 versions each) or Heavy (12 templates, 600 versions on one holding
+the 210-bullet resume the speed check pastes). It asks first, and only Ctrl+Enter goes
+ahead. Restore a backup file opens Settings' Restore a backup on a file you pick.
+
 Every view has an address, such as `history / Tailored for Kestrel / v12 vs v11 / changes`
 (`features/view-address/`). The palette shows where you are with Copy (Ctrl+Shift+C), and a
 pasted address goes there. Release builds have Help › Copy view address too, so a bug report
 can say where it happened.
 
 e2e runs the same tools for setup (`e2e/harness/devTools.ts`): `runDevTool`, `goToView` by
-address and `expectViewAt`, so a spec clicks only what it tests. A setup a spec needs that no
-tool makes becomes a tool first.
+address and `expectViewAt`, so a spec clicks only what it tests. `makeHistory` adds a
+template with the versions a spec lists (named or not, and the name on the resume), in
+place of naming them one by one in the editor. A setup a spec needs that no tool makes
+becomes a tool first.
+
 `bun run package` builds with `--mode release`, which leaves the tools out of the
 installer. Keep the data side-effect free (build it in a function), or the release
 bundle keeps it.

@@ -28,6 +28,14 @@ export interface DevToolStep {
   describe?: (value: DevToolArgs[string]) => string;
 }
 
+/** What a tool that replaces the app's data leaves, for the palette's confirm. */
+export interface DataReplacement {
+  /** What takes the data's place: "Heavy". */
+  replacement: string;
+  /** What is there afterwards, and what stays. */
+  leaves: string;
+}
+
 export interface DevTool {
   id: string;
   group: DevToolGroup;
@@ -39,6 +47,11 @@ export interface DevTool {
   keys?: string;
   /** Asks for text in the field instead (an address to paste); runs with it as `text`. */
   prompt?: string;
+  /**
+   * Replaces the app's data: the palette asks first, and only Ctrl+Enter goes ahead. It runs
+   * with the palette closed, saying how it went in a toast.
+   */
+  replacesData?: (args: DevToolArgs) => DataReplacement;
   /** Resolves with what to tell the user; nothing when what it did is on screen. */
   run: (args: DevToolArgs) => Promise<string>;
 }
