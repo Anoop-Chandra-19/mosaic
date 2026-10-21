@@ -2,7 +2,7 @@ import { goToView } from '@/features/view-address/viewAddress';
 import { showProgressToast } from '@/stores/toastStore';
 import { useTemplateStore } from '@/stores/templateStore';
 import { formatBundleText } from '@shared/vault/formatBundle';
-import { showDevWindowTitle } from '../devWindowTitle';
+import { showUnderWay } from '../devToolsStore';
 import { generateProfile, type GeneratedProfileName, type ProfileName } from './profiles';
 
 let isLoading = false;
@@ -16,7 +16,7 @@ async function eraseEverything(): Promise<string> {
 
 function showLoading(name: ProfileName, detail: string, percent: number | null): void {
   showProgressToast(`Loading ${name}`, { detail, percent });
-  showDevWindowTitle(percent === null ? `Loading ${name}` : `Loading ${name} ${percent}%`);
+  showUnderWay(percent === null ? `Loading ${name}` : `Loading ${name} ${percent}%`);
 }
 
 /**
@@ -47,6 +47,6 @@ export async function loadProfile(name: ProfileName): Promise<string> {
     return await writeProfile(name);
   } finally {
     isLoading = false;
-    showDevWindowTitle();
+    showUnderWay(null);
   }
 }

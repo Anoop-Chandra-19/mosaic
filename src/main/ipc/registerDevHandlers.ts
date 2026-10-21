@@ -1,11 +1,34 @@
 import os from 'node:os';
 import path from 'node:path';
-import { app, ipcMain, type IpcMainInvokeEvent } from 'electron';
+import { app, BrowserWindow, ipcMain, type IpcMainInvokeEvent, type WebContents } from 'electron';
 import { DEV_CHANNELS } from '@shared/ipc/appChannels';
 import { databaseFile } from '../db/appDatabase';
-import { readRecentDevRuns, saveRecentDevRuns } from './devHandlers';
+import { applyDevMotion } from '../dev/applyDevMotion';
+import { describeProcessMemory, type PageProcess } from '../dev/describeProcessMemory';
+import {
+  parseDevSwitches,
+  parseDevToolRuns,
+  parseReopenAddress,
+  readDevToolsFile,
+  updateDevToolsFile,
+} from './devHandlers';
 
-/** Answer the preload's `dev` calls, from the app's own page only. Development builds only. */
+function findPageProcess(pid: number): PageProcess | undefined {
+  for (const window of BrowserWindow.getAllWindows()) {
+    if (window.webContents.getOSProcessId() === pid) return 'window';
+    if (window.webContents.devToolsWebContents?.getOSProcessId() === pid) return 'devTools';
+  }
+  return undefined;
+}
+
+function reportMotionFailure(error: unknown): void {
+  console.error('Developer tools could not apply slow or reduced motion:', error);
+}
+
+/**
+ * Answer the preload's `dev` calls, from the app's own page only, and give every window the
+ * motion switches kept on. Development builds only.
+ */
 export function registerDevHandlers(isAppFrame: (event: IpcMainInvokeEvent) => boolean): void {
   const file = path.join(app.getPath('userData'), 'dev-tools.json');
   const refuseOthers = (event: IpcMainInvokeEvent) => {
@@ -13,13 +36,43 @@ export function registerDevHandlers(isAppFrame: (event: IpcMainInvokeEvent) => b
       throw new Error(`Refused developer tools from ${event.senderFrame?.url}`);
     }
   };
-  ipcMain.handle(DEV_CHANNELS.readRecent, (event) => {
+  const applyKeptMotion = async (page: WebContents) => {
+    const { switches } = await readDevToolsFile(file);
+    await applyDevMotion(page, switches);
+  };
+
+  app.on('browser-window-created', (_event, window) => {
+    applyKeptMotion(window.webContents).catch(reportMotionFailure);
+  });
+  ipcMain.handle(DEV_CHANNELS.readRecent, async (event) => {
     refuseOthers(event);
-    return readRecentDevRuns(file);
+    return (await readDevToolsFile(file)).recent;
   });
   ipcMain.handle(DEV_CHANNELS.saveRecent, (event, runs: unknown) => {
     refuseOthers(event);
-    return saveRecentDevRuns(file, runs);
+    return updateDevToolsFile(file, { recent: parseDevToolRuns(runs) });
+  });
+  ipcMain.handle(DEV_CHANNELS.readSwitches, async (event) => {
+    refuseOthers(event);
+    return (await readDevToolsFile(file)).switches;
+  });
+  ipcMain.handle(DEV_CHANNELS.saveSwitches, async (event, value: unknown) => {
+    refuseOthers(event);
+    const switches = parseDevSwitches(value);
+    await updateDevToolsFile(file, { switches });
+    await applyDevMotion(event.sender, switches);
+  });
+  ipcMain.handle(DEV_CHANNELS.readReopenAddress, async (event) => {
+    refuseOthers(event);
+    return (await readDevToolsFile(file)).reopenAddress;
+  });
+  ipcMain.handle(DEV_CHANNELS.saveReopenAddress, (event, address: unknown) => {
+    refuseOthers(event);
+    return updateDevToolsFile(file, { reopenAddress: parseReopenAddress(address) });
+  });
+  ipcMain.handle(DEV_CHANNELS.readMemory, (event) => {
+    refuseOthers(event);
+    return describeProcessMemory(app.getAppMetrics(), findPageProcess);
   });
   ipcMain.handle(DEV_CHANNELS.readDataFolder, (event) => {
     refuseOthers(event);

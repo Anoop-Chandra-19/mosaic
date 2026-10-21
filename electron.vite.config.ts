@@ -14,6 +14,14 @@ const rendererAlias = [
   // Every `cn` import, shadcn's included, gets the one that knows the type roles.
   { find: /^cn$/, replacement: resolve(rendererRoot, 'src/lib/utils.ts') },
 ];
+/**
+ * The developer tools do nothing on import: each part runs when the shell mounts it. Said
+ * so here, a release build, which never mounts them, leaves every module of theirs out,
+ * tables built with a call (`.map`, a store's `create`) included.
+ */
+const DEV_TOOLS_FOLDER = resolve(rendererRoot, 'src/features/dev-tools');
+const hasSideEffects = (id: string) => !id.startsWith(DEV_TOOLS_FOLDER);
+
 const { version } = JSON.parse(readFileSync(resolve(root, 'package.json'), 'utf8')) as {
   version: string;
 };
@@ -89,7 +97,10 @@ export default defineConfig({
     ],
     build: {
       outDir: resolve(root, 'out/renderer'),
-      rollupOptions: { input: resolve(rendererRoot, 'index.html') },
+      rollupOptions: {
+        input: resolve(rendererRoot, 'index.html'),
+        treeshake: { moduleSideEffects: hasSideEffects },
+      },
     },
   },
 });

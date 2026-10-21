@@ -1,7 +1,8 @@
-import type { DevToolArgs } from '@shared/types/devTools';
+import type { ComponentType } from 'react';
+import type { DevSwitch, DevToolArgs } from '@shared/types/devTools';
 
 /** The palette's groups, in its order. */
-export const DEV_TOOL_GROUPS = ['Data', 'Go to', 'Address'] as const;
+export const DEV_TOOL_GROUPS = ['Data', 'Go to', 'Address', 'Checks', 'Switches'] as const;
 export type DevToolGroup = (typeof DEV_TOOL_GROUPS)[number];
 
 /** One choice a step offers. */
@@ -52,6 +53,13 @@ export interface DevTool {
    * with the palette closed, saying how it went in a toast.
    */
   replacesData?: (args: DevToolArgs) => DataReplacement;
+  /**
+   * Shows what it finds in the palette, in place of the list, taken afresh each time it
+   * mounts; `run` gives the same as text.
+   */
+  report?: ComponentType<{ onRunAgain: () => void }>;
+  /** Turns this switch on or off, the palette staying open; `run` takes `isOn`. */
+  switch?: DevSwitch;
   /** Resolves with what to tell the user; nothing when what it did is on screen. */
   run: (args: DevToolArgs) => Promise<string>;
 }

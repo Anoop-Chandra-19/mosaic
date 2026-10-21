@@ -1,3 +1,4 @@
+import fs from 'node:fs';
 import { expect } from '@playwright/test';
 import { expectViewAt, goToView, makeHistory, runDevTool } from '../harness/devTools';
 import { test, withApp } from '../harness/launch';
@@ -126,4 +127,65 @@ test('a made history reads as asked, and a profile replaces it only on Ctrl+Ente
   await goToView(page, 'history / Tailored for Kestrel / v1 vs draft / page');
   await expect(history).toBeVisible();
   expect(errors).toEqual([]);
+});
+
+test('switches stay on across launches, named in the title, and the memory check reads each process', async ({
+  launchApp,
+}) => {
+  const first = await launchApp();
+  const { userDataDir } = first;
+  try {
+    const { page } = first;
+    await runDevTool(page, 'exampleResume');
+    const tools = page.getByRole('dialog', { name: 'Developer tools' });
+    await page.keyboard.press('Control+Shift+D');
+    await page.keyboard.type('memory');
+    await page.keyboard.press('Enter');
+    const memory = tools.getByRole('region', { name: 'Memory check' });
+    await expect(memory.getByRole('row').first()).toHaveText(/^Main\d+ MB$/);
+    await expect(memory.getByRole('row').nth(1)).toHaveText(/^Window\d+ MB$/);
+    await page.keyboard.press('Enter');
+    await expect(memory).toContainText('change since');
+    await expect(memory.getByRole('row').last()).toHaveText(
+      /^All of Mosaic\d+ MB(same|[+−]\d+ MB)$/
+    );
+
+    // A switch flips in place, with the palette open.
+    await page.keyboard.press('Escape');
+    await page.keyboard.type('reopen');
+    await page.keyboard.press('Enter');
+    await expect(tools.getByRole('option', { selected: true })).toContainText('On');
+    await expect(page).toHaveTitle('Mosaic DEV · Reopens this view');
+    await page.keyboard.press('Escape');
+    await runDevTool(page, 'slowMotion', { isOn: true });
+    await runDevTool(page, 'reducedMotion', { isOn: true });
+    await goToView(page, 'settings / history');
+    await first.app.close();
+
+    const second = await launchApp(userDataDir);
+    try {
+      await expect(second.page).toHaveTitle(
+        'Mosaic DEV · Slow motion ×10 · Reduced motion · Reopens this view'
+      );
+      await expectViewAt(second.page, 'settings / history');
+      // Under Settings, which hides the rest of the window from the accessibility tree.
+      await expect(
+        second.page.getByRole('button', { name: /a switch is on/, includeHidden: true })
+      ).toBeAttached();
+      expect(
+        await second.page.evaluate(() => matchMedia('(prefers-reduced-motion: reduce)').matches)
+      ).toBe(true);
+      const { playbackRate } = await second.app.evaluate(({ BrowserWindow }) =>
+        BrowserWindow.getAllWindows()[0].webContents.debugger.sendCommand(
+          'Animation.getPlaybackRate'
+        )
+      );
+      expect(playbackRate).toBe(0.1);
+      expect(second.errors).toEqual([]);
+    } finally {
+      await second.app.close();
+    }
+  } finally {
+    fs.rmSync(userDataDir, { recursive: true, force: true });
+  }
 });

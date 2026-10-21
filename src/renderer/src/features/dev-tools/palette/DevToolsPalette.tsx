@@ -34,7 +34,8 @@ import { useStepOptions } from './useStepOptions';
  * The palette's contents, inside the dialog: a field over a list. The list is the tools
  * (`toolSections.tsx`), a step's choices once a tool with steps is chosen (`stepSection.tsx`),
  * or a typed address (`addressSection.tsx`); a run that fails shows in its place
- * (`DevToolFailure.tsx`), and a tool that replaces data asks first (`ReplaceDataConfirm.tsx`).
+ * (`DevToolFailure.tsx`), as does a check's report (a tool's `report`), and a tool that
+ * replaces data asks first (`ReplaceDataConfirm.tsx`). A switch flips with the palette open.
  */
 
 interface Stepping {
@@ -57,7 +58,7 @@ const STEP_KEYS: FooterKey[] = [
   { keys: ['Mod+Enter'], label: 'go, the rest as default' },
   { keys: ['Backspace'], label: 'back a step' },
 ];
-const FAILURE_KEYS: FooterKey[] = [
+const RUN_AGAIN_KEYS: FooterKey[] = [
   { keys: ['Enter'], label: 'run again' },
   { keys: ['Esc'], label: 'back' },
 ];
@@ -129,6 +130,9 @@ export function DevToolsPalette({ recent, onRun, onClose }: DevToolsPaletteProps
   const [failure, setFailure] = useState<Failure | null>(null);
   /** A run that replaces data, waiting for Ctrl+Enter. */
   const [confirming, setConfirming] = useState<Stepping | null>(null);
+  /** A tool whose report shows in place of the list; each run of it counts up. */
+  const [reporting, setReporting] = useState<DevTool | null>(null);
+  const [reportRuns, setReportRuns] = useState(0);
   const [stepping, setStepping] = useState<Stepping | null>(null);
   /** A tool that asks for text first: Go to an address. */
   const [asking, setAsking] = useState<DevTool | null>(null);
@@ -153,6 +157,10 @@ export function DevToolsPalette({ recent, onRun, onClose }: DevToolsPaletteProps
       return;
     }
     onRun(devRun);
+    if (tool?.report) {
+      setReporting(tool);
+      return;
+    }
     try {
       const message = await runDevTool(devRun);
       onClose();
@@ -162,7 +170,21 @@ export function DevToolsPalette({ recent, onRun, onClose }: DevToolsPaletteProps
     }
   };
 
+  const flipSwitch = async (tool: DevTool) => {
+    const devRun = { toolId: tool.id, args: {} };
+    try {
+      await runDevTool(devRun);
+    } catch (error) {
+      setFailure({ run: devRun, message: error instanceof Error ? error.message : String(error) });
+    }
+  };
+
   const chooseTool = (tool: DevTool) => {
+    // A switch flips where it is, the list staying as it was to flip another.
+    if (tool.switch) {
+      void flipSwitch(tool);
+      return;
+    }
     changeQuery('');
     if (tool.steps) setStepping({ tool, args: {} });
     else if (tool.prompt) setAsking(tool);
@@ -230,6 +252,9 @@ export function DevToolsPalette({ recent, onRun, onClose }: DevToolsPaletteProps
       // Only Ctrl+Enter replaces: Enter alone, from habit, does nothing.
       event.preventDefault();
       if (isModKey(event)) replace();
+    } else if (event.key === 'Enter' && reporting) {
+      event.preventDefault();
+      setReportRuns((runs) => runs + 1);
     } else if (event.key === 'Enter' && failure) {
       event.preventDefault();
       void run(failure.run);
@@ -261,11 +286,13 @@ export function DevToolsPalette({ recent, onRun, onClose }: DevToolsPaletteProps
   const placeholder = step?.placeholder ?? asking?.prompt ?? 'Search tools, or paste an address';
   let footerKeys = LIST_KEYS;
   if (confirming) footerKeys = CONFIRM_KEYS;
-  else if (failure) footerKeys = FAILURE_KEYS;
+  else if (failure || reporting) footerKeys = RUN_AGAIN_KEYS;
   else if (stepping) footerKeys = STEP_KEYS;
 
   let leading = null;
   if (confirming) leading = <SteppingChips stepping={confirming} isComplete />;
+  else if (reporting)
+    leading = <SteppingChips stepping={{ tool: reporting, args: {} }} isComplete />;
   else if (stepping) leading = <SteppingChips stepping={stepping} />;
 
   let body;
@@ -277,6 +304,9 @@ export function DevToolsPalette({ recent, onRun, onClose }: DevToolsPaletteProps
         onReplace={replace}
       />
     );
+  } else if (reporting?.report) {
+    const Report = reporting.report;
+    body = <Report key={reportRuns} onRunAgain={() => setReportRuns((runs) => runs + 1)} />;
   } else if (failure) {
     body = (
       <DevToolFailure
@@ -316,14 +346,16 @@ export function DevToolsPalette({ recent, onRun, onClose }: DevToolsPaletteProps
       placement="top"
       showCloseButton={false}
       aria-describedby={undefined}
-      // Inside a step, a failure, a prompt or a confirm, Esc steps back out before it closes.
+      // Inside a step, a failure, a prompt, a confirm or a report, Esc steps back out before
+      // it closes.
       onEscapeKeyDown={(event) => {
-        if (!failure && !stepping && !asking && !confirming) return;
+        if (!failure && !stepping && !asking && !confirming && !reporting) return;
         event.preventDefault();
         setFailure(null);
         setStepping(null);
         setAsking(null);
         setConfirming(null);
+        setReporting(null);
       }}
       className="flex max-h-[calc(100%-4.25rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-150"
     >
@@ -338,8 +370,8 @@ export function DevToolsPalette({ recent, onRun, onClose }: DevToolsPaletteProps
           value={query}
           onValueChange={changeQuery}
           onKeyDown={handleFieldKeyDown}
-          placeholder={confirming ? '' : placeholder}
-          readOnly={confirming !== null}
+          placeholder={confirming || reporting ? '' : placeholder}
+          readOnly={confirming !== null || reporting !== null}
           aria-label="Search developer tools"
           className={cn(addressCheck && 'font-mono text-body')}
           leading={leading}

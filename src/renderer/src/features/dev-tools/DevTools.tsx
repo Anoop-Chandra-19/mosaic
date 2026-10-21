@@ -3,9 +3,9 @@ import { AppDialog } from '@/components/ui-kit';
 import { useTargetRequest, useTargetStore } from '@/stores/targetStore';
 import type { DevToolRun } from '@shared/types/devTools';
 import { installDevTestHook } from './devTestHook';
-import { showDevWindowTitle } from './devWindowTitle';
 import { DevToolsPalette } from './palette/DevToolsPalette';
 import { addRecentRun } from './recentDevRuns';
+import { useDevSwitches } from './switches/useDevSwitches';
 
 /** Ctrl+Shift+D (⇧⌘D on a Mac), here rather than in the shortcut catalog: users never have it. */
 function isOpenToolsKey(event: KeyboardEvent): boolean {
@@ -16,14 +16,15 @@ function isOpenToolsKey(event: KeyboardEvent): boolean {
 /**
  * The developer tools in a development build: the palette, and every way to it (the keys,
  * Develop › Developer tools…, the wrench), over any screen or dialog. Not an `overlayStore`
- * dialog, which would replace the dialog it opens over. The window's title says DEV, and e2e
- * gets its hook.
+ * dialog, which would replace the dialog it opens over. The window's title says DEV and the
+ * switches on, and e2e gets its hook.
  */
 export function DevTools() {
   const [isOpen, setIsOpen] = useState(false);
   // Each opening mounts the palette afresh.
   const [openings, setOpenings] = useState(0);
   const [recent, setRecent] = useState<DevToolRun[]>([]);
+  useDevSwitches();
 
   const open = () => {
     setOpenings((count) => count + 1);
@@ -38,7 +39,6 @@ export function DevTools() {
   });
 
   useEffect(() => {
-    showDevWindowTitle();
     installDevTestHook();
     void window.mosaic.dev?.readRecent().then(setRecent);
     window.mosaic.dev?.onOpenTools(() => useTargetStore.getState().requestTarget('devTools'));
