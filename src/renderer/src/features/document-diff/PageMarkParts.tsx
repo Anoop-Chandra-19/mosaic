@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { AppTooltip } from '@/components/AppTooltip';
+import { AppTooltip } from '@/components/ui-kit';
 import { cn } from '@/lib/utils';
 import { describeChangeTip } from '@shared/resume/changes/describeChanges';
 import type { EntryHeadingFields } from '@shared/resume/entryHeading';

@@ -1,7 +1,12 @@
 import { Check, ChevronDown } from 'lucide-react';
-import { AppButton } from '@/components/AppButton';
-import { AppMenu, AppMenuContent, AppMenuItem, AppMenuTrigger } from '@/components/AppMenu';
-import { Text } from '@/components/Text';
+import {
+  AppButton,
+  AppMenu,
+  AppMenuContent,
+  AppMenuItem,
+  AppMenuTrigger,
+  Text,
+} from '@/components/ui-kit';
 import type { ImportMode } from './buildImportedResume';
 
 const MODES: { id: ImportMode; label: string; hint: string }[] = [

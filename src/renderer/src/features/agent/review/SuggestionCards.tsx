@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { Text } from '@/components/Text';
+import { Text } from '@/components/ui-kit';
 import { transitionClasses } from '@/features/view-transitions/transitionClasses';
 import { cn } from '@/lib/utils';
 import type { Proposal } from '@shared/types/agentProposal';

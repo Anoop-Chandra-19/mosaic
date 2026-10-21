@@ -1,5 +1,5 @@
 import { useRef, type ReactNode } from 'react';
-import { AppMenu, AppMenuContent, AppMenuSeparator, AppMenuTrigger } from '@/components/AppMenu';
+import { AppMenu, AppMenuContent, AppMenuSeparator, AppMenuTrigger } from '@/components/ui-kit';
 import { SECTION_PRESETS } from '@shared/resume/sectionPresets';
 import type { BuiltInSectionKind } from '@shared/types/resume';
 import { useOutlineStore } from '@/stores/outlineStore';

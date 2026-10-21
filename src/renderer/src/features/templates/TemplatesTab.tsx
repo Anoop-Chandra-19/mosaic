@@ -1,8 +1,6 @@
 import { useState } from 'react';
 import { Plus, Search } from 'lucide-react';
-import { AppButton } from '@/components/AppButton';
-import { AppInput } from '@/components/AppInput';
-import { Text } from '@/components/Text';
+import { AppButton, AppInput, Text } from '@/components/ui-kit';
 import { useOverlayStore } from '@/stores/overlayStore';
 import { useResumeStore } from '@/stores/resumeStore';
 import { useTemplateStore } from '@/stores/templateStore';

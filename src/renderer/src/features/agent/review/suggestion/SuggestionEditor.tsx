@@ -1,8 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Check } from 'lucide-react';
-import { AppButton } from '@/components/AppButton';
-import { AppTextarea } from '@/components/AppTextarea';
-import { Text } from '@/components/Text';
+import { AppButton, AppTextarea, Text } from '@/components/ui-kit';
 import { ShortcutKeys } from '@/features/shortcuts/ShortcutKeys';
 import type { Proposal } from '@shared/types/agentProposal';
 import { GAP_MARK } from '../../proposals/checks/unfilledGap';

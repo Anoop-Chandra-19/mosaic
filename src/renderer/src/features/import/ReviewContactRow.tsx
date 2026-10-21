@@ -1,7 +1,5 @@
 import { Fragment, useState } from 'react';
-import { AppButton } from '@/components/AppButton';
-import { AppCollapsible, AppCollapsibleTrigger } from '@/components/AppCollapsible';
-import { Text } from '@/components/Text';
+import { AppButton, AppCollapsible, AppCollapsibleTrigger, Text } from '@/components/ui-kit';
 import { getPrintableHeaderLines } from '@shared/resume/resumeHeader';
 import type { ContactInfo } from '@shared/types/resume';
 import { formatCount } from './formatCount';

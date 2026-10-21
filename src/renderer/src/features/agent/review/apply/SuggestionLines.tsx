@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { Text } from '@/components/Text';
+import { Text } from '@/components/ui-kit';
 import { cn } from '@/lib/utils';
 import type { Proposal } from '@shared/types/agentProposal';
 

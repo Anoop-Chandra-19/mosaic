@@ -1,4 +1,4 @@
-import { Text } from '@/components/Text';
+import { Text } from '@/components/ui-kit';
 import type { ApplyPlan } from '../../proposals/planApply';
 import { HistoryRail } from './HistoryRail';
 import type { HistoryRow } from './planHistoryRows';

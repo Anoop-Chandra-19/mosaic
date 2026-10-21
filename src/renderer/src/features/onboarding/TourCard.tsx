@@ -1,7 +1,6 @@
 import type { CSSProperties, ReactNode, Ref } from 'react';
 import { ChevronRight, X } from 'lucide-react';
-import { AppButton } from '@/components/AppButton';
-import { Text } from '@/components/Text';
+import { AppButton, Text } from '@/components/ui-kit';
 import { cn } from '@/lib/utils';
 
 interface TourCardProps {

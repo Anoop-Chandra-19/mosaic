@@ -1,8 +1,6 @@
 import { useState } from 'react';
 import { Check } from 'lucide-react';
-import { AppButton } from '@/components/AppButton';
-import { AppInput } from '@/components/AppInput';
-import { Text } from '@/components/Text';
+import { AppButton, AppInput, Text } from '@/components/ui-kit';
 import { cn } from '@/lib/utils';
 import type { EntryFact, Proposal } from '@shared/types/agentProposal';
 import { confirmProposalFact, editProposalFact } from '../../proposals/proposalActions';

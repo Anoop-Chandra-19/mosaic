@@ -1,12 +1,19 @@
 import { useState } from 'react';
 import { AlertTriangle, ArchiveRestore, FileJson2 } from 'lucide-react';
-import { AppButton } from '@/components/AppButton';
-import { AppDialog, AppDialogContent, AppDialogDescription } from '@/components/AppDialog';
-import { AppRadioGroup, AppRadioGroupItem } from '@/components/AppRadioGroup';
-import { CHOICE_CARD_CLASSES } from '@/components/controlStyles';
-import { DialogFrameBody, DialogFrameFooter, DialogFrameHeader } from '@/components/DialogFrame';
-import { Note } from '@/components/Note';
-import { Text } from '@/components/Text';
+import {
+  AppButton,
+  AppDialog,
+  AppDialogContent,
+  AppDialogDescription,
+  AppRadioGroup,
+  AppRadioGroupItem,
+  DialogFrameBody,
+  DialogFrameFooter,
+  DialogFrameHeader,
+  Note,
+  Text,
+} from '@/components/ui-kit';
+import { CHOICE_CARD_CLASSES } from '@/components/kit/controlStyles';
 import { formatRelativeTime } from '@/features/templates/formatRelativeTime';
 import { easeHeightChanges } from '@/lib/motion/easeHeightChanges';
 

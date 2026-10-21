@@ -11,15 +11,15 @@ import {
   Split,
   Trash2,
 } from 'lucide-react';
-import { AppButton } from '@/components/AppButton';
-import { AppTooltip } from '@/components/AppTooltip';
 import {
+  AppButton,
+  AppTooltip,
   AppMenu,
   AppMenuContent,
   AppMenuItem,
   AppMenuSeparator,
   AppMenuTrigger,
-} from '@/components/AppMenu';
+} from '@/components/ui-kit';
 import { BulletSuggestionDot } from '@/features/agent/review/BulletSuggestionDot';
 import { useBulletSuggestion } from '@/features/agent/review/useBulletSuggestion';
 import { matchesAction } from '@/features/shortcuts/shortcutBindings';

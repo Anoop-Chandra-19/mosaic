@@ -36,12 +36,28 @@ as it renders sits inside a `ReadBoundary`.
 
 ## UI foundation
 
+- Screens import shared primitives from `@/components/ui-kit`, grouping named imports into
+  one declaration. `components/ui-kit.ts` explicitly re-exports the `App*` wrappers, `Text`,
+  `Badge`, `Chip`, `Note`, `ReadingColumn`, and `DialogFrame` parts, plus `textVariantClasses`
+  and the `TextVariant` type for typography on elements that cannot use `Text`. It adds no behavior.
+  No other barrels or `index.ts` files.
+- `components/kit/` holds all `App*.tsx` implementations, `Badge`, `Chip`, `DialogFrame`,
+  `Note`, `ReadingColumn`, and `Text`, plus private helpers `controlStyles.ts`, `textVariants.ts`,
+  `HintLayer.tsx`, and `hintRegistry.ts`. Folder membership is not the public API: helpers and
+  tooltip internals are not exported by `ui-kit.ts`; only `textVariantClasses` and `TextVariant`
+  are exposed from the typography helper. Implementations and internals use direct file imports,
+  never back through `ui-kit.ts`. Their unit tests live in `components/kit/__tests__/`;
+  `components/__tests__/ui-kit.test.ts` stays with the public entry point.
+- Higher-level components `ConfirmDeleteDialog`, `HeaderLinkControls`, `ReadBoundary`,
+  `MosaicMark`, and the hook `useNoSelectionBehindLayers` stay at the `components/` root,
+  use direct imports, and are not exported by `ui-kit.ts`. Raw shadcn parts remain in
+  `components/ui/`, separate from the app's implementations in `components/kit/`.
 - Use Radix/shadcn primitives (new-york, zinc base), not hand-rolled equivalents, through
-  their `App*` wrappers in `components/`: `AppButton`, `AppMenu`, `AppSelect`, `AppInput`,
+  their `App*` wrappers in `components/kit/`: `AppButton`, `AppMenu`, `AppSelect`, `AppInput`,
   `AppTextarea`, `AppDialog` (with `DialogFrame` for the framed dialogs), `AppToggleGroup`,
   `AppTabs`, `AppRadioGroup`, `AppCheckbox`, `AppSwitch`, `AppPopover`, `AppCollapsible`,
   `AppTooltip`, `AppCommand` (a search field over a list, on shadcn's command). Each draws
-  the design's control (`controlStyles.ts` holds the shared field, floating surface and list
+  the design's control (`components/kit/controlStyles.ts` holds the shared field, floating surface and list
   row) and passes Radix props through. ESLint refuses
   `components/ui/` anywhere else: a primitive with no wrapper gets one first.
 - A wrapper builds on the shadcn part when its markup fits, and on Radix directly when the
@@ -86,13 +102,15 @@ as it renders sits inside a `ReadBoundary`.
   is a colour). Weights: `font-regular` 460, `font-control` 560, `font-strong` 650,
   `font-tag` 700. `caption` is meta's size in sans, for a small label that isn't a number.
 - Tracking and line height come with the role. A look that needs its own (a chip, a badge)
-  is written once in `components/` (`Badge`, `AppButton size="chip"`); ESLint refuses
+  is written once in `components/kit/` (`Badge`, `AppButton size="chip"`); ESLint refuses
   `tracking-[…]` and `leading-[…]` elsewhere.
-- Write interface text as `<Text variant="…">` (`components/Text.tsx`); its table adds the
+- Write interface text as `<Text variant="…">` (from `@/components/ui-kit`, implemented in
+  `components/kit/Text.tsx`); its table in `components/kit/textVariants.ts` adds the
   role's family, case and colour. No bare `<h1>`–`<h6>`, `<p>` or `<span>` styled with type
   classes: keep the element for its meaning with `as` (`<Text as="h3" variant="title">`),
   since headings are how screen readers and the e2e specs find things. Where an element can't be a `Text`, such as a Radix part,
-  use `textVariantClasses(variant)`. Override colour through `className`, never the size.
+  use `textVariantClasses(variant)` from `@/components/ui-kit` (which also exports the
+  `TextVariant` type). Override colour through `className`, never the size.
 - Text colour is `foreground`, `ink-soft`, `ink-muted` or `ink-faint`; status colours only
   for meaning. Tabular numbers on counts, times, labels and percentages (the meta role has
   them).

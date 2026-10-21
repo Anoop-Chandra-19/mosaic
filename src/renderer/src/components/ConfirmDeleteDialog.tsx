@@ -1,8 +1,12 @@
 import type { ReactNode } from 'react';
 import { Trash2 } from 'lucide-react';
-import { AppButton } from '@/components/AppButton';
-import { AppDialog, AppDialogContent, AppDialogDescription } from '@/components/AppDialog';
-import { DialogFrameBody, DialogFrameFooter, DialogFrameHeader } from '@/components/DialogFrame';
+import { AppButton } from '@/components/kit/AppButton';
+import { AppDialog, AppDialogContent, AppDialogDescription } from '@/components/kit/AppDialog';
+import {
+  DialogFrameBody,
+  DialogFrameFooter,
+  DialogFrameHeader,
+} from '@/components/kit/DialogFrame';
 
 interface ConfirmDeleteDialogProps {
   open: boolean;

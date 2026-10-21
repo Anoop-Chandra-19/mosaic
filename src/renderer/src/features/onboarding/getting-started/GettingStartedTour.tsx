@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { AppButton } from '@/components/AppButton';
+import { AppButton } from '@/components/ui-kit';
 import { useShortcutLabel } from '@/features/shortcuts/shortcutBindings';
 import { isTypingField } from '@/lib/keyboardShortcuts';
 import type { ShortcutId } from '@/lib/shortcutCatalog';

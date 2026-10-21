@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { TriangleAlert } from 'lucide-react';
-import { AppButton } from '@/components/AppButton';
-import { Text } from '@/components/Text';
+import { AppButton, Text } from '@/components/ui-kit';
 import { formatShortcutLabel, readShortcutCombo } from '@/lib/keyboardShortcuts';
 import {
   explainRefusedShortcut,

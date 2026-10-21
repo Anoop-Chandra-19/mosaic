@@ -1,5 +1,5 @@
 import { Lock, TriangleAlert } from 'lucide-react';
-import { Text } from '@/components/Text';
+import { Text } from '@/components/ui-kit';
 import { cn } from '@/lib/utils';
 import type { ProposalFlag } from '@shared/types/agentProposal';
 import { describeFlag } from './describeFlag';

@@ -1,5 +1,5 @@
 import { EyeOff, List, Move, Plus, Split, Type, type LucideIcon } from 'lucide-react';
-import { Chip } from '@/components/Chip';
+import { Chip } from '@/components/ui-kit';
 import type { ProposalChange } from '@shared/types/agentProposal';
 import { labelSuggestionKind } from '../../proposals/describeSuggestion';
 

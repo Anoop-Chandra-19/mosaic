@@ -1,8 +1,5 @@
 import { useId } from 'react';
-import { AppButton } from '@/components/AppButton';
-import { AppInput } from '@/components/AppInput';
-import { AppRadioGroup, AppRadioGroupItem } from '@/components/AppRadioGroup';
-import { Text } from '@/components/Text';
+import { AppButton, AppInput, AppRadioGroup, AppRadioGroupItem, Text } from '@/components/ui-kit';
 import { cn } from '@/lib/utils';
 import { isMissingName, type AddToOffer, type HistoryChoice } from './historyChoice';
 import { HistoryRail } from './HistoryRail';

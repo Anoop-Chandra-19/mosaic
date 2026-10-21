@@ -8,9 +8,8 @@ import {
   ViewTransition,
 } from 'react';
 import { Clock, List, X } from 'lucide-react';
-import { AppButton } from '@/components/AppButton';
+import { AppButton, Text } from '@/components/ui-kit';
 import { ReadBoundary } from '@/components/ReadBoundary';
-import { Text } from '@/components/Text';
 import { PAPER_DIMENSIONS_PT } from '@/features/preview/pageGeometry';
 import {
   SLIDE_AWAY_MOTION,

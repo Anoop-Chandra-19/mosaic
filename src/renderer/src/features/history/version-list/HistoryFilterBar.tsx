@@ -1,8 +1,8 @@
 import { useRef } from 'react';
 import { ChevronUp, Clock, LayoutTemplate, List, Save, Search, Sparkles, X } from 'lucide-react';
-import { AppButton } from '@/components/AppButton';
-import { AppTooltip } from '@/components/AppTooltip';
 import {
+  AppButton,
+  AppTooltip,
   AppMenu,
   AppMenuContent,
   AppMenuItem,
@@ -10,9 +10,10 @@ import {
   AppMenuRadioItem,
   AppMenuSeparator,
   AppMenuTrigger,
-} from '@/components/AppMenu';
-import { AppInput } from '@/components/AppInput';
-import { AppToggleGroup, AppToggleGroupItem } from '@/components/AppToggleGroup';
+  AppInput,
+  AppToggleGroup,
+  AppToggleGroupItem,
+} from '@/components/ui-kit';
 import { cn } from '@/lib/utils';
 import type { HistoryFilter, HistoryKindFilter } from '@/types/history';
 

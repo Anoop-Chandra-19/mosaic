@@ -1,9 +1,6 @@
 import { useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from 'react';
 import { Search } from 'lucide-react';
-import { AppButton } from '@/components/AppButton';
-import { AppInput } from '@/components/AppInput';
-import { Text } from '@/components/Text';
-import { textVariantClasses } from '@/components/textVariants';
+import { AppButton, AppInput, Text, textVariantClasses } from '@/components/ui-kit';
 import { isSameShortcut, readShortcutCombo } from '@/lib/keyboardShortcuts';
 import {
   isFixedShortcut,

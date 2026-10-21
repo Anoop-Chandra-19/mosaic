@@ -9,10 +9,7 @@ import {
   type ReactNode,
 } from 'react';
 import { Info, Merge, Split } from 'lucide-react';
-import { AppButton } from '@/components/AppButton';
-import { AppToggleGroup, AppToggleGroupItem } from '@/components/AppToggleGroup';
-import { Chip } from '@/components/Chip';
-import { Text } from '@/components/Text';
+import { AppButton, AppToggleGroup, AppToggleGroupItem, Chip, Text } from '@/components/ui-kit';
 import { matchesAction, useShortcutCombo } from '@/features/shortcuts/shortcutBindings';
 import { formatShortcutKeys } from '@/lib/keyboardShortcuts';
 import { cn } from '@/lib/utils';

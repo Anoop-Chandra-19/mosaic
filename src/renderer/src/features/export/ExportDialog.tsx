@@ -10,16 +10,22 @@ import {
   Type,
   type LucideIcon,
 } from 'lucide-react';
-import { DialogFrameFooter, DialogFrameHeader } from '@/components/DialogFrame';
-import { AppButton } from '@/components/AppButton';
-import { AppDialog, AppDialogContent } from '@/components/AppDialog';
-import { AppInput } from '@/components/AppInput';
-import { AppRadioGroup, AppRadioGroupItem } from '@/components/AppRadioGroup';
-import { AppToggleGroup, AppToggleGroupItem } from '@/components/AppToggleGroup';
-import { CHOICE_CARD_CLASSES } from '@/components/controlStyles';
-import { Note } from '@/components/Note';
-import { Chip } from '@/components/Chip';
-import { Text } from '@/components/Text';
+import {
+  DialogFrameFooter,
+  DialogFrameHeader,
+  AppButton,
+  AppDialog,
+  AppDialogContent,
+  AppInput,
+  AppRadioGroup,
+  AppRadioGroupItem,
+  AppToggleGroup,
+  AppToggleGroupItem,
+  Note,
+  Chip,
+  Text,
+} from '@/components/ui-kit';
+import { CHOICE_CARD_CLASSES } from '@/components/kit/controlStyles';
 import { useActiveTemplate } from '@/features/templates/useActiveTemplate';
 import { buildExportName, toFileName } from '@/lib/files/fileNames';
 import { HeaderLinkControls } from '@/components/HeaderLinkControls';

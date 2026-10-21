@@ -1,6 +1,4 @@
-import { AppTextarea } from '@/components/AppTextarea';
-import { AppTooltip } from '@/components/AppTooltip';
-import { textVariantClasses } from '@/components/textVariants';
+import { AppTextarea, AppTooltip, textVariantClasses } from '@/components/ui-kit';
 import { cn } from '@/lib/utils';
 import { useInlineEdit } from '@/lib/hooks/useInlineEdit';
 import type { LiveEdit } from '@/stores/liveEditStore';

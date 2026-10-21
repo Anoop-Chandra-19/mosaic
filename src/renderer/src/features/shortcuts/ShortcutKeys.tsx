@@ -1,6 +1,5 @@
 import { Fragment } from 'react';
-import { Text } from '@/components/Text';
-import { textVariantClasses } from '@/components/textVariants';
+import { Text, textVariantClasses } from '@/components/ui-kit';
 import { formatShortcutKeys } from '@/lib/keyboardShortcuts';
 import { cn } from '@/lib/utils';
 

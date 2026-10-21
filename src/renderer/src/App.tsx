@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { AppTooltipProvider } from '@/components/AppTooltip';
+import { AppTooltipProvider } from '@/components/ui-kit';
 import { useNoSelectionBehindLayers } from '@/components/useNoSelectionBehindLayers';
 import { AppShell } from '@/features/shell/AppShell';
 

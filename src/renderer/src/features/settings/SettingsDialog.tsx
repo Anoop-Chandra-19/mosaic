@@ -1,11 +1,14 @@
 import { useState } from 'react';
 import { Settings } from 'lucide-react';
 import { useOverlayStore } from '@/stores/overlayStore';
-import { AppButton } from '@/components/AppButton';
-import { AppDialog, AppDialogContent } from '@/components/AppDialog';
-import { DialogFrameHeader } from '@/components/DialogFrame';
-import { Chip } from '@/components/Chip';
-import { Text } from '@/components/Text';
+import {
+  AppButton,
+  AppDialog,
+  AppDialogContent,
+  DialogFrameHeader,
+  Chip,
+  Text,
+} from '@/components/ui-kit';
 import { cn } from '@/lib/utils';
 import { useAgentSettingsStore } from '@/stores/agentSettingsStore';
 import { ShortcutsIntro } from '@/features/shortcuts/ShortcutsIntro';

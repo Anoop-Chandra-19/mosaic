@@ -1,9 +1,6 @@
 import type { ReactNode } from 'react';
 import { Clock, Eye, EyeOff, Info, Move, Undo2 } from 'lucide-react';
-import { AppButton } from '@/components/AppButton';
-import { Chip } from '@/components/Chip';
-import { Text } from '@/components/Text';
-import type { TextVariant } from '@/components/textVariants';
+import { AppButton, Chip, Text, type TextVariant } from '@/components/ui-kit';
 import { cn } from '@/lib/utils';
 import type { Proposal, ProposalChange, ProposalChangeKind } from '@shared/types/agentProposal';
 import type { ResumeData } from '@shared/types/resume';

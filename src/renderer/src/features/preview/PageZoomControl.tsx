@@ -1,5 +1,5 @@
 import { Minus, Plus } from 'lucide-react';
-import { AppButton } from '@/components/AppButton';
+import { AppButton } from '@/components/ui-kit';
 import { shortcutLabel } from '@/lib/keyboardShortcuts';
 import { PREVIEW_ZOOM_RANGE } from '@/stores/uiStore';
 

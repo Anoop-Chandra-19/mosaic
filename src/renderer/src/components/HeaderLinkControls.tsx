@@ -1,4 +1,4 @@
-import { AppToggleGroup, AppToggleGroupItem } from '@/components/AppToggleGroup';
+import { AppToggleGroup, AppToggleGroupItem } from '@/components/kit/AppToggleGroup';
 import { LINK_COLORS, LINK_STYLES } from '@shared/resume/resumeHeader';
 import type { LinkColor, LinkStyle } from '@shared/types/resume';
 

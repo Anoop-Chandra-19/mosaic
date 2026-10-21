@@ -1,18 +1,19 @@
 import { useState, type ReactNode } from 'react';
 import { Check, Eye, EyeOff, ShieldCheck } from 'lucide-react';
-import { AppButton } from '@/components/AppButton';
-import { Note } from '@/components/Note';
-import { AppInput } from '@/components/AppInput';
 import {
+  AppButton,
+  Note,
+  AppInput,
   AppSelect,
   AppSelectContent,
   AppSelectItem,
   AppSelectTrigger,
   AppSelectValue,
-} from '@/components/AppSelect';
-import { AppSwitch } from '@/components/AppSwitch';
-import { AppToggleGroup, AppToggleGroupItem } from '@/components/AppToggleGroup';
-import { Text } from '@/components/Text';
+  AppSwitch,
+  AppToggleGroup,
+  AppToggleGroupItem,
+  Text,
+} from '@/components/ui-kit';
 import { isLocalOllamaAddress } from '@shared/model-providers/ollamaAddress';
 import { cn } from '@/lib/utils';
 import { DEFAULT_MODEL_BY_PROVIDER, useAgentSettingsStore } from '@/stores/agentSettingsStore';

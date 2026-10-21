@@ -1,4 +1,4 @@
-import { AppToggleGroup, AppToggleGroupItem } from '@/components/AppToggleGroup';
+import { AppToggleGroup, AppToggleGroupItem } from '@/components/ui-kit';
 import { HeaderLinkToggles } from '@/features/editor/header/HeaderLinkToggles';
 import { useResumeStore } from '@/stores/resumeStore';
 import { useUiStore } from '@/stores/uiStore';

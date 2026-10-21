@@ -1,6 +1,5 @@
 import { Pencil } from 'lucide-react';
-import { AppButton } from '@/components/AppButton';
-import { Text } from '@/components/Text';
+import { AppButton, Text } from '@/components/ui-kit';
 import { cn } from '@/lib/utils';
 import { ShortcutKeys } from './ShortcutKeys';
 

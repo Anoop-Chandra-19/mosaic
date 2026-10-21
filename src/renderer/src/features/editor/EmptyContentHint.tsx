@@ -1,7 +1,12 @@
 import { Plus } from 'lucide-react';
-import { AppButton } from '@/components/AppButton';
-import { Text } from '@/components/Text';
-import { AppMenu, AppMenuContent, AppMenuSeparator, AppMenuTrigger } from '@/components/AppMenu';
+import {
+  AppButton,
+  Text,
+  AppMenu,
+  AppMenuContent,
+  AppMenuSeparator,
+  AppMenuTrigger,
+} from '@/components/ui-kit';
 import { STARTER_KINDS } from '@/features/start/blankResume';
 import { SECTION_PRESETS } from '@shared/resume/sectionPresets';
 import { useOutlineStore } from '@/stores/outlineStore';

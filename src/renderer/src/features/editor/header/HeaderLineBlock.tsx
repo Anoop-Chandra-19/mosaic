@@ -1,8 +1,8 @@
 import { useRef, useState } from 'react';
 import { ArrowDown, ArrowUp, Ellipsis, Plus, Trash2 } from 'lucide-react';
-import { AppButton } from '@/components/AppButton';
-import { Text } from '@/components/Text';
 import {
+  AppButton,
+  Text,
   AppMenu,
   AppMenuContent,
   AppMenuItem,
@@ -10,7 +10,7 @@ import {
   AppMenuRadioItem,
   AppMenuSeparator,
   AppMenuTrigger,
-} from '@/components/AppMenu';
+} from '@/components/ui-kit';
 import {
   BUILT_IN_HEADER_KINDS,
   HEADER_ALIGNS,

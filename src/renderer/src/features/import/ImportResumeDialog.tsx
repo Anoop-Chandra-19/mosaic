@@ -1,11 +1,15 @@
 import { useState, type DragEvent } from 'react';
 import { AlertTriangle, Info, Upload } from 'lucide-react';
-import { DialogFrameFooter, DialogFrameHeader } from '@/components/DialogFrame';
-import { AppButton } from '@/components/AppButton';
-import { AppDialog, AppDialogContent } from '@/components/AppDialog';
-import { AppTextarea } from '@/components/AppTextarea';
-import { Note } from '@/components/Note';
-import { Text } from '@/components/Text';
+import {
+  DialogFrameFooter,
+  DialogFrameHeader,
+  AppButton,
+  AppDialog,
+  AppDialogContent,
+  AppTextarea,
+  Note,
+  Text,
+} from '@/components/ui-kit';
 import { fileFailure } from '@/features/backup/backupFiles';
 import { easeHeightChanges } from '@/lib/motion/easeHeightChanges';
 

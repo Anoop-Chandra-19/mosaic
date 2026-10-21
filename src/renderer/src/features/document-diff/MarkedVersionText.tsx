@@ -1,8 +1,5 @@
 import type { ReactNode } from 'react';
-import { AppTooltip } from '@/components/AppTooltip';
-import { ReadingColumn } from '@/components/ReadingColumn';
-import { Text } from '@/components/Text';
-import { textVariantClasses } from '@/components/textVariants';
+import { AppTooltip, ReadingColumn, Text, textVariantClasses } from '@/components/ui-kit';
 import { cn } from '@/lib/utils';
 import { describeChange, describeChangeTip } from '@shared/resume/changes/describeChanges';
 import type { DiffLine, ResumeDiff } from '@shared/resume/changes/diffResumes';

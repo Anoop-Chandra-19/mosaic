@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type Ref } from 'react';
 import { Sparkles } from 'lucide-react';
-import { Text } from '@/components/Text';
+import { Text } from '@/components/ui-kit';
 import { transitionClasses } from '@/features/view-transitions/transitionClasses';
 import { useSettledSurface } from '@/features/view-transitions/useSettledSurface';
 import { isTypingField } from '@/lib/keyboardShortcuts';

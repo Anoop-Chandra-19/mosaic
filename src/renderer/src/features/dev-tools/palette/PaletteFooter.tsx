@@ -1,6 +1,5 @@
 import { Check } from 'lucide-react';
-import { AppButton } from '@/components/AppButton';
-import { textVariantClasses } from '@/components/textVariants';
+import { AppButton, textVariantClasses } from '@/components/ui-kit';
 import { ShortcutKeys } from '@/features/shortcuts/ShortcutKeys';
 import { cn } from '@/lib/utils';
 

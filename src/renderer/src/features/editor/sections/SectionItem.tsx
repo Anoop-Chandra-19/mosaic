@@ -1,20 +1,21 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { ArrowDown, ArrowUp, Ellipsis, Eye, EyeOff, Pencil, Plus, Trash2 } from 'lucide-react';
-import { AppButton } from '@/components/AppButton';
-import { AppTooltip } from '@/components/AppTooltip';
-import { Badge } from '@/components/Badge';
-import { Text } from '@/components/Text';
-import { AppCollapsible, AppCollapsibleTrigger } from '@/components/AppCollapsible';
-import { prefersReducedMotion } from '@/lib/motion/motionTiming';
-import { washLanded } from '@/lib/motion/rowMotions';
-import { useListMotion } from '@/lib/motion/useListMotion';
 import {
+  AppButton,
+  AppTooltip,
+  Badge,
+  Text,
+  AppCollapsible,
+  AppCollapsibleTrigger,
   AppMenu,
   AppMenuContent,
   AppMenuItem,
   AppMenuSeparator,
   AppMenuTrigger,
-} from '@/components/AppMenu';
+} from '@/components/ui-kit';
+import { prefersReducedMotion } from '@/lib/motion/motionTiming';
+import { washLanded } from '@/lib/motion/rowMotions';
+import { useListMotion } from '@/lib/motion/useListMotion';
 import { ConfirmDeleteDialog } from '@/components/ConfirmDeleteDialog';
 import { cn } from '@/lib/utils';
 import { useOutlineStore } from '@/stores/outlineStore';

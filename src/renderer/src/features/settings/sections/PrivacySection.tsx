@@ -1,10 +1,9 @@
 import { useState } from 'react';
 import { ShieldCheck } from 'lucide-react';
-import { AppButton } from '@/components/AppButton';
+import { AppButton, Note } from '@/components/ui-kit';
 import { ConfirmDeleteDialog } from '@/components/ConfirmDeleteDialog';
 import { attempt, showToast } from '@/stores/toastStore';
 import { useUiStore } from '@/stores/uiStore';
-import { Note } from '@/components/Note';
 import { SettingRow } from '../SettingRow';
 import { useSecretsStatus } from '../useSecretsStatus';
 

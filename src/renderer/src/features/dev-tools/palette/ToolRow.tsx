@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { ChevronRight } from 'lucide-react';
-import { Text } from '@/components/Text';
+import { Text } from '@/components/ui-kit';
 import { ShortcutKeys } from '@/features/shortcuts/ShortcutKeys';
 import type { DevTool } from '../devTool';
 import type { MatchRange } from './searchDevTools';

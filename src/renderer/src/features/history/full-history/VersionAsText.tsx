@@ -1,6 +1,5 @@
 import type { ReactNode } from 'react';
-import { ReadingColumn } from '@/components/ReadingColumn';
-import { Text } from '@/components/Text';
+import { ReadingColumn, Text } from '@/components/ui-kit';
 import { normalizeResumeForExport } from '@/features/export/normalizeResumeExport';
 import type { ResumeData } from '@shared/types/resume';
 

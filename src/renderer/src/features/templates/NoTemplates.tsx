@@ -1,6 +1,5 @@
 import { LayoutTemplate, Plus } from 'lucide-react';
-import { AppButton } from '@/components/AppButton';
-import { Text } from '@/components/Text';
+import { AppButton, Text } from '@/components/ui-kit';
 import { createBlankResume } from '@/features/start/blankResume';
 import { useStartResume } from '@/features/start/useStartResume';
 import { createEmptyResume } from '@shared/resume/defaultResume';

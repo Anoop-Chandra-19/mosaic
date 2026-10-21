@@ -1,5 +1,5 @@
 import type { ComponentProps } from 'react';
-import { FIELD_CLASSES } from '@/components/controlStyles';
+import { FIELD_CLASSES } from './controlStyles';
 import { cn } from '@/lib/utils';
 
 /**
