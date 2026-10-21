@@ -7,7 +7,7 @@ import {
   CommandItem,
   CommandList,
 } from '@/components/ui/command';
-import { LIST_ROW_CLASSES } from '@/components/controlStyles';
+import { LIST_ROW_CLASSES } from './controlStyles';
 import { cn } from '@/lib/utils';
 
 /*
@@ -73,7 +73,7 @@ export function AppCommandGroup({ className, ...props }: ComponentProps<typeof C
   return (
     <CommandGroup
       className={cn(
-        'p-0 text-ink-soft [&_[cmdk-group-heading]]:flex [&_[cmdk-group-heading]]:items-center [&_[cmdk-group-heading]]:gap-2 [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:pt-2.25 [&_[cmdk-group-heading]]:pb-0.75 [&_[cmdk-group-heading]]:text-eyebrow [&_[cmdk-group-heading]]:text-ink-faint [&_[cmdk-group-heading]]:uppercase',
+        'p-0 text-ink-soft **:[[cmdk-group-heading]]:flex **:[[cmdk-group-heading]]:items-center **:[[cmdk-group-heading]]:gap-2 **:[[cmdk-group-heading]]:px-2 **:[[cmdk-group-heading]]:pt-2.25 **:[[cmdk-group-heading]]:pb-0.75 **:[[cmdk-group-heading]]:text-eyebrow **:[[cmdk-group-heading]]:text-ink-faint **:[[cmdk-group-heading]]:uppercase',
         className
       )}
       {...props}

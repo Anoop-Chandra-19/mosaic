@@ -1,9 +1,14 @@
 import { ChevronRight, Settings } from 'lucide-react';
-import { AppButton } from '@/components/AppButton';
-import { AppCheckbox } from '@/components/AppCheckbox';
-import { AppPopover, AppPopoverContent, AppPopoverTrigger } from '@/components/AppPopover';
-import { AppToggleGroup, AppToggleGroupItem } from '@/components/AppToggleGroup';
-import { Text } from '@/components/Text';
+import {
+  AppButton,
+  AppCheckbox,
+  AppPopover,
+  AppPopoverContent,
+  AppPopoverTrigger,
+  AppToggleGroup,
+  AppToggleGroupItem,
+  Text,
+} from '@/components/ui-kit';
 import { startHistoryTour } from '@/features/onboarding/history/startHistoryTour';
 import { tourTargetProps } from '@/features/onboarding/tourTargets';
 import { useShortcutLabel } from '@/features/shortcuts/shortcutBindings';

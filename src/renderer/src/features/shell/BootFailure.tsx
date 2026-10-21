@@ -1,4 +1,4 @@
-import { Text } from '@/components/Text';
+import { Text } from '@/components/ui-kit';
 
 /** Shown instead of the app when boot fails — the stores never filled, so there is nothing to edit. */
 export function BootFailure({ message }: { message: string }) {

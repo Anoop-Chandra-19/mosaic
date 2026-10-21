@@ -87,7 +87,12 @@ src/
     public/       # Static assets
     src/
       assets/     # Bundled assets
-      components/ # Shared app components and shadcn primitives
+      components/ # Higher-level shared components and hooks, imported directly
+        ui-kit.ts # Public named exports for app primitives and text roles
+        __tests__/ # ui-kit.test.ts tests the public entry point
+        kit/      # App primitive implementations and private helpers
+          __tests__/ # Tests for kit implementations
+        ui/       # Raw shadcn primitives, unchanged
       features/   # shell, editor, preview, templates, history, document-diff, import, export, backup, settings, start, agent
       stores/     # Zustand stores
       lib/        # Renderer domain logic and infrastructure (layout, storage bridge, …)
@@ -103,6 +108,14 @@ e2e/              # Playwright specs against the built app, a folder per area
 environment-neutral contracts and logic, not React, DOM, or Electron implementations.
 Unit tests live in a `__tests__/` folder beside the modules they cover; build output
 remains in `out/`.
+
+Screens import shared primitives from `@/components/ui-kit`: `App*` wrappers, `Badge`,
+`Chip`, `DialogFrame` parts, `Note`, `ReadingColumn`, and `Text`, plus `textVariantClasses`
+and the `TextVariant` type. Their implementations live in `components/kit/` with private
+styling and tooltip helpers; folder membership does not make those helpers public exports.
+Implementations and internals import files directly, never back through `ui-kit.ts`.
+Higher-level components and hooks stay at the `components/` root with direct imports;
+raw shadcn parts stay in `components/ui/`, separate from the app kit.
 
 ## Data and Privacy
 

@@ -1,7 +1,5 @@
 import { Keyboard } from 'lucide-react';
-import { AppButton } from '@/components/AppButton';
-import { DialogFrameHeader } from '@/components/DialogFrame';
-import { AppDialog, AppDialogContent } from '@/components/AppDialog';
+import { AppButton, DialogFrameHeader, AppDialog, AppDialogContent } from '@/components/ui-kit';
 import { useDialog, useOverlayStore } from '@/stores/overlayStore';
 import { ShortcutsPanel } from './ShortcutsPanel';
 

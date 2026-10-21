@@ -6,11 +6,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import {
-  FIELD_CLASSES,
-  FLOATING_SURFACE_CLASSES,
-  LIST_ROW_CLASSES,
-} from '@/components/controlStyles';
+import { FIELD_CLASSES, FLOATING_SURFACE_CLASSES, LIST_ROW_CLASSES } from './controlStyles';
 import { cn } from '@/lib/utils';
 
 /*

@@ -5,11 +5,12 @@ import {
   AppCommandInput,
   AppCommandItem,
   AppCommandList,
-} from '@/components/AppCommand';
-import { AppDialogContent, AppDialogTitle } from '@/components/AppDialog';
-import { Chip } from '@/components/Chip';
-import { Text } from '@/components/Text';
-import { textVariantClasses } from '@/components/textVariants';
+  AppDialogContent,
+  AppDialogTitle,
+  Chip,
+  Text,
+  textVariantClasses,
+} from '@/components/ui-kit';
 import { formatViewAddress } from '@/features/view-address/formatViewAddress';
 import { describeCurrentView } from '@/features/view-address/viewAddress';
 import type { ViewPlace } from '@/features/view-address/viewPlace';

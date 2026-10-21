@@ -1,5 +1,5 @@
 import { Fragment } from 'react';
-import { AppTooltip } from '@/components/AppTooltip';
+import { AppTooltip } from '@/components/ui-kit';
 import { HeaderLineBar, MarkedItem, MarkedLine } from '@/features/document-diff/PageMarkParts';
 import { findMarks, LINE_GUTTER, type PageMarks } from '@/features/document-diff/pageMarks';
 import type { ContactInfo } from '@shared/types/resume';

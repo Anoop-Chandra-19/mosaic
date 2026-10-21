@@ -1,8 +1,8 @@
 import type { ReactNode } from 'react';
 import { X, type LucideIcon } from 'lucide-react';
-import { AppButton } from '@/components/AppButton';
-import { AppDialogDescription, AppDialogTitle } from '@/components/AppDialog';
-import { Text } from '@/components/Text';
+import { AppButton } from './AppButton';
+import { AppDialogDescription, AppDialogTitle } from './AppDialog';
+import { Text } from './Text';
 import { cn } from '@/lib/utils';
 
 /*

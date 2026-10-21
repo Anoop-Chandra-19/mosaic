@@ -1,8 +1,6 @@
 import { useEffect, useEffectEvent, useMemo, useRef, useState } from 'react';
 import { Check } from 'lucide-react';
-import { AppButton } from '@/components/AppButton';
-import { AppTooltip } from '@/components/AppTooltip';
-import { Text } from '@/components/Text';
+import { AppButton, AppTooltip, Text } from '@/components/ui-kit';
 import { formatPaneWidth, startPaneResize } from '@/features/shell/paneResize';
 import { matchesAction } from '@/features/shortcuts/shortcutBindings';
 import { changeInViewTransition } from '@/features/view-transitions/changeInViewTransition';

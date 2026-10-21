@@ -1,7 +1,6 @@
 import { Fragment, useState, type RefObject } from 'react';
 import { ChevronDown, ChevronUp, Eye, History } from 'lucide-react';
-import { AppButton } from '@/components/AppButton';
-import { Text } from '@/components/Text';
+import { AppButton, Text } from '@/components/ui-kit';
 import { revealChangeMark } from '@/features/document-diff/revealChangeMark';
 import { cn } from '@/lib/utils';
 import { useOverlayStore } from '@/stores/overlayStore';

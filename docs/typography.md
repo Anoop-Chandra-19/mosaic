@@ -65,12 +65,13 @@ up or tick (counts, times, zoom, page numbers).
 
 ## 3. Writing text
 
-- [`<Text variant="…" as="…">`](../src/renderer/src/components/Text.tsx) renders a role:
-  its table ([`textVariants.ts`](../src/renderer/src/components/textVariants.ts)) adds the
+- [`<Text variant="…" as="…">`](../src/renderer/src/components/kit/Text.tsx), imported from
+  `@/components/ui-kit`, renders a role: its table ([`textVariants.ts`](../src/renderer/src/components/kit/textVariants.ts)) adds the
   family, case and default colour to the token. `as` picks the element, so a heading can
   be an `h3` without heading size.
 - Where an element can't be a `Text`, such as a Radix part, use
-  `textVariantClasses(variant)`.
+  `textVariantClasses(variant)` from `@/components/ui-kit`; the kit also exports the
+  `TextVariant` type. The role-to-class table stays internal to `textVariants.ts`.
 - Override colour through `className`, never the size. Text colour is `foreground`,
   `ink-soft`, `ink-muted` or `ink-faint`; status colours (`add`, `del`, `info`, `amber`)
   only for meaning.
@@ -81,9 +82,19 @@ up or tick (counts, times, zoom, page numbers).
 
 ## 4. Controls
 
-Feature code reaches every primitive through an `App*` wrapper in `components/`; ESLint
-refuses `components/ui/` anywhere else. Each wrapper draws the design's control with the
-roles built in:
+Feature code imports primitives as named exports from `@/components/ui-kit`
+([`components/ui-kit.ts`](../src/renderer/src/components/ui-kit.ts)), the explicit public entry point for
+`App*` wrappers and shared presentation primitives (`Text`, `Badge`, `Chip`, `Note`,
+`ReadingColumn`, and `DialogFrame` parts), plus `textVariantClasses` and `TextVariant` for
+applying text roles outside `Text`. Their implementations live in
+[`components/kit/`](../src/renderer/src/components/kit/), alongside private helpers
+`controlStyles.ts`, `textVariants.ts`, `HintLayer.tsx`, and `hintRegistry.ts`. The folder
+is not the public API: the helpers and tooltip internals are not exported by `ui-kit.ts`;
+only `textVariantClasses` and `TextVariant` are exposed from the typography helper.
+Implementations and internals use direct imports, never back through `ui-kit.ts`.
+Higher-level components and hooks stay at the `components/` root with direct imports.
+Raw shadcn parts stay unchanged in `components/ui/`; ESLint refuses their imports outside
+the wrappers. Each wrapper draws the design's control with the roles built in:
 
 | Wrapper                                     | Design             | Type                                                                             |
 | ------------------------------------------- | ------------------ | -------------------------------------------------------------------------------- |
@@ -101,7 +112,7 @@ roles built in:
 | `AppCheckbox`, `AppSwitch`, `AppRadioGroup` | `.chk`, `.switch`  | no text of their own                                                             |
 
 Shared surfaces (the field, what floats over the window, a list row) are written once in
-[`controlStyles.ts`](../src/renderer/src/components/controlStyles.ts). A caller's
+[`controlStyles.ts`](../src/renderer/src/components/kit/controlStyles.ts). A caller's
 `className` adjusts layout (width, margins); a size or colour the design doesn't have is a
 new wrapper variant, not a class at the call site. Settings rows
 ([`SettingRow`](../src/renderer/src/features/settings/SettingRow.tsx)) are body at

@@ -1,6 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { AppButton } from '@/components/AppButton';
-import { Text } from '@/components/Text';
+import { AppButton, Text } from '@/components/ui-kit';
 import type { VersionMeta } from '@shared/types/db';
 
 interface VersionDeleteConfirmProps {

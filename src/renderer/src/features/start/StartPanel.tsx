@@ -6,10 +6,9 @@ import {
   type ReactNode,
 } from 'react';
 import { ArrowRight, FileText, Info, Lock, Sparkles, Upload, X } from 'lucide-react';
-import { AppButton } from '@/components/AppButton';
+import { AppButton, Text, textVariantClasses } from '@/components/ui-kit';
 import { MosaicMark } from '@/components/MosaicMark';
-import { Text } from '@/components/Text';
-import { textVariantClasses } from '@/components/textVariants';
+
 import { cn } from '@/lib/utils';
 import { matchesAction, useShortcutLabel } from '@/features/shortcuts/shortcutBindings';
 import { createDefaultResume } from '@shared/resume/defaultResume';

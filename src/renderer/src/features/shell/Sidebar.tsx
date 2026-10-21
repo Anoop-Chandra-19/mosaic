@@ -8,10 +8,15 @@ import {
   LayoutTemplate,
   Plus,
 } from 'lucide-react';
-import { AppButton } from '@/components/AppButton';
-import { AppTabs, AppTabsContent, AppTabsList, AppTabsTrigger } from '@/components/AppTabs';
-import { AppTooltip } from '@/components/AppTooltip';
-import { Text } from '@/components/Text';
+import {
+  AppButton,
+  AppTabs,
+  AppTabsContent,
+  AppTabsList,
+  AppTabsTrigger,
+  AppTooltip,
+  Text,
+} from '@/components/ui-kit';
 import { cn } from '@/lib/utils';
 import { HEADER_OUTLINE_ID, useOutlineStore } from '@/stores/outlineStore';
 import { usePreviewStore, type VersionPreview } from '@/stores/previewStore';

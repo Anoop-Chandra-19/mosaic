@@ -1,5 +1,5 @@
 import type { ComponentProps } from 'react';
-import { AppCheckbox } from '@/components/AppCheckbox';
+import { AppCheckbox } from '@/components/ui-kit';
 import { cn } from '@/lib/utils';
 
 /**

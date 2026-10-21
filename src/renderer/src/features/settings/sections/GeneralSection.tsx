@@ -4,7 +4,7 @@ import {
   AppSelectItem,
   AppSelectTrigger,
   AppSelectValue,
-} from '@/components/AppSelect';
+} from '@/components/ui-kit';
 import { shortcutLabel } from '@/lib/keyboardShortcuts';
 import {
   UNDO_HISTORY_STEP_OPTIONS,

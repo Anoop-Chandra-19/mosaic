@@ -1,13 +1,13 @@
 import { useState } from 'react';
 import { Check, ChevronUp } from 'lucide-react';
-import { AppButton } from '@/components/AppButton';
 import {
+  AppButton,
   AppPopover,
   AppPopoverAnchor,
   AppPopoverContent,
   AppPopoverTrigger,
-} from '@/components/AppPopover';
-import { Text } from '@/components/Text';
+  Text,
+} from '@/components/ui-kit';
 import { useShortcutLabel } from '@/features/shortcuts/shortcutBindings';
 import { transitionClasses } from '@/features/view-transitions/transitionClasses';
 import { cn } from '@/lib/utils';

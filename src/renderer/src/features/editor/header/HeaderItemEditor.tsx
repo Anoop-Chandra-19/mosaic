@@ -1,11 +1,13 @@
 import { useId, useState, type KeyboardEvent } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
-import { AppButton } from '@/components/AppButton';
-import { AppInput } from '@/components/AppInput';
-import { AppTextarea } from '@/components/AppTextarea';
-import { AppTooltip } from '@/components/AppTooltip';
-import { Text } from '@/components/Text';
-import { textVariantClasses } from '@/components/textVariants';
+import {
+  AppButton,
+  AppInput,
+  AppTextarea,
+  AppTooltip,
+  Text,
+  textVariantClasses,
+} from '@/components/ui-kit';
 import { cn } from '@/lib/utils';
 import { resolveHeaderItemHref, getHeaderKindInfo } from '@shared/resume/resumeHeader';
 import type { HeaderItem } from '@shared/types/resume';

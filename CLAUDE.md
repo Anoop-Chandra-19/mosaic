@@ -97,6 +97,7 @@ Bun and npm both work (Node ≥ 22.18): `bun run <script>` = `npm run <script>`;
   the main operation or subject + responsibility. Avoid catch-all utils/helpers/manager files.
 - Stores: `<subject>Store.ts`; type modules: domain names; tests: `__tests__/<module>.test.ts`;
   folders: kebab-case. Use `.tsx` only for JSX; keep tool-required and shadcn names unchanged.
+  `src/renderer/src/components/ui-kit.ts` is the explicitly named UI entry-point exception.
 - Types/components: PascalCase; functions/variables: camelCase; fixed module constants:
   SCREAMING_SNAKE_CASE. Acronyms are words (`Pdf`, `Ai`, `Db`, `Id`).
 - Booleans: `is`/`has`/`can`/`should`; hooks: `use`; callbacks: `onDeleteEntry`;
@@ -114,7 +115,14 @@ Someone new should understand a module, and how its files connect, in about 30 m
   it stays in that file. Never split just to make files smaller.
 - A folder is a module, kept flat and imported file by file: no `index.ts` barrels, and no
   folder or file names that repeat in every module (`internal/`, `utils`). A subfolder is
-  named for what it holds, and only once it helps navigation.
+  named for what it holds, and only once it helps navigation. The one re-export exception is
+  `src/renderer/src/components/ui-kit.ts`: an explicit public surface for shared UI primitives
+  and their text roles (`textVariantClasses` and `TextVariant`), not features, hooks, or
+  internal helpers. Implementations and private helpers live in `src/renderer/src/components/kit/`;
+  being in that folder does not make a file public. They use direct file imports, never back
+  through `ui-kit.ts`. Higher-level components stay at the components root with direct imports;
+  raw shadcn parts stay in `components/ui/`, unchanged. Implementation tests live in
+  `components/kit/__tests__/`; the entry-point test stays in `components/__tests__/ui-kit.test.ts`.
 - A module's main file opens with a short comment: what the module is for, the path data
   takes through its files, and which files other modules use. Other modules import only
   those; the rest are its steps and may change freely. Update the comment with the files.

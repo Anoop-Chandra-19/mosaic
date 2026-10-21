@@ -1,7 +1,5 @@
 import { ChevronDown, ChevronRight, Save, Sparkles } from 'lucide-react';
-import { AppButton } from '@/components/AppButton';
-import { Text } from '@/components/Text';
-import type { TextVariant } from '@/components/textVariants';
+import { AppButton, Text, type TextVariant } from '@/components/ui-kit';
 import { ChangeCounts } from '@/features/document-diff/ChangeCounts';
 import { tourTargetProps } from '@/features/onboarding/tourTargets';
 import { cn } from '@/lib/utils';

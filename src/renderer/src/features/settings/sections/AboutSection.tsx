@@ -1,8 +1,6 @@
 import { ExternalLink } from 'lucide-react';
-import { AppButton } from '@/components/AppButton';
-import { AppSwitch } from '@/components/AppSwitch';
+import { AppButton, AppSwitch, Text } from '@/components/ui-kit';
 import { MosaicMark } from '@/components/MosaicMark';
-import { Text } from '@/components/Text';
 import { HISTORY_TIPS_LABEL } from '@/features/history/snapshotSettings';
 import { startHistoryTour } from '@/features/onboarding/history/startHistoryTour';
 import { useOverlayStore } from '@/stores/overlayStore';

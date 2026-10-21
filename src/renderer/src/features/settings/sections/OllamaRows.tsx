@@ -1,16 +1,16 @@
 import { useState, type ReactNode } from 'react';
 import { RotateCw } from 'lucide-react';
-import { AppButton } from '@/components/AppButton';
-import { AppInput } from '@/components/AppInput';
 import {
+  AppButton,
+  AppInput,
   AppSelect,
   AppSelectContent,
   AppSelectItem,
   AppSelectTrigger,
   AppSelectValue,
-} from '@/components/AppSelect';
-import { Text } from '@/components/Text';
-import { textVariantClasses } from '@/components/textVariants';
+  Text,
+  textVariantClasses,
+} from '@/components/ui-kit';
 import { cn } from '@/lib/utils';
 import {
   DEFAULT_OLLAMA_ADDRESS,

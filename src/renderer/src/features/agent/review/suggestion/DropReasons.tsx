@@ -1,8 +1,6 @@
 import { useState } from 'react';
 import { Plus, X } from 'lucide-react';
-import { AppButton } from '@/components/AppButton';
-import { AppTextarea } from '@/components/AppTextarea';
-import { Text } from '@/components/Text';
+import { AppButton, AppTextarea, Text } from '@/components/ui-kit';
 import { cn } from '@/lib/utils';
 import type { DropReason, Proposal } from '@shared/types/agentProposal';
 import { setDropReasons } from '../../proposals/proposalActions';

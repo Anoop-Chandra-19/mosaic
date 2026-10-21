@@ -1,9 +1,12 @@
 import { useState } from 'react';
-import { AppButton } from '@/components/AppButton';
-import { AppInput } from '@/components/AppInput';
-import { AppSwitch } from '@/components/AppSwitch';
-import { AppToggleGroup, AppToggleGroupItem } from '@/components/AppToggleGroup';
-import { Text } from '@/components/Text';
+import {
+  AppButton,
+  AppInput,
+  AppSwitch,
+  AppToggleGroup,
+  AppToggleGroupItem,
+  Text,
+} from '@/components/ui-kit';
 import {
   AGENT_PANE_WIDTH,
   clampPaneWidth,

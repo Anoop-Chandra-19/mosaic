@@ -1,18 +1,18 @@
 import { useState, type KeyboardEvent } from 'react';
 import { ArrowDown, ArrowUp, Copy, Ellipsis, Eye, EyeOff, Trash2 } from 'lucide-react';
-import { AppButton } from '@/components/AppButton';
-import { ConfirmDeleteDialog } from '@/components/ConfirmDeleteDialog';
 import {
+  AppButton,
   AppMenu,
   AppMenuContent,
   AppMenuItem,
   AppMenuSeparator,
   AppMenuTrigger,
-} from '@/components/AppMenu';
+  Text,
+} from '@/components/ui-kit';
+import { ConfirmDeleteDialog } from '@/components/ConfirmDeleteDialog';
 import { matchesAction } from '@/features/shortcuts/shortcutBindings';
 import { isTypingField } from '@/lib/keyboardShortcuts';
 import { ListMotionContext, useSwapMotion } from '@/lib/motion/useListMotion';
-import { Text } from '@/components/Text';
 import { cn } from '@/lib/utils';
 import { formatEntryHeading } from '@shared/resume/entryHeading';
 import type { ResumeEntry, SectionLayout } from '@shared/types/resume';

@@ -12,16 +12,16 @@ import {
   Trash2,
   X,
 } from 'lucide-react';
-import { AppButton } from '@/components/AppButton';
-import { AppTooltip } from '@/components/AppTooltip';
-import { Badge } from '@/components/Badge';
 import {
+  AppButton,
+  AppTooltip,
+  Badge,
   AppMenu,
   AppMenuContent,
   AppMenuItem,
   AppMenuSeparator,
   AppMenuTrigger,
-} from '@/components/AppMenu';
+} from '@/components/ui-kit';
 import { resolveHeaderItemHref, getHeaderKindInfo } from '@shared/resume/resumeHeader';
 import { useSwapMotion } from '@/lib/motion/useListMotion';
 import { cn } from '@/lib/utils';

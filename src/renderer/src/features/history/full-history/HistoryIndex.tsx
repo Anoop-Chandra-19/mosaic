@@ -1,7 +1,5 @@
 import { Save } from 'lucide-react';
-import { AppButton } from '@/components/AppButton';
-import { Text } from '@/components/Text';
-import { textVariantClasses } from '@/components/textVariants';
+import { AppButton, Text, textVariantClasses } from '@/components/ui-kit';
 import { cn } from '@/lib/utils';
 import { useUiStore } from '@/stores/uiStore';
 import type { VersionMeta } from '@shared/types/db';

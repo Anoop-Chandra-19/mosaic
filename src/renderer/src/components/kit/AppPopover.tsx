@@ -1,6 +1,6 @@
 import type { ComponentProps } from 'react';
 import { Popover, PopoverAnchor, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { FLOATING_SURFACE_CLASSES } from '@/components/controlStyles';
+import { FLOATING_SURFACE_CLASSES } from './controlStyles';
 import { cn } from '@/lib/utils';
 
 /** Mosaic's popover: the shadcn popover on the same floating surface as menus. */

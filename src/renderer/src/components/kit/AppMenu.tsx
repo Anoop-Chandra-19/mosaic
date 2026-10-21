@@ -13,7 +13,7 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { FLOATING_SURFACE_CLASSES, LIST_ROW_CLASSES } from '@/components/controlStyles';
+import { FLOATING_SURFACE_CLASSES, LIST_ROW_CLASSES } from './controlStyles';
 import { cn } from '@/lib/utils';
 
 /*

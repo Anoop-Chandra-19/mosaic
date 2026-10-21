@@ -1,7 +1,6 @@
 import type { ReactNode } from 'react';
 import { ChevronDown, ChevronRight } from 'lucide-react';
-import { AppButton } from '@/components/AppButton';
-import { Text } from '@/components/Text';
+import { AppButton, Text } from '@/components/ui-kit';
 import { cn } from '@/lib/utils';
 import type { VersionMeta } from '@shared/types/db';
 import { versionLabel } from '../versionLabel';

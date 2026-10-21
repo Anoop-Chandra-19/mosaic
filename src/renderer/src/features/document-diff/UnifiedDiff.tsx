@@ -1,7 +1,5 @@
 import { Fragment, useState, type ReactNode } from 'react';
-import { AppButton } from '@/components/AppButton';
-import { Text } from '@/components/Text';
-import { textVariantClasses } from '@/components/textVariants';
+import { AppButton, Text, textVariantClasses } from '@/components/ui-kit';
 import { cn } from '@/lib/utils';
 import {
   describeChange,

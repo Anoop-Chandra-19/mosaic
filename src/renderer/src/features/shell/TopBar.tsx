@@ -1,7 +1,6 @@
 import { Download, Moon, Redo2, Save, Settings, Sun, Undo2, Upload } from 'lucide-react';
-import { AppButton } from '@/components/AppButton';
+import { AppButton, Text } from '@/components/ui-kit';
 import { MosaicMark } from '@/components/MosaicMark';
-import { Text } from '@/components/Text';
 import { redoShortcutLabel, shortcutLabel } from '@/lib/keyboardShortcuts';
 import { useOverlayStore } from '@/stores/overlayStore';
 import { usePreviewStore } from '@/stores/previewStore';

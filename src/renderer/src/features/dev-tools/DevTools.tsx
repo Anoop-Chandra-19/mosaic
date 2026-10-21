@@ -1,5 +1,5 @@
 import { useEffect, useEffectEvent, useState } from 'react';
-import { AppDialog } from '@/components/AppDialog';
+import { AppDialog } from '@/components/ui-kit';
 import { useTargetRequest, useTargetStore } from '@/stores/targetStore';
 import type { DevToolRun } from '@shared/types/devTools';
 import { installDevTestHook } from './devTestHook';

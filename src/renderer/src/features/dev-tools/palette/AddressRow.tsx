@@ -1,6 +1,5 @@
 import { AlertCircle } from 'lucide-react';
-import { Text } from '@/components/Text';
-import { textVariantClasses } from '@/components/textVariants';
+import { Text, textVariantClasses } from '@/components/ui-kit';
 import { cn } from '@/lib/utils';
 
 /** A typed address as a row: where it goes, and why it can't when it can't. */

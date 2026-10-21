@@ -4,8 +4,8 @@ import {
   AppMenuSub,
   AppMenuSubContent,
   AppMenuSubTrigger,
-} from '@/components/AppMenu';
-import { Text } from '@/components/Text';
+  Text,
+} from '@/components/ui-kit';
 import { SECTION_PRESETS } from '@shared/resume/sectionPresets';
 import type { BuiltInSectionKind, SectionLayout } from '@shared/types/resume';
 import { CUSTOM_ICONS, PRESET_ICONS } from './sectionIcons';

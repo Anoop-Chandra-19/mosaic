@@ -1,5 +1,5 @@
 import { Wrench } from 'lucide-react';
-import { AppButton } from '@/components/AppButton';
+import { AppButton } from '@/components/ui-kit';
 import { formatShortcutLabel } from '@/lib/keyboardShortcuts';
 import { useTargetStore } from '@/stores/targetStore';
 

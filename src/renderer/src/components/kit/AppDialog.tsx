@@ -1,7 +1,7 @@
 import type { ComponentProps } from 'react';
 import { X } from 'lucide-react';
 import { Dialog } from 'radix-ui';
-import { AppButton } from '@/components/AppButton';
+import { AppButton } from './AppButton';
 import { cn } from '@/lib/utils';
 
 /*

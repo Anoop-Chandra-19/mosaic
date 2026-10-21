@@ -1,16 +1,17 @@
 import { useState } from 'react';
 import { Check, ChevronDown, Copy } from 'lucide-react';
-import { AppButton } from '@/components/AppButton';
-import { AppCollapsible, AppCollapsibleTrigger } from '@/components/AppCollapsible';
-import { Text } from '@/components/Text';
-import { cn } from '@/lib/utils';
 import {
+  AppButton,
+  AppCollapsible,
+  AppCollapsibleTrigger,
+  Text,
   AppMenu,
   AppMenuContent,
   AppMenuItem,
   AppMenuSeparator,
   AppMenuTrigger,
-} from '@/components/AppMenu';
+} from '@/components/ui-kit';
+import { cn } from '@/lib/utils';
 import { copyText } from '@/features/export/exportResume';
 import type { SectionLayout } from '@shared/types/resume';
 import { newSectionNameFor, type PlaceTarget } from './applyImportChoices';

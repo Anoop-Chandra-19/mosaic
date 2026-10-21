@@ -17,9 +17,7 @@
  */
 import type { ReactNode } from 'react';
 import { ChevronDown } from 'lucide-react';
-import { AppButton } from '@/components/AppButton';
-import { Text } from '@/components/Text';
-import { textVariantClasses } from '@/components/textVariants';
+import { AppButton, Text, textVariantClasses } from '@/components/ui-kit';
 import { ChangeCounts } from './ChangeCounts';
 import { cn } from '@/lib/utils';
 import {

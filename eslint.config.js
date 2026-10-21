@@ -49,10 +49,18 @@ const SHARED_LOOK_RULES = [
   },
 ];
 
-/** shadcn's parts are reached only through the App* wrappers in components/. */
+/** shadcn's parts are reached only through the App* wrappers in components/kit/. */
 const UI_PRIMITIVE_IMPORTS = {
   regex: '(^|/)components/ui/',
-  message: 'Use the App* wrapper from @/components (AppButton, AppMenu, AppInput, …), or add one.',
+  message:
+    'Use the App* wrapper from @/components/ui-kit (AppButton, AppMenu, AppInput, …), or add one.',
+};
+
+/** Implementations must not import the entry point that re-exports them. */
+const UI_KIT_IMPORTS = {
+  regex: '(^|/)(components/)?ui-kit([.]ts)?$',
+  message:
+    'Inside components/, import the named component file directly, never back through ui-kit.',
 };
 
 /** Stored data is read and written through its store; only stores reach the database. */
@@ -95,7 +103,7 @@ export default defineConfig([
   },
   {
     files: ['src/renderer/src/**/*.{ts,tsx}'],
-    ignores: ['src/renderer/src/components/ui/**', 'src/renderer/src/components/App*.tsx'],
+    ignores: ['src/renderer/src/components/ui/**', 'src/renderer/src/components/kit/App*.tsx'],
     rules: {
       'no-restricted-imports': ['error', { patterns: [UI_PRIMITIVE_IMPORTS] }],
     },
@@ -105,11 +113,28 @@ export default defineConfig([
     files: ['src/renderer/src/{features,components}/**/*.{ts,tsx}'],
     ignores: [
       'src/renderer/src/components/ui/**',
-      'src/renderer/src/components/App*.tsx',
+      'src/renderer/src/components/kit/App*.tsx',
       '**/__tests__/**',
     ],
     rules: {
       'no-restricted-imports': ['error', { patterns: [UI_PRIMITIVE_IMPORTS, STORAGE_IMPORTS] }],
+    },
+  },
+  {
+    files: ['src/renderer/src/components/**/*.{ts,tsx}'],
+    ignores: ['src/renderer/src/components/ui/**', '**/__tests__/**'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        { patterns: [UI_PRIMITIVE_IMPORTS, STORAGE_IMPORTS, UI_KIT_IMPORTS] },
+      ],
+    },
+  },
+  {
+    // App wrappers build on raw shadcn parts, but still cannot import their own entry point.
+    files: ['src/renderer/src/components/kit/App*.tsx'],
+    rules: {
+      'no-restricted-imports': ['error', { patterns: [UI_KIT_IMPORTS] }],
     },
   },
   {

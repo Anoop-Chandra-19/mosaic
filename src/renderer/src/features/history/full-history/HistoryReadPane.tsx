@@ -1,8 +1,6 @@
 import { useEffect, useEffectEvent, useLayoutEffect, useRef, useState } from 'react';
 import { Copy, Download, History } from 'lucide-react';
-import { AppButton } from '@/components/AppButton';
-import { AppTooltip } from '@/components/AppTooltip';
-import { Text } from '@/components/Text';
+import { AppButton, AppTooltip, Text } from '@/components/ui-kit';
 import { ChangeList } from '@/features/document-diff/ChangeList';
 import { tourTargetProps } from '@/features/onboarding/tourTargets';
 import { MarkedVersionText } from '@/features/document-diff/MarkedVersionText';

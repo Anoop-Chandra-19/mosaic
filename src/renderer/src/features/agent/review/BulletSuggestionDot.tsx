@@ -1,4 +1,4 @@
-import { AppButton } from '@/components/AppButton';
+import { AppButton } from '@/components/ui-kit';
 import { cn } from '@/lib/utils';
 import { useOverlayStore } from '@/stores/overlayStore';
 import type { BulletSuggestion } from './useBulletSuggestion';

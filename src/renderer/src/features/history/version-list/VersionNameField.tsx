@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Bookmark, Pencil } from 'lucide-react';
-import { textVariantClasses } from '@/components/textVariants';
+import { textVariantClasses } from '@/components/ui-kit';
 import { cn } from '@/lib/utils';
 import { MAX_DB_TEXT_LENGTH, type VersionMeta } from '@shared/types/db';
 

@@ -1,7 +1,5 @@
 import { ChevronLeft } from 'lucide-react';
-import { AppButton } from '@/components/AppButton';
-import { AppToggleGroup, AppToggleGroupItem } from '@/components/AppToggleGroup';
-import { Text } from '@/components/Text';
+import { AppButton, AppToggleGroup, AppToggleGroupItem, Text } from '@/components/ui-kit';
 import { transitionClasses } from '@/features/view-transitions/transitionClasses';
 import { cn } from '@/lib/utils';
 import type { Proposal } from '@shared/types/agentProposal';

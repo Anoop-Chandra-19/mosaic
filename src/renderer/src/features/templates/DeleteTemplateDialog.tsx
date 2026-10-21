@@ -1,6 +1,6 @@
 import { Info } from 'lucide-react';
 import { ConfirmDeleteDialog } from '@/components/ConfirmDeleteDialog';
-import { Note } from '@/components/Note';
+import { Note } from '@/components/ui-kit';
 import type { TemplateSummary } from '@shared/types/db';
 
 interface DeleteTemplateDialogProps {

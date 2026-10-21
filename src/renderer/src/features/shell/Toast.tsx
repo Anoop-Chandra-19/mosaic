@@ -1,6 +1,5 @@
 import { AlertTriangle, Check, X } from 'lucide-react';
-import { AppButton } from '@/components/AppButton';
-import { Chip } from '@/components/Chip';
+import { AppButton, Chip } from '@/components/ui-kit';
 import { useToastStore } from '@/stores/toastStore';
 import { usePresenceMotion } from '@/lib/motion/usePresenceMotion';
 

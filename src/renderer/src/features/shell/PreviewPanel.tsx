@@ -1,7 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { TriangleAlert } from 'lucide-react';
-import { Text } from '@/components/Text';
-import { AppToggleGroup, AppToggleGroupItem } from '@/components/AppToggleGroup';
+import { Text, AppToggleGroup, AppToggleGroupItem } from '@/components/ui-kit';
 import { PageZoomControl } from '@/features/preview/PageZoomControl';
 import { ResumePreview } from '@/features/preview/ResumePreview';
 import { useFitPreviewForHandoff } from '@/features/preview/useFitPreviewForHandoff';

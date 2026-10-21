@@ -1,5 +1,4 @@
-import { AppTooltip } from '@/components/AppTooltip';
-import { Badge } from '@/components/Badge';
+import { AppTooltip, Badge } from '@/components/ui-kit';
 import type { TemplateStatus } from './useTemplateStatus';
 
 // Neutral on purpose: amber is kept for the assistant's pending suggestions, and the

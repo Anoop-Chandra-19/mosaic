@@ -1,9 +1,6 @@
 import { useState } from 'react';
 import { AlertTriangle, FileText, Info, Upload } from 'lucide-react';
-import { AppButton } from '@/components/AppButton';
-import { DialogFrameFooter, DialogFrameHeader } from '@/components/DialogFrame';
-import { Note } from '@/components/Note';
-import { Text } from '@/components/Text';
+import { AppButton, DialogFrameFooter, DialogFrameHeader, Note, Text } from '@/components/ui-kit';
 import { getPrintableHeaderLines } from '@shared/resume/resumeHeader';
 import { getResumeSnapshot, useResumeStore } from '@/stores/resumeStore';
 import { useDialog, useOverlayStore } from '@/stores/overlayStore';

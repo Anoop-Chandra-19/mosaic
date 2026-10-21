@@ -5,8 +5,8 @@ import {
   AppSelectItem,
   AppSelectTrigger,
   AppSelectValue,
-} from '@/components/AppSelect';
-import { AppSwitch } from '@/components/AppSwitch';
+  AppSwitch,
+} from '@/components/ui-kit';
 import { useUiStore } from '@/stores/uiStore';
 import { SettingGroupHeading, SettingRow } from '../SettingRow';
 

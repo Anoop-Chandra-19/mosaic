@@ -1,10 +1,11 @@
 import { Fragment, useId } from 'react';
 import { ChevronsDownUp, ChevronsUpDown, Ellipsis, Plus, Shapes } from 'lucide-react';
-import { AppButton } from '@/components/AppButton';
-import { AppTooltip } from '@/components/AppTooltip';
-import { Text } from '@/components/Text';
-import { AppCollapsible, AppCollapsibleTrigger } from '@/components/AppCollapsible';
 import {
+  AppButton,
+  AppTooltip,
+  Text,
+  AppCollapsible,
+  AppCollapsibleTrigger,
   AppMenu,
   AppMenuCheckboxItem,
   AppMenuContent,
@@ -14,7 +15,7 @@ import {
   AppMenuRadioItem,
   AppMenuSeparator,
   AppMenuTrigger,
-} from '@/components/AppMenu';
+} from '@/components/ui-kit';
 import { LINK_COLORS, LINK_STYLES, getPrintableHeaderLines } from '@shared/resume/resumeHeader';
 import { ListMotionContext, useListMotion } from '@/lib/motion/useListMotion';
 import { cn } from '@/lib/utils';

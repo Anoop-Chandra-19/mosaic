@@ -1,13 +1,20 @@
 import { useState } from 'react';
 import { ArrowRight, Check, Info, LayoutTemplate, Save } from 'lucide-react';
-import { AppButton } from '@/components/AppButton';
-import { AppDialog, AppDialogContent, AppDialogDescription } from '@/components/AppDialog';
-import { AppInput } from '@/components/AppInput';
-import { AppRadioGroup, AppRadioGroupItem } from '@/components/AppRadioGroup';
-import { DialogFrameBody, DialogFrameFooter, DialogFrameHeader } from '@/components/DialogFrame';
-import { Note } from '@/components/Note';
+import {
+  AppButton,
+  AppDialog,
+  AppDialogContent,
+  AppDialogDescription,
+  AppInput,
+  AppRadioGroup,
+  AppRadioGroupItem,
+  DialogFrameBody,
+  DialogFrameFooter,
+  DialogFrameHeader,
+  Note,
+  Text,
+} from '@/components/ui-kit';
 import { ReadBoundary } from '@/components/ReadBoundary';
-import { Text } from '@/components/Text';
 import { useVersionDistance } from '@/features/history/useVersionDistance';
 import { versionLabel } from '@/features/history/versionLabel';
 import { easeHeightChanges } from '@/lib/motion/easeHeightChanges';

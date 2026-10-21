@@ -1,22 +1,22 @@
 import { useEffect, useState } from 'react';
 import { Download, Info, TriangleAlert, Upload } from 'lucide-react';
-import { AppButton } from '@/components/AppButton';
-import { AppTooltip } from '@/components/AppTooltip';
 import {
+  AppButton,
+  AppTooltip,
   AppSelect,
   AppSelectContent,
   AppSelectItem,
   AppSelectTrigger,
   AppSelectValue,
-} from '@/components/AppSelect';
+  Note,
+  Text,
+} from '@/components/ui-kit';
 import { backUpNow, chooseBackup, fileFailure } from '@/features/backup/backupFiles';
 import { formatRelativeTime } from '@/features/templates/formatRelativeTime';
 import { useOverlayStore } from '@/stores/overlayStore';
 import { explainFailure, showToast } from '@/stores/toastStore';
 import { saveDraftOrStop, useResumeStore } from '@/stores/resumeStore';
 import type { BackupFrequency, BackupStatus } from '@shared/types/backup';
-import { Note } from '@/components/Note';
-import { Text } from '@/components/Text';
 import { SettingRow } from '../SettingRow';
 
 const FREQUENCY_OPTIONS: { value: BackupFrequency; label: string }[] = [

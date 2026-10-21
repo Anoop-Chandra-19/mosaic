@@ -14,19 +14,19 @@ import {
   Save,
   Trash2,
 } from 'lucide-react';
-import { AppButton } from '@/components/AppButton';
 import {
+  AppButton,
   AppMenu,
   AppMenuContent,
   AppMenuItem,
   AppMenuSeparator,
   AppMenuTrigger,
-} from '@/components/AppMenu';
-import { AppInput } from '@/components/AppInput';
-import { Note } from '@/components/Note';
+  AppInput,
+  Note,
+  Badge,
+  Text,
+} from '@/components/ui-kit';
 import { ReadBoundary } from '@/components/ReadBoundary';
-import { Badge } from '@/components/Badge';
-import { Text } from '@/components/Text';
 import { cn } from '@/lib/utils';
 import { useOverlayStore } from '@/stores/overlayStore';
 import { usePreviewStore } from '@/stores/previewStore';

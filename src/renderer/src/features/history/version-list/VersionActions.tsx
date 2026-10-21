@@ -1,14 +1,14 @@
 import { useRef } from 'react';
 import { Bookmark, Copy, Eye, History, MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
-import { AppButton } from '@/components/AppButton';
 import {
+  AppButton,
   AppMenu,
   AppMenuContent,
   AppMenuItem,
   AppMenuSeparator,
   AppMenuTrigger,
-} from '@/components/AppMenu';
-import { Text } from '@/components/Text';
+  Text,
+} from '@/components/ui-kit';
 import { cn } from '@/lib/utils';
 import type { VersionMeta } from '@shared/types/db';
 

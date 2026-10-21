@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { Text } from '@/components/Text';
+import { Text } from '@/components/ui-kit';
 
 /** One setting: what it is on the left, its control on the right. */
 export function SettingRow({

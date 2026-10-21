@@ -1,9 +1,15 @@
 import { Check, ChevronDown, Eye } from 'lucide-react';
-import { AppButton } from '@/components/AppButton';
-import { AppTooltip } from '@/components/AppTooltip';
-import { AppMenu, AppMenuContent, AppMenuItem, AppMenuTrigger } from '@/components/AppMenu';
-import { AppToggleGroup, AppToggleGroupItem } from '@/components/AppToggleGroup';
-import { Text } from '@/components/Text';
+import {
+  AppButton,
+  AppTooltip,
+  AppMenu,
+  AppMenuContent,
+  AppMenuItem,
+  AppMenuTrigger,
+  AppToggleGroup,
+  AppToggleGroupItem,
+  Text,
+} from '@/components/ui-kit';
 import { tourTargetProps } from '@/features/onboarding/tourTargets';
 import { PageZoomControl, type PageZoomControlProps } from '@/features/preview/PageZoomControl';
 import { cn } from '@/lib/utils';

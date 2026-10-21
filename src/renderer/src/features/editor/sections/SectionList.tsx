@@ -1,6 +1,6 @@
 import { useDeferredValue, useState } from 'react';
 import { Plus } from 'lucide-react';
-import { AppButton } from '@/components/AppButton';
+import { AppButton } from '@/components/ui-kit';
 import type { ResumeSection } from '@shared/types/resume';
 import { useOutlineStore } from '@/stores/outlineStore';
 import { useResumeStore } from '@/stores/resumeStore';

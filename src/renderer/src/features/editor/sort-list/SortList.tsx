@@ -6,7 +6,7 @@ import {
   type ReactNode,
 } from 'react';
 import { GripVertical } from 'lucide-react';
-import { AppButton } from '@/components/AppButton';
+import { AppButton } from '@/components/ui-kit';
 import { cn } from '@/lib/utils';
 import { HIDDEN_WHILE_READING } from '../editorClasses';
 import { moveToSlot } from './listOrder';

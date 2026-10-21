@@ -1,5 +1,4 @@
-import { Chip } from '@/components/Chip';
-import { Text } from '@/components/Text';
+import { Chip, Text } from '@/components/ui-kit';
 import { cn } from '@/lib/utils';
 import type { StepOption } from '../devTool';
 

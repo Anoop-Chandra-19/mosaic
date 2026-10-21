@@ -1,6 +1,6 @@
 import type { ComponentProps } from 'react';
 import { cva, type VariantProps } from 'class-variance-authority';
-import { AppTooltip } from '@/components/AppTooltip';
+import { AppTooltip } from './AppTooltip';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 

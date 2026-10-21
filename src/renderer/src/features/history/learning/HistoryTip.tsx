@@ -1,7 +1,6 @@
 import type { Ref } from 'react';
 import { createPortal } from 'react-dom';
-import { AppButton } from '@/components/AppButton';
-import { Text } from '@/components/Text';
+import { AppButton, Text } from '@/components/ui-kit';
 import { useTargetRect } from '@/features/onboarding/useTargetRect';
 import { cn } from '@/lib/utils';
 

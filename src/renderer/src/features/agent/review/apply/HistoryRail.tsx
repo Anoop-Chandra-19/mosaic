@@ -1,4 +1,4 @@
-import { Text } from '@/components/Text';
+import { Text } from '@/components/ui-kit';
 import { cn } from '@/lib/utils';
 import type { HistoryRow, HistoryRowLook } from './planHistoryRows';
 

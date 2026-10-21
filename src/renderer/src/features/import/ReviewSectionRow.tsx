@@ -1,9 +1,12 @@
 import { useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { AlertTriangle } from 'lucide-react';
-import { AppButton } from '@/components/AppButton';
-import { AppCollapsible, AppCollapsibleTrigger } from '@/components/AppCollapsible';
-import { Text } from '@/components/Text';
-import { textVariantClasses } from '@/components/textVariants';
+import {
+  AppButton,
+  AppCollapsible,
+  AppCollapsibleTrigger,
+  Text,
+  textVariantClasses,
+} from '@/components/ui-kit';
 import { recordPlaces, slideFromRecordedPlaces } from '@/lib/motion/slideToNewPlaces';
 import { cn } from '@/lib/utils';
 import type { ResumeEntry, ResumeSection } from '@shared/types/resume';

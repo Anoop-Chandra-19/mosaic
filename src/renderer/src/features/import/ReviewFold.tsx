@@ -1,6 +1,6 @@
 import type { ComponentProps } from 'react';
 import { ChevronRight } from 'lucide-react';
-import { AppCollapsibleContent } from '@/components/AppCollapsible';
+import { AppCollapsibleContent } from '@/components/ui-kit';
 import { cn } from '@/lib/utils';
 
 /** Turns with the open state of the nearest `group/row`. */
