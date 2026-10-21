@@ -1,5 +1,5 @@
 import type { Bullet, ResumeData, ResumeEntry } from '@shared/types/resume';
-import { pickBetween, pickFrom, type SeededRandom } from './seededRandom';
+import { pickBetween, pickFrom, pickIndex, type SeededRandom } from './seededRandom';
 
 const VERBS = ['Rebuilt', 'Cut', 'Led', 'Wrote', 'Shipped', 'Measured', 'Untangled', 'Moved'];
 const WORDS = [
@@ -40,31 +40,54 @@ export interface ResumeEdit {
   contactName?: string;
 }
 
-const entriesWithBullets = (doc: ResumeData): ResumeEntry[] =>
-  doc.sections.flatMap((section) => section.items).filter((entry) => entry.bullets.length > 0);
+/** Where an entry sits, so an edit can put its changed copy there. */
+interface EntryPlace {
+  items: ResumeEntry[];
+  index: number;
+}
 
-/** A changed copy: `doc` is left as it was, since versions keep the documents they hold. */
+/**
+ * A changed copy that shares what it leaves alone with `doc`, which stays as it was: versions
+ * keep the documents they hold, and a long history then holds each bullet once, not once a
+ * version.
+ */
 export function editResume(
   doc: ResumeData,
   edit: ResumeEdit,
   random: SeededRandom,
   nextBulletId: () => string
 ): ResumeData {
-  const edited = structuredClone(doc);
-  if (edit.contactName !== undefined) edited.contact.name = edit.contactName;
-  const entries = entriesWithBullets(edited);
-  if (entries.length === 0) return edited;
+  const sections = doc.sections.map((section) => ({ ...section, items: [...section.items] }));
+  const contact =
+    edit.contactName === undefined ? doc.contact : { ...doc.contact, name: edit.contactName };
+  const edited: ResumeData = { ...doc, contact, sections };
+  const places: EntryPlace[] = sections
+    .flatMap((section) => section.items.map((_, index) => ({ items: section.items, index })))
+    .filter(({ items, index }) => items[index].bullets.length > 0);
+  if (places.length === 0) return edited;
+
+  const copies = new Set<ResumeEntry>();
+  /** The entry at `place`, copied the first time this edit changes it. */
+  const changeEntry = (place: EntryPlace): ResumeEntry => {
+    const entry = place.items[place.index];
+    if (copies.has(entry)) return entry;
+    const copy = { ...entry, bullets: [...entry.bullets] };
+    place.items[place.index] = copy;
+    copies.add(copy);
+    return copy;
+  };
   for (let count = 0; count < edit.rewrites; count++) {
-    const bullet = pickFrom(random, pickFrom(random, entries).bullets);
-    bullet.text = writeSentence(random);
+    const entry = changeEntry(pickFrom(random, places));
+    const at = pickIndex(random, entry.bullets.length);
+    entry.bullets[at] = { ...entry.bullets[at], text: writeSentence(random) };
   }
   if (edit.addsBullet) {
     const added: Bullet = { id: nextBulletId(), text: writeSentence(random), selected: true };
-    pickFrom(random, entries).bullets.push(added);
+    changeEntry(pickFrom(random, places)).bullets.push(added);
   }
-  const roomy = entries.filter((entry) => entry.bullets.length > 2);
+  const roomy = places.filter(({ items, index }) => items[index].bullets.length > 2);
   if (edit.removesBullet && roomy.length) {
-    const entry = pickFrom(random, roomy);
+    const entry = changeEntry(pickFrom(random, roomy));
     entry.bullets.splice(pickBetween(random, 0, entry.bullets.length - 1), 1);
   }
   return edited;

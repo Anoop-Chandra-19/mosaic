@@ -1,14 +1,15 @@
 /**
- * How the built app holds up under the worst it should ever see: a resume with every section
- * full (past the ten pages the preview draws), 3,000 versions that really differ, and 50
- * templates with histories of their own; then input faster than it can keep up with, such
- * as a held arrow key. For each flow: how long it took to land, the long tasks (when the
+ * How the built app holds up under the worst it should ever see, the Worst case profile: a
+ * resume with every section full (past the ten pages the preview draws), 3,000 versions that
+ * really differ, and 50 templates with histories of their own; then input faster than it can
+ * keep up with, such as a held arrow key. For each flow: how long it took to land, the long tasks (when the
  * page can't answer input), the slowest input, and the frames that came late. Prints a
  * table, and compares it with the last run's, kept in `out/speed-check/last.json`.
  */
 import path from 'node:path';
 import type { Page } from '@playwright/test';
 import { openWith, saveInto } from '../../e2e/harness/dialogs';
+import { runDevTool } from '../../e2e/harness/devTools';
 import { test, withApp } from '../../e2e/harness/launch';
 import { reportAgainstLastRun, type ResultColumn } from '../compared-results';
 import { createFlowProfiler, type FlowProfiler } from './cpuProfile';
@@ -16,13 +17,12 @@ import {
   WORST_CASE_BULLETS,
   worstCaseResumeText,
 } from '../../src/renderer/src/features/dev-tools/profiles/worstCaseResume';
-import { growHistory } from '../large-resume';
 
 const mosaic = withApp();
 
+/** Worst case's: the open template's versions, and the templates beside it. */
 const VERSIONS = 3000;
 const OTHER_TEMPLATES = 49;
-const VERSIONS_PER_OTHER_TEMPLATE = 60;
 /** The pages the preview draws at most (`MAX_PREVIEW_PAGES`). */
 const PREVIEW_PAGES = 10;
 /** Versions stepped through in the full history, a couple of frames apart. */
@@ -244,17 +244,17 @@ test('the worst the app should see, and input faster than it keeps up', async ()
     })
   );
 
-  await growHistory(page, {
-    versions: VERSIONS,
-    otherTemplates: OTHER_TEMPLATES,
-    versionsPerOtherTemplate: VERSIONS_PER_OTHER_TEMPLATE,
-  });
+  // In place of what was pasted: the same resume, under its long history.
+  await runDevTool(page, 'loadProfile', { profile: 'Worst case' });
   rows.push(await timeReload(watch, `reload: ${OTHER_TEMPLATES + 1} templates`));
 
   rows.push(
     await timeFlow(watch, `open a history of ${VERSIONS}`, async () => {
       await page.keyboard.press('Control+Shift+H');
-      await history.getByText(`Round ${VERSIONS}`).first().waitFor();
+      await history
+        .getByRole('button', { name: /^Read / })
+        .first()
+        .waitFor({ state: 'attached' });
     })
   );
   rows.push(

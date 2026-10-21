@@ -1,20 +1,15 @@
 /**
- * How much memory the built app holds, process by process, as a fictional resume grows a
- * long history and every view is opened and closed again and again. Prints a table, and
+ * How much memory the built app holds, process by process, with the Heavy profile's long
+ * history loaded and every view opened and closed again and again. Prints a table, and
  * compares it with the last run's, kept in `out/memory-check/last.json`.
  */
 import fs from 'node:fs';
 import path from 'node:path';
 import { expect, type CDPSession, type ElectronApplication, type Page } from '@playwright/test';
-import { test, withApp } from '../../e2e/harness/launch';
+import { test, type LaunchedApp } from '../../e2e/harness/launch';
 import { reportAgainstLastRun, type ResultColumn } from '../compared-results';
-import { growHistory, importLargeResume } from '../large-resume';
+import { runDevTool } from '../../e2e/harness/devTools';
 
-const mosaic = withApp();
-
-/** About seven A4 pages. */
-const BULLETS = 130;
-const VERSIONS = 200;
 /** Versions stepped through in the full history. */
 const STEPS = 40;
 /**
@@ -171,30 +166,45 @@ function printGrowth(warmedUp: Measurement, last: Measurement) {
   );
 }
 
-test('memory through a long history and repeated views', async () => {
-  const { app, page } = mosaic();
-  const session = await page.context().newCDPSession(page);
+test('memory through a long history and repeated views', async ({ launchApp }) => {
   const rows: Measurement[] = [];
-  const record = async (stage: string) => rows.push(await measure(stage, app, session));
+  const record = async ({ app, page }: LaunchedApp, stage: string) => {
+    const session = await page.context().newCDPSession(page);
+    rows.push(await measure(stage, app, session));
+    await session.detach();
+  };
 
-  await expect(page.getByRole('button', { name: /Blank resume/ })).toBeVisible();
-  await record('launched');
-  await importLargeResume(page, BULLETS);
-  await record(`${BULLETS}-bullet resume`);
-  await growHistory(page, { versions: VERSIONS });
-  await record(`${VERSIONS} versions, reloaded`);
-  await readHistory(page);
-  await record(`stepped through ${STEPS}`);
+  const empty = await launchApp();
+  const { userDataDir } = empty;
+  let launched: LaunchedApp | null = null;
+  try {
+    await expect(empty.page.getByRole('button', { name: /Blank resume/ })).toBeVisible();
+    await record(empty, 'launched');
+    await runDevTool(empty.page, 'loadProfile', { profile: 'Heavy' });
+    await empty.app.close();
 
-  const rounds = WARM_UP_ROUNDS + MEASURED_ROUNDS;
-  for (let round = 1; round <= rounds; round++) {
-    await openAndCloseEverything(page);
-    if (round === 1 || round === WARM_UP_ROUNDS || round === rounds) {
-      await record(`views opened ×${round}`);
+    // Launched again over it: what the app holds reading it from disk, not what writing it
+    // left behind in main.
+    launched = await launchApp(userDataDir);
+    const { page } = launched;
+    await expect(page.locator('[data-preview-page-content]').first()).toBeVisible();
+    await record(launched, 'Heavy, launched');
+    await readHistory(page);
+    await record(launched, `stepped through ${STEPS}`);
+
+    const rounds = WARM_UP_ROUNDS + MEASURED_ROUNDS;
+    for (let round = 1; round <= rounds; round++) {
+      await openAndCloseEverything(page);
+      if (round === 1 || round === WARM_UP_ROUNDS || round === rounds) {
+        await record(launched, `views opened ×${round}`);
+      }
     }
-  }
 
-  reportAgainstLastRun(rows, COLUMNS, RESULTS, 'stage');
-  console.log('MB, except DOM nodes and listeners.');
-  printGrowth(rows.at(-2)!, rows.at(-1)!);
+    reportAgainstLastRun(rows, COLUMNS, RESULTS, 'stage');
+    console.log('MB, except DOM nodes and listeners.');
+    printGrowth(rows.at(-2)!, rows.at(-1)!);
+  } finally {
+    await launched?.app.close();
+    fs.rmSync(userDataDir, { recursive: true, force: true });
+  }
 });

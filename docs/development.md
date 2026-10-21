@@ -23,9 +23,11 @@ made one step at a time, and Ctrl+Enter takes the defaults. Recent (kept in
 
 Replace all data with a profile swaps the development data for a generated set, the same
 every time: Fresh (erased, as on first run, keys included, as `dev:reset` does), Everyday
-(3 templates, about 40 versions each) or Heavy (12 templates, 600 versions on one holding
-the 210-bullet resume the speed check pastes). It asks first, and only Ctrl+Enter goes
-ahead. Restore a backup file opens Settings' Restore a backup on a file you pick.
+(3 templates, about 40 versions each), Heavy (12 templates, 600 versions on one holding
+the 210-bullet resume the speed check pastes; the memory check runs on it) or Worst case
+(50 templates of that resume, 3,000 versions on one; the speed check runs on it). It asks
+first, and only Ctrl+Enter goes ahead. Worst case is written in parts, so a failure partway
+leaves the parts written; the others are written in one go. Restore a backup file opens Settings' Restore a backup on a file you pick.
 
 The memory check lists what each process holds (Main, Window, GPU, utilities) as Electron
 reports it, with the change since the last check and Copy as text. Switches stay on across

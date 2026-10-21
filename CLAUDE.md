@@ -25,9 +25,11 @@ Paths below are relative to the repository root. Read the relevant files before 
   (`scripts/page-break-sweep/`, needs LibreOffice), the typing check
   (`scripts/typing-check/`, whether the live preview keeps up), the speed check
   (`scripts/speed-check/`, long tasks and late frames in everyday flows), and the memory check
-  (`scripts/memory-check/`, what each process holds and whether views leak). The app checks
-  share `scripts/large-resume.ts`, `run-under-load.ts` (`--load N`) and
-  `compared-results.ts` (each run against the last). Build output is `out/`.
+  (`scripts/memory-check/`, what each process holds and whether views leak). The speed and
+  memory checks load a development profile (Worst case, Heavy) through the developer tools;
+  the typing check pastes `scripts/large-resume.ts`'s resumes. The app checks share
+  `run-under-load.ts` (`--load N`) and `compared-results.ts` (each run against the last).
+  Build output is `out/`.
 - React 19 + React Compiler, TypeScript, Tailwind v4, Zustand, Radix/shadcn, Lucide.
   `@/` maps to `src/renderer/src/`; `@shared/` maps to `src/shared/`.
 - Renderer has no Node, raw IPC, or network. Use only `window.mosaic`: `db`, `files`
