@@ -49,6 +49,7 @@ export const DEV_BUILD_ARGUMENT = '--mosaic-dev';
 export const DEV_CHANNELS = {
   readRecent: 'dev:read-recent',
   saveRecent: 'dev:save-recent',
+  readDataFolder: 'dev:read-data-folder',
 } as const satisfies Record<Exclude<keyof MosaicDev, 'onOpenTools'>, string>;
 /** Main → renderer: Develop › Developer tools… was chosen. */
 export const DEV_OPEN_TOOLS = 'dev:open-tools';

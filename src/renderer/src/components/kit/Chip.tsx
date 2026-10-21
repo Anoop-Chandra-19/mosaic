@@ -19,6 +19,8 @@ const TONE_CLASSES = {
   warn: 'border-warn-line bg-warn-soft text-warn',
   // Development builds' own marks, in a hue no user-facing UI uses.
   info: 'border-info-line bg-info-soft text-info',
+  // A warning that something will be lost, outlined only.
+  del: 'border-del-line bg-transparent text-del',
 } as const;
 
 interface ChipProps extends ComponentProps<'span'> {

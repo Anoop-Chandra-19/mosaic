@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { ChevronRight } from 'lucide-react';
-import { Text } from '@/components/ui-kit';
+import { Chip, Text } from '@/components/ui-kit';
 import { ShortcutKeys } from '@/features/shortcuts/ShortcutKeys';
 import type { DevTool } from '../devTool';
 import type { MatchRange } from './searchDevTools';
@@ -54,6 +54,11 @@ export function ToolRow({ tool, ranges, args, description, icon, end }: ToolRowP
         </Text>
       </span>
       {end}
+      {tool.replacesData && (
+        <Chip size="sm" tone="del" className="uppercase">
+          Replaces data
+        </Chip>
+      )}
       {tool.steps && <ChevronRight className="text-ink-faint" />}
       {tool.keys && <ShortcutKeys combos={[tool.keys]} />}
     </>

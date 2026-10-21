@@ -76,6 +76,7 @@ const dev: MosaicDev | undefined = process.argv.includes(DEV_BUILD_ARGUMENT)
   ? {
       readRecent: () => ipcRenderer.invoke(DEV_CHANNELS.readRecent),
       saveRecent: (runs) => ipcRenderer.invoke(DEV_CHANNELS.saveRecent, runs),
+      readDataFolder: () => ipcRenderer.invoke(DEV_CHANNELS.readDataFolder),
       onOpenTools: (open) => {
         ipcRenderer.on(DEV_OPEN_TOOLS, () => open());
       },

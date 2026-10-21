@@ -24,6 +24,7 @@ import { buildAddressSection } from './addressSection';
 import { DevToolFailure } from './DevToolFailure';
 import { PaletteFooter, type FooterKey } from './PaletteFooter';
 import type { PaletteSection } from './paletteSection';
+import { ReplaceDataConfirm } from './ReplaceDataConfirm';
 import { buildStepSection } from './stepSection';
 import { buildToolSections } from './toolSections';
 import { useAddressCheck } from './useAddressCheck';
@@ -33,7 +34,7 @@ import { useStepOptions } from './useStepOptions';
  * The palette's contents, inside the dialog: a field over a list. The list is the tools
  * (`toolSections.tsx`), a step's choices once a tool with steps is chosen (`stepSection.tsx`),
  * or a typed address (`addressSection.tsx`); a run that fails shows in its place
- * (`DevToolFailure.tsx`).
+ * (`DevToolFailure.tsx`), and a tool that replaces data asks first (`ReplaceDataConfirm.tsx`).
  */
 
 interface Stepping {
@@ -60,6 +61,10 @@ const FAILURE_KEYS: FooterKey[] = [
   { keys: ['Enter'], label: 'run again' },
   { keys: ['Esc'], label: 'back' },
 ];
+const CONFIRM_KEYS: FooterKey[] = [
+  { keys: ['Mod+Enter'], label: 'replace' },
+  { keys: ['Esc'], label: 'cancel' },
+];
 
 const NO_ARGS: DevToolArgs = {};
 
@@ -71,8 +76,19 @@ function findCurrentStep(stepping: Stepping | null) {
   return stepping?.tool.steps?.find((step) => !(step.key in stepping.args)) ?? null;
 }
 
-/** The tool and the choices made so far, as chips. */
-function SteppingChips({ stepping }: { stepping: Stepping }) {
+/** Runs on with the palette closed, saying how it went in a toast. */
+async function runReplacingTool(devRun: DevToolRun, label: string): Promise<void> {
+  try {
+    const message = await runDevTool(devRun);
+    if (message) showToast(message, 'success', undefined, 'DEV');
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    showToast(`“${label}” didn’t finish: ${message}`, 'error');
+  }
+}
+
+/** The tool and the choices made so far, as chips; then the next one's, unless all are made. */
+function SteppingChips({ stepping, isComplete }: { stepping: Stepping; isComplete?: boolean }) {
   const made = (stepping.tool.steps ?? []).filter((step) => step.key in stepping.args);
   return (
     <>
@@ -88,9 +104,11 @@ function SteppingChips({ stepping }: { stepping: Stepping }) {
           </span>
         );
       })}
-      <Text variant="secondary" className="text-ink-faint">
-        ›
-      </Text>
+      {!isComplete && (
+        <Text variant="secondary" className="text-ink-faint">
+          ›
+        </Text>
+      )}
     </>
   );
 }
@@ -109,6 +127,8 @@ export function DevToolsPalette({ recent, onRun, onClose }: DevToolsPaletteProps
   const [query, setQuery] = useState('');
   const [chosen, setChosen] = useState('');
   const [failure, setFailure] = useState<Failure | null>(null);
+  /** A run that replaces data, waiting for Ctrl+Enter. */
+  const [confirming, setConfirming] = useState<Stepping | null>(null);
   const [stepping, setStepping] = useState<Stepping | null>(null);
   /** A tool that asks for text first: Go to an address. */
   const [asking, setAsking] = useState<DevTool | null>(null);
@@ -127,6 +147,11 @@ export function DevToolsPalette({ recent, onRun, onClose }: DevToolsPaletteProps
   const run = async (devRun: DevToolRun) => {
     setFailure(null);
     setStepping(null);
+    const tool = findDevTool(devRun.toolId);
+    if (tool?.replacesData) {
+      setConfirming({ tool, args: devRun.args });
+      return;
+    }
     onRun(devRun);
     try {
       const message = await runDevTool(devRun);
@@ -179,6 +204,14 @@ export function DevToolsPalette({ recent, onRun, onClose }: DevToolsPaletteProps
     setStepping({ ...stepping, args });
   };
 
+  const replace = () => {
+    if (!confirming) return;
+    const devRun = { toolId: confirming.tool.id, args: confirming.args };
+    onRun(devRun);
+    onClose();
+    void runReplacingTool(devRun, confirming.tool.label);
+  };
+
   const goToTyped = (place: ViewPlace, templateId?: string) => {
     const args: DevToolArgs = { text: formatViewAddress(place) };
     if (templateId) args.templateId = templateId;
@@ -193,7 +226,11 @@ export function DevToolsPalette({ recent, onRun, onClose }: DevToolsPaletteProps
   };
 
   const handleFieldKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
-    if (event.key === 'Enter' && failure) {
+    if (event.key === 'Enter' && confirming) {
+      // Only Ctrl+Enter replaces: Enter alone, from habit, does nothing.
+      event.preventDefault();
+      if (isModKey(event)) replace();
+    } else if (event.key === 'Enter' && failure) {
       event.preventDefault();
       void run(failure.run);
     } else if (event.key === 'Enter' && isModKey(event) && stepping) {
@@ -222,20 +259,71 @@ export function DevToolsPalette({ recent, onRun, onClose }: DevToolsPaletteProps
 
   const goesTo = stepping ? describeGoToAddress(stepping.tool.id, stepping.args) : null;
   const placeholder = step?.placeholder ?? asking?.prompt ?? 'Search tools, or paste an address';
-  const footerKeys = failure ? FAILURE_KEYS : stepping ? STEP_KEYS : LIST_KEYS;
+  let footerKeys = LIST_KEYS;
+  if (confirming) footerKeys = CONFIRM_KEYS;
+  else if (failure) footerKeys = FAILURE_KEYS;
+  else if (stepping) footerKeys = STEP_KEYS;
+
+  let leading = null;
+  if (confirming) leading = <SteppingChips stepping={confirming} isComplete />;
+  else if (stepping) leading = <SteppingChips stepping={stepping} />;
+
+  let body;
+  if (confirming?.tool.replacesData) {
+    body = (
+      <ReplaceDataConfirm
+        replacement={confirming.tool.replacesData(confirming.args)}
+        onCancel={() => setConfirming(null)}
+        onReplace={replace}
+      />
+    );
+  } else if (failure) {
+    body = (
+      <DevToolFailure
+        label={findDevTool(failure.run.toolId)?.label ?? failure.run.toolId}
+        message={failure.message}
+        onRunAgain={() => void run(failure.run)}
+      />
+    );
+  } else {
+    body = (
+      <AppCommandList>
+        {sections.map((section, sectionIndex) => (
+          <AppCommandGroup key={sectionIndex} heading={section.heading}>
+            {section.rows.map((row) => (
+              <AppCommandItem
+                key={row.value}
+                value={row.value}
+                disabled={row.isDisabled}
+                onSelect={row.onSelect}
+              >
+                {row.content}
+              </AppCommandItem>
+            ))}
+            {section.note && (
+              <Text as="p" variant="secondary" className="px-2 pt-1.5 pb-1 text-ink-faint">
+                {section.note}
+              </Text>
+            )}
+          </AppCommandGroup>
+        ))}
+      </AppCommandList>
+    );
+  }
 
   return (
     <AppDialogContent
       placement="top"
       showCloseButton={false}
       aria-describedby={undefined}
-      // Inside a step, a failure or a prompt, Esc steps back out before it closes.
+      // Inside a step, a failure, a prompt or a confirm, Esc steps back out before it closes.
       onEscapeKeyDown={(event) => {
-        if (!failure && !stepping && !asking) return;
+        if (!failure && !stepping && !asking && !confirming) return;
         event.preventDefault();
         setFailure(null);
         setStepping(null);
         setAsking(null);
+        setConfirming(null);
       }}
       className="flex max-h-[calc(100%-4.25rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-150"
     >
@@ -250,10 +338,11 @@ export function DevToolsPalette({ recent, onRun, onClose }: DevToolsPaletteProps
           value={query}
           onValueChange={changeQuery}
           onKeyDown={handleFieldKeyDown}
-          placeholder={placeholder}
+          placeholder={confirming ? '' : placeholder}
+          readOnly={confirming !== null}
           aria-label="Search developer tools"
           className={cn(addressCheck && 'font-mono text-body')}
-          leading={stepping && <SteppingChips stepping={stepping} />}
+          leading={leading}
           trailing={
             <Chip size="sm" tone="info" title="Development build only" className="ml-auto">
               DEV
@@ -270,35 +359,7 @@ export function DevToolsPalette({ recent, onRun, onClose }: DevToolsPaletteProps
             </span>
           </div>
         )}
-        {failure ? (
-          <DevToolFailure
-            label={findDevTool(failure.run.toolId)?.label ?? failure.run.toolId}
-            message={failure.message}
-            onRunAgain={() => void run(failure.run)}
-          />
-        ) : (
-          <AppCommandList>
-            {sections.map((section, sectionIndex) => (
-              <AppCommandGroup key={sectionIndex} heading={section.heading}>
-                {section.rows.map((row) => (
-                  <AppCommandItem
-                    key={row.value}
-                    value={row.value}
-                    disabled={row.isDisabled}
-                    onSelect={row.onSelect}
-                  >
-                    {row.content}
-                  </AppCommandItem>
-                ))}
-                {section.note && (
-                  <Text as="p" variant="secondary" className="px-2 pt-1.5 pb-1 text-ink-faint">
-                    {section.note}
-                  </Text>
-                )}
-              </AppCommandGroup>
-            ))}
-          </AppCommandList>
-        )}
+        {body}
       </AppCommand>
       <PaletteFooter
         keys={footerKeys}

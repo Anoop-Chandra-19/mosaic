@@ -1,5 +1,5 @@
 import { expect } from '@playwright/test';
-import { expectViewAt, goToView, runDevTool } from '../harness/devTools';
+import { expectViewAt, goToView, makeHistory, runDevTool } from '../harness/devTools';
 import { test, withApp } from '../harness/launch';
 
 const mosaic = withApp();
@@ -89,5 +89,41 @@ test('views are reached by their address: by steps, pasted, from a test, and cop
   expect(await app.evaluate(({ clipboard }) => clipboard.readText())).toBe(
     'editor / Rowan Vale (example) + export'
   );
+  expect(errors).toEqual([]);
+});
+
+test('a made history reads as asked, and a profile replaces it only on Ctrl+Enter', async () => {
+  const { page, errors } = mosaic();
+  await makeHistory(page, {
+    template: 'Kept apart',
+    versions: [{ name: 'First' }, { name: 'Second', contactName: 'Rowan Hale' }],
+  });
+  await goToView(page, 'history / Kept apart / v3 vs v2 / page');
+  const history = page.getByRole('region', { name: /^History of/ });
+  await expect(history.getByRole('heading', { name: 'Second', exact: true })).toBeVisible();
+
+  const tools = page.getByRole('dialog', { name: 'Developer tools' });
+  await page.keyboard.press('Control+Shift+D');
+  await page.keyboard.type('profile');
+  await page.keyboard.press('Enter');
+  await page.keyboard.type('everyday');
+  await page.keyboard.press('Enter');
+  await expect(
+    tools.getByRole('heading', { name: 'Replace all development data with Everyday?' })
+  ).toBeVisible();
+  await expect(tools).toContainText('Deletes the 1 template and 3 versions in this build’s data.');
+  await page.keyboard.press('Enter');
+  await expect(tools).toBeVisible();
+
+  await page.keyboard.press('Control+Enter');
+  await expect(tools).toBeHidden();
+  await expect(
+    page.getByText(/^Loaded Everyday in [\d.]+s\. 3 templates, 48 versions on Base resume\.$/)
+  ).toBeVisible();
+  await expectViewAt(page, 'editor / Base resume');
+  await expect(page).toHaveTitle('Mosaic DEV');
+  await expect(goToView(page, 'editor / Kept apart')).rejects.toThrow('No template named');
+  await goToView(page, 'history / Tailored for Kestrel / v1 vs draft / page');
+  await expect(history).toBeVisible();
   expect(errors).toEqual([]);
 });

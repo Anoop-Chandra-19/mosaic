@@ -10,10 +10,18 @@ import { expect, type Page } from '@playwright/test';
 
 type DevToolArgs = Record<string, string | number | boolean>;
 
+/** A template's history, v2 onwards: each version named or not, and what changes in it. */
+export interface HistorySpec {
+  /** "Rowan Vale (history)" when left out. */
+  template?: string;
+  versions: { name?: string; contactName?: string; rewrites?: number }[];
+}
+
 interface DevTestHook {
   run(toolId: string, args?: DevToolArgs): Promise<string>;
   goTo(address: string): Promise<void>;
   here(): string;
+  makeHistory(spec: HistorySpec): Promise<string>;
 }
 
 async function reachHook(page: Page) {
@@ -26,6 +34,18 @@ export async function runDevTool(page: Page, toolId: string, args: DevToolArgs =
   return page.evaluate(
     ([id, choices]) => (window as unknown as { mosaicDev: DevTestHook }).mosaicDev.run(id, choices),
     [toolId, args] as const
+  );
+}
+
+/**
+ * Adds a template holding the fictional example resume with the history given, and opens
+ * it: in place of naming versions one by one through the editor.
+ */
+export async function makeHistory(page: Page, spec: HistorySpec) {
+  await reachHook(page);
+  return page.evaluate(
+    (history) => (window as unknown as { mosaicDev: DevTestHook }).mosaicDev.makeHistory(history),
+    spec
   );
 }
 

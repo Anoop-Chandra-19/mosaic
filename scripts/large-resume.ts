@@ -1,51 +1,11 @@
 /**
- * The fictional resumes the hand-run checks measure the built app with, imported as pasted
- * text: one entry of long bullets (130 make about seven A4 pages), or the worst case, every
- * section full. Then as long a history as a check asks for, across as many templates.
+ * The hand-run checks' data: the fictional resumes the Heavy profile holds too
+ * (`worstCaseResume.ts`), imported as pasted text, then as long a history as a check asks
+ * for, across as many templates.
  */
 import { expect, type Page } from '@playwright/test';
 import type { DbResult } from '../src/shared/types/db';
-
-const bullet = (index: number) =>
-  `- Wrote program ${index} for the analytical engine, checking every step of it by hand against the tables computed the long way, and wrote down whatever differed.`;
-
-/** Pasted text with `bullets` bullets in one entry, ready for the Import dialog. */
-export function largeResumeText(bullets: number): string {
-  const text = ['Ada Lovelace', 'ada@example.com', '', 'Experience', 'Analyst, Engine Works'];
-  return [...text, ...Array.from({ length: bullets }, (_, i) => bullet(i))].join('\n');
-}
-
-/** Headings import knows, so each is a section of its own. */
-const WORST_CASE_SECTIONS = [
-  'Experience',
-  'Internships',
-  'Projects',
-  'Volunteering',
-  'Awards',
-  'Publications',
-];
-const ENTRIES_PER_SECTION = 5;
-const BULLETS_PER_ENTRY = 7;
-export const WORST_CASE_BULLETS =
-  WORST_CASE_SECTIONS.length * ENTRIES_PER_SECTION * BULLETS_PER_ENTRY;
-
-/**
- * Every section full of entries full of long bullets: past the ten pages the preview draws,
- * so the editor holds all of it and the preview as much as it ever lays out.
- */
-export function worstCaseResumeText(): string {
-  const lines = ['Ada Lovelace', 'ada@example.com · +1 555 0100 · Engine Works', ''];
-  let index = 0;
-  for (const section of WORST_CASE_SECTIONS) {
-    lines.push(section);
-    for (let entry = 1; entry <= ENTRIES_PER_SECTION; entry++) {
-      lines.push(`${section} lead ${entry}, Engine Works ${entry}`);
-      for (let b = 0; b < BULLETS_PER_ENTRY; b++) lines.push(bullet(index++));
-    }
-    lines.push('');
-  }
-  return lines.join('\n');
-}
+import { largeResumeText } from '../src/renderer/src/features/dev-tools/profiles/worstCaseResume';
 
 /** From the Start panel: a blank resume, then `text` imported into it. */
 export async function importResumeText(page: Page, text: string): Promise<void> {

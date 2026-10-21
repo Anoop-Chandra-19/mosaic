@@ -18,6 +18,14 @@ export interface Toast {
   action?: ToastAction;
   /** Shown in place of a success's tick: `DEV` for the developer tools' news. */
   tag?: 'DEV';
+  /** Work under way, shown until the next toast: what it is on, and how far along. */
+  progress?: ToastProgress;
+}
+
+export interface ToastProgress {
+  detail: string;
+  /** Null while it can't tell. */
+  percent: number | null;
 }
 
 interface ToastState {
@@ -49,6 +57,16 @@ export function showToast(
     },
     action ? TOAST_WITH_ACTION_MS : TOAST_MS
   );
+}
+
+/**
+ * Work under way, until the next toast takes its place. Updates to the same work keep the
+ * toast where it is rather than showing it again.
+ */
+export function showProgressToast(message: string, progress: ToastProgress): void {
+  const current = useToastStore.getState().toast;
+  const id = current?.progress && current.message === message ? current.id : nextToastId++;
+  useToastStore.setState({ toast: { id, message, tone: 'success', progress } });
 }
 
 /** A failure whose message is written for the user, so it is shown as it is. */

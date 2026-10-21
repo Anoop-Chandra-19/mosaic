@@ -1,6 +1,7 @@
 import type { DevToolArgs } from '@shared/types/devTools';
 import { describeCurrentView, goToViewAddress } from '@/features/view-address/viewAddress';
 import { runDevTool } from './devTools';
+import { makeHistory, type HistorySpec } from './profiles/makeHistory';
 
 /** What e2e reaches the developer tools through (`e2e/harness/devTools.ts`). */
 export interface DevTestHook {
@@ -10,6 +11,8 @@ export interface DevTestHook {
   goTo(address: string): Promise<void>;
   /** The address of where the app is now. */
   here(): string;
+  /** Adds a template with the history given and opens it, resolving with what it made. */
+  makeHistory(spec: HistorySpec): Promise<string>;
 }
 
 async function goTo(address: string): Promise<void> {
@@ -30,5 +33,6 @@ export function installDevTestHook(): void {
     run: (toolId, args = {}) => runDevTool({ toolId, args }),
     goTo,
     here: describeCurrentView,
+    makeHistory,
   };
 }

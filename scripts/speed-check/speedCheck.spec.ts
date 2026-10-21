@@ -12,7 +12,11 @@ import { openWith, saveInto } from '../../e2e/harness/dialogs';
 import { test, withApp } from '../../e2e/harness/launch';
 import { reportAgainstLastRun, type ResultColumn } from '../compared-results';
 import { createFlowProfiler, type FlowProfiler } from './cpuProfile';
-import { growHistory, WORST_CASE_BULLETS, worstCaseResumeText } from '../large-resume';
+import {
+  WORST_CASE_BULLETS,
+  worstCaseResumeText,
+} from '../../src/renderer/src/features/dev-tools/profiles/worstCaseResume';
+import { growHistory } from '../large-resume';
 
 const mosaic = withApp();
 
