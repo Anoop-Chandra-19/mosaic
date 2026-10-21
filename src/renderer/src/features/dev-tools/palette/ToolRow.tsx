@@ -1,8 +1,11 @@
 import type { ReactNode } from 'react';
 import { ChevronRight } from 'lucide-react';
-import { Chip, Text } from '@/components/ui-kit';
+import { AppSwitch, Chip, Text } from '@/components/ui-kit';
 import { ShortcutKeys } from '@/features/shortcuts/ShortcutKeys';
+import { cn } from '@/lib/utils';
+import type { DevSwitch } from '@shared/types/devTools';
 import type { DevTool } from '../devTool';
+import { useDevToolsStore } from '../devToolsStore';
 import type { MatchRange } from './searchDevTools';
 
 /** The label with the typed words marked in ink, not amber: amber is the assistant's. */
@@ -24,6 +27,22 @@ function MarkedLabel({ label, ranges = [] }: { label: string; ranges?: MatchRang
   }
   pieces.push(label.slice(at));
   return <span className="truncate">{pieces}</span>;
+}
+
+/** A switch's state, which choosing the row flips: the switch itself only shows it. */
+function SwitchState({ name }: { name: DevSwitch }) {
+  const isOn = useDevToolsStore((s) => s.switches[name]);
+  return (
+    <>
+      <Text
+        variant="secondary"
+        className={cn('min-w-5 text-right', isOn ? 'font-strong text-warn' : 'text-ink-faint')}
+      >
+        {isOn ? 'On' : 'Off'}
+      </Text>
+      <AppSwitch checked={isOn} tabIndex={-1} aria-hidden className="pointer-events-none" />
+    </>
+  );
 }
 
 export interface ToolRowProps {
@@ -59,6 +78,7 @@ export function ToolRow({ tool, ranges, args, description, icon, end }: ToolRowP
           Replaces data
         </Chip>
       )}
+      {tool.switch && <SwitchState name={tool.switch} />}
       {tool.steps && <ChevronRight className="text-ink-faint" />}
       {tool.keys && <ShortcutKeys combos={[tool.keys]} />}
     </>

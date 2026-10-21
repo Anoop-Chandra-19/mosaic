@@ -27,6 +27,15 @@ every time: Fresh (erased, as on first run, keys included, as `dev:reset` does),
 the 210-bullet resume the speed check pastes). It asks first, and only Ctrl+Enter goes
 ahead. Restore a backup file opens Settings' Restore a backup on a file you pick.
 
+The memory check lists what each process holds (Main, Window, GPU, utilities) as Electron
+reports it, with the change since the last check and Copy as text. Switches stay on across
+launches until turned off, named in the window's title, with a dot on the wrench: Slow
+motion (every animation 10 times slower) and Reduced motion, which main applies through the
+window's debugger; Outline measured boxes, the boxes pagination measures on the page; and
+Reopen this view at launch, which goes back to the view each launch closed on. Both are kept
+in `.dev-data/dev-tools.json`. A spec turns one on with
+`runDevTool(page, 'slowMotion', { isOn: true })`.
+
 Every view has an address, such as `history / Tailored for Kestrel / v12 vs v11 / changes`
 (`features/view-address/`). The palette shows where you are with Copy (Ctrl+Shift+C), and a
 pasted address goes there. Release builds have Help › Copy view address too, so a bug report
@@ -39,8 +48,9 @@ place of naming them one by one in the editor. A setup a spec needs that no tool
 becomes a tool first.
 
 `bun run package` builds with `--mode release`, which leaves the tools out of the
-installer. Keep the data side-effect free (build it in a function), or the release
-bundle keeps it.
+installer. `electron.vite.config.ts` declares `features/dev-tools/` free of side effects, so
+release drops every module there, tables built with a call included; nothing in it may
+do anything on import alone.
 
 ## React Compiler
 
