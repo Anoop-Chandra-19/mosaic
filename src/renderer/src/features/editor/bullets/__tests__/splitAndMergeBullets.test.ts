@@ -35,9 +35,28 @@ describe('finding where to split', () => {
     expect(text.slice(findSplitStart(text))).toBe('export pipeline');
   });
 
-  it('puts one word at its end, where nothing splits it', () => {
-    expect(findSplitStart('Rebuilt')).toBe('Rebuilt'.length);
+  it('keeps the earlier break when two are equally close to the middle', () => {
+    expect(findSentenceBreakNearMiddle('aa. bb. cccc')).toBe(4);
+    expect(findSplitStart('aa bb ccc')).toBe(3);
   });
+
+  it('includes sentence breaks exactly at the 20% and 80% boundaries', () => {
+    expect(findSentenceBreakNearMiddle(`aa. ${'b'.repeat(16)}`)).toBe(4);
+    expect(findSentenceBreakNearMiddle(`${'a'.repeat(14)}. bbbb`)).toBe(16);
+  });
+
+  it('splits after a whitespace run without choosing leading or trailing whitespace', () => {
+    const text = '  Built   tools  ';
+    expect(findSplitStart(text)).toBe(10);
+    expect(text.slice(findSplitStart(text))).toBe('tools  ');
+  });
+
+  it.each(['Rebuilt', ' Rebuilt ', '', '   '])(
+    'falls back to the end when there is no word break in %j',
+    (text) => {
+      expect(findSplitStart(text)).toBe(text.length);
+    }
+  );
 });
 
 describe('what can be split', () => {
@@ -90,5 +109,19 @@ describe('joining two bullets', () => {
     expect(moveSeamWithEdit(seam, before, 'Built the tool Used it daily.', 14)).toBe(14);
     // Typed after the seam.
     expect(moveSeamWithEdit(seam, before, 'Built the tool. Used it every day.', 33)).toBe(15);
+  });
+
+  it('places the seam at the start of a deletion that crosses it', () => {
+    const before = 'Built the tool. Used it daily.';
+    const after = before.slice(0, 10) + before.slice(20);
+    expect(moveSeamWithEdit(15, before, after, 10)).toBe(10);
+  });
+
+  it('leaves the seam in place for an insertion exactly at it', () => {
+    expect(moveSeamWithEdit(6, 'Built. Used it.', 'Built.! Used it.', 7)).toBe(6);
+  });
+
+  it('leaves the seam in place for a same-length replacement', () => {
+    expect(moveSeamWithEdit(6, 'Built. Used it.', 'Built! Used it.', 6)).toBe(6);
   });
 });
