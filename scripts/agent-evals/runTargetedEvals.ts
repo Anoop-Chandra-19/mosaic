@@ -1,18 +1,22 @@
 /**
  * Instructions that name the words to change ("Swap Led for Drove"), against the one right
- * result. Each case runs with only `propose_rewrite`, only `propose_replace`, and both.
+ * result. Each case runs with only `propose_rewrite`, and with the app's pair: rewrite for one
+ * bullet, `propose_replace_everywhere` for a term across them. The pair should pick rewrite
+ * for one bullet and replace only for the `everywhere` cases.
  *
  *   node scripts/agent-evals/runTargetedEvals.ts <model…> [--think] [--literal]
  *
  * `--literal` uses the rewrite wording from before the grammar rule, which models obeyed to the
  * letter ("Led in the planning").
  */
-import { locatePhrase } from './checkEvalProposals.ts';
+import { PROPOSE_TOOLS } from '../../src/shared/agent-tools/proposeTools.ts';
+import { replaceEveryWholeWord } from '../../src/renderer/src/features/agent/tools/replaceEveryWholeWord.ts';
+import type { ModelTool } from '../../src/shared/types/modelTool.ts';
 import { loadEvalKeys, readEvalOptions, writeEvalResults } from './evalCommandLine.ts';
 import { pickEvalModel, type EvalMessage, type EvalTool } from './evalModelProviders.ts';
 import { TARGETED_CASES } from './fixtures/targetedCases.ts';
 
-type ToolMode = 'rewrite' | 'replace' | 'both';
+type ToolMode = 'rewrite' | 'both';
 
 interface TargetedEvalRow {
   caseNumber: number;
@@ -27,54 +31,62 @@ interface TargetedEvalRow {
 }
 
 const SYSTEM = `You edit resume bullets. You never invent facts, numbers, names or scope.
-Always answer by calling a tool; call it once per bullet you change, and never for a bullet you leave alone.`;
-const CHOOSE_TOOL = `\nWhen the user names the words to change, use propose_replace. When they describe a quality they want ("stronger", "tighter"), use propose_rewrite.`;
+Always answer by calling a tool, and never for a bullet you leave alone.`;
 
-const GRAMMAR_RULE =
-  'Change only what the request needs, but the result must still read as a correct sentence: when a swapped word needs its neighbours to change (swapping "Assisted" for "Led" in "Assisted in the planning" gives "Led the planning"), change them too.';
+const toEvalTool = ({ name, description, inputSchema }: ModelTool): EvalTool => ({
+  name,
+  description,
+  parameters: inputSchema,
+});
 
+/** The app's own rewrite tool, or with `--literal` the wording from before the grammar rule. */
 function describeRewriteTool(isLiteral: boolean): EvalTool {
-  return {
-    name: 'propose_rewrite',
-    description: `Propose a new text for one bullet. ${isLiteral ? 'Change only what the request needs; keep every other word as it is.' : GRAMMAR_RULE}`,
-    parameters: {
-      type: 'object',
-      properties: { bulletId: { type: 'string' }, text: { type: 'string' } },
-      required: ['bulletId', 'text'],
-    },
-  };
+  const tool = toEvalTool(PROPOSE_TOOLS.propose_rewrite);
+  return isLiteral
+    ? {
+        ...tool,
+        description:
+          'Propose a new text for one bullet. Change only what the request needs; keep every other word as it is.',
+      }
+    : tool;
 }
 
-const REPLACE_TOOL: EvalTool = {
-  name: 'propose_replace',
-  description:
-    'Replace exact text. `find` is copied exactly from the bullet and must appear in it once; include any neighbouring words that must also change for the sentence to still read (to swap "Assisted" for "Led" in "Assisted in the planning", find "Assisted in" and replace with "Led"). Leave out bulletId to apply to every bullet that contains `find`.',
-  parameters: {
-    type: 'object',
-    properties: {
-      bulletId: { type: 'string', description: 'Omit to replace in every bullet containing find.' },
-      find: { type: 'string' },
-      replace: { type: 'string' },
-    },
-    required: ['find', 'replace'],
-  },
-};
+const REPLACE_EVERYWHERE_TOOL = toEvalTool(PROPOSE_TOOLS.propose_replace_everywhere);
 
 const normalizeBullet = (text: string) => text.replace(/\s+/g, ' ').trim().replace(/\.$/, '');
+
+/**
+ * propose_replace_everywhere as the app runs it: every whole-word use in every bullet
+ * changes, and none anywhere is the problem.
+ */
+function replaceEverywhere(current: string[], find: string, replace: string) {
+  let looseMatches = 0;
+  let changedCount = 0;
+  current.forEach((text, i) => {
+    const replaced = replaceEveryWholeWord(text, find, replace);
+    if (!replaced) return;
+    if (replaced.isLoose) looseMatches++;
+    changedCount++;
+    current[i] = replaced.text.replace(/ {2,}/g, ' ').trim();
+  });
+  const problem = changedCount
+    ? null
+    : `"${find}" is in no bullet. Copy find exactly as the bullets write it.`;
+  return { problem, looseMatches };
+}
 
 async function runTargetedEvalsForModel(spec: string, think: boolean, isLiteral: boolean) {
   const { chat, label } = pickEvalModel(spec, think);
   const rewriteTool = describeRewriteTool(isLiteral);
   const rows: TargetedEvalRow[] = [];
+  const toolsByMode: Record<ToolMode, EvalTool[]> = {
+    rewrite: [rewriteTool],
+    both: [rewriteTool, REPLACE_EVERYWHERE_TOOL],
+  };
 
-  for (const mode of ['rewrite', 'replace', 'both'] as const) {
-    const tools =
-      mode === 'rewrite'
-        ? [rewriteTool]
-        : mode === 'replace'
-          ? [REPLACE_TOOL]
-          : [rewriteTool, REPLACE_TOOL];
-    const system = SYSTEM + (mode === 'both' ? CHOOSE_TOOL : '');
+  for (const mode of ['rewrite', 'both'] as const) {
+    const tools = toolsByMode[mode];
+    const system = SYSTEM;
 
     for (const [index, testCase] of TARGETED_CASES.entries()) {
       const current = [...testCase.bullets];
@@ -128,28 +140,9 @@ async function runTargetedEvalsForModel(spec: string, think: boolean, isLiteral:
           } else if (typeof args.find !== 'string' || typeof args.replace !== 'string') {
             problem = 'find and replace must both be strings.';
           } else {
-            const { find, replace } = args;
-            const targets = args.bulletId
-              ? [ids.indexOf(args.bulletId)]
-              : ids.map((_, i) => i).filter((i) => locatePhrase(current[i], find) !== 'none');
-            if (targets.length === 0 || targets.includes(-1)) {
-              problem = args.bulletId
-                ? `bulletId must be one of ${ids.join(', ')}.`
-                : `${JSON.stringify(find)} is in no bullet.`;
-            }
-            for (const i of targets.filter((i) => i >= 0)) {
-              const at = locatePhrase(current[i], find);
-              if (at === 'none') {
-                problem = `${JSON.stringify(find)} is not in ${ids[i]}: ${JSON.stringify(current[i])}. Copy find exactly.`;
-              } else if (at === 'many') {
-                problem = `${JSON.stringify(find)} appears more than once in ${ids[i]}; include more surrounding words.`;
-              } else {
-                if (at.isLoose) row.looseMatches++;
-                current[i] = (current[i].slice(0, at.start) + replace + current[i].slice(at.end))
-                  .replace(/ {2,}/g, ' ')
-                  .trim();
-              }
-            }
+            const replaced = replaceEverywhere(current, args.find, args.replace);
+            problem = replaced.problem;
+            row.looseMatches += replaced.looseMatches;
           }
 
           if (problem) row.repairs++;
@@ -179,7 +172,7 @@ async function runTargetedEvalsForModel(spec: string, think: boolean, isLiteral:
   }
 
   const file = writeEvalResults(`targeted-${label}${isLiteral ? '-literal' : ''}.json`, rows);
-  for (const mode of ['rewrite', 'replace', 'both']) {
+  for (const mode of ['rewrite', 'both']) {
     const modeRows = rows.filter((r) => r.mode === mode);
     console.log(
       `== ${label} · ${mode}: exact ${modeRows.filter((r) => r.isExact).length}/${modeRows.length}`

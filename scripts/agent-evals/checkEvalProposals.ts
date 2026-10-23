@@ -2,6 +2,7 @@
  * The checks the evals apply to a model's proposal. Failures carry the `fix` hint the model
  * gets back in its one repair round.
  */
+import { locatePhrase } from '../../src/renderer/src/features/agent/tools/locatePhrase.ts';
 
 export type ProposalCheck =
   | { ok: true; result: string; editCount: number }
@@ -77,36 +78,6 @@ export function checkSegmentsProposal(
   }
   const result = list.map((s) => (s.type === 'keep' ? s.text : s.ins)).join('');
   return { ok: true, result, editCount: edits.length };
-}
-
-const loosenPhrase = (text: string) =>
-  text
-    .replace(/[‘’]/g, "'")
-    .replace(/[“”]/g, '"')
-    .replace(/[–—]/g, '-')
-    .replace(/\s+/g, ' ');
-
-/**
- * Where `find` sits in `text`: exact first, then forgiving of curly quotes, dashes, and runs
- * of spaces. Loosening replaces characters one for one or collapses spaces, so indexes line up
- * with the original for text written with single spaces, which is all a bullet holds.
- */
-export function locatePhrase(
-  text: string,
-  find: string
-): { start: number; end: number; isLoose: boolean } | 'none' | 'many' {
-  const first = text.indexOf(find);
-  if (first !== -1) {
-    return text.indexOf(find, first + 1) === -1
-      ? { start: first, end: first + find.length, isLoose: false }
-      : 'many';
-  }
-  const looseText = loosenPhrase(text);
-  const looseFind = loosenPhrase(find);
-  const at = looseText.indexOf(looseFind);
-  if (at === -1) return 'none';
-  if (looseText.indexOf(looseFind, at + 1) !== -1) return 'many';
-  return { start: at, end: at + looseFind.length, isLoose: true };
 }
 
 export function checkEditsProposal(

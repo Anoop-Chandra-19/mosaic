@@ -1,12 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import type { ModelProviderError, ModelStreamEvent } from '@shared/types/modelReply';
-import type {
-  AssistantMessage,
-  ModelMessage,
-  ModelProvider,
-  ModelRequest,
-  ModelTool,
-} from './modelProvider';
+import type { ModelTool } from '@shared/types/modelTool';
+import type { AssistantMessage, ModelMessage, ModelProvider, ModelRequest } from './modelProvider';
 import type { OllamaFetch } from './ollamaModels';
 
 interface OllamaChatChunk {

@@ -27,7 +27,7 @@ A model is `provider[:model]`: `ollama`, `openai:gpt-6-luna`, `anthropic`, `gemi
 # 50 bullets, each reworded in three proposal shapes, one repair round on a failed check
 node scripts/agent-evals/runBulletEvals.ts ollama openai:gpt-6-luna [--think] [--limit 10] [--only text,edits]
 
-# 20 instructions that name the words to change, with rewrite only, replace only, and both
+# 25 instructions that name the words to change, with rewrite only, and with rewrite plus replace everywhere
 node scripts/agent-evals/runTargetedEvals.ts anthropic gemini [--think] [--literal]
 
 # Tables from everything in results/

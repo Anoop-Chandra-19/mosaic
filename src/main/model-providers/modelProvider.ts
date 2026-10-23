@@ -1,11 +1,5 @@
 import type { ModelReplyPart, ModelStreamEvent } from '@shared/types/modelReply';
-
-export interface ModelTool {
-  name: string;
-  description: string;
-  /** JSON Schema for the arguments. */
-  inputSchema: Record<string, unknown>;
-}
+import type { ModelTool } from '@shared/types/modelTool';
 
 export interface UserMessage {
   role: 'user';
