@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Version, VersionMeta } from '@shared/types/db';
 import type { ResumeData } from '@shared/types/resume';
-import { makeResume } from '../../proposals/__tests__/proposalFixtures';
+import { makeResume } from '../../../suggestions/proposals/__tests__/proposalFixtures';
 
 const storedVersions = vi.hoisted(() => ({ list: [] as VersionMeta[], doc: null as unknown }));
 vi.mock('@/stores/templateStore', async (importOriginal) => ({

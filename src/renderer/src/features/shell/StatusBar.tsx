@@ -8,7 +8,7 @@ import { versionLabel } from '@/features/history/versionLabel';
 import { useShortcutLabel } from '@/features/shortcuts/shortcutBindings';
 import type { ShortcutId } from '@/lib/shortcutCatalog';
 import { cn } from '@/lib/utils';
-import { countSuggestions } from '@/features/agent/review/suggestionState';
+import { countSuggestions } from '@/features/suggestions/suggestionState';
 import { useAgentSettingsStore } from '@/stores/agentSettingsStore';
 import { useOverlayStore } from '@/stores/overlayStore';
 import { selectTemplateProposals, useProposalStore } from '@/stores/proposalStore';

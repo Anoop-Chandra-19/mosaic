@@ -20,8 +20,8 @@ import {
   AppMenuSeparator,
   AppMenuTrigger,
 } from '@/components/ui-kit';
-import { SuggestionDot } from '@/features/agent/review/SuggestionDot';
-import { useSuggestionDot } from '@/features/agent/review/useSuggestionDot';
+import { SuggestionDot } from '@/features/suggestions/SuggestionDot';
+import { useSuggestionDot } from '@/features/suggestions/useSuggestionDot';
 import { matchesAction } from '@/features/shortcuts/shortcutBindings';
 import { carryTint, travelFrom } from '@/lib/motion/rowMotions';
 import { ListMotionContext, useSwapMotion } from '@/lib/motion/useListMotion';

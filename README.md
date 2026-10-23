@@ -93,7 +93,7 @@ src/
         kit/      # App primitive implementations and private helpers
           __tests__/ # Tests for kit implementations
         ui/       # Raw shadcn primitives, unchanged
-      features/   # shell, editor, preview, templates, history, document-diff, import, export, backup, settings, start, agent
+      features/   # shell, editor, preview, templates, history, document-diff, import, export, backup, settings, start, suggestions, agent
       stores/     # Zustand stores
       lib/        # Renderer domain logic and infrastructure (layout, storage bridge, …)
       types/      # Renderer-only types

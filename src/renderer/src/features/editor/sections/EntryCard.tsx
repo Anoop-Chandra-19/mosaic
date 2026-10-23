@@ -10,8 +10,8 @@ import {
   Text,
 } from '@/components/ui-kit';
 import { ConfirmDeleteDialog } from '@/components/ConfirmDeleteDialog';
-import { SuggestionDot } from '@/features/agent/review/SuggestionDot';
-import { useSuggestionDot } from '@/features/agent/review/useSuggestionDot';
+import { SuggestionDot } from '@/features/suggestions/SuggestionDot';
+import { useSuggestionDot } from '@/features/suggestions/useSuggestionDot';
 import { matchesAction } from '@/features/shortcuts/shortcutBindings';
 import { isTypingField } from '@/lib/keyboardShortcuts';
 import { ListMotionContext, useSwapMotion } from '@/lib/motion/useListMotion';

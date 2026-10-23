@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { checkProposal } from '@/features/agent/proposals/checkProposal';
-import { validateProposal } from '@/features/agent/proposals/validateProposal';
+import { checkProposal } from '@/features/suggestions/proposals/checks/checkProposal';
+import { validateProposal } from '@/features/suggestions/proposals/validateProposal';
 import { createExampleResume } from '../exampleResume';
 import { createExampleSuggestions, EXAMPLE_REQUEST } from '../exampleSuggestions';
 

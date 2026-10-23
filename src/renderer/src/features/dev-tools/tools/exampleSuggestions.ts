@@ -1,4 +1,4 @@
-import type { StagedChange } from '@/features/agent/proposals/proposalActions';
+import type { StagedChange } from '@/features/suggestions/proposals/proposalActions';
 import type { ProposalChange } from '@shared/types/agentProposal';
 import { createExampleResume, EXAMPLE_IDS } from './exampleResume';
 
