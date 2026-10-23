@@ -1,7 +1,8 @@
 import type { Proposal, ProposalChange } from '@shared/types/agentProposal';
 import type { ResumeData } from '@shared/types/resume';
-import { applyProposalsToResume, sortForApply } from '../../proposals/applyProposalsToResume';
+import { sortForApply } from '../../proposals/applyProposalsToResume';
 import { findMovedIds } from '../../proposals/findMovedIds';
+import { layInProposal } from '../../proposals/layInProposal';
 import { readShowPlaceId, readTextPlaceId } from '../../proposals/proposalAnchor';
 import { resolveChange } from '../../proposals/reviewedChange';
 
@@ -86,20 +87,14 @@ function readBlock(change: ProposalChange): SuggestionMark['block'] {
 /** Lays one suggestion into the page; false when it no longer fits by its turn. */
 function layIn(page: SuggestionPage, proposal: Proposal): boolean {
   const change = resolveChange(proposal);
-  const created: string[] = [];
-  const createId = () => {
-    const id = crypto.randomUUID();
-    created.push(id);
-    return id;
-  };
   const laidIn = isLeaving(change)
-    ? { doc: page.doc, appliedIds: [proposal.id] }
-    : applyProposalsToResume(page.doc, [{ ...proposal, change }], createId);
-  if (!laidIn.appliedIds.length) return false;
+    ? { doc: page.doc, createdIds: [] }
+    : layInProposal(page.doc, proposal);
+  if (!laidIn) return false;
   page.doc = laidIn.doc;
 
   const mark = { proposal, look: readLook(change), block: readBlock(change) };
-  for (const id of [...readMarkedIds(change), ...created]) page.marks.set(id, mark);
+  for (const id of [...readMarkedIds(change), ...laidIn.createdIds]) page.marks.set(id, mark);
   for (const [id, move] of readMoves(proposal, change)) page.moves.set(id, move);
   return true;
 }

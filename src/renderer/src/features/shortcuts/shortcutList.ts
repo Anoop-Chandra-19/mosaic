@@ -56,6 +56,9 @@ const LABELS: Record<ShortcutId, string> = {
   dropSuggestion: 'Drop',
   editSuggestion: 'Edit in your words',
   applySuggestions: 'Apply what you kept',
+  previewSuggestions: 'Preview, and back',
+  previewAllSuggested: 'Preview all suggested',
+  previewWhatYouKept: 'Preview what you kept',
 };
 
 export function labelShortcut(id: ShortcutId): string {
@@ -136,6 +139,9 @@ const REVIEW_SHORTCUTS: ShortcutId[] = [
   'dropSuggestion',
   'editSuggestion',
   'applySuggestions',
+  'previewSuggestions',
+  'previewAllSuggested',
+  'previewWhatYouKept',
 ];
 
 /** The keys for where the sheet was opened from, shown first. */
