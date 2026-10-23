@@ -2,6 +2,7 @@ import type {
   Proposal,
   ProposalChange,
   ProposalChangeKind,
+  ShowPlace,
   TextPlace,
 } from '@shared/types/agentProposal';
 import type { ResumeData } from '@shared/types/resume';
@@ -54,6 +55,21 @@ function placeBullet(doc: ResumeData, sectionId: string, entryId: string, bullet
   return { bullets: entry.bullets, index, bullet: entry.bullets[index] };
 }
 
+/** A section shows by `hidden`, everything else by `selected`. */
+function setShown(doc: ResumeData, place: ShowPlace, isShown: boolean) {
+  if (place.unit === 'section') {
+    const section = findSection(doc, place.sectionId)!;
+    if (isShown) delete section.hidden;
+    else section.hidden = true;
+    return;
+  }
+  const record =
+    place.unit === 'entry'
+      ? findEntry(doc, place.sectionId, place.entryId)!
+      : findTextRecord(doc, place);
+  record.selected = isShown;
+}
+
 /** Where new items go in a list: right after `afterId`, or first when it is null. */
 const insertAt = (ids: string[], afterId: string | null) =>
   afterId === null ? 0 : ids.indexOf(afterId) + 1;
@@ -84,6 +100,11 @@ function addText(
 
 function reorder(doc: ResumeData, change: Extract<ProposalChange, { kind: 'reorder' }>) {
   const { place, after } = change;
+  if (place.unit === 'sections') {
+    doc.sections = reorderById(doc.sections, after);
+    doc.sections.forEach((section) => (section.order = after.indexOf(section.id)));
+    return;
+  }
   const section = findSection(doc, place.sectionId)!;
   if (place.unit === 'items') {
     section.items = reorderById(section.items, after);
@@ -97,7 +118,7 @@ function reorder(doc: ResumeData, change: Extract<ProposalChange, { kind: 'reord
 function applyChange(doc: ResumeData, change: ProposalChange, createId: () => string): void {
   switch (change.kind) {
     case 'select':
-      findTextRecord(doc, change.place).selected = change.selected;
+      setShown(doc, change.place, change.selected);
       return;
     case 'rewrite':
       findTextRecord(doc, change.place).text = change.after.trim();

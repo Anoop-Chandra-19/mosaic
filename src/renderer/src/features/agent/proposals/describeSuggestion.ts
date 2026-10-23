@@ -46,14 +46,15 @@ function nameWithin(doc: ResumeData, section: ResumeSection) {
   return { entry, bulletNumber, bullet, line, text };
 }
 
-/** The section a change is in. */
-function readSectionId(change: ProposalChange): string {
+/** The section a change is in; the sections' order is in none. */
+function readSectionId(change: ProposalChange): string | null {
   switch (change.kind) {
     case 'rewrite':
     case 'select':
     case 'add':
-    case 'reorder':
       return change.place.sectionId;
+    case 'reorder':
+      return change.place.unit === 'sections' ? null : change.place.sectionId;
     default:
       return change.sectionId;
   }
@@ -76,7 +77,9 @@ function nameAddedPlace(
 
 /** Its place, from the section down: the section's label, the entry, then the bullets. */
 export function placeSuggestion(doc: ResumeData, change: ProposalChange): string[] {
-  const section = findSection(doc, readSectionId(change));
+  const sectionId = readSectionId(change);
+  if (sectionId === null) return ['Section order'];
+  const section = findSection(doc, sectionId);
   if (!section) return [];
   const within = nameWithin(doc, section);
   const path = (...parts: (string | null)[]) =>
@@ -84,8 +87,13 @@ export function placeSuggestion(doc: ResumeData, change: ProposalChange): string
 
   switch (change.kind) {
     case 'rewrite':
-    case 'select':
       return path(...within.text(change.place));
+    case 'select': {
+      const { place } = change;
+      if (place.unit === 'section') return path();
+      if (place.unit === 'entry') return path(within.entry(place.entryId));
+      return path(...within.text(place));
+    }
     case 'split':
       return path(within.entry(change.entryId), within.bullet(change.entryId, change.bulletId));
     case 'merge': {

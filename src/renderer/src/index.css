@@ -155,6 +155,7 @@
   --color-paper-del: var(--paper-del);
   --color-paper-del-text: var(--paper-del-text);
   --color-paper-tag: var(--paper-tag);
+  --color-paper-faded: var(--paper-faded);
   --color-paper-tag-line: var(--paper-tag-line);
   --color-paper-mark-hover: var(--paper-mark-hover);
   --color-paper-suggested: var(--paper-suggested);
@@ -450,6 +451,8 @@
   --paper-del: #b04a3a;
   --paper-del-text: #8a4a40;
   --paper-tag: #6b6b6b;
+  /* An entry or section waiting to leave the page, in review. */
+  --paper-faded: #8f8f8f;
   --paper-tag-line: #b9b9b9;
   --paper-mark-hover: oklch(0.6 0 0 / 18%);
   /*

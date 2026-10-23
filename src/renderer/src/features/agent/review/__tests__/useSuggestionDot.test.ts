@@ -67,3 +67,27 @@ describe('findSuggestionDot, added text', () => {
     expect(findSuggestionDot(proposals, 'b1')).toBeNull();
   });
 });
+
+describe('findSuggestionDot, whole entries and sections', () => {
+  it('says what waits on an entry or a section, and marks only the sections that move', () => {
+    const proposals = [
+      proposal('leave', {
+        kind: 'select',
+        place: { unit: 'entry', sectionId: 's1', entryId: 'e2' },
+        before: 'Intern, Lantern Maps',
+        selected: false,
+      }),
+      proposal('order', {
+        kind: 'reorder',
+        place: { unit: 'sections' },
+        before: ['s1', 's2', 's3'],
+        after: ['s1', 's3', 's2'],
+      }),
+    ];
+    expect(findSuggestionDot(proposals, 'e2')?.waiting).toBe(
+      'A suggestion to leave this entry off the page is waiting.'
+    );
+    expect(findSuggestionDot(proposals, 's3')?.waiting).toBe('A suggestion moves this section.');
+    expect(findSuggestionDot(proposals, 's1')).toBeNull();
+  });
+});

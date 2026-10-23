@@ -11,13 +11,20 @@ export type TextPlace =
   | { unit: 'bullet'; sectionId: string; entryId: string; bulletId: string }
   | { unit: 'line'; sectionId: string; lineId: string };
 
+/** Anything that can be left off the page, or put back. */
+export type ShowPlace =
+  | TextPlace
+  | { unit: 'entry'; sectionId: string; entryId: string }
+  | { unit: 'section'; sectionId: string };
+
 /** Where new text goes: a bullet into an entry, or a line into a lines section. */
 export type AddPlace =
   | { unit: 'bullet'; sectionId: string; entryId: string }
   | { unit: 'line'; sectionId: string };
 
-/** A list whose order can change: a section's items (entries or lines), or an entry's bullets. */
+/** A list whose order can change: the sections, a section's items, or an entry's bullets. */
 export type OrderPlace =
+  | { unit: 'sections' }
   | { unit: 'items'; sectionId: string }
   | { unit: 'bullets'; sectionId: string; entryId: string };
 
@@ -59,7 +66,8 @@ export type ProposalChange =
     }
   | {
       kind: 'select';
-      place: TextPlace;
+      place: ShowPlace;
+      /** What the user sees of it: its text, an entry's heading, or a section's label. */
       before: string;
       selected: boolean;
     }

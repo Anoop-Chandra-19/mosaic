@@ -13,6 +13,7 @@ import {
 } from '../../proposals/proposalActions';
 import { resolveChange } from '../../proposals/reviewedChange';
 import { AddedTextBody } from './AddedTextBody';
+import { BlockBody } from './BlockBody';
 import { BackLink, Caption, CaptionTag, Lines, TagLine } from './BodyParts';
 import { readFlaggedWords, readLostWords } from './describeFlag';
 import { EntryFacts } from './EntryFacts';
@@ -210,13 +211,14 @@ function SplitBody({ proposal }: SuggestionBodyProps) {
   );
 }
 
-/** What a reordered item is called: a line's or bullet's text, or an entry's name. */
+/** What a reordered item is called: a section's label, a line's or bullet's text, an entry's name. */
 function nameReordered(
   draft: ResumeData,
   change: Extract<ProposalChange, { kind: 'reorder' }>,
   id: string
 ) {
   const { place } = change;
+  if (place.unit === 'sections') return findSection(draft, id)?.label;
   if (place.unit === 'bullets') {
     return findEntry(draft, place.sectionId, place.entryId)?.bullets.find((b) => b.id === id)?.text;
   }
@@ -263,9 +265,12 @@ function ReorderBody({ proposal, draft }: SuggestionBodyProps) {
   );
 }
 
-function SelectBody({ proposal }: SuggestionBodyProps) {
-  const { change } = proposal;
+function SelectBody(props: SuggestionBodyProps) {
+  const { change } = props.proposal;
   if (change.kind !== 'select') return null;
+  if (change.place.unit === 'entry' || change.place.unit === 'section') {
+    return <BlockBody {...props} />;
+  }
   return (
     <>
       <Caption>Suggested</Caption>

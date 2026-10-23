@@ -1,4 +1,11 @@
-import type { AddPlace, OrderPlace, ProposalChange, TextPlace } from '@shared/types/agentProposal';
+import { formatEntryHeading } from '@shared/resume/entryHeading';
+import type {
+  AddPlace,
+  OrderPlace,
+  ProposalChange,
+  ShowPlace,
+  TextPlace,
+} from '@shared/types/agentProposal';
 import type { ResumeData, ResumeEntry, ResumeSection } from '@shared/types/resume';
 
 export type AnchorMismatch = 'unknown-target' | 'changed-since-read';
@@ -29,11 +36,46 @@ export function findTextItem(
   );
 }
 
+/** What the user sees of something that can leave the page: its text, heading, or label. */
+export function readShownName(doc: ResumeData, place: ShowPlace): string | undefined {
+  switch (place.unit) {
+    case 'bullet':
+    case 'line':
+      return findTextItem(doc, place)?.text;
+    case 'entry': {
+      const entry = findEntry(doc, place.sectionId, place.entryId);
+      return entry && formatEntryHeading(entry);
+    }
+    case 'section':
+      return findSection(doc, place.sectionId)?.label;
+  }
+}
+
+/** Whether it prints now: a section by `hidden`, everything else by `selected`. */
+export function isPlaceShown(doc: ResumeData, place: ShowPlace): boolean | undefined {
+  switch (place.unit) {
+    case 'bullet':
+    case 'line':
+      return findTextItem(doc, place)?.selected;
+    case 'entry':
+      return findEntry(doc, place.sectionId, place.entryId)?.selected;
+    case 'section': {
+      const section = findSection(doc, place.sectionId);
+      return section && !section.hidden;
+    }
+  }
+}
+
 /** The ids in a list, in the order they print. */
 export function readOrder(doc: ResumeData, place: OrderPlace): string[] | undefined {
-  if (place.unit === 'items')
-    return findSection(doc, place.sectionId)?.items.map((item) => item.id);
-  return findEntry(doc, place.sectionId, place.entryId)?.bullets.map((bullet) => bullet.id);
+  switch (place.unit) {
+    case 'sections':
+      return [...doc.sections].sort((a, b) => a.order - b.order).map((section) => section.id);
+    case 'items':
+      return findSection(doc, place.sectionId)?.items.map((item) => item.id);
+    case 'bullets':
+      return findEntry(doc, place.sectionId, place.entryId)?.bullets.map((bullet) => bullet.id);
+  }
 }
 
 /** The bullets or lines new text goes among, by id; undefined when the place is gone. */
@@ -84,7 +126,7 @@ export function findAnchorMismatch(doc: ResumeData, change: ProposalChange): Anc
       );
     }
     case 'select':
-      return compareText(findTextItem(doc, change.place)?.text, change.before);
+      return compareText(readShownName(doc, change.place), change.before);
     case 'merge':
       return findMergeMismatch(doc, change);
     case 'reorder': {
@@ -112,15 +154,29 @@ export function findAnchorMismatch(doc: ResumeData, change: ProposalChange): Anc
 export const readTextPlaceId = (place: TextPlace) =>
   place.unit === 'bullet' ? place.bulletId : place.lineId;
 
+/** The id a place that can leave the page names. */
+export function readShowPlaceId(place: ShowPlace): string {
+  switch (place.unit) {
+    case 'bullet':
+    case 'line':
+      return readTextPlaceId(place);
+    case 'entry':
+      return place.entryId;
+    case 'section':
+      return place.sectionId;
+  }
+}
+
 /**
- * What a change changes, by id: the bullets and lines that two kept suggestions can't
- * both change.
+ * What a change changes, by id: the bullets, lines, entries and sections that two kept
+ * suggestions can't both change.
  */
 export function readChangedIds(change: ProposalChange): string[] {
   switch (change.kind) {
     case 'rewrite':
-    case 'select':
       return [readTextPlaceId(change.place)];
+    case 'select':
+      return [readShowPlaceId(change.place)];
     case 'split':
       return [change.bulletId];
     case 'merge':

@@ -1,7 +1,7 @@
 import type { Proposal, ProposalChange } from '@shared/types/agentProposal';
 import type { ResumeData } from '@shared/types/resume';
 import { applyProposalsToResume, sortForApply } from '../../proposals/applyProposalsToResume';
-import { readTextPlaceId } from '../../proposals/proposalAnchor';
+import { readShowPlaceId, readTextPlaceId } from '../../proposals/proposalAnchor';
 import { resolveChange } from '../../proposals/reviewedChange';
 
 /** How a mark reads on the page: changed text, added text, or text leaving the page. */
@@ -10,6 +10,11 @@ export type SuggestionLook = 'edit' | 'add' | 'hide';
 export interface SuggestionMark {
   proposal: Proposal;
   look: SuggestionLook;
+  /**
+   * A whole entry or section: leaving the page (faded, with one bracket down its side) or
+   * put back (which says so beside its heading). Absent for a bullet's or line's mark.
+   */
+  block?: 'leaving' | 'back';
 }
 
 /** An item a reorder moves, by its place before and after, counted from 1. */
@@ -21,7 +26,7 @@ export interface SuggestionMove {
 
 /**
  * The page the review shows: the draft with every live suggestion laid in, and its marks,
- * by the id of what they mark: a bullet's or line's text, or a new entry's heading.
+ * by the id of what they mark: a bullet's or line's text, an entry's heading, a section's.
  */
 export interface SuggestionPage {
   doc: ResumeData;
@@ -35,8 +40,9 @@ const isShown = (proposal: Proposal) => !proposal.isStale && proposal.status !==
 function readMarkedIds(change: ProposalChange): string[] {
   switch (change.kind) {
     case 'rewrite':
-    case 'select':
       return [readTextPlaceId(change.place)];
+    case 'select':
+      return [readShowPlaceId(change.place)];
     case 'split':
       return [change.bulletId];
     case 'merge':
@@ -66,6 +72,14 @@ function readLook(change: ProposalChange): SuggestionLook {
   return change.kind === 'add' || change.kind === 'entry' ? 'add' : 'edit';
 }
 
+/** Whether a suggestion takes a whole entry or section off the page, or puts it back. */
+function readBlock(change: ProposalChange): SuggestionMark['block'] {
+  if (change.kind !== 'select') return undefined;
+  const { unit } = change.place;
+  if (unit !== 'entry' && unit !== 'section') return undefined;
+  return change.selected ? 'back' : 'leaving';
+}
+
 /** Lays one suggestion into the page; false when it no longer fits by its turn. */
 function layIn(page: SuggestionPage, proposal: Proposal): boolean {
   const change = resolveChange(proposal);
@@ -81,7 +95,7 @@ function layIn(page: SuggestionPage, proposal: Proposal): boolean {
   if (!laidIn.appliedIds.length) return false;
   page.doc = laidIn.doc;
 
-  const mark = { proposal, look: readLook(change) };
+  const mark = { proposal, look: readLook(change), block: readBlock(change) };
   for (const id of [...readMarkedIds(change), ...created]) page.marks.set(id, mark);
   for (const [id, move] of readMoves(proposal, change)) page.moves.set(id, move);
   return true;
@@ -111,9 +125,11 @@ export function buildSuggestionPage(
   return page;
 }
 
-/** Whether a line or bullet with this id is in the document. */
+/** Whether a section, entry, line or bullet with this id is in the document. */
 function isOnPage(doc: ResumeData, id: string): boolean {
-  return doc.sections.some((section) =>
-    section.items.some((item) => item.id === id || item.bullets.some((b) => b.id === id))
+  return doc.sections.some(
+    (section) =>
+      section.id === id ||
+      section.items.some((item) => item.id === id || item.bullets.some((b) => b.id === id))
   );
 }

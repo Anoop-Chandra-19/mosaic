@@ -7,21 +7,29 @@ import { usePreviewCanvas } from '@/features/preview/usePreviewCanvas';
 import { transitionClasses } from '@/features/view-transitions/transitionClasses';
 import { cn } from '@/lib/utils';
 import { useUiStore } from '@/stores/uiStore';
-import { SuggestionMark, SuggestionMoveChip } from './SuggestionMark';
+import { SuggestionBackChip, SuggestionMark, SuggestionMoveChip } from './SuggestionMark';
 import type { SuggestionPage } from './suggestionPage';
 
 const ignoreMeta = () => {};
 
+/**
+ * A whole entry or section waiting to leave: its text faded, one bracket down its side in
+ * the margin. Kept, it stays the same until Apply.
+ */
+const LEAVING_BLOCK_CLASSES =
+  'relative text-paper-faded before:pointer-events-none before:absolute before:inset-y-0.75 before:-left-3.25 before:w-1.25 before:rounded-l-[0.125rem] before:border-[1.5px] before:border-r-0 before:border-paper-del';
+
 /** The page's marks, built once per page so selecting one never lays the page out again. */
 function decorateSuggestions(page: SuggestionPage): PageDecorations {
-  /** A bullet's or line's text in its mark, with the chip a move leaves beside it. */
-  const markWithMove = (id: string, node: ReactNode) => {
+  /** Text or a heading in its mark, with the chips a move or a return leaves beside it. */
+  const markWithChips = (id: string, node: ReactNode) => {
     const mark = page.marks.get(id);
     const move = page.moves.get(id);
     if (!mark && !move) return node;
     return (
       <>
         {mark ? <SuggestionMark mark={mark}>{node}</SuggestionMark> : node}
+        {mark?.block === 'back' && <SuggestionBackChip mark={mark} />}
         {move && <SuggestionMoveChip move={move} />}
       </>
     );
@@ -31,10 +39,16 @@ function decorateSuggestions(page: SuggestionPage): PageDecorations {
     return mark ? <SuggestionMark mark={mark}>{node}</SuggestionMark> : node;
   };
   return {
-    bullet: markWithMove,
-    line: markWithMove,
-    entryHeading: markWithMove,
+    bullet: markWithChips,
+    line: markWithChips,
+    entryHeading: markWithChips,
     entryDates: markOnly,
+    sectionLabel: markWithChips,
+    blockClassName: (id) => {
+      const mark = page.marks.get(id);
+      const isLeaving = mark?.block === 'leaving' && !mark.proposal.isStale;
+      return isLeaving && mark.proposal.status !== 'rejected' ? LEAVING_BLOCK_CLASSES : undefined;
+    },
   };
 }
 

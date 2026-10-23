@@ -1,6 +1,6 @@
 import type { ProposalChange, ProposalFlag, ProposalFlagKind } from '@shared/types/agentProposal';
 import { formatEntryHeading } from '@shared/resume/entryHeading';
-import { readTextPlaceId } from '@/features/agent/proposals/proposalAnchor';
+import { readShowPlaceId, readTextPlaceId } from '@/features/agent/proposals/proposalAnchor';
 import type { AgentToolRun } from '../agentToolRun';
 
 /*
@@ -14,14 +14,16 @@ const knownHandle = (run: AgentToolRun, id: string) => run.handles.handleById.ge
 export function describeTarget(run: AgentToolRun, change: ProposalChange): string {
   switch (change.kind) {
     case 'rewrite':
-    case 'select':
       return knownHandle(run, readTextPlaceId(change.place));
+    case 'select':
+      return knownHandle(run, readShowPlaceId(change.place));
     case 'split':
       return knownHandle(run, change.bulletId);
     case 'merge':
       return `${knownHandle(run, change.firstId)} and ${knownHandle(run, change.secondId)}`;
     case 'reorder': {
       const { place } = change;
+      if (place.unit === 'sections') return 'the sections';
       return knownHandle(run, place.unit === 'bullets' ? place.entryId : place.sectionId);
     }
     case 'add': {

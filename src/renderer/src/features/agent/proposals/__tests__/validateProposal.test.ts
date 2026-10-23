@@ -127,3 +127,19 @@ describe('validateProposal, added text and lines', () => {
     ).toBe('changed-since-read');
   });
 });
+
+describe('validateProposal, whole entries and sections', () => {
+  it('anchors on a heading or label, and refuses leaving what is already off the page', () => {
+    const doc = makeResumeWithLines();
+    const leave = (before: string): ProposalChange => ({
+      kind: 'select',
+      place: { unit: 'section', sectionId: 's3' },
+      before,
+      selected: false,
+    });
+    expect(validateProposal(doc, leave('Skills'))).toBeNull();
+    expect(validateProposal(doc, leave('Tools'))?.code).toBe('changed-since-read');
+    doc.sections[2].hidden = true;
+    expect(validateProposal(doc, leave('Skills'))?.code).toBe('unchanged');
+  });
+});
