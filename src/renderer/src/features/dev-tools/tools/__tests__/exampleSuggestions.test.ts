@@ -27,8 +27,10 @@ describe('the example suggestions', () => {
       'add',
       'entry',
       'merge',
+      'rename',
       'reorder',
       'rewrite',
+      'section',
       'select',
       'split',
     ]);

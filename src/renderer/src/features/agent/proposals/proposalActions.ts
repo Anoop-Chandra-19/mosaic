@@ -11,7 +11,13 @@ import type {
 import { useProposalStore } from '@/stores/proposalStore';
 import { getResumeSnapshot, useResumeStore } from '@/stores/resumeStore';
 import { checkProposal } from './checkProposal';
-import { findEntry, findTextItem, isProposalCurrent, readAddedAmong } from './proposalAnchor';
+import {
+  findEntry,
+  findSection,
+  findTextItem,
+  isProposalCurrent,
+  readAddedAmong,
+} from './proposalAnchor';
 import { watchProposalAnchors } from './recheckProposals';
 import { canKeepProposal, resolveChange, reviewedRequestText } from './reviewedChange';
 import { validateProposal, type ProposalRefusal } from './validateProposal';
@@ -193,12 +199,14 @@ export function editProposalFact(id: string, fact: EntryFact, text: string): boo
   });
 }
 
-/** What a rewrite or merge would replace now: its text in the draft. */
+/** What a rewrite, merge or rename would replace now: its text in the draft. */
 function readRebasedBefore(change: ProposalChange): ProposalReview['rebasedBefore'] | null {
   const doc = getResumeSnapshot();
   switch (change.kind) {
     case 'rewrite':
       return findTextItem(doc, change.place)?.text ?? null;
+    case 'rename':
+      return findSection(doc, change.sectionId)?.label ?? null;
     case 'merge': {
       const bullets = findEntry(doc, change.sectionId, change.entryId)?.bullets;
       const textOf = (bulletId: string) => bullets?.find((bullet) => bullet.id === bulletId)?.text;
@@ -229,8 +237,15 @@ export function cancelPlacedLast(id: string): boolean {
   return reviewProposal(id, withReview({ placedAfterId: undefined }, 'pending'));
 }
 
+/** A new section's heading in the user's words: not a fact, so nothing to confirm. */
+export function renameProposedSection(id: string, label: string): boolean {
+  const sectionLabel = label.trim();
+  if (!sectionLabel) return false;
+  return reviewProposal(id, withReview({ sectionLabel }));
+}
+
 /**
- * An out-of-date rewrite or merge, reviewed against the text as the user left it:
+ * An out-of-date rewrite, merge or rename, reviewed against the text as the user left it:
  * it waits again, and keeping it replaces their edit.
  */
 export function reviewStaleProposalAnyway(id: string): boolean {

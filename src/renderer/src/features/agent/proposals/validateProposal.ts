@@ -41,6 +41,8 @@ const CHANGE_KINDS: ReadonlySet<ProposalChangeKind> = new Set<ProposalChangeKind
   'select',
   'add',
   'entry',
+  'section',
+  'rename',
 ]);
 
 const isPermutation = (before: string[], after: string[]) =>
@@ -50,10 +52,23 @@ const isPermutation = (before: string[], after: string[]) =>
 
 const hasText = (text: string | undefined) => !!text?.trim();
 
+function findSectionProblem(
+  change: Extract<ProposalChange, { kind: 'section' }>
+): ProposalRefusalCode | null {
+  if (!hasText(change.section.label)) return 'empty-text';
+  const { contents } = change;
+  const isFilled =
+    contents.layout === 'lines'
+      ? contents.lines.some(hasText)
+      : Object.values(contents.entry.frame).some(hasText) || contents.entry.bullets.some(hasText);
+  return isFilled ? null : 'empty-text';
+}
+
 /** What is wrong with the change itself, whatever the draft says. */
 function findShapeProblem(doc: ResumeData, change: ProposalChange): ProposalRefusalCode | null {
   switch (change.kind) {
     case 'rewrite':
+    case 'rename':
       if (!hasText(change.after)) return 'empty-text';
       return change.after === change.before ? 'unchanged' : null;
     case 'split': {
@@ -78,6 +93,8 @@ function findShapeProblem(doc: ResumeData, change: ProposalChange): ProposalRefu
       return Object.values(change.frame).some(hasText) || change.bullets.some(hasText)
         ? null
         : 'empty-text';
+    case 'section':
+      return findSectionProblem(change);
   }
 }
 

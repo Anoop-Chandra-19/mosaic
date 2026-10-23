@@ -1,4 +1,4 @@
-import type { ResumeEntry } from './resume';
+import type { ResumeEntry, SectionKind, SectionLayout } from './resume';
 
 /*
  * What the assistant proposes. Nothing here changes the draft: a proposal waits until the
@@ -27,6 +27,12 @@ export type OrderPlace =
   | { unit: 'sections' }
   | { unit: 'items'; sectionId: string }
   | { unit: 'bullets'; sectionId: string; entryId: string };
+
+/** A new entry's facts and its bullets, which the user confirms field by field. */
+export interface EntryDraft {
+  frame: Pick<ResumeEntry, EntryFact>;
+  bullets: string[];
+}
 
 /**
  * One change, anchored to the text it was made against (`before`): the text the model
@@ -86,6 +92,21 @@ export type ProposalChange =
       /** Facts the user confirms field by field before it applies. */
       frame: Pick<ResumeEntry, EntryFact>;
       bullets: string[];
+    }
+  | {
+      kind: 'section';
+      /** The section it goes after; null: it goes first. */
+      afterSectionId: string | null;
+      /** A preset of the Add section menu, or `custom` with the layout its contents need. */
+      section: { kind: SectionKind; layout: SectionLayout; label: string };
+      /** Never empty: an entry for an entries section, lines for a lines section. */
+      contents: { layout: 'entries'; entry: EntryDraft } | { layout: 'lines'; lines: string[] };
+    }
+  | {
+      kind: 'rename';
+      sectionId: string;
+      before: string;
+      after: string;
     };
 
 /** A new entry's facts, which only the user can vouch for. */
@@ -99,8 +120,10 @@ export type DropReason = 'inaccurate' | 'overstated' | 'wrongTone' | 'keepMyWord
  * so "back to the assistant's wording" and "use it anyway" can be undone.
  */
 export interface ProposalReview {
-  /** Their own wording for a rewrite, merge or added text. */
+  /** Their own wording for a rewrite, merge, added text or heading. */
   userText?: string;
+  /** A new section's heading as they changed it: their words, nothing to confirm. */
+  sectionLabel?: string;
   /**
    * Added text whose place is gone, put last by them instead: the item it now follows
    * (null when the list is empty).
@@ -110,7 +133,7 @@ export interface ProposalReview {
   filledNumber?: string;
   /** They took the version that needs no number. */
   isWithoutNumber?: boolean;
-  /** A new entry's facts they confirmed. */
+  /** A new entry's facts they confirmed, alone or as a new section's first. */
   confirmedFacts?: EntryFact[];
   /** A new entry's facts as they corrected them. */
   factEdits?: Partial<Record<EntryFact, string>>;

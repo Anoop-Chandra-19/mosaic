@@ -234,3 +234,53 @@ describe('whole entries and sections', () => {
     expect(printed).toEqual(['Skills', 'Experience', 'Summary']);
   });
 });
+
+describe('new sections and headings', () => {
+  const printed = (doc: ReturnType<typeof makeResume>) =>
+    [...doc.sections].sort((a, b) => a.order - b.order).map((section) => section.label);
+
+  it('adds a section after the one named, with its first entry or its lines', () => {
+    const entries: ProposalChange = {
+      kind: 'section',
+      afterSectionId: 's1',
+      section: { kind: 'certifications', layout: 'entries', label: 'Certifications' },
+      contents: {
+        layout: 'entries',
+        entry: {
+          frame: { title: 'Solutions Architect', organization: 'Amazon Web Services' },
+          bullets: [' '],
+        },
+      },
+    };
+    const lines: ProposalChange = {
+      kind: 'section',
+      afterSectionId: null,
+      section: { kind: 'custom', layout: 'lines', label: 'Talks' },
+      contents: { layout: 'lines', lines: ['Postgres at scale, 2024', ''] },
+    };
+    const { doc } = applyProposalsToResume(
+      makeResumeWithLines(),
+      [makeProposal(entries, 'p1'), makeProposal(lines, 'p2')],
+      sequentialIds()
+    );
+    expect(printed(doc)).toEqual(['Talks', 'Experience', 'Certifications', 'Summary', 'Skills']);
+    const talks = doc.sections.find((section) => section.label === 'Talks')!;
+    expect(talks).toMatchObject({ kind: 'custom', layout: 'lines' });
+    expect(talks.items.map((item) => item.text)).toEqual(['Postgres at scale, 2024']);
+    const certifications = doc.sections.find((section) => section.label === 'Certifications')!;
+    expect(certifications.items).toMatchObject([
+      { title: 'Solutions Architect', organization: 'Amazon Web Services', bullets: [] },
+    ]);
+  });
+
+  it('renames a heading', () => {
+    const rename: ProposalChange = {
+      kind: 'rename',
+      sectionId: 's1',
+      before: 'Experience',
+      after: 'Work Experience',
+    };
+    const { doc } = applyProposalsToResume(makeResume(), [makeProposal(rename, 'p1')]);
+    expect(doc.sections[0].label).toBe('Work Experience');
+  });
+});

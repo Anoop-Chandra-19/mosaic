@@ -143,3 +143,22 @@ describe('validateProposal, whole entries and sections', () => {
     expect(validateProposal(doc, leave('Skills'))?.code).toBe('unchanged');
   });
 });
+
+describe('validateProposal, new sections and headings', () => {
+  it('refuses a new section with nothing in it, and a rename that changes nothing', () => {
+    const empty: ProposalChange = {
+      kind: 'section',
+      afterSectionId: 's1',
+      section: { kind: 'custom', layout: 'lines', label: 'Talks' },
+      contents: { layout: 'lines', lines: [' '] },
+    };
+    expect(validateProposal(makeResume(), empty)?.code).toBe('empty-text');
+    const same: ProposalChange = {
+      kind: 'rename',
+      sectionId: 's1',
+      before: 'Experience',
+      after: 'Experience',
+    };
+    expect(validateProposal(makeResume(), same)?.code).toBe('unchanged');
+  });
+});

@@ -1,4 +1,4 @@
-import type { EntryFact, Proposal, ProposalChange } from '@shared/types/agentProposal';
+import type { EntryDraft, EntryFact, Proposal, ProposalChange } from '@shared/types/agentProposal';
 import { GAP_MARK } from './checks/unfilledGap';
 
 const ENTRY_FACTS: EntryFact[] = ['title', 'organization', 'location', 'dates'];
@@ -12,6 +12,11 @@ function reviewedText(proposal: Proposal, after: string): string {
   }
   return review.filledNumber ? after.replace(GAP_MARK, review.filledNumber) : after;
 }
+
+const withFactEdits = (entry: EntryDraft, proposal: Proposal): EntryDraft => ({
+  ...entry,
+  frame: { ...entry.frame, ...proposal.review.factEdits },
+});
 
 /**
  * The change as the user reviewed it: what checks, staleness and apply all read, so they
@@ -34,11 +39,33 @@ export function resolveChange(proposal: Proposal): ProposalChange {
       const afterId = review.placedAfterId !== undefined ? review.placedAfterId : change.afterId;
       return { ...change, afterId, text: reviewedText(proposal, change.text) };
     }
+    case 'rename': {
+      const before =
+        typeof review.rebasedBefore === 'string' ? review.rebasedBefore : change.before;
+      return { ...change, before, after: review.userText ?? change.after };
+    }
     case 'entry':
-      return { ...change, frame: { ...change.frame, ...review.factEdits } };
+      return { ...change, ...withFactEdits(change, proposal) };
+    case 'section': {
+      const section = { ...change.section, label: review.sectionLabel ?? change.section.label };
+      const contents =
+        change.contents.layout === 'entries'
+          ? { ...change.contents, entry: withFactEdits(change.contents.entry, proposal) }
+          : change.contents;
+      return { ...change, section, contents };
+    }
     default:
       return change;
   }
+}
+
+/** The new entry a suggestion brings, alone or as a new section's first: its facts to confirm. */
+export function readEntryDraft(change: ProposalChange): EntryDraft | null {
+  if (change.kind === 'entry') return change;
+  if (change.kind === 'section' && change.contents.layout === 'entries') {
+    return change.contents.entry;
+  }
+  return null;
 }
 
 /** What the user asked, plus every word they wrote in review: their own numbers are theirs. */
@@ -48,10 +75,10 @@ export function reviewedRequestText({ requestText, review }: Proposal): string {
 
 /** A new entry's facts that have text and that the user hasn't confirmed yet. */
 export function findUnconfirmedFacts(proposal: Proposal): EntryFact[] {
-  const change = resolveChange(proposal);
-  if (change.kind !== 'entry') return [];
+  const entry = readEntryDraft(resolveChange(proposal));
+  if (!entry) return [];
   const confirmed = proposal.review.confirmedFacts ?? [];
-  return ENTRY_FACTS.filter((fact) => change.frame[fact]?.trim() && !confirmed.includes(fact));
+  return ENTRY_FACTS.filter((fact) => entry.frame[fact]?.trim() && !confirmed.includes(fact));
 }
 
 /** Can be kept: current, and with every fact confirmed. A gap still to fill is held back on apply. */

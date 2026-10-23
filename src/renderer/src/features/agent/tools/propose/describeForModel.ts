@@ -33,6 +33,10 @@ export function describeTarget(run: AgentToolRun, change: ProposalChange): strin
     }
     case 'entry':
       return `a new entry in ${knownHandle(run, change.sectionId)}`;
+    case 'section':
+      return `a new section, ${change.section.label}`;
+    case 'rename':
+      return `the heading of ${knownHandle(run, change.sectionId)}`;
   }
 }
 
@@ -58,6 +62,16 @@ export function describeResult(run: AgentToolRun, change: ProposalChange): strin
       const heading = formatEntryHeading(change.frame) || 'an untitled entry';
       return `It would add ${heading}, with ${change.bullets.length} bullets.`;
     }
+    case 'section': {
+      const { contents } = change;
+      const holds =
+        contents.layout === 'lines'
+          ? `${contents.lines.length} lines`
+          : `its first entry, ${formatEntryHeading(contents.entry.frame) || 'untitled'}`;
+      return `It would add a ${change.section.label} section with ${holds}.`;
+    }
+    case 'rename':
+      return `The heading would read: "${change.after}"`;
   }
 }
 

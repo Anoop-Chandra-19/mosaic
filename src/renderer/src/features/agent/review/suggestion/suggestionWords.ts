@@ -44,6 +44,8 @@ export function describeStaleChange(draft: ResumeData, change: ProposalChange): 
     case 'split':
     case 'merge':
       return TEXT_STALE.bullet;
+    case 'rename':
+      return 'You renamed this heading after it was suggested.';
     case 'add': {
       const noun = change.place.unit === 'line' ? 'line' : 'bullet';
       return `The ${noun} it was to follow is gone, so this has no place to go.`;
@@ -69,5 +71,7 @@ export function describeStaleChange(draft: ResumeData, change: ProposalChange): 
     }
     case 'entry':
       return 'The entry it was to follow is gone, so this has no place to go.';
+    case 'section':
+      return 'The section it was to follow is gone, so this has no place to go.';
   }
 }

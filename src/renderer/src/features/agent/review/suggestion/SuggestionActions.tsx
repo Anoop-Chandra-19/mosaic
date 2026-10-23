@@ -93,6 +93,7 @@ function readStaleRecovery(proposal: Proposal) {
   switch (proposal.change.kind) {
     case 'rewrite':
     case 'merge':
+    case 'rename':
       return {
         label: 'Use it anyway…',
         title: 'Compare with your edit, then decide',
