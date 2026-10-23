@@ -1,6 +1,7 @@
 import type { Proposal, ProposalChange } from '@shared/types/agentProposal';
 import type { ResumeData } from '@shared/types/resume';
 import { applyProposalsToResume, sortForApply } from '../../proposals/applyProposalsToResume';
+import { findMovedIds } from '../../proposals/findMovedIds';
 import { readShowPlaceId, readTextPlaceId } from '../../proposals/proposalAnchor';
 import { resolveChange } from '../../proposals/reviewedChange';
 
@@ -54,15 +55,13 @@ function readMarkedIds(change: ProposalChange): string[] {
   }
 }
 
-/** The items a reorder moves, by id, for the "moved 2→1" chips. */
+/** The items a reorder moves, by id, for the "moved 2→1" chips: not the ones it only shifts. */
 function readMoves(proposal: Proposal, change: ProposalChange): [string, SuggestionMove][] {
   if (change.kind !== 'reorder') return [];
-  return change.after
-    .map((id, index): [string, SuggestionMove] => [
-      id,
-      { proposal, from: change.before.indexOf(id) + 1, to: index + 1 },
-    ])
-    .filter(([, { from, to }]) => from !== to);
+  return findMovedIds(change.before, change.after).map((id) => [
+    id,
+    { proposal, from: change.before.indexOf(id) + 1, to: change.after.indexOf(id) + 1 },
+  ]);
 }
 
 /** A hide stays on the page, struck, since the review is about what it takes away. */

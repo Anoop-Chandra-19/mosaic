@@ -42,8 +42,24 @@ function withGaps(text: ReactNode): ReactNode {
   ]);
 }
 
+/** Where a mark's flag dot sits: past a bullet's marker, or just before a line or heading. */
+export type FlagGutter = 'bullet' | 'line';
+
+const FLAG_GUTTER_CLASSES: Record<FlagGutter, string> = {
+  bullet: '-left-7.75',
+  line: '-left-3',
+};
+
 /** A suggestion's mark on the page: click it to read it in the inspector. */
-export function SuggestionMark({ mark, children }: { mark: Mark; children: ReactNode }) {
+export function SuggestionMark({
+  mark,
+  gutter = 'bullet',
+  children,
+}: {
+  mark: Mark;
+  gutter?: FlagGutter;
+  children: ReactNode;
+}) {
   const { selectedId, select } = use(SuggestionSelection);
   const { proposal, look } = mark;
   const state = readSuggestionState(proposal);
@@ -64,7 +80,8 @@ export function SuggestionMark({ mark, children }: { mark: Mark; children: React
         select(proposal.id);
       }}
       className={cn(
-        'relative cursor-pointer rounded-[0.125rem] border-b-[1.5px] px-px text-inherit transition-colors duration-100 group-data-landing/review:animate-mark-in motion-reduce:animate-none',
+        // The scroll margin keeps a selected mark clear of the floating apply bar.
+        'relative cursor-pointer scroll-mb-20 rounded-[0.125rem] border-b-[1.5px] px-px text-inherit transition-colors duration-100 group-data-landing/review:animate-mark-in motion-reduce:animate-none',
         LOOK_CLASSES[look],
         STATE_CLASSES[state],
         isCurrent && CURRENT_CLASSES[look],
@@ -80,7 +97,8 @@ export function SuggestionMark({ mark, children }: { mark: Mark; children: React
         <span
           aria-hidden
           className={cn(
-            'absolute top-1 -left-7.75 size-1.5 group-data-landing/review:animate-flag-in motion-reduce:animate-none',
+            'absolute top-1 size-1.5 group-data-landing/review:animate-flag-in motion-reduce:animate-none',
+            FLAG_GUTTER_CLASSES[gutter],
             needsNumber(proposal)
               ? 'rounded-[0.0625rem] bg-white shadow-[inset_0_0_0_1.5px_var(--paper-flag)]'
               : 'rounded-full bg-paper-flag shadow-[0_0_0_2px_white]'

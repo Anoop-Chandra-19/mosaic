@@ -2,6 +2,7 @@ import type { Proposal, ProposalChange } from '@shared/types/agentProposal';
 import { useAgentSettingsStore } from '@/stores/agentSettingsStore';
 import { selectTemplateProposals, useProposalStore } from '@/stores/proposalStore';
 import { useResumeStore } from '@/stores/resumeStore';
+import { findMovedIds } from '../proposals/findMovedIds';
 import { readShowPlaceId, readTextPlaceId } from '../proposals/proposalAnchor';
 
 /** The suggestion an editor bullet, line, entry or section points to, and why. */
@@ -48,7 +49,7 @@ function readDots(change: ProposalChange): [string, string][] {
       return [];
     case 'reorder': {
       if (change.place.unit !== 'sections') return [];
-      const moved = change.after.filter((id, index) => change.before[index] !== id);
+      const moved = findMovedIds(change.before, change.after);
       return moved.map((id) => [id, 'A suggestion moves this section.']);
     }
   }
