@@ -13,17 +13,17 @@ test('suggestions are reviewed from the status bar, kept and dropped with the ke
   const { page, errors } = mosaic();
   await stageExampleSuggestions(page);
 
-  await page.getByRole('button', { name: '12 suggestions waiting' }).click();
+  await page.getByRole('button', { name: '17 suggestions waiting' }).click();
   const review = page.getByRole('region', { name: 'Suggestion review' });
-  await expect(review.getByRole('heading', { name: 'Reviewing 12 suggestions' })).toBeVisible();
+  await expect(review.getByRole('heading', { name: 'Reviewing 17 suggestions' })).toBeVisible();
   const inspector = review.getByRole('complementary', { name: 'Suggestions' });
-  await expect(inspector.getByText('1 / 12')).toBeVisible();
+  await expect(inspector.getByText('1 / 17')).toBeVisible();
   // The opening transition holds input while it runs, so the keys wait for it.
   await page.waitForFunction(() => !document.documentElement.matches(':active-view-transition'));
 
   // Keep moves on to the next; drop stays.
   await page.keyboard.press('a');
-  await expect(inspector.getByText('2 / 12')).toBeVisible();
+  await expect(inspector.getByText('2 / 17')).toBeVisible();
   await page.keyboard.press('r');
   await expect(inspector.getByRole('button', { name: 'Dropped' })).toBeVisible();
   await page.keyboard.press('k');
@@ -31,10 +31,10 @@ test('suggestions are reviewed from the status bar, kept and dropped with the ke
 
   // Esc steps back to the list, then back to the draft, which nothing has touched.
   await page.keyboard.press('Escape');
-  await expect(inspector.getByText('12 suggestions', { exact: true })).toBeVisible();
+  await expect(inspector.getByText('17 suggestions', { exact: true })).toBeVisible();
   await page.keyboard.press('Escape');
   await expect(review).toBeHidden();
-  await expect(page.getByRole('button', { name: '11 suggestions waiting' })).toBeVisible();
+  await expect(page.getByRole('button', { name: '16 suggestions waiting' })).toBeVisible();
   await expect(page.getByText('Assisted in migrating billing to Postgres').first()).toBeVisible();
   expect(errors).toEqual([]);
 });
@@ -42,7 +42,7 @@ test('suggestions are reviewed from the status bar, kept and dropped with the ke
 test('a number is filled in, a rewrite put in your words, and a new entry confirmed fact by fact', async () => {
   const { page, errors } = mosaic();
   await stageExampleSuggestions(page);
-  await page.getByRole('button', { name: '12 suggestions waiting' }).click();
+  await page.getByRole('button', { name: '17 suggestions waiting' }).click();
   const review = page.getByRole('region', { name: 'Suggestion review' });
   const inspector = review.getByRole('complementary', { name: 'Suggestions' });
   const status = inspector.getByText(/^(waiting|kept)/).first();
@@ -84,23 +84,23 @@ test('a number is filled in, a rewrite put in your words, and a new entry confir
 test('what was kept applies as one step, which undo takes back to review', async () => {
   const { page, errors } = mosaic();
   await stageExampleSuggestions(page);
-  await page.getByRole('button', { name: '12 suggestions waiting' }).click();
+  await page.getByRole('button', { name: '17 suggestions waiting' }).click();
   const review = page.getByRole('region', { name: 'Suggestion review' });
   const inspector = review.getByRole('complementary', { name: 'Suggestions' });
   await inspector.getByRole('button', { name: 'Keep', exact: true }).click();
 
   await page.keyboard.press('Control+Enter');
   await expect(
-    inspector.getByRole('heading', { name: 'Applied 1 of 12 suggestions' })
+    inspector.getByRole('heading', { name: 'Applied 1 of 17 suggestions' })
   ).toBeVisible();
   await inspector.getByRole('button', { name: 'Undo apply' }).click();
-  await expect(review.getByRole('heading', { name: 'Reviewing 12 suggestions' })).toBeVisible();
+  await expect(review.getByRole('heading', { name: 'Reviewing 17 suggestions' })).toBeVisible();
   await expect(review.getByRole('button', { name: 'Apply 1 suggestion' })).toBeVisible();
 
   await review.getByRole('button', { name: 'Apply 1 suggestion' }).click();
   await inspector.getByRole('button', { name: 'Back to draft' }).click();
   await expect(review).toBeHidden();
-  await expect(page.getByRole('button', { name: '11 suggestions waiting' })).toBeVisible();
+  await expect(page.getByRole('button', { name: '16 suggestions waiting' })).toBeVisible();
   await expect(
     page.getByRole('complementary').getByText('Led the billing migration to Postgres')
   ).toBeVisible();
@@ -117,23 +117,23 @@ test('editing a bullet puts its suggestion out of date, undo brings it back, and
   await page.keyboard.type(' quickly');
   await page.keyboard.press('Enter');
   await expect(
-    page.getByRole('button', { name: /11 suggestions waiting\s*· 1 out of date/ })
+    page.getByRole('button', { name: /16 suggestions waiting\s*· 1 out of date/ })
   ).toBeVisible();
   await page.keyboard.press('Control+z');
-  await expect(page.getByRole('button', { name: '12 suggestions waiting' })).toBeVisible();
+  await expect(page.getByRole('button', { name: '17 suggestions waiting' })).toBeVisible();
 
   await editor.getByRole('button', { name: 'Review its suggestion' }).nth(1).click();
   const inspector = page
     .getByRole('region', { name: 'Suggestion review' })
     .getByRole('complementary', { name: 'Suggestions' });
-  await expect(inspector.getByText('2 / 12')).toBeVisible();
+  await expect(inspector.getByText('2 / 17')).toBeVisible();
   expect(errors).toEqual([]);
 });
 
 test('applying with a name keeps it in history under that name', async () => {
   const { page, errors } = mosaic();
   await stageExampleSuggestions(page);
-  await page.getByRole('button', { name: '12 suggestions waiting' }).click();
+  await page.getByRole('button', { name: '17 suggestions waiting' }).click();
   const review = page.getByRole('region', { name: 'Suggestion review' });
   const inspector = review.getByRole('complementary', { name: 'Suggestions' });
   await inspector.getByRole('button', { name: 'Keep', exact: true }).click();

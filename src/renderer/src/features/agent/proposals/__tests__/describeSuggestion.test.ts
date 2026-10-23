@@ -1,7 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import type { ProposalChange } from '@shared/types/agentProposal';
 import { describeLandedSuggestions, placeSuggestion } from '../describeSuggestion';
-import { makeProposal, makeResume, rewrite } from './proposalFixtures';
+import {
+  addText,
+  makeProposal,
+  makeResume,
+  makeResumeWithLines,
+  rewrite,
+} from './proposalFixtures';
 
 const doc = makeResume();
 const B3 = 'Wrote the on-call runbook for the payments team';
@@ -23,7 +29,7 @@ const ENTRY: ProposalChange = {
 };
 const OSLO: ProposalChange = {
   ...rewrite('b4', 'Built tile caching for the Oslo office', 'Built the Oslo tile cache'),
-  entryId: 'e2',
+  place: { unit: 'bullet', sectionId: 's1', entryId: 'e2', bulletId: 'b4' },
 };
 
 describe('placeSuggestion', () => {
@@ -55,5 +61,34 @@ describe('describeLandedSuggestions', () => {
     );
     const three = [...two, makeProposal(ENTRY, 'p3')];
     expect(describeLandedSuggestions(doc, three)).toBe('3 suggestions in 3 places');
+  });
+});
+
+describe('added text and lines', () => {
+  const lines = makeResumeWithLines();
+  const summaryLine = {
+    kind: 'rewrite' as const,
+    place: { unit: 'line' as const, sectionId: 's2', lineId: 'l1' },
+    before: 'Backend engineer for six years.',
+    after: 'Backend engineer for six years, mostly payments.',
+  };
+
+  it('names new text by where it goes, and a line by its place in the section', () => {
+    expect(placeSuggestion(lines, addText('bullet', 'b2', 'x'))).toEqual([
+      'Experience',
+      'Harbor Freight Labs',
+      'new bullet, after bullet 2',
+    ]);
+    expect(placeSuggestion(lines, addText('line', null, 'x'))).toEqual([
+      'Skills',
+      'new line, first',
+    ]);
+    expect(placeSuggestion(lines, summaryLine)).toEqual(['Summary', 'line 1']);
+  });
+
+  it('titles a version by the section when a line, not an entry, landed', () => {
+    expect(describeLandedSuggestions(lines, [makeProposal(summaryLine, 'p1')])).toBe(
+      'Rewrite in Summary, line 1'
+    );
   });
 });

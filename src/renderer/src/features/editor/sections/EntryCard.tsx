@@ -10,6 +10,8 @@ import {
   Text,
 } from '@/components/ui-kit';
 import { ConfirmDeleteDialog } from '@/components/ConfirmDeleteDialog';
+import { SuggestionDot } from '@/features/agent/review/SuggestionDot';
+import { useSuggestionDot } from '@/features/agent/review/useSuggestionDot';
 import { matchesAction } from '@/features/shortcuts/shortcutBindings';
 import { isTypingField } from '@/lib/keyboardShortcuts';
 import { ListMotionContext, useSwapMotion } from '@/lib/motion/useListMotion';
@@ -85,6 +87,8 @@ export function EntryCard({
   const update = (patch: Partial<ResumeEntry>) => updateEntry(sectionId, entry.id, patch);
   const paperSize = useUiStore((s) => s.paperSize);
   const headingLines = isTextOnly ? null : countHeadingLines(entry, paperSize);
+  // A line's own suggestion, or an entry's: leaving the page, coming back, a new bullet.
+  const suggestion = useSuggestionDot(entry.id);
 
   const { motion, listRef, shownIds, isMerging, bulletRowProps } = useSplitAndMergeBullets(
     sectionId,
@@ -143,6 +147,7 @@ export function EntryCard({
         <div className="min-w-0 flex-1">
           {isTextOnly ? (
             <div className="flex pr-8.5">
+              {suggestion && <SuggestionDot dot={suggestion} className="shrink-0" />}
               <InlineEditField
                 value={entry.text ?? ''}
                 onSave={(v) => update({ text: v })}
@@ -153,6 +158,7 @@ export function EntryCard({
           ) : (
             <div className="flex flex-col gap-0.5 pr-8.5">
               <div className="flex min-w-0">
+                {suggestion && <SuggestionDot dot={suggestion} className="shrink-0" />}
                 <InlineEditField
                   value={entry.title ?? ''}
                   onSave={(v) => update({ title: v })}

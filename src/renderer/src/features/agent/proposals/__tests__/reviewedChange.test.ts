@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { ProposalChange, ProposalReview } from '@shared/types/agentProposal';
 import { findUnconfirmedFacts, resolveChange, reviewedRequestText } from '../reviewedChange';
-import { makeProposal, rewrite } from './proposalFixtures';
+import { addText, makeProposal, rewrite } from './proposalFixtures';
 
 const B3 = 'Wrote the on-call runbook for the payments team';
 const GAPPED: ProposalChange = {
@@ -71,5 +71,18 @@ describe('reviewedRequestText', () => {
   it('counts the user’s own words and number as known', () => {
     const proposal = { ...reviewed(GAPPED, { filledNumber: '30' }), requestText: 'Tighten it' };
     expect(reviewedRequestText(proposal)).toBe('Tighten it\n30');
+  });
+});
+
+describe('resolveChange, added text', () => {
+  it("takes the user's wording, and the place they chose when its own was gone", () => {
+    const proposal = {
+      ...makeProposal(addText('bullet', 'b9', 'Ran the rotation'), 'p1'),
+      review: { userText: 'Ran the on-call rotation', placedAfterId: 'b3' },
+    };
+    expect(resolveChange(proposal)).toMatchObject({
+      afterId: 'b3',
+      text: 'Ran the on-call rotation',
+    });
   });
 });

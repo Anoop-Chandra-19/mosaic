@@ -19,11 +19,19 @@ describe('the example suggestions', () => {
     const kinds = new Set(EXAMPLE_SUGGESTIONS.map(({ change }) => change.kind));
     const flags = new Set(
       EXAMPLE_SUGGESTIONS.flatMap(({ change }) =>
-        checkProposal(change, EXAMPLE_REQUEST).map((flag) => flag.kind)
+        checkProposal(createExampleResume(), change, EXAMPLE_REQUEST).map((flag) => flag.kind)
       )
     );
 
-    expect([...kinds].sort()).toEqual(['entry', 'merge', 'reorder', 'rewrite', 'select', 'split']);
+    expect([...kinds].sort()).toEqual([
+      'add',
+      'entry',
+      'merge',
+      'reorder',
+      'rewrite',
+      'select',
+      'split',
+    ]);
     expect([...flags].sort()).toEqual([
       'calculatedNumbers',
       'claimsMore',

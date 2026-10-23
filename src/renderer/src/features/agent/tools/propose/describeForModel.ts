@@ -1,5 +1,6 @@
 import type { ProposalChange, ProposalFlag, ProposalFlagKind } from '@shared/types/agentProposal';
 import { formatEntryHeading } from '@shared/resume/entryHeading';
+import { readTextPlaceId } from '@/features/agent/proposals/proposalAnchor';
 import type { AgentToolRun } from '../agentToolRun';
 
 /*
@@ -13,13 +14,21 @@ const knownHandle = (run: AgentToolRun, id: string) => run.handles.handleById.ge
 export function describeTarget(run: AgentToolRun, change: ProposalChange): string {
   switch (change.kind) {
     case 'rewrite':
-    case 'split':
     case 'select':
+      return knownHandle(run, readTextPlaceId(change.place));
+    case 'split':
       return knownHandle(run, change.bulletId);
     case 'merge':
       return `${knownHandle(run, change.firstId)} and ${knownHandle(run, change.secondId)}`;
-    case 'reorder':
-      return knownHandle(run, change.entryId ?? change.sectionId);
+    case 'reorder': {
+      const { place } = change;
+      return knownHandle(run, place.unit === 'bullets' ? place.entryId : place.sectionId);
+    }
+    case 'add': {
+      const { place } = change;
+      const into = place.unit === 'bullet' ? place.entryId : place.sectionId;
+      return `a new ${place.unit} in ${knownHandle(run, into)}`;
+    }
     case 'entry':
       return `a new entry in ${knownHandle(run, change.sectionId)}`;
   }
@@ -41,6 +50,8 @@ export function describeResult(run: AgentToolRun, change: ProposalChange): strin
       return change.selected ? 'It would be back on the page.' : 'It would be left off the page.';
     case 'reorder':
       return `The new order: ${change.after.map((id) => knownHandle(run, id)).join(', ')}`;
+    case 'add':
+      return `It would read: "${change.text}"`;
     case 'entry': {
       const heading = formatEntryHeading(change.frame) || 'an untitled entry';
       return `It would add ${heading}, with ${change.bullets.length} bullets.`;

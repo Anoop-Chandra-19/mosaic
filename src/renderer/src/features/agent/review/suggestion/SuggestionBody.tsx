@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
-import { Clock, Eye, EyeOff, Info, Move, Undo2 } from 'lucide-react';
-import { AppButton, Chip, Text, type TextVariant } from '@/components/ui-kit';
+import { Eye, EyeOff, Info, Move } from 'lucide-react';
+import { AppButton, Chip, Text } from '@/components/ui-kit';
 import { cn } from '@/lib/utils';
 import type { Proposal, ProposalChange, ProposalChangeKind } from '@shared/types/agentProposal';
 import type { ResumeData } from '@shared/types/resume';
@@ -12,12 +12,16 @@ import {
   fillProposalNumber,
 } from '../../proposals/proposalActions';
 import { resolveChange } from '../../proposals/reviewedChange';
+import { AddedTextBody } from './AddedTextBody';
+import { BackLink, Caption, CaptionTag, Lines, TagLine } from './BodyParts';
 import { readFlaggedWords, readLostWords } from './describeFlag';
 import { EntryFacts } from './EntryFacts';
 import { GapField } from './GapField';
+import { StaleBody } from './StaleBody';
 import { SuggestionEditor } from './SuggestionEditor';
 import { SuggestionFlags } from './SuggestionFlags';
 import { FlaggedText, MarkedText } from './SuggestionText';
+import { nameEntry, nameTextPlace, type TextNoun } from './suggestionWords';
 
 /*
  * One suggestion, read beside the user's words: shared by the inspector and the Compare all
@@ -26,7 +30,7 @@ import { FlaggedText, MarkedText } from './SuggestionText';
 
 export interface SuggestionBodyProps {
   proposal: Proposal;
-  /** The draft as it is now, for what a bullet says today. */
+  /** The draft as it is now, for what its text says today. */
   draft: ResumeData;
   isEditing: boolean;
   onEditingChange: (isEditing: boolean) => void;
@@ -44,58 +48,9 @@ const KIND_BODIES: Record<ProposalChangeKind, (props: SuggestionBodyProps) => Re
   split: SplitBody,
   reorder: ReorderBody,
   select: SelectBody,
+  add: AddedTextBody,
   entry: ({ proposal }) => <EntryFacts proposal={proposal} />,
 };
-
-function Caption({ children }: { children: ReactNode }) {
-  return (
-    <Text as="p" variant="tag" className="mt-3 mb-1.5 flex items-center gap-1.75 first:mt-0.5">
-      {children}
-    </Text>
-  );
-}
-
-/** A small label beside a caption: "in your words", "same words". */
-function CaptionTag({ children }: { children: ReactNode }) {
-  return (
-    <span className="inline-flex h-4 items-center rounded-[0.25rem] bg-line px-1.25 text-ink-soft">
-      {children}
-    </span>
-  );
-}
-
-interface LinesProps {
-  lines: ReactNode[];
-  isNumbered: boolean;
-  variant: TextVariant;
-  className?: string;
-}
-
-/** Lines of the user's own text, numbered when there are several. */
-function Lines({ lines, isNumbered, variant, className }: LinesProps) {
-  return lines.map((line, index) => (
-    <div key={index} className="flex items-start gap-1.75 [&+&]:mt-1">
-      {isNumbered && (
-        <Text variant="meta" className="min-w-2.5 text-ink-faint">
-          {index + 1}
-        </Text>
-      )}
-      <Text variant={variant} className={className}>
-        {line}
-      </Text>
-    </div>
-  ));
-}
-
-/** A quiet text button under a body: back to an earlier choice. */
-function BackLink({ onClick, children }: { onClick: () => void; children: ReactNode }) {
-  return (
-    <AppButton variant="quiet" size="xs" onClick={onClick} className="mt-1.5 -ml-2">
-      <Undo2 className="size-2.75" />
-      {children}
-    </AppButton>
-  );
-}
 
 /** What the suggestion writes before the gap is filled: the user's words, or the assistant's. */
 function readShownAfter({ change, review }: Proposal): string {
@@ -107,11 +62,19 @@ function readShownAfter({ change, review }: Proposal): string {
   return change.after;
 }
 
-function RewriteBody({ proposal, isEditing, onEditingChange }: SuggestionBodyProps) {
+/** "Now" names the text only where a bullet goes without saying. */
+const NOW_CAPTIONS: Record<TextNoun, string> = {
+  bullet: 'Now',
+  line: 'Now, this line',
+  summary: 'Now, your summary',
+};
+
+function RewriteBody({ proposal, draft, isEditing, onEditingChange }: SuggestionBodyProps) {
   const change = resolveChange(proposal);
   if (change.kind !== 'rewrite' && change.kind !== 'merge') return null;
   const { review, flags } = proposal;
   const isMerge = change.kind === 'merge';
+  const noun = isMerge ? 'bullet' : nameTextPlace(draft, change.place);
   const isRebased = review.rebasedBefore !== undefined;
   const before = isMerge ? change.before : [change.before];
   const lost = readLostWords(flags);
@@ -129,8 +92,8 @@ function RewriteBody({ proposal, isEditing, onEditingChange }: SuggestionBodyPro
 
   return (
     <>
-      {isRebased && <RebasedNote proposal={proposal} />}
-      <Caption>{isMerge ? 'Now, two bullets' : isRebased ? 'Your edited bullet' : 'Now'}</Caption>
+      {isRebased && <RebasedNote proposal={proposal} noun={noun} />}
+      <Caption>{readNowCaption(isMerge, isRebased, noun)}</Caption>
       <div>
         <Lines
           isNumbered={isMerge}
@@ -195,13 +158,18 @@ function RewriteBody({ proposal, isEditing, onEditingChange }: SuggestionBodyPro
   );
 }
 
-/** Out of date, but shown against the bullet as the user left it, on their say-so. */
-function RebasedNote({ proposal }: { proposal: Proposal }) {
+function readNowCaption(isMerge: boolean, isRebased: boolean, noun: TextNoun): string {
+  if (isMerge) return 'Now, two bullets';
+  return isRebased ? `Your edited ${noun}` : NOW_CAPTIONS[noun];
+}
+
+/** Out of date, but shown against the text as the user left it, on their say-so. */
+function RebasedNote({ proposal, noun }: { proposal: Proposal; noun: TextNoun }) {
   return (
     <div className="mb-1 flex flex-wrap items-start gap-x-1.75 gap-y-1 rounded-sm bg-line px-2.25 py-1.75">
       <Info className="mt-0.75 size-3 shrink-0 text-ink-muted" />
       <Text variant="secondary" className="min-w-45 flex-1 text-ink-soft">
-        Now shown against your edited bullet. Keeping it replaces your edit; undo and history still
+        Now shown against your edited {noun}. Keeping it replaces your edit; undo and history still
         have it.
       </Text>
       <AppButton
@@ -242,18 +210,19 @@ function SplitBody({ proposal }: SuggestionBodyProps) {
   );
 }
 
-/** What a reordered bullet or entry is called: its text, or the entry's name. */
+/** What a reordered item is called: a line's or bullet's text, or an entry's name. */
 function nameReordered(
   draft: ResumeData,
   change: Extract<ProposalChange, { kind: 'reorder' }>,
   id: string
 ) {
-  if (change.entryId) {
-    return findEntry(draft, change.sectionId, change.entryId)?.bullets.find((b) => b.id === id)
-      ?.text;
+  const { place } = change;
+  if (place.unit === 'bullets') {
+    return findEntry(draft, place.sectionId, place.entryId)?.bullets.find((b) => b.id === id)?.text;
   }
-  const entry = findSection(draft, change.sectionId)?.items.find((item) => item.id === id);
-  return entry?.organization?.trim() || entry?.title?.trim();
+  const section = findSection(draft, place.sectionId);
+  const item = section?.items.find((each) => each.id === id);
+  return section?.layout === 'lines' ? item?.text : nameEntry(item);
 }
 
 function ReorderBody({ proposal, draft }: SuggestionBodyProps) {
@@ -297,7 +266,6 @@ function ReorderBody({ proposal, draft }: SuggestionBodyProps) {
 function SelectBody({ proposal }: SuggestionBodyProps) {
   const { change } = proposal;
   if (change.kind !== 'select') return null;
-  const Icon = change.selected ? Eye : EyeOff;
   return (
     <>
       <Caption>Suggested</Caption>
@@ -308,86 +276,11 @@ function SelectBody({ proposal }: SuggestionBodyProps) {
       >
         {change.before}
       </Text>
-      <div className="mt-2 flex items-start gap-1.5 text-ink-muted">
-        <Icon className="mt-0.75 size-3 shrink-0" />
-        <Text variant="secondary" className="text-ink-muted">
-          {change.selected
-            ? 'Back on the page.'
-            : 'Off the page, still in your content. Show it again from the editor any time.'}
-        </Text>
-      </div>
-    </>
-  );
-}
-
-/** What the bullets an out-of-date suggestion is about say now. */
-function readTextNow(draft: ResumeData, change: ProposalChange): string | undefined {
-  if (!('entryId' in change) || !change.entryId) return undefined;
-  const bullets = findEntry(draft, change.sectionId, change.entryId)?.bullets ?? [];
-  const textOf = (id: string) => bullets.find((bullet) => bullet.id === id)?.text;
-  if (change.kind === 'merge') {
-    const texts = [textOf(change.firstId), textOf(change.secondId)].filter(Boolean);
-    return texts.length ? texts.join(' ') : undefined;
-  }
-  return 'bulletId' in change ? textOf(change.bulletId) : undefined;
-}
-
-const SUGGESTED_FOR: Partial<Record<ProposalChangeKind, (change: ProposalChange) => string>> = {
-  rewrite: (change) => (change.kind === 'rewrite' ? change.before : ''),
-  merge: (change) => (change.kind === 'merge' ? change.before.join(' ') : ''),
-  split: (change) => (change.kind === 'split' ? change.before : ''),
-  select: (change) => (change.kind === 'select' ? change.before : ''),
-};
-
-function StaleBody({ proposal, draft }: SuggestionBodyProps) {
-  const { change } = proposal;
-  const now = readTextNow(draft, change);
-  const suggestedFor = SUGGESTED_FOR[change.kind]?.(change);
-  const canUseAnyway = change.kind === 'rewrite' || change.kind === 'merge';
-  return (
-    <>
-      <div className="flex items-start gap-2 rounded-sm border border-line-strong bg-line px-2.5 py-2">
-        <Clock className="mt-0.75 size-3.25 shrink-0 text-ink-muted" />
-        <Text variant="secondary" className="text-foreground">
-          You changed this bullet after it was suggested, so it no longer fits your text.
-        </Text>
-      </div>
-      {now !== undefined && (
-        <>
-          <Caption>Your bullet now</Caption>
-          <Text as="p" variant="body">
-            {now}
-          </Text>
-        </>
-      )}
-      {suggestedFor !== undefined && (
-        <>
-          <Caption>It was suggested for</Caption>
-          <Text as="p" variant="body" className="text-ink-muted">
-            {suggestedFor}
-          </Text>
-        </>
-      )}
-      {canUseAnyway && (
-        <>
-          <Caption>Suggested</Caption>
-          <Text as="p" variant="body" className="text-ink-muted line-through">
-            {change.after}
-          </Text>
-          <Text
-            as="p"
-            variant="secondary"
-            className="mt-3 border-t border-line pt-2.5 text-ink-faint"
-          >
-            Still want it? <b className="font-control text-ink-soft">Use it anyway</b> puts it next
-            to your edited bullet so you can see what it would replace, then keep or drop it as
-            usual.
-          </Text>
-        </>
-      )}
-      <Text as="p" variant="secondary" className="mt-2 text-ink-faint">
-        An undo that brings back the old text makes it current again.
-      </Text>
+      <TagLine icon={change.selected ? Eye : EyeOff}>
+        {change.selected
+          ? 'Back on the page.'
+          : 'Off the page, still in your content. Show it again from the editor any time.'}
+      </TagLine>
     </>
   );
 }

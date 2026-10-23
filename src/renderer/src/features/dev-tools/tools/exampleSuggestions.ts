@@ -24,9 +24,7 @@ function rewrite(
 ): ProposalChange {
   return {
     kind: 'rewrite',
-    sectionId,
-    entryId,
-    bulletId,
+    place: { unit: 'bullet', sectionId, entryId, bulletId },
     before: textOf(bulletId),
     after,
     ...(withoutNumber && { gap: { withoutNumber } }),
@@ -76,9 +74,7 @@ export const createExampleSuggestions = (): StagedChange[] => [
     reason: 'Not experience a backend role screens for. It stays in your content.',
     change: {
       kind: 'select',
-      sectionId,
-      entryId: harbor,
-      bulletId: 'ex-b4',
+      place: { unit: 'bullet', sectionId, entryId: harbor, bulletId: 'ex-b4' },
       before: textOf('ex-b4'),
       selected: false,
     },
@@ -120,8 +116,7 @@ export const createExampleSuggestions = (): StagedChange[] => [
     reason: 'You asked for the AWS work first.',
     change: {
       kind: 'reorder',
-      sectionId,
-      entryId: lantern,
+      place: { unit: 'bullets', sectionId, entryId: lantern },
       before: ['ex-b5', 'ex-b6', 'ex-b7', 'ex-b8', 'ex-b9'],
       after: ['ex-b6', 'ex-b5', 'ex-b7', 'ex-b8', 'ex-b9'],
     },
@@ -150,6 +145,57 @@ export const createExampleSuggestions = (): StagedChange[] => [
         dates: '2021 – Present',
       },
       bullets: ['Mentor first-time contributors on civic data projects'],
+    },
+  },
+  {
+    source: 'add',
+    reason: 'You mentioned the rotation; it belongs with the runbook.',
+    change: {
+      kind: 'add',
+      place: { unit: 'bullet', sectionId, entryId: harbor },
+      afterId: 'ex-b3',
+      text: 'Ran the on-call rotation for the payments team for a year',
+    },
+  },
+  {
+    source: 'add',
+    reason: 'Shows the platform work.',
+    change: {
+      kind: 'add',
+      place: { unit: 'bullet', sectionId, entryId: harbor },
+      afterId: 'ex-b1',
+      text: 'Moved the billing workers onto Kubernetes',
+    },
+  },
+  {
+    source: 'rewrite',
+    reason: 'Says what you like doing, which a summary is for.',
+    change: {
+      kind: 'rewrite',
+      place: { unit: 'line', sectionId: 'ex-summary', lineId: 'ex-summary-1' },
+      before: 'Backend engineer with six years on billing, payments and mapping services.',
+      after:
+        'Backend engineer with six years on billing, payments and mapping services. Happiest owning a service from schema to on-call.',
+    },
+  },
+  {
+    source: 'rewrite',
+    reason: 'Kafka is in your Lantern Geo work.',
+    change: {
+      kind: 'rewrite',
+      place: { unit: 'line', sectionId: 'ex-skills', lineId: 'ex-skills-1' },
+      before: 'Go, Python, SQL, PostgreSQL, Redis, AWS, Terraform',
+      after: 'Go, Python, SQL, PostgreSQL, Redis, Kafka, AWS, Terraform',
+    },
+  },
+  {
+    source: 'add',
+    reason: 'You said you speak both.',
+    change: {
+      kind: 'add',
+      place: { unit: 'line', sectionId: 'ex-skills' },
+      afterId: 'ex-skills-1',
+      text: 'Spanish and Norwegian',
     },
   },
 ];

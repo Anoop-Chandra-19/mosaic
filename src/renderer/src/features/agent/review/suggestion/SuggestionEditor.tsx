@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Check } from 'lucide-react';
 import { AppButton, AppTextarea, Text } from '@/components/ui-kit';
 import { ShortcutKeys } from '@/features/shortcuts/ShortcutKeys';
-import type { Proposal } from '@shared/types/agentProposal';
+import type { Proposal, ProposalChange } from '@shared/types/agentProposal';
 import { GAP_MARK } from '../../proposals/checks/unfilledGap';
 import { checkProposalEdit, editProposal } from '../../proposals/proposalActions';
 import { resolveChange } from '../../proposals/reviewedChange';
@@ -12,12 +12,23 @@ import { SuggestionFlags } from './SuggestionFlags';
 const TYPED_GAP = '[?]';
 
 function readEditableText(proposal: Proposal): string {
-  const change = resolveChange(proposal);
-  const text = change.kind === 'rewrite' || change.kind === 'merge' ? change.after : '';
-  return text.replaceAll(GAP_MARK, TYPED_GAP);
+  return readWrittenText(resolveChange(proposal)).replaceAll(GAP_MARK, TYPED_GAP);
 }
 
-/** A rewrite or merge in the user's words, checked as they type. Saving keeps it. */
+/** What a suggestion writes in words: a rewrite's or merge's new text, or added text. */
+function readWrittenText(change: ProposalChange): string {
+  switch (change.kind) {
+    case 'rewrite':
+    case 'merge':
+      return change.after;
+    case 'add':
+      return change.text;
+    default:
+      return '';
+  }
+}
+
+/** A suggestion in the user's words, checked as they type. Saving keeps it. */
 export function SuggestionEditor({ proposal, onDone }: { proposal: Proposal; onDone: () => void }) {
   const [text, setText] = useState(() => readEditableText(proposal));
   const fieldRef = useRef<HTMLTextAreaElement>(null);

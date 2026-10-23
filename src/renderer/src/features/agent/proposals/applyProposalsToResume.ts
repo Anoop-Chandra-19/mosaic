@@ -1,11 +1,17 @@
-import type { Proposal, ProposalChange, ProposalChangeKind } from '@shared/types/agentProposal';
+import type {
+  Proposal,
+  ProposalChange,
+  ProposalChangeKind,
+  TextPlace,
+} from '@shared/types/agentProposal';
 import type { ResumeData } from '@shared/types/resume';
 import { findAnchorMismatch, findEntry, findSection } from './proposalAnchor';
 
 /**
- * Hiding goes first, since it keys on text a rewrite would change; text before structure,
- * new entries last. A change that no longer fits once the ones before it have landed (two
- * rewrites of one bullet, a merge of bullets a reorder moved apart) is skipped, not forced.
+ * Hiding goes first, since it keys on text a rewrite would change; text before structure;
+ * added text after the orders it would otherwise upset; new entries last. A
+ * change that no longer fits once the ones before it have landed (two rewrites of one
+ * bullet, a merge of bullets a reorder moved apart) is skipped, not forced.
  */
 const APPLY_ORDER: Record<ProposalChangeKind, number> = {
   select: 0,
@@ -13,7 +19,8 @@ const APPLY_ORDER: Record<ProposalChangeKind, number> = {
   split: 2,
   merge: 3,
   reorder: 4,
-  entry: 5,
+  add: 5,
+  entry: 6,
 };
 
 /** In the order they apply, which is not the order they were suggested in. */
@@ -33,22 +40,67 @@ function reorderById<T extends { id: string }>(items: T[], ids: string[]): T[] {
   return ids.map((id) => byId.get(id)!);
 }
 
+/** The place's own record: a bullet, or a line's item. */
+function findTextRecord(doc: ResumeData, place: TextPlace) {
+  if (place.unit === 'line') return findEntry(doc, place.sectionId, place.lineId)!;
+  return findEntry(doc, place.sectionId, place.entryId)!.bullets.find(
+    (bullet) => bullet.id === place.bulletId
+  )!;
+}
+
 function placeBullet(doc: ResumeData, sectionId: string, entryId: string, bulletId: string) {
   const entry = findEntry(doc, sectionId, entryId)!;
   const index = entry.bullets.findIndex((bullet) => bullet.id === bulletId);
   return { bullets: entry.bullets, index, bullet: entry.bullets[index] };
 }
 
+/** Where new items go in a list: right after `afterId`, or first when it is null. */
+const insertAt = (ids: string[], afterId: string | null) =>
+  afterId === null ? 0 : ids.indexOf(afterId) + 1;
+
+function addText(
+  doc: ResumeData,
+  change: Extract<ProposalChange, { kind: 'add' }>,
+  createId: () => string
+) {
+  const text = change.text.trim();
+  const { place } = change;
+  if (place.unit === 'line') {
+    const items = findSection(doc, place.sectionId)!.items;
+    const at = insertAt(
+      items.map((item) => item.id),
+      change.afterId
+    );
+    items.splice(at, 0, { id: createId(), selected: true, bullets: [], text });
+    return;
+  }
+  const bullets = findEntry(doc, place.sectionId, place.entryId)!.bullets;
+  const at = insertAt(
+    bullets.map((bullet) => bullet.id),
+    change.afterId
+  );
+  bullets.splice(at, 0, { id: createId(), text, selected: true });
+}
+
+function reorder(doc: ResumeData, change: Extract<ProposalChange, { kind: 'reorder' }>) {
+  const { place, after } = change;
+  const section = findSection(doc, place.sectionId)!;
+  if (place.unit === 'items') {
+    section.items = reorderById(section.items, after);
+    return;
+  }
+  const entry = section.items.find((item) => item.id === place.entryId)!;
+  entry.bullets = reorderById(entry.bullets, after);
+}
+
 /** Changes `doc` in place; the change has been checked to fit it. */
 function applyChange(doc: ResumeData, change: ProposalChange, createId: () => string): void {
   switch (change.kind) {
     case 'select':
-      placeBullet(doc, change.sectionId, change.entryId, change.bulletId).bullet.selected =
-        change.selected;
+      findTextRecord(doc, change.place).selected = change.selected;
       return;
     case 'rewrite':
-      placeBullet(doc, change.sectionId, change.entryId, change.bulletId).bullet.text =
-        change.after.trim();
+      findTextRecord(doc, change.place).text = change.after.trim();
       return;
     case 'split': {
       const { bullets, index, bullet } = placeBullet(
@@ -73,16 +125,12 @@ function applyChange(doc: ResumeData, change: ProposalChange, createId: () => st
       bullets.splice(index + 1, 1);
       return;
     }
-    case 'reorder': {
-      const section = findSection(doc, change.sectionId)!;
-      if (change.entryId) {
-        const entry = section.items.find((item) => item.id === change.entryId)!;
-        entry.bullets = reorderById(entry.bullets, change.after);
-      } else {
-        section.items = reorderById(section.items, change.after);
-      }
+    case 'reorder':
+      reorder(doc, change);
       return;
-    }
+    case 'add':
+      addText(doc, change, createId);
+      return;
     case 'entry': {
       const section = findSection(doc, change.sectionId)!;
       const at = change.afterEntryId

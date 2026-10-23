@@ -2,7 +2,7 @@ import type { StagedChange } from '@/features/agent/proposals/proposalActions';
 import type { AgentToolArgs } from '@shared/agent-tools/agentTools';
 import { refuse, type AgentToolRun, type ToolAnswer } from '../agentToolRun';
 import { replaceEveryWholeWord } from '../replaceEveryWholeWord';
-import { isProblem, listBulletsInReceipt } from './findInReceipt';
+import { isProblem, listBulletsInReceipt, placeOfBullet } from './findInReceipt';
 import { stageSuggestions } from './stageSuggestions';
 
 /** One term renamed in every bullet that uses it, each bullet its own suggestion. */
@@ -14,15 +14,13 @@ export function proposeReplaceEverywhere(
   if (isProblem(bullets)) return refuse(bullets.problem);
 
   const changes: StagedChange[] = [];
-  for (const { sectionId, entry, bullet } of bullets) {
-    const replaced = replaceEveryWholeWord(bullet.text, args.find, args.replace);
+  for (const found of bullets) {
+    const replaced = replaceEveryWholeWord(found.bullet.text, args.find, args.replace);
     if (!replaced) continue;
     const change = {
       kind: 'rewrite' as const,
-      sectionId,
-      entryId: entry.id,
-      bulletId: bullet.id,
-      before: bullet.text,
+      place: placeOfBullet(found),
+      before: found.bullet.text,
       after: replaced.text,
     };
     changes.push({ change, source: 'replace', reason: args.reason });

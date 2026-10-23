@@ -11,7 +11,7 @@ import type {
 import { useProposalStore } from '@/stores/proposalStore';
 import { getResumeSnapshot, useResumeStore } from '@/stores/resumeStore';
 import { checkProposal } from './checkProposal';
-import { findEntry, isProposalCurrent } from './proposalAnchor';
+import { findEntry, findTextItem, isProposalCurrent, readAddedAmong } from './proposalAnchor';
 import { watchProposalAnchors } from './recheckProposals';
 import { canKeepProposal, resolveChange, reviewedRequestText } from './reviewedChange';
 import { validateProposal, type ProposalRefusal } from './validateProposal';
@@ -68,7 +68,7 @@ export function stageProposals(requestText: string, changes: StagedChange[]): St
       status: 'pending',
       review: {},
       isStale: false,
-      flags: checkProposal(change, requestText),
+      flags: checkProposal(doc, change, requestText),
       reason,
       requestText,
       createdAt: Date.now(),
@@ -122,7 +122,7 @@ function reviewProposal(id: string, update: (proposal: Proposal) => Proposal | n
   const change = resolveChange(next);
   const isStale = !isProposalCurrent(doc, change);
   if (!isStale && validateProposal(doc, change)) return false;
-  const flags = checkProposal(change, reviewedRequestText(next));
+  const flags = checkProposal(doc, change, reviewedRequestText(next));
   useProposalStore.getState().replaceProposals(openTemplateId(), [{ ...next, isStale, flags }]);
   return true;
 }
@@ -135,7 +135,7 @@ const withReview =
     status: status ?? proposal.status,
   });
 
-/** The user's own wording for a rewrite or merge. Editing is saying yes to it. */
+/** The user's own wording for what a suggestion writes. Editing is saying yes to it. */
 export function editProposal(id: string, text: string): boolean {
   return reviewProposal(id, withReview({ userText: text.trim() }, 'accepted'));
 }
@@ -143,7 +143,7 @@ export function editProposal(id: string, text: string): boolean {
 /** What the checks would say about the user's wording, as they type it. */
 export function checkProposalEdit(proposal: Proposal, text: string): ProposalFlag[] {
   const edited = withReview({ userText: text.trim() })(proposal);
-  return checkProposal(resolveChange(edited), reviewedRequestText(edited));
+  return checkProposal(getResumeSnapshot(), resolveChange(edited), reviewedRequestText(edited));
 }
 
 /** Back to the assistant's wording. */
@@ -193,19 +193,45 @@ export function editProposalFact(id: string, fact: EntryFact, text: string): boo
   });
 }
 
-/** What a rewrite or merge would replace now: its bullets' text in the draft. */
+/** What a rewrite or merge would replace now: its text in the draft. */
 function readRebasedBefore(change: ProposalChange): ProposalReview['rebasedBefore'] | null {
-  if (change.kind !== 'rewrite' && change.kind !== 'merge') return null;
-  const bullets = findEntry(getResumeSnapshot(), change.sectionId, change.entryId)?.bullets;
-  const textOf = (bulletId: string) => bullets?.find((bullet) => bullet.id === bulletId)?.text;
-  if (change.kind === 'rewrite') return textOf(change.bulletId) ?? null;
-  const [first, second] = [textOf(change.firstId), textOf(change.secondId)];
-  return first !== undefined && second !== undefined ? [first, second] : null;
+  const doc = getResumeSnapshot();
+  switch (change.kind) {
+    case 'rewrite':
+      return findTextItem(doc, change.place)?.text ?? null;
+    case 'merge': {
+      const bullets = findEntry(doc, change.sectionId, change.entryId)?.bullets;
+      const textOf = (bulletId: string) => bullets?.find((bullet) => bullet.id === bulletId)?.text;
+      const [first, second] = [textOf(change.firstId), textOf(change.secondId)];
+      return first !== undefined && second !== undefined ? [first, second] : null;
+    }
+    default:
+      return null;
+  }
 }
 
 /**
- * An out-of-date rewrite or merge, reviewed against the bullet as the user left it: it
- * waits again, and keeping it replaces their edit.
+ * Added text whose place is gone, put at the end of its entry or section instead. It waits
+ * again, as an ordinary suggestion.
+ */
+export function placeProposalLast(id: string): boolean {
+  return reviewProposal(id, (proposal) => {
+    const { change } = proposal;
+    if (change.kind !== 'add') return null;
+    const among = readAddedAmong(getResumeSnapshot(), change.place);
+    if (!among) return null;
+    return withReview({ placedAfterId: among.at(-1) ?? null }, 'pending')(proposal);
+  });
+}
+
+/** Back to its own place, which is gone: out of date again. */
+export function cancelPlacedLast(id: string): boolean {
+  return reviewProposal(id, withReview({ placedAfterId: undefined }, 'pending'));
+}
+
+/**
+ * An out-of-date rewrite or merge, reviewed against the text as the user left it:
+ * it waits again, and keeping it replaces their edit.
  */
 export function reviewStaleProposalAnyway(id: string): boolean {
   return reviewProposal(id, (proposal) => {

@@ -1,6 +1,6 @@
 import type { ProposalChange, ProposalChangeKind } from '@shared/types/agentProposal';
 import type { ResumeData } from '@shared/types/resume';
-import { findAnchorMismatch, findEntry, type AnchorMismatch } from './proposalAnchor';
+import { findAnchorMismatch, findTextItem, type AnchorMismatch } from './proposalAnchor';
 
 export type ProposalRefusalCode =
   | AnchorMismatch
@@ -17,12 +17,12 @@ export interface ProposalRefusal {
 }
 
 const FIXES: Record<ProposalRefusalCode, string> = {
-  'unknown-target': 'No such section, entry or bullet. Read the document again for its ids.',
+  'unknown-target': 'No such section, entry, bullet or line. Read the document again for its ids.',
   'changed-since-read':
     'That text changed since you read it. Read it again and propose against what it says now.',
   'unknown-change':
-    'Only bullets can be changed. Titles, organizations, places, dates and contact details are the user’s to edit.',
-  'empty-text': 'The new text is empty. To leave a bullet off the page, propose hiding it.',
+    'Titles, organizations, places, dates and contact details are the user’s to edit.',
+  'empty-text': 'The new text is empty. To leave something off the page, propose hiding it.',
   unchanged: 'This changes nothing. Leave it out.',
   'bad-split': 'Split inside the text, so both halves keep some of it.',
   'not-a-permutation': 'A new order has the same ids as the old one, each once.',
@@ -39,6 +39,7 @@ const CHANGE_KINDS: ReadonlySet<ProposalChangeKind> = new Set<ProposalChangeKind
   'merge',
   'reorder',
   'select',
+  'add',
   'entry',
 ]);
 
@@ -47,11 +48,13 @@ const isPermutation = (before: string[], after: string[]) =>
   new Set(after).size === after.length &&
   after.every((id) => before.includes(id));
 
+const hasText = (text: string | undefined) => !!text?.trim();
+
 /** What is wrong with the change itself, whatever the draft says. */
 function findShapeProblem(doc: ResumeData, change: ProposalChange): ProposalRefusalCode | null {
   switch (change.kind) {
     case 'rewrite':
-      if (!change.after.trim()) return 'empty-text';
+      if (!hasText(change.after)) return 'empty-text';
       return change.after === change.before ? 'unchanged' : null;
     case 'split': {
       const isInside =
@@ -63,22 +66,18 @@ function findShapeProblem(doc: ResumeData, change: ProposalChange): ProposalRefu
       return hasHalves ? null : 'bad-split';
     }
     case 'merge':
-      return change.after.trim() ? null : 'empty-text';
+      return hasText(change.after) ? null : 'empty-text';
     case 'reorder':
       if (!isPermutation(change.before, change.after)) return 'not-a-permutation';
       return change.after.every((id, index) => id === change.before[index]) ? 'unchanged' : null;
-    case 'select': {
-      const bullet = findEntry(doc, change.sectionId, change.entryId)?.bullets.find(
-        (b) => b.id === change.bulletId
-      );
-      return bullet?.selected === change.selected ? 'unchanged' : null;
-    }
-    case 'entry': {
-      const hasText =
-        Object.values(change.frame).some((value) => value?.trim()) ||
-        change.bullets.some((bullet) => bullet.trim());
-      return hasText ? null : 'empty-text';
-    }
+    case 'select':
+      return findTextItem(doc, change.place)?.selected === change.selected ? 'unchanged' : null;
+    case 'add':
+      return hasText(change.text) ? null : 'empty-text';
+    case 'entry':
+      return Object.values(change.frame).some(hasText) || change.bullets.some(hasText)
+        ? null
+        : 'empty-text';
   }
 }
 

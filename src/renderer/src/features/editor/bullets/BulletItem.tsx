@@ -20,8 +20,8 @@ import {
   AppMenuSeparator,
   AppMenuTrigger,
 } from '@/components/ui-kit';
-import { BulletSuggestionDot } from '@/features/agent/review/BulletSuggestionDot';
-import { useBulletSuggestion } from '@/features/agent/review/useBulletSuggestion';
+import { SuggestionDot } from '@/features/agent/review/SuggestionDot';
+import { useSuggestionDot } from '@/features/agent/review/useSuggestionDot';
 import { matchesAction } from '@/features/shortcuts/shortcutBindings';
 import { carryTint, travelFrom } from '@/lib/motion/rowMotions';
 import { ListMotionContext, useSwapMotion } from '@/lib/motion/useListMotion';
@@ -106,7 +106,7 @@ export function BulletItem({
   const afterMenu = useRef<(() => void) | null>(null);
   const motion = useContext(ListMotionContext);
   const beginSwap = useSwapMotion(editing !== null);
-  const suggestion = useBulletSuggestion(bullet.id);
+  const suggestion = useSuggestionDot(bullet.id);
 
   const setEditing = (next: EditorOpening | null) => {
     if ((next === null) !== (editing === null)) beginSwap();
@@ -329,7 +329,7 @@ export function BulletItem({
               <span className={MENU_BUTTON_SPACE} />
             )}
           </span>
-          {suggestion && <BulletSuggestionDot suggestion={suggestion} />}
+          {suggestion && <SuggestionDot dot={suggestion} className="float-left mr-0.5" />}
           {bullet.text || <span className="text-ink-faint no-underline">Empty bullet</span>}
         </div>
       </AppTooltip>

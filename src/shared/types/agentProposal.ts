@@ -6,6 +6,21 @@ import type { ResumeEntry } from './resume';
  * stores proposals once the agent runs there; until then they live in the renderer.
  */
 
+/** Text the user wrote: a bullet of an entry, or a line of a lines section (its item). */
+export type TextPlace =
+  | { unit: 'bullet'; sectionId: string; entryId: string; bulletId: string }
+  | { unit: 'line'; sectionId: string; lineId: string };
+
+/** Where new text goes: a bullet into an entry, or a line into a lines section. */
+export type AddPlace =
+  | { unit: 'bullet'; sectionId: string; entryId: string }
+  | { unit: 'line'; sectionId: string };
+
+/** A list whose order can change: a section's items (entries or lines), or an entry's bullets. */
+export type OrderPlace =
+  | { unit: 'items'; sectionId: string }
+  | { unit: 'bullets'; sectionId: string; entryId: string };
+
 /**
  * One change, anchored to the text it was made against (`before`): the text the model
  * read, never the draft's text at staging time, so an edit made since shows as stale.
@@ -13,9 +28,7 @@ import type { ResumeEntry } from './resume';
 export type ProposalChange =
   | {
       kind: 'rewrite';
-      sectionId: string;
-      entryId: string;
-      bulletId: string;
+      place: TextPlace;
       before: string;
       after: string;
       /** The rewrite holds a `{{?}}` the user fills; this is the version that needs none. */
@@ -40,19 +53,22 @@ export type ProposalChange =
     }
   | {
       kind: 'reorder';
-      sectionId: string;
-      /** Set: the entry's bullets. Absent: the section's entries. */
-      entryId?: string;
+      place: OrderPlace;
       before: string[];
       after: string[];
     }
   | {
       kind: 'select';
-      sectionId: string;
-      entryId: string;
-      bulletId: string;
+      place: TextPlace;
       before: string;
       selected: boolean;
+    }
+  | {
+      kind: 'add';
+      place: AddPlace;
+      /** The bullet or line it goes after; null: it goes first. */
+      afterId: string | null;
+      text: string;
     }
   | {
       kind: 'entry';
@@ -75,8 +91,13 @@ export type DropReason = 'inaccurate' | 'overstated' | 'wrongTone' | 'keepMyWord
  * so "back to the assistant's wording" and "use it anyway" can be undone.
  */
 export interface ProposalReview {
-  /** Their own wording for a rewrite or merge. */
+  /** Their own wording for a rewrite, merge or added text. */
   userText?: string;
+  /**
+   * Added text whose place is gone, put last by them instead: the item it now follows
+   * (null when the list is empty).
+   */
+  placedAfterId?: string | null;
   /** The number they typed into the gap. */
   filledNumber?: string;
   /** They took the version that needs no number. */

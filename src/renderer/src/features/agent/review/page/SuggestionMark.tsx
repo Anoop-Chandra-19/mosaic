@@ -52,7 +52,7 @@ export function SuggestionMark({ mark, children }: { mark: Mark; children: React
   const isCurrent = selectedId === proposal.id;
   const title =
     state === 'stale'
-      ? 'Out of date: you changed this bullet after it was suggested'
+      ? 'Out of date: you changed this after it was suggested'
       : `${labelSuggestionKind(proposal.change)}${flagCount ? ` · ${flagCount} to check` : ''}`;
   return (
     <mark

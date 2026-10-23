@@ -73,9 +73,7 @@ const SPIKE_LIKE_CHANGES = [
     source: 'replace',
     change: {
       kind: 'rewrite',
-      sectionId: 's1',
-      entryId: 'e2',
-      bulletId: 'b4',
+      place: { unit: 'bullet', sectionId: 's1', entryId: 'e2', bulletId: 'b4' },
       before: B4,
       after: 'Built tile caching for the Oslo and Bergen offices',
     },

@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils';
 import type { Proposal } from '@shared/types/agentProposal';
 import {
   acceptProposals,
+  placeProposalLast,
   rejectProposals,
   returnProposals,
   reviewStaleProposalAnyway,
@@ -87,10 +88,31 @@ export function SuggestionActions({
   );
 }
 
-/** Out of date: it can't be kept as it is, only discarded, or a rewrite looked at again. */
+/** Its way back while out of date: looked at again against the edit, or put last. */
+function readStaleRecovery(proposal: Proposal) {
+  switch (proposal.change.kind) {
+    case 'rewrite':
+    case 'merge':
+      return {
+        label: 'Use it anyway…',
+        title: 'Compare with your edit, then decide',
+        run: () => reviewStaleProposalAnyway(proposal.id),
+      };
+    case 'add':
+      return {
+        label: 'Put it last',
+        title: 'Place it at the end, then decide',
+        run: () => placeProposalLast(proposal.id),
+      };
+    default:
+      return null;
+  }
+}
+
+/** Out of date: it can't be kept as it is, only discarded, or brought back another way. */
 function StaleActions({ proposal }: { proposal: Proposal }) {
   const isDiscarded = proposal.status === 'rejected';
-  const canUseAnyway = proposal.change.kind === 'rewrite' || proposal.change.kind === 'merge';
+  const recovery = readStaleRecovery(proposal);
   return (
     <>
       <AppButton
@@ -102,15 +124,10 @@ function StaleActions({ proposal }: { proposal: Proposal }) {
         <Trash2 />
         {isDiscarded ? 'Discarded' : 'Discard'}
       </AppButton>
-      {canUseAnyway ? (
-        <AppButton
-          variant="outline"
-          size="sm"
-          title="Compare with your edited bullet, then decide"
-          onClick={() => reviewStaleProposalAnyway(proposal.id)}
-        >
+      {recovery ? (
+        <AppButton variant="outline" size="sm" title={recovery.title} onClick={recovery.run}>
           <RotateCcw />
-          Use it anyway…
+          {recovery.label}
         </AppButton>
       ) : (
         <Text variant="secondary" className="flex-1 text-ink-faint">

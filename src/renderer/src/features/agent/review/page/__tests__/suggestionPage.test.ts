@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import type { Proposal, ProposalChange, ProposalStatus } from '@shared/types/agentProposal';
-import { makeProposal, makeResume, rewrite } from '../../../proposals/__tests__/proposalFixtures';
+import {
+  addText,
+  makeProposal,
+  makeResume,
+  rewrite,
+} from '../../../proposals/__tests__/proposalFixtures';
 import { buildSuggestionPage } from '../suggestionPage';
 
 const B1 = 'Assisted in migrating billing to Postgres';
@@ -22,8 +27,8 @@ describe('buildSuggestionPage', () => {
     ]);
 
     expect(textOf(page.doc).slice(0, 2)).toEqual(['Led the billing migration to Postgres', B2]);
-    expect(page.byBullet.get('b1')?.proposal.id).toBe('led');
-    expect(page.byBullet.get('b2')?.proposal.id).toBe('cut');
+    expect(page.marks.get('b1')?.proposal.id).toBe('led');
+    expect(page.marks.get('b2')?.proposal.id).toBe('cut');
     expect(textOf(draft)[0]).toBe(B1);
   });
 
@@ -38,9 +43,7 @@ describe('buildSuggestionPage', () => {
     };
     const hide: ProposalChange = {
       kind: 'select',
-      sectionId: 's1',
-      entryId: 'e1',
-      bulletId: 'b2',
+      place: { unit: 'bullet', sectionId: 's1', entryId: 'e1', bulletId: 'b2' },
       before: B2,
       selected: false,
     };
@@ -51,16 +54,15 @@ describe('buildSuggestionPage', () => {
 
     const [first, second] = page.doc.sections[0].items[0].bullets;
     expect([first.text, second.text]).toEqual(['Assisted in migrating billing', 'to Postgres']);
-    expect(page.byBullet.get(second.id)?.proposal.id).toBe('split');
-    expect(page.byBullet.get('b2')).toMatchObject({ look: 'hide' });
+    expect(page.marks.get(second.id)?.proposal.id).toBe('split');
+    expect(page.marks.get('b2')).toMatchObject({ look: 'hide' });
     expect(page.doc.sections[0].items[0].bullets.find((b) => b.id === 'b2')?.selected).toBe(true);
   });
 
   it('shows the first of two rewrites of one bullet, and chips the bullets a reorder moves', () => {
     const reorder: ProposalChange = {
       kind: 'reorder',
-      sectionId: 's1',
-      entryId: 'e1',
+      place: { unit: 'bullets', sectionId: 's1', entryId: 'e1' },
       before: ['b1', 'b2', 'b3'],
       after: ['b2', 'b1', 'b3'],
     };
@@ -70,7 +72,7 @@ describe('buildSuggestionPage', () => {
       proposal('order', reorder),
     ]);
 
-    expect(page.byBullet.get('b2')?.proposal.id).toBe('first');
+    expect(page.marks.get('b2')?.proposal.id).toBe('first');
     expect(textOf(page.doc)[0]).toBe('Cut p99 latency');
     expect(page.moves.get('b2')).toMatchObject({ from: 2, to: 1 });
     expect(page.moves.has('b3')).toBe(false);
@@ -87,7 +89,18 @@ describe('buildSuggestionPage', () => {
     const page = buildSuggestionPage(makeResume(), [proposal('new', entry)] as Proposal[]);
 
     const added = page.doc.sections[0].items[2];
-    expect(page.byEntry.get(added.id)).toMatchObject({ look: 'add' });
-    expect(page.byBullet.get(added.bullets[0].id)).toMatchObject({ look: 'add' });
+    expect(page.marks.get(added.id)).toMatchObject({ look: 'add' });
+    expect(page.marks.get(added.bullets[0].id)).toMatchObject({ look: 'add' });
+  });
+});
+
+describe('buildSuggestionPage, added text', () => {
+  it('lays a new bullet in at its place, marked as added', () => {
+    const page = buildSuggestionPage(makeResume(), [
+      proposal('add', addText('bullet', 'b1', 'Ran the on-call rotation')),
+    ]);
+    const bullets = page.doc.sections[0].items[0].bullets;
+    expect(bullets.map((b) => b.text)[1]).toBe('Ran the on-call rotation');
+    expect(page.marks.get(bullets[1].id)).toMatchObject({ look: 'add' });
   });
 });

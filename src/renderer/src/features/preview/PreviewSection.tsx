@@ -39,6 +39,8 @@ export interface PreviewRenderableSection {
  */
 export interface PageDecorations {
   bullet?: (bulletId: string, text: ReactNode) => ReactNode;
+  /** A line of a lines section, by its item's id. */
+  line?: (lineId: string, text: ReactNode) => ReactNode;
   entryHeading?: (entryId: string, heading: ReactNode) => ReactNode;
   entryDates?: (entryId: string, dates: ReactNode) => ReactNode;
 }
@@ -114,7 +116,11 @@ export function PreviewSection({ section, marks, decorations }: PreviewSectionPr
               data-preview-entry-key={`${section.id}::${entry.id}`}
               data-preview-section-id={section.id}
             >
-              {markLine(findMarks(marks, 'entry', entry.id), entry.text ?? '')}
+              {decorate(
+                decorations?.line,
+                entry.id,
+                markLine(findMarks(marks, 'entry', entry.id), entry.text ?? '')
+              )}
             </p>
           ) : (
             <article

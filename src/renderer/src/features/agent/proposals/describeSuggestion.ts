@@ -1,5 +1,5 @@
-import type { Proposal, ProposalChange } from '@shared/types/agentProposal';
-import type { ResumeData, ResumeEntry } from '@shared/types/resume';
+import type { Proposal, ProposalChange, TextPlace } from '@shared/types/agentProposal';
+import type { ResumeData, ResumeEntry, ResumeSection } from '@shared/types/resume';
 import { findEntry, findSection } from './proposalAnchor';
 
 /*
@@ -14,6 +14,8 @@ const KIND_LABELS: Record<ProposalChange['kind'], (change: ProposalChange) => st
   merge: () => 'Merge',
   reorder: () => 'Reorder',
   select: (change) => (change.kind === 'select' && change.selected ? 'Show' : 'Hide'),
+  add: (change) =>
+    change.kind === 'add' && change.place.unit === 'line' ? 'New line' : 'New bullet',
   entry: () => 'New entry',
 };
 
@@ -26,39 +28,102 @@ function nameEntry(entry: ResumeEntry, index: number): string {
   return entry.organization?.trim() || entry.title?.trim() || `entry ${index + 1}`;
 }
 
-/** Its place, from the section down: the section's label, the entry, then the bullets. */
-export function placeSuggestion(doc: ResumeData, change: ProposalChange): string[] {
-  const section = findSection(doc, change.sectionId);
-  if (!section) return [];
-  const entryName = (entryId: string) => {
+/** The parts of a place below its section, each named as the user knows it. */
+function nameWithin(doc: ResumeData, section: ResumeSection) {
+  const entry = (entryId: string) => {
     const index = section.items.findIndex((item) => item.id === entryId);
     return index >= 0 ? nameEntry(section.items[index], index) : null;
   };
   const bulletNumber = (entryId: string, bulletId: string) =>
-    (findEntry(doc, change.sectionId, entryId)?.bullets.findIndex((b) => b.id === bulletId) ?? -1) +
-    1;
+    (findEntry(doc, section.id, entryId)?.bullets.findIndex((b) => b.id === bulletId) ?? -1) + 1;
+  const bullet = (entryId: string, bulletId: string) => `bullet ${bulletNumber(entryId, bulletId)}`;
+  const line = (lineId: string) =>
+    `line ${section.items.findIndex((item) => item.id === lineId) + 1}`;
+  const text = (place: TextPlace) =>
+    place.unit === 'line'
+      ? [line(place.lineId)]
+      : [entry(place.entryId), bullet(place.entryId, place.bulletId)];
+  return { entry, bulletNumber, bullet, line, text };
+}
+
+/** The section a change is in. */
+function readSectionId(change: ProposalChange): string {
+  switch (change.kind) {
+    case 'rewrite':
+    case 'select':
+    case 'add':
+    case 'reorder':
+      return change.place.sectionId;
+    default:
+      return change.sectionId;
+  }
+}
+
+/** Where added text goes: "new bullet, after bullet 2", or "new line, first". */
+function nameAddedPlace(
+  doc: ResumeData,
+  section: ResumeSection,
+  change: Extract<ProposalChange, { kind: 'add' }>
+): (string | null)[] {
+  const within = nameWithin(doc, section);
+  const { place, afterId } = change;
+  if (place.unit === 'line') {
+    return [afterId ? `new line, after ${within.line(afterId)}` : 'new line, first'];
+  }
+  const where = afterId ? `after ${within.bullet(place.entryId, afterId)}` : 'first';
+  return [within.entry(place.entryId), `new bullet, ${where}`];
+}
+
+/** Its place, from the section down: the section's label, the entry, then the bullets. */
+export function placeSuggestion(doc: ResumeData, change: ProposalChange): string[] {
+  const section = findSection(doc, readSectionId(change));
+  if (!section) return [];
+  const within = nameWithin(doc, section);
   const path = (...parts: (string | null)[]) =>
     [section.label, ...parts].filter((part): part is string => !!part);
 
   switch (change.kind) {
     case 'rewrite':
-    case 'split':
     case 'select':
-      return path(
-        entryName(change.entryId),
-        `bullet ${bulletNumber(change.entryId, change.bulletId)}`
-      );
+      return path(...within.text(change.place));
+    case 'split':
+      return path(within.entry(change.entryId), within.bullet(change.entryId, change.bulletId));
     case 'merge': {
-      const first = bulletNumber(change.entryId, change.firstId);
-      return path(entryName(change.entryId), `bullets ${first} and ${first + 1}`);
+      const first = within.bulletNumber(change.entryId, change.firstId);
+      return path(within.entry(change.entryId), `bullets ${first} and ${first + 1}`);
     }
     case 'reorder':
-      return path(change.entryId ? entryName(change.entryId) : null);
+      return path(change.place.unit === 'bullets' ? within.entry(change.place.entryId) : null);
+    case 'add':
+      return path(...nameAddedPlace(doc, section, change));
     case 'entry': {
-      const after = change.afterEntryId && entryName(change.afterEntryId);
+      const after = change.afterEntryId && within.entry(change.afterEntryId);
       return path(after ? `new entry, after ${after}` : 'new entry, first');
     }
   }
+}
+
+/** The entry a change is inside, if it is inside one: a bullet's, or an entry's own. */
+function readEntryId(change: ProposalChange): string | null {
+  switch (change.kind) {
+    case 'rewrite':
+    case 'select':
+    case 'add':
+      return 'entryId' in change.place ? change.place.entryId : null;
+    case 'reorder':
+      return change.place.unit === 'bullets' ? change.place.entryId : null;
+    case 'split':
+    case 'merge':
+      return change.entryId;
+    default:
+      return null;
+  }
+}
+
+/** Where a landed suggestion is, for a version's title: its entry, else its section. */
+function nameWhere(doc: ResumeData, change: ProposalChange): string {
+  const [section, entryName] = placeSuggestion(doc, change);
+  return readEntryId(change) && entryName ? entryName : section;
 }
 
 /**
@@ -67,16 +132,14 @@ export function placeSuggestion(doc: ResumeData, change: ProposalChange): string
  * Labs and Lantern Geo", or "in 3 places".
  */
 export function describeLandedSuggestions(doc: ResumeData, landed: readonly Proposal[]): string {
-  const places = landed.map((proposal) => placeSuggestion(doc, proposal.change));
   if (landed.length === 1) {
-    const [section, ...rest] = places[0];
-    return `${labelSuggestionKind(landed[0].change)} in ${rest.join(', ') || section}`;
+    const { change } = landed[0];
+    const [section, ...rest] = placeSuggestion(doc, change);
+    // Within an entry, the entry names it; otherwise the section does ("Summary, line 2").
+    const where = readEntryId(change) ? rest : [section, ...rest];
+    return `${labelSuggestionKind(change)} in ${where.join(', ')}`;
   }
-  const entries = [
-    ...new Set(
-      places.map(([section, entry]) => (entry && !entry.startsWith('new entry') ? entry : section))
-    ),
-  ];
+  const entries = [...new Set(landed.map((proposal) => nameWhere(doc, proposal.change)))];
   const where = entries.length <= 2 ? entries.join(' and ') : `${entries.length} places`;
   return `${landed.length} suggestions in ${where}`;
 }

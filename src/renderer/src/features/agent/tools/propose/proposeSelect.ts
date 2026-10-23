@@ -1,6 +1,6 @@
 import type { AgentToolArgs } from '@shared/agent-tools/agentTools';
 import { refuse, type AgentToolRun, type ToolAnswer } from '../agentToolRun';
-import { findBulletInReceipt, isProblem } from './findInReceipt';
+import { findBulletInReceipt, isProblem, placeOfBullet } from './findInReceipt';
 import { stageSuggestions } from './stageSuggestions';
 
 /** A bullet left off the page or put back. It stays in the resume either way. */
@@ -13,9 +13,7 @@ export function proposeSelect(
 
   const change = {
     kind: 'select' as const,
-    sectionId: found.sectionId,
-    entryId: found.entry.id,
-    bulletId: found.bullet.id,
+    place: placeOfBullet(found),
     before: found.bullet.text,
     selected: args.show,
   };

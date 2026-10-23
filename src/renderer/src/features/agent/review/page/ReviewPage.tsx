@@ -14,24 +14,27 @@ const ignoreMeta = () => {};
 
 /** The page's marks, built once per page so selecting one never lays the page out again. */
 function decorateSuggestions(page: SuggestionPage): PageDecorations {
-  const wrapEntry = (entryId: string, node: ReactNode) => {
-    const mark = page.byEntry.get(entryId);
+  /** A bullet's or line's text in its mark, with the chip a move leaves beside it. */
+  const markWithMove = (id: string, node: ReactNode) => {
+    const mark = page.marks.get(id);
+    const move = page.moves.get(id);
+    if (!mark && !move) return node;
+    return (
+      <>
+        {mark ? <SuggestionMark mark={mark}>{node}</SuggestionMark> : node}
+        {move && <SuggestionMoveChip move={move} />}
+      </>
+    );
+  };
+  const markOnly = (id: string, node: ReactNode) => {
+    const mark = page.marks.get(id);
     return mark ? <SuggestionMark mark={mark}>{node}</SuggestionMark> : node;
   };
   return {
-    bullet: (bulletId, text) => {
-      const mark = page.byBullet.get(bulletId);
-      const move = page.moves.get(bulletId);
-      if (!mark && !move) return text;
-      return (
-        <>
-          {mark ? <SuggestionMark mark={mark}>{text}</SuggestionMark> : text}
-          {move && <SuggestionMoveChip move={move} />}
-        </>
-      );
-    },
-    entryHeading: wrapEntry,
-    entryDates: wrapEntry,
+    bullet: markWithMove,
+    line: markWithMove,
+    entryHeading: markWithMove,
+    entryDates: markOnly,
   };
 }
 

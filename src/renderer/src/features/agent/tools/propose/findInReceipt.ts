@@ -1,4 +1,5 @@
 import { useResumeStore } from '@/stores/resumeStore';
+import type { TextPlace } from '@shared/types/agentProposal';
 import type { Bullet, ResumeEntry, ResumeSection } from '@shared/types/resume';
 import { NO_RESUME_OPEN, type AgentToolRun, type ReadReceipt } from '../agentToolRun';
 import { idForHandle, type HandleKind } from '../resumeHandles';
@@ -21,6 +22,14 @@ export interface BulletInReceipt {
   entry: ResumeEntry;
   bullet: Bullet;
 }
+
+/** A found bullet as a suggestion names it. */
+export const placeOfBullet = ({ sectionId, entry, bullet }: BulletInReceipt): TextPlace => ({
+  unit: 'bullet',
+  sectionId,
+  entryId: entry.id,
+  bulletId: bullet.id,
+});
 
 /** What the run read, if it is of the resume open now. */
 function openReceipt(run: AgentToolRun): ReadReceipt | Problem {
