@@ -47,6 +47,8 @@ function readMarkedIds(change: ProposalChange): string[] {
       return [change.bulletId];
     case 'merge':
       return [change.firstId];
+    case 'rename':
+      return [change.sectionId];
     default:
       return [];
   }
@@ -69,7 +71,9 @@ const isLeaving = (change: ProposalChange) => change.kind === 'select' && !chang
 /** The look of what a suggestion lays in: new text and things put back read as added. */
 function readLook(change: ProposalChange): SuggestionLook {
   if (change.kind === 'select') return change.selected ? 'add' : 'hide';
-  return change.kind === 'add' || change.kind === 'entry' ? 'add' : 'edit';
+  return change.kind === 'add' || change.kind === 'entry' || change.kind === 'section'
+    ? 'add'
+    : 'edit';
 }
 
 /** Whether a suggestion takes a whole entry or section off the page, or puts it back. */
@@ -103,7 +107,7 @@ function layIn(page: SuggestionPage, proposal: Proposal): boolean {
 
 /**
  * Lays each shown suggestion into the draft in the order Apply would, one at a time, so
- * what a split, an addition or a new entry makes is known to be theirs. One that no
+ * what a split, an addition, a new entry or a new section makes is known to be theirs. One that no
  * longer fits by its turn (a second rewrite of the same bullet) is left off the page.
  */
 export function buildSuggestionPage(

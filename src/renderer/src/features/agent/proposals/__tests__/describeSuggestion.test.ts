@@ -120,3 +120,19 @@ describe('whole entries, sections and their order', () => {
     ).toEqual(['Section order']);
   });
 });
+
+describe('new sections and headings', () => {
+  it('names a new section by its heading, and a rename by its section', () => {
+    expect(
+      placeSuggestion(makeResume(), {
+        kind: 'section',
+        afterSectionId: null,
+        section: { kind: 'custom', layout: 'lines', label: 'Talks' },
+        contents: { layout: 'lines', lines: ['A talk'] },
+      })
+    ).toEqual(['Talks, new section']);
+    expect(
+      placeSuggestion(makeResume(), { kind: 'rename', sectionId: 's1', before: '', after: '' })
+    ).toEqual(['Experience', 'heading']);
+  });
+});

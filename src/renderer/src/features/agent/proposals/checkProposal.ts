@@ -47,7 +47,14 @@ function readCheckedText(
       return { before: '', after: change.text, context: readAddedContext(doc, change.place) };
     case 'entry':
       return { before: '', after: change.bullets.join('\n'), context: '' };
+    case 'section': {
+      const { contents } = change;
+      const after =
+        contents.layout === 'lines' ? contents.lines.join('\n') : contents.entry.bullets.join('\n');
+      return { before: '', after, context: '' };
+    }
     default:
+      // A heading is the user's words, not a claim; the rest write no new words.
       return null;
   }
 }

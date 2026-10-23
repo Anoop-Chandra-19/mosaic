@@ -1,27 +1,30 @@
 import type {
+  EntryDraft,
   Proposal,
   ProposalChange,
   ProposalChangeKind,
   ShowPlace,
   TextPlace,
 } from '@shared/types/agentProposal';
-import type { ResumeData } from '@shared/types/resume';
+import type { ResumeData, ResumeEntry, ResumeSection } from '@shared/types/resume';
 import { findAnchorMismatch, findEntry, findSection } from './proposalAnchor';
 
 /**
  * Hiding goes first, since it keys on text a rewrite would change; text before structure;
- * added text after the orders it would otherwise upset; new entries last. A
+ * added text after the orders it would otherwise upset; new entries and sections last. A
  * change that no longer fits once the ones before it have landed (two rewrites of one
  * bullet, a merge of bullets a reorder moved apart) is skipped, not forced.
  */
 const APPLY_ORDER: Record<ProposalChangeKind, number> = {
   select: 0,
   rewrite: 1,
+  rename: 1,
   split: 2,
   merge: 3,
   reorder: 4,
   add: 5,
   entry: 6,
+  section: 7,
 };
 
 /** In the order they apply, which is not the order they were suggested in. */
@@ -98,6 +101,47 @@ function addText(
   bullets.splice(at, 0, { id: createId(), text, selected: true });
 }
 
+/** A new entry from a suggestion: its facts as written, its non-empty bullets. */
+function createEntry({ frame, bullets }: EntryDraft, createId: () => string): ResumeEntry {
+  return {
+    id: createId(),
+    selected: true,
+    ...frame,
+    bullets: bullets
+      .map((text) => text.trim())
+      .filter(Boolean)
+      .map((text) => ({ id: createId(), text, selected: true })),
+  };
+}
+
+function addSection(
+  doc: ResumeData,
+  change: Extract<ProposalChange, { kind: 'section' }>,
+  createId: () => string
+) {
+  const { contents } = change;
+  const sectionId = createId();
+  const items =
+    contents.layout === 'lines'
+      ? contents.lines
+          .map((text) => text.trim())
+          .filter(Boolean)
+          .map((text) => ({ id: createId(), selected: true, bullets: [], text }))
+      : [createEntry(contents.entry, createId)];
+  const section: ResumeSection = { id: sectionId, ...change.section, items, order: 0 };
+  const ordered = [...doc.sections].sort((a, b) => a.order - b.order);
+  ordered.splice(
+    insertAt(
+      ordered.map((each) => each.id),
+      change.afterSectionId
+    ),
+    0,
+    section
+  );
+  ordered.forEach((each, order) => (each.order = order));
+  doc.sections = ordered;
+}
+
 function reorder(doc: ResumeData, change: Extract<ProposalChange, { kind: 'reorder' }>) {
   const { place, after } = change;
   if (place.unit === 'sections') {
@@ -122,6 +166,9 @@ function applyChange(doc: ResumeData, change: ProposalChange, createId: () => st
       return;
     case 'rewrite':
       findTextRecord(doc, change.place).text = change.after.trim();
+      return;
+    case 'rename':
+      findSection(doc, change.sectionId)!.label = change.after.trim();
       return;
     case 'split': {
       const { bullets, index, bullet } = placeBullet(
@@ -157,17 +204,12 @@ function applyChange(doc: ResumeData, change: ProposalChange, createId: () => st
       const at = change.afterEntryId
         ? section.items.findIndex((item) => item.id === change.afterEntryId) + 1
         : 0;
-      section.items.splice(at, 0, {
-        id: createId(),
-        selected: true,
-        ...change.frame,
-        bullets: change.bullets
-          .map((text) => text.trim())
-          .filter(Boolean)
-          .map((text) => ({ id: createId(), text, selected: true })),
-      });
+      section.items.splice(at, 0, createEntry(change, createId));
       return;
     }
+    case 'section':
+      addSection(doc, change, createId);
+      return;
   }
 }
 

@@ -15,11 +15,12 @@ function readEditableText(proposal: Proposal): string {
   return readWrittenText(resolveChange(proposal)).replaceAll(GAP_MARK, TYPED_GAP);
 }
 
-/** What a suggestion writes in words: a rewrite's or merge's new text, or added text. */
+/** What a suggestion writes in words: a rewrite's, merge's or heading's new text, or added text. */
 function readWrittenText(change: ProposalChange): string {
   switch (change.kind) {
     case 'rewrite':
     case 'merge':
+    case 'rename':
       return change.after;
     case 'add':
       return change.text;

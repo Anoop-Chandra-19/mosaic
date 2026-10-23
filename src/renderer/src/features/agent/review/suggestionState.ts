@@ -24,11 +24,12 @@ export function readSuggestionState(proposal: Proposal): SuggestionState {
   return needsNumber(proposal) ? 'held' : 'kept';
 }
 
-/** What writes words the user can put in their own: rewritten, merged or added text. */
+/** What writes words the user can put in their own: rewritten, merged, added text, a heading. */
 const EDITABLE_KINDS: ReadonlySet<ProposalChangeKind> = new Set<ProposalChangeKind>([
   'rewrite',
   'merge',
   'add',
+  'rename',
 ]);
 
 export const canEditSuggestion = (proposal: Proposal) =>

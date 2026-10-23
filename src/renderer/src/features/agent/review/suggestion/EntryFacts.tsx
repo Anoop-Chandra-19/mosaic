@@ -4,7 +4,7 @@ import { AppButton, AppInput, Text } from '@/components/ui-kit';
 import { cn } from '@/lib/utils';
 import type { EntryFact, Proposal } from '@shared/types/agentProposal';
 import { confirmProposalFact, editProposalFact } from '../../proposals/proposalActions';
-import { resolveChange } from '../../proposals/reviewedChange';
+import { readEntryDraft, resolveChange } from '../../proposals/reviewedChange';
 
 const FACT_LABELS: Record<EntryFact, string> = {
   title: 'Title',
@@ -15,11 +15,14 @@ const FACT_LABELS: Record<EntryFact, string> = {
 
 const ENTRY_FACTS = Object.keys(FACT_LABELS) as EntryFact[];
 
-/** A new entry's facts, each confirmed or changed in place, then the bullets it brings. */
+/**
+ * A new entry's facts, alone or as a new section's first, each confirmed or changed in
+ * place, then the bullets it brings.
+ */
 export function EntryFacts({ proposal }: { proposal: Proposal }) {
   const [openFact, setOpenFact] = useState<EntryFact | null>(null);
-  const change = resolveChange(proposal);
-  if (change.kind !== 'entry') return null;
+  const change = readEntryDraft(resolveChange(proposal));
+  if (!change) return null;
   const { confirmedFacts = [], factEdits = {} } = proposal.review;
   const facts = ENTRY_FACTS.filter((fact) => change.frame[fact]?.trim());
   const confirmedCount = facts.filter((fact) => confirmedFacts.includes(fact)).length;

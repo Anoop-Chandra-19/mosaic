@@ -147,6 +147,12 @@ export function findAnchorMismatch(doc: ResumeData, change: ProposalChange): Anc
         !change.afterEntryId || section?.items.some((entry) => entry.id === change.afterEntryId);
       return section && hasPlace ? null : 'unknown-target';
     }
+    case 'section':
+      return change.afterSectionId === null || findSection(doc, change.afterSectionId)
+        ? null
+        : 'changed-since-read';
+    case 'rename':
+      return compareText(findSection(doc, change.sectionId)?.label, change.before);
   }
 }
 
@@ -183,8 +189,11 @@ export function readChangedIds(change: ProposalChange): string[] {
       return [change.firstId, change.secondId];
     case 'reorder':
       return change.after;
+    case 'rename':
+      return [change.sectionId];
     case 'add':
     case 'entry':
+    case 'section':
       return [];
   }
 }

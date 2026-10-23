@@ -18,6 +18,8 @@ import { BackLink, Caption, CaptionTag, Lines, TagLine } from './BodyParts';
 import { readFlaggedWords, readLostWords } from './describeFlag';
 import { EntryFacts } from './EntryFacts';
 import { GapField } from './GapField';
+import { NewSectionBody } from './NewSectionBody';
+import { RenameBody } from './RenameBody';
 import { StaleBody } from './StaleBody';
 import { SuggestionEditor } from './SuggestionEditor';
 import { SuggestionFlags } from './SuggestionFlags';
@@ -51,6 +53,8 @@ const KIND_BODIES: Record<ProposalChangeKind, (props: SuggestionBodyProps) => Re
   select: SelectBody,
   add: AddedTextBody,
   entry: ({ proposal }) => <EntryFacts proposal={proposal} />,
+  section: NewSectionBody,
+  rename: RenameBody,
 };
 
 /** What the suggestion writes before the gap is filled: the user's words, or the assistant's. */

@@ -86,3 +86,35 @@ describe('resolveChange, added text', () => {
     });
   });
 });
+
+describe('resolveChange, a new section', () => {
+  it('takes the heading the user gave, and their facts, which they confirm one by one', () => {
+    const proposal = {
+      ...makeProposal(
+        {
+          kind: 'section',
+          afterSectionId: 's1',
+          section: { kind: 'certifications', layout: 'entries', label: 'Certifications' },
+          contents: {
+            layout: 'entries',
+            entry: {
+              frame: { title: 'Solutions Architect', organization: 'Amazon Web Services' },
+              bullets: [' '],
+            },
+          },
+        },
+        'p1'
+      ),
+      review: {
+        sectionLabel: 'Certificates',
+        factEdits: { title: 'Solutions Architect, Associate' },
+        confirmedFacts: ['title' as const],
+      },
+    };
+    expect(resolveChange(proposal)).toMatchObject({
+      section: { label: 'Certificates' },
+      contents: { entry: { frame: { title: 'Solutions Architect, Associate' } } },
+    });
+    expect(findUnconfirmedFacts(proposal)).toEqual(['organization']);
+  });
+});

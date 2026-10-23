@@ -17,6 +17,8 @@ const KIND_LABELS: Record<ProposalChange['kind'], (change: ProposalChange) => st
   add: (change) =>
     change.kind === 'add' && change.place.unit === 'line' ? 'New line' : 'New bullet',
   entry: () => 'New entry',
+  section: () => 'New section',
+  rename: () => 'Rename',
 };
 
 export function labelSuggestionKind(change: ProposalChange): string {
@@ -46,7 +48,7 @@ function nameWithin(doc: ResumeData, section: ResumeSection) {
   return { entry, bulletNumber, bullet, line, text };
 }
 
-/** The section a change is in; the sections' order is in none. */
+/** The section a change is in; a new section and the sections' order are in none. */
 function readSectionId(change: ProposalChange): string | null {
   switch (change.kind) {
     case 'rewrite':
@@ -55,6 +57,8 @@ function readSectionId(change: ProposalChange): string | null {
       return change.place.sectionId;
     case 'reorder':
       return change.place.unit === 'sections' ? null : change.place.sectionId;
+    case 'section':
+      return null;
     default:
       return change.sectionId;
   }
@@ -77,6 +81,7 @@ function nameAddedPlace(
 
 /** Its place, from the section down: the section's label, the entry, then the bullets. */
 export function placeSuggestion(doc: ResumeData, change: ProposalChange): string[] {
+  if (change.kind === 'section') return [`${change.section.label}, new section`];
   const sectionId = readSectionId(change);
   if (sectionId === null) return ['Section order'];
   const section = findSection(doc, sectionId);
@@ -108,6 +113,8 @@ export function placeSuggestion(doc: ResumeData, change: ProposalChange): string
       const after = change.afterEntryId && within.entry(change.afterEntryId);
       return path(after ? `new entry, after ${after}` : 'new entry, first');
     }
+    case 'rename':
+      return path('heading');
   }
 }
 

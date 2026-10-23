@@ -128,3 +128,22 @@ describe('buildSuggestionPage, whole entries and sections', () => {
     expect(page.marks.get('e2')).toMatchObject({ look: 'add', block: 'back' });
   });
 });
+
+describe('buildSuggestionPage, new sections and headings', () => {
+  it('lays a new section in marked as added, and marks a renamed heading', () => {
+    const page = buildSuggestionPage(makeResume(), [
+      proposal('talks', {
+        kind: 'section',
+        afterSectionId: 's1',
+        section: { kind: 'custom', layout: 'lines', label: 'Talks' },
+        contents: { layout: 'lines', lines: ['A talk'] },
+      }),
+      proposal('rename', { kind: 'rename', sectionId: 's1', before: 'Experience', after: 'Work' }),
+    ]);
+    const talks = page.doc.sections.find((section) => section.label === 'Talks')!;
+    expect(page.marks.get(talks.id)).toMatchObject({ look: 'add' });
+    expect(page.marks.get(talks.items[0].id)).toMatchObject({ look: 'add' });
+    expect(page.doc.sections[0].label).toBe('Work');
+    expect(page.marks.get('s1')).toMatchObject({ look: 'edit' });
+  });
+});

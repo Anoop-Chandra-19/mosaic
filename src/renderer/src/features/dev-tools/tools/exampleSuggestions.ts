@@ -228,4 +228,39 @@ export const createExampleSuggestions = (): StagedChange[] => [
       after: ['ex-summary', 'ex-skills', sectionId, 'ex-education'],
     },
   },
+  {
+    source: 'rename',
+    reason: 'The heading most screens look for.',
+    change: { kind: 'rename', sectionId, before: 'Experience', after: 'Work Experience' },
+  },
+  {
+    source: 'section',
+    reason: 'You mentioned the certificate. Its facts need you.',
+    change: {
+      kind: 'section',
+      afterSectionId: 'ex-education',
+      section: { kind: 'certifications', layout: 'entries', label: 'Certifications' },
+      contents: {
+        layout: 'entries',
+        entry: {
+          frame: {
+            title: 'Solutions Architect, Associate',
+            organization: 'Amazon Web Services',
+            dates: '2023',
+          },
+          bullets: [],
+        },
+      },
+    },
+  },
+  {
+    source: 'section',
+    reason: 'Your talks, as you listed them.',
+    change: {
+      kind: 'section',
+      afterSectionId: 'ex-skills',
+      section: { kind: 'custom', layout: 'lines', label: 'Talks' },
+      contents: { layout: 'lines', lines: ['Postgres at scale, PDX Backend Meetup, 2024'] },
+    },
+  },
 ];

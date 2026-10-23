@@ -34,7 +34,7 @@ function readOrderKey(place: OrderPlace): string {
 
 /**
  * What a change is a suggestion for, so a second one of its kind replaces the first. Added
- * text and new entries have none: two of them are two suggestions.
+ * text and new entries and sections have none: two of them are two suggestions.
  */
 function targetKeyOf(change: ProposalChange): string | null {
   switch (change.kind) {
@@ -48,8 +48,11 @@ function targetKeyOf(change: ProposalChange): string | null {
       return `merge:${change.firstId}`;
     case 'reorder':
       return `reorder:${readOrderKey(change.place)}`;
+    case 'rename':
+      return `rename:${change.sectionId}`;
     case 'add':
     case 'entry':
+    case 'section':
       return null;
   }
 }

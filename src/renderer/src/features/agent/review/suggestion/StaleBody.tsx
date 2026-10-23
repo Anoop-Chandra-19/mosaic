@@ -2,7 +2,12 @@ import { Clock } from 'lucide-react';
 import { Text } from '@/components/ui-kit';
 import type { ProposalChange } from '@shared/types/agentProposal';
 import type { ResumeData } from '@shared/types/resume';
-import { findEntry, findTextItem, readShownName } from '../../proposals/proposalAnchor';
+import {
+  findEntry,
+  findSection,
+  findTextItem,
+  readShownName,
+} from '../../proposals/proposalAnchor';
 import { Caption } from './BodyParts';
 import type { SuggestionBodyProps } from './SuggestionBody';
 import { describeStaleChange, nameTextPlace } from './suggestionWords';
@@ -14,6 +19,8 @@ function readTextNow(draft: ResumeData, change: ProposalChange): string | undefi
       return findTextItem(draft, change.place)?.text;
     case 'select':
       return readShownName(draft, change.place);
+    case 'rename':
+      return findSection(draft, change.sectionId)?.label;
     case 'split':
       return findTextItem(draft, { unit: 'bullet', ...pickBullet(change) })?.text;
     case 'merge': {
@@ -41,6 +48,7 @@ const pickBullet = ({
 function readWasAndWould(change: ProposalChange): { was: string; would?: string } | null {
   switch (change.kind) {
     case 'rewrite':
+    case 'rename':
       return { was: change.before, would: change.after };
     case 'merge':
       return { was: change.before.join(' '), would: change.after };
@@ -57,6 +65,7 @@ function readWasAndWould(change: ProposalChange): { was: string; would?: string 
 /** What a card calls its text in "Your bullet now": by its place. */
 function nameNoun(draft: ResumeData, change: ProposalChange): string {
   if (change.kind === 'rewrite') return nameTextPlace(draft, change.place);
+  if (change.kind === 'rename') return 'heading';
   if (change.kind !== 'select') return 'bullet';
   const { place } = change;
   return place.unit === 'bullet' || place.unit === 'line'
@@ -75,7 +84,7 @@ function readUndoHint(change: ProposalChange): string {
 }
 
 const canUseAnyway = (change: ProposalChange) =>
-  change.kind === 'rewrite' || change.kind === 'merge';
+  change.kind === 'rewrite' || change.kind === 'merge' || change.kind === 'rename';
 
 /** Out of date: what changed under it, what it was for, and the ways back to it. */
 export function StaleBody({ proposal, draft }: SuggestionBodyProps) {

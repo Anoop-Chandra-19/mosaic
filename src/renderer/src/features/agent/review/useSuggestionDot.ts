@@ -42,6 +42,10 @@ function readDots(change: ProposalChange): [string, string][] {
     }
     case 'entry':
       return [[change.sectionId, 'A new entry is suggested for this section.']];
+    case 'rename':
+      return [[change.sectionId, 'A suggestion to rename this heading is waiting.']];
+    case 'section':
+      return [];
     case 'reorder': {
       if (change.place.unit !== 'sections') return [];
       const moved = change.after.filter((id, index) => change.before[index] !== id);
