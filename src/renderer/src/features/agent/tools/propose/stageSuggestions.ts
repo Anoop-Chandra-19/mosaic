@@ -1,5 +1,5 @@
 import { checkProposal } from '@/features/agent/proposals/checkProposal';
-import { readTextPlaceId } from '@/features/agent/proposals/proposalAnchor';
+import { readShowPlaceId, readTextPlaceId } from '@/features/agent/proposals/proposalAnchor';
 import {
   discardProposals,
   stageProposals,
@@ -26,9 +26,11 @@ import { describeFlag, describeResult, describeTarget } from './describeForModel
 /** Never what the user meant: sent back to fix before anything is staged. */
 const DEFINITE_MISTAKES: ReadonlySet<ProposalFlagKind> = new Set(['doubledWords']);
 
-/** The list a reorder is of, as a key: the section's or entry's id. */
-const readOrderKey = (place: OrderPlace) =>
-  place.unit === 'bullets' ? place.entryId : place.sectionId;
+/** The list a reorder is of, as a key: "sections", or the section's or entry's id. */
+function readOrderKey(place: OrderPlace): string {
+  if (place.unit === 'sections') return 'sections';
+  return place.unit === 'bullets' ? place.entryId : place.sectionId;
+}
 
 /**
  * What a change is a suggestion for, so a second one of its kind replaces the first. Added
@@ -39,7 +41,7 @@ function targetKeyOf(change: ProposalChange): string | null {
     case 'rewrite':
       return `rewrite:${readTextPlaceId(change.place)}`;
     case 'select':
-      return `select:${readTextPlaceId(change.place)}`;
+      return `select:${readShowPlaceId(change.place)}`;
     case 'split':
       return `split:${change.bulletId}`;
     case 'merge':

@@ -50,6 +50,7 @@ export function SuggestionMark({ mark, children }: { mark: Mark; children: React
   const isLive = state !== 'dropped' && state !== 'stale';
   const flagCount = isLive ? proposal.flags.length : 0;
   const isCurrent = selectedId === proposal.id;
+  const isLeavingBlock = mark.block === 'leaving' && isLive;
   const title =
     state === 'stale'
       ? 'Out of date: you changed this after it was suggested'
@@ -67,7 +68,12 @@ export function SuggestionMark({ mark, children }: { mark: Mark; children: React
         LOOK_CLASSES[look],
         STATE_CLASSES[state],
         isCurrent && CURRENT_CLASSES[look],
-        look === 'hide' && isLive && 'line-through decoration-paper-del opacity-50'
+        look === 'hide' &&
+          isLive &&
+          !isLeavingBlock &&
+          'line-through decoration-paper-del opacity-50',
+        // The heading of a whole entry or section leaving: struck, on the block's faded ink.
+        isLeavingBlock && 'static bg-transparent text-paper-tag line-through decoration-paper-del'
       )}
     >
       {flagCount > 0 && (
@@ -86,19 +92,32 @@ export function SuggestionMark({ mark, children }: { mark: Mark; children: React
   );
 }
 
-/** The chip a reorder leaves beside a bullet it moves. */
-export function SuggestionMoveChip({ move }: { move: SuggestionMove }) {
+/** A small chip on the page beside what a suggestion moves or brings back. */
+function PageChip({ proposalId, children }: { proposalId: string; children: ReactNode }) {
   const { select } = use(SuggestionSelection);
-  const { from, to } = move;
   return (
     <span
       onClick={(event) => {
         event.stopPropagation();
-        select(move.proposal.id);
+        select(proposalId);
       }}
-      className="ml-1.25 inline-flex cursor-pointer items-center gap-0.75 rounded-[0.1875rem] border border-paper-add bg-paper-add-soft px-1 align-[1.5px] font-sans text-[0.5rem] font-bold tracking-[0.03em] whitespace-nowrap text-paper-add uppercase"
+      className="ml-1.25 inline-flex cursor-pointer items-center gap-0.75 rounded-[0.1875rem] border border-paper-add bg-paper-add-soft px-1 align-[1.5px] font-sans text-[0.5rem] font-bold tracking-[0.03em] whitespace-nowrap text-paper-add not-italic uppercase"
     >
-      moved {from}→{to}
+      {children}
     </span>
   );
+}
+
+/** The chip a reorder leaves beside a bullet, entry or section it moves. */
+export function SuggestionMoveChip({ move }: { move: SuggestionMove }) {
+  return (
+    <PageChip proposalId={move.proposal.id}>
+      moved {move.from}→{move.to}
+    </PageChip>
+  );
+}
+
+/** Beside the heading of an entry or section a suggestion puts back on the page. */
+export function SuggestionBackChip({ mark }: { mark: Mark }) {
+  return <PageChip proposalId={mark.proposal.id}>back on the page</PageChip>;
 }

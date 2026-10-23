@@ -104,3 +104,27 @@ describe('buildSuggestionPage, added text', () => {
     expect(page.marks.get(bullets[1].id)).toMatchObject({ look: 'add' });
   });
 });
+
+describe('buildSuggestionPage, whole entries and sections', () => {
+  it('keeps an entry leaving on the page as a block, and lays one coming back in', () => {
+    const doc = makeResume();
+    doc.sections[0].items[1].selected = false;
+    const page = buildSuggestionPage(doc, [
+      proposal('leave', {
+        kind: 'select',
+        place: { unit: 'entry', sectionId: 's1', entryId: 'e1' },
+        before: 'Backend Engineer, Harbor Freight Labs',
+        selected: false,
+      }),
+      proposal('back', {
+        kind: 'select',
+        place: { unit: 'entry', sectionId: 's1', entryId: 'e2' },
+        before: 'Intern, Lantern Maps',
+        selected: true,
+      }),
+    ]);
+    expect(page.doc.sections[0].items.map((entry) => entry.selected)).toEqual([true, true]);
+    expect(page.marks.get('e1')).toMatchObject({ look: 'hide', block: 'leaving' });
+    expect(page.marks.get('e2')).toMatchObject({ look: 'add', block: 'back' });
+  });
+});

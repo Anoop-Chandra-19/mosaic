@@ -187,3 +187,50 @@ describe('added text and lines', () => {
     expect(applyProposalsToResume(makeResume(), [gone]).skippedIds).toEqual(['gone']);
   });
 });
+
+describe('whole entries and sections', () => {
+  it('leaves an entry or a section off the page, and puts a section back', () => {
+    const doc = makeResumeWithLines();
+    doc.sections[2].hidden = true;
+    const changes: ProposalChange[] = [
+      {
+        kind: 'select',
+        place: { unit: 'entry', sectionId: 's1', entryId: 'e2' },
+        before: 'Intern, Lantern Maps',
+        selected: false,
+      },
+      {
+        kind: 'select',
+        place: { unit: 'section', sectionId: 's2' },
+        before: 'Summary',
+        selected: false,
+      },
+      {
+        kind: 'select',
+        place: { unit: 'section', sectionId: 's3' },
+        before: 'Skills',
+        selected: true,
+      },
+    ];
+    const result = applyProposalsToResume(
+      doc,
+      changes.map((change, index) => makeProposal(change, `p${index}`))
+    );
+    expect(result.skippedIds).toEqual([]);
+    expect(result.doc.sections[0].items[1].selected).toBe(false);
+    expect(result.doc.sections[1].hidden).toBe(true);
+    expect(result.doc.sections[2].hidden).toBeUndefined();
+  });
+
+  it('puts the sections in a new order', () => {
+    const change: ProposalChange = {
+      kind: 'reorder',
+      place: { unit: 'sections' },
+      before: ['s1', 's2', 's3'],
+      after: ['s3', 's1', 's2'],
+    };
+    const { doc } = applyProposalsToResume(makeResumeWithLines(), [makeProposal(change, 'p1')]);
+    const printed = [...doc.sections].sort((a, b) => a.order - b.order).map((s) => s.label);
+    expect(printed).toEqual(['Skills', 'Experience', 'Summary']);
+  });
+});

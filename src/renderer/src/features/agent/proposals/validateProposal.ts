@@ -1,6 +1,6 @@
 import type { ProposalChange, ProposalChangeKind } from '@shared/types/agentProposal';
 import type { ResumeData } from '@shared/types/resume';
-import { findAnchorMismatch, findTextItem, type AnchorMismatch } from './proposalAnchor';
+import { findAnchorMismatch, isPlaceShown, type AnchorMismatch } from './proposalAnchor';
 
 export type ProposalRefusalCode =
   | AnchorMismatch
@@ -71,7 +71,7 @@ function findShapeProblem(doc: ResumeData, change: ProposalChange): ProposalRefu
       if (!isPermutation(change.before, change.after)) return 'not-a-permutation';
       return change.after.every((id, index) => id === change.before[index]) ? 'unchanged' : null;
     case 'select':
-      return findTextItem(doc, change.place)?.selected === change.selected ? 'unchanged' : null;
+      return isPlaceShown(doc, change.place) === change.selected ? 'unchanged' : null;
     case 'add':
       return hasText(change.text) ? null : 'empty-text';
     case 'entry':

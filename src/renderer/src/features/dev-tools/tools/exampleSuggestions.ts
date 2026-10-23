@@ -198,4 +198,34 @@ export const createExampleSuggestions = (): StagedChange[] => [
       text: 'Spanish and Norwegian',
     },
   },
+  {
+    source: 'select',
+    reason: 'A degree from 2019 says less than the work since. It stays in your content.',
+    change: {
+      kind: 'select',
+      place: { unit: 'entry', sectionId: 'ex-education', entryId: 'ex-psu' },
+      before: 'B.S. Computer Science, Portland State University',
+      selected: false,
+    },
+  },
+  {
+    source: 'select',
+    reason: 'To fit one page. Your education stays in your content.',
+    change: {
+      kind: 'select',
+      place: { unit: 'section', sectionId: 'ex-education' },
+      before: 'Education',
+      selected: false,
+    },
+  },
+  {
+    source: 'reorder',
+    reason: 'Skills first, for a screen that reads keywords.',
+    change: {
+      kind: 'reorder',
+      place: { unit: 'sections' },
+      before: ['ex-summary', sectionId, 'ex-education', 'ex-skills'],
+      after: ['ex-summary', 'ex-skills', sectionId, 'ex-education'],
+    },
+  },
 ];

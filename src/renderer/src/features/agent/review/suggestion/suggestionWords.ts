@@ -49,11 +49,24 @@ export function describeStaleChange(draft: ResumeData, change: ProposalChange): 
       return `The ${noun} it was to follow is gone, so this has no place to go.`;
     }
     case 'reorder': {
-      const items = change.place.unit === 'bullets' ? 'bullets' : 'entries';
+      const { place } = change;
+      if (place.unit === 'sections')
+        return 'You moved your sections after this order was suggested.';
+      const items = place.unit === 'bullets' ? 'bullets' : 'entries';
       return `You reordered these ${items} after this order was suggested.`;
     }
-    case 'select':
-      return TEXT_STALE[nameTextPlace(draft, change.place)];
+    case 'select': {
+      const { place } = change;
+      if (place.unit === 'bullet' || place.unit === 'line') {
+        return TEXT_STALE[nameTextPlace(draft, place)];
+      }
+      if (place.unit === 'section') {
+        const label = findSection(draft, place.sectionId)?.label ?? '';
+        return `You changed the ${label} section after this was suggested.`;
+      }
+      const entry = nameEntry(findEntry(draft, place.sectionId, place.entryId));
+      return `You changed ${entry} after this was suggested.`;
+    }
     case 'entry':
       return 'The entry it was to follow is gone, so this has no place to go.';
   }

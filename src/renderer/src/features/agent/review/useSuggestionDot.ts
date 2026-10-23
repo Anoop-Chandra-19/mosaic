@@ -2,7 +2,7 @@ import type { Proposal, ProposalChange } from '@shared/types/agentProposal';
 import { useAgentSettingsStore } from '@/stores/agentSettingsStore';
 import { selectTemplateProposals, useProposalStore } from '@/stores/proposalStore';
 import { useResumeStore } from '@/stores/resumeStore';
-import { readTextPlaceId } from '../proposals/proposalAnchor';
+import { readShowPlaceId, readTextPlaceId } from '../proposals/proposalAnchor';
 
 /** The suggestion an editor bullet, line, entry or section points to, and why. */
 export interface SuggestionDot {
@@ -16,8 +16,17 @@ export interface SuggestionDot {
 function readDots(change: ProposalChange): [string, string][] {
   switch (change.kind) {
     case 'rewrite':
-    case 'select':
       return [[readTextPlaceId(change.place), 'A suggestion is waiting here.']];
+    case 'select': {
+      const { place, selected } = change;
+      if (place.unit === 'bullet' || place.unit === 'line') {
+        return [[readShowPlaceId(place), 'A suggestion is waiting here.']];
+      }
+      const waiting = selected
+        ? `A suggestion to put this ${place.unit} back on the page is waiting.`
+        : `A suggestion to leave this ${place.unit} off the page is waiting.`;
+      return [[readShowPlaceId(place), waiting]];
+    }
     case 'split':
       return [[change.bulletId, 'A suggestion is waiting here.']];
     case 'merge':
@@ -33,8 +42,11 @@ function readDots(change: ProposalChange): [string, string][] {
     }
     case 'entry':
       return [[change.sectionId, 'A new entry is suggested for this section.']];
-    case 'reorder':
-      return [];
+    case 'reorder': {
+      if (change.place.unit !== 'sections') return [];
+      const moved = change.after.filter((id, index) => change.before[index] !== id);
+      return moved.map((id) => [id, 'A suggestion moves this section.']);
+    }
   }
 }
 

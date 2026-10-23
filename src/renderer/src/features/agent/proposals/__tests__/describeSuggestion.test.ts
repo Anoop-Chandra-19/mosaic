@@ -92,3 +92,31 @@ describe('added text and lines', () => {
     );
   });
 });
+
+describe('whole entries, sections and their order', () => {
+  it('names an entry by where it was, a section by its label, and the order as such', () => {
+    const lines = makeResumeWithLines();
+    const select = (
+      place: Extract<ProposalChange, { kind: 'select' }>['place']
+    ): ProposalChange => ({
+      kind: 'select',
+      place,
+      before: '',
+      selected: false,
+    });
+    expect(
+      placeSuggestion(lines, select({ unit: 'entry', sectionId: 's1', entryId: 'e2' }))
+    ).toEqual(['Experience', 'Lantern Maps']);
+    expect(placeSuggestion(lines, select({ unit: 'section', sectionId: 's3' }))).toEqual([
+      'Skills',
+    ]);
+    expect(
+      placeSuggestion(lines, {
+        kind: 'reorder',
+        place: { unit: 'sections' },
+        before: [],
+        after: [],
+      })
+    ).toEqual(['Section order']);
+  });
+});

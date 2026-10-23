@@ -43,6 +43,9 @@ export interface PageDecorations {
   line?: (lineId: string, text: ReactNode) => ReactNode;
   entryHeading?: (entryId: string, heading: ReactNode) => ReactNode;
   entryDates?: (entryId: string, dates: ReactNode) => ReactNode;
+  sectionLabel?: (sectionId: string, label: ReactNode) => ReactNode;
+  /** A class for a whole entry or section, by its id. It must not change the layout. */
+  blockClassName?: (id: string) => string | undefined;
 }
 
 interface PreviewSectionProps {
@@ -87,7 +90,7 @@ export function PreviewSection({ section, marks, decorations }: PreviewSectionPr
         // One blank body line above each section header, none above the first.
         marginTop: `${LYT.bodyLeading}px`,
       }}
-      className="first:mt-0"
+      className={cn('first:mt-0', decorations?.blockClassName?.(section.id))}
       data-preview-section-id={section.id}
     >
       {/*
@@ -101,7 +104,11 @@ export function PreviewSection({ section, marks, decorations }: PreviewSectionPr
           style={bodyText}
           data-preview-section-title-id={section.id}
         >
-          {markLine(findMarks(marks, 'section', section.id), section.label)}
+          {decorate(
+            decorations?.sectionLabel,
+            section.id,
+            markLine(findMarks(marks, 'section', section.id), section.label)
+          )}
         </h2>
       )}
 
@@ -125,6 +132,7 @@ export function PreviewSection({ section, marks, decorations }: PreviewSectionPr
           ) : (
             <article
               key={entry.id}
+              className={decorations?.blockClassName?.(entry.id)}
               data-preview-entry-id={entry.id}
               data-preview-entry-key={`${section.id}::${entry.id}`}
               data-preview-section-id={section.id}
