@@ -1,7 +1,7 @@
 import {
   labelSuggestionKind,
   placeSuggestion,
-} from '@/features/agent/proposals/describeSuggestion';
+} from '@/features/suggestions/proposals/describeSuggestion';
 import { versionLabel } from '@/features/history/versionLabel';
 import { GETTING_STARTED_STEPS } from '@/features/onboarding/getting-started/gettingStartedSteps';
 import { HISTORY_TOUR_STEPS } from '@/features/onboarding/history/historyTourSteps';

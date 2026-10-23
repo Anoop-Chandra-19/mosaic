@@ -6,7 +6,7 @@ import { PreviewPanel } from './PreviewPanel';
 import { Toast } from './Toast';
 import { AgentPane } from '@/features/agent/AgentPane';
 import { DevTools } from '@/features/dev-tools/DevTools';
-import { SuggestionReview } from '@/features/agent/review/SuggestionReview';
+import { SuggestionReview } from '@/features/suggestions/review/SuggestionReview';
 import { RestoreBackupDialog } from '@/features/backup/RestoreBackupDialog';
 import { ExportDialog } from '@/features/export/ExportDialog';
 import { FullHistory } from '@/features/history/full-history/FullHistory';

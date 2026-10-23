@@ -1,6 +1,6 @@
 import type { ProposalChange, ProposalFlag, ProposalFlagKind } from '@shared/types/agentProposal';
 import { formatEntryHeading } from '@shared/resume/entryHeading';
-import { readShowPlaceId, readTextPlaceId } from '@/features/agent/proposals/proposalAnchor';
+import { readShowPlaceId, readTextPlaceId } from '@/features/suggestions/proposals/proposalAnchor';
 import type { AgentToolRun } from '../agentToolRun';
 
 /*

@@ -1,4 +1,4 @@
-import { discardProposals, stageProposals } from '@/features/agent/proposals/proposalActions';
+import { discardProposals, stageProposals } from '@/features/suggestions/proposals/proposalActions';
 import { chooseBackup } from '@/features/backup/backupFiles';
 import { useAgentSettingsStore } from '@/stores/agentSettingsStore';
 import { useOverlayStore } from '@/stores/overlayStore';

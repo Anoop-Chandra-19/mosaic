@@ -5,7 +5,7 @@ import type { Proposal, ProposalStatus } from '@shared/types/agentProposal';
 /*
  * The staging layer: the assistant's suggestions, waiting over each template's draft and
  * never inside it. State only. Staging, checking and applying are
- * `features/agent/proposals/`, which are the only writers. In memory until the agent's
+ * `features/suggestions/proposals/`, which are the only writers. In memory until the agent's
  * tables keep them.
  */
 

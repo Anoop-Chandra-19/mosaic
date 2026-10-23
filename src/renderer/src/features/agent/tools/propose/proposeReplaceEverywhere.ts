@@ -1,4 +1,4 @@
-import type { StagedChange } from '@/features/agent/proposals/proposalActions';
+import type { StagedChange } from '@/features/suggestions/proposals/proposalActions';
 import type { AgentToolArgs } from '@shared/agent-tools/agentTools';
 import { refuse, type AgentToolRun, type ToolAnswer } from '../agentToolRun';
 import { replaceEveryWholeWord } from '../replaceEveryWholeWord';

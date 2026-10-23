@@ -1,10 +1,10 @@
-import { checkProposal } from '@/features/agent/proposals/checkProposal';
-import { readShowPlaceId, readTextPlaceId } from '@/features/agent/proposals/proposalAnchor';
+import { checkProposal } from '@/features/suggestions/proposals/checks/checkProposal';
+import { readShowPlaceId, readTextPlaceId } from '@/features/suggestions/proposals/proposalAnchor';
 import {
   discardProposals,
   stageProposals,
   type StagedChange,
-} from '@/features/agent/proposals/proposalActions';
+} from '@/features/suggestions/proposals/proposalActions';
 import { useProposalStore } from '@/stores/proposalStore';
 import { getResumeSnapshot } from '@/stores/resumeStore';
 import type {
