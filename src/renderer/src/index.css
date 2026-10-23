@@ -167,6 +167,8 @@
   --color-paper-flag: var(--paper-flag);
   --color-paper-stale-line: var(--paper-stale-line);
   --color-paper-stale-text: var(--paper-stale-text);
+  --color-paper-outline: var(--paper-outline);
+  --color-paper-outline-open: var(--paper-outline-open);
   --color-swatch-add: var(--swatch-add);
   --color-swatch-add-line: var(--swatch-add-line);
   --color-swatch-del: var(--swatch-del);
@@ -468,6 +470,9 @@
   --paper-flag: #c2620f;
   --paper-stale-line: #9a9a9a;
   --paper-stale-text: #555;
+  /* Preview's outline round what a suggestion made: dashed on hover, washed while open. */
+  --paper-outline: #8a8a8a;
+  --paper-outline-open: oklch(0.93 0.13 80 / 22%);
   /* The version banner's swatches, each the mark its phrase stands for on the page. */
   --swatch-add: oklch(0.86 0.14 150 / 55%);
   --swatch-add-line: #3f8f5f;

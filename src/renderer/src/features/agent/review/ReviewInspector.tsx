@@ -1,36 +1,27 @@
 import { useState } from 'react';
-import {
-  ChevronDown,
-  ChevronLeft,
-  ChevronRight,
-  ChevronUp,
-  Info,
-  Lock,
-  TriangleAlert,
-} from 'lucide-react';
+import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Info } from 'lucide-react';
 import { AppButton, Text } from '@/components/ui-kit';
 import { ShortcutKeys } from '@/features/shortcuts/ShortcutKeys';
 import { getShortcutCombos, useShortcutLabel } from '@/features/shortcuts/shortcutBindings';
 import type { ShortcutId } from '@/lib/shortcutCatalog';
 import { cn } from '@/lib/utils';
-import type { Proposal, ProposalChange } from '@shared/types/agentProposal';
+import type { Proposal } from '@shared/types/agentProposal';
 import type { ResumeData } from '@shared/types/resume';
-import { labelSuggestionKind, placeSuggestion } from '../proposals/describeSuggestion';
+import { placeSuggestion } from '../proposals/describeSuggestion';
 import { DropReasons } from './suggestion/DropReasons';
 import { SuggestionActions } from './suggestion/SuggestionActions';
 import { SuggestionBody } from './suggestion/SuggestionBody';
 import { SuggestionKindChip } from './suggestion/SuggestionKindChip';
 import {
   countSuggestions,
-  FLAG_LABELS,
   labelSuggestionState,
-  needsNumber,
   readSuggestionState,
   STATE_TONES,
 } from './suggestionState';
+import { SuggestionRow } from './SuggestionRow';
 
 /** How the left side shows the suggestions, which the list's hint speaks to. */
-export type ReviewMode = 'page' | 'cards';
+export type ReviewMode = 'page' | 'cards' | 'preview';
 
 interface ReviewInspectorProps {
   proposals: Proposal[];
@@ -56,6 +47,7 @@ export function ReviewInspector({ proposals, selectedId, ...props }: ReviewInspe
 const LIST_HINTS: Record<ReviewMode, string> = {
   page: 'Click a mark on the page to read it beside your words.',
   cards: 'Pick one to read it beside your words.',
+  preview: 'Pick one to read it. Keeping or dropping changes the preview at once.',
 };
 
 function SuggestionList({
@@ -103,62 +95,8 @@ function SuggestionList({
   );
 }
 
-function KeyHint({ id }: { id: ShortcutId }) {
+export function KeyHint({ id }: { id: ShortcutId }) {
   return <ShortcutKeys combos={getShortcutCombos(id).slice(0, 1)} />;
-}
-
-/** What a row is about: its bullet or entry, or for a new entry, the entry's own name. */
-function nameRowTarget(change: ProposalChange, place: string[]): string | undefined {
-  if (change.kind !== 'entry') return place.at(-1);
-  return change.frame.organization?.trim() || change.frame.title?.trim() || place.at(-1);
-}
-
-function SuggestionRow({
-  proposal,
-  number,
-  place,
-  onClick,
-}: {
-  proposal: Proposal;
-  number: number;
-  place: string[];
-  onClick: () => void;
-}) {
-  const state = readSuggestionState(proposal);
-  const flags = state === 'stale' || state === 'dropped' ? [] : proposal.flags;
-  const isBlocked = needsNumber(proposal);
-  const FlagIcon = isBlocked ? Lock : TriangleAlert;
-  return (
-    <AppButton
-      variant="ghost"
-      shape="text"
-      onClick={onClick}
-      className="flex w-full items-center gap-2.25 rounded-[0.4375rem] px-2 py-1.75"
-    >
-      <span className={cn('size-1.75 shrink-0 rounded-full', STATE_TONES[state].dot)} />
-      <span className="min-w-0 flex-1">
-        <Text as="span" variant="body" className="block truncate font-control text-foreground">
-          {labelSuggestionKind(proposal.change)}, {nameRowTarget(proposal.change, place)}
-        </Text>
-        <Text as="span" variant="secondary" className="block truncate text-ink-muted">
-          {state === 'stale' ? 'Out of date' : place.at(-2)}
-        </Text>
-      </span>
-      {flags.length > 0 && (
-        <Text
-          variant="meta"
-          className="inline-flex items-center gap-0.75 text-warn"
-          title={flags.map((flag) => FLAG_LABELS[flag.kind]).join('\n')}
-        >
-          <FlagIcon className="size-2.5" />
-          {flags.length}
-        </Text>
-      )}
-      <Text variant="meta" className="text-ink-faint">
-        {String(number).padStart(2, '0')}
-      </Text>
-    </AppButton>
-  );
 }
 
 function SuggestionDetail({

@@ -73,12 +73,16 @@ export function reviewedRequestText({ requestText, review }: Proposal): string {
   return [requestText, review.userText, review.filledNumber].filter(Boolean).join('\n');
 }
 
+/** A new entry's facts that have text, which the user confirms one by one. */
+export function findWrittenFacts(proposal: Proposal): EntryFact[] {
+  const entry = readEntryDraft(resolveChange(proposal));
+  return entry ? ENTRY_FACTS.filter((fact) => entry.frame[fact]?.trim()) : [];
+}
+
 /** A new entry's facts that have text and that the user hasn't confirmed yet. */
 export function findUnconfirmedFacts(proposal: Proposal): EntryFact[] {
-  const entry = readEntryDraft(resolveChange(proposal));
-  if (!entry) return [];
   const confirmed = proposal.review.confirmedFacts ?? [];
-  return ENTRY_FACTS.filter((fact) => entry.frame[fact]?.trim() && !confirmed.includes(fact));
+  return findWrittenFacts(proposal).filter((fact) => !confirmed.includes(fact));
 }
 
 /** Can be kept: current, and with every fact confirmed. A gap still to fill is held back on apply. */

@@ -14,6 +14,7 @@ import { selectTemplateProposals, useProposalStore } from '@/stores/proposalStor
 import { useResumeStore } from '@/stores/resumeStore';
 import { AGENT_PANE_WIDTH, useUiStore } from '@/stores/uiStore';
 import { useViewPlaceStore } from '@/stores/viewPlaceStore';
+import type { ResumePreviewMeta } from '@/types/preview';
 import type { Proposal } from '@shared/types/agentProposal';
 import { acceptProposals, rejectProposals, returnProposals } from '../proposals/proposalActions';
 import { ApplyBar } from './apply/ApplyBar';
@@ -21,6 +22,9 @@ import { ApplyResult } from './apply/ApplyResult';
 import { useApplySuggestions } from './apply/useApplySuggestions';
 import { ReviewPage } from './page/ReviewPage';
 import { buildSuggestionPage } from './page/suggestionPage';
+import { PreviewList } from './preview/PreviewList';
+import { buildSuggestionPreview, type PreviewLook } from './preview/suggestionPreview';
+import { SuggestionPreviewPage } from './preview/SuggestionPreviewPage';
 import { ReviewBar } from './ReviewBar';
 import { ReviewInspector, type ReviewMode } from './ReviewInspector';
 import { DropReasons } from './suggestion/DropReasons';
@@ -32,6 +36,8 @@ import { canEditSuggestion } from './suggestionState';
  * The review of the assistant's suggestions: a surface over the whole window but the status
  * bar. On the left, the page as Apply would leave it (`page/`: `ReviewPage`, its marks from
  * `suggestionPage.ts`), or every suggestion as a card (`SuggestionCards`, "Compare all").
+ * Or Preview (`preview/`): the page as it would print, all suggested or only what was kept,
+ * the inspector a list saying why each is or isn't on it (`PreviewList`).
  * On the right, the inspector at the assistant pane's width (`ReviewInspector`). One
  * selection between them. `ReviewBar` sits on top. The inspector and the cards draw one
  * suggestion from the same parts (`suggestion/`: its body per kind, actions, drop reasons).
@@ -93,11 +99,35 @@ export function SuggestionReview({ openOn }: { openOn?: string }) {
   }, []);
 
   const [mode, setMode] = useState<ReviewMode>('page');
-  const changeMode = (next: ReviewMode) =>
+  // Preview goes back to the view it was opened from.
+  const [modeBeforePreview, setModeBeforePreview] = useState<ReviewMode>('page');
+  const changeMode = (next: ReviewMode) => {
+    if (next === mode) return;
+    // Preview is a switch of view only, with no motion.
+    if (next === 'preview' || mode === 'preview') {
+      if (next === 'preview') setModeBeforePreview(mode);
+      setMode(next);
+      return;
+    }
     changeInViewTransition(
       () => setMode(next),
       next === 'cards' ? TRANSITION_TYPE.stepForward : TRANSITION_TYPE.stepBack
     );
+  };
+  const togglePreview = () => changeMode(mode === 'preview' ? modeBeforePreview : 'preview');
+  const [previewLook, setPreviewLook] = useState<PreviewLook>('all');
+  const [previewMeta, setPreviewMeta] = useState<ResumePreviewMeta>({
+    totalPages: 1,
+    hasMorePages: false,
+  });
+  const [hoveredId, setHoveredId] = useState<string | null>(null);
+  // Once applied, or with nothing waiting, the page is all there is to show.
+  const shownView: ReviewMode = proposals.length > 0 && !result ? mode : 'page';
+  const preview = useMemo(
+    () => (shownView === 'preview' ? buildSuggestionPreview(draft, proposals, previewLook) : null),
+    [shownView, draft, proposals, previewLook]
+  );
+  const notShown = proposals.filter((p) => preview?.notes.get(p.id)?.isOnPage === false);
   const [editingId, setEditingId] = useState<string | null>(null);
   // Drop all offers one reason for everything it dropped, until dismissed.
   const [droppedAllIds, setDroppedAllIds] = useState<string[] | null>(null);
@@ -134,6 +164,9 @@ export function SuggestionReview({ openOn }: { openOn?: string }) {
       id: 'editSuggestion',
       run: () => selected && canEditSuggestion(selected) && setEditingId(selected.id),
     },
+    { id: 'previewSuggestions', run: togglePreview },
+    { id: 'previewAllSuggested', run: () => mode === 'preview' && setPreviewLook('all') },
+    { id: 'previewWhatYouKept', run: () => mode === 'preview' && setPreviewLook('kept') },
   ];
   /** After Apply only two keys mean anything: undo takes it back, Esc leaves. */
   const handleResultKey = (event: KeyboardEvent) => {
@@ -161,6 +194,7 @@ export function SuggestionReview({ openOn }: { openOn?: string }) {
       event.preventDefault();
       if (editingId) setEditingId(null);
       else if (selectedId) select(null);
+      else if (mode === 'preview') changeMode(modeBeforePreview);
       else close();
       return;
     }
@@ -199,11 +233,29 @@ export function SuggestionReview({ openOn }: { openOn?: string }) {
           onModeChange={changeMode}
           onBack={close}
           onDroppedAll={setDroppedAllIds}
+          preview={
+            preview && {
+              look: previewLook,
+              onLookChange: setPreviewLook,
+              meta: previewMeta,
+              notShownCount: notShown.length,
+              onShowNotShown: () => notShown[0] && select(notShown[0].id),
+            }
+          }
         />
         {/* Narrow, the inspector docks under the page. */}
         <div className="grid min-h-0 flex-1 grid-cols-[minmax(20rem,1fr)_auto] @max-[62.5rem]/review:grid-cols-1 @max-[62.5rem]/review:grid-rows-[minmax(10rem,1fr)_minmax(0,46%)]">
           <div className="relative grid min-h-0 min-w-0">
-            {mode === 'cards' && proposals.length && !result ? (
+            {preview && (
+              <SuggestionPreviewPage
+                preview={preview}
+                look={previewLook}
+                hoveredId={hoveredId}
+                openId={selectedId}
+                onMetaChange={setPreviewMeta}
+              />
+            )}
+            {shownView === 'cards' && (
               <SuggestionCards
                 proposals={proposals}
                 draft={draft}
@@ -212,7 +264,8 @@ export function SuggestionReview({ openOn }: { openOn?: string }) {
                 editingId={editingId}
                 onEditingChange={setEditingId}
               />
-            ) : (
+            )}
+            {shownView === 'page' && (
               <ReviewPage page={page} selectedId={selectedId} onBlank={() => select(null)} />
             )}
             {droppedAll.length > 0 && !result && (
@@ -267,7 +320,23 @@ export function SuggestionReview({ openOn }: { openOn?: string }) {
                 onDone={close}
               />
             )}
-            {!result && proposals.length > 0 && (
+            {preview && (
+              <PreviewList
+                proposals={proposals}
+                draft={draft}
+                notes={preview.notes}
+                openId={selectedId}
+                onOpen={select}
+                onHover={setHoveredId}
+                editingId={editingId}
+                onEditingChange={setEditingId}
+                onShowOnPage={(id) => {
+                  changeMode('page');
+                  select(id);
+                }}
+              />
+            )}
+            {!preview && !result && proposals.length > 0 && (
               <ReviewInspector
                 proposals={proposals}
                 draft={draft}
