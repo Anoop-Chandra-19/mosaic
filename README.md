@@ -146,8 +146,8 @@ npm run dev
 ```
 
 Every script below works with either (`npm run <script>`). See
-[docs/development.md](docs/development.md) for development data, the React Compiler, and
-end-to-end tests.
+[docs/development.md](docs/development.md) for development data, optional local code-navigation
+graphs, dependency checks, the React Compiler, and end-to-end tests.
 
 ## Scripts
 
@@ -162,6 +162,9 @@ end-to-end tests.
 | `bun run check:typing` | Build, then check the preview keeps up with typing  |
 | `bun run check:speed`  | Build, then time everyday flows on a long resume    |
 | `bun run check:memory` | Build, then measure memory and leaks from views     |
+| `bun run check:deps`   | Check import cycles and architecture boundaries     |
+| `bun run graph:build`  | Build the optional local code graph (requires uv)   |
+| `bun run graph`        | Query/explain/trace the local graph; pass CLI args  |
 | `bun run lint`         | Run ESLint                                          |
 | `bun run format`       | Format supported project files with Oxfmt           |
 | `bun run format:check` | Check formatting without changing files             |

@@ -3,6 +3,73 @@
 Details for working on Mosaic: development data, the React Compiler, and end-to-end tests.
 Setup and scripts are in the [README](../README.md).
 
+## Code navigation and architecture checks
+
+These are development tools only: neither is imported by the app, required by its build,
+run automatically by Git hooks, or connected to Graphify Cloud.
+
+### Dependency checks
+
+```bash
+bun run check:deps
+```
+
+[dependency-cruiser](https://github.com/sverweij/dependency-cruiser) is an npm dev dependency.
+`.dependency-cruiser.cjs` checks all source TS/TSX files, including tests and type-only
+imports, for cycles and unresolved imports. It also checks process boundaries and reverse
+renderer-layer imports. Tests are exempt from layer restrictions, not cycle detection.
+Resolution follows the TypeScript aliases and Vite's exact `cn` alias; `import.meta.glob`
+is not expanded. It is an import-graph check, not a runtime behavior or DOM-usage audit.
+
+The command exits nonzero on violations. At introduction, it found one existing type-only
+cycle: `src/shared/types/bundle.ts → src/shared/types/db.ts → bundle.ts`. There is no
+suppression baseline; keep findings visible and fix them in a focused change rather than
+reorganizing application code as part of tooling setup.
+
+### Local Graphify graph
+
+Install [uv](https://docs.astral.sh/uv/getting-started/installation/) separately, then run:
+
+```bash
+bun run graph:build
+bun run graph query "flushDraft scheduleSave"
+bun run graph explain "flushDraft"
+bun run graph path "scheduleSave" "flushDraft"
+```
+
+Use the same scripts with `npm run`; npm needs `--` before forwarded arguments, for example
+`npm run graph -- explain "flushDraft"`. Ambiguous symbol names return candidates: use the
+qualified name or identifier reported by the tool rather than guessing which match it meant.
+
+`scripts/graphify.ts` runs the pinned `graphifyy` CLI with its SQL parser extra through
+`uv tool run`, in an isolated cached Python environment rather than a global install. The first run downloads the tool
+and its dependencies (and a compatible Python if needed); normal app setup needs neither
+uv nor Python. The wrapper disables model backends (`GRAPHIFY_BACKEND=none`) and local
+query logging, and `graph:build` requests code-only extraction. No model key is needed;
+source extraction does not use a remote semantic backend. Do not override these settings
+or enable document/media extraction without reviewing the privacy implications.
+
+`.graphifyignore` excludes local profiles, environment files, personal documents, docs,
+lockfiles, dependency folders, build output, and planning material. Source, code tests,
+scripts, and code/config relationships remain available. Keep private files excluded even
+when using local extraction. Generated `graphify-out/` files are local and gitignored;
+commit the setup, not the generated graph. To create an interactive browser map:
+
+```bash
+bun run graph export html
+```
+
+Use scoped `query`, `explain`, and `path` results for broad navigation or impact questions,
+then read the relevant source before changing it. Code-only queries retrieve matching symbol
+neighborhoods, not model-written answers; include known symbol names to reduce irrelevant
+matches. Some files yield no symbols, and dynamic calls or IPC need source inspection. Do not load the full `graph.json` into
+agent context. Re-run `graph:build` after source changes, pulls, or branch switches; review
+any extraction warnings before trusting results. A missing edge is not proof of no
+relationship, and Graphify does not replace dependency-cruiser, tests, or targeted search.
+If the optional tool is unavailable, proceed with normal search. Assistant integrations
+live in the canonical `CLAUDE.md`; do not run `graphify install` over the `AGENTS.md` symlinks
+or install automatic search/Git hooks.
+
 ## Development data
 
 Development runs keep their data in the repo's gitignored `.dev-data/`, never an installed

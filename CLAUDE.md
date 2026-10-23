@@ -16,6 +16,22 @@ Paths below are relative to the repository root. Read the relevant files before 
 - Setup, full source tree, and scripts: `README.md`.
 - Development data, React Compiler background, and e2e details: `docs/development.md`.
 
+## Code navigation and dependency checks
+
+- For broad relationship or impact questions, use the optional local graph before broad
+  source searches: `bun run graph query "<question>"`, `bun run graph explain "<symbol>"`,
+  or `bun run graph path "<symbol>" "<symbol>"`. Read the returned source files before editing;
+  graph edges are navigation hints, not proof of behavior or architectural compliance.
+- If the graph is missing or stale after source changes or a branch switch, refresh with
+  `bun run graph:build` (needs uv). If unavailable or incomplete, use targeted search normally;
+  do not block work, read the entire graph JSON, or install assistant/search hooks.
+- `bun run check:deps` checks source import cycles (type-only included), unresolved imports,
+  and process/renderer-layer boundaries. Report existing violations; do not suppress them
+  or refactor unrelated code just to make the check pass.
+- These tools are development-only, not app dependencies or build prerequisites. Graphify
+  uses code-only extraction with model backends and query logging disabled; generated files
+  stay gitignored. Setup, privacy exclusions, and limitations: `docs/development.md`.
+
 ## Architecture and boundaries
 
 - Electron 44 + electron-vite: `src/main/`, sandboxed `src/preload/`, and
