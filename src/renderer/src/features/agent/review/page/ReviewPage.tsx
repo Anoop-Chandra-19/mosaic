@@ -7,7 +7,12 @@ import { usePreviewCanvas } from '@/features/preview/usePreviewCanvas';
 import { transitionClasses } from '@/features/view-transitions/transitionClasses';
 import { cn } from '@/lib/utils';
 import { useUiStore } from '@/stores/uiStore';
-import { SuggestionBackChip, SuggestionMark, SuggestionMoveChip } from './SuggestionMark';
+import {
+  SuggestionBackChip,
+  SuggestionMark,
+  SuggestionMoveChip,
+  type FlagGutter,
+} from './SuggestionMark';
 import type { SuggestionPage } from './suggestionPage';
 
 const ignoreMeta = () => {};
@@ -22,13 +27,19 @@ const LEAVING_BLOCK_CLASSES =
 /** The page's marks, built once per page so selecting one never lays the page out again. */
 function decorateSuggestions(page: SuggestionPage): PageDecorations {
   /** Text or a heading in its mark, with the chips a move or a return leaves beside it. */
-  const markWithChips = (id: string, node: ReactNode) => {
+  const markWithChips = (gutter: FlagGutter) => (id: string, node: ReactNode) => {
     const mark = page.marks.get(id);
     const move = page.moves.get(id);
     if (!mark && !move) return node;
     return (
       <>
-        {mark ? <SuggestionMark mark={mark}>{node}</SuggestionMark> : node}
+        {mark ? (
+          <SuggestionMark mark={mark} gutter={gutter}>
+            {node}
+          </SuggestionMark>
+        ) : (
+          node
+        )}
         {mark?.block === 'back' && <SuggestionBackChip mark={mark} />}
         {move && <SuggestionMoveChip move={move} />}
       </>
@@ -36,14 +47,20 @@ function decorateSuggestions(page: SuggestionPage): PageDecorations {
   };
   const markOnly = (id: string, node: ReactNode) => {
     const mark = page.marks.get(id);
-    return mark ? <SuggestionMark mark={mark}>{node}</SuggestionMark> : node;
+    return mark ? (
+      <SuggestionMark mark={mark} gutter="line">
+        {node}
+      </SuggestionMark>
+    ) : (
+      node
+    );
   };
   return {
-    bullet: markWithChips,
-    line: markWithChips,
-    entryHeading: markWithChips,
+    bullet: markWithChips('bullet'),
+    line: markWithChips('line'),
+    entryHeading: markWithChips('line'),
     entryDates: markOnly,
-    sectionLabel: markWithChips,
+    sectionLabel: markWithChips('line'),
     blockClassName: (id) => {
       const mark = page.marks.get(id);
       const isLeaving = mark?.block === 'leaving' && !mark.proposal.isStale;

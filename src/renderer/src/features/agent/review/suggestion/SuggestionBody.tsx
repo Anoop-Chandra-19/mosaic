@@ -4,6 +4,7 @@ import { AppButton, Chip, Text } from '@/components/ui-kit';
 import { cn } from '@/lib/utils';
 import type { Proposal, ProposalChange, ProposalChangeKind } from '@shared/types/agentProposal';
 import type { ResumeData } from '@shared/types/resume';
+import { findMovedIds } from '../../proposals/findMovedIds';
 import { findEntry, findSection } from '../../proposals/proposalAnchor';
 import {
   cancelStaleReview,
@@ -234,13 +235,14 @@ function nameReordered(
 function ReorderBody({ proposal, draft }: SuggestionBodyProps) {
   const { change } = proposal;
   if (change.kind !== 'reorder') return null;
+  const moved = findMovedIds(change.before, change.after);
   return (
     <>
       <Caption>Suggested order</Caption>
       <div className="flex flex-col gap-1.5">
         {change.after.map((id, index) => {
           const from = change.before.indexOf(id) + 1;
-          const isMoved = from !== index + 1;
+          const isMoved = moved.includes(id);
           return (
             <div
               key={id}

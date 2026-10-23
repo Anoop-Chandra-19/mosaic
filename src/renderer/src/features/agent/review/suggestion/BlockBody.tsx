@@ -60,6 +60,19 @@ function readBlock(draft: ResumeData, place: ShowPlace): Block | undefined {
   return section && readSectionBlock(section);
 }
 
+/** What leaves with it, or comes back with it; an empty one says only where it stays. */
+function describeWhatGoes(block: Block, isBack: boolean): string {
+  const hasRows = block.rows.length > 0;
+  if (isBack) {
+    return hasRows
+      ? `Back as it is in your content, with ${block.count}. Nothing in it is rewritten.`
+      : 'Back as it is in your content.';
+  }
+  if (!hasRows) return 'It stays in your content; show it again from the editor any time.';
+  const count = block.count.charAt(0).toUpperCase() + block.count.slice(1);
+  return `${count} ${block.isMany ? 'go' : 'goes'} with it. All of it stays in your content; show it again from the editor any time.`;
+}
+
 /**
  * A whole entry or section leaving the page, or coming back. Named by its heading; what
  * goes with it is counted and listed, never struck line by line.
@@ -72,7 +85,6 @@ export function BlockBody({ proposal, draft }: SuggestionBodyProps) {
   const isBack = change.selected;
   const listed = block.rows.slice(0, SHOWN_ROWS);
   const more = block.rows.length - listed.length;
-  const count = block.count.charAt(0).toUpperCase() + block.count.slice(1);
 
   return (
     <>
@@ -120,11 +132,7 @@ export function BlockBody({ proposal, draft }: SuggestionBodyProps) {
           )}
         </div>
       </div>
-      <TagLine icon={isBack ? Eye : EyeOff}>
-        {isBack
-          ? `Back as it is in your content, with ${block.count}. Nothing in it is rewritten.`
-          : `${count} ${block.isMany ? 'go' : 'goes'} with it. All of it stays in your content; show it again from the editor any time.`}
-      </TagLine>
+      <TagLine icon={isBack ? Eye : EyeOff}>{describeWhatGoes(block, isBack)}</TagLine>
     </>
   );
 }
