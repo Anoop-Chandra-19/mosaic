@@ -195,4 +195,69 @@ export const TARGETED_CASES: TargetedCase[] = [
       'Wrote alerts for the payments service',
     ],
   },
+  // The term inside another word: a plain find would also change "Google".
+  {
+    kind: 'everywhere',
+    instruction: 'Change "Go" to "Golang" everywhere.',
+    bullets: [
+      'Wrote the billing workers in Go',
+      'Moved search from Google Cloud to our own servers',
+      'Rewrote two Go services to halve their memory use',
+    ],
+    expected: [
+      'Wrote the billing workers in Golang',
+      'Moved search from Google Cloud to our own servers',
+      'Rewrote two Golang services to halve their memory use',
+    ],
+  },
+  {
+    kind: 'everywhere',
+    instruction: 'Spell out "JS" as "JavaScript" everywhere.',
+    bullets: [
+      'Rebuilt the JS bundle so the app loads in half the time',
+      'Wrote JSON schemas for the partner API',
+      'Taught two interns how to test JS with Vitest',
+    ],
+    expected: [
+      'Rebuilt the JavaScript bundle so the app loads in half the time',
+      'Wrote JSON schemas for the partner API',
+      'Taught two interns how to test JavaScript with Vitest',
+    ],
+  },
+  // Already the new name in one bullet: "Postgres" is inside "PostgreSQL".
+  {
+    kind: 'everywhere',
+    instruction: 'Say "PostgreSQL" instead of "Postgres" everywhere.',
+    bullets: ['Tuned Postgres indexes for the search service', 'Upgraded PostgreSQL to version 16'],
+    expected: [
+      'Tuned PostgreSQL indexes for the search service',
+      'Upgraded PostgreSQL to version 16',
+    ],
+  },
+  // Twice in one bullet: a rename changes both.
+  {
+    kind: 'everywhere',
+    instruction: 'Say "Amazon Web Services" instead of "AWS" everywhere.',
+    bullets: [
+      'Cut AWS costs by a third by moving logs out of AWS',
+      'Set up AWS accounts for the data team',
+    ],
+    expected: [
+      'Cut Amazon Web Services costs by a third by moving logs out of Amazon Web Services',
+      'Set up Amazon Web Services accounts for the data team',
+    ],
+  },
+  // Written in lower case by the user: the bullets say "Terraform".
+  {
+    kind: 'everywhere',
+    instruction: 'Change terraform to OpenTofu everywhere.',
+    bullets: [
+      'Moved the network setup into Terraform modules',
+      'Wrote Terraform checks that run on every pull request',
+    ],
+    expected: [
+      'Moved the network setup into OpenTofu modules',
+      'Wrote OpenTofu checks that run on every pull request',
+    ],
+  },
 ];

@@ -20,6 +20,7 @@ interface BulletRow {
 
 interface TargetedRow {
   caseNumber: number;
+  kind: string;
   mode: string;
   isExact: boolean;
   tools: string[];
@@ -75,7 +76,9 @@ for (const [label, byKey] of [...bulletRuns].sort(([a], [b]) => a.localeCompare(
 }
 
 lines.push('');
-lines.push('| Model | Rewrite only | Replace only | Both offered | Picked replace | API errors |');
+lines.push(
+  '| Model | Rewrite only | Rewrite + replace everywhere | Replace on one bullet | Replace when everywhere | API errors |'
+);
 lines.push('| --- | --- | --- | --- | --- | --- |');
 for (const file of files.filter((f) => f.startsWith('targeted-'))) {
   const rows = readRows<TargetedRow>(file);
@@ -88,12 +91,12 @@ for (const file of files.filter((f) => f.startsWith('targeted-'))) {
     return `${modeRows.filter((r) => r.isExact).length}/${modeRows.length}${misses.length ? ` (${misses.join(' ')})` : ''}`;
   };
   const both = rows.filter((r) => r.mode === 'both');
-  const pickedReplace = both.filter(
-    (r) => r.tools.length && r.tools.every((t) => t === 'propose_replace')
-  ).length;
+  const usedReplace = (r: TargetedRow) => r.tools.includes('propose_replace_everywhere');
+  const oneBullet = both.filter((r) => r.kind !== 'everywhere');
+  const everywhere = both.filter((r) => r.kind === 'everywhere');
   const label = file.replace(/^targeted-/, '').replace(/\.json$/, '');
   lines.push(
-    `| ${label} | ${cell('rewrite')} | ${cell('replace')} | ${cell('both')} | ${pickedReplace}/${both.length} | ${rows.filter(isApiError).length} |`
+    `| ${label} | ${cell('rewrite')} | ${cell('both')} | ${oneBullet.filter(usedReplace).length}/${oneBullet.length} | ${everywhere.filter(usedReplace).length}/${everywhere.length} | ${rows.filter(isApiError).length} |`
   );
 }
 
