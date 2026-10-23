@@ -1,0 +1,32 @@
+# Code navigation only. Never index local profiles, secrets, or personal documents.
+.git/
+.dev-data/
+.env
+.env.*
+*.local
+*.db
+*.db-*
+*.sqlite
+*.sqlite3
+*.pem
+*.key
+*.docx
+*.pdf
+
+# Dependencies, generated output, and planning material are not source evidence.
+node_modules/
+dist/
+dist-ssr/
+out/
+release/
+coverage/
+test-results/
+playwright-report/
+graphify-out/
+plans/
+docs/
+wireframe.jsx
+bun.lock
+package-lock.json
+scripts/agent-evals/results/
+scripts/page-break-sweep/results/

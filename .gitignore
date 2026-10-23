@@ -35,6 +35,9 @@ scripts/agent-evals/.env
 scripts/agent-evals/results/
 scripts/page-break-sweep/results/
 
+# Local code-navigation graph and extraction cache
+/graphify-out/
+
 # Planning docs
 plans/
 wireframe.jsx
