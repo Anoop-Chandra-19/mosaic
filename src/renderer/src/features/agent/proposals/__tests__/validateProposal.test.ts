@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { ProposalChange } from '@shared/types/agentProposal';
 import { validateProposal } from '../validateProposal';
-import { makeResume, rewrite } from './proposalFixtures';
+import { addText, makeResume, makeResumeWithLines, rewrite } from './proposalFixtures';
 
 const B1 = 'Assisted in migrating billing to Postgres';
 const codeOf = (change: ProposalChange) => validateProposal(makeResume(), change)?.code ?? null;
@@ -73,8 +73,7 @@ describe('validateProposal', () => {
   it('takes a new order only of the same ids, and only when it is new', () => {
     const reorder = (before: string[], after: string[]): ProposalChange => ({
       kind: 'reorder',
-      sectionId: 's1',
-      entryId: 'e1',
+      place: { unit: 'bullets', sectionId: 's1', entryId: 'e1' },
       before,
       after,
     });
@@ -87,13 +86,44 @@ describe('validateProposal', () => {
   it('refuses hiding a bullet that is already hidden', () => {
     const select = (selected: boolean): ProposalChange => ({
       kind: 'select',
-      sectionId: 's1',
-      entryId: 'e1',
-      bulletId: 'b1',
+      place: { unit: 'bullet', sectionId: 's1', entryId: 'e1', bulletId: 'b1' },
       before: B1,
       selected,
     });
     expect(codeOf(select(false))).toBeNull();
     expect(codeOf(select(true))).toBe('unchanged');
+  });
+});
+
+describe('validateProposal, added text and lines', () => {
+  it('refuses empty added text, and a place that is gone', () => {
+    expect(validateProposal(makeResumeWithLines(), addText('line', 'l2', '  '))?.code).toBe(
+      'empty-text'
+    );
+    expect(validateProposal(makeResumeWithLines(), addText('line', 'l9', 'Rust'))?.code).toBe(
+      'changed-since-read'
+    );
+    expect(validateProposal(makeResumeWithLines(), addText('line', null, 'Rust'))).toBeNull();
+  });
+
+  it('anchors a line rewrite to the line as it was read', () => {
+    const place = { unit: 'line' as const, sectionId: 's2', lineId: 'l1' };
+    const doc = makeResumeWithLines();
+    expect(
+      validateProposal(doc, {
+        kind: 'rewrite',
+        place,
+        before: 'Backend engineer for six years.',
+        after: 'Backend engineer.',
+      })
+    ).toBeNull();
+    expect(
+      validateProposal(doc, {
+        kind: 'rewrite',
+        place,
+        before: 'Something else',
+        after: 'Backend engineer.',
+      })?.code
+    ).toBe('changed-since-read');
   });
 });

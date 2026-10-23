@@ -3,7 +3,7 @@ import { GAP_MARK } from './checks/unfilledGap';
 
 const ENTRY_FACTS: EntryFact[] = ['title', 'organization', 'location', 'dates'];
 
-/** The text a rewrite writes: the user's wording, the version without a number, or the gap filled. */
+/** The text a suggestion writes: the user's wording, the version without a number, or the gap filled. */
 function reviewedText(proposal: Proposal, after: string): string {
   const { review, change } = proposal;
   if (review.userText !== undefined) return review.userText;
@@ -29,6 +29,10 @@ export function resolveChange(proposal: Proposal): ProposalChange {
     case 'merge': {
       const before = Array.isArray(review.rebasedBefore) ? review.rebasedBefore : change.before;
       return { ...change, before, after: reviewedText(proposal, change.after) };
+    }
+    case 'add': {
+      const afterId = review.placedAfterId !== undefined ? review.placedAfterId : change.afterId;
+      return { ...change, afterId, text: reviewedText(proposal, change.text) };
     }
     case 'entry':
       return { ...change, frame: { ...change.frame, ...review.factEdits } };

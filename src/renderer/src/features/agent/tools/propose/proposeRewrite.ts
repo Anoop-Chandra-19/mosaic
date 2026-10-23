@@ -1,7 +1,7 @@
 import type { AgentToolArgs } from '@shared/agent-tools/agentTools';
 import type { ProposalChange } from '@shared/types/agentProposal';
 import { refuse, type AgentToolRun, type ToolAnswer } from '../agentToolRun';
-import { findBulletInReceipt, isProblem } from './findInReceipt';
+import { findBulletInReceipt, isProblem, placeOfBullet } from './findInReceipt';
 import { stageSuggestions } from './stageSuggestions';
 
 /** A bullet's new text, with a `{{?}}` gap only when the version without a number comes too. */
@@ -21,9 +21,7 @@ export function proposeRewrite(
 
   const change: Extract<ProposalChange, { kind: 'rewrite' }> = {
     kind: 'rewrite',
-    sectionId: found.sectionId,
-    entryId: found.entry.id,
-    bulletId: found.bullet.id,
+    place: placeOfBullet(found),
     before: found.bullet.text,
     after: args.text.trim(),
   };

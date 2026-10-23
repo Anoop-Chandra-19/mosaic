@@ -17,6 +17,8 @@ import { prefersReducedMotion } from '@/lib/motion/motionTiming';
 import { washLanded } from '@/lib/motion/rowMotions';
 import { useListMotion } from '@/lib/motion/useListMotion';
 import { ConfirmDeleteDialog } from '@/components/ConfirmDeleteDialog';
+import { SuggestionDot } from '@/features/agent/review/SuggestionDot';
+import { useSuggestionDot } from '@/features/agent/review/useSuggestionDot';
 import { cn } from '@/lib/utils';
 import { useOutlineStore } from '@/stores/outlineStore';
 import { useResumeStore } from '@/stores/resumeStore';
@@ -90,6 +92,8 @@ export function SectionItem({
   const renameAfterMenu = useRef(false);
 
   const isHidden = section.hidden === true;
+  // A rename, a move, leaving the page, or something new suggested for this section.
+  const suggestion = useSuggestionDot(section.id);
   const shownCount = section.items.filter((entry) => entry.selected).length;
   // A custom section has no kind to go by, so its icon shows its shape.
   const Icon =
@@ -145,6 +149,7 @@ export function SectionItem({
           </AppButton>
         </AppCollapsibleTrigger>
         <Icon className="-ml-1 size-3.5 shrink-0 text-ink-muted" />
+        {suggestion && <SuggestionDot dot={suggestion} className="-mr-1.5 shrink-0" />}
         {isRenaming ? (
           <div className="flex min-w-0 flex-1" onClick={(event) => event.stopPropagation()}>
             <InlineEditField

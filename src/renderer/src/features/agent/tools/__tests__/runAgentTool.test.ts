@@ -111,7 +111,7 @@ describe('the propose tools', () => {
       requestText: 'Tighten my bullets',
       change: {
         kind: 'rewrite',
-        bulletId: 'b1',
+        place: { bulletId: 'b1' },
         before: 'Assisted in migrating billing to Postgres',
       },
     });
@@ -164,8 +164,8 @@ describe('the propose tools', () => {
     });
     expect(result.isError).toBe(false);
     expect(stagedSuggestions().map((proposal) => proposal.change)).toMatchObject([
-      { bulletId: 'b3', after: 'Wrote the on-call runbook for our payments team' },
-      { bulletId: 'b4', after: 'Built tile caching for our Oslo office' },
+      { place: { bulletId: 'b3' }, after: 'Wrote the on-call runbook for our payments team' },
+      { place: { bulletId: 'b4' }, after: 'Built tile caching for our Oslo office' },
     ]);
     expect(stagedSuggestions().map((proposal) => proposal.source)).toEqual(['replace', 'replace']);
   });
@@ -174,8 +174,8 @@ describe('the propose tools', () => {
     await readTheResume();
     await callTool('propose_replace_everywhere', { find: 'the', replace: 'our' });
     expect(stagedSuggestions().map((proposal) => proposal.change)).toMatchObject([
-      { bulletId: 'b3', after: 'Wrote our on-call runbook for our payments team' },
-      { bulletId: 'b4', after: 'Built tile caching for our Oslo office' },
+      { place: { bulletId: 'b3' }, after: 'Wrote our on-call runbook for our payments team' },
+      { place: { bulletId: 'b4' }, after: 'Built tile caching for our Oslo office' },
     ]);
     expect(
       (await callTool('propose_replace_everywhere', { find: 'Post', replace: 'x' })).content
@@ -222,7 +222,7 @@ describe('the propose tools', () => {
     });
     expect(stagedSuggestions().map((proposal) => proposal.change)).toMatchObject([
       { kind: 'reorder', after: ['e2', 'e1'] },
-      { kind: 'reorder', entryId: 'e1', after: ['b3', 'b1', 'b2'] },
+      { kind: 'reorder', place: { entryId: 'e1' }, after: ['b3', 'b1', 'b2'] },
     ]);
     expect(
       (await callTool('propose_reorder', { sectionId: 's1', order: ['e2'] })).content
@@ -296,7 +296,7 @@ describe("checking the model's work", () => {
     await callTool('propose_select', { bulletId: 'b3', show: false });
     await callTool('propose_rewrite', { bulletId: 'b3', text: 'Wrote the on-call runbook' });
     expect(stagedSuggestions().map((proposal) => proposal.change)).toMatchObject([
-      { kind: 'select', bulletId: 'b3' },
+      { kind: 'select', place: { bulletId: 'b3' } },
       { kind: 'rewrite', after: 'Wrote the on-call runbook' },
     ]);
   });

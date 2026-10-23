@@ -1,4 +1,5 @@
 import type { AgentToolArgs } from '@shared/agent-tools/agentTools';
+import type { OrderPlace } from '@shared/types/agentProposal';
 import { refuse, type AgentToolRun, type ToolAnswer } from '../agentToolRun';
 import {
   findEntryInSection,
@@ -26,12 +27,9 @@ export function proposeReorder(
   const newOrder = idsForHandles(run, entry ? 'bullet' : 'entry', args.order);
   if (isProblem(newOrder)) return refuse(newOrder.problem);
 
-  const change = {
-    kind: 'reorder' as const,
-    sectionId: section.id,
-    entryId: entry?.id,
-    before: orderNow,
-    after: newOrder,
-  };
+  const place: OrderPlace = entry
+    ? { unit: 'bullets', sectionId: section.id, entryId: entry.id }
+    : { unit: 'items', sectionId: section.id };
+  const change = { kind: 'reorder' as const, place, before: orderNow, after: newOrder };
   return stageSuggestions(run, [{ change, source: 'reorder', reason: args.reason }]);
 }

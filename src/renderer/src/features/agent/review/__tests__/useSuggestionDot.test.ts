@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Proposal, ProposalChange, ProposalStatus } from '@shared/types/agentProposal';
-import { makeProposal, rewrite } from '../../proposals/__tests__/proposalFixtures';
-import { findBulletSuggestion } from '../useBulletSuggestion';
+import { addText, makeProposal, rewrite } from '../../proposals/__tests__/proposalFixtures';
+import { findSuggestionDot } from '../useSuggestionDot';
 
 const B1 = 'Assisted in migrating billing to Postgres';
 const B2 = 'Reduced p99 latency from 18% to 3% of requests';
@@ -23,12 +23,18 @@ const merge: ProposalChange = {
   after: 'Moved billing to Postgres, cutting p99 latency',
 };
 
-describe('findBulletSuggestion', () => {
+describe('findSuggestionDot', () => {
   it('points a bullet to the suggestion waiting on it, and a merge to both its bullets', () => {
     const proposals = [proposal('merge', merge)];
-    expect(findBulletSuggestion(proposals, 'b1')).toEqual({ proposalId: 'merge', isStale: false });
-    expect(findBulletSuggestion(proposals, 'b2')).toEqual({ proposalId: 'merge', isStale: false });
-    expect(findBulletSuggestion(proposals, 'b3')).toBeNull();
+    expect(findSuggestionDot(proposals, 'b1')).toMatchObject({
+      proposalId: 'merge',
+      isStale: false,
+    });
+    expect(findSuggestionDot(proposals, 'b2')).toMatchObject({
+      proposalId: 'merge',
+      isStale: false,
+    });
+    expect(findSuggestionDot(proposals, 'b3')).toBeNull();
   });
 
   it('skips what was applied or dropped', () => {
@@ -36,16 +42,28 @@ describe('findBulletSuggestion', () => {
       proposal('done', rewrite('b1', B1, 'Led it'), 'applied'),
       proposal('dropped', rewrite('b1', B1, 'Ran it'), 'rejected'),
     ];
-    expect(findBulletSuggestion(proposals, 'b1')).toBeNull();
+    expect(findSuggestionDot(proposals, 'b1')).toBeNull();
   });
 
   it('is out of date only when every suggestion on the bullet is', () => {
     const stale = proposal('stale', rewrite('b1', B1, 'Led it'), 'accepted', true);
-    expect(findBulletSuggestion([stale], 'b1')).toEqual({ proposalId: 'stale', isStale: true });
+    expect(findSuggestionDot([stale], 'b1')).toMatchObject({ proposalId: 'stale', isStale: true });
     const current = proposal('current', rewrite('b1', B1, 'Ran it'));
-    expect(findBulletSuggestion([stale, current], 'b1')).toEqual({
+    expect(findSuggestionDot([stale, current], 'b1')).toMatchObject({
       proposalId: 'current',
       isStale: false,
     });
+  });
+});
+
+describe('findSuggestionDot, added text', () => {
+  it("puts a new bullet's dot on its entry, saying so", () => {
+    const proposals = [proposal('add', addText('bullet', 'b1', 'Ran the rotation'))];
+    expect(findSuggestionDot(proposals, 'e1')).toEqual({
+      proposalId: 'add',
+      isStale: false,
+      waiting: 'A new bullet is suggested for this entry.',
+    });
+    expect(findSuggestionDot(proposals, 'b1')).toBeNull();
   });
 });

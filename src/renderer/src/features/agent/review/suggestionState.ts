@@ -1,4 +1,4 @@
-import type { Proposal, ProposalFlagKind } from '@shared/types/agentProposal';
+import type { Proposal, ProposalChangeKind, ProposalFlagKind } from '@shared/types/agentProposal';
 
 /** Each check's name, as the card and the list show it. */
 export const FLAG_LABELS: Record<ProposalFlagKind, string> = {
@@ -24,9 +24,15 @@ export function readSuggestionState(proposal: Proposal): SuggestionState {
   return needsNumber(proposal) ? 'held' : 'kept';
 }
 
-/** Only a rewrite or a merge writes words the user can put in their own. */
+/** What writes words the user can put in their own: rewritten, merged or added text. */
+const EDITABLE_KINDS: ReadonlySet<ProposalChangeKind> = new Set<ProposalChangeKind>([
+  'rewrite',
+  'merge',
+  'add',
+]);
+
 export const canEditSuggestion = (proposal: Proposal) =>
-  !proposal.isStale && (proposal.change.kind === 'rewrite' || proposal.change.kind === 'merge');
+  !proposal.isStale && EDITABLE_KINDS.has(proposal.change.kind);
 
 /** The words a card or row shows for where it stands. */
 export function labelSuggestionState(proposal: Proposal): string {

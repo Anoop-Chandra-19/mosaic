@@ -1,6 +1,7 @@
-import type { Proposal, ProposalChange } from '@shared/types/agentProposal';
+import type { Proposal } from '@shared/types/agentProposal';
 import type { ResumeData } from '@shared/types/resume';
 import { applyProposalsToResume } from './applyProposalsToResume';
+import { readChangedIds } from './proposalAnchor';
 import { resolveChange } from './reviewedChange';
 
 export interface SkippedProposal {
@@ -19,22 +20,6 @@ export interface ApplyPlan {
   stale: Proposal[];
   dropped: Proposal[];
   doc: ResumeData;
-}
-
-/** The bullets (or entries, for a reorder of entries) a change rewrites or moves. */
-function readTouchedIds(change: ProposalChange): string[] {
-  switch (change.kind) {
-    case 'rewrite':
-    case 'split':
-    case 'select':
-      return [change.bulletId];
-    case 'merge':
-      return [change.firstId, change.secondId];
-    case 'reorder':
-      return change.after;
-    case 'entry':
-      return [];
-  }
 }
 
 const needsNumber = (proposal: Proposal) =>
@@ -56,10 +41,10 @@ export function planApply(doc: ResumeData, proposals: readonly Proposal[]): Appl
   const byId = new Map(ready.map((proposal) => [proposal.id, proposal]));
   const landed = result.appliedIds.map((id) => byId.get(id)!);
   const changedBy = (proposal: Proposal) => {
-    const touched = readTouchedIds(resolveChange(proposal));
+    const touched = readChangedIds(resolveChange(proposal));
     return (
       landed.find((other) =>
-        readTouchedIds(resolveChange(other)).some((id) => touched.includes(id))
+        readChangedIds(resolveChange(other)).some((id) => touched.includes(id))
       ) ?? null
     );
   };

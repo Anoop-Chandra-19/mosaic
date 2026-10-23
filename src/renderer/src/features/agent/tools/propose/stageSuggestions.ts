@@ -1,11 +1,18 @@
 import { checkProposal } from '@/features/agent/proposals/checkProposal';
+import { readTextPlaceId } from '@/features/agent/proposals/proposalAnchor';
 import {
   discardProposals,
   stageProposals,
   type StagedChange,
 } from '@/features/agent/proposals/proposalActions';
 import { useProposalStore } from '@/stores/proposalStore';
-import type { Proposal, ProposalChange, ProposalFlagKind } from '@shared/types/agentProposal';
+import { getResumeSnapshot } from '@/stores/resumeStore';
+import type {
+  OrderPlace,
+  Proposal,
+  ProposalChange,
+  ProposalFlagKind,
+} from '@shared/types/agentProposal';
 import { answer, refuse, type AgentToolRun, type ToolAnswer } from '../agentToolRun';
 import { describeFlag, describeResult, describeTarget } from './describeForModel';
 
@@ -19,17 +26,27 @@ import { describeFlag, describeResult, describeTarget } from './describeForModel
 /** Never what the user meant: sent back to fix before anything is staged. */
 const DEFINITE_MISTAKES: ReadonlySet<ProposalFlagKind> = new Set(['doubledWords']);
 
-/** What a change is a suggestion for, so a second one of its kind replaces the first. */
+/** The list a reorder is of, as a key: the section's or entry's id. */
+const readOrderKey = (place: OrderPlace) =>
+  place.unit === 'bullets' ? place.entryId : place.sectionId;
+
+/**
+ * What a change is a suggestion for, so a second one of its kind replaces the first. Added
+ * text and new entries have none: two of them are two suggestions.
+ */
 function targetKeyOf(change: ProposalChange): string | null {
   switch (change.kind) {
     case 'rewrite':
-    case 'split':
+      return `rewrite:${readTextPlaceId(change.place)}`;
     case 'select':
-      return `${change.kind}:${change.bulletId}`;
+      return `select:${readTextPlaceId(change.place)}`;
+    case 'split':
+      return `split:${change.bulletId}`;
     case 'merge':
       return `merge:${change.firstId}`;
     case 'reorder':
-      return `reorder:${change.entryId ?? change.sectionId}`;
+      return `reorder:${readOrderKey(change.place)}`;
+    case 'add':
     case 'entry':
       return null;
   }
@@ -39,7 +56,7 @@ function targetKeyOf(change: ProposalChange): string | null {
 function sendBackForRepair(run: AgentToolRun, change: ProposalChange): string | null {
   const key = targetKeyOf(change);
   if (!key || run.repairedTargets.has(key)) return null;
-  const mistakes = checkProposal(change, run.requestText).filter((flag) =>
+  const mistakes = checkProposal(getResumeSnapshot(), change, run.requestText).filter((flag) =>
     DEFINITE_MISTAKES.has(flag.kind)
   );
   if (!mistakes.length) return null;
