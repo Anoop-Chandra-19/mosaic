@@ -61,7 +61,9 @@ bun run graph export html
 Use scoped `query`, `explain`, and `path` results for broad navigation or impact questions,
 then read the relevant source before changing it. Code-only queries retrieve matching symbol
 neighborhoods, not model-written answers; include known symbol names to reduce irrelevant
-matches. Some files yield no symbols, and dynamic calls or IPC need source inspection. Do not load the full `graph.json` into
+matches. Some files yield no symbols, and dynamic calls or IPC need source inspection. Zustand store
+actions are not symbols either: explain the store (`useOverlayStore`) to find who uses it,
+then search for the action (`openSurface(`). Do not load the full `graph.json` into
 agent context. Re-run `graph:build` after source changes, pulls, or branch switches; review
 any extraction warnings before trusting results. A missing edge is not proof of no
 relationship, and Graphify does not replace dependency-cruiser, tests, or targeted search.

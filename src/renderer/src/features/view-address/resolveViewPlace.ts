@@ -2,33 +2,26 @@ import { findComparedBase } from '@/features/history/full-history/prepareHistory
 import { versionLabel } from '@/features/history/versionLabel';
 import { GETTING_STARTED_STEPS } from '@/features/onboarding/getting-started/gettingStartedSteps';
 import { HISTORY_TOUR_STEPS } from '@/features/onboarding/history/historyTourSteps';
-import type { TourKind } from '@/stores/overlayStore';
-import type { HistoryComparison, ReadPaneView } from '@/types/history';
-import type { SettingsSectionId } from '@/types/settings';
+import type { AppPlace } from '@/features/navigation/appPlace';
+import type { DialogRequest, TourKind } from '@/stores/overlayStore';
+import type { HistoryComparison } from '@/types/history';
 import type { TemplateSummary, VersionMeta } from '@shared/types/db';
 import { ADDRESS_TOURS, type AddressDialog, type ViewPlace } from './viewPlace';
 
-/** A view by the ids the stores open it with. */
-export type ResolvedPlace =
-  | { kind: 'start' }
-  | { kind: 'editor'; templateId: string; dialog?: AddressDialog }
-  | {
-      kind: 'history';
-      templateId: string;
-      versionId?: string;
-      comparison?: HistoryComparison;
-      reading?: ReadPaneView;
-    }
-  | { kind: 'review'; templateId: string; proposalId?: string }
-  | { kind: 'settings'; section: SettingsSectionId }
-  | { kind: 'tour'; tour: TourKind; step: number };
+/** The dialog each address word opens over the editor. */
+const DIALOG_REQUESTS: Record<AddressDialog, DialogRequest> = {
+  import: { kind: 'import', asNewOnly: false },
+  export: { kind: 'export', version: null },
+  nameVersion: { kind: 'nameVersion' },
+  shortcuts: { kind: 'shortcuts', place: null },
+};
 
 /**
  * The view, or why it doesn't exist, in words. Template names needn't be unique: two with
  * the name are handed back to choose from.
  */
 export type Resolution =
-  | { resolved: ResolvedPlace }
+  | { resolved: AppPlace }
   | { error: string }
   | { sameName: TemplateSummary[] };
 
@@ -144,7 +137,13 @@ export async function resolveViewPlace(
   if (!('id' in template)) return template;
   switch (place.kind) {
     case 'editor':
-      return { resolved: { kind: 'editor', templateId: template.id, dialog: place.dialog } };
+      return {
+        resolved: {
+          kind: 'editor',
+          templateId: template.id,
+          dialog: place.dialog && DIALOG_REQUESTS[place.dialog],
+        },
+      };
     case 'history':
       return resolveHistory(place, template, lookup);
     case 'review':

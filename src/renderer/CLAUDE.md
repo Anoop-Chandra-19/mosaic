@@ -27,6 +27,11 @@ Each store holds one kind of state; put new state with its kind, not in the near
 - `viewPlaceStore`: where the user is inside a surface (the version being read, the
   suggestion chosen), reported by the surface while it is open, for the view's address.
 
+Getting somewhere that takes more than one store (another template's history, a dialog on
+a template that isn't open, clearing what covers the app) goes through
+`features/navigation/showPlace.ts`. A layer opening or closing on its own talks to
+`overlayStore` directly.
+
 Stored data goes features → stores → the storage service → main. Stores hold state and
 actions, and export their reads (`useVersion`, `readVersion`, …). Only stores use the
 service, and only `storage` and `useStored` from `lib/storage/storageService.ts`: where a
