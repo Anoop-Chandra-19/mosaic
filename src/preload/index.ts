@@ -1,6 +1,6 @@
 import { contextBridge, ipcRenderer } from 'electron';
 import type { MosaicBackup } from '@shared/types/backup';
-import type { MosaicDbBridge } from '@shared/types/db';
+import type { MosaicDbBridge } from '@shared/types/dbBridge';
 import type { MosaicDev } from '@shared/types/devTools';
 import type { MosaicFiles } from '@shared/types/files';
 import type { MosaicModelProviders } from '@shared/types/modelProviders';

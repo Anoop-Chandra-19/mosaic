@@ -1,4 +1,4 @@
-import type { MosaicDb } from '../types/db';
+import type { MosaicDb } from '../types/dbBridge';
 
 /** "templates.create" for `MosaicDb['templates']['create']`, and so on for every method. */
 export type DbMethod = MethodPaths<MosaicDb>;

@@ -21,10 +21,9 @@ renderer-layer imports. Tests are exempt from layer restrictions, not cycle dete
 Resolution follows the TypeScript aliases and Vite's exact `cn` alias; `import.meta.glob`
 is not expanded. It is an import-graph check, not a runtime behavior or DOM-usage audit.
 
-The command exits nonzero on violations. At introduction, it found one existing type-only
-cycle: `src/shared/types/bundle.ts → src/shared/types/db.ts → bundle.ts`. There is no
-suppression baseline; keep findings visible and fix them in a focused change rather than
-reorganizing application code as part of tooling setup.
+The command exits nonzero on violations. There is no suppression baseline; keep findings
+visible and fix them in a focused change rather than reorganizing application code as part
+of tooling setup.
 
 ### Local Graphify graph
 

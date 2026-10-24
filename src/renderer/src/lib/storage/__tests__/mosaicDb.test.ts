@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { MosaicDbBridge } from '@shared/types/db';
+import type { MosaicDbBridge } from '@shared/types/dbBridge';
 import { DbError, unwrapBridge } from '../mosaicDb';
 
 describe('unwrapBridge', () => {

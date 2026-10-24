@@ -1,10 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createDefaultResume } from '@shared/resume/defaultResume';
-import type { DbResult, TemplateSummary } from '@shared/types/db';
+import type { TemplateSummary } from '@shared/types/db';
+import type { DbResult } from '@shared/types/dbBridge';
 import { DB_METHODS } from '@shared/ipc/dbMethods';
 import { openDatabase, type Database } from '../../db/connection';
 import { createDbHandlers, handlerFor, settle, type Handlers } from '../dbHandlers';
-import type { MosaicDb } from '@shared/types/db';
+import type { MosaicDb } from '@shared/types/dbBridge';
 import type { MosaicBundle } from '@shared/types/bundle';
 import { formatBundleText } from '@shared/vault/formatBundle';
 
