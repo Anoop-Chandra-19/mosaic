@@ -123,7 +123,7 @@ async function runTargetedEvalsForModel(spec: string, think: boolean, isLiteral:
         for (const call of reply.calls) {
           row.tools.push(call.name);
           const args = (call.args ?? {}) as {
-            bulletId?: string;
+            id?: string;
             text?: unknown;
             find?: unknown;
             replace?: unknown;
@@ -131,9 +131,9 @@ async function runTargetedEvalsForModel(spec: string, think: boolean, isLiteral:
           let problem: string | null = null;
 
           if (call.name === 'propose_rewrite') {
-            const i = ids.indexOf(args.bulletId ?? '');
+            const i = ids.indexOf(args.id ?? '');
             if (i === -1 || typeof args.text !== 'string') {
-              problem = `bulletId must be one of ${ids.join(', ')} and text a string.`;
+              problem = `id must be one of ${ids.join(', ')} and text a string.`;
             } else {
               current[i] = args.text;
             }

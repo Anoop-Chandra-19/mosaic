@@ -52,7 +52,7 @@ const isLeftOut = (value: unknown) => value === undefined || value === null || v
 
 /**
  * A call's arguments, checked against the schema the model was given. Unknown names are
- * dropped, and an empty optional text counts as left out ("bulletId": "" means none).
+ * dropped, and an empty optional text counts as left out ("entryId": "" means none).
  */
 export function checkAgentToolArgs<N extends AgentToolName>(
   name: N,

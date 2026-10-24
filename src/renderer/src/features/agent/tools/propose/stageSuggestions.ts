@@ -14,13 +14,13 @@ import type {
   ProposalFlagKind,
 } from '@shared/types/agentProposal';
 import { answer, refuse, type AgentToolRun, type ToolAnswer } from '../agentToolRun';
-import { describeFlag, describeResult, describeTarget } from './describeForModel';
+import { describeFlag, describeResultWeWrote, describeTarget } from './describeForModel';
 
 /*
  * A propose tool's last step, where our code checks the model's work before the user sees
  * it. A definite mistake goes back to the model to fix, once per target; what passes is
  * staged through `proposals/`, replacing this run's earlier suggestion of the same kind for
- * the same target; and the model hears what each would make and what the checks noticed.
+ * the same target; and the model hears what the checks noticed about each.
  */
 
 /** Never what the user meant: sent back to fix before anything is staged. */
@@ -93,8 +93,12 @@ function replaceEarlierSuggestions(run: AgentToolRun, staged: Proposal[]) {
 
 function describeStaged(run: AgentToolRun, proposal: Proposal): string {
   const checks = proposal.flags.map(describeFlag);
+  const suggested = [
+    `Suggested for ${describeTarget(run, proposal.change)}.`,
+    describeResultWeWrote(proposal),
+  ];
   return [
-    `Suggested for ${describeTarget(run, proposal.change)}. ${describeResult(run, proposal.change)}`,
+    suggested.filter(Boolean).join(' '),
     `Checks: ${checks.length ? checks.join(' ') : 'none.'}`,
   ].join('\n');
 }

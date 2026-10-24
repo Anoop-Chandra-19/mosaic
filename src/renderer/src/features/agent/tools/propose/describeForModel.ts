@@ -1,16 +1,21 @@
-import type { ProposalChange, ProposalFlag, ProposalFlagKind } from '@shared/types/agentProposal';
-import { formatEntryHeading } from '@shared/resume/entryHeading';
+import type {
+  Proposal,
+  ProposalChange,
+  ProposalFlag,
+  ProposalFlagKind,
+} from '@shared/types/agentProposal';
 import { readShowPlaceId, readTextPlaceId } from '@/features/suggestions/proposals/proposalAnchor';
 import type { AgentToolRun } from '../agentToolRun';
 
 /*
- * What the model hears about a suggestion: which bullet it is, what it would make, and what
- * the checks noticed, so it can see its own result and fix it without reading again.
+ * What the model hears about a suggestion: what it is for, what the checks noticed, and
+ * what it would make where our code wrote that, so the model can fix its own work without
+ * reading again.
  */
 
 const knownHandle = (run: AgentToolRun, id: string) => run.handles.handleById.get(id) ?? id;
 
-/** The bullet, entry or section a change is about, by the handle the model knows it by. */
+/** The bullet, line, entry or section a change is about, by the handle the model knows it by. */
 export function describeTarget(run: AgentToolRun, change: ProposalChange): string {
   switch (change.kind) {
     case 'rewrite':
@@ -40,39 +45,18 @@ export function describeTarget(run: AgentToolRun, change: ProposalChange): strin
   }
 }
 
-/** What the resume would say once the change applies. */
-export function describeResult(run: AgentToolRun, change: ProposalChange): string {
-  switch (change.kind) {
-    case 'rewrite':
-      return `It would read: "${change.after}"`;
-    case 'merge':
-      return `The two would read as one: "${change.after}"`;
-    case 'split': {
-      const first = change.before.slice(0, change.at).trim();
-      const second = change.before.slice(change.at).trim();
-      return `It would become two bullets: "${first}" and "${second}"`;
-    }
-    case 'select':
-      return change.selected ? 'It would be back on the page.' : 'It would be left off the page.';
-    case 'reorder':
-      return `The new order: ${change.after.map((id) => knownHandle(run, id)).join(', ')}`;
-    case 'add':
-      return `It would read: "${change.text}"`;
-    case 'entry': {
-      const heading = formatEntryHeading(change.frame) || 'an untitled entry';
-      return `It would add ${heading}, with ${change.bullets.length} bullets.`;
-    }
-    case 'section': {
-      const { contents } = change;
-      const holds =
-        contents.layout === 'lines'
-          ? `${contents.lines.length} lines`
-          : `its first entry, ${formatEntryHeading(contents.entry.frame) || 'untitled'}`;
-      return `It would add a ${change.section.label} section with ${holds}.`;
-    }
-    case 'rename':
-      return `The heading would read: "${change.after}"`;
+/**
+ * What the resume would say, only where our code wrote it: a replace's text, a split's
+ * halves. The rest the model sent itself, and hearing it again costs its context.
+ */
+export function describeResultWeWrote({ change, source }: Proposal): string | null {
+  if (change.kind === 'split') {
+    const first = change.before.slice(0, change.at).trim();
+    const second = change.before.slice(change.at).trim();
+    return `It would become two bullets: "${first}" and "${second}"`;
   }
+  if (change.kind === 'rewrite' && source === 'replace') return `It would read: "${change.after}"`;
+  return null;
 }
 
 const quoteWords = (flag: ProposalFlag) => flag.words.map((word) => `"${word}"`).join(', ');

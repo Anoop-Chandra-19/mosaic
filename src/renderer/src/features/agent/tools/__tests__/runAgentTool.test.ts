@@ -1,7 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Version, VersionMeta } from '@shared/types/db';
 import type { ResumeData } from '@shared/types/resume';
-import { makeResume } from '../../../suggestions/proposals/__tests__/proposalFixtures';
+import {
+  makeResume,
+  makeResumeWithLines,
+} from '../../../suggestions/proposals/__tests__/proposalFixtures';
 
 const storedVersions = vi.hoisted(() => ({ list: [] as VersionMeta[], doc: null as unknown }));
 vi.mock('@/stores/templateStore', async (importOriginal) => ({
@@ -64,21 +67,15 @@ describe('read_document', () => {
     expect((await readTheResume()).content).toMatch(/- b3: Wrote[^\n]*\n- b2: Reduced/);
   });
 
-  it('marks hidden bullets and leaves lines sections without handles', async () => {
-    const doc = makeResume();
+  it('gives lines sections and their lines handles, and marks what is hidden', async () => {
+    const doc = makeResumeWithLines();
     doc.sections[0].items[0].bullets[0].selected = false;
-    doc.sections.push({
-      id: 'sum',
-      kind: 'summary',
-      layout: 'lines',
-      label: 'Summary',
-      order: 1,
-      items: [{ id: 'l1', selected: true, bullets: [], text: 'Ten years of backend work' }],
-    });
+    doc.sections[2].items[1].selected = false;
     openDraft(doc);
     const { content } = await readTheResume();
     expect(content).toContain('- b1 (hidden): Assisted');
-    expect(content).toContain('## Summary (lines, read only)\n- Ten years of backend work');
+    expect(content).toContain('## Summary (s2)\n- l1: Backend engineer for six years.');
+    expect(content).toContain('## Skills (s3)\n- l2: Go, Python, Postgres\n- l3 (hidden): Docker');
   });
 
   it('says so when no resume is open', async () => {
@@ -89,7 +86,7 @@ describe('read_document', () => {
 
 describe('the propose tools', () => {
   it('refuse until the resume is read', async () => {
-    const result = await callTool('propose_rewrite', { bulletId: 'b1', text: 'Led billing' });
+    const result = await callTool('propose_rewrite', { id: 'b1', text: 'Led billing' });
     expect(result).toMatchObject({
       isError: true,
       content: expect.stringContaining('read_document'),
@@ -100,7 +97,7 @@ describe('the propose tools', () => {
   it('stage a rewrite against the text the run read', async () => {
     await readTheResume();
     const result = await callTool('propose_rewrite', {
-      bulletId: 'b1',
+      id: 'b1',
       text: 'Helped migrate billing to Postgres',
       reason: 'Shorter',
     });
@@ -120,7 +117,7 @@ describe('the propose tools', () => {
   it('refuse a bullet the user edited since the read, with the fix', async () => {
     await readTheResume();
     openDraft(withBulletText('b1', 'Migrated billing to Postgres'), 't1', 4);
-    const result = await callTool('propose_rewrite', { bulletId: 'b1', text: 'Led billing' });
+    const result = await callTool('propose_rewrite', { id: 'b1', text: 'Led billing' });
     expect(result).toMatchObject({
       isError: true,
       content: expect.stringContaining('Read it again'),
@@ -130,24 +127,24 @@ describe('the propose tools', () => {
   it('refuse when another resume is open than the one read', async () => {
     await readTheResume();
     openDraft(makeResume(), 't2');
-    expect((await callTool('propose_select', { bulletId: 'b1', show: false })).content).toContain(
+    expect((await callTool('propose_select', { id: 'b1', show: false })).content).toContain(
       'Another resume is open'
     );
   });
 
   it('name an unknown handle', async () => {
     await readTheResume();
-    const result = await callTool('propose_rewrite', { bulletId: 'b9', text: 'x' });
+    const result = await callTool('propose_rewrite', { id: 'b9', text: 'x' });
     expect(result.content).toContain('No bullet "b9"');
   });
 
   it('need the version without a number for a {{?}} gap', async () => {
     await readTheResume();
     expect(
-      (await callTool('propose_rewrite', { bulletId: 'b3', text: 'Cut pages by {{?}}%' })).isError
+      (await callTool('propose_rewrite', { id: 'b3', text: 'Cut pages by {{?}}%' })).isError
     ).toBe(true);
     await callTool('propose_rewrite', {
-      bulletId: 'b3',
+      id: 'b3',
       text: 'Wrote the runbook that cut pages by {{?}}%',
       withoutNumber: 'Wrote the runbook for payments',
     });
@@ -231,7 +228,7 @@ describe('the propose tools', () => {
 
   it('hide a bullet, taking "false" as false', async () => {
     await readTheResume();
-    await callTool('propose_select', { bulletId: 'b2', show: 'false' });
+    await callTool('propose_select', { id: 'b2', show: 'false' });
     expect(stagedSuggestions()[0].change).toMatchObject({ kind: 'select', selected: false });
   });
 
@@ -255,18 +252,88 @@ describe('the propose tools', () => {
   });
 });
 
+describe('the propose tools, on lines, entries and sections', () => {
+  beforeEach(() => openDraft(makeResumeWithLines()));
+
+  it('rewrite a line, and point a heading to propose_rename', async () => {
+    await readTheResume();
+    await callTool('propose_rewrite', { id: 'l2', text: 'Go, Python, PostgreSQL' });
+    expect(stagedSuggestions()[0].change).toEqual({
+      kind: 'rewrite',
+      place: { unit: 'line', sectionId: 's3', lineId: 'l2' },
+      before: 'Go, Python, Postgres',
+      after: 'Go, Python, PostgreSQL',
+    });
+    expect((await callTool('propose_rewrite', { id: 's2', text: 'About' })).content).toBe(
+      'To change a heading, use propose_rename.'
+    );
+    expect((await callTool('propose_rewrite', { id: 'e1', text: 'x' })).content).toBe(
+      '"e1" can\'t be used here. Use a bullet or line handle, such as b1 or l1.'
+    );
+  });
+
+  it("rename a section's heading", async () => {
+    await readTheResume();
+    await callTool('propose_rename', { sectionId: 's1', label: 'Work history' });
+    expect(stagedSuggestions()[0]).toMatchObject({
+      source: 'rename',
+      change: { kind: 'rename', sectionId: 's1', before: 'Experience', after: 'Work history' },
+    });
+  });
+
+  it('hide a line, an entry or a section, with what the user sees of it', async () => {
+    await readTheResume();
+    for (const id of ['l3', 'e2', 's2']) await callTool('propose_select', { id, show: false });
+    expect(stagedSuggestions().map((proposal) => proposal.change)).toMatchObject([
+      { place: { unit: 'line', lineId: 'l3' }, before: 'Docker, Terraform' },
+      { place: { unit: 'entry', entryId: 'e2' }, before: 'Intern, Lantern Maps' },
+      { place: { unit: 'section', sectionId: 's2' }, before: 'Summary' },
+    ]);
+  });
+
+  it("reorder the sections, or a section's lines", async () => {
+    await readTheResume();
+    await callTool('propose_reorder', { order: ['s3', 's1', 's2'] });
+    await callTool('propose_reorder', { sectionId: 's3', order: ['l3', 'l2'] });
+    expect(stagedSuggestions().map((proposal) => proposal.change)).toMatchObject([
+      { place: { unit: 'sections' }, before: ['s1', 's2', 's3'], after: ['s3', 's1', 's2'] },
+      { place: { unit: 'items', sectionId: 's3' }, after: ['l3', 'l2'] },
+    ]);
+    expect((await callTool('propose_reorder', { entryId: 'e1', order: ['b2'] })).content).toContain(
+      'Give the sectionId'
+    );
+  });
+
+  it('replace a term in lines too, never in a heading', async () => {
+    await readTheResume();
+    await callTool('propose_replace_everywhere', { find: 'Postgres', replace: 'PostgreSQL' });
+    expect(stagedSuggestions().map((proposal) => proposal.change)).toMatchObject([
+      { place: { bulletId: 'b1' }, after: 'Assisted in migrating billing to PostgreSQL' },
+      { place: { lineId: 'l2' }, after: 'Go, Python, PostgreSQL' },
+    ]);
+    expect(
+      (await callTool('propose_replace_everywhere', { find: 'Skills', replace: 'Tools' })).content
+    ).toContain('in no bullet or line');
+  });
+});
+
 describe("checking the model's work", () => {
-  it('tells the model what each suggestion would make, and what the checks noticed', async () => {
+  it('tells the model what the checks noticed, and the result only where our code wrote it', async () => {
     await readTheResume();
     const plain = await callTool('propose_rewrite', {
-      bulletId: 'b3',
+      id: 'b3',
       text: 'Wrote the payments on-call runbook',
     });
-    expect(plain.content).toBe(
-      'Suggested for b3. It would read: "Wrote the payments on-call runbook"\nChecks: none.'
+    expect(plain.content).toBe('Suggested for b3.\nChecks: none.');
+    const replaced = await callTool('propose_replace_everywhere', {
+      find: 'caching',
+      replace: 'caches',
+    });
+    expect(replaced.content).toBe(
+      'Suggested for b4. It would read: "Built tile caches for the Oslo office"\nChecks: none.'
     );
     const bigger = await callTool('propose_rewrite', {
-      bulletId: 'b1',
+      id: 'b1',
       text: 'Led migrating billing to Postgres',
     });
     expect(bigger.content).toContain('sound bigger than the original');
@@ -275,7 +342,7 @@ describe("checking the model's work", () => {
   it('sends a doubled word back once, then stages the second try flagged', async () => {
     await readTheResume();
     const doubled = {
-      bulletId: 'b2',
+      id: 'b2',
       text: 'Reduced reduce p99 latency from 18% to 3% of requests',
     };
     const first = await callTool('propose_rewrite', doubled);
@@ -292,9 +359,9 @@ describe("checking the model's work", () => {
 
   it("replaces the run's earlier suggestion for the same bullet", async () => {
     await readTheResume();
-    await callTool('propose_rewrite', { bulletId: 'b3', text: 'Wrote the payments runbook' });
-    await callTool('propose_select', { bulletId: 'b3', show: false });
-    await callTool('propose_rewrite', { bulletId: 'b3', text: 'Wrote the on-call runbook' });
+    await callTool('propose_rewrite', { id: 'b3', text: 'Wrote the payments runbook' });
+    await callTool('propose_select', { id: 'b3', show: false });
+    await callTool('propose_rewrite', { id: 'b3', text: 'Wrote the on-call runbook' });
     expect(stagedSuggestions().map((proposal) => proposal.change)).toMatchObject([
       { kind: 'select', place: { bulletId: 'b3' } },
       { kind: 'rewrite', after: 'Wrote the on-call runbook' },
@@ -343,7 +410,7 @@ describe('any call', () => {
       'There is no tool named delete_everything.'
     );
     await readTheResume();
-    expect((await callTool('propose_rewrite', { bulletId: 'b1' })).content).toBe(
+    expect((await callTool('propose_rewrite', { id: 'b1' })).content).toBe(
       'text is needed, as text.'
     );
   });
