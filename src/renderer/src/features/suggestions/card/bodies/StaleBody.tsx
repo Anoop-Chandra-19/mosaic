@@ -8,7 +8,7 @@ import {
   findTextItem,
   readShownName,
 } from '../../proposals/proposalAnchor';
-import { Caption } from './BodyParts';
+import { Caption, Hint, SuggestedText } from './BodyParts';
 import type { SuggestionBodyProps } from './suggestionBodyProps';
 import { describeStaleChange, nameTextPlace } from '../text/suggestionWords';
 
@@ -104,37 +104,25 @@ export function StaleBody({ proposal, draft }: SuggestionBodyProps) {
       {now !== undefined && (
         <>
           <Caption>Your {noun} now</Caption>
-          <Text as="p" variant="body">
-            {now}
-          </Text>
+          <SuggestedText>{now}</SuggestedText>
         </>
       )}
       {texts?.was && (
         <>
           <Caption>It was suggested for</Caption>
-          <Text as="p" variant="body" className="text-ink-muted">
-            {texts.was}
-          </Text>
+          <SuggestedText className="text-ink-muted">{texts.was}</SuggestedText>
         </>
       )}
       {texts?.would !== undefined && (
         <>
           <Caption>{isAdded ? `Suggested, new ${change.place.unit}` : 'Suggested'}</Caption>
-          <Text
-            as="p"
-            variant="body"
-            className={isAdded ? 'text-ink-muted' : 'text-ink-muted line-through'}
-          >
+          <SuggestedText className={isAdded ? 'text-ink-muted' : 'text-ink-muted line-through'}>
             {texts.would}
-          </Text>
+          </SuggestedText>
         </>
       )}
       {(canUseAnyway(change) || isAdded) && (
-        <Text
-          as="p"
-          variant="secondary"
-          className="mt-3 border-t border-line pt-2.5 text-ink-faint"
-        >
+        <Hint className="mt-3 border-t border-line pt-2.5">
           Still want it?{' '}
           {isAdded ? (
             <>
@@ -147,11 +135,9 @@ export function StaleBody({ proposal, draft }: SuggestionBodyProps) {
               edited {noun} so you can see what it would replace, then keep or drop it as usual.
             </>
           )}
-        </Text>
+        </Hint>
       )}
-      <Text as="p" variant="secondary" className="mt-2 text-ink-faint">
-        {readUndoHint(change)}
-      </Text>
+      <Hint>{readUndoHint(change)}</Hint>
     </>
   );
 }

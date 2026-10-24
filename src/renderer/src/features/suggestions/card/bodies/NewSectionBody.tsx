@@ -4,7 +4,7 @@ import { AppButton, AppInput, Text } from '@/components/ui-kit';
 import type { ResumeData } from '@shared/types/resume';
 import { renameProposedSection } from '../../proposals/proposalActions';
 import { resolveChange } from '../../proposals/reviewedChange';
-import { Caption, CaptionNote } from './BodyParts';
+import { Caption, CaptionNote, Hint, SuggestedText } from './BodyParts';
 import { EntryFacts } from './EntryFacts';
 import type { SuggestionBodyProps } from './suggestionBodyProps';
 
@@ -120,16 +120,14 @@ export function NewSectionBody({ proposal, draft }: SuggestionBodyProps) {
       </Caption>
       {isLines ? (
         contents.lines.map((line, index) => (
-          <Text as="p" key={index} variant="body" className="[&+&]:mt-1">
+          <SuggestedText key={index} className="[&+&]:mt-1">
             {line}
-          </Text>
+          </SuggestedText>
         ))
       ) : (
         <EntryFacts proposal={proposal} />
       )}
-      <Text as="p" variant="secondary" className="mt-2 text-ink-faint">
-        Keeping it keeps all of it. Change any part in the editor once it lands.
-      </Text>
+      <Hint>Keeping it keeps all of it. Change any part in the editor once it lands.</Hint>
     </>
   );
 }

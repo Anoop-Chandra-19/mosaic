@@ -1,8 +1,7 @@
 import { Eye, EyeOff } from 'lucide-react';
-import { Text } from '@/components/ui-kit';
 import { cn } from '@/lib/utils';
 import { BlockBody } from './BlockBody';
-import { Caption, TagLine } from './BodyParts';
+import { Caption, SuggestedText, TagLine } from './BodyParts';
 import type { SuggestionBodyProps } from './suggestionBodyProps';
 
 export function SelectBody(props: SuggestionBodyProps) {
@@ -14,13 +13,11 @@ export function SelectBody(props: SuggestionBodyProps) {
   return (
     <>
       <Caption>Suggested</Caption>
-      <Text
-        as="p"
-        variant="body"
+      <SuggestedText
         className={cn(!change.selected && 'text-ink-muted line-through decoration-del')}
       >
         {change.before}
-      </Text>
+      </SuggestedText>
       <TagLine icon={change.selected ? Eye : EyeOff}>
         {change.selected
           ? 'Back on the page.'

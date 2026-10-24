@@ -25,7 +25,8 @@ interface PreviewListProps {
 
 /**
  * The inspector in Preview: the list only, each row saying why it is or isn't on the page.
- * A row opens in place, one at a time, to change it here; the page follows.
+ * A row opens in place, one at a time, into a compact card to change it here; the page
+ * follows.
  */
 export function PreviewList({
   proposals,
@@ -87,7 +88,10 @@ export function PreviewList({
               </SuggestionRow>
               {isOpen && (
                 <>
-                  <div className="flex flex-col gap-1.5 pt-0.5 pr-3.5 pb-2 pl-8.5">
+                  <div
+                    data-compact
+                    className="group/card flex flex-col gap-1.5 pt-0.5 pr-3.5 pb-2 pl-8.5"
+                  >
                     <SuggestionBody
                       proposal={proposal}
                       draft={draft}

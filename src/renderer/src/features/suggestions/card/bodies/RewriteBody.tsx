@@ -14,7 +14,7 @@ import { SuggestionEditor } from '../text/SuggestionEditor';
 import { SuggestionFlags } from '../text/SuggestionFlags';
 import { FlaggedText, MarkedText } from '../text/SuggestionText';
 import { nameTextPlace, type TextNoun } from '../text/suggestionWords';
-import { BackLink, Caption, CaptionTag, Lines } from './BodyParts';
+import { BackLink, Caption, CaptionTag, Lines, SuggestedText } from './BodyParts';
 import type { SuggestionBodyProps } from './suggestionBodyProps';
 
 /** What the suggestion writes before the gap is filled: the user's words, or the assistant's. */
@@ -62,8 +62,7 @@ export function RewriteBody({ proposal, draft, isEditing, onEditingChange }: Sug
       <div>
         <Lines
           isNumbered={isMerge}
-          variant="secondary"
-          className="text-ink-soft"
+          look="now"
           lines={before.map((text) => (
             <FlaggedText key={text} text={text} words={lost} />
           ))}
@@ -77,19 +76,14 @@ export function RewriteBody({ proposal, draft, isEditing, onEditingChange }: Sug
         <SuggestionEditor proposal={proposal} onDone={() => onEditingChange(false)} />
       ) : (
         <>
-          <Text
-            as="p"
-            variant="body"
-            className="text-pretty"
-            onDoubleClick={() => onEditingChange(true)}
-          >
+          <SuggestedText className="text-pretty" onDoubleClick={() => onEditingChange(true)}>
             <MarkedText
               before={before.join(' ')}
               after={readShownAfter(proposal)}
               words={readFlaggedWords(flags)}
               gap={gap}
             />
-          </Text>
+          </SuggestedText>
           <SuggestionFlags flags={flags} />
           {withoutNumber !== undefined &&
             (review.isWithoutNumber ? (

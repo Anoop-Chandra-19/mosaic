@@ -44,7 +44,7 @@ describe('placeSuggestion', () => {
       'Harbor Freight Labs',
       'bullets 2 and 3',
     ]);
-    expect(placeSuggestion(doc, ENTRY)).toEqual(['Experience', 'new entry, after Lantern Maps']);
+    expect(placeSuggestion(doc, ENTRY)).toEqual(['Experience', 'after Lantern Maps']);
   });
 });
 
@@ -77,18 +77,24 @@ describe('added text and lines', () => {
     expect(placeSuggestion(lines, addText('bullet', 'b2', 'x'))).toEqual([
       'Experience',
       'Harbor Freight Labs',
-      'new bullet, after bullet 2',
+      'after bullet 2',
     ]);
-    expect(placeSuggestion(lines, addText('line', null, 'x'))).toEqual([
-      'Skills',
-      'new line, first',
-    ]);
+    expect(placeSuggestion(lines, addText('line', null, 'x'))).toEqual(['Skills', 'first']);
     expect(placeSuggestion(lines, summaryLine)).toEqual(['Summary', 'line 1']);
   });
 
   it('titles a version by the section when a line, not an entry, landed', () => {
     expect(describeLandedSuggestions(lines, [makeProposal(summaryLine, 'p1')])).toBe(
       'Rewrite in Summary, line 1'
+    );
+  });
+
+  it('says what new text is once, in the title', () => {
+    expect(
+      describeLandedSuggestions(lines, [makeProposal(addText('bullet', 'b2', 'x'), 'p1')])
+    ).toBe('New bullet in Harbor Freight Labs, after bullet 2');
+    expect(describeLandedSuggestions(lines, [makeProposal(addText('line', null, 'x'), 'p1')])).toBe(
+      'New line in Skills, first'
     );
   });
 });
@@ -123,14 +129,16 @@ describe('whole entries, sections and their order', () => {
 
 describe('new sections and headings', () => {
   it('names a new section by its heading, and a rename by its section', () => {
-    expect(
-      placeSuggestion(makeResume(), {
-        kind: 'section',
-        afterSectionId: null,
-        section: { kind: 'custom', layout: 'lines', label: 'Talks' },
-        contents: { layout: 'lines', lines: ['A talk'] },
-      })
-    ).toEqual(['Talks, new section']);
+    const talks: ProposalChange = {
+      kind: 'section',
+      afterSectionId: null,
+      section: { kind: 'custom', layout: 'lines', label: 'Talks' },
+      contents: { layout: 'lines', lines: ['A talk'] },
+    };
+    expect(placeSuggestion(makeResume(), talks)).toEqual(['Talks']);
+    expect(describeLandedSuggestions(makeResume(), [makeProposal(talks, 'p1')])).toBe(
+      'New section, Talks'
+    );
     expect(
       placeSuggestion(makeResume(), { kind: 'rename', sectionId: 's1', before: '', after: '' })
     ).toEqual(['Experience', 'heading']);
