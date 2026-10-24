@@ -21,7 +21,7 @@ export function SplitBody({ proposal }: SuggestionBodyProps) {
         Suggested, two bullets <CaptionTag>same words</CaptionTag>
       </Caption>
       <div>
-        <Lines isNumbered variant="body" lines={parts.map((part) => part.trim())} />
+        <Lines isNumbered look="suggested" lines={parts.map((part) => part.trim())} />
       </div>
     </>
   );

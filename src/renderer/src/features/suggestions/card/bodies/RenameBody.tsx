@@ -2,7 +2,7 @@ import { ArrowRight } from 'lucide-react';
 import { Text } from '@/components/ui-kit';
 import { clearProposalEdit } from '../../proposals/proposalActions';
 import { resolveChange } from '../../proposals/reviewedChange';
-import { BackLink, Caption, CaptionTag } from './BodyParts';
+import { BackLink, Caption, CaptionTag, Hint } from './BodyParts';
 import type { SuggestionBodyProps } from './suggestionBodyProps';
 import { SuggestionEditor } from '../text/SuggestionEditor';
 
@@ -40,9 +40,7 @@ export function RenameBody({ proposal, isEditing, onEditingChange }: SuggestionB
         </div>
       )}
       {!isEditing && (
-        <Text as="p" variant="secondary" className="mt-2 text-ink-faint">
-          Your words, not a fact, so there is nothing to check. Only the heading changes.
-        </Text>
+        <Hint>Your words, not a fact, so there is nothing to check. Only the heading changes.</Hint>
       )}
       {!isEditing && isInTheirWords && (
         <BackLink onClick={() => clearProposalEdit(proposal.id)}>

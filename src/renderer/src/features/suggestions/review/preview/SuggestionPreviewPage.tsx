@@ -10,12 +10,15 @@ interface SuggestionPreviewPageProps {
   look: PreviewLook;
   /** The row the pointer is on: outlined, dashed. */
   hoveredId: string | null;
-  /** The row that is open: outlined, and brought into view as it opens. */
+  /** The row that is open: outlined, and kept in view as it opens. */
   openId: string | null;
   onMetaChange: (meta: ResumePreviewMeta) => void;
 }
 
 const NO_OUTLINES: { hovered: Outline[]; open: Outline[] } = { hovered: [], open: [] };
+
+/** How long the page keeps an opened row's place in view while its layout settles. */
+const FOLLOW_MS = 15_000;
 
 /**
  * Preview's page: clean, as it would print. What a row made is outlined over it, measured
@@ -30,7 +33,7 @@ export function SuggestionPreviewPage({
 }: SuggestionPreviewPageProps) {
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const layerRef = useRef<HTMLDivElement | null>(null);
-  const revealedIdRef = useRef<string | null>(null);
+  const followRef = useRef<{ id: string; until: number } | null>(null);
   const [outlines, setOutlines] = useState(NO_OUTLINES);
 
   const measure = () => {
@@ -48,24 +51,45 @@ export function SuggestionPreviewPage({
         ? shown
         : next
     );
-    // Once per opening: after that, the page is the reader's to scroll.
-    if (openId !== revealedIdRef.current && next.open[0]) {
-      revealOutline(pages, layer, next.open[0]);
-      revealedIdRef.current = openId;
+    // Zoom fit and the inspector docking move it after it opens: it stays in view until
+    // the reader scrolls, clicks or types, or the layout has long settled.
+    if (openId && followRef.current?.id !== openId) {
+      followRef.current = { id: openId, until: performance.now() + FOLLOW_MS };
     }
-    if (!openId) revealedIdRef.current = null;
+    if (!openId) followRef.current = null;
+    const follow = followRef.current;
+    if (follow && performance.now() < follow.until && next.open[0]) {
+      revealOutline(pages, layer, next.open[0]);
+    }
   };
   const measureFromEffect = useEffectEvent(measure);
 
   useLayoutEffect(() => measureFromEffect(), [preview, hoveredId, openId]);
-  // Zooming scales the pages, and the layer with them.
+  // Zooming scales the pages, and the layer with them; docking resizes the pages' box.
   useEffect(() => {
+    const pages = scrollRef.current;
     const layer = layerRef.current;
-    if (!layer) return;
+    if (!pages || !layer) return;
     const observer = new ResizeObserver(() => measureFromEffect());
+    observer.observe(pages);
     observer.observe(layer);
     return () => observer.disconnect();
   }, []);
+  useEffect(() => {
+    const pages = scrollRef.current;
+    if (!openId || !pages) return;
+    const stopFollowing = () => {
+      if (followRef.current) followRef.current.until = 0;
+    };
+    pages.addEventListener('wheel', stopFollowing, { passive: true });
+    pages.addEventListener('pointerdown', stopFollowing);
+    window.addEventListener('keydown', stopFollowing);
+    return () => {
+      pages.removeEventListener('wheel', stopFollowing);
+      pages.removeEventListener('pointerdown', stopFollowing);
+      window.removeEventListener('keydown', stopFollowing);
+    };
+  }, [openId]);
 
   const isDraftAsItIs = look === 'kept' && preview.landedCount === 0;
   return (

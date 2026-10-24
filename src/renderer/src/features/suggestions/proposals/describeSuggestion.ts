@@ -64,7 +64,7 @@ function readSectionId(change: ProposalChange): string | null {
   }
 }
 
-/** Where added text goes: "new bullet, after bullet 2", or "new line, first". */
+/** Where added text goes: "after bullet 2", or "first". The kind's label says what it is. */
 function nameAddedPlace(
   doc: ResumeData,
   section: ResumeSection,
@@ -73,15 +73,20 @@ function nameAddedPlace(
   const within = nameWithin(doc, section);
   const { place, afterId } = change;
   if (place.unit === 'line') {
-    return [afterId ? `new line, after ${within.line(afterId)}` : 'new line, first'];
+    return [afterId ? `after ${within.line(afterId)}` : 'first'];
   }
-  const where = afterId ? `after ${within.bullet(place.entryId, afterId)}` : 'first';
-  return [within.entry(place.entryId), `new bullet, ${where}`];
+  return [
+    within.entry(place.entryId),
+    afterId ? `after ${within.bullet(place.entryId, afterId)}` : 'first',
+  ];
 }
 
-/** Its place, from the section down: the section's label, the entry, then the bullets. */
+/**
+ * Its place, from the section down: the section's label, the entry, then the bullets. What
+ * is new is placed, not named ("after Lantern Maps"): the kind's label goes beside it.
+ */
 export function placeSuggestion(doc: ResumeData, change: ProposalChange): string[] {
-  if (change.kind === 'section') return [`${change.section.label}, new section`];
+  if (change.kind === 'section') return [change.section.label];
   const sectionId = readSectionId(change);
   if (sectionId === null) return ['Section order'];
   const section = findSection(doc, sectionId);
@@ -111,7 +116,7 @@ export function placeSuggestion(doc: ResumeData, change: ProposalChange): string
       return path(...nameAddedPlace(doc, section, change));
     case 'entry': {
       const after = change.afterEntryId && within.entry(change.afterEntryId);
-      return path(after ? `new entry, after ${after}` : 'new entry, first');
+      return path(after ? `after ${after}` : 'first');
     }
     case 'rename':
       return path('heading');
@@ -149,6 +154,7 @@ function nameWhere(doc: ResumeData, change: ProposalChange): string {
 export function describeLandedSuggestions(doc: ResumeData, landed: readonly Proposal[]): string {
   if (landed.length === 1) {
     const { change } = landed[0];
+    if (change.kind === 'section') return `${labelSuggestionKind(change)}, ${change.section.label}`;
     const [section, ...rest] = placeSuggestion(doc, change);
     // Within an entry, the entry names it; otherwise the section does ("Summary, line 2").
     const where = readEntryId(change) ? rest : [section, ...rest];
