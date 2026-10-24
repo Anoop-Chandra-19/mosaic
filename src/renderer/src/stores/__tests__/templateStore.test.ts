@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createDefaultResume, createEmptyResume } from '@shared/resume/defaultResume';
-import type { MosaicDb, MosaicDbBridge } from '@shared/types/db';
+import type { MosaicDb, MosaicDbBridge } from '@shared/types/dbBridge';
 import { formatBundleText } from '@shared/vault/formatBundle';
 // The real main-process database code over SQLite in memory: these flows run against
 // what the app runs, minus the IPC hop.

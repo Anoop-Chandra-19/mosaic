@@ -1,6 +1,6 @@
 import { ipcMain, type IpcMainInvokeEvent } from 'electron';
 import type { Database } from 'better-sqlite3';
-import type { MosaicDb } from '@shared/types/db';
+import type { MosaicDb } from '@shared/types/dbBridge';
 import { DB_METHODS, dbChannel } from '@shared/ipc/dbMethods';
 import { createDbHandlers, handlerFor, settle, type Handlers } from './dbHandlers';
 

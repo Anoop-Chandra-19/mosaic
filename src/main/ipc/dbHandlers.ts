@@ -6,11 +6,10 @@ import {
   isDbText,
   MAX_DB_TEXT_LENGTH,
   type AppliedHistory,
-  type DbResult,
-  type MosaicDb,
   type NamingMode,
   type SnapshotOccasion,
 } from '@shared/types/db';
+import { type DbResult, type MosaicDb } from '@shared/types/dbBridge';
 import type { ResumeData } from '@shared/types/resume';
 import type { DbMethod } from '@shared/ipc/dbMethods';
 import { readBootState } from '../db/readBootState';

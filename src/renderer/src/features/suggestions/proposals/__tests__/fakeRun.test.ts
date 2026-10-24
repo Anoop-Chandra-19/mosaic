@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { MosaicDb, MosaicDbBridge } from '@shared/types/db';
+import type { MosaicDb, MosaicDbBridge } from '@shared/types/dbBridge';
 import type { ProposalChange } from '@shared/types/agentProposal';
 // The real main-process database code over SQLite in memory, minus the IPC hop.
 import { openDatabase, type Database } from '../../../../../../main/db/connection';

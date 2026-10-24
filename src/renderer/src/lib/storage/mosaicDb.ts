@@ -1,4 +1,4 @@
-import type { DbErrorCode, DbResult, MosaicDb, MosaicDbBridge } from '@shared/types/db';
+import type { DbErrorCode, DbResult, MosaicDb, MosaicDbBridge } from '@shared/types/dbBridge';
 
 /** A database call main refused or could not complete; its transaction rolled back. */
 export class DbError extends Error {
