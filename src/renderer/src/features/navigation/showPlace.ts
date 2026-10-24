@@ -1,16 +1,22 @@
 import { startHistoryTour } from '@/features/onboarding/history/startHistoryTour';
-import { useOverlayStore, type DialogRequest } from '@/stores/overlayStore';
+import { useOverlayStore } from '@/stores/overlayStore';
 import { useResumeStore } from '@/stores/resumeStore';
 import { useTemplateStore } from '@/stores/templateStore';
-import type { AddressDialog } from './viewPlace';
-import type { ResolvedPlace } from './resolveViewPlace';
+import type { AppPlace } from './appPlace';
 
-const DIALOG_REQUESTS: Record<AddressDialog, DialogRequest> = {
-  import: { kind: 'import', asNewOnly: false },
-  export: { kind: 'export', version: null },
-  nameVersion: { kind: 'nameVersion' },
-  shortcuts: { kind: 'shortcuts', place: null },
-};
+/*
+ * Navigation: getting to a place that takes more than one store, such as another
+ * template's history or a dialog on a template that isn't open. The template opens first
+ * (which saves the draft), then what shows on it. Two ways:
+ * - `showPlace`, over where you are: the layers' own rules decide the rest (a dialog
+ *   replaces a dialog, a tour underneath comes back). A button or a link uses this.
+ * - `goToPlace`, somewhere exactly: whatever covers the app goes first. A view address
+ *   uses this.
+ * A layer that opens or closes on its own (a surface's Esc, a button opening Settings)
+ * talks to `overlayStore` directly.
+ *
+ * Other modules use this file and `appPlace.ts`'s type.
+ */
 
 /** Whatever covers the editor now goes: the surface, Settings, a dialog, a tour. */
 function clearOverlays(): void {
@@ -21,23 +27,25 @@ function clearOverlays(): void {
   if (overlay.surface) overlay.closeSurface(overlay.surface.kind);
 }
 
-async function openTemplate(templateId: string): Promise<void> {
+async function openTemplateIfNeeded(templateId: string): Promise<void> {
   if (useResumeStore.getState().templateId !== templateId) {
     await useTemplateStore.getState().openTemplate(templateId);
   }
 }
 
-/** Shows the view, opening its template first when it belongs to one. */
-export async function goToViewPlace(place: ResolvedPlace): Promise<void> {
-  clearOverlays();
-  if ('templateId' in place) await openTemplate(place.templateId);
+/**
+ * Shows the place over where you are, opening its template first when it belongs to one.
+ * Throws when the template can't be opened, and then shows nothing.
+ */
+export async function showPlace(place: AppPlace): Promise<void> {
+  if ('templateId' in place) await openTemplateIfNeeded(place.templateId);
   const overlay = useOverlayStore.getState();
   switch (place.kind) {
     case 'start':
       overlay.openSurface({ kind: 'start' });
       return;
     case 'editor':
-      if (place.dialog) overlay.openDialog(DIALOG_REQUESTS[place.dialog]);
+      if (place.dialog) overlay.openDialog(place.dialog);
       return;
     case 'history':
       overlay.openSurface({
@@ -59,4 +67,10 @@ export async function goToViewPlace(place: ResolvedPlace): Promise<void> {
       else overlay.startTour(place.tour);
       useOverlayStore.getState().setTourStep(place.step - 1);
   }
+}
+
+/** Goes to the place and nothing else: whatever covers the app goes first. */
+export function goToPlace(place: AppPlace): Promise<void> {
+  clearOverlays();
+  return showPlace(place);
 }

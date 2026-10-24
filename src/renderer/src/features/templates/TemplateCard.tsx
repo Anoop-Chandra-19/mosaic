@@ -39,6 +39,7 @@ import { formatRelativeTime } from './formatRelativeTime';
 import type { HistoryFilter } from '@/types/history';
 import { versionLabel } from '@/features/history/versionLabel';
 import { VersionList } from '@/features/history/version-list/VersionList';
+import { showPlace } from '@/features/navigation/showPlace';
 import { tourTargetProps } from '@/features/onboarding/tourTargets';
 
 interface TemplateCardProps {
@@ -91,12 +92,15 @@ export function TemplateCard({ template, active, expanded, onToggle }: TemplateC
     }
   };
 
-  const exportTemplate = async () => {
-    if (!active && !(await attempt(openTemplate(template.id), 'Could not open that template'))) {
-      return;
-    }
-    openDialog({ kind: 'export', version: null });
-  };
+  const exportTemplate = () =>
+    attempt(
+      showPlace({
+        kind: 'editor',
+        templateId: template.id,
+        dialog: { kind: 'export', version: null },
+      }),
+      'Could not open that template'
+    );
 
   /** The version in the sheet, or else the newest one. */
   const exportVersion = async () => {
