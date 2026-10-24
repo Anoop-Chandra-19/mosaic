@@ -1,5 +1,10 @@
 import { formatEntryHeading } from '@shared/resume/entryHeading';
-import type { AddPlace, ProposalChange, ProposalFlag } from '@shared/types/agentProposal';
+import type {
+  AddPlace,
+  EntryDraft,
+  ProposalChange,
+  ProposalFlag,
+} from '@shared/types/agentProposal';
 import type { ResumeData } from '@shared/types/resume';
 import { checkClaimsMore } from './claimsMore';
 import { checkDoubledWords } from './doubledWords';
@@ -33,6 +38,10 @@ function readAddedContext(doc: ResumeData, place: AddPlace): string {
   return [formatEntryHeading(entry), entry.dates, ...entry.bullets.map((b) => b.text)].join('\n');
 }
 
+/** A new entry's facts, which its bullets may repeat: the user confirms each one. */
+const readEntryFacts = ({ frame }: EntryDraft) =>
+  [formatEntryHeading(frame), frame.dates].join('\n');
+
 /** The text a change replaces, what it writes, and what else it may repeat; null when it writes none. */
 function readCheckedText(
   doc: ResumeData,
@@ -46,12 +55,14 @@ function readCheckedText(
     case 'add':
       return { before: '', after: change.text, context: readAddedContext(doc, change.place) };
     case 'entry':
-      return { before: '', after: change.bullets.join('\n'), context: '' };
+      return { before: '', after: change.bullets.join('\n'), context: readEntryFacts(change) };
     case 'section': {
       const { contents } = change;
-      const after =
-        contents.layout === 'lines' ? contents.lines.join('\n') : contents.entry.bullets.join('\n');
-      return { before: '', after, context: '' };
+      if (contents.layout === 'lines') {
+        return { before: '', after: contents.lines.join('\n'), context: '' };
+      }
+      const { entry } = contents;
+      return { before: '', after: entry.bullets.join('\n'), context: readEntryFacts(entry) };
     }
     default:
       // A heading is the user's words, not a claim; the rest write no new words.

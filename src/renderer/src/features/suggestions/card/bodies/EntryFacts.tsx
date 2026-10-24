@@ -5,6 +5,10 @@ import { cn } from '@/lib/utils';
 import type { EntryFact, Proposal } from '@shared/types/agentProposal';
 import { confirmProposalFact, editProposalFact } from '../../proposals/proposalActions';
 import { readEntryDraft, resolveChange } from '../../proposals/reviewedChange';
+import { readFlaggedWords } from '../text/describeFlag';
+import { SuggestionFlags } from '../text/SuggestionFlags';
+import { FlaggedText } from '../text/SuggestionText';
+import { SuggestedText } from './BodyParts';
 
 const FACT_LABELS: Record<EntryFact, string> = {
   title: 'Title',
@@ -17,7 +21,7 @@ const ENTRY_FACTS = Object.keys(FACT_LABELS) as EntryFact[];
 
 /**
  * A new entry's facts, alone or as a new section's first, each confirmed or changed in
- * place, then the bullets it brings.
+ * place, then the bullets it brings, with what the checks noticed in them.
  */
 export function EntryFacts({ proposal }: { proposal: Proposal }) {
   const [openFact, setOpenFact] = useState<EntryFact | null>(null);
@@ -105,10 +109,13 @@ export function EntryFacts({ proposal }: { proposal: Proposal }) {
             <Text variant="meta" className="min-w-2.5 text-ink-faint">
               •
             </Text>
-            <Text variant="body">{bullet}</Text>
+            <SuggestedText>
+              <FlaggedText text={bullet} words={readFlaggedWords(proposal.flags)} />
+            </SuggestedText>
           </div>
         ))}
       </div>
+      <SuggestionFlags flags={proposal.flags} />
     </div>
   );
 }

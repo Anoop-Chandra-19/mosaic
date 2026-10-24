@@ -4,6 +4,9 @@ import { AppButton, AppInput, Text } from '@/components/ui-kit';
 import type { ResumeData } from '@shared/types/resume';
 import { renameProposedSection } from '../../proposals/proposalActions';
 import { resolveChange } from '../../proposals/reviewedChange';
+import { readFlaggedWords } from '../text/describeFlag';
+import { SuggestionFlags } from '../text/SuggestionFlags';
+import { FlaggedText } from '../text/SuggestionText';
 import { Caption, CaptionNote, Hint, SuggestedText } from './BodyParts';
 import { EntryFacts } from './EntryFacts';
 import type { SuggestionBodyProps } from './suggestionBodyProps';
@@ -119,11 +122,14 @@ export function NewSectionBody({ proposal, draft }: SuggestionBodyProps) {
           : 'With its first entry'}
       </Caption>
       {isLines ? (
-        contents.lines.map((line, index) => (
-          <SuggestedText key={index} className="[&+&]:mt-1">
-            {line}
-          </SuggestedText>
-        ))
+        <>
+          {contents.lines.map((line, index) => (
+            <SuggestedText key={index} className="[&+&]:mt-1">
+              <FlaggedText text={line} words={readFlaggedWords(proposal.flags)} />
+            </SuggestedText>
+          ))}
+          <SuggestionFlags flags={proposal.flags} />
+        </>
       ) : (
         <EntryFacts proposal={proposal} />
       )}

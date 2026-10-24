@@ -8,19 +8,22 @@ import type { ProposalFlag, ProposalFlagKind } from '@shared/types/agentProposal
 const quote = (word: string) => `“${word}”`;
 const quoteAll = (words: readonly string[]) => words.map(quote).join(' and ');
 const isOrAre = (words: readonly string[]) => (words.length === 1 ? 'is' : 'are');
+const itOrThem = (words: readonly string[]) => (words.length === 1 ? 'it' : 'them');
 const capitalize = (word: string) => word.charAt(0).toUpperCase() + word.slice(1);
+
+/** For any kind: what it replaces, or where new text goes, is "here". */
+const notYours = (words: readonly string[]) =>
+  `You didn’t write ${quoteAll(words)} here, or ask for ${itOrThem(words)}.`;
 
 const FLAG_SENTENCES: Record<ProposalFlagKind, (words: string[]) => string> = {
   unfilledGap: () => 'Only you know this number. Fill it in, or take the version without one.',
   claimsMore: ([from, to]) =>
     `${quote(capitalize(from))} became ${quote(capitalize(to))}. Keep it only if you led it.`,
-  newNumbers: (words) =>
-    `${quoteAll(words)} ${isOrAre(words)} in neither your bullet nor what you asked.`,
+  newNumbers: notYours,
   calculatedNumbers: (words) =>
     `${quoteAll(words)} ${isOrAre(words)} worked out from your numbers. Probably right, but check it.`,
   removedDetail: (words) => `Your bullet had ${quoteAll(words)}. This one doesn’t.`,
-  newNames: (words) =>
-    `${quoteAll(words)} ${isOrAre(words)} in neither your bullet nor what you asked.`,
+  newNames: notYours,
   doubledWords: (words) => `${quoteAll(words)} where the new text met the old.`,
 };
 
