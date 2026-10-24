@@ -10,12 +10,22 @@ import { handleFor, type ResumeHandles } from './resumeHandles';
  *   - b1: Assisted in migrating billing to Postgres
  *   - b2 (hidden): Wrote the on-call runbook
  *
- * Lines sections (Summary, Skills) have no handles: nothing can change them yet.
+ *   ## Skills (s2)
+ *   - l1: Go, Python, Postgres
  */
 
+function formatText(handle: string, isShown: boolean, text: string): string {
+  const hiddenNote = isShown ? '' : ' (hidden)';
+  return `- ${handle}${hiddenNote}: ${text}`;
+}
+
 function formatBullet(handles: ResumeHandles, bullet: Bullet): string {
-  const hiddenNote = bullet.selected ? '' : ' (hidden)';
-  return `- ${handleFor(handles, 'bullet', bullet.id)}${hiddenNote}: ${bullet.text}`;
+  return formatText(handleFor(handles, 'bullet', bullet.id), bullet.selected, bullet.text);
+}
+
+/** A lines section's item, which holds its text where an entry holds bullets. */
+function formatLine(handles: ResumeHandles, line: ResumeEntry): string {
+  return formatText(handleFor(handles, 'line', line.id), line.selected, line.text ?? '');
 }
 
 function formatEntry(handles: ResumeHandles, entry: ResumeEntry): string[] {
@@ -30,17 +40,12 @@ function formatEntry(handles: ResumeHandles, entry: ResumeEntry): string[] {
 
 function formatSection(handles: ResumeHandles, section: ResumeSection): string[] {
   const hiddenNote = section.hidden ? ' (hidden section)' : '';
-  if (section.layout === 'lines') {
-    return [
-      `## ${section.label}${hiddenNote} (lines, read only)`,
-      ...section.items.map((line) => `- ${line.text ?? ''}`),
-    ];
-  }
-  const handle = handleFor(handles, 'section', section.id);
-  return [
-    `## ${section.label}${hiddenNote} (${handle})`,
-    ...section.items.flatMap((entry) => formatEntry(handles, entry)),
-  ];
+  const heading = `## ${section.label}${hiddenNote} (${handleFor(handles, 'section', section.id)})`;
+  const items =
+    section.layout === 'lines'
+      ? section.items.map((line) => formatLine(handles, line))
+      : section.items.flatMap((entry) => formatEntry(handles, entry));
+  return [heading, ...items];
 }
 
 export function formatResumeForModel(doc: ResumeData, handles: ResumeHandles): string {

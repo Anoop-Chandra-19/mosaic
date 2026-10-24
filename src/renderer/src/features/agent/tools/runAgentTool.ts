@@ -9,6 +9,7 @@ import { refuse, type AgentToolRun, type ToolAnswer } from './agentToolRun';
 import { checkAgentToolArgs } from './checkAgentToolArgs';
 import { proposeEntry } from './propose/proposeEntry';
 import { proposeMerge } from './propose/proposeMerge';
+import { proposeRename } from './propose/proposeRename';
 import { proposeReorder } from './propose/proposeReorder';
 import { proposeReplaceEverywhere } from './propose/proposeReplaceEverywhere';
 import { proposeRewrite } from './propose/proposeRewrite';
@@ -39,6 +40,7 @@ const TOOLS: {
   read_document: readDocument,
   read_newest_version: readNewestVersion,
   propose_rewrite: proposeRewrite,
+  propose_rename: proposeRename,
   propose_replace_everywhere: proposeReplaceEverywhere,
   propose_split: proposeSplit,
   propose_merge: proposeMerge,

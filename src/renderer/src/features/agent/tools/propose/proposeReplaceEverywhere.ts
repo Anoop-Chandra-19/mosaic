@@ -2,31 +2,31 @@ import type { StagedChange } from '@/features/suggestions/proposals/proposalActi
 import type { AgentToolArgs } from '@shared/agent-tools/agentTools';
 import { refuse, type AgentToolRun, type ToolAnswer } from '../agentToolRun';
 import { replaceEveryWholeWord } from '../replaceEveryWholeWord';
-import { isProblem, listBulletsInReceipt, placeOfBullet } from './findInReceipt';
+import { isProblem, listTextInReceipt } from './findInReceipt';
 import { stageSuggestions } from './stageSuggestions';
 
-/** One term renamed in every bullet that uses it, each bullet its own suggestion. */
+/**
+ * One term renamed in every bullet and line that uses it, each its own suggestion. Headings
+ * stay out: a heading is renamed on purpose, one at a time.
+ */
 export function proposeReplaceEverywhere(
   run: AgentToolRun,
   args: AgentToolArgs['propose_replace_everywhere']
 ): ToolAnswer {
-  const bullets = listBulletsInReceipt(run);
-  if (isProblem(bullets)) return refuse(bullets.problem);
+  const texts = listTextInReceipt(run);
+  if (isProblem(texts)) return refuse(texts.problem);
 
   const changes: StagedChange[] = [];
-  for (const found of bullets) {
-    const replaced = replaceEveryWholeWord(found.bullet.text, args.find, args.replace);
+  for (const { place, before } of texts) {
+    const replaced = replaceEveryWholeWord(before, args.find, args.replace);
     if (!replaced) continue;
-    const change = {
-      kind: 'rewrite' as const,
-      place: placeOfBullet(found),
-      before: found.bullet.text,
-      after: replaced.text,
-    };
+    const change = { kind: 'rewrite' as const, place, before, after: replaced.text };
     changes.push({ change, source: 'replace', reason: args.reason });
   }
   if (!changes.length) {
-    return refuse(`"${args.find}" is in no bullet. Copy find exactly as the bullets write it.`);
+    return refuse(
+      `"${args.find}" is in no bullet or line. Copy find exactly as the resume writes it.`
+    );
   }
   return stageSuggestions(run, changes);
 }

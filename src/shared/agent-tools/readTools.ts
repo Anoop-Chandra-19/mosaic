@@ -10,7 +10,7 @@ export interface ReadToolArgs {
 export const READ_TOOLS: Record<keyof ReadToolArgs, ModelTool> = {
   read_document: defineAgentTool(
     'read_document',
-    'Read the open resume: its sections, entries and bullets, each with a handle (s1, e2, b7) that the propose tools take. Read it before proposing, and again when a tool says the text changed. Bullets marked (hidden) are kept but left off the page. Lines in sections like Summary or Skills are there for context and cannot be changed yet.'
+    'Read the open resume: its sections, their entries and bullets, and the lines of sections like Summary or Skills, each with a handle (s1, e2, b7, l3) that the propose tools take. Read it before proposing, and again when a tool says the text changed. Bullets and lines marked (hidden) are kept but left off the page.'
   ),
   read_newest_version: defineAgentTool(
     'read_newest_version',
