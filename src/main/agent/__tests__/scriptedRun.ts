@@ -1,7 +1,8 @@
 import type { AgentToolResult } from '@shared/agent-tools/agentTools';
+import type { AgentToolCall } from '@shared/types/agentBridge';
 import type { ModelStreamEvent } from '@shared/types/modelReply';
 import type { ModelProvider, ModelRequest } from '../../model-providers/modelProvider';
-import type { ToolBridge, ToolCallRequest } from '../runToolRound';
+import type { ToolBridge } from '../runToolRound';
 
 /** A step's reply: events played back, or a stream of its own (to hang, or to fail). */
 export type ScriptedReply =
@@ -54,10 +55,10 @@ export type PageAnswer = Omit<AgentToolResult, 'draft'> & { draft?: AgentToolRes
 
 /** A page that answers each call with `answer`, remembering the calls. */
 export function fakePage(
-  answer: (call: ToolCallRequest) => PageAnswer | Promise<PageAnswer>,
+  answer: (call: AgentToolCall) => PageAnswer | Promise<PageAnswer>,
   draft: AgentToolResult['draft'] = null
 ) {
-  const calls: ToolCallRequest[] = [];
+  const calls: AgentToolCall[] = [];
   const bridge: ToolBridge = {
     async runTool(call) {
       calls.push(call);

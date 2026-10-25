@@ -1,3 +1,4 @@
+import type { MosaicAgent } from '@shared/types/agentBridge';
 import type { MosaicBackup } from '@shared/types/backup';
 import type { HelpMenuCommand } from '@shared/ipc/appChannels';
 import type { MosaicDbBridge } from '@shared/types/dbBridge';
@@ -16,6 +17,7 @@ declare global {
       backup: MosaicBackup;
       secrets: MosaicSecrets;
       modelProviders: MosaicModelProviders;
+      agent: MosaicAgent;
       /** Development builds only. */
       dev?: MosaicDev;
       app: {

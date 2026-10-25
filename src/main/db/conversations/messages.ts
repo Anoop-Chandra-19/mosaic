@@ -5,6 +5,7 @@ import type {
   TranscriptMessage,
   TranscriptMessageBody,
 } from '@shared/types/agentConversation';
+import type { MessagePage } from '@shared/types/agentBridge';
 import { StorageError } from '../storageError';
 import { encodeStoredMessageBody, parseStoredMessageBody } from './storedMessageBody';
 
@@ -69,12 +70,6 @@ function toTranscriptBody(body: MessageBody): TranscriptMessageBody {
   if (body.type !== 'toolResults') return body;
   const results = body.results.map(({ callId, isError }) => ({ callId, isError }));
   return { type: 'toolResults', results };
-}
-
-export interface MessagePage {
-  /** The page ends just before this message; absent for the newest page. */
-  beforeSeq?: number;
-  limit: number;
 }
 
 /**

@@ -2,6 +2,8 @@ import type { Database } from 'better-sqlite3';
 import type { RunStoppedMessageBody, RunStopReason } from '@shared/types/agentConversation';
 import type { ModelReplyPart, ModelUsage } from '@shared/types/modelReply';
 import { getTemplate } from '../resumes/templates';
+import { StorageError } from '../storageError';
+import { createConversation } from './conversations';
 import { appendMessage } from './messages';
 import { finishRun, readLastRun, startRun, type ConversationRun, type RunEnd } from './runs';
 import { closePendingCalls, finishToolCall, recordToolCall, type ToolCallEnd } from './toolCalls';
@@ -13,16 +15,22 @@ import { closePendingCalls, finishToolCall, recordToolCall, type ToolCallEnd } f
  * with `readConversationLog` and `readToolCallStamps`.
  */
 
-export interface UserAsk {
+export interface RunAsk {
   conversationId: number;
-  text: string;
   /** The template open when the user sent it; null with none open. */
   templateId: string | null;
   provider: string;
   model: string;
 }
 
-export interface UserRunStart {
+export interface UserAsk extends Omit<RunAsk, 'conversationId'> {
+  /** Null starts a new conversation. */
+  conversationId: number | null;
+  text: string;
+}
+
+export interface RunStart {
+  conversationId: number;
   runId: number;
   /** The open template as the run starts on it; null with none open. */
   template: { id: string; name: string; rev: number } | null;
@@ -55,39 +63,65 @@ const END_STATUS: Record<RunStopReason, RunEnd['status']> = {
   cancelled: 'cancelled',
 };
 
-/** The run, the user's message, and a note first when the open resume changed since. */
-export function startUserRun(db: Database, ask: UserAsk): UserRunStart {
-  return db.transaction(() => {
-    const { conversationId, templateId } = ask;
-    const template = templateId === null ? null : getTemplate(db, templateId);
-    const lastRun = readLastRun(db, conversationId);
-    const run = startRun(db, {
-      conversationId,
-      templateId,
-      provider: ask.provider,
-      model: ask.model,
-    });
-    if (template && lastRun && lastRun.templateId !== template.id) {
-      appendMessage(db, {
-        conversationId,
-        runId: run.id,
-        body: {
-          type: 'templateSwitched',
-          templateId: template.id,
-          label: template.name,
-          ...(lastRun.templateId ? { previousId: lastRun.templateId } : {}),
-        },
-      });
-    }
+/** The run, with a note first when the open resume changed since the last one. */
+function openRun(db: Database, ask: RunAsk): RunStart {
+  const { conversationId, templateId } = ask;
+  const template = templateId === null ? null : getTemplate(db, templateId);
+  const lastRun = readLastRun(db, conversationId);
+  const run = startRun(db, {
+    conversationId,
+    templateId,
+    provider: ask.provider,
+    model: ask.model,
+  });
+  if (template && lastRun && lastRun.templateId !== template.id) {
     appendMessage(db, {
       conversationId,
       runId: run.id,
+      body: {
+        type: 'templateSwitched',
+        templateId: template.id,
+        label: template.name,
+        ...(lastRun.templateId ? { previousId: lastRun.templateId } : {}),
+      },
+    });
+  }
+  return {
+    conversationId,
+    runId: run.id,
+    template: template && { id: template.id, name: template.name, rev: template.rev },
+  };
+}
+
+/** A run for what the user sent, in a new conversation or an old one, then their message. */
+export function startUserRun(db: Database, ask: UserAsk): RunStart {
+  return db.transaction(() => {
+    const { provider, model } = ask;
+    const conversationId = ask.conversationId ?? createConversation(db, { provider, model });
+    const start = openRun(db, { ...ask, conversationId });
+    appendMessage(db, {
+      conversationId,
+      runId: start.runId,
       body: { type: 'user', text: ask.text, resume: [], isLimit: false },
     });
-    return {
-      runId: run.id,
-      template: template && { id: template.id, name: template.name, rev: template.rev },
-    };
+    return start;
+  })();
+}
+
+/**
+ * A run with no message of its own, which carries on from the log as it stands, so the
+ * reply reads as if the stop never happened. A conversation with no run has nothing to
+ * carry on from.
+ */
+export function startCarryOnRun(db: Database, ask: RunAsk): RunStart {
+  return db.transaction(() => {
+    if (!readLastRun(db, ask.conversationId)) {
+      throw new StorageError(
+        'invalid-argument',
+        `Conversation ${ask.conversationId} has no run to carry on from`
+      );
+    }
+    return openRun(db, ask);
   })();
 }
 

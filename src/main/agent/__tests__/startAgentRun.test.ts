@@ -6,7 +6,7 @@ import { createConversation } from '../../db/conversations/conversations';
 import { readConversationLog } from '../../db/conversations/messages';
 import { createTemplate } from '../../db/resumes/templates';
 import { STALE_READ } from '../assembleModelContext';
-import { runAgent, type AgentRunRequest } from '../runAgent';
+import { startAgentRun, type AgentRunRequest } from '../startAgentRun';
 import { REPEAT_WARNING, RUN_LIMITS } from '../runLimits';
 import {
   callTool,
@@ -51,10 +51,9 @@ function ask({ replies, answer = () => ok('Done.'), overrides }: Ask) {
   const model = scriptedModel(replies);
   const page = fakePage(answer, { templateId, rev: 0 });
   const events: AgentRunEvent[] = [];
-  const run = runAgent({
+  const { ended: run } = startAgentRun({
     db,
-    conversationId,
-    text: 'Tighten my summary.',
+    ask: { type: 'user', conversationId, text: 'Tighten my summary.' },
     templateId,
     model: { provider: 'ollama', name: 'qwen3.5:9b' },
     modelProvider: model.provider,
@@ -80,7 +79,7 @@ describe('a run', () => {
         (call.args as { id?: string }).id === 'b9' ? refused('There is no b9.') : ok('Answered.'),
     });
 
-    expect(await run).toEqual({ runId: 1, stopReason: undefined });
+    expect(await run).toEqual({ stopReason: undefined });
     expect(bodies().map((body) => body.type)).toEqual([
       'user',
       'assistant',
@@ -131,6 +130,23 @@ describe('a run', () => {
     expect(results).toMatchObject([{ content: STALE_READ }, { content: 'Answered.' }]);
   });
 
+  it('carries on from the log with no new message', async () => {
+    const { run } = ask({
+      replies: [[{ type: 'error', error: { reason: 'keyRefused', httpStatus: 401 } }]],
+    });
+    expect(await run).toEqual({ stopReason: 'providerError' });
+
+    const carryOn = ask({
+      replies: [[say('Here it is.'), DONE]],
+      overrides: { ask: { type: 'carryOn', conversationId } },
+    });
+    expect(await carryOn.run).toEqual({ stopReason: undefined });
+    expect(carryOn.model.requests[0].messages).toEqual([
+      { role: 'user', text: 'Tighten my summary.' },
+    ]);
+    expect(bodies().map((body) => body.type)).toEqual(['user', 'runStopped', 'assistant']);
+  });
+
   it('carries on when a tool does not answer in time', async () => {
     const { run } = ask({
       replies: [
@@ -140,7 +156,7 @@ describe('a run', () => {
       answer: () => new Promise<PageAnswer>(() => {}),
       overrides: { limits: { ...RUN_LIMITS, toolAnswerMs: 10 } },
     });
-    expect(await run).toEqual({ runId: 1, stopReason: undefined });
+    expect(await run).toEqual({ stopReason: undefined });
     expect(readToolCalls()).toEqual([{ call_id: 'c1', status: 'error', check_name: 'timeout' }]);
   });
 });
@@ -157,7 +173,7 @@ describe('stopping a run', () => {
       answer: () => refused('order mixes lists'),
     });
 
-    expect(await run).toEqual({ runId: 1, stopReason: 'repeatedCall' });
+    expect(await run).toEqual({ stopReason: 'repeatedCall' });
     expect(model.requests[2].messages.at(-1)).toMatchObject({
       content: `order mixes lists\n${REPEAT_WARNING}`,
     });
@@ -180,7 +196,7 @@ describe('stopping a run', () => {
       replies: [step('c1'), step('c2'), step('c3')],
       overrides: { limits: { ...RUN_LIMITS, steps: 2 } },
     });
-    expect(await run).toEqual({ runId: 1, stopReason: 'stepLimit' });
+    expect(await run).toEqual({ stopReason: 'stepLimit' });
     expect(model.requests).toHaveLength(2);
     expect(readRun(1)).toMatchObject({ status: 'step_limit' });
   });
@@ -201,7 +217,7 @@ describe('stopping a run', () => {
       overrides: { signal: stop.signal },
     });
 
-    expect(await run).toEqual({ runId: 1, stopReason: 'cancelled' });
+    expect(await run).toEqual({ stopReason: 'cancelled' });
     expect(bodies().slice(1)).toEqual([
       { type: 'assistant', content: [{ type: 'text', text: 'Looking at' }] },
       { type: 'runStopped', reason: 'cancelled' },
@@ -221,7 +237,7 @@ describe('stopping a run', () => {
       },
     });
 
-    expect(await run).toEqual({ runId: 1, stopReason: 'cancelled' });
+    expect(await run).toEqual({ stopReason: 'cancelled' });
     expect(page.calls).toHaveLength(1);
     expect(readToolCalls()).toEqual([
       { call_id: 'c1', status: 'ok', check_name: null },
@@ -248,7 +264,7 @@ describe('stopping a run', () => {
       {
         type: 'runStopped',
         reason: 'appFault',
-        detail: expect.stringMatching(/^Error: broken view\n\s+at .*runAgent\.test\.ts/),
+        detail: expect.stringMatching(/^Error: broken view\n\s+at .*startAgentRun\.test\.ts/),
       },
     ]);
   });
