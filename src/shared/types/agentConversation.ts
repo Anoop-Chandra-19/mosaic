@@ -1,4 +1,4 @@
-import type { ModelReplyPart } from './modelReply';
+import type { ModelProviderError, ModelReplyPart } from './modelReply';
 
 /*
  * A conversation is an append-only log of messages, read in `seq` order. Each message's
@@ -49,11 +49,42 @@ export interface TemplateSwitchedMessageBody {
   previousId?: string;
 }
 
+/**
+ * Why a run ended before the model finished: a stop layer, the provider (`connection`
+ * once retries ran out, `providerError` when retrying couldn't help), Mosaic itself, or
+ * the user's Stop.
+ */
+export type RunStopReason =
+  | 'repeatedCall'
+  | 'refusalsInARow'
+  | 'stepLimit'
+  | 'connection'
+  | 'providerError'
+  | 'appFault'
+  | 'cancelled';
+
+/**
+ * Written when a run stops; for the user, never sent to the model. It holds what happened,
+ * never wording: the pane decides how each stop reads.
+ */
+export interface RunStoppedMessageBody {
+  type: 'runStopped';
+  reason: RunStopReason;
+  /** The refusal a stop layer counted, or Mosaic's own error. */
+  detail?: string;
+  /** The provider's error as it came, for `connection` and `providerError`. */
+  providerError?: ModelProviderError;
+  /** Requests made for the step that failed, and the time spent waiting between them. */
+  attempts?: number;
+  waitedMs?: number;
+}
+
 export type MessageBody =
   | UserMessageBody
   | AssistantMessageBody
   | ToolResultsMessageBody
-  | TemplateSwitchedMessageBody;
+  | TemplateSwitchedMessageBody
+  | RunStoppedMessageBody;
 
 /**
  * A body as the transcript reads it. Tool results come without their content, which can

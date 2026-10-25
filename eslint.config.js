@@ -78,6 +78,10 @@ const DB_CLIENT_IMPORTS = {
   message: 'Use `storage` from lib/storage/storageService, adding what it is missing there.',
 };
 
+/** In main, only db/ talks to SQLite; everything else passes the handle to db/'s functions. */
+const SQLITE_MESSAGE =
+  'Only src/main/db/ talks to SQLite. Call a db/ function, or add one named for the operation; it runs its own transaction.';
+
 /** One `no-restricted-syntax` entry per rule, for plain strings and template literals. */
 function restrictClassStrings(rules) {
   return rules.flatMap(({ pattern, message }) => [
@@ -190,6 +194,24 @@ export default defineConfig([
     files: ['src/main/**/*.ts', 'src/preload/**/*.ts', 'scripts/**/*.ts', '*.config.ts'],
     languageOptions: {
       globals: globals.node,
+    },
+  },
+  {
+    // Tests may still check what was stored with SQL.
+    files: ['src/main/**/*.ts'],
+    ignores: ['src/main/db/**', '**/__tests__/**'],
+    rules: {
+      '@typescript-eslint/no-restricted-imports': [
+        'error',
+        { paths: [{ name: 'better-sqlite3', allowTypeImports: true, message: SQLITE_MESSAGE }] },
+      ],
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: 'CallExpression[callee.property.name=/^(prepare|transaction|pragma)$/]',
+          message: SQLITE_MESSAGE,
+        },
+      ],
     },
   },
   eslintConfigPrettier,

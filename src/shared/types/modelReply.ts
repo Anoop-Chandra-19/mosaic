@@ -13,7 +13,15 @@ export interface ModelUsage {
 
 export type ModelProviderError =
   | { reason: 'unreachable' }
+  /** `retryAfterMs` when the provider said how long to wait. */
+  | { reason: 'rateLimited'; retryAfterMs?: number }
+  /** No credits or quota left: waiting won't help. */
+  | { reason: 'quotaExceeded'; message: string; httpStatus?: number }
   | { reason: 'model-not-found' }
+  /** The model, or its route, can't take tools, which the assistant needs. */
+  | { reason: 'toolsUnsupported'; message: string }
+  /** The provider's safety filter refused the request. */
+  | { reason: 'contentBlocked'; message: string }
   | { reason: 'context-too-long' }
   | { reason: 'failed'; message: string; httpStatus?: number };
 

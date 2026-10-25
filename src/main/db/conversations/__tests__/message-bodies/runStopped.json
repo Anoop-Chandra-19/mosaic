@@ -1,0 +1,7 @@
+{
+  "type": "runStopped",
+  "reason": "connection",
+  "providerError": { "reason": "failed", "message": "Bad gateway", "httpStatus": 502 },
+  "attempts": 4,
+  "waitedMs": 21000
+}

@@ -103,6 +103,22 @@ export function readMessagePage(
   }));
 }
 
+export interface LoggedMessage {
+  seq: number;
+  runId: number | null;
+  body: MessageBody;
+}
+
+/** The whole log in full, oldest first: what the next request is built from. */
+export function readConversationLog(db: Database, conversationId: number): LoggedMessage[] {
+  return db
+    .prepare<[number], Pick<MessageRow, 'seq' | 'run_id' | 'body'>>(
+      'select seq, run_id, body from messages where conversation_id = ? order by seq'
+    )
+    .all(conversationId)
+    .map((row) => ({ seq: row.seq, runId: row.run_id, body: parseStoredMessageBody(row.body) }));
+}
+
 /** One tool result in full, for the Trace view. */
 export function readToolResult(db: Database, messageId: number, callId: string): ToolResult {
   const result = db
