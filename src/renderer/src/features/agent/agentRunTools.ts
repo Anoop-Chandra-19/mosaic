@@ -17,15 +17,13 @@ const toolRunById = new Map<number, AgentToolRun>();
 /** The start under way: a run's first call can come in before its id does. */
 let starting: Promise<unknown> = Promise.resolve();
 
-/** Starts a run in a new conversation, on the resume open now. */
-export function askAgent(text: string): Promise<AgentStart> {
+/** Starts a run on the resume open now, in the conversation given or a new one. */
+export function askAgent(text: string, conversationId: number | null = null): Promise<AgentStart> {
   const { templateId } = useResumeStore.getState();
-  const start = window.mosaic.agent
-    .start({ conversationId: null, text, templateId })
-    .then((result) => {
-      if (result.ok) toolRunById.set(result.runId, createAgentToolRun(text));
-      return result;
-    });
+  const start = window.mosaic.agent.start({ conversationId, text, templateId }).then((result) => {
+    if (result.ok) toolRunById.set(result.runId, createAgentToolRun(text));
+    return result;
+  });
   starting = start.catch(() => undefined);
   return start;
 }

@@ -25,24 +25,41 @@ function toastWhenRunEnds(runId: number): void {
   });
 }
 
+/** The conversation the palette last asked in, until the window reloads. */
+let lastConversationId: number | null = null;
+
 /** Suggestions show only while the assistant is on, so asking turns it on. */
-async function askAgentFromPalette(args: DevToolArgs): Promise<string> {
+async function askAgentFromPalette(text: string, conversationId: number | null): Promise<string> {
   const agentSettings = useAgentSettingsStore.getState();
   const turnedOn = agentSettings.enabled ? '' : '. Turned the assistant on';
   // Main reads the setting at the start, and the write reaches it first.
   agentSettings.setEnabled(true);
-  const start = await askAgent(String(args.text ?? ''));
+  const start = await askAgent(text, conversationId);
   if (!start.ok) throw new Error(REFUSAL_WORDS[start.reason]);
+  lastConversationId = start.conversationId;
   toastWhenRunEnds(start.runId);
-  return `Asked the assistant, run ${start.runId}${turnedOn}`;
+  return `Asked the assistant, run ${start.runId} in conversation ${start.conversationId}${turnedOn}`;
 }
 
+const askedText = (args: DevToolArgs) => String(args.text ?? '');
+
 /** The assistant, before its pane: a run asked for by hand, its suggestions in the review. */
-export const ASK_AGENT_TOOL: DevTool = {
-  id: 'askAgent',
-  group: 'Data',
-  label: 'Ask the assistant…',
-  description: 'Starts a run on the open resume; its suggestions come in for review.',
-  prompt: 'What should the assistant do?',
-  run: askAgentFromPalette,
-};
+export const ASK_AGENT_TOOLS: DevTool[] = [
+  {
+    id: 'askAgent',
+    group: 'Data',
+    label: 'Ask the assistant…',
+    description:
+      'Carries on the conversation last asked in from here, or starts one. Suggestions come in for review.',
+    prompt: 'What should the assistant do?',
+    run: (args) => askAgentFromPalette(askedText(args), lastConversationId),
+  },
+  {
+    id: 'askAgentNew',
+    group: 'Data',
+    label: 'Ask in a new conversation…',
+    description: 'Starts a conversation on the open resume, with nothing from earlier runs.',
+    prompt: 'What should the assistant do?',
+    run: (args) => askAgentFromPalette(askedText(args), null),
+  },
+];
