@@ -1,6 +1,6 @@
 import type { DevToolArgs } from '@shared/types/devTools';
 import { describeCurrentView, goToViewAddress } from '@/features/view-address/viewAddress';
-import { runDevTool } from './devTools';
+import { runDevTool } from './tools/runDevTool';
 import { makeHistory, type HistorySpec } from './profiles/makeHistory';
 
 /** What e2e reaches the developer tools through (`e2e/harness/devTools.ts`). */

@@ -1,4 +1,4 @@
-import type { StepOption } from '../devTool';
+import type { StepOption } from '../tools/devTool';
 
 /** How many choices a step lists before asking for more letters. */
 export const MAX_LISTED_OPTIONS = 60;

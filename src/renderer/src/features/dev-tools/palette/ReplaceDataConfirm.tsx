@@ -4,7 +4,7 @@ import { formatCount } from '@/features/import/formatCount';
 import { ShortcutKeys } from '@/features/shortcuts/ShortcutKeys';
 import { cn } from '@/lib/utils';
 import { useTemplateStore } from '@/stores/templateStore';
-import type { DataReplacement } from '../devTool';
+import type { DataReplacement } from '../tools/devTool';
 
 interface ReplaceDataConfirmProps {
   replacement: DataReplacement;

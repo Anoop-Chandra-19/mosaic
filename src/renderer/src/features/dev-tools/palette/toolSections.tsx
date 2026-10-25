@@ -3,10 +3,10 @@ import { Text, textVariantClasses } from '@/components/ui-kit';
 import { ShortcutKeys } from '@/features/shortcuts/ShortcutKeys';
 import { cn } from '@/lib/utils';
 import type { DevToolRun } from '@shared/types/devTools';
-import { DEV_TOOL_GROUPS, type DevTool } from '../devTool';
-import { DEV_TOOLS, findDevTool } from '../devTools';
+import { DEV_TOOL_GROUPS, type DevTool } from '../tools/devTool';
+import { DEV_TOOLS, findDevTool } from '../tools/runDevTool';
 import type { PaletteSection } from './paletteSection';
-import { describeRunArgs } from '../recentDevRuns';
+import { describeRunArgs } from './recentRuns';
 import { searchDevTools, type MatchRange } from './searchDevTools';
 import { ToolRow } from './ToolRow';
 

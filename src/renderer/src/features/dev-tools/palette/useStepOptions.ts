@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { DevToolArgs } from '@shared/types/devTools';
-import type { DevToolStep, StepOption } from '../devTool';
+import type { DevToolStep, StepOption } from '../tools/devTool';
 
 /**
  * A step's choices, read for the choices made before it (a template's versions). Null while

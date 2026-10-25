@@ -4,8 +4,14 @@ import { useTargetRequest, useTargetStore } from '@/stores/targetStore';
 import type { DevToolRun } from '@shared/types/devTools';
 import { installDevTestHook } from './devTestHook';
 import { DevToolsPalette } from './palette/DevToolsPalette';
-import { addRecentRun } from './recentDevRuns';
+import { addRecentRun } from './palette/recentRuns';
 import { useDevSwitches } from './switches/useDevSwitches';
+
+/*
+ * Developer tools, left out of release builds. The palette (`palette/`) lists the tools in
+ * `tools/` and runs one with `runDevTool`; e2e runs them through `devTestHook.ts`. The shell
+ * uses this file and `DevToolsWrench.tsx`.
+ */
 
 /** Ctrl+Shift+D (⇧⌘D on a Mac), here rather than in the shortcut catalog: users never have it. */
 function isOpenToolsKey(event: KeyboardEvent): boolean {

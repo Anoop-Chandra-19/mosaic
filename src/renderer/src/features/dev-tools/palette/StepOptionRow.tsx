@@ -1,6 +1,6 @@
 import { Chip, Text } from '@/components/ui-kit';
 import { cn } from '@/lib/utils';
-import type { StepOption } from '../devTool';
+import type { StepOption } from '../tools/devTool';
 
 /** One of a step's choices: a version reads its label, then its name or what it holds. */
 export function StepOptionRow({ option }: { option: StepOption }) {

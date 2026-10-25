@@ -1,4 +1,4 @@
-import type { DevTool } from '../devTool';
+import type { DevTool } from './devTool';
 import { MemoryCheckReport } from '../memory-check/MemoryCheckReport';
 import { formatMemoryCheckText, runMemoryCheck } from '../memory-check/runMemoryCheck';
 

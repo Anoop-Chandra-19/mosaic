@@ -3,7 +3,7 @@ import { useAgentSettingsStore } from '@/stores/agentSettingsStore';
 import { showToast } from '@/stores/toastStore';
 import type { AgentStartRefusal } from '@shared/types/agentBridge';
 import type { DevToolArgs } from '@shared/types/devTools';
-import type { DevTool } from '../devTool';
+import type { DevTool } from './devTool';
 
 const REFUSAL_WORDS: Record<AgentStartRefusal, string> = {
   assistantOff: 'The assistant is off.',
