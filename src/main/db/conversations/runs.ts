@@ -74,6 +74,7 @@ export interface RunEnd {
   status: 'done' | 'step_limit' | 'failed' | 'cancelled';
   error?: string;
   inputTokens?: number;
+  cachedInputTokens?: number;
   outputTokens?: number;
 }
 
@@ -82,13 +83,15 @@ export function finishRun(db: Database, runId: number, end: RunEnd): void {
   const { changes } = db
     .prepare(
       `update runs
-          set status = ?, error = ?, input_tokens = ?, output_tokens = ?, finished_at = ?
+          set status = ?, error = ?, input_tokens = ?, cached_input_tokens = ?,
+              output_tokens = ?, finished_at = ?
         where id = ? and status = 'running'`
     )
     .run(
       end.status,
       end.error ?? null,
       end.inputTokens ?? null,
+      end.cachedInputTokens ?? null,
       end.outputTokens ?? null,
       Date.now(),
       runId

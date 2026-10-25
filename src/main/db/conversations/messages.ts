@@ -17,6 +17,7 @@ export interface NewMessage {
   /** Assistant messages: the model that wrote it, and the tokens its request used. */
   model?: string;
   inputTokens?: number;
+  cachedInputTokens?: number;
   outputTokens?: number;
 }
 
@@ -39,10 +40,12 @@ export function appendMessage(db: Database, message: NewMessage): AppendedMessag
     return db
       .prepare<[Record<string, unknown>], AppendedMessage>(
         `insert into messages
-           (conversation_id, seq, run_id, type, body, model, input_tokens, output_tokens, created_at)
+           (conversation_id, seq, run_id, type, body, model,
+            input_tokens, cached_input_tokens, output_tokens, created_at)
          values (@conversationId,
                  (select coalesce(max(seq), 0) + 1 from messages where conversation_id = @conversationId),
-                 @runId, @type, @body, @model, @inputTokens, @outputTokens, @now)
+                 @runId, @type, @body, @model,
+                 @inputTokens, @cachedInputTokens, @outputTokens, @now)
          returning id, seq`
       )
       .get({
@@ -52,6 +55,7 @@ export function appendMessage(db: Database, message: NewMessage): AppendedMessag
         body,
         model: message.model ?? null,
         inputTokens: message.inputTokens ?? null,
+        cachedInputTokens: message.cachedInputTokens ?? null,
         outputTokens: message.outputTokens ?? null,
         now,
       })!;

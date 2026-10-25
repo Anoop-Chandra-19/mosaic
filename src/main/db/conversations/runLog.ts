@@ -138,6 +138,7 @@ export function storeModelReply(db: Database, run: ConversationRun, reply: Store
       },
       model: reply.model,
       inputTokens: reply.usage?.inputTokens,
+      cachedInputTokens: reply.usage?.cachedInputTokens,
       outputTokens: reply.usage?.outputTokens,
     });
     for (const part of reply.parts) {
