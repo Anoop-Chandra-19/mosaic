@@ -3,6 +3,7 @@ import type { ModelProviderError, ModelStreamEvent } from '@shared/types/modelRe
 import type { ModelTool } from '@shared/types/modelTool';
 import type { AssistantMessage, ModelMessage, ModelProvider, ModelRequest } from './modelProvider';
 import type { OllamaFetch } from './ollamaModels';
+import { readRateLimit } from './readRateLimit';
 
 interface OllamaChatChunk {
   message?: {
@@ -46,8 +47,12 @@ export function createOllamaModelProvider({
           body: JSON.stringify(buildChatBody(request, contextTokens)),
           signal: request.signal,
         });
-      } catch {
-        if (!request.signal.aborted) yield { type: 'error', error: { reason: 'unreachable' } };
+      } catch (error) {
+        if (request.signal.aborted) return;
+        yield {
+          type: 'error',
+          error: { reason: 'unreachable', message: describeNetworkError(error) },
+        };
         return;
       }
       if (!response.ok || !response.body) {
@@ -193,11 +198,24 @@ async function readErrorResponse(response: Response): Promise<ModelProviderError
   } catch {
     message = body;
   }
-  if (response.status === 404 && /not found/i.test(message)) return { reason: 'model-not-found' };
-  return describeOllamaError(message || `Ollama answered ${response.status}`, response.status);
+  const httpStatus = response.status;
+  if (httpStatus === 429) return { ...readRateLimit(response), message, httpStatus };
+  if (httpStatus === 404 && /not found/i.test(message)) {
+    return { reason: 'model-not-found', message, httpStatus };
+  }
+  return describeOllamaError(message || `Ollama answered ${httpStatus}`, httpStatus);
 }
 
 function describeOllamaError(message: string, httpStatus?: number): ModelProviderError {
-  if (/context length/i.test(message)) return { reason: 'context-too-long' };
+  if (/context length/i.test(message)) return { reason: 'context-too-long', message, httpStatus };
+  if (/does not support tools/i.test(message)) {
+    return { reason: 'toolsUnsupported', message, httpStatus };
+  }
   return { reason: 'failed', message, httpStatus };
+}
+
+/** What the network said when nothing answered: `fetch failed` hides it in its cause. */
+function describeNetworkError(error: unknown): string {
+  const cause = error instanceof Error && error.cause instanceof Error ? error.cause : error;
+  return cause instanceof Error ? cause.message : String(cause);
 }

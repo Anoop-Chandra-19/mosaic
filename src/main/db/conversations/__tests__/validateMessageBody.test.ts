@@ -66,8 +66,16 @@ describe('isMessageBody', () => {
     ['a switch without its template', { type: 'templateSwitched', label: 'Platform' }],
     ['a stop for an unknown reason', { type: 'runStopped', reason: 'tired' }],
     [
-      'a provider error without its message',
-      { type: 'runStopped', reason: 'providerError', providerError: { reason: 'quotaExceeded' } },
+      'an unknown provider error without its message',
+      { type: 'runStopped', reason: 'providerError', providerError: { reason: 'failed' } },
+    ],
+    [
+      'a provider’s status as text',
+      {
+        type: 'runStopped',
+        reason: 'providerError',
+        providerError: { reason: 'keyRefused', httpStatus: '401' },
+      },
     ],
   ])('refuses %s', (_, body) => {
     expect(isMessageBody(body)).toBe(false);

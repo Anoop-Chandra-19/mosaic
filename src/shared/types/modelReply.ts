@@ -11,19 +11,35 @@ export interface ModelUsage {
   outputTokens: number;
 }
 
-export type ModelProviderError =
-  | { reason: 'unreachable' }
-  /** `retryAfterMs` when the provider said how long to wait. */
-  | { reason: 'rateLimited'; retryAfterMs?: number }
-  /** No credits or quota left: waiting won't help. */
-  | { reason: 'quotaExceeded'; message: string; httpStatus?: number }
-  | { reason: 'model-not-found' }
-  /** The model, or its route, can't take tools, which the assistant needs. */
-  | { reason: 'toolsUnsupported'; message: string }
-  /** The provider's safety filter refused the request. */
-  | { reason: 'contentBlocked'; message: string }
-  | { reason: 'context-too-long' }
-  | { reason: 'failed'; message: string; httpStatus?: number };
+/**
+ * What the provider said, word for word, and its HTTP status, whenever it gave them; for
+ * `unreachable`, what the network said. The user is shown both as they came: with their
+ * own key, they are the one who fixes it.
+ */
+interface ProviderWords {
+  message?: string;
+  httpStatus?: number;
+}
+
+/** Each adapter sorts its provider's errors into these; the pane never guesses from a status. */
+export type ModelProviderError = ProviderWords &
+  (
+    | { reason: 'unreachable' }
+    /** `retryAfterMs` when the provider said how long to wait. */
+    | { reason: 'rateLimited'; retryAfterMs?: number }
+    /** The provider turned the API key down. */
+    | { reason: 'keyRefused' }
+    /** No credits or quota left: waiting won't help. */
+    | { reason: 'quotaExceeded' }
+    | { reason: 'model-not-found' }
+    /** The model, or its route, can't take tools, which the assistant needs. */
+    | { reason: 'toolsUnsupported' }
+    /** The provider's safety filter refused the request. */
+    | { reason: 'contentBlocked' }
+    | { reason: 'context-too-long' }
+    /** Anything else; the message is all there is to show. */
+    | { reason: 'failed'; message: string }
+  );
 
 /**
  * A reply as it streams. It ends with one `finish` or `error`, or with nothing once the
