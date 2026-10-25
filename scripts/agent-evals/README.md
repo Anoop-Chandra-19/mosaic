@@ -30,8 +30,8 @@ node scripts/agent-evals/runBulletEvals.ts ollama openai:gpt-6-luna [--think] [-
 # 25 instructions that name the words to change, with rewrite only, and with rewrite plus replace everywhere
 node scripts/agent-evals/runTargetedEvals.ts anthropic gemini [--think] [--literal]
 
-# 30 requests that add bullets, lines and sections, move things, or reach lines, entries and
-# sections, once per shape of the tools (one-call, builder, builder-move-only), N times each
+# Requests that add bullets, lines and sections, move things, or reach lines, entries and
+# sections, once per shape of the tools (one-call, builder), N times each
 node scripts/agent-evals/runAddEvals.ts openai:gpt-6-luna ollama [--think] [--only builder] [--repeat 2]
 
 # The add eval's own right answers through its scoring, with no model

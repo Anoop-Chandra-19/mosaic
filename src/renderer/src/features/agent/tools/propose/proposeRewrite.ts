@@ -1,7 +1,6 @@
 import type { AgentToolArgs } from '@shared/agent-tools/agentTools';
 import type { ProposalChange } from '@shared/types/agentProposal';
 import { refuse, type AgentToolRun, type ToolAnswer } from '../agentToolRun';
-import { readHandleKind } from '../resumeHandles';
 import { findTextInReceipt, isProblem } from './findInReceipt';
 import { stageSuggestions } from './stageSuggestions';
 
@@ -13,9 +12,6 @@ export function proposeRewrite(
   run: AgentToolRun,
   args: AgentToolArgs['propose_rewrite']
 ): ToolAnswer {
-  if (readHandleKind(args.id) === 'section') {
-    return refuse('To change a heading, use propose_rename.');
-  }
   const found = findTextInReceipt(run, args.id);
   if (isProblem(found)) return refuse(found.problem);
 

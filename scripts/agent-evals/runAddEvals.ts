@@ -17,6 +17,8 @@
  * `--dry` needs no model: it plays each case's own right answer in every shape and answer
  * style, which checks the cases, the simulated tools and the scoring against each other.
  */
+import { checkAgentToolArgs } from '../../src/renderer/src/features/agent/tools/checkAgentToolArgs.ts';
+import { readAgentToolArgs } from '../../src/renderer/src/features/agent/tools/readAgentToolArgs.ts';
 import { formatEvalResume, type EvalResume } from './addEvalResume.ts';
 import {
   ADD_EVAL_SHAPES,
@@ -24,7 +26,6 @@ import {
   describeAddEvalTools,
   type AddEvalShape,
 } from './addEvalTools.ts';
-import { checkEvalToolArgs } from './checkEvalToolArgs.ts';
 import { loadEvalKeys, readEvalOptions, writeEvalResults } from './evalCommandLine.ts';
 import {
   pickEvalModel,
@@ -39,7 +40,6 @@ import {
   type AddEvalCall,
 } from './fixtures/addCases.ts';
 import { HELD_OUT_CASES, startingHeldOutResume } from './fixtures/addHeldOutCases.ts';
-import { readEvalToolArgs } from './readEvalToolArgs.ts';
 import {
   listEmptyNewSections,
   lookUpEvalResume,
@@ -117,15 +117,15 @@ function runCall(
 ): CallResult {
   const toolSet = ADD_EVAL_TOOL_SETS[variant.shape];
   const settings = { ...toolSet, answers: variant.answers };
-  const tool = tools.find((each) => each.name === name);
-  if (!toolSet.isBuilder || !tool) {
-    return { ...runAddEvalTool(resume, settings, name, args), tookCount: 0 };
-  }
-  const read = readEvalToolArgs(tool, args, lookUpEvalResume(resume));
-  const problem = checkEvalToolArgs(tool, read.args);
-  const answer = problem
-    ? { answer: problem, isRefused: true }
-    : runAddEvalTool(resume, settings, name, read.args);
+  const evalTool = tools.find((each) => each.name === name);
+  if (!evalTool) return { ...runAddEvalTool(resume, settings, name, args), tookCount: 0 };
+  const tool = { ...evalTool, inputSchema: evalTool.parameters };
+  const read = readAgentToolArgs(tool, args, lookUpEvalResume(resume));
+  const checked = checkAgentToolArgs(tool, read.args);
+  const answer =
+    'problem' in checked
+      ? { answer: checked.problem, isRefused: true }
+      : runAddEvalTool(resume, settings, name, checked.args);
   const took = read.took.length ? `${read.took.join(' ')}\n` : '';
   return { ...answer, answer: `${took}${answer.answer}`, tookCount: read.took.length };
 }

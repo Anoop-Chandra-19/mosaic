@@ -1,19 +1,10 @@
+import { HANDLE_KINDS, HANDLE_PREFIXES, type HandleKind } from '@shared/agent-tools/handleKinds';
+
 /**
  * Short names for a run's sections, entries, bullets and lines ("s1", "e2", "b7", "l3"),
  * which a model copies back far more reliably than ids. Given in reading order the first
  * time each is seen, and kept for the whole run, so b7 is the same bullet in every read.
  */
-
-export type HandleKind = 'section' | 'entry' | 'bullet' | 'line';
-
-const HANDLE_PREFIXES: Record<HandleKind, string> = {
-  section: 's',
-  entry: 'e',
-  bullet: 'b',
-  line: 'l',
-};
-
-const HANDLE_KINDS = Object.keys(HANDLE_PREFIXES) as HandleKind[];
 
 export interface ResumeHandles {
   handleById: Map<string, string>;

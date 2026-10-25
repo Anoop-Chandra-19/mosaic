@@ -347,7 +347,7 @@ export const ADD_CASES: AddCase[] = [
   {
     instruction: 'Move the runbook bullet to the top of Harbor Freight Labs.',
     outcomes: [{ orders: { e1: ['b3', 'b1', 'b2'] } }],
-    answer: [reorder({ sectionId: 's2', entryId: 'e1', order: ['b3', 'b1', 'b2'] })],
+    answer: [reorder({ order: ['b3', 'b1', 'b2'] })],
     builderAnswer: [move({ id: 'b3', after: 'start' })],
   },
   {
@@ -359,25 +359,24 @@ export const ADD_CASES: AddCase[] = [
   {
     instruction: 'Swap the two Skills lines.',
     outcomes: [{ orders: { s3: ['l3', 'l2'] } }],
-    answer: [reorder({ sectionId: 's3', order: ['l3', 'l2'] })],
+    answer: [reorder({ order: ['l3', 'l2'] })],
     builderAnswer: [move({ id: 'l3', before: 'l2' })],
   },
   {
     instruction: 'Move the latency bullet below the runbook one.',
     outcomes: [{ orders: { e1: ['b1', 'b3', 'b2'] } }],
-    answer: [reorder({ sectionId: 's2', entryId: 'e1', order: ['b1', 'b3', 'b2'] })],
+    answer: [reorder({ order: ['b1', 'b3', 'b2'] })],
     builderAnswer: [move({ id: 'b2', after: 'b3' })],
   },
   {
     instruction: 'Put Lantern Maps above Harbor Freight Labs.',
     outcomes: [{ orders: { s2: ['e2', 'e1'] } }],
-    answer: [reorder({ sectionId: 's2', order: ['e2', 'e1'] })],
+    answer: [reorder({ order: ['e2', 'e1'] })],
     builderAnswer: [move({ id: 'e2', before: 'e1' })],
   },
   {
     instruction: 'Put my Harbor Freight bullets in this order: latency, runbook, billing.',
     outcomes: [{ orders: { e1: ['b2', 'b3', 'b1'] } }],
-    answer: [reorder({ sectionId: 's2', entryId: 'e1', order: ['b2', 'b3', 'b1'] })],
-    builderAnswer: [reorder({ order: ['b2', 'b3', 'b1'] })],
+    answer: [reorder({ order: ['b2', 'b3', 'b1'] })],
   },
 ];

@@ -9,7 +9,8 @@
  * answered but not simulated: no case asks for them, so the scorer counts them as wrong.
  */
 import { replaceEveryWholeWord } from '../../src/renderer/src/features/agent/tools/replaceEveryWholeWord.ts';
-import { diffWords } from '../../src/renderer/src/features/suggestions/proposals/diffWords.ts';
+import type { ResumeLookup } from '../../src/renderer/src/features/agent/tools/readAgentToolArgs.ts';
+import { hasSameWords } from '../../src/renderer/src/features/suggestions/proposals/diffWords.ts';
 import { SECTION_PRESETS } from '../../src/shared/resume/sectionPresets.ts';
 import type { BuiltInSectionKind, SectionKind } from '../../src/shared/types/resume.ts';
 import {
@@ -20,7 +21,6 @@ import {
   type EvalText,
 } from './addEvalResume.ts';
 import { SECTION_KINDS, type AddEvalToolSet } from './addEvalTools.ts';
-import type { ResumeLookup } from './readEvalToolArgs.ts';
 
 /**
  * How a tool that makes or moves something answers: `short` names the handle, as B1's
@@ -67,9 +67,6 @@ function readStrings(value: unknown): string[] {
   }
   return Array.isArray(list) ? list.map(readString).filter(Boolean) : [];
 }
-
-const hasSameWords = (before: string, after: string) =>
-  diffWords(before, after).every((part) => part.kind === 'same' || !part.text.trim());
 
 const markSuggested = (resume: EvalResume, key: string) => (resume.suggested ??= []).push(key);
 
@@ -257,7 +254,6 @@ function readWords(item: Handled): string {
 const proposeRewrite: RunTool = (resume, args) => {
   const id = readString(args.id);
   const text = readString(args.text);
-  if (findSection(resume, id)) return refuse('To change a heading, use propose_rename.');
   const found = findText(resume, id);
   if (!found) {
     return refuse(`"${id}" can't be used here. Use a bullet or line handle, such as b1 or l1.`);
@@ -311,21 +307,7 @@ const answerUnscored: RunTool = () => ({
   isUnscored: true,
 });
 
-/** The list `propose_reorder` names: the sections, a section's items, or an entry's bullets. */
-function findOrderedList(resume: EvalResume, args: Args): Handled[] | string {
-  const sectionId = readString(args.sectionId);
-  const entryId = readString(args.entryId);
-  if (!sectionId) {
-    return entryId ? 'Give the sectionId of the section the entry is in.' : resume.sections;
-  }
-  const section = findSection(resume, sectionId);
-  if (!section) return `No section "${sectionId}". Use a section handle, such as s1.`;
-  if (!entryId) return section.layout === 'lines' ? section.lines : section.entries;
-  const entry = section.entries.find((each) => each.handle === entryId);
-  return entry ? entry.bullets : `${entryId} isn't in that section.`;
-}
-
-/** The builder's reorder: the one list the order's handles are in, or what they are. */
+/** The one list the order's handles are in, or what they are. */
 function findListOfOrder(resume: EvalResume, order: string[]): Handled[] | string {
   const groups = new Map<Handled[], { place: HandlePlace; handles: string[] }>();
   for (const handle of order) {
@@ -344,7 +326,7 @@ function findListOfOrder(resume: EvalResume, order: string[]): Handled[] | strin
 
 const proposeReorder: RunTool = (resume, args, toolSet) => {
   const order = readStrings(args.order);
-  const list = toolSet.isBuilder ? findListOfOrder(resume, order) : findOrderedList(resume, args);
+  const list = findListOfOrder(resume, order);
   if (typeof list === 'string') return refuse(list);
   const isEveryOnce =
     order.length === list.length && list.every((each) => order.includes(each.handle));
@@ -457,17 +439,6 @@ function insertEntry(resume: EvalResume, entries: EvalEntry[], index: number, ar
 const isEmpty = (section: EvalSection) =>
   section.lines.length === 0 && section.entries.length === 0;
 
-/**
- * Where a new entry goes: the builder's `after` (left out, last), or the shipped
- * `afterEntryId` (left out, first). Null when it names an entry not in the section.
- */
-function findEntryIndex(entries: EvalEntry[], args: Args, toolSet: AddEvalSettings) {
-  if (toolSet.isBuilder) return findInsertIndex(entries, readString(args.after));
-  const afterEntryId = readString(args.afterEntryId);
-  const afterIndex = entries.findIndex((entry) => entry.handle === afterEntryId);
-  return afterEntryId && afterIndex === -1 ? null : afterIndex + 1;
-}
-
 const proposeEntry: RunTool = (resume, args, toolSet) => {
   const section = findSection(resume, readString(args.sectionId));
   if (!section) {
@@ -479,11 +450,10 @@ const proposeEntry: RunTool = (resume, args, toolSet) => {
       `${section.handle} holds lines; propose_add adds lines. The sections that hold entries are ${listHandles(withEntries)}.`
     );
   }
-  const index = findEntryIndex(section.entries, args, toolSet);
+  const index = findInsertIndex(section.entries, readString(args.after));
   if (index === null) {
-    const placeArg = toolSet.isBuilder ? args.after : args.afterEntryId;
     return refuse(
-      `${readString(placeArg)} isn't in ${section.handle}, whose entries are ${listHandles(section.entries)}.`
+      `${readString(args.after)} isn't in ${section.handle}, whose entries are ${listHandles(section.entries)}.`
     );
   }
   section.layout = 'entries';
@@ -598,7 +568,7 @@ const listTexts = (resume: EvalResume) => [
   ...listEntries(resume).flatMap((entry) => entry.bullets),
 ];
 
-/** What reading a call's arguments needs of this resume (`readEvalToolArgs.ts`). */
+/** What reading a call's arguments needs of this resume (the app's `readAgentToolArgs.ts`). */
 export function lookUpEvalResume(resume: EvalResume): ResumeLookup {
   return {
     findByText: (text) => findHandleByText(resume, text),

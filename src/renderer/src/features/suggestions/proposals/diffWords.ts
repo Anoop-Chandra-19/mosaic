@@ -103,3 +103,7 @@ export function diffWords(before: string, after: string): WordDiffPart[] {
   if (carried) parts.push({ kind: 'same', text: carried });
   return parts;
 }
+
+/** Whether two texts differ only in their spaces: no word removed or added. */
+export const hasSameWords = (before: string, after: string) =>
+  diffWords(before, after).every((part) => part.kind === 'same' || !part.text.trim());

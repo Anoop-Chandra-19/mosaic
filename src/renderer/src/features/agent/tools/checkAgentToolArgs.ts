@@ -1,76 +1,79 @@
-import {
-  AGENT_TOOLS,
-  type AgentToolArgs,
-  type AgentToolName,
-} from '@shared/agent-tools/agentTools';
+// Only type imports besides its sibling: the eval scripts load this with plain Node.
+import type { PropertySchema } from '@shared/agent-tools/defineAgentTool';
+import type { ModelTool } from '@shared/types/modelTool';
+import { readList } from './readAgentToolArgs.ts';
 
-type ArgType = 'string' | 'boolean' | 'array';
+/*
+ * A call's arguments checked against the schema the model was given, after they are read
+ * (`readAgentToolArgs.ts`): what is required, the type, an enum, and a pattern. A refusal
+ * comes from the schema, so it is the same for every tool: the argument, what was given,
+ * and the argument's own description. Unknown names are dropped, and an empty optional
+ * text counts as left out ("after": "" means none).
+ */
 
-interface ToolInputSchema {
-  properties: Record<string, { type: ArgType }>;
-  required: string[];
-}
-
-export type CheckedToolArgs<N extends AgentToolName> =
-  | { args: AgentToolArgs[N] }
-  | { problem: string };
-
-/** A list may come as JSON text: some models send it that way. */
-function checkStringList(value: unknown): string[] | undefined {
-  let list = value;
-  if (typeof value === 'string') {
-    try {
-      list = JSON.parse(value);
-    } catch {
-      return undefined;
-    }
-  }
-  const isStringList = Array.isArray(list) && list.every((item) => typeof item === 'string');
-  return isStringList ? (list as string[]) : undefined;
-}
-
-/** A yes/no may come as "true" or "false". */
-function checkBoolean(value: unknown): boolean | undefined {
-  if (typeof value === 'boolean') return value;
-  if (value === 'true' || value === 'false') return value === 'true';
-  return undefined;
-}
-
-const CHECK_BY_TYPE: Record<ArgType, (value: unknown) => unknown> = {
-  string: (value) => (typeof value === 'string' ? value : undefined),
-  boolean: checkBoolean,
-  array: checkStringList,
-};
-
-const EXPECTED_TYPE: Record<ArgType, string> = {
-  string: 'text',
-  boolean: 'true or false',
-  array: 'a list of text',
-};
+export type CheckedToolArgs = { args: Record<string, unknown> } | { problem: string };
 
 const isLeftOut = (value: unknown) => value === undefined || value === null || value === '';
 
-/**
- * A call's arguments, checked against the schema the model was given. Unknown names are
- * dropped, and an empty optional text counts as left out ("entryId": "" means none).
- */
-export function checkAgentToolArgs<N extends AgentToolName>(
-  name: N,
-  rawArgs: unknown
-): CheckedToolArgs<N> {
-  const givenArgs =
-    typeof rawArgs === 'object' && rawArgs !== null ? (rawArgs as Record<string, unknown>) : {};
-  const { properties, required } = AGENT_TOOLS[name].inputSchema as unknown as ToolInputSchema;
-  const checkedArgs: Record<string, unknown> = {};
+/** " name: its description", to end a refusal with what the argument is. */
+const describeArg = (name: string, schema: PropertySchema) =>
+  schema.description ? ` ${name}: ${schema.description}` : '';
 
-  for (const [argName, { type }] of Object.entries(properties)) {
-    const given = givenArgs[argName];
-    if (isLeftOut(given) && !required.includes(argName)) continue;
-    const checked = isLeftOut(given) ? undefined : CHECK_BY_TYPE[type](given);
-    if (checked === undefined) {
-      return { problem: `${argName} is needed, as ${EXPECTED_TYPE[type]}.` };
-    }
-    checkedArgs[argName] = checked;
+type Checked = { value: unknown } | { problem: string };
+
+function checkList(name: string, value: unknown, schema: PropertySchema): Checked {
+  const list = readList(value);
+  const about = describeArg(name, schema);
+  if (!list) return { problem: `${name} is a list.${about}` };
+  const pattern = schema.type === 'array' ? schema.items.pattern : undefined;
+  const fits = (item: unknown) =>
+    typeof item === 'string' && (!pattern || new RegExp(pattern).test(item.trim()));
+  const misfit = list.find((item) => !fits(item));
+  if (misfit !== undefined) {
+    return { problem: `${JSON.stringify(misfit)} doesn't fit ${name}.${about}` };
   }
-  return { args: checkedArgs as AgentToolArgs[N] };
+  return { value: (list as string[]).map((item) => item.trim()) };
+}
+
+function checkText(name: string, value: unknown, schema: PropertySchema): Checked {
+  const about = describeArg(name, schema);
+  if (typeof value !== 'string') return { problem: `${name} is text.${about}` };
+  if (schema.type !== 'string') return { value };
+  if (schema.enum && !schema.enum.includes(value.trim())) {
+    return { problem: `${name} is one of ${schema.enum.join(', ')}.` };
+  }
+  if (schema.pattern && !new RegExp(schema.pattern).test(value.trim())) {
+    return { problem: `"${value}" doesn't fit ${name}.${about}` };
+  }
+  return { value: schema.pattern || schema.enum ? value.trim() : value };
+}
+
+const CHECK_BY_TYPE: Record<
+  PropertySchema['type'],
+  (name: string, value: unknown, schema: PropertySchema) => Checked
+> = {
+  string: checkText,
+  boolean: (name, value) =>
+    typeof value === 'boolean' ? { value } : { problem: `${name} is true or false.` },
+  array: checkList,
+};
+
+export function checkAgentToolArgs(
+  tool: ModelTool,
+  given: Record<string, unknown>
+): CheckedToolArgs {
+  const properties = (tool.inputSchema.properties ?? {}) as Record<string, PropertySchema>;
+  const required = (tool.inputSchema.required ?? []) as string[];
+  const args: Record<string, unknown> = {};
+  for (const [name, schema] of Object.entries(properties)) {
+    const value = given[name];
+    if (isLeftOut(value) && required.includes(name)) {
+      return { problem: `${name} is needed.${describeArg(name, schema)}` };
+    }
+    if (isLeftOut(value)) continue;
+    const checked = CHECK_BY_TYPE[schema.type](name, value, schema);
+    if ('problem' in checked) return checked;
+    args[name] = checked.value;
+  }
+  return { args };
 }

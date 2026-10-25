@@ -28,12 +28,17 @@ function formatLine(handles: ResumeHandles, line: ResumeEntry): string {
   return formatText(handleFor(handles, 'line', line.id), line.selected, line.text ?? '');
 }
 
-function formatEntry(handles: ResumeHandles, entry: ResumeEntry): string[] {
+/** An entry's heading as the model reads it: "Backend Engineer, Harbor Freight Labs · 2021 to 2024". */
+export function readEntryHeading(entry: ResumeEntry): string {
   const heading = [formatEntryHeading(entry), entry.dates?.trim()].filter(Boolean).join(' · ');
+  return heading || 'Untitled entry';
+}
+
+function formatEntry(handles: ResumeHandles, entry: ResumeEntry): string[] {
   const offPageNote = entry.selected ? '' : ' (off the page)';
   const handle = handleFor(handles, 'entry', entry.id);
   return [
-    `### ${heading || 'Untitled entry'}${offPageNote} (${handle})`,
+    `### ${readEntryHeading(entry)}${offPageNote} (${handle})`,
     ...entry.bullets.map((bullet) => formatBullet(handles, bullet)),
   ];
 }
