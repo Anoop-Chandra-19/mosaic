@@ -6,8 +6,8 @@ import { createAgentHandlers } from '../agentHandlers';
 
 function setUp() {
   const runs: AgentRuns = {
-    start: vi.fn(() => ({ ok: true as const, conversationId: 1, runId: 1 })),
-    carryOn: vi.fn(() => ({ ok: true as const, conversationId: 1, runId: 2 })),
+    start: vi.fn(async () => ({ ok: true as const, conversationId: 1, runId: 1 })),
+    carryOn: vi.fn(async () => ({ ok: true as const, conversationId: 1, runId: 2 })),
     stop: vi.fn(),
     answerTool: vi.fn(),
     stopAll: vi.fn(async () => {}),
