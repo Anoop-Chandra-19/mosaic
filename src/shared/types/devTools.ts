@@ -10,8 +10,17 @@ export interface DevToolRun {
 /** How many runs Recent keeps. */
 export const MAX_RECENT_DEV_RUNS = 4;
 
-/** What stays on until turned off, across launches. Main applies the motion ones. */
-export const DEV_SWITCHES = ['slowMotion', 'reducedMotion', 'outlineBoxes', 'reopenView'] as const;
+/**
+ * What stays on until turned off, across launches. Main applies the motion ones, and runs
+ * the assistant on the scripted model.
+ */
+export const DEV_SWITCHES = [
+  'slowMotion',
+  'reducedMotion',
+  'outlineBoxes',
+  'reopenView',
+  'scriptedModel',
+] as const;
 export type DevSwitch = (typeof DEV_SWITCHES)[number];
 export type DevSwitches = Record<DevSwitch, boolean>;
 
@@ -20,6 +29,7 @@ export const ALL_DEV_SWITCHES_OFF: DevSwitches = {
   reducedMotion: false,
   outlineBoxes: false,
   reopenView: false,
+  scriptedModel: false,
 };
 
 /** One process's memory, as Electron reports it. */

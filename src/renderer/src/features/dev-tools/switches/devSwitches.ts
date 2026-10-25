@@ -28,6 +28,11 @@ export const DEV_SWITCH_WORDS: Record<DevSwitch, DevSwitchWords> = {
     description: 'Every launch of this build goes back to the view it closed on.',
     titleName: 'Reopens this view',
   },
+  scriptedModel: {
+    label: 'Scripted model',
+    description: 'The assistant plays back a script in place of the chosen provider.',
+    titleName: 'Scripted model',
+  },
 };
 
 export const hasSwitchOn = (switches: DevSwitches) => DEV_SWITCHES.some((name) => switches[name]);
