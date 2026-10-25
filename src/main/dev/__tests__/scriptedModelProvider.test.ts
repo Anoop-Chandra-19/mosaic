@@ -6,7 +6,7 @@ import { createScriptedModelProvider } from '../scriptedModelProvider';
 async function playStep(messages: ModelMessage[]): Promise<ModelStreamEvent[]> {
   const events: ModelStreamEvent[] = [];
   const signal = new AbortController().signal;
-  const request = { model: 'scripted', system: '', messages, tools: [], signal };
+  const request = { model: 'scripted', system: '', messages, tools: [], cacheKey: 'c1', signal };
   for await (const event of createScriptedModelProvider().streamReply(request)) events.push(event);
   return events;
 }

@@ -16,8 +16,9 @@ bun run check:deps
 
 [dependency-cruiser](https://github.com/sverweij/dependency-cruiser) is an npm dev dependency.
 `.dependency-cruiser.cjs` checks all source TS/TSX files, including tests and type-only
-imports, for cycles and unresolved imports. It also checks process boundaries and reverse
-renderer-layer imports. Tests are exempt from layer restrictions, not cycle detection.
+imports, for cycles and unresolved imports. It also checks process boundaries, reverse
+renderer-layer imports, and that only main's `model-providers/` imports a provider SDK or
+Node's HTTP modules. Tests are exempt from layer restrictions, not cycle detection.
 Resolution follows the TypeScript aliases and Vite's exact `cn` alias; `import.meta.glob`
 is not expanded. It is an import-graph check, not a runtime behavior or DOM-usage audit.
 

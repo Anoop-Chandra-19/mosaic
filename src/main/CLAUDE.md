@@ -106,6 +106,19 @@ No ORM: `db/` is the layer every other module goes through, and ESLint enforces 
 - Test (`model-providers/testApiKey.ts`) makes one request that costs no tokens. The key travels only in a
   header, never in a URL, and no result or error repeats it.
 
+## Model providers (`model-providers/`)
+
+- **Only `model-providers/` talks to a provider.** It alone imports a provider's SDK
+  (`openai`) or Node's HTTP modules; the rest of main hands it Electron's `net.fetch`.
+  SDK types stay inside too. `bun run check:deps` enforces it.
+- An adapter returns our `ModelStreamEvent`s and `ModelProviderError`s and never throws. It
+  keeps the provider's message and HTTP status, and sorts its errors by a table (a refused
+  key is `keyRefused`), so the pane never guesses from a status.
+- Each SDK client is made with `maxRetries: 0` (the loop retries, so the attempts show and
+  are stored), a request timeout, the run's signal on each request, and every setting the
+  SDK would take from the environment given: only Settings decides where requests go.
+- No HTTP client of our own; the loop's stall check covers every provider's stream.
+
 ## The assistant's tables (`db/conversations/`)
 
 A conversation is an append-only log of messages, each a JSON `MessageBody`

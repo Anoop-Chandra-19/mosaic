@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import type { ModelProviderError, ModelStreamEvent } from '@shared/types/modelReply';
 import type { ModelTool } from '@shared/types/modelTool';
+import { describeNetworkError } from './describeNetworkError';
 import type { AssistantMessage, ModelMessage, ModelProvider, ModelRequest } from './modelProvider';
 import type { OllamaFetch } from './ollamaModels';
 import { readRateLimit } from './readRateLimit';
@@ -199,7 +200,7 @@ async function readErrorResponse(response: Response): Promise<ModelProviderError
     message = body;
   }
   const httpStatus = response.status;
-  if (httpStatus === 429) return { ...readRateLimit(response), message, httpStatus };
+  if (httpStatus === 429) return { ...readRateLimit(response.headers), message, httpStatus };
   if (httpStatus === 404 && /not found/i.test(message)) {
     return { reason: 'model-not-found', message, httpStatus };
   }
@@ -212,10 +213,4 @@ function describeOllamaError(message: string, httpStatus?: number): ModelProvide
     return { reason: 'toolsUnsupported', message, httpStatus };
   }
   return { reason: 'failed', message, httpStatus };
-}
-
-/** What the network said when nothing answered: `fetch failed` hides it in its cause. */
-function describeNetworkError(error: unknown): string {
-  const cause = error instanceof Error && error.cause instanceof Error ? error.cause : error;
-  return cause instanceof Error ? cause.message : String(cause);
 }

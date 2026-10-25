@@ -116,6 +116,7 @@ async function loopSteps(
   const limits = createRunLimits(limitSettings);
   const system = buildSystemPrompt(run.resumeName);
   const tools = Object.values(AGENT_TOOLS);
+  const cacheKey = `mosaic-conversation-${conversationId}`;
   let draft = run.draft;
 
   for (let step = 1; ; step++) {
@@ -127,7 +128,7 @@ async function loopSteps(
     );
     const reply = await requestModelReply({
       provider: modelProvider,
-      request: { model: modelName, system, messages, tools },
+      request: { model: modelName, system, messages, tools, cacheKey },
       signal,
       onEvent,
       limits: limitSettings,
