@@ -88,11 +88,17 @@ function beginRun({ db, ask, templateId, model }: AgentRunRequest): StartedRun {
 /** Tokens over the run's steps; null until a provider reports any. */
 type RunUsage = { total: ModelUsage | null };
 
+/** Absent while no step has said: unknown, not zero. */
+function addCount(total: number | undefined, step: number | undefined): number | undefined {
+  return total === undefined && step === undefined ? undefined : (total ?? 0) + (step ?? 0);
+}
+
 function addUsage(usage: RunUsage, step: ModelUsage | null): void {
   if (!step) return;
   usage.total = {
     inputTokens: (usage.total?.inputTokens ?? 0) + step.inputTokens,
     outputTokens: (usage.total?.outputTokens ?? 0) + step.outputTokens,
+    cachedInputTokens: addCount(usage.total?.cachedInputTokens, step.cachedInputTokens),
   };
 }
 

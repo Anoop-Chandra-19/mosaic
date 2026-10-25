@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { createDefaultResume } from '@shared/resume/defaultResume';
 import type { AgentRunEvent } from '@shared/types/agentRunEvents';
+import type { ModelStreamEvent } from '@shared/types/modelReply';
 import { openDatabase, type Database } from '../../db/connection';
 import { createConversation } from '../../db/conversations/conversations';
 import { readConversationLog } from '../../db/conversations/messages';
@@ -38,6 +39,12 @@ const bodies = () => readConversationLog(db, conversationId).map((message) => me
 const readRun = (id: number) =>
   db.prepare('select status, error, input_tokens, output_tokens from runs where id = ?').get(id);
 
+const doneReadingCache = (cachedInputTokens: number): ModelStreamEvent => ({
+  type: 'finish',
+  reason: 'complete',
+  usage: { inputTokens: 100, outputTokens: 10, cachedInputTokens },
+});
+
 const readToolCalls = () =>
   db.prepare('select call_id, status, check_name from tool_calls order by id').all();
 
@@ -72,8 +79,8 @@ describe('a run', () => {
       replies: [
         [callTool('c1', 'read_document'), DONE],
         [callTool('c2', 'propose_rewrite', { id: 'b9' }), DONE],
-        [callTool('c3', 'propose_rewrite', { id: 'b1' }), DONE],
-        [say('I suggested a tighter first bullet.'), DONE],
+        [callTool('c3', 'propose_rewrite', { id: 'b1' }), doneReadingCache(70)],
+        [say('I suggested a tighter first bullet.'), doneReadingCache(80)],
       ],
       answer: (call) =>
         (call.args as { id?: string }).id === 'b9' ? refused('There is no b9.') : ok('Answered.'),
@@ -96,6 +103,10 @@ describe('a run', () => {
       input_tokens: 400,
       output_tokens: 40,
     });
+    // Counted from the steps that said; the first two didn't.
+    expect(db.prepare('select cached_input_tokens from runs where id = 1').get()).toEqual({
+      cached_input_tokens: 150,
+    });
     expect(model.requests[0].system).toContain('The open resume is “Platform, general”.');
     expect(model.requests[2].messages.at(-1)).toMatchObject({
       content: 'There is no b9.',
@@ -105,6 +116,10 @@ describe('a run', () => {
 
     const other = createTemplate(db, 'Data, senior', createDefaultResume()).id;
     await ask({ replies: [[say('Hi.'), DONE]], overrides: { templateId: other } }).run;
+    // No step said: unknown, not zero.
+    expect(db.prepare('select cached_input_tokens from runs where id = 2').get()).toEqual({
+      cached_input_tokens: null,
+    });
     expect(bodies().filter((body) => body.type === 'templateSwitched')).toEqual([
       {
         type: 'templateSwitched',

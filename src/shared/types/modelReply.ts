@@ -9,6 +9,8 @@ export type ModelReplyPart =
 export interface ModelUsage {
   inputTokens: number;
   outputTokens: number;
+  /** Of `inputTokens`, those read from the provider's prompt cache, when it says. */
+  cachedInputTokens?: number;
 }
 
 /**

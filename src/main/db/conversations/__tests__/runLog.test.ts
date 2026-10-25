@@ -58,7 +58,7 @@ function replyCalling(run: ConversationRun, callIds: string[]): void {
         args: {},
       })),
     ],
-    usage: { inputTokens: 100, outputTokens: 10 },
+    usage: { inputTokens: 100, outputTokens: 10, cachedInputTokens: 80 },
     model: 'qwen3.5:9b',
     rev: 0,
   });
@@ -83,7 +83,7 @@ describe('a run in the log', () => {
     storeToolAnswers(db, run, [
       { callId: 'c1', content: 'Name: Ada Quill', isError: false, status: 'ok', rev: 1 },
     ]);
-    endRun(db, run, undefined, { inputTokens: 100, outputTokens: 10 });
+    endRun(db, run, undefined, { inputTokens: 100, outputTokens: 10, cachedInputTokens: 80 });
 
     expect(bodies().map((body) => body.type)).toEqual(['user', 'assistant', 'toolResults']);
     expect(readToolCalls()).toEqual([{ call_id: 'c1', status: 'ok', check_name: null, rev: 1 }]);
@@ -96,6 +96,12 @@ describe('a run in the log', () => {
       input_tokens: 100,
       output_tokens: 10,
     });
+    const tokensOf = (table: string) =>
+      db
+        .prepare(`select cached_input_tokens from ${table} where cached_input_tokens is not null`)
+        .all();
+    expect(tokensOf('messages')).toEqual([{ cached_input_tokens: 80 }]);
+    expect(tokensOf('runs')).toEqual([{ cached_input_tokens: 80 }]);
   });
 
   it('notes a switch of resume before the user’s message, never on the first run', () => {

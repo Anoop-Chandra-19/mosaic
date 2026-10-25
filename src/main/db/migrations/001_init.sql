@@ -77,6 +77,7 @@ create table runs (
   provider        text not null,
   model           text not null,
   input_tokens    integer,
+  cached_input_tokens integer,              -- of input_tokens, read from the provider's cache
   output_tokens   integer,
   error           text,
   started_at      integer not null,
@@ -95,6 +96,7 @@ create table messages (
   body            text not null check (json_valid(body)),
   model           text,                     -- assistant messages: the model that wrote it
   input_tokens    integer,
+  cached_input_tokens integer,
   output_tokens   integer,
   created_at      integer not null,
   unique (conversation_id, seq)
