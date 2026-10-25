@@ -111,7 +111,9 @@ switches and Recent are kept in `.dev-data/dev-tools.json`. A spec turns one on 
 
 Ask the assistant… (Data) starts a run on the open resume with the text you type, turning
 the assistant on, and its suggestions come in for review; a toast says how the run ended.
-It stands in for the assistant's pane until the pane is built.
+It carries on the conversation the palette last asked in, until the window reloads; Ask in
+a new conversation… starts afresh. They stand in for the assistant's pane until the pane is
+built.
 
 Every view has an address, such as `history / Tailored for Kestrel / v12 vs v11 / changes`
 (`features/view-address/`). The palette shows where you are with Copy (Ctrl+Shift+C), and a

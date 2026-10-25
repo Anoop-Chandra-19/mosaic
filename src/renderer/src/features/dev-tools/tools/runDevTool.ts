@@ -1,5 +1,5 @@
 import type { DevToolRun } from '@shared/types/devTools';
-import { ASK_AGENT_TOOL } from './askAgentTool';
+import { ASK_AGENT_TOOLS } from './askAgentTools';
 import { DATA_TOOLS } from './dataTools';
 import type { DevTool } from './devTool';
 import { CHECK_TOOLS } from './checkTools';
@@ -9,7 +9,7 @@ import { SWITCH_TOOLS } from './switchTools';
 /** Every tool, in the palette's order. */
 export const DEV_TOOLS: DevTool[] = [
   ...DATA_TOOLS,
-  ASK_AGENT_TOOL,
+  ...ASK_AGENT_TOOLS,
   ...GO_TO_TOOLS,
   ...ADDRESS_TOOLS,
   ...CHECK_TOOLS,

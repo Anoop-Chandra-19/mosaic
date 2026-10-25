@@ -21,6 +21,7 @@ import type { DevTool, StepOption } from '../tools/devTool';
 import { findDevTool, runDevTool } from '../tools/runDevTool';
 import { describeGoToAddress } from '../tools/goToTools';
 import { buildAddressSection } from './addressSection';
+import { buildPromptSection } from './promptSection';
 import { DevToolFailure } from './DevToolFailure';
 import { PaletteFooter, type FooterKey } from './PaletteFooter';
 import type { PaletteSection } from './paletteSection';
@@ -33,7 +34,8 @@ import { useStepOptions } from './useStepOptions';
 /*
  * The palette's contents, inside the dialog: a field over a list. The list is the tools
  * (`toolSections.tsx`), a step's choices once a tool with steps is chosen (`stepSection.tsx`),
- * or a typed address (`addressSection.tsx`); a run that fails shows in its place
+ * a typed address (`addressSection.tsx`), or the text a tool asks for (`promptSection.tsx`);
+ * a run that fails shows in its place
  * (`DevToolFailure.tsx`), as does a check's report (a tool's `report`), and a tool that
  * replaces data asks first (`ReplaceDataConfirm.tsx`). A switch flips with the palette open.
  */
@@ -57,6 +59,10 @@ const STEP_KEYS: FooterKey[] = [
   { keys: ['Enter'], label: 'choose' },
   { keys: ['Mod+Enter'], label: 'go, the rest as default' },
   { keys: ['Backspace'], label: 'back a step' },
+];
+const PROMPT_KEYS: FooterKey[] = [
+  { keys: ['Enter'], label: 'run' },
+  { keys: ['Backspace'], label: 'back' },
 ];
 const RUN_AGAIN_KEYS: FooterKey[] = [
   { keys: ['Enter'], label: 'run again' },
@@ -134,14 +140,16 @@ export function DevToolsPalette({ recent, onRun, onClose }: DevToolsPaletteProps
   const [reporting, setReporting] = useState<DevTool | null>(null);
   const [reportRuns, setReportRuns] = useState(0);
   const [stepping, setStepping] = useState<Stepping | null>(null);
-  /** A tool that asks for text first: Go to an address. */
+  /** A tool that asks for text first: Go to an address, Ask the assistant. */
   const [asking, setAsking] = useState<DevTool | null>(null);
   const [here] = useState(describeCurrentView);
   const [isCopied, setIsCopied] = useState(false);
 
   const step = findCurrentStep(stepping);
   const options = useStepOptions(step, stepping?.args ?? NO_ARGS);
-  const addressCheck = useAddressCheck(stepping ? '' : query);
+  // Text asked for is the tool's, even when it reads like an address; Go to an address's is one.
+  const isAskingText = asking !== null && asking.id !== 'goToAddress';
+  const addressCheck = useAddressCheck(stepping || isAskingText ? '' : query);
 
   const changeQuery = (next: string) => {
     setQuery(next);
@@ -234,6 +242,12 @@ export function DevToolsPalette({ recent, onRun, onClose }: DevToolsPaletteProps
     void runReplacingTool(devRun, confirming.tool.label);
   };
 
+  const runAsked = (text: string) => {
+    if (!asking) return;
+    setAsking(null);
+    void run({ toolId: asking.id, args: { text: text.trim() } });
+  };
+
   const goToTyped = (place: ViewPlace, templateId?: string) => {
     const args: DevToolArgs = { text: formatViewAddress(place) };
     if (templateId) args.templateId = templateId;
@@ -277,6 +291,7 @@ export function DevToolsPalette({ recent, onRun, onClose }: DevToolsPaletteProps
   let sections: PaletteSection[];
   if (stepping) sections = [buildStepSection(options, query, chooseOption)];
   else if (addressCheck) sections = [buildAddressSection(query, addressCheck, goToTyped)];
+  else if (asking) sections = [buildPromptSection(asking, query, runAsked)];
   else sections = buildToolSections(query, recent, chooseTool, (devRun) => void run(devRun));
   const rows = sections.flatMap((section) => section.rows).filter((row) => !row.isDisabled);
   // Typing, a new step, or Recent arriving moves the choice to the first row, once it is gone.
@@ -288,12 +303,14 @@ export function DevToolsPalette({ recent, onRun, onClose }: DevToolsPaletteProps
   if (confirming) footerKeys = CONFIRM_KEYS;
   else if (failure || reporting) footerKeys = RUN_AGAIN_KEYS;
   else if (stepping) footerKeys = STEP_KEYS;
+  else if (asking) footerKeys = PROMPT_KEYS;
 
   let leading = null;
   if (confirming) leading = <SteppingChips stepping={confirming} isComplete />;
   else if (reporting)
     leading = <SteppingChips stepping={{ tool: reporting, args: {} }} isComplete />;
   else if (stepping) leading = <SteppingChips stepping={stepping} />;
+  else if (asking) leading = <SteppingChips stepping={{ tool: asking, args: {} }} />;
 
   let body;
   if (confirming?.tool.replacesData) {

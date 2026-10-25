@@ -18,6 +18,9 @@ export const CHOICE_CARD_CLASSES = {
   idle: 'border-line hover:border-line-strong',
 } as const;
 
-/** One row of a menu or a select's list, from the design's `.menu-item`. */
+/**
+ * One row of a menu or a select's list, from the design's `.menu-item`. Dimmed by
+ * `aria-disabled`, not `data-disabled`: cmdk writes `data-disabled="false"` on every row.
+ */
 export const LIST_ROW_CLASSES =
-  "min-h-[1.8125rem] gap-[0.5625rem] rounded-sm px-2 py-0 text-body text-ink-soft focus:bg-line focus:text-foreground data-[disabled]:opacity-40 [&_svg:not([class*='size-'])]:size-[0.8125rem] [&_svg:not([class*='text-'])]:text-current";
+  "min-h-[1.8125rem] gap-[0.5625rem] rounded-sm px-2 py-0 text-body text-ink-soft focus:bg-line focus:text-foreground aria-disabled:opacity-40 [&_svg:not([class*='size-'])]:size-[0.8125rem] [&_svg:not([class*='text-'])]:text-current";
