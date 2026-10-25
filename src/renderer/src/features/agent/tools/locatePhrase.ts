@@ -38,38 +38,33 @@ export interface PhraseSpan {
 }
 
 /**
- * Every place `find` sits in `text` as words of its own, in order: exact matches, or when
- * there are none, loose ones as `locatePhrase` allows. Used to rename a term throughout.
+ * Every place `find` sits in `text`, in order: exact matches, or when there are none, ones
+ * forgiving of curly quotes, dashes, and runs of spaces. Loosening replaces characters one
+ * for one or collapses spaces, so indexes line up with the original for text written with
+ * single spaces, which is all a bullet holds.
  */
-export function locateEveryWholeWord(text: string, find: string): PhraseSpan[] {
-  const exactStarts = findStarts(text, find, true);
+function locateEvery(text: string, find: string, isWholeWord: boolean): PhraseSpan[] {
+  const exactStarts = findStarts(text, find, isWholeWord);
   if (exactStarts.length) {
     return exactStarts.map((start) => ({ start, end: start + find.length, isLoose: false }));
   }
   const looseFind = loosenPhrase(find);
-  return findStarts(loosenPhrase(text), looseFind, true).map((start) => ({
+  return findStarts(loosenPhrase(text), looseFind, isWholeWord).map((start) => ({
     start,
     end: start + looseFind.length,
     isLoose: true,
   }));
 }
 
-/**
- * Where `find` sits in `text`: exact first, then forgiving of curly quotes, dashes, and runs
- * of spaces. Loosening replaces characters one for one or collapses spaces, so indexes line up
- * with the original for text written with single spaces, which is all a bullet holds.
- */
+/** Every place `find` sits in `text` as words of its own. Used to rename a term throughout. */
+export const locateEveryWholeWord = (text: string, find: string) => locateEvery(text, find, true);
+
+/** Every place `find` sits in `text`, inside words too. */
+export const locateEveryPhrase = (text: string, find: string) => locateEvery(text, find, false);
+
+/** Where `find` sits in `text`, if it sits there once. */
 export function locatePhrase(text: string, find: string): PhraseSpan | 'none' | 'many' {
-  const exactStarts = findStarts(text, find, false);
-  if (exactStarts.length > 1) return 'many';
-  if (exactStarts.length === 1) {
-    return { start: exactStarts[0], end: exactStarts[0] + find.length, isLoose: false };
-  }
-  const looseFind = loosenPhrase(find);
-  const looseStarts = findStarts(loosenPhrase(text), looseFind, false);
-  if (looseStarts.length > 1) return 'many';
-  if (looseStarts.length === 1) {
-    return { start: looseStarts[0], end: looseStarts[0] + looseFind.length, isLoose: true };
-  }
-  return 'none';
+  const spans = locateEveryPhrase(text, find);
+  if (spans.length > 1) return 'many';
+  return spans[0] ?? 'none';
 }

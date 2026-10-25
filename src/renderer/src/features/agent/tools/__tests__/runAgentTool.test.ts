@@ -35,6 +35,15 @@ function withBulletText(bulletId: string, text: string): ResumeData {
   return doc;
 }
 
+/** The resume with one bullet left off the page. */
+function withBulletHidden(bulletId: string): ResumeData {
+  const doc = makeResume();
+  for (const entry of doc.sections[0].items) {
+    for (const bullet of entry.bullets) if (bullet.id === bulletId) bullet.selected = false;
+  }
+  return doc;
+}
+
 let run = createAgentToolRun('Tighten my bullets');
 
 beforeEach(() => {
@@ -219,17 +228,128 @@ describe('the propose tools', () => {
     ]);
   });
 
-  it('refuse an order that mixes lists or leaves one out, with the facts', async () => {
+  it('merge two bullets given in the other order, saying so', async () => {
     await readTheResume();
-    expect((await callTool('propose_reorder', { order: ['e2', 'b3', 'b2', 'b1'] })).content).toBe(
-      'order mixes lists: e2 is an entry in s1; b3, b2, b1 are bullets in e1. order is the handles of one list.'
+    const result = await callTool('propose_merge', {
+      firstBulletId: 'b3',
+      secondBulletId: 'b2',
+      text: 'Cut p99 latency and wrote the runbook',
+    });
+    expect(result.content).toMatch(/^Took them in the order they sit: b2, then b3\.\n/);
+    expect(stagedSuggestions()[0].change).toMatchObject({ firstId: 'b2', secondId: 'b3' });
+  });
+
+  it('refuse a merge of bullets apart or in two entries, with the facts', async () => {
+    await readTheResume();
+    const merge = async (firstBulletId: string, secondBulletId: string) =>
+      (await callTool('propose_merge', { firstBulletId, secondBulletId, text: 'x' })).content;
+    expect(await merge('b3', 'b4')).toBe(
+      'b3 is in e1 and b4 is in e2. propose_merge joins two bullets next to each other in one entry.'
     );
-    expect((await callTool('propose_reorder', { order: ['b2', 'b1'] })).content).toBe(
-      'That list holds b1, b2, b3; order gives b2, b1. order is every one of them, once.'
+    expect(await merge('b1', 'b3')).toBe(
+      "b1 and b3 aren't next to each other: e1's bullets are b1, b2, b3. propose_merge joins two bullets next to each other in one entry."
+    );
+  });
+
+  it('give a split that can be read two ways back, listing both', async () => {
+    openDraft(withBulletText('b2', 'Cut latency, cut costs and cut waste'));
+    await readTheResume();
+    expect(
+      (await callTool('propose_split', { bulletId: 'b2', secondStartsWith: 'cut' })).content
+    ).toBe(
+      'That can be read two ways: "Cut latency," and "cut costs and cut waste", or "Cut latency, cut costs and" and "cut waste". Say which.'
+    );
+  });
+});
+
+describe('the order compiler', () => {
+  const reorder = (...order: string[]) => callTool('propose_reorder', { order });
+
+  it('reads a path written before the list as the list', async () => {
+    await readTheResume();
+    const result = await reorder('e1', 'b3', 'b1', 'b2');
+    expect(result.content).toBe(
+      "Took order as e1's bullets: b3, b1, b2.\ne1: suggested. Checks: none."
+    );
+    expect(stagedSuggestions().map((proposal) => proposal.change)).toMatchObject([
+      { place: { unit: 'bullets', entryId: 'e1' }, after: ['b3', 'b1', 'b2'] },
+    ]);
+  });
+
+  it('reorders items that sit side by side among their own places', async () => {
+    await readTheResume();
+    await reorder('b3', 'b2');
+    expect(stagedSuggestions()[0].change).toMatchObject({ after: ['b1', 'b3', 'b2'] });
+  });
+
+  it('stages each list that changes', async () => {
+    await readTheResume();
+    await reorder('e2', 'e1', 'b2', 'b1', 'b3');
+    expect(stagedSuggestions().map((proposal) => proposal.change)).toMatchObject([
+      { place: { unit: 'items' }, after: ['e2', 'e1'] },
+      { place: { unit: 'bullets' }, after: ['b2', 'b1', 'b3'] },
+    ]);
+  });
+
+  it('refuses a new order with an item between, naming it, hidden or not', async () => {
+    openDraft(withBulletHidden('b2'));
+    await readTheResume();
+    expect((await reorder('b3', 'b1')).content).toBe(
+      "In e1's bullets, b2 (hidden) sits between b3, b1, so their new order can be read more than one way. e1's bullets holds b1, b2 (hidden), b3: give all of them in the new order."
     );
     expect(stagedSuggestions()).toEqual([]);
   });
 
+  it('answers an order that changes nothing, and a handle given twice', async () => {
+    await readTheResume();
+    expect(await reorder('b1', 'b2', 'b3')).toMatchObject({
+      content: 'e1: nothing changed. Already in that order.',
+      isError: false,
+    });
+    expect((await reorder('b1', 'b1', 'b2')).content).toBe(
+      'b1 is in order twice. order names each one once.'
+    );
+  });
+});
+
+describe('the rules every change goes through', () => {
+  it('says nothing changed when no word differs, or it already shows', async () => {
+    await readTheResume();
+    const answers = [
+      await callTool('propose_rewrite', {
+        id: 'b1',
+        text: 'Assisted in  migrating billing to Postgres ',
+      }),
+      await callTool('propose_select', { id: 'b1', show: true }),
+    ];
+    expect(answers.map(({ content, isError }) => ({ content, isError }))).toEqual([
+      { content: 'b1: nothing changed. It already reads that.', isError: false },
+      { content: 'b1: nothing changed. Already on the page.', isError: false },
+    ]);
+    expect(stagedSuggestions()).toEqual([]);
+  });
+
+  it("says a repeat of the run's own waiting suggestion is already suggested", async () => {
+    await readTheResume();
+    const rewrite = { id: 'b3', text: 'Wrote the payments runbook' };
+    await callTool('propose_rewrite', rewrite);
+    expect(await callTool('propose_rewrite', rewrite)).toMatchObject({
+      content: 'b3: already suggested, waiting for the user.',
+      isError: false,
+    });
+    expect(stagedSuggestions()).toHaveLength(1);
+  });
+
+  it('refuse an entry in a lines section, naming the sections that hold entries', async () => {
+    openDraft(makeResumeWithLines());
+    await readTheResume();
+    expect((await callTool('propose_entry', { sectionId: 's3', title: 'Go' })).content).toBe(
+      's3 holds lines, not entries. The sections that hold entries are s1.'
+    );
+  });
+});
+
+describe('the propose tools, showing and placing', () => {
   it('hide a bullet, taking "false" as false', async () => {
     await readTheResume();
     await callTool('propose_select', { id: 'b2', show: 'false' });
@@ -264,7 +384,7 @@ describe('the propose tools', () => {
       { afterEntryId: undefined },
     ]);
     expect((await callTool('propose_entry', { sectionId: 's1', after: 'e7' })).content).toBe(
-      'No entry "e7". Use a entry handle from read_document, such as e1.'
+      'No entry "e7". Use an entry handle from the resume, such as e1.'
     );
   });
 });
@@ -335,13 +455,13 @@ describe("checking the model's work", () => {
       id: 'b3',
       text: 'Wrote the payments on-call runbook',
     });
-    expect(plain.content).toBe('Suggested for b3.\nChecks: none.');
+    expect(plain.content).toBe('b3: suggested. Checks: none.');
     const replaced = await callTool('propose_replace_everywhere', {
       find: 'caching',
       replace: 'caches',
     });
     expect(replaced.content).toBe(
-      'Suggested for b4. It would read: "Built tile caches for the Oslo office"\nChecks: none.'
+      'b4: suggested. It would read: "Built tile caches for the Oslo office". Checks: none.'
     );
     const bigger = await callTool('propose_rewrite', {
       id: 'b1',
@@ -455,7 +575,7 @@ describe('reading the arguments the one way they can be read', () => {
       id: 'Go, Python, Postgres',
       text: 'Go, Python, PostgreSQL',
     });
-    expect(result.content).toMatch(/^Took "Go, Python, Postgres" as "l2"\.\nSuggested for l2\./);
+    expect(result.content).toMatch(/^Took "Go, Python, Postgres" as "l2"\.\nl2: suggested\./);
     expect(lastChange()).toMatchObject({ place: { lineId: 'l2' } });
   });
 
