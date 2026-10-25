@@ -52,23 +52,24 @@ const STOP_REASONS: ReadonlySet<unknown> = new Set<RunStopReason>([
 
 const isCount = (value: unknown) => Number.isInteger(value) && (value as number) >= 0;
 
-const hasMessage: Check = (error) => isString(error.message);
-
 const CHECK_BY_PROVIDER_ERROR: Record<ModelProviderError['reason'], Check> = {
   unreachable: () => true,
   rateLimited: (error) => isOptional(error.retryAfterMs, isCount),
-  quotaExceeded: (error) => hasMessage(error) && isOptional(error.httpStatus, isCount),
+  keyRefused: () => true,
+  quotaExceeded: () => true,
   'model-not-found': () => true,
-  toolsUnsupported: hasMessage,
-  contentBlocked: hasMessage,
+  toolsUnsupported: () => true,
+  contentBlocked: () => true,
   'context-too-long': () => true,
-  failed: (error) => hasMessage(error) && isOptional(error.httpStatus, isCount),
+  failed: (error) => isString(error.message),
 };
 
 const isProviderError = (error: unknown) =>
   isRecord(error) &&
   isString(error.reason) &&
   Object.hasOwn(CHECK_BY_PROVIDER_ERROR, error.reason) &&
+  isOptional(error.message, isString) &&
+  isOptional(error.httpStatus, isCount) &&
   CHECK_BY_PROVIDER_ERROR[error.reason as ModelProviderError['reason']](error);
 
 const isToolResult: Check = (result) =>

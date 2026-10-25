@@ -74,7 +74,8 @@ src/
       conversations/ # The assistant's conversations, runs and messages
     ipc/          # Database and file-dialog handlers
     window/       # The window, its page and menu, and saving before it closes
-    model-providers/ # Ollama model list, API key tests
+    agent/        # The assistant's run loop: steps, tool rounds, stop layers, system prompt
+    model-providers/ # Ollama chat and model list, API key tests
   preload/        # The only bridge to the renderer: window.mosaic
   shared/
     ipc/          # Channel names shared by main and preload

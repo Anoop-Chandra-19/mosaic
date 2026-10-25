@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { ModelStreamEvent } from '@shared/types/modelReply';
+import type { ModelProviderError, ModelStreamEvent } from '@shared/types/modelReply';
 import type { ModelRequest } from '../modelProvider';
 import { createOllamaModelProvider } from '../ollamaModelProvider';
 import type { OllamaFetch } from '../ollamaModels';
@@ -219,32 +219,57 @@ describe('createOllamaModelProvider', () => {
     expect(sent.map((s) => s.body.options)).toEqual([undefined, { num_ctx: 16_384 }]);
   });
 
-  it('says when nothing is listening', async () => {
-    const refused: OllamaFetch = () => Promise.reject(new TypeError('connect ECONNREFUSED'));
+  it('says when nothing is listening, in the network’s words', async () => {
+    const refused: OllamaFetch = () =>
+      Promise.reject(
+        new TypeError('fetch failed', { cause: new Error('connect ECONNREFUSED 127.0.0.1:11434') })
+      );
     const events = await collect(
       createOllamaModelProvider({ address: OLLAMA_URL, fetch: refused }).streamReply(request())
     );
-    expect(events).toEqual([{ type: 'error', error: { reason: 'unreachable' } }]);
+    expect(events).toEqual([
+      {
+        type: 'error',
+        error: { reason: 'unreachable', message: 'connect ECONNREFUSED 127.0.0.1:11434' },
+      },
+    ]);
   });
 
-  it('says when the model isn’t pulled', async () => {
-    const { fetch } = ollama(() =>
-      Response.json({ error: "model 'qwen3.5:9b' not found" }, { status: 404 })
-    );
+  it.each<[string, () => Response, ModelProviderError]>([
+    [
+      'the model isn’t pulled',
+      () => Response.json({ error: "model 'qwen3.5:9b' not found" }, { status: 404 }),
+      { reason: 'model-not-found', message: "model 'qwen3.5:9b' not found", httpStatus: 404 },
+    ],
+    [
+      'it is rate limited, and for how long',
+      () =>
+        Response.json(
+          { error: 'too many requests' },
+          { status: 429, headers: { 'Retry-After': '3' } }
+        ),
+      { reason: 'rateLimited', retryAfterMs: 3000, message: 'too many requests', httpStatus: 429 },
+    ],
+    [
+      'the model can’t take tools',
+      () => Response.json({ error: 'gemma:2b does not support tools' }, { status: 400 }),
+      { reason: 'toolsUnsupported', message: 'gemma:2b does not support tools', httpStatus: 400 },
+    ],
+    [
+      'the conversation is too long for the model',
+      () => Response.json({ error: 'input length exceeds the context length' }, { status: 400 }),
+      {
+        reason: 'context-too-long',
+        message: 'input length exceeds the context length',
+        httpStatus: 400,
+      },
+    ],
+  ])('says when %s, keeping Ollama’s words', async (_, answer, error) => {
+    const { fetch } = ollama(answer);
     const events = await collect(
       createOllamaModelProvider({ address: OLLAMA_URL, fetch }).streamReply(request())
     );
-    expect(events).toEqual([{ type: 'error', error: { reason: 'model-not-found' } }]);
-  });
-
-  it('says when the conversation is too long for the model', async () => {
-    const { fetch } = ollama(() =>
-      Response.json({ error: 'input length exceeds the context length' }, { status: 400 })
-    );
-    const events = await collect(
-      createOllamaModelProvider({ address: OLLAMA_URL, fetch }).streamReply(request())
-    );
-    expect(events).toEqual([{ type: 'error', error: { reason: 'context-too-long' } }]);
+    expect(events).toEqual([{ type: 'error', error }]);
   });
 
   it('keeps the message of any other error, before or during the reply', async () => {
