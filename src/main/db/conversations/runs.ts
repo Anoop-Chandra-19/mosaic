@@ -9,6 +9,12 @@ export interface NewRun {
   model: string;
 }
 
+/** A run and the conversation whose log it writes to. */
+export interface ConversationRun {
+  conversationId: number;
+  runId: number;
+}
+
 export interface StartedRun {
   id: number;
   /** Its number in the conversation, from 1. */
@@ -50,6 +56,18 @@ export function startRun(db: Database, run: NewRun): StartedRun {
       )
       .get({ ...run, rev, now })!;
   })();
+}
+
+/** The conversation's newest run, if it has one: the template it worked on, null for none. */
+export function readLastRun(
+  db: Database,
+  conversationId: number
+): { templateId: string | null } | undefined {
+  return db
+    .prepare<[number], { templateId: string | null }>(
+      'select template_id as templateId from runs where conversation_id = ? order by seq desc limit 1'
+    )
+    .get(conversationId);
 }
 
 export interface RunEnd {

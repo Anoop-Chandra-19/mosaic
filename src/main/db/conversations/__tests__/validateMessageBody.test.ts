@@ -13,6 +13,7 @@ const FIXTURE_BY_TYPE: Record<MessageBody['type'], string> = {
   assistant: 'assistant.json',
   toolResults: 'toolResults.json',
   templateSwitched: 'templateSwitched.json',
+  runStopped: 'runStopped.json',
 };
 
 function readFixture(name: string): unknown {
@@ -33,6 +34,8 @@ describe('isMessageBody', () => {
     { type: 'assistant', content: [{ type: 'toolCall', callId: 'c', name: 'n', args: null }] },
     { type: 'toolResults', results: [] },
     { type: 'templateSwitched', templateId: 't', label: '' },
+    { type: 'runStopped', reason: 'cancelled' },
+    { type: 'runStopped', reason: 'repeatedCall', detail: 'order mixes lists' },
   ])('takes a body with only what is required: %o', (body) => {
     expect(isMessageBody(body)).toBe(true);
   });
@@ -61,6 +64,11 @@ describe('isMessageBody', () => {
       { type: 'toolResults', results: [{ callId: 'c', content: '', isError: 'yes' }] },
     ],
     ['a switch without its template', { type: 'templateSwitched', label: 'Platform' }],
+    ['a stop for an unknown reason', { type: 'runStopped', reason: 'tired' }],
+    [
+      'a provider error without its message',
+      { type: 'runStopped', reason: 'providerError', providerError: { reason: 'quotaExceeded' } },
+    ],
   ])('refuses %s', (_, body) => {
     expect(isMessageBody(body)).toBe(false);
   });

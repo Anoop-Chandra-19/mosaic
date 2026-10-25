@@ -15,6 +15,23 @@ Read with the root `CLAUDE.md`. This covers `src/main/` and its contract with pr
   thin `ipc/register*Handlers.ts` file that puts them on `ipcMain`.
 - One instance only (`requestSingleInstanceLock`): SQLite has a single writer.
 
+## Database access (`db/`)
+
+No ORM: `db/` is the layer every other module goes through, and ESLint enforces it.
+
+- **Only `db/` talks to SQLite.** `prepare`, `transaction`, `pragma` and value imports of
+  `better-sqlite3` stay there. Other modules hold the `Database` handle (a type import) only
+  to pass it to `db/` functions. Tests may check what was stored with SQL.
+- **One exported function is one domain operation, and it is atomic.** It runs its own
+  transaction when it writes more than one row (nested ones become savepoints). Callers
+  never wrap `db/` calls in a transaction: when writes must land together, that is a new
+  `db/` function named for the operation (`startUserRun`, `storeToolAnswers`), not a
+  transaction in the caller.
+- **Domain types in and out.** Rows (`input_tokens`, `conversation_id`) never leave `db/`;
+  select with aliases or map them. Refusals are `StorageError` codes.
+- Files follow the tables and the work: `runs.ts`, `toolCalls.ts` for a table's own
+  reads and writes; `runLog.ts` for an operation that writes several of them.
+
 ## SQLite
 
 - One database, `mosaic.db`, in the OS's local data folder (`databaseFolder.ts`):
