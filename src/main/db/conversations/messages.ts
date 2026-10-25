@@ -4,8 +4,10 @@ import type {
   ToolResult,
   TranscriptMessage,
   TranscriptMessageBody,
+  TranscriptReplyPart,
 } from '@shared/types/agentConversation';
 import type { MessagePage } from '@shared/types/agentBridge';
+import type { ModelReplyPart } from '@shared/types/modelReply';
 import { StorageError } from '../storageError';
 import { encodeStoredMessageBody, parseStoredMessageBody } from './storedMessageBody';
 
@@ -70,10 +72,24 @@ interface MessageRow {
   created_at: number;
 }
 
+/** Only what the pane shows; the rest stays in main rather than in the window's memory. */
 function toTranscriptBody(body: MessageBody): TranscriptMessageBody {
-  if (body.type !== 'toolResults') return body;
-  const results = body.results.map(({ callId, isError }) => ({ callId, isError }));
-  return { type: 'toolResults', results };
+  switch (body.type) {
+    case 'assistant':
+      return { ...body, content: body.content.map(toTranscriptReplyPart) };
+    case 'toolResults':
+      return {
+        type: 'toolResults',
+        results: body.results.map(({ callId, isError }) => ({ callId, isError })),
+      };
+    default:
+      return body;
+  }
+}
+
+function toTranscriptReplyPart(part: ModelReplyPart): TranscriptReplyPart {
+  if (part.type !== 'reasoning') return part;
+  return { type: 'reasoning', durationMs: part.durationMs };
 }
 
 /**
