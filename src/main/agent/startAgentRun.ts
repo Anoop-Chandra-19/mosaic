@@ -7,6 +7,7 @@ import { readConversationLog } from '../db/conversations/messages';
 import {
   endRun,
   failRun,
+  startCarryOnRun,
   startUserRun,
   storeModelReply,
   type RunStop,
@@ -22,34 +23,47 @@ import { createRunLimits, RUN_LIMITS, type RunLimitSettings } from './runLimits'
 import { runToolRound, type ToolBridge, type ToolCallPart } from './runToolRound';
 
 /*
- * The assistant's run, in main. `runAgent` starts a run on a conversation, then loops a
- * step at a time: the context built from the log (`assembleModelContext.ts`), one request
- * to the model (`requestModelReply.ts`, which retries a failed connection), its reply
- * stored, its tool calls answered by the page through a `ToolBridge` (`runToolRound.ts`).
- * A reply with no tool calls ends the run; so does a stop layer (`runLimits.ts`), a
- * provider failure or the user's Stop, each written as a `runStopped` message, with what
- * was staged kept. Others use this file and `runToolRound.ts`'s `ToolBridge`.
+ * One run of the assistant, in main. `startAgentRun` starts a run on a conversation, for
+ * the user's message or to carry on, then loops a step at a time: the context built from
+ * the log (`assembleModelContext.ts`), one request to the model (`requestModelReply.ts`,
+ * which retries a failed connection), its reply stored, its tool calls answered by the
+ * page through a `ToolBridge` (`runToolRound.ts`). A reply with no tool calls ends the
+ * run; so does a stop layer (`runLimits.ts`), a provider failure or the user's Stop, each
+ * written as a `runStopped` message, with what was staged kept. `agentRuns.ts` starts runs
+ * through this file; tests use it directly.
  */
+
+/**
+ * What the user sent, in a new conversation (`conversationId` null) or an old one; or carry
+ * on from a conversation's log with no new message.
+ */
+export type AgentAsk =
+  | { type: 'user'; conversationId: number | null; text: string }
+  | { type: 'carryOn'; conversationId: number };
 
 export interface AgentRunRequest {
   db: Database;
-  conversationId: number;
-  text: string;
+  ask: AgentAsk;
   /** The template open when the user sent it; null with none open. */
   templateId: string | null;
   model: { provider: string; name: string };
   modelProvider: ModelProvider;
   bridge: ToolBridge;
   signal: AbortSignal;
-  onEvent?: (event: AgentRunEvent) => void;
+  /** Each event comes with its run, since the first arrives before `startAgentRun` returns. */
+  onEvent?: (event: AgentRunEvent, run: ConversationRun) => void;
   limits?: RunLimitSettings;
   wait?: Wait;
 }
 
 export interface AgentRunEnd {
-  runId: number;
   /** Absent when the model finished. */
   stopReason?: RunStopReason;
+}
+
+/** A run stored as started; `ended` settles once its end is stored too. */
+export interface StartedAgentRun extends ConversationRun {
+  ended: Promise<AgentRunEnd>;
 }
 
 interface StartedRun extends ConversationRun {
@@ -57,14 +71,12 @@ interface StartedRun extends ConversationRun {
   resumeName: string | null;
 }
 
-function beginRun({ db, conversationId, text, templateId, model }: AgentRunRequest): StartedRun {
-  const { runId, template } = startUserRun(db, {
-    conversationId,
-    text,
-    templateId,
-    provider: model.provider,
-    model: model.name,
-  });
+function beginRun({ db, ask, templateId, model }: AgentRunRequest): StartedRun {
+  const choice = { templateId, provider: model.provider, model: model.name };
+  const { conversationId, runId, template } =
+    ask.type === 'user'
+      ? startUserRun(db, { ...choice, conversationId: ask.conversationId, text: ask.text })
+      : startCarryOnRun(db, { ...choice, conversationId: ask.conversationId });
   return {
     conversationId,
     runId,
@@ -90,9 +102,10 @@ async function loopSteps(
   run: StartedRun,
   usage: RunUsage
 ): Promise<RunStop | undefined> {
-  const { db, conversationId, modelProvider, bridge, signal } = request;
+  const { db, modelProvider, bridge, signal } = request;
+  const { conversationId } = run;
   const modelName = request.model.name;
-  const onEvent = request.onEvent ?? (() => {});
+  const onEvent = (event: AgentRunEvent) => request.onEvent?.(event, run);
   const limitSettings = request.limits ?? RUN_LIMITS;
   const limits = createRunLimits(limitSettings);
   const system = buildSystemPrompt(run.resumeName);
@@ -162,21 +175,26 @@ function describeFault(error: unknown): string {
   return frame ? `${String(error)}\n${frame}` : String(error);
 }
 
-/**
- * One ask, run to its end. Every way it ends is stored before this resolves; only a fault
- * in Mosaic itself rejects, after storing it as an `appFault` stop with its calls answered.
- */
-export async function runAgent(request: AgentRunRequest): Promise<AgentRunEnd> {
+async function runToEnd(request: AgentRunRequest, run: StartedRun): Promise<AgentRunEnd> {
   const { db } = request;
-  const run = beginRun(request);
   const usage: RunUsage = { total: null };
   try {
     const stop = await loopSteps(request, run, usage);
     endRun(db, run, stop, usage.total);
-    request.onEvent?.({ type: 'runEnded', stopReason: stop?.reason });
-    return { runId: run.runId, stopReason: stop?.reason };
+    request.onEvent?.({ type: 'runEnded', stopReason: stop?.reason }, run);
+    return { stopReason: stop?.reason };
   } catch (error) {
     failRun(db, run, describeFault(error), usage.total);
     throw error;
   }
+}
+
+/**
+ * One ask, stored as started before this returns, then run to its end. Every way it ends
+ * is stored before `ended` resolves; only a fault in Mosaic itself rejects, after storing
+ * it as an `appFault` stop with its calls answered.
+ */
+export function startAgentRun(request: AgentRunRequest): StartedAgentRun {
+  const run = beginRun(request);
+  return { conversationId: run.conversationId, runId: run.runId, ended: runToEnd(request, run) };
 }

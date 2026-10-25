@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import { DEFAULT_OLLAMA_ADDRESS } from '@shared/model-providers/ollamaAddress';
 import { settingsStorage } from '@/lib/storage/settingsStorage';
-import type { ModelProviderId } from '@shared/types/modelProviders';
+import { AGENT_SETTINGS_KEY, type ModelProviderId } from '@shared/types/modelProviders';
 
 /**
  * Each provider's current mid tier — capable enough for resume writing, without the top
@@ -76,7 +76,7 @@ export const useAgentSettingsStore = create<AgentSettingsState>()(
         })),
     }),
     {
-      name: 'agentSettings',
+      name: AGENT_SETTINGS_KEY,
       storage: createJSONStorage(() => settingsStorage),
       // Hydrated by `hydrateStores` once boot has loaded the settings.
       skipHydration: true,

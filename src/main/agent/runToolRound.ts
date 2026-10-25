@@ -1,5 +1,6 @@
 import type { Database } from 'better-sqlite3';
 import type { AgentToolResult } from '@shared/agent-tools/agentTools';
+import type { AgentToolCall } from '@shared/types/agentBridge';
 import type { RunStopReason } from '@shared/types/agentConversation';
 import type { AgentRunEvent } from '@shared/types/agentRunEvents';
 import type { ModelReplyPart } from '@shared/types/modelReply';
@@ -18,19 +19,12 @@ import type { RunLimitSettings, RunLimits } from './runLimits';
 
 export type ToolCallPart = Extract<ModelReplyPart, { type: 'toolCall' }>;
 
-export interface ToolCallRequest {
-  runId: number;
-  callId: string;
-  name: string;
-  args: unknown;
-}
-
 /**
  * How main reaches the page that runs the tools. A call can't be cancelled across IPC;
  * on a Stop or a timeout the round stops waiting, and a late answer is dropped.
  */
 export interface ToolBridge {
-  runTool(call: ToolCallRequest): Promise<AgentToolResult>;
+  runTool(call: AgentToolCall): Promise<AgentToolResult>;
 }
 
 export interface ToolRound {

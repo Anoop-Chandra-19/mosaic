@@ -1,6 +1,7 @@
 import { app } from 'electron';
 import { closeAppDatabase, getAppDatabase, openAppDatabaseOrQuit } from './db/appDatabase';
 import { redirectDevProfile } from './devProfile';
+import { registerAgentHandlers } from './ipc/registerAgentHandlers';
 import { registerBackupHandlers } from './ipc/registerBackupHandlers';
 import { registerDbHandlers } from './ipc/registerDbHandlers';
 import { registerDevHandlers } from './ipc/registerDevHandlers';
@@ -40,7 +41,8 @@ if (!app.requestSingleInstanceLock()) {
     registerBackupHandlers(getAppDatabase, isAppFrame);
     registerModelProviderHandlers(isAppFrame);
     registerSecretsHandlers(apiKeys, isAppFrame);
-    registerEraseHandler(apiKeys, isAppFrame);
+    const agentRuns = registerAgentHandlers(getAppDatabase, isAppFrame);
+    registerEraseHandler(apiKeys, agentRuns, isAppFrame);
     if (!app.isPackaged) registerDevHandlers(isAppFrame);
     setAppMenu();
     openAppWindow();

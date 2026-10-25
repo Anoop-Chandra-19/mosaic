@@ -72,9 +72,9 @@ src/
     db/           # SQLite: connection, migrations, settings, boot state
       resumes/    # Templates, drafts, versions, bundles
       conversations/ # The assistant's conversations, runs and messages
-    ipc/          # Database and file-dialog handlers
+    ipc/          # Database, file-dialog and assistant handlers
     window/       # The window, its page and menu, and saving before it closes
-    agent/        # The assistant's run loop: steps, tool rounds, stop layers, system prompt
+    agent/        # The assistant's runs: the loop, tool rounds through the page, stop layers
     model-providers/ # Ollama chat and model list, API key tests
   preload/        # The only bridge to the renderer: window.mosaic
   shared/

@@ -1,4 +1,10 @@
 import { contextBridge, ipcRenderer } from 'electron';
+import type {
+  AgentRunEnvelope,
+  AgentToolAnswer,
+  AgentToolCall,
+  MosaicAgent,
+} from '@shared/types/agentBridge';
 import type { MosaicBackup } from '@shared/types/backup';
 import type { MosaicDbBridge } from '@shared/types/dbBridge';
 import type { MosaicDev } from '@shared/types/devTools';
@@ -21,6 +27,12 @@ import {
   MODEL_PROVIDERS_CHANNELS,
   SECRETS_CHANNELS,
 } from '@shared/ipc/appChannels';
+import {
+  AGENT_CHANNELS,
+  AGENT_EVENT,
+  AGENT_TOOL_ANSWER,
+  AGENT_TOOL_CALL,
+} from '@shared/ipc/agentChannels';
 import { DB_METHODS, dbChannel } from '@shared/ipc/dbMethods';
 
 // The only door between the sandboxed renderer and the main process: narrow, typed
@@ -67,6 +79,41 @@ const secrets: MosaicSecrets = {
   test: (provider, model, key) => ipcRenderer.invoke(SECRETS_CHANNELS.test, provider, model, key),
 };
 
+let toolRunnerRegistered = false;
+
+/** Runs happen in main; the page follows them and runs the tools they call. */
+const agent: MosaicAgent = {
+  start: (request) => ipcRenderer.invoke(AGENT_CHANNELS.start, request),
+  carryOn: (request) => ipcRenderer.invoke(AGENT_CHANNELS.carryOn, request),
+  stop: (runId) => ipcRenderer.invoke(AGENT_CHANNELS.stop, runId),
+  readMessages: (conversationId, page) =>
+    ipcRenderer.invoke(AGENT_CHANNELS.readMessages, conversationId, page),
+  onEvent: (follow) => {
+    const listener = (_event: unknown, envelope: AgentRunEnvelope) => follow(envelope);
+    ipcRenderer.on(AGENT_EVENT, listener);
+    return () => ipcRenderer.removeListener(AGENT_EVENT, listener);
+  },
+  onToolCall: (run) => {
+    if (toolRunnerRegistered) throw new Error('The page already runs the assistant’s tools');
+    toolRunnerRegistered = true;
+    const listener = (_event: unknown, call: AgentToolCall) => {
+      void Promise.resolve()
+        .then(() => run(call))
+        .then(
+          (result): AgentToolAnswer => ({ ok: true, result }),
+          (error: unknown): AgentToolAnswer => ({ ok: false, message: String(error) })
+        )
+        .then((answer) => ipcRenderer.invoke(AGENT_TOOL_ANSWER, call.runId, call.callId, answer))
+        .catch((error: unknown) => console.error('Could not answer a tool call:', error));
+    };
+    ipcRenderer.on(AGENT_TOOL_CALL, listener);
+    return () => {
+      ipcRenderer.removeListener(AGENT_TOOL_CALL, listener);
+      toolRunnerRegistered = false;
+    };
+  },
+};
+
 const modelProviders: MosaicModelProviders = {
   ollamaModels: (address) => ipcRenderer.invoke(MODEL_PROVIDERS_CHANNELS.ollamaModels, address),
 };
@@ -95,6 +142,7 @@ contextBridge.exposeInMainWorld('mosaic', {
   backup,
   secrets,
   modelProviders,
+  agent,
   ...(dev && { dev }),
   app: {
     eraseAll: (): Promise<void> => ipcRenderer.invoke(ERASE_ALL),

@@ -8,6 +8,7 @@ import type { ConversationRun } from '../runs';
 import {
   endRun,
   failRun,
+  startCarryOnRun,
   startUserRun,
   storeModelReply,
   storeToolAnswers,
@@ -108,6 +109,34 @@ describe('a run in the log', () => {
       { type: 'user', text: 'Tighten my summary.', resume: [], isLimit: false },
     ]);
     expect(bodies().filter((body) => body.type === 'templateSwitched')).toHaveLength(1);
+  });
+
+  it('carries on with no message of its own, noting a switch of resume, never first', () => {
+    const carryOn = (openId: string) =>
+      startCarryOnRun(db, { conversationId, templateId: openId, provider: 'ollama', model: 'm' });
+    expect(() => carryOn(templateId)).toThrow('has no run to carry on from');
+
+    endRun(db, ask(), { reason: 'connection' }, null);
+    endRun(db, { conversationId, runId: carryOn(templateId).runId }, undefined, null);
+    const other = createTemplate(db, 'Data, senior', createDefaultResume()).id;
+    carryOn(other);
+
+    expect(bodies().map((body) => body.type)).toEqual(['user', 'runStopped', 'templateSwitched']);
+  });
+
+  it('starts a new conversation, or none if the run can’t start', () => {
+    const start = (openId: string) =>
+      startUserRun(db, {
+        conversationId: null,
+        text: 'Hi.',
+        templateId: openId,
+        provider: 'ollama',
+        model: 'm',
+      });
+    expect(() => start('no-such-template')).toThrow();
+    const { conversationId: started } = start(templateId);
+    expect(started).toBe(conversationId + 1);
+    expect(readConversationLog(db, started).map((message) => message.body.type)).toEqual(['user']);
   });
 
   it('writes nothing of a reply it can’t store whole', () => {
