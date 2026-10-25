@@ -1,22 +1,22 @@
-import { useResumeStore } from '@/stores/resumeStore';
+import { useProposalStore } from '@/stores/proposalStore';
+import { getResumeSnapshot, useResumeStore } from '@/stores/resumeStore';
 import {
   AGENT_TOOLS,
   isAgentToolName,
-  type AgentToolArgs,
   type AgentToolName,
   type AgentToolResult,
 } from '@shared/agent-tools/agentTools';
-import { refuse, type AgentToolRun, type ToolAnswer } from './agentToolRun';
+import {
+  PROPOSE_TOOLS,
+  type ProposeToolArgs,
+  type ProposeToolName,
+} from '@shared/agent-tools/proposeTools';
+import type { ReadToolArgs } from '@shared/agent-tools/readTools';
+import { refuse, type AgentToolRun, type ToolAnswer, type ToolCallContext } from './agentToolRun';
 import { checkAgentToolArgs } from './checkAgentToolArgs';
 import { lookUpReceipt } from './lookUpReceipt';
-import { proposeEntry } from './propose/proposeEntry';
-import { proposeMerge } from './propose/proposeMerge';
-import { proposeRename } from './propose/proposeRename';
-import { proposeReorder } from './propose/proposeReorder';
-import { proposeReplaceEverywhere } from './propose/proposeReplaceEverywhere';
-import { proposeRewrite } from './propose/proposeRewrite';
-import { proposeSelect } from './propose/proposeSelect';
-import { proposeSplit } from './propose/proposeSplit';
+import { compileProposeCall } from './propose/compileProposeCall';
+import { stageCompiledCall } from './propose/stageSuggestions';
 import { readAgentToolArgs } from './readAgentToolArgs';
 import { readDocument } from './read/readDocument';
 import { readNewestVersion } from './read/readNewestVersion';
@@ -25,41 +25,57 @@ import { readNewestVersion } from './read/readNewestVersion';
  * The assistant's tools, run in the page where the draft and the suggestions live. A call
  * comes in as a name and the model's arguments; `readAgentToolArgs` takes the one reading
  * of any that don't fit (over what the run read, `lookUpReceipt.ts`), `checkAgentToolArgs`
- * checks them against the definitions the model was given (`@shared/agent-tools/`), and
- * the tool answers:
+ * checks them against the definitions the model was given (`@shared/agent-tools/`), and:
  *
- * - `read/`: the draft and the newest version, written out by `formatResumeForModel.ts`
- *   with the short handles of `resumeHandles.ts`. Reading the draft is the run's receipt.
- * - `propose/`: each tool finds what its handles name in the receipt (`findInReceipt.ts`),
- *   builds its change, and stages it for review (`stageSuggestions.ts`).
+ * - `read/` answers: the draft and the newest version, written out by
+ *   `formatResumeForModel.ts` with the short handles of `resumeHandles.ts`. Reading the
+ *   draft is the run's receipt.
+ * - `propose/` compiles the call (`compileProposeCall.ts`): the tool's own step turns it
+ *   into what it can mean, and the rules every change goes through decide what is staged
+ *   for review (`stageSuggestions.ts`).
  *
  * Other modules use this file and `agentToolRun.ts`, which holds what a run's tools keep.
  */
 
-const TOOLS: {
-  [N in AgentToolName]: (
-    run: AgentToolRun,
-    args: AgentToolArgs[N]
-  ) => ToolAnswer | Promise<ToolAnswer>;
+type ReadToolName = keyof ReadToolArgs;
+
+const READ_TOOLS: {
+  [N in ReadToolName]: (run: AgentToolRun) => ToolAnswer | Promise<ToolAnswer>;
 } = {
   read_document: readDocument,
   read_newest_version: readNewestVersion,
-  propose_rewrite: proposeRewrite,
-  propose_rename: proposeRename,
-  propose_replace_everywhere: proposeReplaceEverywhere,
-  propose_split: proposeSplit,
-  propose_merge: proposeMerge,
-  propose_reorder: proposeReorder,
-  propose_select: proposeSelect,
-  propose_entry: proposeEntry,
 };
+
+const isProposeToolName = (name: AgentToolName): name is ProposeToolName =>
+  Object.hasOwn(PROPOSE_TOOLS, name);
+
+/** What a propose call is compiled against, read from the stores once. */
+function readToolCallContext(run: AgentToolRun): ToolCallContext {
+  const { templateId } = useResumeStore.getState();
+  const proposals = templateId ? (useProposalStore.getState().byTemplate[templateId] ?? []) : [];
+  const waiting = proposals.filter((proposal) => proposal.status === 'pending');
+  return { run, templateId, doc: getResumeSnapshot(), waiting };
+}
 
 /** What was taken another way goes first, so the model reads it before the outcome. */
 const sayTookFirst = (took: string[], toolAnswer: ToolAnswer): ToolAnswer =>
-  took.length ? { ...toolAnswer, content: `${took.join(' ')}\n${toolAnswer.content}` } : toolAnswer;
+  took.length
+    ? { ...toolAnswer, content: `${took.join('\n')}\n${toolAnswer.content}` }
+    : toolAnswer;
 
-async function runWithCheckedArgs<N extends AgentToolName>(
+function compileAndStage<N extends ProposeToolName>(
+  run: AgentToolRun,
   name: N,
+  checkedArgs: Record<string, unknown>
+): ToolAnswer {
+  const context = readToolCallContext(run);
+  // The check held the arguments to the schema these types describe.
+  const args = checkedArgs as ProposeToolArgs[N];
+  return stageCompiledCall(context, compileProposeCall(context, name, args));
+}
+
+async function runWithCheckedArgs(
+  name: AgentToolName,
   run: AgentToolRun,
   rawArgs: unknown
 ): Promise<ToolAnswer> {
@@ -68,9 +84,10 @@ async function runWithCheckedArgs<N extends AgentToolName>(
   const read = readAgentToolArgs(AGENT_TOOLS[name], givenArgs, lookUpReceipt(run));
   const checked = checkAgentToolArgs(AGENT_TOOLS[name], read.args);
   if ('problem' in checked) return sayTookFirst(read.took, refuse(checked.problem));
-  // The check held the arguments to the schema these types describe.
-  const args = checked.args as AgentToolArgs[N];
-  return sayTookFirst(read.took, await TOOLS[name](run, args));
+  const toolAnswer = isProposeToolName(name)
+    ? compileAndStage(run, name, checked.args)
+    : await READ_TOOLS[name](run);
+  return sayTookFirst(read.took, toolAnswer);
 }
 
 function describeOpenDraft(): AgentToolResult['draft'] {

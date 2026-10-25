@@ -1,4 +1,5 @@
 import type { AgentToolResult } from '@shared/agent-tools/agentTools';
+import type { Proposal } from '@shared/types/agentProposal';
 import type { ResumeData } from '@shared/types/resume';
 import { createResumeHandles, type ResumeHandles } from './resumeHandles';
 
@@ -28,6 +29,20 @@ export const createAgentToolRun = (requestText: string): AgentToolRun => ({
   suggestionIdByTarget: new Map(),
   repairedTargets: new Set(),
 });
+
+/**
+ * What a propose call is compiled against, read from the stores once when it comes in, so
+ * every step after that is given what it uses rather than reading it.
+ */
+export interface ToolCallContext {
+  run: AgentToolRun;
+  /** The resume open now, or null when none is. */
+  templateId: string | null;
+  /** The open draft as it is now, which staging checks a change against. */
+  doc: ResumeData;
+  /** The open resume's suggestions waiting for the user. */
+  waiting: Proposal[];
+}
 
 /** What one tool says back to the model; `runAgentTool` adds where the draft stood. */
 export type ToolAnswer = Omit<AgentToolResult, 'draft'>;

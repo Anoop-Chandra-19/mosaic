@@ -46,8 +46,9 @@ type RunTool = (resume: EvalResume, args: Args, toolSet: AddEvalSettings) => Add
 
 type Handled = { handle: string };
 
-const suggested = (handle: string): AddEvalToolAnswer => ({
-  answer: `Suggested for ${handle}.\nChecks: none.`,
+/** The app's answer for what it staged: a line for each target, the target first. */
+const suggested = (...targets: string[]): AddEvalToolAnswer => ({
+  answer: targets.map((target) => `${target}: suggested. Checks: none.`).join('\n'),
   isRefused: false,
 });
 
@@ -77,11 +78,11 @@ const wasSuggested = (resume: EvalResume, key: string) => resume.suggested?.incl
  * suggested, when the run's own suggestion made it so (a repeat, which staging would
  * replace with itself), or nothing changed, when it is the user's own.
  */
-function answerNoChange(resume: EvalResume, key: string, what: string, fact: string) {
+function answerNoChange(resume: EvalResume, key: string, target: string, fact: string) {
   const answer = wasSuggested(resume, key)
-    ? `Already suggested: ${what}.`
-    : `Nothing changed. ${fact}`;
-  return { answer: `${answer}\nChecks: none.`, isRefused: false };
+    ? 'already suggested, waiting for the user.'
+    : `nothing changed. ${fact}`;
+  return { answer: `${target}: ${answer}`, isRefused: false };
 }
 
 /** The key a list's order is suggested under: "order:sections", or "order:" and its holder. */
@@ -156,7 +157,7 @@ const describeList = (place: HandlePlace) =>
   place.holder ? `${place.holder}'s ${KIND_PLURAL[place.kind]}` : 'the sections';
 
 interface MadeOrMoved {
-  /** What `short` names: the handle, or a reorder's whole order. */
+  /** What `short` names: the handle, or what holds the list a reorder changed. */
   shortFor: string;
   marked: string[];
   mark: 'new' | 'moved';
@@ -260,7 +261,7 @@ const proposeRewrite: RunTool = (resume, args) => {
   }
   if (!text) return refuse('text is needed.');
   if (hasSameWords(found.item.text, text)) {
-    return answerNoChange(resume, id, `${id} reads that`, `That is ${id}'s text as it is.`);
+    return answerNoChange(resume, id, id, 'It already reads that.');
   }
   found.item.text = text;
   markSuggested(resume, id);
@@ -275,8 +276,8 @@ const proposeRename: RunTool = (resume, args) => {
   }
   if (!label) return refuse('label is needed.');
   if (hasSameWords(section.label, label)) {
-    const what = `${section.handle} is called "${section.label}"`;
-    return answerNoChange(resume, section.handle, what, `${what} already.`);
+    const target = `the heading of ${section.handle}`;
+    return answerNoChange(resume, section.handle, target, 'It already reads that.');
   }
   section.label = label;
   markSuggested(resume, section.handle);
@@ -298,52 +299,97 @@ const proposeReplaceEverywhere: RunTool = (resume, args) => {
   if (!find || changed.length === 0) {
     return refuse(`"${find}" is in no bullet or line. Copy find exactly as the resume writes it.`);
   }
-  return suggested(changed.map((item) => item.handle).join(', '));
+  return suggested(...changed.map((item) => item.handle));
 };
 
 const answerUnscored: RunTool = () => ({
-  answer: 'Suggested.\nChecks: none.',
+  answer: 'Suggested. Checks: none.',
   isRefused: false,
   isUnscored: true,
 });
 
-/** The one list the order's handles are in, or what they are. */
-function findListOfOrder(resume: EvalResume, order: string[]): Handled[] | string {
-  const groups = new Map<Handled[], { place: HandlePlace; handles: string[] }>();
+interface OrderGroup {
+  place: HandlePlace;
+  handles: string[];
+}
+
+/** The order's handles grouped by the list each sits in, in the order given. */
+function groupOrderByList(resume: EvalResume, order: string[]): OrderGroup[] | string {
+  const groups = new Map<Handled[], OrderGroup>();
+  const seen = new Set<string>();
   for (const handle of order) {
     const place = findHandlePlace(resume, handle);
     if (!place) return `${handle} isn't in the resume.`;
+    if (seen.has(handle)) return `${handle} is in order twice. order names each one once.`;
+    seen.add(handle);
     const group = groups.get(place.list) ?? { place, handles: [] };
     group.handles.push(handle);
     groups.set(place.list, group);
   }
-  const [first, ...others] = [...groups.values()];
-  if (!first) return 'order is empty.';
-  if (others.length === 0) return first.place.list;
-  const described = [first, ...others].map((group) => describeHandles(group.handles, group.place));
-  return `order mixes lists: ${described.join('; ')}. order is the handles of one list.`;
+  return [...groups.values()];
+}
+
+/** "b2", or "b2 (hidden)", which still counts in its list. */
+const describeItem = (item: Handled) =>
+  (item as EvalText).isShown === false ? `${item.handle} (hidden)` : item.handle;
+
+/**
+ * One list's new order by the app's order compiler: named items that keep their order
+ * leave it as it is; named items that are the whole list or sit side by side take the new
+ * order among their own places; with another between them, it's refused with the list.
+ */
+function compileListOrder({ place, handles }: OrderGroup): string[] | string {
+  const before = place.list.map((each) => each.handle);
+  const isNamed = (handle: string) => handles.includes(handle);
+  if (before.filter(isNamed).join() === handles.join()) return before;
+  const slots = before.flatMap((handle, index) => (isNamed(handle) ? [index] : []));
+  const between = place.list
+    .slice(slots[0], slots.at(-1)! + 1)
+    .filter((each) => !isNamed(each.handle));
+  if (between.length) {
+    const list = describeList(place);
+    const sit = between.length > 1 ? 'sit' : 'sits';
+    return `In ${list}, ${between.map(describeItem).join(', ')} ${sit} between ${handles.join(', ')}, so their new order can be read more than one way. ${list} holds ${place.list.map(describeItem).join(', ')}: give all of them in the new order.`;
+  }
+  const after = [...before];
+  slots.forEach((slot, index) => (after[slot] = handles[index]));
+  return after;
 }
 
 const proposeReorder: RunTool = (resume, args, toolSet) => {
-  const order = readStrings(args.order);
-  const list = findListOfOrder(resume, order);
-  if (typeof list === 'string') return refuse(list);
-  const isEveryOnce =
-    order.length === list.length && list.every((each) => order.includes(each.handle));
-  if (!isEveryOnce) {
-    return refuse(
-      `That list holds ${listHandles(list)}; order gives ${order.join(', ')}. order is every one of them, once.`
-    );
+  const groups = groupOrderByList(resume, readStrings(args.order));
+  if (typeof groups === 'string') return refuse(groups);
+  if (!groups.length) {
+    return refuse('order is empty. order is every handle of one list, in the new order.');
   }
-  const key = orderKey(findHandlePlace(resume, list[0].handle)!);
-  if (isSameOrder(list, order)) {
-    return answerNoChange(resume, key, 'that order', 'That is the order the list has now.');
+  const compiled: { group: OrderGroup; after: string[] }[] = [];
+  for (const group of groups) {
+    const after = compileListOrder(group);
+    if (typeof after === 'string') return refuse(after);
+    compiled.push({ group, after });
   }
-  const movedHandles = order.filter((handle, index) => list[index].handle !== handle);
-  const reordered = order.map((handle) => list.find((each) => each.handle === handle)!);
-  list.splice(0, list.length, ...reordered);
-  markSuggested(resume, key);
-  return answerMoved(resume, toolSet, movedHandles, order.join(', '));
+  const changed = compiled.filter(({ group, after }) => !isSameOrder(group.place.list, after));
+  if (!changed.length) {
+    const { place } = groups[0];
+    const target = place.holder ?? 'the sections';
+    return answerNoChange(resume, orderKey(place), target, 'Already in that order.');
+  }
+  const [first] = compiled;
+  const isPlain =
+    compiled.length === 1 && first.group.handles.length === first.group.place.list.length;
+  const took = isPlain
+    ? []
+    : changed.map(
+        ({ group, after }) => `Took order as ${describeList(group.place)}: ${after.join(', ')}.`
+      );
+  const answers = changed.map(({ group: { place }, after }) => {
+    const movedHandles = after.filter((handle, index) => place.list[index].handle !== handle);
+    const reordered = after.map((handle) => place.list.find((each) => each.handle === handle)!);
+    place.list.splice(0, place.list.length, ...reordered);
+    markSuggested(resume, orderKey(place));
+    return answerMoved(resume, toolSet, movedHandles, place.holder ?? 'the sections').answer;
+  });
+  return { answer: [...took, ...answers].join('\n'), isRefused: false };
 };
 
 /** Where `before` or `after` puts `id` among the rest of its list, or the problem. */
@@ -401,13 +447,7 @@ const proposeSelect: RunTool = (resume, args) => {
   }
   if (typeof args.show !== 'boolean') return refuse('show is true or false.');
   if (target.isShown === args.show) {
-    const what = `${id} ${args.show ? 'on' : 'off'} the page`;
-    return answerNoChange(
-      resume,
-      id,
-      what,
-      `${id} is already ${args.show ? 'on' : 'off'} the page.`
-    );
+    return answerNoChange(resume, id, id, `Already ${args.show ? 'on' : 'off'} the page.`);
   }
   target.isShown = args.show;
   markSuggested(resume, id);
@@ -518,8 +558,8 @@ function addListItem(resume: EvalResume, line: EvalText, args: Args): AddEvalToo
   const items = line.text.split(separator);
   const repeated = items.find((each) => hasSameWords(each, item));
   if (repeated) {
-    const fact = `${line.handle} already lists "${repeated}".`;
-    return answerNoChange(resume, line.handle, `"${repeated}" in ${line.handle}`, fact);
+    const fact = `It already lists "${repeated}".`;
+    return answerNoChange(resume, line.handle, line.handle, fact);
   }
   const after = readString(args.after);
   const afterIndex = items.findIndex((each) => hasSameWords(each, after));
@@ -547,9 +587,8 @@ const proposeAdd: RunTool = (resume, args, toolSet) => {
   if (!text) return refuse('text is needed.');
   const repeated = list.find((item) => hasSameWords(item.text, text));
   if (repeated) {
-    const what = `${repeated.handle} in ${holder}`;
     const fact = `${holder} already has that, as ${repeated.handle}.`;
-    return withTook(answerNoChange(resume, repeated.handle, what, fact), took);
+    return withTook(answerNoChange(resume, repeated.handle, holder, fact), took);
   }
   const index = findInsertIndex(list, readString(args.after));
   if (index === null) {

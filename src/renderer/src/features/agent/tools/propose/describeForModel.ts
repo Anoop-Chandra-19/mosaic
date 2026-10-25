@@ -4,13 +4,19 @@ import type {
   ProposalFlag,
   ProposalFlagKind,
 } from '@shared/types/agentProposal';
-import { readShowPlaceId, readTextPlaceId } from '@/features/suggestions/proposals/proposalAnchor';
+import { hasSameWords } from '@/features/suggestions/proposals/diffWords';
+import {
+  isPlaceShown,
+  readShowPlaceId,
+  readTextPlaceId,
+} from '@/features/suggestions/proposals/proposalAnchor';
+import type { ResumeData } from '@shared/types/resume';
 import type { AgentToolRun } from '../agentToolRun';
 
 /*
- * What the model hears about a suggestion: what it is for, what the checks noticed, and
- * what it would make where our code wrote that, so the model can fix its own work without
- * reading again.
+ * What the model hears about a suggestion: what it is for, what the checks noticed, what
+ * it would make where our code wrote that, and why it changes nothing when it doesn't, so
+ * the model can fix its own work without reading again.
  */
 
 const knownHandle = (run: AgentToolRun, id: string) => run.handles.handleById.get(id) ?? id;
@@ -46,6 +52,28 @@ export function describeTarget(run: AgentToolRun, change: ProposalChange): strin
 }
 
 /**
+ * Why a change changes nothing, as a fact ("It already reads that."), or null when it
+ * changes something. Words count, not spaces: `hasSameWords` finds no word changed.
+ */
+export function describeNoChange(doc: ResumeData, change: ProposalChange): string | null {
+  switch (change.kind) {
+    case 'rewrite':
+    case 'rename':
+      return hasSameWords(change.before, change.after) ? 'It already reads that.' : null;
+    case 'reorder': {
+      const isSameOrder = change.after.every((id, index) => id === change.before[index]);
+      return isSameOrder ? 'Already in that order.' : null;
+    }
+    case 'select': {
+      const isAlready = isPlaceShown(doc, change.place) === change.selected;
+      return isAlready ? `Already ${change.selected ? 'on' : 'off'} the page.` : null;
+    }
+    default:
+      return null;
+  }
+}
+
+/**
  * What the resume would say, only where our code wrote it: a replace's text, a split's
  * halves. The rest the model sent itself, and hearing it again costs its context.
  */
@@ -53,9 +81,9 @@ export function describeResultWeWrote({ change, source }: Proposal): string | nu
   if (change.kind === 'split') {
     const first = change.before.slice(0, change.at).trim();
     const second = change.before.slice(change.at).trim();
-    return `It would become two bullets: "${first}" and "${second}"`;
+    return `It would become two bullets: "${first}" and "${second}".`;
   }
-  if (change.kind === 'rewrite' && source === 'replace') return `It would read: "${change.after}"`;
+  if (change.kind === 'rewrite' && source === 'replace') return `It would read: "${change.after}".`;
   return null;
 }
 

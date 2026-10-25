@@ -1,15 +1,21 @@
 import { readShowPlaceId, readShownName } from '@/features/suggestions/proposals/proposalAnchor';
-import { useResumeStore } from '@/stores/resumeStore';
+import type { HandleKind } from '@shared/agent-tools/handleKinds';
 import type { ShowPlace } from '@shared/types/agentProposal';
 import type { Bullet, ResumeData, ResumeEntry, ResumeSection } from '@shared/types/resume';
-import { NO_RESUME_OPEN, type AgentToolRun, type ReadReceipt } from '../agentToolRun';
-import type { HandleKind } from '@shared/agent-tools/handleKinds';
+import {
+  NO_RESUME_OPEN,
+  type AgentToolRun,
+  type ReadReceipt,
+  type ToolCallContext,
+} from '../agentToolRun';
 import { idForHandle, readHandleKind } from '../resumeHandles';
+import { TOOL_FACTS } from './toolFacts';
 
 /*
- * What a propose tool's handles name, found in the resume as the run read it, never the
+ * What a propose call's handles name, found in the resume as the run read it, never the
  * draft as it is now: a suggestion's `before` comes from here, so staging can tell an edit
- * made since. Each finder gives back what it found, or the problem to tell the model.
+ * made since. The one place a handle is looked up; each finder gives back what it found,
+ * or the facts to tell the model.
  */
 
 export interface Problem {
@@ -32,62 +38,57 @@ export interface PlaceInReceipt<K extends HandleKind> {
 }
 
 /** What the run read, if it is of the resume open now. */
-export function openReceipt(run: AgentToolRun): ReadReceipt | Problem {
-  const { templateId } = useResumeStore.getState();
+export function openReceipt({ run, templateId }: ToolCallContext): ReadReceipt | Problem {
   if (templateId === null) return { problem: NO_RESUME_OPEN };
-  if (!run.receipt) return { problem: 'Read the resume first, with read_document.' };
-  if (run.receipt.templateId !== templateId) {
-    return { problem: 'Another resume is open now. Read it with read_document.' };
-  }
+  if (!run.receipt) return { problem: TOOL_FACTS.notRead };
+  if (run.receipt.templateId !== templateId) return { problem: TOOL_FACTS.otherResumeOpen };
   return run.receipt;
 }
 
-const EXAMPLE_HANDLES: Record<HandleKind, string> = {
-  section: 's1',
-  entry: 'e1',
-  bullet: 'b1',
-  line: 'l1',
-};
-
-/** "a or b", "a, b or c". */
-const listEither = (words: readonly string[]) =>
-  words.length < 2 ? words.join('') : `${words.slice(0, -1).join(', ')} or ${words.at(-1)}`;
-
 const unknownHandle = (kind: HandleKind, handle: string): Problem => ({
-  problem: `No ${kind} "${handle}". Use a ${kind} handle from read_document, such as ${EXAMPLE_HANDLES[kind]}.`,
+  problem: TOOL_FACTS.unknownHandle(kind, handle),
 });
 
-const wrongKind = (handle: string, kinds: readonly HandleKind[]): Problem => ({
-  problem: `"${handle}" can't be used here. Use a ${listEither(kinds)} handle, such as ${listEither(kinds.map((kind) => EXAMPLE_HANDLES[kind]))}.`,
-});
+const notInReceipt = (handle: string): Problem => ({ problem: TOOL_FACTS.notInReceipt(handle) });
 
-const notInReceipt = (handle: string): Problem => ({
-  problem: `${handle} isn't in the resume as you last read it. Read it again.`,
-});
+/** The handles the run gave these ids, as the model knows them. */
+export const handlesOf = (run: AgentToolRun, ids: string[]) =>
+  ids.map((id) => run.handles.handleById.get(id) ?? id);
 
-export function findSectionInReceipt(run: AgentToolRun, handle: string): ResumeSection | Problem {
-  const receipt = openReceipt(run);
+export function findSectionInReceipt(
+  context: ToolCallContext,
+  handle: string
+): ResumeSection | Problem {
+  const receipt = openReceipt(context);
   if (isProblem(receipt)) return receipt;
-  const sectionId = idForHandle(run.handles, 'section', handle);
+  const sectionId = idForHandle(context.run.handles, 'section', handle);
   if (!sectionId) return unknownHandle('section', handle);
   return receipt.doc.sections.find((section) => section.id === sectionId) ?? notInReceipt(handle);
 }
 
 export function findEntryInSection(
-  run: AgentToolRun,
+  context: ToolCallContext,
   section: ResumeSection,
   handle: string
 ): ResumeEntry | Problem {
-  const entryId = idForHandle(run.handles, 'entry', handle);
+  const entryId = idForHandle(context.run.handles, 'entry', handle);
   if (!entryId) return unknownHandle('entry', handle);
   const entry = section.items.find((each) => each.id === entryId);
-  return entry ?? { problem: `${handle} isn't in that section.` };
+  if (entry) return entry;
+  const [sectionHandle, ...entries] = handlesOf(context.run, [
+    section.id,
+    ...section.items.map((each) => each.id),
+  ]);
+  return { problem: TOOL_FACTS.entryNotInSection(handle, sectionHandle, entries) };
 }
 
-export function findBulletInReceipt(run: AgentToolRun, handle: string): BulletInReceipt | Problem {
-  const receipt = openReceipt(run);
+export function findBulletInReceipt(
+  context: ToolCallContext,
+  handle: string
+): BulletInReceipt | Problem {
+  const receipt = openReceipt(context);
   if (isProblem(receipt)) return receipt;
-  const bulletId = idForHandle(run.handles, 'bullet', handle);
+  const bulletId = idForHandle(context.run.handles, 'bullet', handle);
   if (!bulletId) return unknownHandle('bullet', handle);
   for (const section of receipt.doc.sections) {
     for (const entry of section.items) {
@@ -127,15 +128,17 @@ const isOfKind = <K extends HandleKind>(
 
 /** What a handle names, if its kind is one of `kinds`. */
 function findPlaceInReceipt<K extends HandleKind>(
-  run: AgentToolRun,
+  context: ToolCallContext,
   handle: string,
   kinds: readonly K[]
 ): PlaceInReceipt<K> | Problem {
-  const receipt = openReceipt(run);
+  const receipt = openReceipt(context);
   if (isProblem(receipt)) return receipt;
   const kind = readHandleKind(handle);
-  if (!kind || !(kinds as readonly HandleKind[]).includes(kind)) return wrongKind(handle, kinds);
-  const id = idForHandle(run.handles, kind, handle);
+  if (!kind || !(kinds as readonly HandleKind[]).includes(kind)) {
+    return { problem: TOOL_FACTS.wrongKind(handle, kinds) };
+  }
+  const id = idForHandle(context.run.handles, kind, handle);
   if (!id) return unknownHandle(kind, handle);
   const place = listPlaces(receipt.doc).find(
     (each) => each.unit === kind && readShowPlaceId(each) === id
@@ -148,24 +151,20 @@ const TEXT_KINDS = ['bullet', 'line'] as const;
 const SHOWABLE_KINDS = ['bullet', 'line', 'entry', 'section'] as const;
 
 /** A bullet or a line, with its text. */
-export const findTextInReceipt = (run: AgentToolRun, handle: string) =>
-  findPlaceInReceipt(run, handle, TEXT_KINDS);
+export const findTextInReceipt = (context: ToolCallContext, handle: string) =>
+  findPlaceInReceipt(context, handle, TEXT_KINDS);
 
 /** Anything that can leave the page, with its text, an entry's heading, or a section's label. */
-export const findShowableInReceipt = (run: AgentToolRun, handle: string) =>
-  findPlaceInReceipt(run, handle, SHOWABLE_KINDS);
+export const findShowableInReceipt = (context: ToolCallContext, handle: string) =>
+  findPlaceInReceipt(context, handle, SHOWABLE_KINDS);
 
 /** Every bullet and line the run read. */
 export function listTextInReceipt(
-  run: AgentToolRun
+  context: ToolCallContext
 ): PlaceInReceipt<(typeof TEXT_KINDS)[number]>[] | Problem {
-  const receipt = openReceipt(run);
+  const receipt = openReceipt(context);
   if (isProblem(receipt)) return receipt;
   return listPlaces(receipt.doc)
     .filter((place) => isOfKind(place, TEXT_KINDS))
     .map((place) => ({ place, before: readShownName(receipt.doc, place) ?? '' }));
 }
-
-/** The handles the run gave these ids, as the model knows them. */
-export const handlesOf = (run: AgentToolRun, ids: string[]) =>
-  ids.map((id) => run.handles.handleById.get(id) ?? id);
