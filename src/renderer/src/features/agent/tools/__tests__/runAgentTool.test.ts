@@ -209,21 +209,25 @@ describe('the propose tools', () => {
     });
   });
 
-  it("reorder entries, or an entry's bullets, by handle", async () => {
+  it("reorder entries, or an entry's bullets, finding the list from the handles", async () => {
     await readTheResume();
-    await callTool('propose_reorder', { sectionId: 's1', order: ['e2', 'e1'] });
-    await callTool('propose_reorder', {
-      sectionId: 's1',
-      entryId: 'e1',
-      order: '["b3","b1","b2"]',
-    });
+    await callTool('propose_reorder', { order: ['e2', 'e1'] });
+    await callTool('propose_reorder', { order: '["b3","b1","b2"]' });
     expect(stagedSuggestions().map((proposal) => proposal.change)).toMatchObject([
-      { kind: 'reorder', after: ['e2', 'e1'] },
-      { kind: 'reorder', place: { entryId: 'e1' }, after: ['b3', 'b1', 'b2'] },
+      { kind: 'reorder', place: { unit: 'items', sectionId: 's1' }, after: ['e2', 'e1'] },
+      { kind: 'reorder', place: { unit: 'bullets', entryId: 'e1' }, after: ['b3', 'b1', 'b2'] },
     ]);
-    expect(
-      (await callTool('propose_reorder', { sectionId: 's1', order: ['e2'] })).content
-    ).toContain('same ids');
+  });
+
+  it('refuse an order that mixes lists or leaves one out, with the facts', async () => {
+    await readTheResume();
+    expect((await callTool('propose_reorder', { order: ['e2', 'b3', 'b2', 'b1'] })).content).toBe(
+      'order mixes lists: e2 is an entry in s1; b3, b2, b1 are bullets in e1. order is the handles of one list.'
+    );
+    expect((await callTool('propose_reorder', { order: ['b2', 'b1'] })).content).toBe(
+      'That list holds b1, b2, b3; order gives b2, b1. order is every one of them, once.'
+    );
+    expect(stagedSuggestions()).toEqual([]);
   });
 
   it('hide a bullet, taking "false" as false', async () => {
@@ -236,7 +240,7 @@ describe('the propose tools', () => {
     await readTheResume();
     await callTool('propose_entry', {
       sectionId: 's1',
-      afterEntryId: 'e1',
+      after: 'e1',
       title: 'Volunteer',
       organization: 'Code for Portland',
       location: '',
@@ -249,6 +253,19 @@ describe('the propose tools', () => {
       frame: { title: 'Volunteer', organization: 'Code for Portland' },
       bullets: ['Mapped bus stops for the transit app'],
     });
+  });
+
+  it('place a new entry last when after is left out, and first with "start"', async () => {
+    await readTheResume();
+    await callTool('propose_entry', { sectionId: 's1', title: 'Volunteer' });
+    await callTool('propose_entry', { sectionId: 's1', after: 'start', title: 'Founder' });
+    expect(stagedSuggestions().map((proposal) => proposal.change)).toMatchObject([
+      { afterEntryId: 'e2' },
+      { afterEntryId: undefined },
+    ]);
+    expect((await callTool('propose_entry', { sectionId: 's1', after: 'e7' })).content).toBe(
+      'No entry "e7". Use a entry handle from read_document, such as e1.'
+    );
   });
 });
 
@@ -265,10 +282,7 @@ describe('the propose tools, on lines, entries and sections', () => {
       after: 'Go, Python, PostgreSQL',
     });
     expect((await callTool('propose_rewrite', { id: 's2', text: 'About' })).content).toBe(
-      'To change a heading, use propose_rename.'
-    );
-    expect((await callTool('propose_rewrite', { id: 'e1', text: 'x' })).content).toBe(
-      '"e1" can\'t be used here. Use a bullet or line handle, such as b1 or l1.'
+      '"s2" doesn\'t fit id. id: The bullet or line to rewrite; for a section\'s heading, use propose_rename. A bullet or line handle from the resume, such as b1 or l1.'
     );
   });
 
@@ -294,14 +308,11 @@ describe('the propose tools, on lines, entries and sections', () => {
   it("reorder the sections, or a section's lines", async () => {
     await readTheResume();
     await callTool('propose_reorder', { order: ['s3', 's1', 's2'] });
-    await callTool('propose_reorder', { sectionId: 's3', order: ['l3', 'l2'] });
+    await callTool('propose_reorder', { order: ['l3', 'l2'] });
     expect(stagedSuggestions().map((proposal) => proposal.change)).toMatchObject([
       { place: { unit: 'sections' }, before: ['s1', 's2', 's3'], after: ['s3', 's1', 's2'] },
       { place: { unit: 'items', sectionId: 's3' }, after: ['l3', 'l2'] },
     ]);
-    expect((await callTool('propose_reorder', { entryId: 'e1', order: ['b2'] })).content).toContain(
-      'Give the sectionId'
-    );
   });
 
   it('replace a term in lines too, never in a heading', async () => {
@@ -411,7 +422,59 @@ describe('any call', () => {
     );
     await readTheResume();
     expect((await callTool('propose_rewrite', { id: 'b1' })).content).toBe(
-      'text is needed, as text.'
+      'text is needed. text: The whole new bullet or line.'
     );
+  });
+});
+
+describe('reading the arguments the one way they can be read', () => {
+  beforeEach(() => openDraft(makeResumeWithLines()));
+
+  const lastChange = () => stagedSuggestions().at(-1)?.change;
+
+  it('takes a handle in another case, inside other text, or at the end of its path', async () => {
+    await readTheResume();
+    for (const [id, show] of [
+      ['B2', false],
+      ['handle b3.', false],
+      ['e1b1', false],
+    ] as const) {
+      const result = await callTool('propose_select', { id, show });
+      expect(result.content).toMatch(/^Took ".*" as "b\d"\.\n/);
+    }
+    expect(stagedSuggestions().map((proposal) => proposal.change)).toMatchObject([
+      { place: { bulletId: 'b2' } },
+      { place: { bulletId: 'b3' } },
+      { place: { bulletId: 'b1' } },
+    ]);
+  });
+
+  it("takes an item's own words where its handle goes, when one item has them", async () => {
+    await readTheResume();
+    const result = await callTool('propose_rewrite', {
+      id: 'Go, Python, Postgres',
+      text: 'Go, Python, PostgreSQL',
+    });
+    expect(result.content).toMatch(/^Took "Go, Python, Postgres" as "l2"\.\nSuggested for l2\./);
+    expect(lastChange()).toMatchObject({ place: { lineId: 'l2' } });
+  });
+
+  it("refuses a path whose handles don't hold each other, or two handles in one", async () => {
+    await readTheResume();
+    for (const id of ['e2b1', 'b1 or b2']) {
+      const result = await callTool('propose_select', { id, show: false });
+      expect(result).toMatchObject({
+        isError: true,
+        content: expect.stringContaining("doesn't fit id"),
+      });
+    }
+    expect(stagedSuggestions()).toEqual([]);
+  });
+
+  it('reads each handle of a list', async () => {
+    await readTheResume();
+    const result = await callTool('propose_reorder', { order: ['L3', 'l2'] });
+    expect(result.content).toMatch(/^Took order as \["l3","l2"\]\.\n/);
+    expect(lastChange()).toMatchObject({ after: ['l3', 'l2'] });
   });
 });

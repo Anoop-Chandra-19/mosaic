@@ -3,7 +3,8 @@ import { useResumeStore } from '@/stores/resumeStore';
 import type { ShowPlace } from '@shared/types/agentProposal';
 import type { Bullet, ResumeData, ResumeEntry, ResumeSection } from '@shared/types/resume';
 import { NO_RESUME_OPEN, type AgentToolRun, type ReadReceipt } from '../agentToolRun';
-import { idForHandle, readHandleKind, type HandleKind } from '../resumeHandles';
+import type { HandleKind } from '@shared/agent-tools/handleKinds';
+import { idForHandle, readHandleKind } from '../resumeHandles';
 
 /*
  * What a propose tool's handles name, found in the resume as the run read it, never the
@@ -165,17 +166,6 @@ export function listTextInReceipt(
     .map((place) => ({ place, before: readShownName(receipt.doc, place) ?? '' }));
 }
 
-/** A list of handles of one kind, as ids, or the first that names nothing. */
-export function idsForHandles(
-  run: AgentToolRun,
-  kind: HandleKind,
-  handles: string[]
-): string[] | Problem {
-  const ids: string[] = [];
-  for (const handle of handles) {
-    const id = idForHandle(run.handles, kind, handle);
-    if (!id) return unknownHandle(kind, handle);
-    ids.push(id);
-  }
-  return ids;
-}
+/** The handles the run gave these ids, as the model knows them. */
+export const handlesOf = (run: AgentToolRun, ids: string[]) =>
+  ids.map((id) => run.handles.handleById.get(id) ?? id);

@@ -1,5 +1,14 @@
 import type { ModelTool } from '../types/modelTool';
-import { booleanArg, defineAgentTool, stringArg, stringListArg } from './defineAgentTool.ts';
+import {
+  afterArg,
+  booleanArg,
+  defineAgentTool,
+  handleArg,
+  handleListArg,
+  stringArg,
+  stringListArg,
+} from './defineAgentTool.ts';
+import { HANDLE_KINDS } from './handleKinds.ts';
 
 /*
  * The tools that suggest changes. Nothing changes until the user reviews a suggestion. The
@@ -11,8 +20,11 @@ import { booleanArg, defineAgentTool, stringArg, stringListArg } from './defineA
  * one term across the whole resume, where a noun swaps for a noun.
  *
  * A tool that takes several kinds of handle calls it `id`; one that takes a single kind
- * names it (`bulletId`, `sectionId`). A heading has its own tool, propose_rename, so a
- * rewrite of a section's lines can't rename the section by mistake.
+ * names it (`bulletId`, `sectionId`). Every handle argument says which kinds it takes,
+ * with an example and a pattern, and every tool that places takes the one `after`. A
+ * heading has its own tool, propose_rename, so a rewrite of a section's lines can't
+ * rename the section by mistake. propose_reorder takes only the new order: its handles
+ * say which list it is.
  */
 
 /** The propose tools, and their arguments once checked. */
@@ -27,16 +39,16 @@ export interface ProposeToolArgs {
     text: string;
     reason?: string;
   };
-  propose_reorder: { sectionId?: string; entryId?: string; order: string[]; reason?: string };
+  propose_reorder: { order: string[]; reason?: string };
   propose_select: { id: string; show: boolean; reason?: string };
   propose_entry: {
     sectionId: string;
-    afterEntryId?: string;
+    after?: string;
     title?: string;
     organization?: string;
     location?: string;
     dates?: string;
-    bullets: string[];
+    bullets?: string[];
     reason?: string;
   };
 }
@@ -56,7 +68,10 @@ export const PROPOSE_TOOLS: Record<ProposeToolName, ModelTool> = {
     'propose_rewrite',
     `Suggest a new text for one bullet or line, for any change to it: rewording, or swapping the words the user names. The user reviews it before anything changes. ${WHOLE_SENTENCE_RULE} ${NO_NEW_FACTS_RULE} When it needs a number only the user knows, write {{?}} where it goes and give withoutNumber, a version that needs no number. For a section's heading, use propose_rename.`,
     {
-      id: stringArg('A bullet or line handle, such as b1 or l1.'),
+      id: handleArg(
+        ['bullet', 'line'],
+        "The bullet or line to rewrite; for a section's heading, use propose_rename."
+      ),
       text: stringArg('The whole new bullet or line.'),
       withoutNumber: stringArg('Only with {{?}} in text: the same text written to need no number.'),
       reason: REASON_ARG,
@@ -66,7 +81,11 @@ export const PROPOSE_TOOLS: Record<ProposeToolName, ModelTool> = {
   propose_rename: defineAgentTool(
     'propose_rename',
     'Suggest a new heading for a section, such as "Experience" to "Work history". Only when the user asks for a new heading: to change what a section says, rewrite its bullets or lines.',
-    { sectionId: stringArg(), label: stringArg('The new heading.'), reason: REASON_ARG },
+    {
+      sectionId: handleArg(['section'], 'The section to rename.'),
+      label: stringArg('The new heading.'),
+      reason: REASON_ARG,
+    },
     ['sectionId', 'label']
   ),
   propose_replace_everywhere: defineAgentTool(
@@ -78,27 +97,32 @@ export const PROPOSE_TOOLS: Record<ProposeToolName, ModelTool> = {
   propose_split: defineAgentTool(
     'propose_split',
     'Suggest splitting one bullet in two, keeping its words as they are. secondStartsWith is where the second bullet begins: its first few words, copied exactly from the bullet.',
-    { bulletId: stringArg(), secondStartsWith: stringArg(), reason: REASON_ARG },
+    {
+      bulletId: handleArg(['bullet'], 'The bullet to split.'),
+      secondStartsWith: stringArg('The first few words of the second bullet, copied exactly.'),
+      reason: REASON_ARG,
+    },
     ['bulletId', 'secondStartsWith']
   ),
   propose_merge: defineAgentTool(
     'propose_merge',
     `Suggest joining two bullets that sit next to each other in one entry. text is the joined bullet: one correct sentence that keeps the facts of both. ${NO_NEW_FACTS_RULE}`,
     {
-      firstBulletId: stringArg(),
-      secondBulletId: stringArg('The bullet right after the first.'),
-      text: stringArg(),
+      firstBulletId: handleArg(['bullet'], 'The first of the two.'),
+      secondBulletId: handleArg(['bullet'], 'The bullet right after the first.'),
+      text: stringArg('The joined bullet.'),
       reason: REASON_ARG,
     },
     ['firstBulletId', 'secondBulletId', 'text']
   ),
   propose_reorder: defineAgentTool(
     'propose_reorder',
-    "Suggest a new order for the sections, for a section's entries or lines (with sectionId), or for an entry's bullets (with sectionId and entryId). order lists every one of their handles, each once.",
+    "Suggest a whole new order for one list: the sections, a section's entries or lines, or an entry's bullets.",
     {
-      sectionId: stringArg("Give it to reorder that section's entries or lines."),
-      entryId: stringArg("With sectionId, to reorder that entry's bullets."),
-      order: stringListArg('Handles in the new order.'),
+      order: handleListArg(
+        HANDLE_KINDS,
+        'Every handle of one list, each once, in the new order, such as ["b3", "b1", "b2"]. The handles say which list it is.'
+      ),
       reason: REASON_ARG,
     },
     ['order']
@@ -107,25 +131,25 @@ export const PROPOSE_TOOLS: Record<ProposeToolName, ModelTool> = {
     'propose_select',
     'Suggest leaving a bullet, line, entry or section off the page (show false), or putting it back (show true). An entry or section goes with everything in it. It stays in the resume either way, so this is how to fit the page: nothing is ever deleted.',
     {
-      id: stringArg('A bullet, line, entry or section handle, such as b1, l1, e1 or s1.'),
-      show: booleanArg(),
+      id: handleArg(HANDLE_KINDS, 'What leaves the page or comes back.'),
+      show: booleanArg('false to leave it off the page, true to put it back.'),
       reason: REASON_ARG,
     },
     ['id', 'show']
   ),
   propose_entry: defineAgentTool(
     'propose_entry',
-    `Suggest a new entry in a section, such as a job the user describes. The user confirms its title, organization, location and dates one by one, so give only what they told you. Its bullets are reviewed like rewrites. ${NO_NEW_FACTS_RULE}`,
+    `Suggest a new entry in a section that holds entries, such as a job the user describes. The user confirms its title, organization, location and dates one by one, so give only what they told you. Its bullets are reviewed like rewrites. ${NO_NEW_FACTS_RULE}`,
     {
-      sectionId: stringArg(),
-      afterEntryId: stringArg('The entry it goes after. Leave out to put it first.'),
-      title: stringArg(),
-      organization: stringArg(),
+      sectionId: handleArg(['section'], 'The section it goes into.'),
+      after: afterArg(['entry']),
+      title: stringArg('What the user was: a role, a degree, a project.'),
+      organization: stringArg('Where or for whom.'),
       location: stringArg(),
       dates: stringArg('As the user wrote them, such as "2021 to 2024".'),
       bullets: stringListArg('Its bullets, each a whole sentence.'),
       reason: REASON_ARG,
     },
-    ['sectionId', 'bullets']
+    ['sectionId']
   ),
 };

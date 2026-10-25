@@ -147,7 +147,7 @@ export const HELD_OUT_CASES: AddCase[] = [
   {
     instruction: 'Make the second Pinegrove bullet the first one.',
     outcomes: [{ orders: { e2: ['b5', 'b4'] } }],
-    answer: [call('propose_reorder', { sectionId: 's2', entryId: 'e2', order: ['b5', 'b4'] })],
+    answer: [call('propose_reorder', { order: ['b5', 'b4'] })],
     builderAnswer: [call('propose_move', { id: 'b5', after: 'start' })],
   },
   {
@@ -181,10 +181,7 @@ export const HELD_OUT_CASES: AddCase[] = [
   {
     instruction: 'Reverse the order of my Kestrel bullets.',
     outcomes: [{ orders: { e1: ['b3', 'b2', 'b1'] } }],
-    answer: [
-      call('propose_reorder', { sectionId: 's2', entryId: 'e1', order: ['b3', 'b2', 'b1'] }),
-    ],
-    builderAnswer: [call('propose_reorder', { order: ['b3', 'b2', 'b1'] })],
+    answer: [call('propose_reorder', { order: ['b3', 'b2', 'b1'] })],
   },
   {
     instruction:
