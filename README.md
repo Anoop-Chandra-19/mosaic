@@ -53,6 +53,7 @@ for local models through Ollama is in place, and AI features are in progress.
 
 - Electron 44 via electron-vite: main process, sandboxed preload, React renderer
 - SQLite (better-sqlite3) in the main process for all data
+- The providers' own SDKs (OpenAI's so far) for the assistant, in the main process
 - React 19 + React Compiler, TypeScript, Tailwind CSS v4 (CSS-first)
 - Radix UI / shadcn primitives, Lucide icons
 - Zustand for renderer state
@@ -75,7 +76,7 @@ src/
     ipc/          # Database, file-dialog and assistant handlers
     window/       # The window, its page and menu, and saving before it closes
     agent/        # The assistant's runs: the loop, tool rounds through the page, stop layers
-    model-providers/ # Ollama chat and model list, API key tests
+    model-providers/ # Ollama and OpenAI chat, Ollama's model list, API key tests
   preload/        # The only bridge to the renderer: window.mosaic
   shared/
     ipc/          # Channel names shared by main and preload

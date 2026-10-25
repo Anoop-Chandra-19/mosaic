@@ -82,7 +82,8 @@ Bun and npm both work (Node ≥ 22.18): `bun run <script>` = `npm run <script>`;
   keychain's API keys.
 - `bun run db:freeze` is a release step, not validation; see `src/main/CLAUDE.md`.
 - Don't add dependencies without asking. Only main-process runtime modules belong in
-  `dependencies` (`better-sqlite3`, `@napi-rs/keyring`); renderer modules go in
+  `dependencies` (`better-sqlite3`, `@napi-rs/keyring`, `openai`), pinned exactly when they
+  are a provider's SDK; renderer modules go in
   `devDependencies` because Vite bundles them.
 - After dependency changes, run `bun install`, then `npm install --package-lock-only`;
   include both lockfiles. No install scripts are needed; npm 11 skipped-script notices

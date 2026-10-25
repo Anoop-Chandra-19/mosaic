@@ -23,6 +23,20 @@ module.exports = {
       to: { path: '^src/(main|renderer|preload)/', pathNot: '^src/$1/' },
     },
     {
+      name: 'provider-sdks-only-in-model-providers',
+      severity: 'error',
+      // Requests to a model provider go through main's model-providers/, handed `net.fetch`;
+      // SDK types stay there too.
+      from: { path: '^src/', pathNot: '^src/main/model-providers/' },
+      to: { path: '(^|/)node_modules/(openai|@anthropic-ai/sdk|@google/genai|undici)/' },
+    },
+    {
+      name: 'no-node-http-outside-model-providers',
+      severity: 'error',
+      from: { path: '^src/', pathNot: '^src/main/model-providers/' },
+      to: { path: '^(node:)?(http|https|http2)$', dependencyTypes: ['core'] },
+    },
+    {
       name: 'shared-not-to-app-layers',
       severity: 'error',
       from: { path: '^src/shared/', pathNot: '(^|/)__tests__/' },

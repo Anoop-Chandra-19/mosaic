@@ -13,7 +13,7 @@ function request(replies: ScriptedReply[], overrides: Partial<ReplyRequest> = {}
   const waits: number[] = [];
   const options: ReplyRequest = {
     provider: model.provider,
-    request: { model: 'qwen3.5:9b', system: '', messages: [], tools: [] },
+    request: { model: 'qwen3.5:9b', system: '', messages: [], tools: [], cacheKey: 'c1' },
     signal: new AbortController().signal,
     onEvent: (event) => events.push(event),
     limits: RUN_LIMITS,

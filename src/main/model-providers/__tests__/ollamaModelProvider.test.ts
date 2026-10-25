@@ -26,6 +26,7 @@ function request(overrides: Partial<ModelRequest> = {}): ModelRequest {
     system: 'You help with resumes.',
     messages: [{ role: 'user', text: 'Tighten my summary.' }],
     tools: [TOOL],
+    cacheKey: 'mosaic-conversation-1',
     signal: new AbortController().signal,
     ...overrides,
   };

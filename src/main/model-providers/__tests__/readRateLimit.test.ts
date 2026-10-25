@@ -2,10 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { readRateLimit } from '../readRateLimit';
 
 const tooMany = (retryAfter?: string) =>
-  new Response('', {
-    status: 429,
-    headers: retryAfter === undefined ? {} : { 'Retry-After': retryAfter },
-  });
+  new Headers(retryAfter === undefined ? {} : { 'Retry-After': retryAfter });
 
 describe('readRateLimit', () => {
   it('reads a wait in seconds', () => {

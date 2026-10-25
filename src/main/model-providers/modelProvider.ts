@@ -26,6 +26,11 @@ export interface ModelRequest {
   system: string;
   messages: ModelMessage[];
   tools: ModelTool[];
+  /**
+   * The same for every request in a conversation: a provider that routes its prompt cache
+   * by a key sends them to the same cache.
+   */
+  cacheKey: string;
   signal: AbortSignal;
 }
 
