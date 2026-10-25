@@ -87,7 +87,7 @@ fictional data, such as opening an example resume or staging the assistant's sug
 without a provider, and go to any view: a tool's choices (which template, which version) are
 made one step at a time, and Ctrl+Enter takes the defaults. Recent (kept in
 `.dev-data/dev-tools.json`) runs the last one again with Enter. Each tool is one entry in
-`DEV_TOOLS` (`features/dev-tools/devTools.ts`).
+`DEV_TOOLS` (`features/dev-tools/tools/runDevTool.ts`).
 
 Replace all data with a profile swaps the development data for a generated set, the same
 every time: Fresh (erased, as on first run, keys included, as `dev:reset` does), Everyday

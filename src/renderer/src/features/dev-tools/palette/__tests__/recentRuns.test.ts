@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { addRecentRun, describeRunArgs } from '../recentDevRuns';
+import { addRecentRun, describeRunArgs } from '../recentRuns';
 
 describe('addRecentRun', () => {
   it('puts the run first, once, and keeps four', () => {

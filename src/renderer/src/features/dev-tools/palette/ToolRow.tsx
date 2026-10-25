@@ -4,7 +4,7 @@ import { AppSwitch, Chip, Text } from '@/components/ui-kit';
 import { ShortcutKeys } from '@/features/shortcuts/ShortcutKeys';
 import { cn } from '@/lib/utils';
 import type { DevSwitch } from '@shared/types/devTools';
-import type { DevTool } from '../devTool';
+import type { DevTool } from '../tools/devTool';
 import { useDevToolsStore } from '../devToolsStore';
 import type { MatchRange } from './searchDevTools';
 

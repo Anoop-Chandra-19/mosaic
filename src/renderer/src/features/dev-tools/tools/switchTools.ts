@@ -1,5 +1,5 @@
 import { DEV_SWITCHES, type DevSwitch, type DevToolArgs } from '@shared/types/devTools';
-import type { DevTool } from '../devTool';
+import type { DevTool } from './devTool';
 import { setDevSwitch, useDevToolsStore } from '../devToolsStore';
 import { DEV_SWITCH_WORDS } from '../switches/devSwitches';
 

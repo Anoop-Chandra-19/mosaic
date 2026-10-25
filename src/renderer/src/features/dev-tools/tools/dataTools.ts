@@ -5,7 +5,7 @@ import { useOverlayStore } from '@/stores/overlayStore';
 import { getResumeSnapshot } from '@/stores/resumeStore';
 import { useTemplateStore } from '@/stores/templateStore';
 import type { DevToolArgs } from '@shared/types/devTools';
-import type { DevTool, DevToolStep } from '../devTool';
+import type { DevTool, DevToolStep } from './devTool';
 import { loadProfile } from '../profiles/loadProfile';
 import { makeHistory, type HistorySpec } from '../profiles/makeHistory';
 import { PROFILE_NAMES, PROFILES, type ProfileName } from '../profiles/profiles';

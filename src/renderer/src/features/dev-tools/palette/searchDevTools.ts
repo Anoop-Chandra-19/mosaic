@@ -1,4 +1,4 @@
-import type { DevTool } from '../devTool';
+import type { DevTool } from '../tools/devTool';
 
 /** Where a matched word sits in a label: `[start, end)`. */
 export type MatchRange = [number, number];

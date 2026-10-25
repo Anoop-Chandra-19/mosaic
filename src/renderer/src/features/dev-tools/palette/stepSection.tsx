@@ -1,4 +1,4 @@
-import type { StepOption } from '../devTool';
+import type { StepOption } from '../tools/devTool';
 import { filterStepOptions, MAX_LISTED_OPTIONS } from './filterStepOptions';
 import type { PaletteSection } from './paletteSection';
 import { StepOptionRow } from './StepOptionRow';

@@ -17,7 +17,7 @@ import { readVersionHistory, useTemplateStore } from '@/stores/templateStore';
 import type { HistoryComparison, ReadPaneView } from '@/types/history';
 import type { SettingsSectionId } from '@/types/settings';
 import type { DevToolArgs } from '@shared/types/devTools';
-import type { DevTool, DevToolStep } from '../devTool';
+import type { DevTool, DevToolStep } from './devTool';
 
 /*
  * Tools that go to a view, one per kind of view, each taking its choices as steps. What they
