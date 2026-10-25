@@ -18,7 +18,7 @@ function setUp() {
   return { runs, handlers: createAgentHandlers(runs, noDb as () => Database) };
 }
 
-const page: RunPage = { sendEvent: () => {}, sendToolCall: () => {} };
+const page: RunPage = { sendEvent: () => {}, sendToolCall: () => {}, watchGone: () => () => {} };
 
 const answer = (result: unknown) => ({ ok: true, result });
 

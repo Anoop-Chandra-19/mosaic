@@ -2,6 +2,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { app, BrowserWindow, ipcMain, type IpcMainInvokeEvent, type WebContents } from 'electron';
 import { DEV_CHANNELS } from '@shared/ipc/appChannels';
+import { ALL_DEV_SWITCHES_OFF, type DevSwitches } from '@shared/types/devTools';
 import { databaseFile } from '../db/appDatabase';
 import { applyDevMotion } from '../dev/applyDevMotion';
 import { describeProcessMemory, type PageProcess } from '../dev/describeProcessMemory';
@@ -27,10 +28,18 @@ function reportMotionFailure(error: unknown): void {
 
 /**
  * Answer the preload's `dev` calls, from the app's own page only, and give every window the
- * motion switches kept on. Development builds only.
+ * motion switches kept on. Development builds only. Returns the switches as they stand, for
+ * main's own code to read at once.
  */
-export function registerDevHandlers(isAppFrame: (event: IpcMainInvokeEvent) => boolean): void {
+export function registerDevHandlers(
+  isAppFrame: (event: IpcMainInvokeEvent) => boolean
+): () => DevSwitches {
   const file = path.join(app.getPath('userData'), 'dev-tools.json');
+  let switchesNow = ALL_DEV_SWITCHES_OFF;
+  let hasSavedSwitches = false;
+  void readDevToolsFile(file).then(({ switches }) => {
+    if (!hasSavedSwitches) switchesNow = switches;
+  });
   const refuseOthers = (event: IpcMainInvokeEvent) => {
     if (!isAppFrame(event)) {
       throw new Error(`Refused developer tools from ${event.senderFrame?.url}`);
@@ -60,6 +69,8 @@ export function registerDevHandlers(isAppFrame: (event: IpcMainInvokeEvent) => b
     refuseOthers(event);
     const switches = parseDevSwitches(value);
     await updateDevToolsFile(file, { switches });
+    switchesNow = switches;
+    hasSavedSwitches = true;
     await applyDevMotion(event.sender, switches);
   });
   ipcMain.handle(DEV_CHANNELS.readReopenAddress, async (event) => {
@@ -80,4 +91,5 @@ export function registerDevHandlers(isAppFrame: (event: IpcMainInvokeEvent) => b
     const home = os.homedir();
     return folder.startsWith(home + path.sep) ? `~${folder.slice(home.length)}` : folder;
   });
+  return () => switchesNow;
 }

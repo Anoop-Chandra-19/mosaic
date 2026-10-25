@@ -6,7 +6,7 @@ import { openDatabase, type Database } from '../../db/connection';
 import { readConversationLog } from '../../db/conversations/messages';
 import { createTemplate } from '../../db/resumes/templates';
 import { setSetting } from '../../db/settings';
-import { createAgentRuns, type AgentRuns } from '../agentRuns';
+import { createAgentRuns, type AgentRuns, type RunPage } from '../agentRuns';
 import { RUN_LIMITS } from '../runLimits';
 import { callTool, DONE, hang, say, scriptedModel, type ScriptedReply } from './scriptedRun';
 
@@ -61,16 +61,22 @@ function setUp({ replies, answer, toolAnswerMs = RUN_LIMITS.toolAnswerMs }: Setu
   });
   let hearEnd = () => {};
   const ended = new Promise<void>((resolve) => (hearEnd = resolve));
-  const page = {
-    sendEvent: (envelope: AgentRunEnvelope) => {
+  const goneWatchers = new Set<() => void>();
+  const page: RunPage = {
+    sendEvent: (envelope) => {
       envelopes.push(envelope);
       if (envelope.event.type === 'runEnded') hearEnd();
     },
-    sendToolCall: (call: AgentToolCall) => queueMicrotask(() => answer?.(call, runs)),
+    sendToolCall: (call) => queueMicrotask(() => answer?.(call, runs)),
+    watchGone: (onGone) => {
+      goneWatchers.add(onGone);
+      return () => goneWatchers.delete(onGone);
+    },
   };
   const ask = () =>
     runs.start(page, { conversationId: null, text: 'Tighten my summary.', templateId });
-  return { runs, ask, ended, envelopes };
+  const reloadPage = () => goneWatchers.forEach((onGone) => onGone());
+  return { runs, ask, ended, envelopes, reloadPage, goneWatchers };
 }
 
 describe('a run started from the page', () => {
@@ -125,6 +131,17 @@ describe('a run started from the page', () => {
 
     expect(envelopes.at(-1)?.event).toEqual({ type: 'runEnded', stopReason: 'cancelled' });
     expect(ask()).toMatchObject({ ok: true, runId: 2 });
+  });
+
+  it('stops when its page reloads or closes, and stops watching the page once ended', async () => {
+    const { runs, ask, envelopes, reloadPage, goneWatchers } = setUp({ replies: [hang] });
+    ask();
+    expect(goneWatchers.size).toBe(1);
+    reloadPage();
+    await runs.stopAll();
+
+    expect(envelopes.at(-1)?.event).toEqual({ type: 'runEnded', stopReason: 'cancelled' });
+    expect(goneWatchers.size).toBe(0);
   });
 
   it('drops an answer that comes after the call’s deadline, and fails a call that threw', async () => {

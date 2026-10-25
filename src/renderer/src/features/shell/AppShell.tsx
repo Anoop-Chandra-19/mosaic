@@ -5,6 +5,7 @@ import { StatusBar } from './StatusBar';
 import { PreviewPanel } from './PreviewPanel';
 import { Toast } from './Toast';
 import { AgentPane } from '@/features/agent/AgentPane';
+import { useAnswerAgentToolCalls } from '@/features/agent/agentRunTools';
 import { DevTools } from '@/features/dev-tools/DevTools';
 import { SuggestionReview } from '@/features/suggestions/review/SuggestionReview';
 import { RestoreBackupDialog } from '@/features/backup/RestoreBackupDialog';
@@ -51,6 +52,7 @@ export function AppShell() {
   useAutoSnapshot();
   useKeyboardNavigationMark();
   useHelpMenu();
+  useAnswerAgentToolCalls();
   const hasTemplates = useTemplateStore((s) => s.templates.length > 0);
   const surface = useOverlayStore((s) => s.surface);
   const shownSurface = useShownSurface();

@@ -1,4 +1,10 @@
-import { ipcMain, net, type IpcMainInvokeEvent, type WebContents } from 'electron';
+import {
+  ipcMain,
+  net,
+  type IpcMainInvokeEvent,
+  type WebContents,
+  type WebContentsDidStartNavigationEventParams,
+} from 'electron';
 import type { Database } from 'better-sqlite3';
 import {
   AGENT_CHANNELS,
@@ -6,9 +12,29 @@ import {
   AGENT_TOOL_ANSWER,
   AGENT_TOOL_CALL,
 } from '@shared/ipc/agentChannels';
+import type { DevSwitches } from '@shared/types/devTools';
 import { createAgentRuns, type AgentRuns, type RunPage } from '../agent/agentRuns';
+import { createScriptedModelProvider } from '../dev/scriptedModelProvider';
 import { createModelProvider } from '../model-providers/createModelProvider';
 import { createAgentHandlers } from './agentHandlers';
+
+/** A reload or a page that crashed or closed, never a link within the page. */
+function watchPageGone(page: WebContents, onGone: () => void): () => void {
+  const onNavigation = ({
+    isMainFrame,
+    isSameDocument,
+  }: WebContentsDidStartNavigationEventParams) => {
+    if (isMainFrame && !isSameDocument) onGone();
+  };
+  page.on('did-start-navigation', onNavigation);
+  page.on('render-process-gone', onGone);
+  page.on('destroyed', onGone);
+  return () => {
+    page.off('did-start-navigation', onNavigation);
+    page.off('render-process-gone', onGone);
+    page.off('destroyed', onGone);
+  };
+}
 
 /** A run's events and calls go to the page that started it, while it is there. */
 function runPage(page: WebContents): RunPage {
@@ -18,16 +44,19 @@ function runPage(page: WebContents): RunPage {
   return {
     sendEvent: (envelope) => send(AGENT_EVENT, envelope),
     sendToolCall: (call) => send(AGENT_TOOL_CALL, call),
+    watchGone: (onGone) => watchPageGone(page, onGone),
   };
 }
 
 /**
  * Answer the preload's `agent` calls, from the app's own page only. Returns the runs, which
- * Erase stops before the database goes.
+ * Erase stops before the database goes. In development, the Scripted model switch
+ * (`readDevSwitches`) puts the scripted model in place of the chosen provider.
  */
 export function registerAgentHandlers(
   currentDb: () => Database | undefined,
-  isAppFrame: (event: IpcMainInvokeEvent) => boolean
+  isAppFrame: (event: IpcMainInvokeEvent) => boolean,
+  readDevSwitches: (() => DevSwitches) | null
 ): AgentRuns {
   const openDb = () => {
     const db = currentDb();
@@ -36,7 +65,10 @@ export function registerAgentHandlers(
   };
   const runs = createAgentRuns({
     currentDb: openDb,
-    createProvider: (choice) => createModelProvider(choice, { fetch: net.fetch }),
+    createProvider: (choice) =>
+      readDevSwitches?.().scriptedModel
+        ? createScriptedModelProvider()
+        : createModelProvider(choice, { fetch: net.fetch }),
   });
   const handlers = createAgentHandlers(runs, openDb);
   const handle = (

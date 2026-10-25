@@ -1,4 +1,5 @@
 import type { DevToolRun } from '@shared/types/devTools';
+import { ASK_AGENT_TOOL } from './tools/askAgentTool';
 import { DATA_TOOLS } from './tools/dataTools';
 import type { DevTool } from './devTool';
 import { CHECK_TOOLS } from './tools/checkTools';
@@ -11,7 +12,8 @@ import { SWITCH_TOOLS } from './tools/switchTools';
  * (`DevToolsWrench.tsx`) or Develop › Developer tools… opens `DevTools.tsx`, whose palette
  * (`palette/`) lists `DEV_TOOLS`, takes a tool's choices one step at a time (`devTool.ts`'s
  * steps) and runs it with `runDevTool`, keeping it in Recent (`recentDevRuns.ts`). The tools
- * are in `tools/`: fictional data (`dataTools.ts`), views by their address (`goToTools.ts`),
+ * are in `tools/`: fictional data (`dataTools.ts`), a run of the assistant
+ * (`askAgentTool.ts`), views by their address (`goToTools.ts`),
  * the memory check (`checkTools.ts`, reading `memory-check/`) and the switches
  * (`switchTools.ts`), which stay on across launches (`switches/`, kept by main). What shows
  * outside the palette, the switches on and a load under way, is in `devToolsStore.ts`, for
@@ -21,6 +23,7 @@ import { SWITCH_TOOLS } from './tools/switchTools';
 
 export const DEV_TOOLS: DevTool[] = [
   ...DATA_TOOLS,
+  ASK_AGENT_TOOL,
   ...GO_TO_TOOLS,
   ...ADDRESS_TOOLS,
   ...CHECK_TOOLS,

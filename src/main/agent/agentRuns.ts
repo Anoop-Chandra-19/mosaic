@@ -20,14 +20,19 @@ import { startAgentRun, type AgentAsk } from './startAgentRun';
 /*
  * The assistant's runs as the page sees them, and this module's entry: one at a time,
  * started with what Settings chose (`readModelChoice.ts`), run by `startAgentRun.ts`,
- * followed through numbered events, stopped on request, with the page running each tool
- * call (`ipcToolBridge.ts`). The IPC handlers and Erase use this file.
+ * followed through numbered events, stopped on request or when its page goes, with the page
+ * running each tool call (`ipcToolBridge.ts`). The IPC handlers and Erase use this file.
  */
 
 /** The page that started a run: where its events and tool calls go. */
 export interface RunPage {
   sendEvent(envelope: AgentRunEnvelope): void;
   sendToolCall(call: AgentToolCall): void;
+  /**
+   * Calls `onGone` if the page reloads or closes, since a run's tools live in it; returns
+   * the call that stops watching.
+   */
+  watchGone(onGone: () => void): () => void;
 }
 
 export interface AgentRunsNeeds {
@@ -87,6 +92,7 @@ export function createAgentRuns(needs: AgentRunsNeeds): AgentRuns {
       limits: needs.limits,
       wait: needs.wait,
     });
+    const stopWatchingPage = page.watchGone(() => stop.abort());
     const ended = run.ended
       .then(
         () => {},
@@ -97,6 +103,7 @@ export function createAgentRuns(needs: AgentRunsNeeds): AgentRuns {
         }
       )
       .finally(() => {
+        stopWatchingPage();
         bridge.close();
         active = null;
       });

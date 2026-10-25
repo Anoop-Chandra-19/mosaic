@@ -101,10 +101,16 @@ The memory check lists what each process holds (Main, Window, GPU, utilities) as
 reports it, with the change since the last check and Copy as text. Switches stay on across
 launches until turned off, named in the window's title, with a dot on the wrench: Slow
 motion (every animation 10 times slower) and Reduced motion, which main applies through the
-window's debugger; Outline measured boxes, the boxes pagination measures on the page; and
-Reopen this view at launch, which goes back to the view each launch closed on. Both are kept
-in `.dev-data/dev-tools.json`. A spec turns one on with
+window's debugger; Outline measured boxes, the boxes pagination measures on the page;
+Reopen this view at launch, which goes back to the view each launch closed on; and Scripted
+model, which runs the assistant on a script in main (`src/main/dev/scriptedModelProvider.ts`)
+in place of the chosen provider: it reads the resume, suggests two changes and finishes. The
+switches and Recent are kept in `.dev-data/dev-tools.json`. A spec turns one on with
 `runDevTool(page, 'slowMotion', { isOn: true })`.
+
+Ask the assistant… (Data) starts a run on the open resume with the text you type, turning
+the assistant on, and its suggestions come in for review; a toast says how the run ended.
+It stands in for the assistant's pane until the pane is built.
 
 Every view has an address, such as `history / Tailored for Kestrel / v12 vs v11 / changes`
 (`features/view-address/`). The palette shows where you are with Copy (Ctrl+Shift+C), and a
