@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import type { MessageBody } from '@shared/types/agentConversation';
 import { openDatabase, type Database } from '../../connection';
 import { createConversation } from '../conversations';
-import { appendMessage, readMessagePage, readToolResult } from '../messages';
+import { appendMessage, readConversationLog, readMessagePage, readToolResult } from '../messages';
 
 let db: Database;
 let conversationId: number;
@@ -106,6 +106,31 @@ describe('readMessagePage', () => {
       content: 'No such bullet.',
       isError: true,
     });
+  });
+
+  it('gives thinking its duration only, keeping the rest for the next request', () => {
+    const reasoning = {
+      type: 'reasoning',
+      text: 'The summary repeats the first bullet.',
+      durationMs: 3400,
+      providerState: { type: 'reasoning', encrypted_content: 'gAAAAB-opaque' },
+    } as const;
+    const body: MessageBody = {
+      type: 'assistant',
+      content: [reasoning, { type: 'text', text: 'Tightened it.' }],
+      finish: 'complete',
+    };
+    appendMessage(db, { conversationId, runId: null, body });
+
+    expect(readMessagePage(db, conversationId, { limit: 1 })[0].body).toEqual({
+      type: 'assistant',
+      content: [
+        { type: 'reasoning', durationMs: 3400 },
+        { type: 'text', text: 'Tightened it.' },
+      ],
+      finish: 'complete',
+    });
+    expect(readConversationLog(db, conversationId)[0].body).toEqual(body);
   });
 });
 

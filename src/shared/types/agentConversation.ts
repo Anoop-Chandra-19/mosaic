@@ -86,12 +86,18 @@ export type MessageBody =
   | TemplateSwitchedMessageBody
   | RunStoppedMessageBody;
 
+/** Thinking shows how long, never what: its text and provider state stay in main. */
+export type TranscriptReplyPart =
+  | Exclude<ModelReplyPart, { type: 'reasoning' }>
+  | { type: 'reasoning'; durationMs: number };
+
 /**
  * A body as the transcript reads it. Tool results come without their content, which can
  * be large and shows only when the Trace view opens one.
  */
 export type TranscriptMessageBody =
-  | Exclude<MessageBody, ToolResultsMessageBody>
+  | Exclude<MessageBody, AssistantMessageBody | ToolResultsMessageBody>
+  | (Omit<AssistantMessageBody, 'content'> & { content: TranscriptReplyPart[] })
   | { type: 'toolResults'; results: Omit<ToolResult, 'content'>[] };
 
 export interface TranscriptMessage {
