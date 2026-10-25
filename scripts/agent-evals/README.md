@@ -30,6 +30,13 @@ node scripts/agent-evals/runBulletEvals.ts ollama openai:gpt-6-luna [--think] [-
 # 25 instructions that name the words to change, with rewrite only, and with rewrite plus replace everywhere
 node scripts/agent-evals/runTargetedEvals.ts anthropic gemini [--think] [--literal]
 
+# 30 requests that add bullets, lines and sections, move things, or reach lines, entries and
+# sections, once per shape of the tools (one-call, builder, builder-move-only), N times each
+node scripts/agent-evals/runAddEvals.ts openai:gpt-6-luna ollama [--think] [--only builder] [--repeat 2]
+
+# The add eval's own right answers through its scoring, with no model
+node scripts/agent-evals/runAddEvals.ts --dry
+
 # Tables from everything in results/
 node scripts/agent-evals/summarizeEvalResults.ts
 ```
@@ -45,3 +52,11 @@ short calls per model; thinking multiplies the time and output tokens several ti
 - **Targeted evals** (`fixtures/targetedCases.ts`): whether the bullet ends up exactly as
   asked, including swaps that need a neighbouring word changed ("Assisted in the planning"
   → "Led the planning").
+- **Add evals** (`fixtures/addCases.ts`): whether the resume ends up as asked once every
+  suggestion is kept: which text changed, what was added and where, what left the page or
+  moved, and nothing else. Run with every propose tool offered, and counted per shape of
+  the tools (a section brought whole or filled after, moving by a whole order or one
+  thing), plus how many calls were refused. What models get wrong is feedback on the tool
+  definitions, never on single cases: `fixtures/addHeldOutCases.ts` is never tuned
+  against and is summed apart, so a gain on the main set alone means the tuning fit the
+  test.

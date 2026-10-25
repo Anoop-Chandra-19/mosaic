@@ -100,4 +100,38 @@ for (const file of files.filter((f) => f.startsWith('targeted-'))) {
   );
 }
 
+interface AddRow {
+  set: string;
+  caseNumber: number;
+  shape: string;
+  answers: string;
+  isRight: boolean;
+  refusals: number;
+  repeats: number;
+}
+
+// Held-out cases are never tuned against, so they stay a row of their own.
+const addFiles = files.filter((f) => f.startsWith('add-'));
+if (addFiles.length) {
+  lines.push('');
+  lines.push('| Model | Tools | Cases | Right | Wrong | Refused | Repeats |');
+  lines.push('| --- | --- | --- | --- | --- | --- | --- |');
+}
+for (const file of addFiles) {
+  const rows = readRows<AddRow>(file);
+  const label = file.replace(/^add-/, '').replace(/\.json$/, '');
+  const variants = [...new Set(rows.map((r) => `${r.shape}/${r.answers}`))];
+  for (const variant of variants) {
+    for (const set of [...new Set(rows.map((r) => r.set))]) {
+      const setRows = rows.filter((r) => `${r.shape}/${r.answers}` === variant && r.set === set);
+      const wrong = setRows.filter((r) => !r.isRight).map((r) => `#${r.caseNumber}`);
+      const refusals = setRows.reduce((sum, r) => sum + r.refusals, 0);
+      const repeats = setRows.reduce((sum, r) => sum + r.repeats, 0);
+      lines.push(
+        `| ${label} | ${variant} | ${set} | ${setRows.length - wrong.length}/${setRows.length} | ${wrong.join(' ') || '–'} | ${refusals} | ${repeats} |`
+      );
+    }
+  }
+}
+
 console.log(lines.join('\n'));
