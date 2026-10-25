@@ -16,6 +16,7 @@ import type { DevSwitches } from '@shared/types/devTools';
 import { createAgentRuns, type AgentRuns, type RunPage } from '../agent/agentRuns';
 import { createScriptedModelProvider } from '../dev/scriptedModelProvider';
 import { createModelProvider } from '../model-providers/createModelProvider';
+import type { ApiKeys } from '../secrets/apiKeys';
 import { createAgentHandlers } from './agentHandlers';
 
 /** A reload or a page that crashed or closed, never a link within the page. */
@@ -55,6 +56,7 @@ function runPage(page: WebContents): RunPage {
  */
 export function registerAgentHandlers(
   currentDb: () => Database | undefined,
+  apiKeys: ApiKeys,
   isAppFrame: (event: IpcMainInvokeEvent) => boolean,
   readDevSwitches: (() => DevSwitches) | null
 ): AgentRuns {
@@ -65,10 +67,10 @@ export function registerAgentHandlers(
   };
   const runs = createAgentRuns({
     currentDb: openDb,
-    createProvider: (choice) =>
+    createProvider: async (choice) =>
       readDevSwitches?.().scriptedModel
-        ? createScriptedModelProvider()
-        : createModelProvider(choice, { fetch: net.fetch }),
+        ? { ok: true, modelProvider: createScriptedModelProvider() }
+        : createModelProvider(choice, { fetch: net.fetch, readApiKey: apiKeys.read }),
   });
   const handlers = createAgentHandlers(runs, openDb);
   const handle = (

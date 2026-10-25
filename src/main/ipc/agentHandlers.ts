@@ -23,8 +23,8 @@ const MAX_TOOL_ANSWER_LENGTH = 1_000_000;
 
 /** Every argument arrives unchecked. */
 export interface AgentHandlers {
-  start(page: RunPage, request: unknown): AgentStart;
-  carryOn(page: RunPage, request: unknown): AgentStart;
+  start(page: RunPage, request: unknown): Promise<AgentStart>;
+  carryOn(page: RunPage, request: unknown): Promise<AgentStart>;
   stop(runId: unknown): void;
   readMessages(conversationId: unknown, page: unknown): TranscriptMessage[];
   answerTool(runId: unknown, callId: unknown, answer: unknown): void;

@@ -20,10 +20,14 @@ export interface AgentCarryOnRequest {
 }
 
 /**
- * `assistantOff`: the assistant is off in Settings. `runInProgress`: one run at a time.
- * `providerNotSupported`: Settings names a provider this build can't run yet.
+ * `providerNotSupported`: Settings names a provider this build can't run yet. `noApiKey`:
+ * no key is saved for it. `keychainRefused`: the keychain holds the key but wouldn't give
+ * it back (locked, or its prompt was turned down).
  */
-export type AgentStartRefusal = 'assistantOff' | 'runInProgress' | 'providerNotSupported';
+export type ModelProviderRefusal = 'providerNotSupported' | 'noApiKey' | 'keychainRefused';
+
+/** `assistantOff`: the assistant is off in Settings. `runInProgress`: one run at a time. */
+export type AgentStartRefusal = 'assistantOff' | 'runInProgress' | ModelProviderRefusal;
 
 export type AgentStart =
   | { ok: true; conversationId: number; runId: number }

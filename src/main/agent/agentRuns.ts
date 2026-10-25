@@ -3,13 +3,14 @@ import type {
   AgentCarryOnRequest,
   AgentRunEnvelope,
   AgentStart,
+  AgentStartRefusal,
   AgentStartRequest,
   AgentToolAnswer,
   AgentToolCall,
 } from '@shared/types/agentBridge';
 import type { AgentRunEvent } from '@shared/types/agentRunEvents';
 import type { ConversationRun } from '../db/conversations/runs';
-import type { ModelChoice } from '../model-providers/createModelProvider';
+import type { ModelChoice, ModelProviderOpening } from '../model-providers/createModelProvider';
 import type { ModelProvider } from '../model-providers/modelProvider';
 import type { Wait } from './abortableWaits';
 import { createIpcToolBridge, type IpcToolBridge } from './ipcToolBridge';
@@ -38,17 +39,20 @@ export interface RunPage {
 export interface AgentRunsNeeds {
   /** Asked at each start: Erase swaps the connection for a fresh file. */
   currentDb: () => Database;
-  createProvider: (choice: ModelChoice) => ModelProvider | null;
+  createProvider: (choice: ModelChoice) => Promise<ModelProviderOpening>;
   limits?: RunLimitSettings;
   wait?: Wait;
 }
 
 export interface AgentRuns {
-  start(page: RunPage, request: AgentStartRequest): AgentStart;
-  carryOn(page: RunPage, request: AgentCarryOnRequest): AgentStart;
+  start(page: RunPage, request: AgentStartRequest): Promise<AgentStart>;
+  carryOn(page: RunPage, request: AgentCarryOnRequest): Promise<AgentStart>;
   stop(runId: number): void;
   answerTool(runId: number, callId: string, answer: AgentToolAnswer): void;
-  /** Stops the run if one is going, and settles once its end is stored. */
+  /**
+   * Stops the run if one is going, and settles once its end is stored. A start still
+   * waiting for its provider is refused.
+   */
   stopAll(): Promise<void>;
 }
 
@@ -59,6 +63,22 @@ interface ActiveRun {
   ended: Promise<void>;
 }
 
+/** A start waiting for its provider, which may wait on a keychain prompt. */
+interface PendingStart {
+  isCancelled: boolean;
+  opened: Promise<ModelProviderOpening>;
+}
+
+interface RunSetup {
+  db: Database;
+  choice: ModelChoice;
+  modelProvider: ModelProvider;
+  ask: AgentAsk;
+  templateId: string | null;
+}
+
+const refused = (reason: AgentStartRefusal): AgentStart => ({ ok: false, reason });
+
 /** Numbers each event within its run, from 1. */
 function numberEvents(page: RunPage) {
   let seq = 0;
@@ -68,15 +88,30 @@ function numberEvents(page: RunPage) {
 
 export function createAgentRuns(needs: AgentRunsNeeds): AgentRuns {
   let active: ActiveRun | null = null;
+  let pending: PendingStart | null = null;
 
-  function begin(page: RunPage, ask: AgentAsk, templateId: string | null): AgentStart {
-    if (active) return { ok: false, reason: 'runInProgress' };
+  async function begin(
+    page: RunPage,
+    ask: AgentAsk,
+    templateId: string | null
+  ): Promise<AgentStart> {
+    if (active || pending) return refused('runInProgress');
     const db = needs.currentDb();
     const choice = readModelChoice(db);
-    if (!choice) return { ok: false, reason: 'assistantOff' };
-    const modelProvider = needs.createProvider(choice);
-    if (!modelProvider) return { ok: false, reason: 'providerNotSupported' };
+    if (!choice) return refused('assistantOff');
+    const start: PendingStart = { isCancelled: false, opened: needs.createProvider(choice) };
+    pending = start;
+    const opened = await start.opened.finally(() => (pending = null));
+    // Erase came while it waited, and leaves the assistant off.
+    if (start.isCancelled) return refused('assistantOff');
+    if (!opened.ok) return refused(opened.reason);
+    return run(page, { db, choice, modelProvider: opened.modelProvider, ask, templateId });
+  }
 
+  function run(
+    page: RunPage,
+    { db, choice, modelProvider, ask, templateId }: RunSetup
+  ): AgentStart {
     const stop = new AbortController();
     const bridge = createIpcToolBridge((call) => page.sendToolCall(call));
     const onEvent = numberEvents(page);
@@ -121,6 +156,10 @@ export function createAgentRuns(needs: AgentRunsNeeds): AgentRuns {
     stop: (runId) => activeRun(runId)?.stop.abort(),
     answerTool: (runId, callId, answer) => activeRun(runId)?.bridge.answer(callId, answer),
     stopAll: async () => {
+      if (pending) {
+        pending.isCancelled = true;
+        await pending.opened.catch(() => {});
+      }
       active?.stop.abort();
       await active?.ended;
     },

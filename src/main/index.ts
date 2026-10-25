@@ -42,7 +42,7 @@ if (!app.requestSingleInstanceLock()) {
     registerModelProviderHandlers(isAppFrame);
     registerSecretsHandlers(apiKeys, isAppFrame);
     const readDevSwitches = app.isPackaged ? null : registerDevHandlers(isAppFrame);
-    const agentRuns = registerAgentHandlers(getAppDatabase, isAppFrame, readDevSwitches);
+    const agentRuns = registerAgentHandlers(getAppDatabase, apiKeys, isAppFrame, readDevSwitches);
     registerEraseHandler(apiKeys, agentRuns, isAppFrame);
     setAppMenu();
     openAppWindow();

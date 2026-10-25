@@ -1,4 +1,4 @@
-import OpenAI, { APIConnectionError, APIError, type ClientOptions } from 'openai';
+import OpenAI, { APIConnectionError, APIError } from 'openai';
 import type {
   FunctionTool,
   Response as OpenAiResponse,
@@ -33,7 +33,8 @@ const OPENAI_URL = 'https://api.openai.com/v1';
 /** Until the reply starts; once it streams, the loop's stall check watches it. */
 const REQUEST_TIMEOUT_MS = 60_000;
 
-export type OpenAiFetch = NonNullable<ClientOptions['fetch']>;
+/** Electron's `net.fetch` takes no `URL` objects; the SDK only ever passes a string. */
+export type OpenAiFetch = (url: string, init?: RequestInit) => Promise<Response>;
 
 export interface OpenAiProviderOptions {
   apiKey: string;
@@ -68,7 +69,7 @@ export function createOpenAiModelProvider({
   // Settings decides where requests go and with which key.
   const client = new OpenAI({
     apiKey,
-    fetch,
+    fetch: (url, init) => fetch(String(url), init),
     baseURL: OPENAI_URL,
     organization: null,
     project: null,

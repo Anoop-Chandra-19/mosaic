@@ -48,14 +48,21 @@ interface Setup {
   /** How the page answers each call; left out, it never does. */
   answer?: (call: AgentToolCall, runs: AgentRuns) => void;
   toolAnswerMs?: number;
+  /** Held until the test lets it go, as a keychain prompt would hold it. */
+  providerOpened?: Promise<void>;
 }
 
-function setUp({ replies, answer, toolAnswerMs = RUN_LIMITS.toolAnswerMs }: Setup) {
+function setUp({ replies, answer, toolAnswerMs = RUN_LIMITS.toolAnswerMs, providerOpened }: Setup) {
   const model = scriptedModel(replies);
   const envelopes: AgentRunEnvelope[] = [];
   const runs = createAgentRuns({
     currentDb: () => db,
-    createProvider: (choice) => (choice.provider === 'ollama' ? model.provider : null),
+    createProvider: async (choice) => {
+      await providerOpened;
+      return choice.provider === 'ollama'
+        ? { ok: true, modelProvider: model.provider }
+        : { ok: false, reason: 'providerNotSupported' };
+    },
     limits: { ...RUN_LIMITS, toolAnswerMs },
     wait: async () => {},
   });
@@ -89,7 +96,7 @@ describe('a run started from the page', () => {
       answer: (call, runs) => runs.answerTool(call.runId, call.callId, answered('Name: Ada')),
     });
 
-    const start = ask();
+    const start = await ask();
     expect(start).toEqual({ ok: true, conversationId: 1, runId: 1 });
     await ended;
 
@@ -110,32 +117,47 @@ describe('a run started from the page', () => {
     ]);
   });
 
-  it('refuses a start while the assistant is off, its provider isn’t built, or a run is going', () => {
+  it('refuses a start while the assistant is off, its provider refuses, or a run is starting or going', async () => {
     const { ask } = setUp({ replies: [hang] });
     storeSettings({ enabled: false });
-    expect(ask()).toEqual({ ok: false, reason: 'assistantOff' });
+    expect(await ask()).toEqual({ ok: false, reason: 'assistantOff' });
     storeSettings({ provider: 'openai' });
-    expect(ask()).toEqual({ ok: false, reason: 'providerNotSupported' });
+    expect(await ask()).toEqual({ ok: false, reason: 'providerNotSupported' });
     storeSettings({});
-    expect(ask()).toMatchObject({ ok: true });
-    expect(ask()).toEqual({ ok: false, reason: 'runInProgress' });
+    const first = ask();
+    expect(await ask()).toEqual({ ok: false, reason: 'runInProgress' });
+    expect(await first).toMatchObject({ ok: true });
+    expect(await ask()).toEqual({ ok: false, reason: 'runInProgress' });
+  });
+
+  it('refuses a start still waiting for its provider when Erase stops everything', async () => {
+    let openProvider = () => {};
+    const providerOpened = new Promise<void>((resolve) => (openProvider = resolve));
+    const { runs, ask, envelopes } = setUp({ replies: [hang], providerOpened });
+    const start = ask();
+    const stopped = runs.stopAll();
+    openProvider();
+
+    expect(await start).toEqual({ ok: false, reason: 'assistantOff' });
+    await stopped;
+    expect(envelopes).toEqual([]);
   });
 
   it('stops on Stop, and takes the next start once the end is stored', async () => {
     const { runs, ask, envelopes } = setUp({ replies: [hang, [say('Hi.'), DONE]] });
-    const start = ask();
+    const start = await ask();
     if (!start.ok) throw new Error('did not start');
     runs.stop(start.runId + 1);
     runs.stop(start.runId);
     await runs.stopAll();
 
     expect(envelopes.at(-1)?.event).toEqual({ type: 'runEnded', stopReason: 'cancelled' });
-    expect(ask()).toMatchObject({ ok: true, runId: 2 });
+    expect(await ask()).toMatchObject({ ok: true, runId: 2 });
   });
 
   it('stops when its page reloads or closes, and stops watching the page once ended', async () => {
     const { runs, ask, envelopes, reloadPage, goneWatchers } = setUp({ replies: [hang] });
-    ask();
+    await ask();
     expect(goneWatchers.size).toBe(1);
     reloadPage();
     await runs.stopAll();
@@ -158,7 +180,7 @@ describe('a run started from the page', () => {
       },
       toolAnswerMs: 5,
     });
-    ask();
+    await ask();
     await ended;
     runs.answerTool(late[0].runId, late[0].callId, answered('Too late.'));
 
@@ -178,7 +200,7 @@ describe('a run started from the page', () => {
   it('tells the page a run ended when a fault in Mosaic ended it', async () => {
     const { ask, ended, envelopes } = setUp({ replies: [] });
     const report = vi.spyOn(console, 'error').mockImplementation(() => {});
-    ask();
+    await ask();
     await ended;
     expect(envelopes.at(-1)?.event).toEqual({ type: 'runEnded', stopReason: 'appFault' });
     expect(report).toHaveBeenCalledOnce();
