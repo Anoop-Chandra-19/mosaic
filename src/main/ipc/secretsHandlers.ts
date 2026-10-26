@@ -42,27 +42,13 @@ function apiKey(value: unknown): string {
   return key;
 }
 
-function modelName(value: unknown): string {
-  const model = typeof value === 'string' ? value.trim() : '';
-  if (model === '' || model.length > 200) throw new Error('model must be text of 1–200 characters');
-  return model;
-}
-
 function saveKeyOptions(value: unknown): SaveKeyOptions {
   const options = value as Partial<Record<keyof SaveKeyOptions, unknown>> | null;
   if (typeof options?.check !== 'boolean' || typeof options.forgetOnClose !== 'boolean') {
     throw new Error('options must say whether to check the key and whether to forget it');
   }
-  return {
-    model: modelName(options.model),
-    check: options.check,
-    forgetOnClose: options.forgetOnClose,
-  };
+  return { check: options.check, forgetOnClose: options.forgetOnClose };
 }
-
-/** Gemini's own names start `models/`; its list leaves that off. */
-const isModelListed = (models: ProviderModels, model: string) =>
-  models.models.includes(model.replace(/^models\//, ''));
 
 type SavedKeyRead =
   | { ok: true; key: string; savedAt: number }
@@ -106,10 +92,10 @@ export function createSecretsHandlers(
     save: async (provider, key, options): Promise<KeyCheck> => {
       const checked = keyedProvider(provider);
       const secret = apiKey(key);
-      const { model, check, forgetOnClose } = saveKeyOptions(options);
+      const { check, forgetOnClose } = saveKeyOptions(options);
       if (!check) {
         const status = await keys.save(checked, secret, { forgetOnClose, checked: false });
-        return { ok: true, status, modelFound: null };
+        return { ok: true, status };
       }
       // A key already saved stays in place until this one passes.
       const test = await testKey(checked, secret);
@@ -117,19 +103,18 @@ export function createSecretsHandlers(
       const status = await keys.save(checked, secret, { forgetOnClose, checked: true });
       const savedAt = status.saved[checked]?.savedAt;
       if (savedAt !== undefined) keepList(checked, savedAt, test);
-      return { ok: true, status, modelFound: isModelListed(test, model) };
+      return { ok: true, status };
     },
 
-    check: async (provider, model): Promise<KeyCheck> => {
+    check: async (provider): Promise<KeyCheck> => {
       const checked = keyedProvider(provider);
-      const name = modelName(model);
       const saved = await readSavedKey(checked);
       if (!saved.ok) return saved;
       const test = await testKey(checked, saved.key);
       if (!test.ok) return test;
       keepList(checked, saved.savedAt, test);
       const status = await keys.markChecked(checked, saved.savedAt);
-      return { ok: true, status, modelFound: isModelListed(test, name) };
+      return { ok: true, status };
     },
 
     listModels: async (provider, refresh): Promise<ModelListing> => {

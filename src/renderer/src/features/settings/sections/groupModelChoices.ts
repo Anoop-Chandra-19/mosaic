@@ -73,6 +73,10 @@ export function groupModelChoices({
   return groups;
 }
 
+/** Whether the key's list has the model. Gemini's own names start `models/`; its list leaves that off. */
+export const isModelListed = (listed: string[], model: string) =>
+  listed.includes(model.replace(/^models\//, ''));
+
 /** Where the query falls in a name, to mark it; null when it doesn't. */
 export function findQueryInName(
   model: string,

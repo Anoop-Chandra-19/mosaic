@@ -6,7 +6,7 @@ import { createSecretsHandlers, type SecretsHandlers } from '../secretsHandlers'
 
 const SECRET = 'sk-ant-secret-value';
 const MODEL = 'claude-sonnet-5';
-const CHECK = { model: MODEL, check: true, forgetOnClose: false };
+const CHECK = { check: true, forgetOnClose: false };
 
 let os: ReturnType<typeof fakeKeyring>;
 let tested: { provider: string; key: string }[];
@@ -42,8 +42,7 @@ describe('secrets handlers', () => {
       ['save', 'anthropic', 42, CHECK],
       ['save', 'anthropic', SECRET, null],
       ['save', 'anthropic', SECRET, { ...CHECK, check: 'yes' }],
-      ['save', 'anthropic', SECRET, { ...CHECK, model: '' }],
-      ['check', 'anthropic', 7],
+      ['check', 'acme'],
       ['listModels', 'ollama', false],
       ['listModels', 'anthropic', 'yes'],
       ['remove', 'ollama'],
@@ -67,7 +66,6 @@ describe('secrets handlers', () => {
         keychain: 'available',
         saved: { anthropic: { where: 'keychain', savedAt: 1_000, checkedAt: 1_000 } },
       },
-      modelFound: true,
     });
     expect(tested).toEqual([{ provider: 'anthropic', key: SECRET }]);
     expect(os.entries.get('anthropic')).toBe(SECRET);
@@ -84,7 +82,7 @@ describe('secrets handlers', () => {
   it('save without checking only when asked', async () => {
     const saved = await handlers.save('openai', 'sk-offline', { ...CHECK, check: false });
 
-    expect(saved).toMatchObject({ ok: true, modelFound: null });
+    expect(saved).toMatchObject({ ok: true });
     expect(tested).toEqual([]);
     expect(await handlers.status()).toMatchObject({ saved: { openai: { checkedAt: null } } });
   });
@@ -93,29 +91,19 @@ describe('secrets handlers', () => {
     await handlers.save('openai', 'sk-saved', { ...CHECK, check: false });
 
     answer = { ok: false, reason: 'unreachable' };
-    expect(await handlers.check('openai', MODEL)).toEqual(answer);
+    expect(await handlers.check('openai')).toEqual(answer);
     expect(await handlers.status()).toMatchObject({ saved: { openai: { checkedAt: null } } });
 
     answer = { ok: true, models: ['gpt-6-luna'], hiddenCount: 4 };
-    expect(await handlers.check('openai', ` ${MODEL} `)).toMatchObject({
+    expect(await handlers.check('openai')).toMatchObject({
       ok: true,
       status: { saved: { openai: { checkedAt: 1_000 } } },
-      modelFound: false,
     });
     expect(tested.at(-1)).toEqual({ provider: 'openai', key: 'sk-saved' });
   });
 
-  it('find Gemini’s model by either of its names', async () => {
-    answer = { ok: true, models: ['gemini-3.8-flash'], hiddenCount: 0 };
-    const saved = await handlers.save('gemini', 'AIza-key', {
-      ...CHECK,
-      model: 'models/gemini-3.8-flash',
-    });
-    expect(saved).toMatchObject({ ok: true, modelFound: true });
-  });
-
   it('answer a check with no key to check, or one the keychain keeps to itself', async () => {
-    expect(await handlers.check('gemini', 'gemini-3.8-flash')).toEqual({
+    expect(await handlers.check('gemini')).toEqual({
       ok: false,
       reason: 'no-key',
     });
@@ -123,7 +111,7 @@ describe('secrets handlers', () => {
     await handlers.save('anthropic', SECRET, CHECK);
     tested = [];
     os.refusing.add('get');
-    expect(await handlers.check('anthropic', MODEL)).toEqual({ ok: false, reason: 'keychain' });
+    expect(await handlers.check('anthropic')).toEqual({ ok: false, reason: 'keychain' });
     expect(tested).toEqual([]);
   });
 });

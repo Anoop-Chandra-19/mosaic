@@ -74,7 +74,7 @@ const secrets: MosaicSecrets = {
   status: () => ipcRenderer.invoke(SECRETS_CHANNELS.status),
   save: (provider, key, options) =>
     ipcRenderer.invoke(SECRETS_CHANNELS.save, provider, key, options),
-  check: (provider, model) => ipcRenderer.invoke(SECRETS_CHANNELS.check, provider, model),
+  check: (provider) => ipcRenderer.invoke(SECRETS_CHANNELS.check, provider),
   listModels: (provider, refresh) =>
     ipcRenderer.invoke(SECRETS_CHANNELS.listModels, provider, refresh),
   remove: (provider) => ipcRenderer.invoke(SECRETS_CHANNELS.remove, provider),

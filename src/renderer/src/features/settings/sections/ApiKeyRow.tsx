@@ -14,8 +14,6 @@ interface ApiKeyRowProps {
   provider: KeyedProvider;
   status: SecretsStatus | null;
   loadFailed: boolean;
-  /** The model in settings for a provider, which a check looks for in the key's list. */
-  modelFor: (provider: KeyedProvider) => string;
   onStatus: (status: SecretsStatus) => void;
   /** A key passed a check, or was saved without one. */
   onKeyChecked: (provider: KeyedProvider) => void;
@@ -30,7 +28,6 @@ export function ApiKeyRow({
   provider,
   status,
   loadFailed,
-  modelFor,
   onStatus,
   onKeyChecked,
 }: ApiKeyRowProps) {
@@ -91,8 +88,7 @@ export function ApiKeyRow({
     }
     void runCheck(
       target,
-      () =>
-        window.mosaic.secrets.save(target, key, { model: modelFor(target), check, forgetOnClose }),
+      () => window.mosaic.secrets.save(target, key, { check, forgetOnClose }),
       'Could not save the key.'
     );
   };
@@ -100,7 +96,7 @@ export function ApiKeyRow({
   const checkSavedKey = () =>
     void runCheck(
       provider,
-      () => window.mosaic.secrets.check(provider, modelFor(provider)),
+      () => window.mosaic.secrets.check(provider),
       'Could not check the key.'
     );
 

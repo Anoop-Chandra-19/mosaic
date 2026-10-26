@@ -1,6 +1,7 @@
 import type { KeyedProvider, SecretsStatus } from '@shared/types/secrets';
 import { SettingRow } from '../SettingRow';
 import { KeyMessageLine } from './ApiKeyMessage';
+import { isModelListed } from './groupModelChoices';
 import { readKeyState } from './apiKeyWords';
 import { MODEL_PROVIDER_OPTION_BY_ID } from './modelProviderOptions';
 import { ModelCombobox } from './ModelCombobox';
@@ -32,7 +33,7 @@ export function KeyedModelRow({
   const keyState = readKeyState(provider, status);
   const modelList = useModelList(active, provider, status?.saved[provider]);
   const { listing } = modelList;
-  const isModelUnlisted = listing?.ok === true && !listing.list.models.includes(model);
+  const isModelUnlisted = listing?.ok === true && !isModelListed(listing.list.models, model);
   const hasCheckedKey = keyState === 'saved' || keyState === 'savedForSession';
 
   return (
