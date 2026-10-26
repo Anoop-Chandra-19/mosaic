@@ -5,7 +5,9 @@ import { KeychainError } from '../secrets/apiKeys';
 import type { ModelProvider } from './modelProvider';
 import { createOllamaModelProvider } from './ollamaModelProvider';
 import type { OllamaFetch } from './ollamaModels';
-import { createOpenAiModelProvider, type OpenAiFetch } from './openAiModelProvider';
+import type { OpenAiFetch } from './openAiClient';
+import { createOpenAiModelProvider } from './openAiModelProvider';
+import { createOpenRouterModelProvider } from './openRouterModelProvider';
 
 /** The provider and model a run uses, as the user chose them in Settings. */
 export interface ModelChoice {
@@ -35,7 +37,7 @@ type CreateKeyedProvider = (apiKey: string, fetch: OpenAiFetch) => ModelProvider
 /** Null for a provider whose adapter this build doesn't have yet. */
 const CREATE_KEYED_PROVIDER: Record<KeyedProvider, CreateKeyedProvider | null> = {
   openai: (apiKey, fetch) => createOpenAiModelProvider({ apiKey, fetch }),
-  openrouter: null,
+  openrouter: (apiKey, fetch) => createOpenRouterModelProvider({ apiKey, fetch }),
   anthropic: null,
   gemini: null,
 };

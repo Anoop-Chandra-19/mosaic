@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import type { ModelStreamEvent } from '@shared/types/modelReply';
 import type { ModelRequest } from '../modelProvider';
-import { createOpenAiModelProvider, type OpenAiFetch } from '../openAiModelProvider';
+import type { OpenAiFetch } from '../openAiClient';
+import { createOpenAiModelProvider } from '../openAiModelProvider';
 
 const API_KEY = 'sk-test-0000';
 

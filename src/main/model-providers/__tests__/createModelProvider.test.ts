@@ -7,7 +7,7 @@ import {
   type ModelChoice,
   type ModelProviderNeeds,
 } from '../createModelProvider';
-import type { OpenAiFetch } from '../openAiModelProvider';
+import type { OpenAiFetch } from '../openAiClient';
 
 const choice = (provider: ModelProviderId): ModelChoice => ({
   provider,
@@ -27,7 +27,7 @@ const lockedKeychain: ReadApiKey = async () => {
 };
 
 const REFUSALS: [string, ModelProviderId, ReadApiKey, ModelProviderRefusal][] = [
-  ['a provider this build can’t run', 'openrouter', async () => 'sk-or-1', 'providerNotSupported'],
+  ['a provider this build can’t run', 'anthropic', async () => 'sk-ant-1', 'providerNotSupported'],
   ['no saved key', 'openai', async () => undefined, 'noApiKey'],
   ['a keychain that won’t give the key back', 'openai', lockedKeychain, 'keychainRefused'],
 ];

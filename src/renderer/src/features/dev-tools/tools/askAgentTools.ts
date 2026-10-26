@@ -9,7 +9,7 @@ const REFUSAL_WORDS: Record<AgentStartRefusal, string> = {
   assistantOff: 'The assistant is off.',
   runInProgress: 'A run is still going.',
   providerNotSupported:
-    'This build can’t run the chosen provider yet. Choose Ollama or OpenAI, or turn on Scripted model.',
+    'This build can’t run the chosen provider yet. Choose Ollama, OpenAI or OpenRouter, or turn on Scripted model.',
   noApiKey: 'No API key is saved for the chosen provider. Add one in Settings.',
   keychainRefused: 'The keychain wouldn’t give back the API key.',
 };
