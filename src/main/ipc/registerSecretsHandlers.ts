@@ -10,8 +10,8 @@ export function registerSecretsHandlers(
   apiKeys: ApiKeys,
   isAppFrame: (event: IpcMainInvokeEvent) => boolean
 ): void {
-  const handlers = createSecretsHandlers(apiKeys, (provider, key, model) =>
-    testApiKey(provider, key, model, net.fetch)
+  const handlers = createSecretsHandlers(apiKeys, (provider, key) =>
+    testApiKey(provider, key, net.fetch)
   );
   for (const [method, channel] of Object.entries(SECRETS_CHANNELS)) {
     const handler = handlers[method as keyof MosaicSecrets] as (...args: unknown[]) => unknown;

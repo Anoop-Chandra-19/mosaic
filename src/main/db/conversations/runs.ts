@@ -70,6 +70,17 @@ export function readLastRun(
     .get(conversationId);
 }
 
+/** Each provider and model a run has used, the most recently used first. */
+export function listUsedModels(db: Database): { provider: string; model: string }[] {
+  return db
+    .prepare<[], { provider: string; model: string }>(
+      `select provider, model from runs
+        group by provider, model
+        order by max(started_at) desc, max(id) desc`
+    )
+    .all();
+}
+
 export interface RunEnd {
   status: 'done' | 'step_limit' | 'failed' | 'cancelled';
   error?: string;
