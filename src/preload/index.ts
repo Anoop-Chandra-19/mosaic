@@ -72,11 +72,11 @@ const backup: MosaicBackup = {
 /** Keys go in; nothing here can bring one back out. */
 const secrets: MosaicSecrets = {
   status: () => ipcRenderer.invoke(SECRETS_CHANNELS.status),
-  save: (provider, key) => ipcRenderer.invoke(SECRETS_CHANNELS.save, provider, key),
+  save: (provider, key, options) =>
+    ipcRenderer.invoke(SECRETS_CHANNELS.save, provider, key, options),
+  check: (provider, model) => ipcRenderer.invoke(SECRETS_CHANNELS.check, provider, model),
   remove: (provider) => ipcRenderer.invoke(SECRETS_CHANNELS.remove, provider),
-  setLocation: (location) => ipcRenderer.invoke(SECRETS_CHANNELS.setLocation, location),
   forgetAll: () => ipcRenderer.invoke(SECRETS_CHANNELS.forgetAll),
-  test: (provider, model, key) => ipcRenderer.invoke(SECRETS_CHANNELS.test, provider, model, key),
 };
 
 let toolRunnerRegistered = false;

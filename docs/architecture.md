@@ -17,7 +17,7 @@ export it as `architecture.png` at 2× scale.
   `window.mosaic`, wrapped by `lib/storage/mosaicDb.ts` and `settingsStorage.ts`.
 - **Preload** (`src/preload/index.ts`): the only bridge. It exposes `db` (one method per
   entry in `DB_METHODS`), `files`, `secrets`, `ai`, and `app`, each a narrow typed call.
-  `secrets` can save, test, and remove a key, but has no way to read one.
+  `secrets` can save, check, and remove a key, but has no way to read one.
 - **Main** (`src/main/`): owns the window, SQLite, the file dialogs, the keychain, and
   every network call. Each handler checks `isAppFrame`, validates its arguments, and
   refuses with a `DbResult` code (`not-found`, `stale-rev`, `invalid-argument`).
@@ -68,7 +68,7 @@ limit is what can be read back: JavaScript's longest string, about 512 MB.
 The renderer makes no requests. Main makes only these:
 
 - `ollamaModels`: `/api/tags` and `/api/show` on the Ollama address in Settings.
-- `testApiKey`: one request per test, costing no tokens, with the key in a header and
+- `testApiKey`: one request per key check, costing no tokens, with the key in a header and
   never in the URL.
 
 ## Planned: the agent layer

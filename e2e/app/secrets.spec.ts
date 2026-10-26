@@ -36,7 +36,7 @@ function kernelKeyringEntries(): string[] {
     );
 }
 
-test('with no keychain, a key is tested, kept for the session, and forgotten', async ({
+test('with no keychain, a key is checked, kept for the session, and forgotten', async ({
   launchApp,
 }) => {
   const first = await launchApp();
@@ -48,25 +48,19 @@ test('with no keychain, a key is tested, kept for the session, and forgotten', a
     await settings.getByRole('combobox', { name: 'Provider' }).click();
     await page.getByRole('option', { name: 'Anthropic' }).click();
 
-    // Nothing has asked the keychain yet, so the keychain is still on offer.
-    await expect(settings.getByRole('radio', { name: 'OS keychain' })).toBeChecked();
-
+    // Save checks first: a refused key is not kept.
     const field = settings.getByRole('textbox', { name: 'Anthropic API key' });
     await field.fill(KEY);
     await providerAnswers(app, 401);
-    await settings.getByRole('button', { name: 'Test' }).click();
+    await settings.getByRole('button', { name: 'Save' }).click();
     await expect(settings.getByText('Anthropic turned this key down.')).toBeVisible();
+    await expect(field).toHaveValue(KEY);
 
+    // It passes, and saving finds no keychain: the key stays in memory, and the row says so.
     await providerAnswers(app, 200);
-    await settings.getByRole('button', { name: 'Test' }).click();
-    await expect(settings.getByRole('button', { name: 'Reachable' })).toBeVisible();
-
-    // Saving finds no keychain: the key stays in memory, and the row says so.
     await settings.getByRole('button', { name: 'Save' }).click();
     await expect(settings.getByText('Saved for this session')).toBeVisible();
-    await expect(settings.getByText('No keychain was found on this computer')).toBeVisible();
-    await expect(settings.getByRole('radio', { name: 'OS keychain' })).toBeDisabled();
-    await expect(settings.getByRole('radio', { name: 'This session' })).toBeChecked();
+    await expect(settings.getByText('This computer has no keychain')).toBeVisible();
     // Nothing was left behind in the kernel keyring either.
     expect(kernelKeyringEntries()).toEqual([]);
 
@@ -80,9 +74,6 @@ test('with no keychain, a key is tested, kept for the session, and forgotten', a
     await page.reload();
     const reloaded = await goToAiSettings(page);
     await expect(reloaded.getByText('Saved for this session')).toBeVisible();
-    await providerAnswers(app, 200);
-    await reloaded.getByRole('button', { name: 'Test' }).click();
-    await expect(reloaded.getByRole('button', { name: 'Reachable' })).toBeVisible();
 
     await reloaded.getByRole('navigation').getByRole('button', { name: 'Privacy' }).click();
     const forget = reloaded.getByRole('button', { name: 'Forget keys' });
@@ -128,7 +119,6 @@ test('a pasted key with spaces is caught before anything is sent', async ({ laun
 
     await settings.getByRole('textbox', { name: 'OpenAI API key' }).fill('sk-part one');
     await expect(settings.getByText('Keys have no spaces.')).toBeVisible();
-    await expect(settings.getByRole('button', { name: 'Test' })).toBeDisabled();
     await expect(settings.getByRole('button', { name: 'Save' })).toBeDisabled();
   } finally {
     await app.close();
