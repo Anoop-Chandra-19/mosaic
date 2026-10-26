@@ -95,7 +95,6 @@ export function AiSection() {
               provider={provider}
               status={status}
               loadFailed={loadFailed}
-              modelFor={modelFor}
               onStatus={show}
               onKeyChecked={handleKeyChecked}
             />

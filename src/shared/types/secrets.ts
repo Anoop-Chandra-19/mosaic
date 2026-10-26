@@ -39,8 +39,6 @@ export interface SecretsStatus {
 }
 
 export interface SaveKeyOptions {
-  /** The model in settings, which the check looks up where the provider can. */
-  model: string;
   /** False only for "Save without checking", after the provider couldn't be reached. */
   check: boolean;
   /** Kept in memory only, never in the keychain, and gone when Mosaic closes. */
@@ -49,12 +47,7 @@ export interface SaveKeyOptions {
 
 /** What a check found, and the keys as they stand after it. Nothing in it echoes the key. */
 export type KeyCheck =
-  | {
-      ok: true;
-      status: SecretsStatus;
-      /** Whether the key can reach the model; null if the provider can't say, or unchecked. */
-      modelFound: boolean | null;
-    }
+  | { ok: true; status: SecretsStatus }
   | {
       ok: false;
       /**
@@ -94,7 +87,7 @@ export interface MosaicSecrets {
    */
   save(provider: KeyedProvider, key: string, options: SaveKeyOptions): Promise<KeyCheck>;
   /** Checks the saved key again, for a key saved without checking. */
-  check(provider: KeyedProvider, model: string): Promise<KeyCheck>;
+  check(provider: KeyedProvider): Promise<KeyCheck>;
   /**
    * The chat models the saved key can use. A check lists them too, and main keeps the last
    * list for each key until Mosaic closes; `refresh` asks the provider again.

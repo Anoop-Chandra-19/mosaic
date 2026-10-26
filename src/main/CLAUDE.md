@@ -108,7 +108,7 @@ No ORM: `db/` is the layer every other module goes through, and ESLint enforces 
   identity, or users are asked again after each update.
 - A check (`model-providers/testApiKey.ts`) lists the models the key can use
   (`listModels.ts`, chat models only; for OpenRouter, ones that call tools), which costs no
-  tokens and also says whether the key reaches the model in settings. Main keeps each key's
+  tokens. Settings warns from that list when it lacks the model in settings. Main keeps each key's
   last list in memory until Mosaic closes. The key travels only in a
   header, never in a URL, and no result or error repeats it.
 

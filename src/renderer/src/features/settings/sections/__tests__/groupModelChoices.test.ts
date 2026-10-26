@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { findQueryInName, groupModelChoices } from '../groupModelChoices';
+import { findQueryInName, groupModelChoices, isModelListed } from '../groupModelChoices';
 
 const headingsAndModels = (groups: ReturnType<typeof groupModelChoices>) =>
   groups.map((group) => [group.heading, group.choices.map((choice) => choice.model)]);
@@ -62,6 +62,14 @@ describe('groupModelChoices', () => {
       ['Used before', ['anthropic/claude-opus-5']],
       ['anthropic', ['anthropic/claude-sonnet-5']],
     ]);
+  });
+});
+
+describe('isModelListed', () => {
+  it('finds Gemini’s model by either of its names', () => {
+    expect(isModelListed(['gemini-3.8-flash'], 'models/gemini-3.8-flash')).toBe(true);
+    expect(isModelListed(['gemini-3.8-flash'], 'gemini-3.8-flash')).toBe(true);
+    expect(isModelListed(['gemini-3.8-flash'], 'gemini-3.8-pro')).toBe(false);
   });
 });
 

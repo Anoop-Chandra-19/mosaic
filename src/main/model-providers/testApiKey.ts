@@ -12,8 +12,8 @@ export type KeyTest = ModelListAnswer;
 
 /**
  * Asks the provider whether `key` works, by listing the models it can use: a request that
- * needs a valid key and costs no tokens, and whose answer also says whether the key reaches
- * the model in settings. OpenRouter's list is public, so there the key is asked about first.
+ * needs a valid key and costs no tokens, and whose answer Settings keeps as the key's list.
+ * OpenRouter's list is public, so there the key is asked about first.
  * Every outcome is data; this never throws.
  */
 export async function testApiKey(
