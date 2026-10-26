@@ -17,8 +17,8 @@ interface ApiKeyRowProps {
   /** The model in settings for a provider, which a check looks for in the key's list. */
   modelFor: (provider: KeyedProvider) => string;
   onStatus: (status: SecretsStatus) => void;
-  /** A key passed a check, or was saved without one (`modelFound` null). */
-  onKeyChecked: (provider: KeyedProvider, modelFound: boolean | null) => void;
+  /** A key passed a check, or was saved without one. */
+  onKeyChecked: (provider: KeyedProvider) => void;
 }
 
 /**
@@ -59,7 +59,7 @@ export function ApiKeyRow({
     setDraft('');
     setIsReplacing(false);
     setIsFresh(true);
-    onKeyChecked(checked, result.modelFound);
+    onKeyChecked(checked);
   };
 
   const runCheck = async (

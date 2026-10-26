@@ -7,7 +7,7 @@ import {
   CommandItem,
   CommandList,
 } from '@/components/ui/command';
-import { LIST_ROW_CLASSES } from './controlStyles';
+import { FIELD_CLASSES, LIST_ROW_CLASSES } from './controlStyles';
 import { cn } from '@/lib/utils';
 
 /*
@@ -55,6 +55,25 @@ export function AppCommandInput({
         {...props}
       />
       {trailing}
+    </div>
+  );
+}
+
+/**
+ * The search drawn as a form field, for a list that drops down under it (a combobox):
+ * `trailing` sits inside its end, as a field's icon button does.
+ */
+export function AppCommandField({
+  className,
+  trailing,
+  ...props
+}: ComponentProps<typeof CommandInput> & { trailing?: ReactNode }) {
+  return (
+    <div className="relative *:data-[slot=command-input-wrapper]:h-auto *:data-[slot=command-input-wrapper]:border-0 *:data-[slot=command-input-wrapper]:p-0 [&>[data-slot=command-input-wrapper]>svg]:hidden">
+      <CommandInput className={cn(FIELD_CLASSES, 'w-full py-0', className)} {...props} />
+      {trailing && (
+        <div className="absolute inset-y-0 right-0.75 flex items-center">{trailing}</div>
+      )}
     </div>
   );
 }
