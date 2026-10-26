@@ -49,8 +49,8 @@ test('with no keychain, a key is checked, kept for the session, and forgotten', 
     await page.getByRole('button', { name: /Blank resume/ }).click();
     const settings = await goToAiSettings(page);
     await settings.getByRole('switch', { name: 'Enable AI assistant' }).click();
-    await settings.getByRole('combobox', { name: 'Provider' }).click();
-    await page.getByRole('option', { name: 'Anthropic' }).click();
+    await settings.getByRole('button', { name: 'Provider' }).click();
+    await page.getByRole('menuitemradio', { name: /^Anthropic/ }).click();
 
     // Save checks first: a refused key is not kept.
     const field = settings.getByRole('textbox', { name: 'Anthropic API key' });
@@ -60,11 +60,18 @@ test('with no keychain, a key is checked, kept for the session, and forgotten', 
     await expect(settings.getByText('Anthropic turned this key down.')).toBeVisible();
     await expect(field).toHaveValue(KEY);
 
+    // Another provider's key is caught before anything is sent.
+    await field.fill('sk-proj-e2e-made-up-key');
+    await settings.getByRole('button', { name: 'Save' }).click();
+    await expect(settings.getByText('This looks like an OpenAI key')).toBeVisible();
+
     // It passes, and saving finds no keychain: the key stays in memory, and the row says so.
+    await field.fill(KEY);
     await providerAnswers(app, 200);
     await settings.getByRole('button', { name: 'Save' }).click();
-    await expect(settings.getByText('Saved for this session')).toBeVisible();
+    await expect(settings.getByText(/^Saved just now until Mosaic closes/)).toBeVisible();
     await expect(settings.getByText('This computer has no keychain')).toBeVisible();
+    await expect(settings.getByText('Forget this key when Mosaic closes')).toHaveCount(0);
     // Nothing was left behind in the kernel keyring either.
     expect(kernelKeyringEntries()).toEqual([]);
 
@@ -77,7 +84,7 @@ test('with no keychain, a key is checked, kept for the session, and forgotten', 
     // A reload keeps the session's key: it lives in main, not in the page.
     await page.reload();
     const reloaded = await goToAiSettings(page);
-    await expect(reloaded.getByText('Saved for this session')).toBeVisible();
+    await expect(reloaded.getByText(/^Saved just now until Mosaic closes/)).toBeVisible();
 
     await reloaded.getByRole('navigation').getByRole('button', { name: 'Privacy' }).click();
     const forget = reloaded.getByRole('button', { name: 'Forget keys' });
@@ -92,7 +99,7 @@ test('with no keychain, a key is checked, kept for the session, and forgotten', 
       .click();
     await reloaded.getByRole('textbox', { name: 'Anthropic API key' }).fill(KEY);
     await reloaded.getByRole('button', { name: 'Save' }).click();
-    await expect(reloaded.getByText('Saved for this session')).toBeVisible();
+    await expect(reloaded.getByText(/^Saved just now until Mosaic closes/)).toBeVisible();
     expect(errors).toEqual([]);
     await app.close();
 
@@ -118,12 +125,14 @@ test('a pasted key with spaces is caught before anything is sent', async ({ laun
     await page.getByRole('button', { name: /Blank resume/ }).click();
     const settings = await goToAiSettings(page);
     await settings.getByRole('switch', { name: 'Enable AI assistant' }).click();
-    await settings.getByRole('combobox', { name: 'Provider' }).click();
-    await page.getByRole('option', { name: 'OpenAI' }).click();
+    await settings.getByRole('button', { name: 'Provider' }).click();
+    await page.getByRole('menuitemradio', { name: /^OpenAI/ }).click();
 
     await settings.getByRole('textbox', { name: 'OpenAI API key' }).fill('sk-part one');
+    await settings.getByRole('button', { name: 'Save' }).click();
     await expect(settings.getByText('Keys have no spaces.')).toBeVisible();
-    await expect(settings.getByRole('button', { name: 'Save' })).toBeDisabled();
+    await expect(settings.getByRole('button', { name: 'Save' })).toBeEnabled();
+    expect(await page.evaluate(() => window.mosaic.secrets.status())).toMatchObject({ saved: {} });
   } finally {
     await app.close();
     fs.rmSync(userDataDir, { recursive: true, force: true });

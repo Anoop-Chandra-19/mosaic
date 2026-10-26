@@ -35,8 +35,8 @@ test('settings are grouped as the design has them, and take effect', async () =>
   await expect(settings.locator('[inert]')).toHaveCount(1);
   await settings.getByRole('switch', { name: 'Enable AI assistant' }).click();
   await expect(settings.locator('[inert]')).toHaveCount(0);
-  await settings.getByRole('combobox', { name: 'Provider' }).click();
-  await page.getByRole('option', { name: 'Ollama (local)' }).click();
+  await settings.getByRole('button', { name: 'Provider' }).click();
+  await page.getByRole('menuitemradio', { name: /^Ollama/ }).click();
   // A local model needs no key.
   await expect(settings.getByText('API key', { exact: true })).toHaveCount(0);
 
@@ -82,8 +82,8 @@ test('Ollama’s model is picked from the chat models pulled on this machine', a
 
   const settings = await openSettings(page, 'AI assistant');
   await settings.getByRole('switch', { name: 'Enable AI assistant' }).click();
-  await settings.getByRole('combobox', { name: 'Provider' }).click();
-  await page.getByRole('option', { name: 'Ollama (local)' }).click();
+  await settings.getByRole('button', { name: 'Provider' }).click();
+  await page.getByRole('menuitemradio', { name: /^Ollama/ }).click();
 
   await settings.getByRole('combobox', { name: 'Ollama model' }).click();
   await expect(page.getByRole('option')).toHaveText(['gemma4:12b7.6 GB', 'qwen3.5:9b6.6 GB']);
@@ -151,8 +151,8 @@ test('Ollama can live elsewhere on the network, and Settings says where text goe
 
   const settings = await openSettings(page, 'AI assistant');
   await settings.getByRole('switch', { name: 'Enable AI assistant' }).click();
-  await settings.getByRole('combobox', { name: 'Provider' }).click();
-  await page.getByRole('option', { name: 'Ollama (local)' }).click();
+  await settings.getByRole('button', { name: 'Provider' }).click();
+  await page.getByRole('menuitemradio', { name: /^Ollama/ }).click();
   await expect(settings.getByText('your resume text never leaves it')).toBeVisible();
   await expect.poll(asked).toContain('http://127.0.0.1:11434/api/tags');
 

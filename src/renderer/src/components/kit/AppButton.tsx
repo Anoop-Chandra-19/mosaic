@@ -29,6 +29,9 @@ const appButtonVariants = cva(
           'text-ink-soft hover:bg-line hover:text-foreground aria-[haspopup=menu]:data-[state=open]:bg-line-strong aria-[haspopup=menu]:data-[state=open]:text-foreground',
         quiet:
           'text-ink-faint hover:bg-line hover:text-ink-soft aria-[haspopup=menu]:data-[state=open]:bg-line aria-[haspopup=menu]:data-[state=open]:text-ink-soft',
+        // A choice that opens a menu of richer rows than a select can hold, drawn as a field.
+        field:
+          'justify-start border border-line-strong bg-pane-sunken pr-2 pl-2.5 text-left font-regular text-foreground hover:border-line-heavy [&>svg:last-child]:ml-auto [&>svg:last-child]:text-ink-faint',
         // A row's name that opens it: no fill, even on hover.
         plain: 'text-foreground',
         destructive: 'border border-del-line bg-del-soft font-strong text-del hover:bg-del-line',
