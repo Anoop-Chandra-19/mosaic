@@ -19,7 +19,7 @@ import {
   ollamaHost,
 } from '@shared/model-providers/ollamaAddress';
 import type { OllamaModel } from '@shared/types/modelProviders';
-import { SettingRow } from '../SettingRow';
+import { SettingRow } from '../../SettingRow';
 import type { OllamaModelsAnswer } from './useOllamaModels';
 
 function gigabytes(bytes: number): string | null {

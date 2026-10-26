@@ -436,7 +436,7 @@ credential cleanup and surface uncertainty instead of claiming complete deletion
 
 **Locations:** [`ollamaAddress.ts:27–30`](../src/shared/model-providers/ollamaAddress.ts#L27),
 [`ollamaModels.ts:60–66`](../src/main/model-providers/ollamaModels.ts#L60),
-[`OllamaRows.tsx:63–66,133`](../src/renderer/src/features/settings/sections/OllamaRows.tsx#L63).
+[`OllamaRows.tsx:63–66,133`](../src/renderer/src/features/settings/sections/ai/OllamaRows.tsx#L63).
 
 The renderer preserves an explicitly specified scheme-default port semantically, but
 `URL.origin` removes its text. Main normalizes that canonical result again and adds 11434
