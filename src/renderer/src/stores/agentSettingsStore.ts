@@ -40,7 +40,6 @@ interface AgentSettingsState {
   setProvider: (provider: ModelProviderId) => void;
   setModelForProvider: (provider: ModelProviderId, model: string) => void;
   setModelForActiveProvider: (model: string) => void;
-  resetModelForProvider: (provider: ModelProviderId) => void;
 }
 
 export const useAgentSettingsStore = create<AgentSettingsState>()(
@@ -67,13 +66,6 @@ export const useAgentSettingsStore = create<AgentSettingsState>()(
           },
         }));
       },
-      resetModelForProvider: (provider) =>
-        set((state) => ({
-          modelsByProvider: {
-            ...state.modelsByProvider,
-            [provider]: DEFAULT_MODEL_BY_PROVIDER[provider],
-          },
-        })),
     }),
     {
       name: AGENT_SETTINGS_KEY,

@@ -10,6 +10,7 @@ export { AppCollapsible, AppCollapsibleContent, AppCollapsibleTrigger } from './
 export {
   AppCommand,
   AppCommandEmpty,
+  AppCommandField,
   AppCommandGroup,
   AppCommandInput,
   AppCommandItem,
