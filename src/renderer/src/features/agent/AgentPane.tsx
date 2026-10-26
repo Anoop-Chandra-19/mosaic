@@ -1,7 +1,7 @@
 import { useRef } from 'react';
 import { Sparkles, X } from 'lucide-react';
 import { AppButton, AppTooltip, Text } from '@/components/ui-kit';
-import { MODEL_PROVIDER_OPTION_BY_ID } from '@/features/settings/sections/modelProviderOptions';
+import { MODEL_PROVIDER_OPTION_BY_ID } from '@/features/settings/sections/ai/modelProviderOptions';
 import { formatPaneWidth, startPaneResize } from '@/features/shell/paneResize';
 import { useShortcutLabel } from '@/features/shortcuts/shortcutBindings';
 import { useIsSideHandover } from '@/features/view-transitions/sideHandover';

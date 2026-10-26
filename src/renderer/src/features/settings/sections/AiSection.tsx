@@ -7,15 +7,21 @@ import type { ModelProviderId } from '@shared/types/modelProviders';
 import { isKeyedProvider, type KeyedProvider } from '@shared/types/secrets';
 import { SettingRow } from '../SettingRow';
 import { useSecretsStatus } from '../useSecretsStatus';
-import { ApiKeyRow } from './ApiKeyRow';
-import { readKeyState } from './apiKeyWords';
-import { KeyedModelRow } from './KeyedModelRow';
-import { KeyStatus } from './KeyStatus';
-import { MODEL_PROVIDER_OPTION_BY_ID } from './modelProviderOptions';
-import { OllamaAddressRow, OllamaContextRow, OllamaModelRow } from './OllamaRows';
-import { ProviderMenu } from './ProviderMenu';
-import { useOllamaModels } from './useOllamaModels';
+import { ApiKeyRow } from './ai/ApiKeyRow';
+import { readKeyState } from './ai/apiKeyWords';
+import { KeyedModelRow } from './ai/KeyedModelRow';
+import { KeyStatus } from './ai/KeyStatus';
+import { MODEL_PROVIDER_OPTION_BY_ID } from './ai/modelProviderOptions';
+import { OllamaAddressRow, OllamaContextRow, OllamaModelRow } from './ai/OllamaRows';
+import { ProviderMenu } from './ai/ProviderMenu';
+import { useOllamaModels } from './ai/useOllamaModels';
 
+/*
+ * Settings › AI assistant: the switch, the provider menu, and that provider's rows under its
+ * heading, all from `ai/`. A keyed provider gets the key row (`ApiKeyRow` and its messages)
+ * and the model list (`KeyedModelRow`, `ModelCombobox`); Ollama gets `OllamaRows`. Outside
+ * Settings, only `ai/modelProviderOptions.ts` is used.
+ */
 export function AiSection() {
   const enabled = useAgentSettingsStore((s) => s.enabled);
   const provider = useAgentSettingsStore((s) => s.provider);

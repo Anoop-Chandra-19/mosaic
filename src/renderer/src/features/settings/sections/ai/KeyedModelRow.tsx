@@ -1,5 +1,5 @@
 import type { KeyedProvider, SecretsStatus } from '@shared/types/secrets';
-import { SettingRow } from '../SettingRow';
+import { SettingRow } from '../../SettingRow';
 import { KeyMessageLine } from './ApiKeyMessage';
 import { isModelListed } from './groupModelChoices';
 import { readKeyState } from './apiKeyWords';

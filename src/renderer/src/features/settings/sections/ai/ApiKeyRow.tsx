@@ -8,7 +8,7 @@ import { describeSavedKey, withArticle } from './apiKeyWords';
 import { detectKeyProvider } from './detectKeyProvider';
 import type { KeyProblem } from './keyProblem';
 import { KEY_PAGE_URLS, MODEL_PROVIDER_OPTION_BY_ID } from './modelProviderOptions';
-import { SettingRow } from '../SettingRow';
+import { SettingRow } from '../../SettingRow';
 
 interface ApiKeyRowProps {
   provider: KeyedProvider;
