@@ -28,5 +28,5 @@ export function useSecretsStatus() {
     setStatus(await change);
   }, []);
 
-  return { status, loadFailed, apply };
+  return { status, loadFailed, apply, show: setStatus };
 }

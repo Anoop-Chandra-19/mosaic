@@ -90,12 +90,15 @@ No ORM: `db/` is the layer every other module goes through, and ESLint enforces 
 
 ## API keys (`secrets/`)
 
-- Kept in the OS keychain (`@napi-rs/keyring`, async so a prompt never blocks main) or in
-  main's memory for the session. `window.mosaic.secrets` can save, test, and remove a key
-  but has no way to read one; main makes every call that needs it.
-- Main notes only which providers the keychain holds (`app.apiKeys`), so status never
-  touches the keychain and opening Settings can't raise a prompt. A keychain that refuses
-  a write counts as unavailable until the next launch; keys stay in memory, with a notice.
+- Kept in the OS keychain (`@napi-rs/keyring`, async so a prompt never blocks main), or in
+  main's memory when the user asks to forget the key on close. `window.mosaic.secrets` can
+  save, check, and remove a key but has no way to read one; main makes every call that
+  needs it. Saving checks the key with the provider first and keeps it only if it passes,
+  unless the user saves without checking after the provider couldn't be reached.
+- Main notes only which providers the keychain holds, with when each key was saved and last
+  passed a check (`app.apiKeys`), so status never touches the keychain and opening Settings
+  can't raise a prompt. A keychain that refuses a write counts as unavailable until the next
+  launch; keys stay in memory, with a notice.
 - On Linux without a Secret Service, @napi-rs/keyring silently writes to the kernel
   keyring, which forgets keys at logout. `osKeyring.ts` spots that in `/proc/keys`, undoes
   the write, and reports the keychain unavailable.
@@ -103,7 +106,7 @@ No ORM: `db/` is the layer every other module goes through, and ESLint enforces 
   e2e launches have no D-Bus session, so they never reach the desktop's keychain.
 - macOS ties keychain access to the code signature: release builds need a stable signing
   identity, or users are asked again after each update.
-- Test (`model-providers/testApiKey.ts`) makes one request that costs no tokens. The key travels only in a
+- A check (`model-providers/testApiKey.ts`) makes one request that costs no tokens. The key travels only in a
   header, never in a URL, and no result or error repeats it.
 
 ## Model providers (`model-providers/`)

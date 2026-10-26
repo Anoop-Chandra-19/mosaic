@@ -34,10 +34,9 @@ export const MODEL_PROVIDERS_CHANNELS = {
 export const SECRETS_CHANNELS = {
   status: 'secrets:status',
   save: 'secrets:save',
+  check: 'secrets:check',
   remove: 'secrets:remove',
-  setLocation: 'secrets:set-location',
   forgetAll: 'secrets:forget-all',
-  test: 'secrets:test',
 } as const satisfies Record<keyof MosaicSecrets, string>;
 
 /**

@@ -1,4 +1,9 @@
-import type { KeyedProvider, KeyTest } from '@shared/types/secrets';
+import type { KeyedProvider } from '@shared/types/secrets';
+
+/** What the provider said about a key, with the reasons `KeyCheck` gives. Never echoes the key. */
+export type KeyTest =
+  | { ok: true; modelFound: boolean | null }
+  | { ok: false; reason: 'refused' | 'unreachable' | 'failed'; httpStatus?: number };
 
 /** `fetch`, narrowed to what a key test sends. Main passes Electron's `net.fetch`. */
 export type KeyTestFetch = (

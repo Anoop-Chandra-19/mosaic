@@ -1,7 +1,7 @@
 import {
   KEYED_PROVIDERS,
   type KeyedProvider,
-  type KeyLocation,
+  type SavedKey,
   type SecretsStatus,
 } from '@shared/types/secrets';
 
@@ -22,60 +22,85 @@ export interface KeyIndexStorage {
 /** The keychain holds a key but would not hand it over (locked, or the prompt was refused). */
 export class KeychainError extends Error {}
 
-/** Main's note between launches. Provider names only, never a key. */
+type KeyDates = Omit<SavedKey, 'where'>;
+
+/** Main's note between launches: the keychain's keys and their dates, never a key. */
 interface KeyIndex {
-  /** What the user chose. */
-  location: KeyLocation;
-  /** Providers whose key is in the keychain. */
-  keychain: KeyedProvider[];
+  keychain: Partial<Record<KeyedProvider, KeyDates>>;
+}
+
+function parseDates(value: unknown): KeyDates | undefined {
+  const dates = value as Partial<Record<keyof KeyDates, unknown>> | null;
+  if (typeof dates?.savedAt !== 'number') return undefined;
+  return {
+    savedAt: dates.savedAt,
+    checkedAt: typeof dates.checkedAt === 'number' ? dates.checkedAt : null,
+  };
 }
 
 function parseIndex(value: string | null): KeyIndex {
   try {
-    const stored = JSON.parse(value ?? 'null') as Partial<Record<keyof KeyIndex, unknown>> | null;
-    const listed = Array.isArray(stored?.keychain) ? (stored.keychain as unknown[]) : [];
-    return {
-      location: stored?.location === 'session' ? 'session' : 'keychain',
-      keychain: KEYED_PROVIDERS.filter((provider) => listed.includes(provider)),
-    };
+    const stored = JSON.parse(value ?? 'null') as { keychain?: Record<string, unknown> } | null;
+    const keychain: KeyIndex['keychain'] = {};
+    for (const provider of KEYED_PROVIDERS) {
+      const dates = parseDates(stored?.keychain?.[provider]);
+      if (dates) keychain[provider] = dates;
+    }
+    return { keychain };
   } catch {
-    return { location: 'keychain', keychain: [] };
+    return { keychain: {} };
   }
 }
 
-function withKeychainEntry(index: KeyIndex, provider: KeyedProvider, held: boolean): KeyIndex {
-  const others = index.keychain.filter((p) => p !== provider);
-  return {
-    ...index,
-    keychain: KEYED_PROVIDERS.filter((p) => others.includes(p) || (held && p === provider)),
-  };
+function withKeychainEntry(
+  index: KeyIndex,
+  provider: KeyedProvider,
+  dates: KeyDates | undefined
+): KeyIndex {
+  const keychain = { ...index.keychain };
+  if (dates) keychain[provider] = dates;
+  else delete keychain[provider];
+  return { keychain };
+}
+
+export interface SaveOptions {
+  /** Kept in memory only, never written to the keychain. */
+  forgetOnClose: boolean;
+  /** Whether it passed a check just now; false when saved without checking. */
+  checked: boolean;
 }
 
 export interface ApiKeys {
   status(): Promise<SecretsStatus>;
-  save(provider: KeyedProvider, key: string): Promise<SecretsStatus>;
+  save(provider: KeyedProvider, key: string, options: SaveOptions): Promise<SecretsStatus>;
+  /** Notes that the key saved at `savedAt` passed a check; a key saved since is left alone. */
+  markChecked(provider: KeyedProvider, savedAt: number): Promise<SecretsStatus>;
   remove(provider: KeyedProvider): Promise<SecretsStatus>;
-  setLocation(location: KeyLocation): Promise<SecretsStatus>;
   forgetAll(): Promise<SecretsStatus>;
   /**
-   * The saved key, for main's own calls (Test now, the assistant later). Never sent to the
+   * The saved key, for main's own calls (checks and the assistant's runs). Never sent to the
    * renderer. Rejects with `KeychainError` if the keychain holds it but won't give it back.
    */
   read(provider: KeyedProvider): Promise<string | undefined>;
 }
 
 /**
- * API keys, kept by main: in the OS keychain, or in memory for this session. The keychain
- * is only touched when a key is saved, read, moved, or removed — never to report status —
- * so opening Settings cannot raise a keychain prompt. A keychain that refuses a write is
- * marked unavailable until the next launch, and keys stay in memory instead.
+ * API keys, kept by main: in the OS keychain, or in memory for this session when asked to
+ * forget the key on close. The keychain is only touched when a key is saved, read, or
+ * removed — never to report status — so opening Settings cannot raise a keychain prompt. A
+ * keychain that refuses a write is marked unavailable until the next launch, and keys stay in
+ * memory instead.
  */
-export function createApiKeys(keyring: Keyring, storage: KeyIndexStorage): ApiKeys {
-  const session = new Map<KeyedProvider, string>();
+export function createApiKeys(
+  keyring: Keyring,
+  storage: KeyIndexStorage,
+  now: () => number = Date.now
+): ApiKeys {
+  const session = new Map<KeyedProvider, KeyDates & { key: string }>();
   let keychain: SecretsStatus['keychain'] = 'unknown';
 
-  // One change at a time: moving keys between the two places takes several keychain calls,
-  // and a save arriving halfway must not see a half-moved state.
+  // One change at a time: forgetting every key takes several keychain calls, and a save
+  // arriving halfway must not see a half-done state.
   let queue: Promise<unknown> = Promise.resolve();
   const serial = <T>(task: () => Promise<T>): Promise<T> => {
     const run = queue.then(task, task);
@@ -87,17 +112,15 @@ export function createApiKeys(keyring: Keyring, storage: KeyIndexStorage): ApiKe
   const store = (index: KeyIndex) => storage.write(JSON.stringify(index));
 
   const snapshot = (): SecretsStatus => {
-    const index = load();
     const saved: SecretsStatus['saved'] = {};
-    for (const provider of index.keychain) saved[provider] = 'keychain';
+    for (const [provider, dates] of Object.entries(load().keychain)) {
+      saved[provider as KeyedProvider] = { where: 'keychain', ...dates };
+    }
     // A session key is the one in use, even if an older copy is still in the keychain.
-    for (const provider of session.keys()) saved[provider] = 'session';
-    return {
-      location:
-        index.location === 'keychain' && keychain !== 'unavailable' ? 'keychain' : 'session',
-      keychain,
-      saved,
-    };
+    for (const [provider, { savedAt, checkedAt }] of session) {
+      saved[provider] = { where: 'session', savedAt, checkedAt };
+    }
+    return { keychain, saved };
   };
 
   /** False, and the keychain marked unavailable, if it refuses the key. */
@@ -116,7 +139,7 @@ export function createApiKeys(keyring: Keyring, storage: KeyIndexStorage): ApiKe
   /** Deletes the keychain's copy and the note of it. */
   const dropFromKeychain = async (index: KeyIndex, provider: KeyedProvider): Promise<KeyIndex> => {
     await keyring.delete(provider);
-    const next = withKeychainEntry(index, provider, false);
+    const next = withKeychainEntry(index, provider, undefined);
     store(next);
     return next;
   };
@@ -124,21 +147,38 @@ export function createApiKeys(keyring: Keyring, storage: KeyIndexStorage): ApiKe
   return {
     status: () => serial(async () => snapshot()),
 
-    save: (provider, key) =>
+    save: (provider, key, { forgetOnClose, checked }) =>
       serial(async () => {
         const index = load();
-        const toKeychain = index.location === 'keychain' && keychain !== 'unavailable';
+        const savedAt = now();
+        const dates: KeyDates = { savedAt, checkedAt: checked ? savedAt : null };
+        const toKeychain = !forgetOnClose && keychain !== 'unavailable';
         if (toKeychain && (await writeKeychain(provider, key))) {
           session.delete(provider);
-          store(withKeychainEntry(index, provider, true));
+          store(withKeychainEntry(index, provider, dates));
           return snapshot();
         }
-        session.set(provider, key);
+        session.set(provider, { key, ...dates });
         // The old keychain copy would otherwise come back after a relaunch. If the keychain
         // won't delete it, the session key is still the one used, and Remove or Forget
         // tries again.
-        if (index.keychain.includes(provider)) {
+        if (index.keychain[provider]) {
           await dropFromKeychain(index, provider).catch(() => {});
+        }
+        return snapshot();
+      }),
+
+    markChecked: (provider, savedAt) =>
+      serial(async () => {
+        const checkedAt = now();
+        const inSession = session.get(provider);
+        if (inSession) {
+          if (inSession.savedAt === savedAt) session.set(provider, { ...inSession, checkedAt });
+          return snapshot();
+        }
+        const index = load();
+        if (index.keychain[provider]?.savedAt === savedAt) {
+          store(withKeychainEntry(index, provider, { savedAt, checkedAt }));
         }
         return snapshot();
       }),
@@ -147,36 +187,7 @@ export function createApiKeys(keyring: Keyring, storage: KeyIndexStorage): ApiKe
       serial(async () => {
         session.delete(provider);
         const index = load();
-        if (index.keychain.includes(provider)) await dropFromKeychain(index, provider);
-        return snapshot();
-      }),
-
-    setLocation: (location) =>
-      serial(async () => {
-        let index = load();
-        if (location === 'session') {
-          // Read every key before deleting any, so a refusal leaves everything where it was.
-          const moving = new Map<KeyedProvider, string>();
-          for (const provider of index.keychain) {
-            const key = await keyring.get(provider);
-            if (key) moving.set(provider, key);
-          }
-          for (const [provider, key] of moving) {
-            if (!session.has(provider)) session.set(provider, key);
-          }
-          for (const provider of index.keychain) index = await dropFromKeychain(index, provider);
-          store({ ...index, location });
-          return snapshot();
-        }
-
-        index = { ...index, location };
-        store(index);
-        for (const [provider, key] of session) {
-          if (!(await writeKeychain(provider, key))) break;
-          session.delete(provider);
-          index = withKeychainEntry(index, provider, true);
-          store(index);
-        }
+        if (index.keychain[provider]) await dropFromKeychain(index, provider);
         return snapshot();
       }),
 
@@ -185,7 +196,7 @@ export function createApiKeys(keyring: Keyring, storage: KeyIndexStorage): ApiKe
         session.clear();
         let index = load();
         for (const provider of KEYED_PROVIDERS) {
-          if (index.keychain.includes(provider)) {
+          if (index.keychain[provider]) {
             index = await dropFromKeychain(index, provider);
           } else {
             // Not on record, but gone all the same: an entry left by an earlier install, or
@@ -199,9 +210,9 @@ export function createApiKeys(keyring: Keyring, storage: KeyIndexStorage): ApiKe
     read: (provider) =>
       serial(async () => {
         const inSession = session.get(provider);
-        if (inSession !== undefined) return inSession;
+        if (inSession !== undefined) return inSession.key;
         const index = load();
-        if (!index.keychain.includes(provider)) return undefined;
+        if (!index.keychain[provider]) return undefined;
         let key: string | null | undefined;
         try {
           key = await keyring.get(provider);
@@ -212,7 +223,7 @@ export function createApiKeys(keyring: Keyring, storage: KeyIndexStorage): ApiKe
         }
         if (!key) {
           // Deleted outside Mosaic (a keychain manager, say): stop listing it.
-          store(withKeychainEntry(index, provider, false));
+          store(withKeychainEntry(index, provider, undefined));
           return undefined;
         }
         keychain = 'available';
