@@ -1,4 +1,4 @@
-import OpenAI, { APIConnectionError, APIError } from 'openai';
+import { APIConnectionError, APIError } from 'openai';
 import type {
   FunctionTool,
   Response as OpenAiResponse,
@@ -19,6 +19,8 @@ import type {
 import type { ModelTool } from '@shared/types/modelTool';
 import { describeNetworkError } from './describeNetworkError';
 import type { ModelMessage, ModelProvider, ModelRequest } from './modelProvider';
+import { createOpenAiClient, type OpenAiFetch } from './openAiClient';
+import { parseToolArguments } from './parseToolArguments';
 import { readRateLimit } from './readRateLimit';
 
 /*
@@ -29,12 +31,6 @@ import { readRateLimit } from './readRateLimit';
  */
 
 const OPENAI_URL = 'https://api.openai.com/v1';
-
-/** Until the reply starts; once it streams, the loop's stall check watches it. */
-const REQUEST_TIMEOUT_MS = 60_000;
-
-/** Electron's `net.fetch` takes no `URL` objects; the SDK only ever passes a string. */
-export type OpenAiFetch = (url: string, init?: RequestInit) => Promise<Response>;
 
 export interface OpenAiProviderOptions {
   apiKey: string;
@@ -65,20 +61,7 @@ export function createOpenAiModelProvider({
   fetch,
   now = () => performance.now(),
 }: OpenAiProviderOptions): ModelProvider {
-  // Every setting the SDK would otherwise take from the environment is given, so only
-  // Settings decides where requests go and with which key.
-  const client = new OpenAI({
-    apiKey,
-    fetch: (url, init) => fetch(String(url), init),
-    baseURL: OPENAI_URL,
-    organization: null,
-    project: null,
-    adminAPIKey: null,
-    webhookSecret: null,
-    maxRetries: 0,
-    timeout: REQUEST_TIMEOUT_MS,
-    logLevel: 'off',
-  });
+  const client = createOpenAiClient(apiKey, OPENAI_URL, fetch);
   return {
     async *streamReply(request) {
       try {
@@ -201,15 +184,6 @@ function toToolCall(call: ResponseFunctionToolCall): ModelStreamEvent {
     name: call.name,
     args: parseToolArguments(call.arguments),
   };
-}
-
-/** A call whose arguments won't parse goes on as written, for the repair round. */
-function parseToolArguments(written: string): unknown {
-  try {
-    return JSON.parse(written);
-  } catch {
-    return written;
-  }
 }
 
 function readUsage(usage: ResponseUsage | undefined): ModelUsage | null {
