@@ -9,20 +9,23 @@ const MODEL = 'claude-sonnet-5';
 const CHECK = { model: MODEL, check: true, forgetOnClose: false };
 
 let os: ReturnType<typeof fakeKeyring>;
-let tested: { provider: string; key: string; model: string }[];
+let tested: { provider: string; key: string }[];
 let answer: KeyTest;
+let clock: number;
 let handlers: SecretsHandlers;
 
 beforeEach(() => {
   os = fakeKeyring();
   tested = [];
-  answer = { ok: true, modelFound: true };
+  answer = { ok: true, models: [MODEL, 'claude-opus-5'], hiddenCount: 0 };
+  clock = 1_000;
   handlers = createSecretsHandlers(
-    createApiKeys(os.keyring, memoryStorage(), () => 1_000),
-    async (provider, key, model) => {
-      tested.push({ provider, key, model });
+    createApiKeys(os.keyring, memoryStorage(), () => clock),
+    async (provider, key) => {
+      tested.push({ provider, key });
       return answer;
-    }
+    },
+    () => clock
   );
 });
 
@@ -41,6 +44,8 @@ describe('secrets handlers', () => {
       ['save', 'anthropic', SECRET, { ...CHECK, check: 'yes' }],
       ['save', 'anthropic', SECRET, { ...CHECK, model: '' }],
       ['check', 'anthropic', 7],
+      ['listModels', 'ollama', false],
+      ['listModels', 'anthropic', 'yes'],
       ['remove', 'ollama'],
     ];
     for (const [method, ...args] of refusals) {
@@ -64,7 +69,7 @@ describe('secrets handlers', () => {
       },
       modelFound: true,
     });
-    expect(tested).toEqual([{ provider: 'anthropic', key: SECRET, model: MODEL }]);
+    expect(tested).toEqual([{ provider: 'anthropic', key: SECRET }]);
     expect(os.entries.get('anthropic')).toBe(SECRET);
   });
 
@@ -91,13 +96,22 @@ describe('secrets handlers', () => {
     expect(await handlers.check('openai', MODEL)).toEqual(answer);
     expect(await handlers.status()).toMatchObject({ saved: { openai: { checkedAt: null } } });
 
-    answer = { ok: true, modelFound: false };
+    answer = { ok: true, models: ['gpt-6-luna'], hiddenCount: 4 };
     expect(await handlers.check('openai', ` ${MODEL} `)).toMatchObject({
       ok: true,
       status: { saved: { openai: { checkedAt: 1_000 } } },
       modelFound: false,
     });
-    expect(tested.at(-1)).toEqual({ provider: 'openai', key: 'sk-saved', model: MODEL });
+    expect(tested.at(-1)).toEqual({ provider: 'openai', key: 'sk-saved' });
+  });
+
+  it('find Gemini’s model by either of its names', async () => {
+    answer = { ok: true, models: ['gemini-3.8-flash'], hiddenCount: 0 };
+    const saved = await handlers.save('gemini', 'AIza-key', {
+      ...CHECK,
+      model: 'models/gemini-3.8-flash',
+    });
+    expect(saved).toMatchObject({ ok: true, modelFound: true });
   });
 
   it('answer a check with no key to check, or one the keychain keeps to itself', async () => {
@@ -111,5 +125,52 @@ describe('secrets handlers', () => {
     os.refusing.add('get');
     expect(await handlers.check('anthropic', MODEL)).toEqual({ ok: false, reason: 'keychain' });
     expect(tested).toEqual([]);
+  });
+});
+
+describe('model lists', () => {
+  it('keep the list a check made, answered without asking the keychain again', async () => {
+    await handlers.save('anthropic', SECRET, CHECK);
+    tested = [];
+    os.calls.length = 0;
+    clock = 9_000;
+
+    expect(await handlers.listModels('anthropic', false)).toEqual({
+      ok: true,
+      list: { models: [MODEL, 'claude-opus-5'], hiddenCount: 0, listedAt: 1_000 },
+    });
+    expect(tested).toEqual([]);
+    expect(os.calls).toEqual([]);
+  });
+
+  it('ask the provider again on refresh, or once a new key is saved', async () => {
+    await handlers.save('anthropic', SECRET, CHECK);
+    clock = 2_000;
+    answer = { ok: true, models: ['claude-haiku-5'], hiddenCount: 0 };
+    expect(await handlers.listModels('anthropic', true)).toMatchObject({
+      list: { models: ['claude-haiku-5'], listedAt: 2_000 },
+    });
+
+    await handlers.save('anthropic', 'sk-ant-newer', { ...CHECK, check: false });
+    clock = 3_000;
+    expect(await handlers.listModels('anthropic', false)).toMatchObject({
+      list: { listedAt: 3_000 },
+    });
+    expect(tested.at(-1)).toEqual({ provider: 'anthropic', key: 'sk-ant-newer' });
+  });
+
+  it('say why there is no list', async () => {
+    expect(await handlers.listModels('openai', false)).toEqual({ ok: false, reason: 'no-key' });
+
+    await handlers.save('anthropic', SECRET, CHECK);
+    await handlers.remove('anthropic');
+    expect(await handlers.listModels('anthropic', false)).toEqual({
+      ok: false,
+      reason: 'no-key',
+    });
+
+    await handlers.save('openai', 'sk-saved', { ...CHECK, check: false });
+    answer = { ok: false, reason: 'failed', httpStatus: 503 };
+    expect(await handlers.listModels('openai', false)).toEqual(answer);
   });
 });

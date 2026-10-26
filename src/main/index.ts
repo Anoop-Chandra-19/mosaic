@@ -39,7 +39,7 @@ if (!app.requestSingleInstanceLock()) {
     registerDbHandlers(getAppDatabase, isAppFrame);
     registerFileHandlers(isAppFrame);
     registerBackupHandlers(getAppDatabase, isAppFrame);
-    registerModelProviderHandlers(isAppFrame);
+    registerModelProviderHandlers(getAppDatabase, isAppFrame);
     registerSecretsHandlers(apiKeys, isAppFrame);
     const readDevSwitches = app.isPackaged ? null : registerDevHandlers(isAppFrame);
     const agentRuns = registerAgentHandlers(getAppDatabase, apiKeys, isAppFrame, readDevSwitches);

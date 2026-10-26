@@ -24,8 +24,16 @@ export type OllamaModels =
    */
   | { ok: false; reason: 'unreachable' | 'failed' | 'invalid-address' };
 
+/** A provider and model the assistant has run with. */
+export interface UsedModel {
+  provider: ModelProviderId;
+  model: string;
+}
+
 /** `window.mosaic.modelProviders`: what main can find out about model providers for the renderer. */
 export interface MosaicModelProviders {
+  /** Every provider and model a run has used, the most recently used first. */
+  usedModels(): Promise<UsedModel[]>;
   /**
    * The chat models pulled into the Ollama at `address` — this machine's by default, or one
    * on the network. Embedding-only models are left out.

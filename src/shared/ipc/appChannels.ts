@@ -27,6 +27,7 @@ export const BACKUP_CHANNELS = {
 
 /** Renderer → main: `MosaicModelProviders`, one channel per method. */
 export const MODEL_PROVIDERS_CHANNELS = {
+  usedModels: 'model-providers:used-models',
   ollamaModels: 'model-providers:ollama-models',
 } as const satisfies Record<keyof MosaicModelProviders, string>;
 
@@ -35,6 +36,7 @@ export const SECRETS_CHANNELS = {
   status: 'secrets:status',
   save: 'secrets:save',
   check: 'secrets:check',
+  listModels: 'secrets:list-models',
   remove: 'secrets:remove',
   forgetAll: 'secrets:forget-all',
 } as const satisfies Record<keyof MosaicSecrets, string>;

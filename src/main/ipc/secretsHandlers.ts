@@ -3,9 +3,12 @@ import {
   MAX_KEY_LENGTH,
   type KeyCheck,
   type KeyedProvider,
+  type ModelList,
+  type ModelListing,
   type MosaicSecrets,
   type SaveKeyOptions,
 } from '@shared/types/secrets';
+import type { ProviderModels } from '../model-providers/listModels';
 import type { KeyTest } from '../model-providers/testApiKey';
 import { KeychainError, type ApiKeys } from '../secrets/apiKeys';
 
@@ -21,8 +24,8 @@ export type SecretsHandlers = {
     : never;
 };
 
-/** A key test against the provider, given a key that has already been checked. */
-export type TestKey = (provider: KeyedProvider, key: string, model: string) => Promise<KeyTest>;
+/** A key test against the provider, given a key whose form has already been checked. */
+export type TestKey = (provider: KeyedProvider, key: string) => Promise<KeyTest>;
 
 function keyedProvider(value: unknown): KeyedProvider {
   if (!KEYED_PROVIDERS.includes(value as KeyedProvider)) {
@@ -57,7 +60,46 @@ function saveKeyOptions(value: unknown): SaveKeyOptions {
   };
 }
 
-export function createSecretsHandlers(keys: ApiKeys, testKey: TestKey): SecretsHandlers {
+/** Gemini's own names start `models/`; its list leaves that off. */
+const isModelListed = (models: ProviderModels, model: string) =>
+  models.models.includes(model.replace(/^models\//, ''));
+
+type SavedKeyRead =
+  | { ok: true; key: string; savedAt: number }
+  | { ok: false; reason: 'no-key' | 'keychain' };
+
+export function createSecretsHandlers(
+  keys: ApiKeys,
+  testKey: TestKey,
+  now: () => number = Date.now
+): SecretsHandlers {
+  /** The last list each key gave, by the key's `savedAt`: a key saved since makes it stale. */
+  const lists = new Map<KeyedProvider, { savedAt: number; list: ModelList }>();
+
+  const keepList = (provider: KeyedProvider, savedAt: number, models: ProviderModels) => {
+    const list: ModelList = {
+      models: models.models,
+      hiddenCount: models.hiddenCount,
+      listedAt: now(),
+    };
+    lists.set(provider, { savedAt, list });
+    return list;
+  };
+
+  const readSavedKey = async (provider: KeyedProvider): Promise<SavedKeyRead> => {
+    const saved = (await keys.status()).saved[provider];
+    if (!saved) return { ok: false, reason: 'no-key' };
+    let key: string | undefined;
+    try {
+      key = await keys.read(provider);
+    } catch (error) {
+      if (error instanceof KeychainError) return { ok: false, reason: 'keychain' };
+      throw error;
+    }
+    if (key === undefined) return { ok: false, reason: 'no-key' };
+    return { ok: true, key, savedAt: saved.savedAt };
+  };
+
   return {
     status: () => keys.status(),
 
@@ -70,29 +112,38 @@ export function createSecretsHandlers(keys: ApiKeys, testKey: TestKey): SecretsH
         return { ok: true, status, modelFound: null };
       }
       // A key already saved stays in place until this one passes.
-      const test = await testKey(checked, secret, model);
+      const test = await testKey(checked, secret);
       if (!test.ok) return test;
       const status = await keys.save(checked, secret, { forgetOnClose, checked: true });
-      return { ok: true, status, modelFound: test.modelFound };
+      const savedAt = status.saved[checked]?.savedAt;
+      if (savedAt !== undefined) keepList(checked, savedAt, test);
+      return { ok: true, status, modelFound: isModelListed(test, model) };
     },
 
     check: async (provider, model): Promise<KeyCheck> => {
       const checked = keyedProvider(provider);
       const name = modelName(model);
-      const saved = (await keys.status()).saved[checked];
-      if (!saved) return { ok: false, reason: 'no-key' };
-      let secret: string | undefined;
-      try {
-        secret = await keys.read(checked);
-      } catch (error) {
-        if (error instanceof KeychainError) return { ok: false, reason: 'keychain' };
-        throw error;
-      }
-      if (secret === undefined) return { ok: false, reason: 'no-key' };
-      const test = await testKey(checked, secret, name);
+      const saved = await readSavedKey(checked);
+      if (!saved.ok) return saved;
+      const test = await testKey(checked, saved.key);
       if (!test.ok) return test;
+      keepList(checked, saved.savedAt, test);
       const status = await keys.markChecked(checked, saved.savedAt);
-      return { ok: true, status, modelFound: test.modelFound };
+      return { ok: true, status, modelFound: isModelListed(test, name) };
+    },
+
+    listModels: async (provider, refresh): Promise<ModelListing> => {
+      const checked = keyedProvider(provider);
+      if (typeof refresh !== 'boolean') throw new Error('refresh must be true or false');
+      // Status first: a kept list is answered without asking the keychain for the key.
+      const savedAt = (await keys.status()).saved[checked]?.savedAt;
+      const kept = lists.get(checked);
+      if (!refresh && kept && kept.savedAt === savedAt) return { ok: true, list: kept.list };
+      const saved = await readSavedKey(checked);
+      if (!saved.ok) return saved;
+      const test = await testKey(checked, saved.key);
+      if (!test.ok) return test;
+      return { ok: true, list: keepList(checked, saved.savedAt, test) };
     },
 
     remove: (provider) => keys.remove(keyedProvider(provider)),

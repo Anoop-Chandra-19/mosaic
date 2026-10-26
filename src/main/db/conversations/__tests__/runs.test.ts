@@ -4,7 +4,7 @@ import { openDatabase, type Database } from '../../connection';
 import { createTemplate, removeTemplate } from '../../resumes/templates';
 import { createConversation } from '../conversations';
 import { appendMessage, readMessagePage } from '../messages';
-import { finishRun, startRun } from '../runs';
+import { finishRun, listUsedModels, startRun } from '../runs';
 
 let db: Database;
 let conversationId: number;
@@ -61,6 +61,23 @@ describe('finishRun', () => {
     expect(() => finishRun(db, run.id, { status: 'done' })).toThrow(
       expect.objectContaining({ code: 'not-found' })
     );
+  });
+});
+
+describe('listUsedModels', () => {
+  it('lists each provider and model once, the most recently used first', () => {
+    const use = (provider: string, model: string) =>
+      startRun(db, { conversationId, templateId: null, provider, model });
+    use('openai', 'gpt-5.6-terra');
+    use('openrouter', 'openai/gpt-5.6-terra');
+    use('openai', 'gpt-6-luna');
+    use('openai', 'gpt-5.6-terra');
+
+    expect(listUsedModels(db)).toEqual([
+      { provider: 'openai', model: 'gpt-5.6-terra' },
+      { provider: 'openai', model: 'gpt-6-luna' },
+      { provider: 'openrouter', model: 'openai/gpt-5.6-terra' },
+    ]);
   });
 });
 

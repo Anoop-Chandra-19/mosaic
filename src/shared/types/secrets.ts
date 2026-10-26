@@ -66,6 +66,20 @@ export type KeyCheck =
       httpStatus?: number;
     };
 
+/** The chat models a key can use, as the provider listed them. */
+export interface ModelList {
+  /** Newest first, where the provider dates them. */
+  models: string[];
+  /** Models listed but left out: embeddings, speech, images, or (OpenRouter) no tool calls. */
+  hiddenCount: number;
+  /** When the provider was asked, in milliseconds since the epoch. */
+  listedAt: number;
+}
+
+export type ModelListing =
+  | { ok: true; list: ModelList }
+  | { ok: false; reason: Extract<KeyCheck, { ok: false }>['reason']; httpStatus?: number };
+
 /**
  * `window.mosaic.secrets`: API keys, kept by main. A key goes in and never comes back out —
  * main makes every call that needs one.
@@ -81,6 +95,11 @@ export interface MosaicSecrets {
   save(provider: KeyedProvider, key: string, options: SaveKeyOptions): Promise<KeyCheck>;
   /** Checks the saved key again, for a key saved without checking. */
   check(provider: KeyedProvider, model: string): Promise<KeyCheck>;
+  /**
+   * The chat models the saved key can use. A check lists them too, and main keeps the last
+   * list for each key until Mosaic closes; `refresh` asks the provider again.
+   */
+  listModels(provider: KeyedProvider, refresh: boolean): Promise<ModelListing>;
   remove(provider: KeyedProvider): Promise<SecretsStatus>;
   /** Every key, from both places. */
   forgetAll(): Promise<SecretsStatus>;

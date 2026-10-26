@@ -75,6 +75,8 @@ const secrets: MosaicSecrets = {
   save: (provider, key, options) =>
     ipcRenderer.invoke(SECRETS_CHANNELS.save, provider, key, options),
   check: (provider, model) => ipcRenderer.invoke(SECRETS_CHANNELS.check, provider, model),
+  listModels: (provider, refresh) =>
+    ipcRenderer.invoke(SECRETS_CHANNELS.listModels, provider, refresh),
   remove: (provider) => ipcRenderer.invoke(SECRETS_CHANNELS.remove, provider),
   forgetAll: () => ipcRenderer.invoke(SECRETS_CHANNELS.forgetAll),
 };
@@ -115,6 +117,7 @@ const agent: MosaicAgent = {
 };
 
 const modelProviders: MosaicModelProviders = {
+  usedModels: () => ipcRenderer.invoke(MODEL_PROVIDERS_CHANNELS.usedModels),
   ollamaModels: (address) => ipcRenderer.invoke(MODEL_PROVIDERS_CHANNELS.ollamaModels, address),
 };
 

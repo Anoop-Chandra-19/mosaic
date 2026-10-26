@@ -8,10 +8,14 @@ import { test } from '../harness/launch';
 
 const KEY = 'sk-ant-e2e-made-up-key';
 
-/** Every request main makes to a provider answers with `status` — nothing leaves the machine. */
+/**
+ * Every request main makes to a provider answers with `status`, and an empty model list when
+ * it works — nothing leaves the computer.
+ */
 async function providerAnswers(app: ElectronApplication, status: number) {
   await app.evaluate(({ net }, answer) => {
-    net.fetch = async () => new Response(null, { status: answer });
+    net.fetch = async () =>
+      answer === 200 ? Response.json({ data: [] }) : new Response(null, { status: answer });
   }, status);
 }
 
