@@ -5,8 +5,8 @@ describe('detectKeyProvider', () => {
   it.each([
     ['sk-ant-api03-made-up', 'anthropic'],
     ['sk-or-v1-made-up', 'openrouter'],
-    ['AIzaSyMadeUp', 'gemini'],
-    ['AQ.MadeUpKey', 'gemini'],
+    ['AIzaSyMadeUp', 'google'],
+    ['AQ.MadeUpKey', 'google'],
     ['sk-proj-made-up', 'openai'],
     ['sk-made-up', 'openai'],
     ['made-up-key', null],

@@ -1,12 +1,12 @@
 import type { KeyedProvider } from '@shared/types/secrets';
 
-/** Most specific first: every prefix but Gemini's starts like OpenAI's. */
+/** Most specific first: every prefix but Google's starts like OpenAI's. */
 const KEY_PREFIXES: [prefix: string, provider: KeyedProvider][] = [
   ['sk-ant-', 'anthropic'],
   ['sk-or-', 'openrouter'],
-  ['AIza', 'gemini'],
+  ['AIza', 'google'],
   // Google's newer keys.
-  ['AQ.', 'gemini'],
+  ['AQ.', 'google'],
   ['sk-', 'openai'],
 ];
 

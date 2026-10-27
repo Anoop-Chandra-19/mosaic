@@ -18,7 +18,7 @@ export function readKeyState(
   return saved.where === 'session' ? 'savedForSession' : 'saved';
 }
 
-/** "an OpenAI", "a Gemini". */
+/** "an OpenAI", "a Google". */
 export const withArticle = (label: string) => `${/^[AEIOU]/.test(label) ? 'an' : 'a'} ${label}`;
 
 function describeWhere(saved: SavedKey, keychain: SecretsStatus['keychain']): string {

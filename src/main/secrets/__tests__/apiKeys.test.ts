@@ -121,7 +121,7 @@ describe('API keys', () => {
 
   it('are all forgotten, including keychain entries Mosaic has no note of', async () => {
     await keys.save('anthropic', SECRET, CHECKED);
-    os.entries.set('gemini', 'left by an earlier install');
+    os.entries.set('google', 'left by an earlier install');
     await keys.save('openai', 'sk-session', FORGET);
 
     expect(await keys.forgetAll()).toMatchObject({ saved: {} });

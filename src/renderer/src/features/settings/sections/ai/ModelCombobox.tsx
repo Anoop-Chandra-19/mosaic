@@ -25,7 +25,7 @@ import type { ModelListAnswer } from './useModelList';
 const HIDDEN_KINDS: Record<KeyedProvider, string> = {
   anthropic: 'embeddings, speech, images',
   openai: 'embeddings, speech, images',
-  gemini: 'embeddings, speech, images',
+  google: 'embeddings, speech, images',
   openrouter: 'no tool use',
 };
 

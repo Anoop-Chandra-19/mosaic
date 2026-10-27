@@ -27,7 +27,7 @@ const lockedKeychain: ReadApiKey = async () => {
 };
 
 const REFUSALS: [string, ModelProviderId, ReadApiKey, ModelProviderRefusal][] = [
-  ['a provider this build can’t run', 'gemini', async () => 'AIza-test-1', 'providerNotSupported'],
+  ['a provider this build can’t run', 'google', async () => 'AIza-test-1', 'providerNotSupported'],
   ['no saved key', 'openai', async () => undefined, 'noApiKey'],
   ['a keychain that won’t give the key back', 'openai', lockedKeychain, 'keychainRefused'],
 ];
