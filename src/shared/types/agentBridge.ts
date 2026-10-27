@@ -20,11 +20,10 @@ export interface AgentCarryOnRequest {
 }
 
 /**
- * `providerNotSupported`: Settings names a provider this build can't run yet. `noApiKey`:
- * no key is saved for it. `keychainRefused`: the keychain holds the key but wouldn't give
- * it back (locked, or its prompt was turned down).
+ * `noApiKey`: no key is saved for the provider Settings names. `keychainRefused`: the
+ * keychain holds the key but wouldn't give it back (locked, or its prompt was turned down).
  */
-export type ModelProviderRefusal = 'providerNotSupported' | 'noApiKey' | 'keychainRefused';
+export type ModelProviderRefusal = 'noApiKey' | 'keychainRefused';
 
 /** `assistantOff`: the assistant is off in Settings. `runInProgress`: one run at a time. */
 export type AgentStartRefusal = 'assistantOff' | 'runInProgress' | ModelProviderRefusal;

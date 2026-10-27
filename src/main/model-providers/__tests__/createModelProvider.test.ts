@@ -27,7 +27,6 @@ const lockedKeychain: ReadApiKey = async () => {
 };
 
 const REFUSALS: [string, ModelProviderId, ReadApiKey, ModelProviderRefusal][] = [
-  ['a provider this build can’t run', 'google', async () => 'AIza-test-1', 'providerNotSupported'],
   ['no saved key', 'openai', async () => undefined, 'noApiKey'],
   ['a keychain that won’t give the key back', 'openai', lockedKeychain, 'keychainRefused'],
 ];
@@ -49,16 +48,22 @@ describe('createModelProvider', () => {
   });
 
   it.each([
-    ['openai', 'https://api.openai.com/v1/responses'],
-    ['anthropic', 'https://api.anthropic.com/v1/messages'],
-  ] as const)('opens %s with the saved key', async (provider, expectedUrl) => {
+    ['openai', 'https://api.openai.com/v1/responses', 'authorization', 'Bearer sk-test-0000'],
+    ['anthropic', 'https://api.anthropic.com/v1/messages', 'authorization', 'Bearer sk-test-0000'],
+    [
+      'google',
+      'https://generativelanguage.googleapis.com/v1beta/models/gpt-5.6-terra:streamGenerateContent?alt=sse',
+      'x-goog-api-key',
+      'sk-test-0000',
+    ],
+  ] as const)('opens %s with the saved key', async (provider, expectedUrl, header, sent) => {
     const opened = needs(async () => 'sk-test-0000');
     const created = await createModelProvider(choice(provider), opened);
     if (!created.ok) throw new Error('not opened');
     const request = {
       model: 'gpt-5.6-terra',
       system: '',
-      messages: [],
+      messages: [{ role: 'user' as const, text: 'Tighten my summary.' }],
       tools: [],
       cacheKey: 'mosaic-conversation-1',
       signal: new AbortController().signal,
@@ -67,6 +72,6 @@ describe('createModelProvider', () => {
 
     const [url, init] = opened.fetch.mock.calls[0];
     expect(url).toBe(expectedUrl);
-    expect(new Headers(init?.headers).get('authorization')).toBe('Bearer sk-test-0000');
+    expect(new Headers(init?.headers).get(header)).toBe(sent);
   });
 });
