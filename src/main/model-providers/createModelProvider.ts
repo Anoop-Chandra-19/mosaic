@@ -42,7 +42,7 @@ const CREATE_KEYED_PROVIDER: Record<KeyedProvider, CreateKeyedProvider | null> =
   openai: (apiKey, fetch) => createOpenAiModelProvider({ apiKey, fetch }),
   openrouter: (apiKey, fetch) => createOpenRouterModelProvider({ apiKey, fetch }),
   anthropic: (apiKey, fetch) => createAnthropicModelProvider({ apiKey, fetch }),
-  gemini: null,
+  google: null,
 };
 
 export const isModelProviderId = (value: unknown): value is ModelProviderId =>

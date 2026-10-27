@@ -24,8 +24,8 @@ export const MODEL_PROVIDER_OPTIONS: ModelProviderOption[] = [
     hint: 'Balanced quality and speed for writing workflows.',
   },
   {
-    id: 'gemini',
-    label: 'Gemini',
+    id: 'google',
+    label: 'Google',
     trust: 'Direct API',
     hint: 'Good cost-performance for frequent iterations.',
   },
@@ -52,6 +52,6 @@ export const MODEL_PROVIDER_OPTION_BY_ID = MODEL_PROVIDER_OPTIONS.reduce(
 export const KEY_PAGE_URLS: Record<KeyedProvider, string> = {
   anthropic: 'https://console.anthropic.com/settings/keys',
   openai: 'https://platform.openai.com/api-keys',
-  gemini: 'https://aistudio.google.com/apikey',
+  google: 'https://aistudio.google.com/apikey',
   openrouter: 'https://openrouter.ai/keys',
 };

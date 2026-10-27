@@ -81,7 +81,7 @@ describe('listModels', () => {
       }
     );
 
-    expect(await listModels('gemini', KEY, fetch)).toEqual({
+    expect(await listModels('google', KEY, fetch)).toEqual({
       ok: true,
       models: ['gemini-3.8-flash', 'gemini-3.8-pro'],
       hiddenCount: 3,
@@ -120,7 +120,7 @@ describe('listModels', () => {
     });
     expect(
       await listModels(
-        'gemini',
+        'google',
         KEY,
         answering(400, '{"error":{"details":[{"reason":"API_KEY_INVALID"}]}}')
       )

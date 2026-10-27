@@ -77,7 +77,7 @@ The renderer makes no requests. Main makes only these:
 From the Claude Design project's `src/lib/agent/README.md` and design memory:
 
 - Main runs each turn (`runAgentTurn`) with the key and the provider SDKs: OpenAI,
-  Anthropic, and Gemini through their SDKs; OpenRouter and Ollama over raw HTTP. Turns are
+  Anthropic, and Google through their SDKs; OpenRouter and Ollama over raw HTTP. Turns are
   stateless (`store: false`), so the transcript never lives on a provider's servers.
 - Tool calls never change the document. Main sends a `ToolRequest`; the renderer answers
   reads or validates and stages proposed ops (reconstruction, anchor against `rev`,

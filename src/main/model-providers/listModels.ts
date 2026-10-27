@@ -100,8 +100,8 @@ const SOURCES: Record<KeyedProvider, ModelListSource> = {
       };
     },
   },
-  gemini: {
-    firstUrl: `${PROVIDER_API_URL.gemini}/v1beta/models?pageSize=1000`,
+  google: {
+    firstUrl: `${PROVIDER_API_URL.google}/v1beta/models?pageSize=1000`,
     headers: (key) => ({ 'x-goog-api-key': key }),
     readPage: (body, url) => {
       const page = body as Entry;
@@ -145,7 +145,7 @@ export async function readFailure(response: Response): Promise<Failure | null> {
   const httpStatus = response.status;
   if (response.ok) return null;
   if (httpStatus === 401 || httpStatus === 403) return { ok: false, reason: 'refused', httpStatus };
-  // Gemini turns down a bad key with a 400 rather than a 401.
+  // Google turns down a bad key with a 400 rather than a 401.
   if (httpStatus === 400 && (await response.text().catch(() => '')).includes('API_KEY_INVALID')) {
     return { ok: false, reason: 'refused', httpStatus };
   }

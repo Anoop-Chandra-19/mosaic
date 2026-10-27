@@ -4,7 +4,7 @@ import type { ModelProviderId } from './modelProviders';
 export const KEYED_PROVIDERS = [
   'openai',
   'anthropic',
-  'gemini',
+  'google',
   'openrouter',
 ] as const satisfies readonly ModelProviderId[];
 

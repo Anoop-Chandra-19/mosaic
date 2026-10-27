@@ -103,7 +103,7 @@ describe('secrets handlers', () => {
   });
 
   it('answer a check with no key to check, or one the keychain keeps to itself', async () => {
-    expect(await handlers.check('gemini')).toEqual({
+    expect(await handlers.check('google')).toEqual({
       ok: false,
       reason: 'no-key',
     });

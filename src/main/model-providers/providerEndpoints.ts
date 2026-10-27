@@ -8,7 +8,7 @@ export const PROVIDER_API_URL: Record<KeyedProvider, string> = {
   openai: 'https://api.openai.com/v1',
   openrouter: 'https://openrouter.ai/api/v1',
   anthropic: 'https://api.anthropic.com',
-  gemini: 'https://generativelanguage.googleapis.com',
+  google: 'https://generativelanguage.googleapis.com',
 };
 
 /** A model's reply, until it starts; once it streams, the loop's stall check watches it. */

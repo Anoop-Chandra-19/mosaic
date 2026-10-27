@@ -1,4 +1,4 @@
-export type ModelProviderId = 'openai' | 'anthropic' | 'gemini' | 'ollama' | 'openrouter';
+export type ModelProviderId = 'openai' | 'anthropic' | 'google' | 'ollama' | 'openrouter';
 
 /** The setting the renderer keeps the assistant's settings in; main reads it to start a run. */
 export const AGENT_SETTINGS_KEY = 'agentSettings';
