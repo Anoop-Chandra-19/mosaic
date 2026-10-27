@@ -3,6 +3,7 @@ import type { ModelProviderId } from '@shared/types/modelProviders';
 import { isKeyedProvider, type KeyedProvider } from '@shared/types/secrets';
 import { KeychainError } from '../secrets/apiKeys';
 import { createAnthropicModelProvider, type AnthropicFetch } from './anthropicModelProvider';
+import { createGoogleModelProvider, type GoogleFetch } from './googleModelProvider';
 import type { ModelProvider } from './modelProvider';
 import { createOllamaModelProvider } from './ollamaModelProvider';
 import type { OllamaFetch } from './ollamaModels';
@@ -33,16 +34,15 @@ export type ModelProviderOpening =
   | { ok: true; modelProvider: ModelProvider }
   | { ok: false; reason: ModelProviderRefusal };
 
-type KeyedFetch = OpenAiFetch & AnthropicFetch;
+type KeyedFetch = OpenAiFetch & AnthropicFetch & GoogleFetch;
 
 type CreateKeyedProvider = (apiKey: string, fetch: KeyedFetch) => ModelProvider;
 
-/** Null for a provider whose adapter this build doesn't have yet. */
-const CREATE_KEYED_PROVIDER: Record<KeyedProvider, CreateKeyedProvider | null> = {
+const CREATE_KEYED_PROVIDER: Record<KeyedProvider, CreateKeyedProvider> = {
   openai: (apiKey, fetch) => createOpenAiModelProvider({ apiKey, fetch }),
   openrouter: (apiKey, fetch) => createOpenRouterModelProvider({ apiKey, fetch }),
   anthropic: (apiKey, fetch) => createAnthropicModelProvider({ apiKey, fetch }),
-  google: null,
+  google: (apiKey, fetch) => createGoogleModelProvider({ apiKey, fetch }),
 };
 
 export const isModelProviderId = (value: unknown): value is ModelProviderId =>
@@ -52,7 +52,7 @@ const refused = (reason: ModelProviderRefusal): ModelProviderOpening => ({ ok: f
 
 /**
  * The provider a run talks to, with its saved key read as the run starts (the keychain may
- * ask first). Refused when this build can't run the chosen provider yet, or there's no key.
+ * ask first). Refused when there's no key, or the keychain won't give it back.
  */
 export async function createModelProvider(
   { provider, ollama }: ModelChoice,
@@ -67,8 +67,6 @@ export async function createModelProvider(
     });
     return { ok: true, modelProvider };
   }
-  const create = CREATE_KEYED_PROVIDER[provider];
-  if (!create) return refused('providerNotSupported');
   let apiKey: string | undefined;
   try {
     apiKey = await readApiKey(provider);
@@ -77,5 +75,5 @@ export async function createModelProvider(
     throw error;
   }
   if (!apiKey) return refused('noApiKey');
-  return { ok: true, modelProvider: create(apiKey, fetch) };
+  return { ok: true, modelProvider: CREATE_KEYED_PROVIDER[provider](apiKey, fetch) };
 }

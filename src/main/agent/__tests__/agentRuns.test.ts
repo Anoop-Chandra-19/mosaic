@@ -61,7 +61,7 @@ function setUp({ replies, answer, toolAnswerMs = RUN_LIMITS.toolAnswerMs, provid
       await providerOpened;
       return choice.provider === 'ollama'
         ? { ok: true, modelProvider: model.provider }
-        : { ok: false, reason: 'providerNotSupported' };
+        : { ok: false, reason: 'noApiKey' };
     },
     limits: { ...RUN_LIMITS, toolAnswerMs },
     wait: async () => {},
@@ -122,7 +122,7 @@ describe('a run started from the page', () => {
     storeSettings({ enabled: false });
     expect(await ask()).toEqual({ ok: false, reason: 'assistantOff' });
     storeSettings({ provider: 'openai' });
-    expect(await ask()).toEqual({ ok: false, reason: 'providerNotSupported' });
+    expect(await ask()).toEqual({ ok: false, reason: 'noApiKey' });
     storeSettings({});
     const first = ask();
     expect(await ask()).toEqual({ ok: false, reason: 'runInProgress' });

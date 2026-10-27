@@ -115,7 +115,7 @@ No ORM: `db/` is the layer every other module goes through, and ESLint enforces 
 ## Model providers (`model-providers/`)
 
 - **Only `model-providers/` talks to a provider.** It alone imports a provider's SDK
-  (`openai`, `@anthropic-ai/sdk`) or Node's HTTP modules; the rest of main hands it Electron's `net.fetch`.
+  (`openai`, `@anthropic-ai/sdk`, `@google/genai`) or Node's HTTP modules; the rest of main hands it Electron's `net.fetch`.
   SDK types stay inside too. `bun run check:deps` enforces it.
 - An adapter returns our `ModelStreamEvent`s and `ModelProviderError`s and never throws. It
   keeps the provider's message and HTTP status, and sorts its errors by a table (a refused
