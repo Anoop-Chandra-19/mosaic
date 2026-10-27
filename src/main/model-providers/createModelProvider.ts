@@ -2,6 +2,7 @@ import type { ModelProviderRefusal } from '@shared/types/agentBridge';
 import type { ModelProviderId } from '@shared/types/modelProviders';
 import { isKeyedProvider, type KeyedProvider } from '@shared/types/secrets';
 import { KeychainError } from '../secrets/apiKeys';
+import { createAnthropicModelProvider, type AnthropicFetch } from './anthropicModelProvider';
 import type { ModelProvider } from './modelProvider';
 import { createOllamaModelProvider } from './ollamaModelProvider';
 import type { OllamaFetch } from './ollamaModels';
@@ -23,7 +24,7 @@ export interface ModelChoice {
 
 export interface ModelProviderNeeds {
   /** Main passes Electron's `net.fetch`, which serves every provider. */
-  fetch: OllamaFetch & OpenAiFetch;
+  fetch: OllamaFetch & KeyedFetch;
   /** The saved key; rejects with `KeychainError` if the keychain won't give it back. */
   readApiKey: (provider: KeyedProvider) => Promise<string | undefined>;
 }
@@ -32,13 +33,15 @@ export type ModelProviderOpening =
   | { ok: true; modelProvider: ModelProvider }
   | { ok: false; reason: ModelProviderRefusal };
 
-type CreateKeyedProvider = (apiKey: string, fetch: OpenAiFetch) => ModelProvider;
+type KeyedFetch = OpenAiFetch & AnthropicFetch;
+
+type CreateKeyedProvider = (apiKey: string, fetch: KeyedFetch) => ModelProvider;
 
 /** Null for a provider whose adapter this build doesn't have yet. */
 const CREATE_KEYED_PROVIDER: Record<KeyedProvider, CreateKeyedProvider | null> = {
   openai: (apiKey, fetch) => createOpenAiModelProvider({ apiKey, fetch }),
   openrouter: (apiKey, fetch) => createOpenRouterModelProvider({ apiKey, fetch }),
-  anthropic: null,
+  anthropic: (apiKey, fetch) => createAnthropicModelProvider({ apiKey, fetch }),
   gemini: null,
 };
 

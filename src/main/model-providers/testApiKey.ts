@@ -6,6 +6,7 @@ import {
   type ModelListAnswer,
   type ModelListFetch,
 } from './listModels';
+import { PROVIDER_API_URL } from './providerEndpoints';
 
 /** What the provider said about a key, with the reasons `KeyCheck` gives. Never echoes the key. */
 export type KeyTest = ModelListAnswer;
@@ -23,7 +24,7 @@ export async function testApiKey(
 ): Promise<KeyTest> {
   if (provider === 'openrouter') {
     const response = await requestWithKey(
-      'https://openrouter.ai/api/v1/key',
+      `${PROVIDER_API_URL.openrouter}/key`,
       { Authorization: `Bearer ${key}` },
       fetch
     );
