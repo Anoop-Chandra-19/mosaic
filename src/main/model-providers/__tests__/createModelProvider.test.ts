@@ -27,7 +27,7 @@ const lockedKeychain: ReadApiKey = async () => {
 };
 
 const REFUSALS: [string, ModelProviderId, ReadApiKey, ModelProviderRefusal][] = [
-  ['a provider this build can’t run', 'anthropic', async () => 'sk-ant-1', 'providerNotSupported'],
+  ['a provider this build can’t run', 'gemini', async () => 'AIza-test-1', 'providerNotSupported'],
   ['no saved key', 'openai', async () => undefined, 'noApiKey'],
   ['a keychain that won’t give the key back', 'openai', lockedKeychain, 'keychainRefused'],
 ];
@@ -48,9 +48,12 @@ describe('createModelProvider', () => {
     expect(readApiKey).not.toHaveBeenCalled();
   });
 
-  it('opens OpenAI with the saved key', async () => {
+  it.each([
+    ['openai', 'https://api.openai.com/v1/responses'],
+    ['anthropic', 'https://api.anthropic.com/v1/messages'],
+  ] as const)('opens %s with the saved key', async (provider, expectedUrl) => {
     const opened = needs(async () => 'sk-test-0000');
-    const created = await createModelProvider(choice('openai'), opened);
+    const created = await createModelProvider(choice(provider), opened);
     if (!created.ok) throw new Error('not opened');
     const request = {
       model: 'gpt-5.6-terra',
@@ -63,7 +66,7 @@ describe('createModelProvider', () => {
     await created.modelProvider.streamReply(request)[Symbol.asyncIterator]().next();
 
     const [url, init] = opened.fetch.mock.calls[0];
-    expect(url).toBe('https://api.openai.com/v1/responses');
+    expect(url).toBe(expectedUrl);
     expect(new Headers(init?.headers).get('authorization')).toBe('Bearer sk-test-0000');
   });
 });

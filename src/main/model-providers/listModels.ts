@@ -1,4 +1,5 @@
 import type { KeyedProvider } from '@shared/types/secrets';
+import { PROVIDER_API_URL } from './providerEndpoints';
 
 /** `fetch`, narrowed to what a key check or a model list sends. Main passes Electron's `net.fetch`. */
 export type ModelListFetch = (
@@ -70,7 +71,7 @@ function withQuery(url: string, name: string, value: string): string {
 
 const SOURCES: Record<KeyedProvider, ModelListSource> = {
   openai: {
-    firstUrl: 'https://api.openai.com/v1/models',
+    firstUrl: `${PROVIDER_API_URL.openai}/models`,
     headers: (key) => ({ Authorization: `Bearer ${key}` }),
     readPage: (body) => ({
       models: readEntries((body as Entry).data).map((entry) => ({
@@ -82,7 +83,7 @@ const SOURCES: Record<KeyedProvider, ModelListSource> = {
     }),
   },
   anthropic: {
-    firstUrl: 'https://api.anthropic.com/v1/models?limit=1000',
+    firstUrl: `${PROVIDER_API_URL.anthropic}/v1/models?limit=1000`,
     headers: (key) => ({ 'x-api-key': key, 'anthropic-version': '2023-06-01' }),
     readPage: (body, url) => {
       const page = body as Entry;
@@ -100,7 +101,7 @@ const SOURCES: Record<KeyedProvider, ModelListSource> = {
     },
   },
   gemini: {
-    firstUrl: 'https://generativelanguage.googleapis.com/v1beta/models?pageSize=1000',
+    firstUrl: `${PROVIDER_API_URL.gemini}/v1beta/models?pageSize=1000`,
     headers: (key) => ({ 'x-goog-api-key': key }),
     readPage: (body, url) => {
       const page = body as Entry;
@@ -125,7 +126,7 @@ const SOURCES: Record<KeyedProvider, ModelListSource> = {
   },
   // The assistant works through tools, so a model that can't call them isn't offered.
   openrouter: {
-    firstUrl: 'https://openrouter.ai/api/v1/models',
+    firstUrl: `${PROVIDER_API_URL.openrouter}/models`,
     headers: (key) => ({ Authorization: `Bearer ${key}` }),
     readPage: (body) => ({
       models: readEntries((body as Entry).data).map((entry) => ({

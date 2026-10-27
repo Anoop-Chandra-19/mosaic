@@ -1,7 +1,5 @@
 import OpenAI from 'openai';
-
-/** Until the reply starts; once it streams, the loop's stall check watches it. */
-const REQUEST_TIMEOUT_MS = 60_000;
+import { REPLY_START_TIMEOUT_MS } from './providerEndpoints';
 
 /** Electron's `net.fetch` takes no `URL` objects; the SDK only ever passes a string. */
 export type OpenAiFetch = (url: string, init?: RequestInit) => Promise<Response>;
@@ -21,7 +19,7 @@ export function createOpenAiClient(apiKey: string, baseUrl: string, fetch: OpenA
     adminAPIKey: null,
     webhookSecret: null,
     maxRetries: 0,
-    timeout: REQUEST_TIMEOUT_MS,
+    timeout: REPLY_START_TIMEOUT_MS,
     logLevel: 'off',
   });
 }

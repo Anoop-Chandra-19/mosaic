@@ -20,6 +20,7 @@ import { describeNetworkError } from './describeNetworkError';
 import type { ModelMessage, ModelProvider, ModelRequest } from './modelProvider';
 import { createOpenAiClient, type OpenAiFetch } from './openAiClient';
 import { parseToolArguments } from './parseToolArguments';
+import { PROVIDER_API_URL } from './providerEndpoints';
 import { readRateLimit } from './readRateLimit';
 
 /*
@@ -30,8 +31,6 @@ import { readRateLimit } from './readRateLimit';
  * (reasoning details, caching, error metadata) are typed here, since the SDK doesn't know
  * them.
  */
-
-const OPENROUTER_URL = 'https://openrouter.ai/api/v1';
 
 export interface OpenRouterProviderOptions {
   apiKey: string;
@@ -87,7 +86,7 @@ export function createOpenRouterModelProvider({
   fetch,
   now = () => performance.now(),
 }: OpenRouterProviderOptions): ModelProvider {
-  const client = createOpenAiClient(apiKey, OPENROUTER_URL, fetch);
+  const client = createOpenAiClient(apiKey, PROVIDER_API_URL.openrouter, fetch);
   return {
     async *streamReply(request) {
       try {

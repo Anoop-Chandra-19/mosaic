@@ -21,6 +21,7 @@ import { describeNetworkError } from './describeNetworkError';
 import type { ModelMessage, ModelProvider, ModelRequest } from './modelProvider';
 import { createOpenAiClient, type OpenAiFetch } from './openAiClient';
 import { parseToolArguments } from './parseToolArguments';
+import { PROVIDER_API_URL } from './providerEndpoints';
 import { readRateLimit } from './readRateLimit';
 
 /*
@@ -29,8 +30,6 @@ import { readRateLimit } from './readRateLimit';
  * the reasoning part's `providerState`, and goes back unchanged, which keeps it across
  * tool calls.
  */
-
-const OPENAI_URL = 'https://api.openai.com/v1';
 
 export interface OpenAiProviderOptions {
   apiKey: string;
@@ -61,7 +60,7 @@ export function createOpenAiModelProvider({
   fetch,
   now = () => performance.now(),
 }: OpenAiProviderOptions): ModelProvider {
-  const client = createOpenAiClient(apiKey, OPENAI_URL, fetch);
+  const client = createOpenAiClient(apiKey, PROVIDER_API_URL.openai, fetch);
   return {
     async *streamReply(request) {
       try {
