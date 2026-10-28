@@ -124,7 +124,10 @@ describe('API keys', () => {
     os.entries.set('google', 'left by an earlier install');
     await keys.save('openai', 'sk-session', FORGET);
 
-    expect(await keys.forgetAll()).toMatchObject({ saved: {} });
+    expect(await keys.forgetAll()).toEqual({
+      status: { keychain: 'available', saved: {} },
+      unconfirmed: [],
+    });
     expect(os.entries.size).toBe(0);
     expect(await keys.read('openai')).toBeUndefined();
   });
@@ -135,6 +138,37 @@ describe('API keys', () => {
 
     await expect(keys.forgetAll()).rejects.toThrow();
     expect(await keys.status()).toMatchObject({ saved: { anthropic: { where: 'keychain' } } });
+  });
+
+  it('report the entries with no record that the keychain would not delete', async () => {
+    os.refusing.add('delete');
+
+    expect(await keys.forgetAll()).toEqual({
+      status: { keychain: 'unknown', saved: {} },
+      unconfirmed: ['openai', 'anthropic', 'google', 'openrouter'],
+    });
+  });
+
+  it('take a key back from the keychain when its note cannot be written', async () => {
+    storage.isRefusing = true;
+
+    expect((await keys.save('anthropic', SECRET, CHECKED)).saved).toEqual({
+      anthropic: { where: 'session', savedAt: 1_000, checkedAt: 1_000 },
+    });
+    expect(os.entries.size).toBe(0);
+    expect(await keys.read('anthropic')).toBe(SECRET);
+  });
+
+  it('confirm a key gone that has no note and would not be taken back', async () => {
+    storage.isRefusing = true;
+    os.refusing.add('delete');
+    await keys.save('anthropic', SECRET, CHECKED);
+    storage.isRefusing = false;
+
+    await expect(keys.forgetAll()).rejects.toThrow();
+    os.refusing.delete('delete');
+    expect(await keys.forgetAll()).toMatchObject({ unconfirmed: [] });
+    expect(os.entries.size).toBe(0);
   });
 
   it('forget a key deleted from the keychain outside Mosaic', async () => {

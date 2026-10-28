@@ -1,5 +1,6 @@
 import {
   KEYED_PROVIDERS,
+  type ForgetResult,
   type KeyedProvider,
   type SavedKey,
   type SecretsStatus,
@@ -16,6 +17,7 @@ export interface Keyring {
 /** Where main keeps its note of which keys the keychain holds — the settings table. */
 export interface KeyIndexStorage {
   read(): string | null;
+  /** Throws if the note can't be written. */
   write(value: string): void;
 }
 
@@ -76,7 +78,8 @@ export interface ApiKeys {
   /** Notes that the key saved at `savedAt` passed a check; a key saved since is left alone. */
   markChecked(provider: KeyedProvider, savedAt: number): Promise<SecretsStatus>;
   remove(provider: KeyedProvider): Promise<SecretsStatus>;
-  forgetAll(): Promise<SecretsStatus>;
+  /** Rejects if a key on record won't go; one not on record that won't is reported. */
+  forgetAll(): Promise<ForgetResult>;
   /**
    * Refuses saves, checks and removals until the returned release is called, so a key saved
    * during Erase can't outlive it. Forgetting still runs. Throws if already held: one erase
@@ -151,9 +154,40 @@ export function createApiKeys(
     }
   };
 
+  // Keys this session put in the keychain without a note, because the note couldn't be
+  // written and the keychain then wouldn't take the key back. Forgetting must confirm them
+  // gone, as it does keys on record.
+  const unnoted = new Set<KeyedProvider>();
+
+  /**
+   * Notes a key the keychain now holds. False if the note can't be written: the keychain's
+   * copy is then taken back, so no key sits there with no record of it.
+   */
+  const noteKeychainKey = async (
+    index: KeyIndex,
+    provider: KeyedProvider,
+    dates: KeyDates
+  ): Promise<boolean> => {
+    try {
+      store(withKeychainEntry(index, provider, dates));
+      unnoted.delete(provider);
+      return true;
+    } catch (error) {
+      console.warn(
+        `Couldn't note the ${provider} key; keeping it for this session. ${String(error)}`
+      );
+      await keyring.delete(provider).catch(() => unnoted.add(provider));
+      return false;
+    }
+  };
+
+  const isOnRecord = (index: KeyIndex, provider: KeyedProvider) =>
+    index.keychain[provider] !== undefined || unnoted.has(provider);
+
   /** Deletes the keychain's copy and the note of it. */
   const dropFromKeychain = async (index: KeyIndex, provider: KeyedProvider): Promise<KeyIndex> => {
     await keyring.delete(provider);
+    unnoted.delete(provider);
     const next = withKeychainEntry(index, provider, undefined);
     store(next);
     return next;
@@ -168,9 +202,12 @@ export function createApiKeys(
         const savedAt = now();
         const dates: KeyDates = { savedAt, checkedAt: checked ? savedAt : null };
         const toKeychain = !forgetOnClose && keychain !== 'unavailable';
-        if (toKeychain && (await writeKeychain(provider, key))) {
+        if (
+          toKeychain &&
+          (await writeKeychain(provider, key)) &&
+          (await noteKeychainKey(index, provider, dates))
+        ) {
           session.delete(provider);
-          store(withKeychainEntry(index, provider, dates));
           return snapshot();
         }
         session.set(provider, { key, ...dates });
@@ -202,7 +239,7 @@ export function createApiKeys(
       change(async () => {
         session.delete(provider);
         const index = load();
-        if (index.keychain[provider]) await dropFromKeychain(index, provider);
+        if (isOnRecord(index, provider)) await dropFromKeychain(index, provider);
         return snapshot();
       }),
 
@@ -210,16 +247,23 @@ export function createApiKeys(
       serial(async () => {
         session.clear();
         let index = load();
+        const unconfirmed: KeyedProvider[] = [];
         for (const provider of KEYED_PROVIDERS) {
-          if (index.keychain[provider]) {
+          if (isOnRecord(index, provider)) {
             index = await dropFromKeychain(index, provider);
           } else {
             // Not on record, but gone all the same: an entry left by an earlier install, or
-            // a note lost with the database. Only a key on record must be confirmed gone.
-            await keyring.delete(provider).catch(() => false);
+            // a note lost with the database. Without a record there may well be nothing there,
+            // so one the keychain won't delete (locked, or out of reach) is reported rather
+            // than stopping an erase.
+            const isGone = await keyring.delete(provider).then(
+              () => true,
+              () => false
+            );
+            if (!isGone) unconfirmed.push(provider);
           }
         }
-        return snapshot();
+        return { status: snapshot(), unconfirmed };
       }),
 
     holdChanges: () => {

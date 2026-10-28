@@ -4,18 +4,34 @@ import { AppButton, Note } from '@/components/ui-kit';
 import { ConfirmDeleteDialog } from '@/components/ConfirmDeleteDialog';
 import { attempt, showToast } from '@/stores/toastStore';
 import { useUiStore } from '@/stores/uiStore';
+import type { KeyedProvider } from '@shared/types/secrets';
 import { SettingRow } from '../SettingRow';
 import { useSecretsStatus } from '../useSecretsStatus';
+import { UnconfirmedKeysDialog } from './UnconfirmedKeysDialog';
+
+/** Start over from the empty database, as a fresh install does. */
+const startOver = () => window.location.reload();
 
 export function PrivacySection() {
-  const { status, apply } = useSecretsStatus();
+  const { status, show } = useSecretsStatus();
   const resetInterface = useUiStore((s) => s.resetInterface);
   const [confirmingErase, setConfirmingErase] = useState(false);
   const [erasing, setErasing] = useState(false);
+  // Keys the keychain wouldn't confirm gone, and whether Erase is waiting to start over.
+  const [unconfirmed, setUnconfirmed] = useState<{
+    providers: KeyedProvider[];
+    isErased: boolean;
+  } | null>(null);
   const hasKeys = Object.keys(status?.saved ?? {}).length > 0;
 
   const forgetKeys = async () => {
-    if (await attempt(apply(window.mosaic.secrets.forgetAll()), 'Could not forget the keys')) {
+    const forgetting = window.mosaic.secrets.forgetAll();
+    if (!(await attempt(forgetting, 'Could not forget the keys'))) return;
+    const result = await forgetting;
+    show(result.status);
+    if (result.unconfirmed.length > 0) {
+      setUnconfirmed({ providers: result.unconfirmed, isErased: false });
+    } else {
       showToast('API keys forgotten');
     }
   };
@@ -23,10 +39,15 @@ export function PrivacySection() {
   const erase = async () => {
     setErasing(true);
     // Main forgets the keys first, then deletes the database.
-    const erased = await attempt(window.mosaic.app.eraseAll(), 'Could not erase everything');
-    // Start over from the empty database, as a fresh install does.
-    if (erased) window.location.reload();
-    else setErasing(false);
+    const erasure = window.mosaic.app.eraseAll();
+    if (!(await attempt(erasure, 'Could not erase everything'))) {
+      setErasing(false);
+      return;
+    }
+    const { unconfirmedKeys } = await erasure;
+    if (unconfirmedKeys.length === 0) return startOver();
+    setConfirmingErase(false);
+    setUnconfirmed({ providers: unconfirmedKeys, isErased: true });
   };
 
   return (
@@ -84,6 +105,12 @@ export function PrivacySection() {
         isDeleting={erasing}
         shouldCloseOnConfirm={false}
         onConfirm={() => void erase()}
+      />
+
+      <UnconfirmedKeysDialog
+        providers={unconfirmed?.providers ?? []}
+        closeLabel={unconfirmed?.isErased ? 'Start over' : 'Done'}
+        onClose={unconfirmed?.isErased ? startOver : () => setUnconfirmed(null)}
       />
     </>
   );
