@@ -1,6 +1,12 @@
 import { formatRelativeTime } from '@/features/templates/formatRelativeTime';
 import type { ModelProviderId } from '@shared/types/modelProviders';
-import { isKeyedProvider, type SavedKey, type SecretsStatus } from '@shared/types/secrets';
+import {
+  isKeyedProvider,
+  type KeyedProvider,
+  type SavedKey,
+  type SecretsStatus,
+} from '@shared/types/secrets';
+import { MODEL_PROVIDER_OPTION_BY_ID } from './modelProviderOptions';
 
 /** Where a provider stands, as its status dot and words say it. */
 export type KeyState = 'local' | 'none' | 'unchecked' | 'saved' | 'savedForSession';
@@ -16,6 +22,13 @@ export function readKeyState(
   if (!saved) return 'none';
   if (saved.checkedAt === null) return 'unchecked';
   return saved.where === 'session' ? 'savedForSession' : 'saved';
+}
+
+/** Keys Forget couldn't confirm gone, and where to look for them. */
+export function describeUnconfirmedKeys(providers: KeyedProvider[]): string {
+  const labels = providers.map((provider) => MODEL_PROVIDER_OPTION_BY_ID[provider].label);
+  const list = new Intl.ListFormat('en', { type: 'conjunction' }).format(labels);
+  return `Your keychain wouldn’t let Mosaic clear any ${list} keys left there from before. Look for Mosaic in your keychain app and delete what you find.`;
 }
 
 /** "an OpenAI", "a Google". */

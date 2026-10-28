@@ -10,7 +10,7 @@ import type { MosaicDbBridge } from '@shared/types/dbBridge';
 import type { MosaicDev } from '@shared/types/devTools';
 import type { MosaicFiles } from '@shared/types/files';
 import type { MosaicModelProviders } from '@shared/types/modelProviders';
-import type { MosaicSecrets } from '@shared/types/secrets';
+import type { EraseResult, MosaicSecrets } from '@shared/types/secrets';
 import {
   BACKUP_CHANNELS,
   DEV_BUILD_ARGUMENT,
@@ -148,7 +148,7 @@ contextBridge.exposeInMainWorld('mosaic', {
   agent,
   ...(dev && { dev }),
   app: {
-    eraseAll: (): Promise<void> => ipcRenderer.invoke(ERASE_ALL),
+    eraseAll: (): Promise<EraseResult> => ipcRenderer.invoke(ERASE_ALL),
     /** A Help menu item was chosen. */
     onHelpMenu: (answer: (command: HelpMenuCommand) => void) => {
       if (helpMenuRegistered) return;

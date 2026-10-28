@@ -5,7 +5,7 @@ import type { MosaicDbBridge } from '@shared/types/dbBridge';
 import type { MosaicDev } from '@shared/types/devTools';
 import type { MosaicFiles } from '@shared/types/files';
 import type { MosaicModelProviders } from '@shared/types/modelProviders';
-import type { MosaicSecrets } from '@shared/types/secrets';
+import type { EraseResult, MosaicSecrets } from '@shared/types/secrets';
 
 declare global {
   interface Window {
@@ -25,7 +25,7 @@ declare global {
          * Deletes the API keys, the database file, and everything the page stored. Reload
          * afterwards: the app then boots empty.
          */
-        eraseAll(): Promise<void>;
+        eraseAll(): Promise<EraseResult>;
         /**
          * Called when the window is closing; the close waits (up to 2 s) for it to settle,
          * and asks first when it resolves false: the draft couldn't be saved.

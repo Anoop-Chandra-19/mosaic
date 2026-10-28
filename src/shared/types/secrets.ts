@@ -59,6 +59,21 @@ export type KeyCheck =
       httpStatus?: number;
     };
 
+/** What forgetting every key did. */
+export interface ForgetResult {
+  status: SecretsStatus;
+  /**
+   * Keychain entries Mosaic had no record of that the keychain wouldn't delete, so they may
+   * still be there: left by an earlier install, or by a database since erased.
+   */
+  unconfirmed: KeyedProvider[];
+}
+
+/** What Erase everything couldn't confirm gone: only keys, since the rest goes as files. */
+export interface EraseResult {
+  unconfirmedKeys: KeyedProvider[];
+}
+
 /** The chat models a key can use, as the provider listed them. */
 export interface ModelList {
   /** Newest first, where the provider dates them. */
@@ -95,5 +110,5 @@ export interface MosaicSecrets {
   listModels(provider: KeyedProvider, refresh: boolean): Promise<ModelListing>;
   remove(provider: KeyedProvider): Promise<SecretsStatus>;
   /** Every key, from both places. */
-  forgetAll(): Promise<SecretsStatus>;
+  forgetAll(): Promise<ForgetResult>;
 }

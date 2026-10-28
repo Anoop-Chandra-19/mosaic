@@ -14,7 +14,8 @@ export function createAppApiKeys(): ApiKeys {
     },
     write: (value) => {
       const db = getAppDatabase();
-      if (db) setSetting(db, API_KEYS_KEY, value);
+      if (!db) throw new Error('The database is not open');
+      setSetting(db, API_KEYS_KEY, value);
     },
   });
 }

@@ -69,8 +69,11 @@ No ORM: `db/` is the layer every other module goes through, and ESLint enforces 
   so none may hold a secret.
 - Erase (`eraseAll.ts`) forgets the API keys, then deletes the database file and
   reopens it empty, so tables added later are wiped without anyone listing them. If a key
-  won't go, the erase stops before the resumes do. Key changes are refused until it
-  finishes, so a save landing midway can't outlive it.
+  on record won't go, the erase stops before the resumes do; one with no record that won't
+  is reported, and Settings says so. Key changes are refused until it finishes, so a save
+  landing midway can't outlive it.
+- A key the keychain took but whose note couldn't be written is taken back out and kept for
+  the session, so no key sits in the keychain unrecorded.
 
 ## Migrations
 

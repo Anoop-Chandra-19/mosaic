@@ -26,12 +26,17 @@ export function fakeKeyring() {
   return { keyring, entries, calls, refusing };
 }
 
-/** The settings row main keeps its note in. */
-export function memoryStorage(): KeyIndexStorage & { value: string | null } {
+/** The settings row main keeps its note in, which can be told to refuse writes. */
+export function memoryStorage(): KeyIndexStorage & {
+  value: string | null;
+  isRefusing: boolean;
+} {
   const storage = {
     value: null as string | null,
+    isRefusing: false,
     read: () => storage.value,
     write: (value: string) => {
+      if (storage.isRefusing) throw new Error('settings refused the write');
       storage.value = value;
     },
   };
