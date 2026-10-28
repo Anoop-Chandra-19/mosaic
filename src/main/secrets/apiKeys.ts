@@ -78,6 +78,12 @@ export interface ApiKeys {
   remove(provider: KeyedProvider): Promise<SecretsStatus>;
   forgetAll(): Promise<SecretsStatus>;
   /**
+   * Refuses saves, checks and removals until the returned release is called, so a key saved
+   * during Erase can't outlive it. Forgetting still runs. Throws if already held: one erase
+   * at a time.
+   */
+  holdChanges(): () => void;
+  /**
    * The saved key, for main's own calls (checks and the assistant's runs). Never sent to the
    * renderer. Rejects with `KeychainError` if the keychain holds it but won't give it back.
    */
@@ -107,6 +113,15 @@ export function createApiKeys(
     queue = run.catch(() => {});
     return run;
   };
+
+  // Checked when the change runs, not when it's asked for: one queued before the hold, or
+  // a save whose key check was still out with the provider, lands after Erase has begun.
+  let isHeld = false;
+  const change = <T>(task: () => Promise<T>): Promise<T> =>
+    serial(async () => {
+      if (isHeld) throw new Error('Key changes wait until Erase everything finishes');
+      return task();
+    });
 
   const load = () => parseIndex(storage.read());
   const store = (index: KeyIndex) => storage.write(JSON.stringify(index));
@@ -148,7 +163,7 @@ export function createApiKeys(
     status: () => serial(async () => snapshot()),
 
     save: (provider, key, { forgetOnClose, checked }) =>
-      serial(async () => {
+      change(async () => {
         const index = load();
         const savedAt = now();
         const dates: KeyDates = { savedAt, checkedAt: checked ? savedAt : null };
@@ -169,7 +184,7 @@ export function createApiKeys(
       }),
 
     markChecked: (provider, savedAt) =>
-      serial(async () => {
+      change(async () => {
         const checkedAt = now();
         const inSession = session.get(provider);
         if (inSession) {
@@ -184,7 +199,7 @@ export function createApiKeys(
       }),
 
     remove: (provider) =>
-      serial(async () => {
+      change(async () => {
         session.delete(provider);
         const index = load();
         if (index.keychain[provider]) await dropFromKeychain(index, provider);
@@ -206,6 +221,14 @@ export function createApiKeys(
         }
         return snapshot();
       }),
+
+    holdChanges: () => {
+      if (isHeld) throw new Error('Erase everything is already running');
+      isHeld = true;
+      return () => {
+        isHeld = false;
+      };
+    },
 
     read: (provider) =>
       serial(async () => {

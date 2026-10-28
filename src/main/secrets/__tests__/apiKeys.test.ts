@@ -164,4 +164,36 @@ describe('API keys', () => {
       openai: { where: 'keychain', savedAt: 1_000, checkedAt: 1_000 },
     });
   });
+
+  it('refuse changes while Erase holds them, and forget the one already in flight', async () => {
+    let finishWrite = () => {};
+    const set = os.keyring.set;
+    const writing = new Promise<void>((started) => {
+      os.keyring.set = async (account, secret) => {
+        started();
+        await new Promise<void>((resolve) => (finishWrite = resolve));
+        await set(account, secret);
+      };
+    });
+    const inFlight = keys.save('anthropic', SECRET, CHECKED);
+    await writing;
+
+    const release = keys.holdChanges();
+    const forgetting = keys.forgetAll();
+    const queued = keys.save('openai', 'sk-openai', CHECKED);
+    finishWrite();
+
+    await inFlight;
+    await forgetting;
+    await expect(queued).rejects.toThrow('Erase everything');
+    await expect(keys.remove('anthropic')).rejects.toThrow('Erase everything');
+    expect(os.entries.size).toBe(0);
+    expect(await keys.status()).toMatchObject({ saved: {} });
+    expect(() => keys.holdChanges()).toThrow('already running');
+
+    release();
+    os.keyring.set = set;
+    await keys.save('openai', 'sk-openai', CHECKED);
+    expect(os.entries.get('openai')).toBe('sk-openai');
+  });
 });

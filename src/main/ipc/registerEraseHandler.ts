@@ -14,6 +14,7 @@ export function registerEraseHandler(
   ipcMain.handle(ERASE_ALL, (event) => {
     if (!isAppFrame(event)) throw new Error(`Refused erase from ${event.senderFrame?.url}`);
     return eraseAll({
+      holdKeyChanges: () => apiKeys.holdChanges(),
       stopRuns: () => agentRuns.stopAll(),
       forgetKeys: () => apiKeys.forgetAll(),
       file: databaseFile(),
