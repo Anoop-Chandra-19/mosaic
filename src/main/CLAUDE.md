@@ -69,7 +69,8 @@ No ORM: `db/` is the layer every other module goes through, and ESLint enforces 
   so none may hold a secret.
 - Erase (`eraseAll.ts`) forgets the API keys, then deletes the database file and
   reopens it empty, so tables added later are wiped without anyone listing them. If a key
-  won't go, the erase stops before the resumes do.
+  won't go, the erase stops before the resumes do. Key changes are refused until it
+  finishes, so a save landing midway can't outlive it.
 
 ## Migrations
 
