@@ -138,6 +138,17 @@ export function clampPreviewZoom(zoom: number) {
   return Math.min(PREVIEW_ZOOM_RANGE.max, Math.max(PREVIEW_ZOOM_RANGE.min, zoom));
 }
 
+/**
+ * Where the assistant's pane was left: a conversation by id, `new` for one not sent in yet,
+ * or null before it has opened any, when it opens the conversation used last.
+ */
+export type AgentPaneConversation = number | 'new' | null;
+
+function pickAgentPaneConversation(value: unknown): AgentPaneConversation {
+  if (value === 'new') return value;
+  return Number.isSafeInteger(value) && (value as number) > 0 ? (value as number) : null;
+}
+
 /** The next step past `zoom`, going up or down; undefined at either end. */
 export function nextPreviewZoomStep(zoom: number, direction: 1 | -1): number | undefined {
   const steps = direction === 1 ? [...PREVIEW_ZOOM_STEPS] : [...PREVIEW_ZOOM_STEPS].reverse();
@@ -161,6 +172,8 @@ export const DEFAULT_INTERFACE = {
   /** Only drawn while AI is on; this remembers whether it was closed. */
   agentPaneOpen: true,
   agentPaneWidthPx: AGENT_PANE_WIDTH.defaultPx,
+  /** The conversation the pane was left on, which it opens on next time. */
+  agentPaneConversation: null as AgentPaneConversation,
   historyReadWidthPx: HISTORY_READ_WIDTH.defaultPx,
   /** The comparison last picked in the full history, which it opens on next time. */
   historyComparison: 'parent' as HistoryComparison,
@@ -201,6 +214,7 @@ interface UiState {
   sidebarCollapsed: boolean;
   agentPaneOpen: boolean;
   agentPaneWidthPx: number;
+  agentPaneConversation: AgentPaneConversation;
   historyReadWidthPx: number;
   historyComparison: HistoryComparison;
   shouldShowHistoryDetails: boolean;
@@ -225,6 +239,7 @@ interface UiState {
   toggleSidebarCollapsed: () => void;
   toggleAgentPane: () => void;
   setAgentPaneWidthPx: (px: number) => void;
+  setAgentPaneConversation: (conversation: AgentPaneConversation) => void;
   setHistoryReadWidthPx: (px: number) => void;
   setHistoryComparison: (comparison: HistoryComparison) => void;
   setShouldShowHistoryDetails: (shown: boolean) => void;
@@ -307,6 +322,10 @@ export const useUiStore = create<UiState>()(
       setAgentPaneWidthPx: (px) =>
         set((state) => {
           state.agentPaneWidthPx = clampPaneWidth(px, AGENT_PANE_WIDTH);
+        }),
+      setAgentPaneConversation: (conversation) =>
+        set((state) => {
+          state.agentPaneConversation = conversation;
         }),
       setHistoryReadWidthPx: (px) =>
         set((state) => {
@@ -425,6 +444,7 @@ export const useUiStore = create<UiState>()(
             stored.historyReadWidthPx ?? HISTORY_READ_WIDTH.defaultPx,
             HISTORY_READ_WIDTH
           ),
+          agentPaneConversation: pickAgentPaneConversation(stored.agentPaneConversation),
         };
       },
       // Hydrated by `hydrateStores` once boot has loaded the settings.
