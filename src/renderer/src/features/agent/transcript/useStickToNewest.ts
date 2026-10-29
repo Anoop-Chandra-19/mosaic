@@ -1,4 +1,5 @@
 import { useEffect, type RefObject } from 'react';
+import { scrollQuietly } from '@/lib/scrollbarReveal';
 
 /** Closer than this to the end counts as reading the newest. */
 const PINNED_WITHIN_PX = 72;
@@ -22,7 +23,8 @@ export function useStickToNewest(
         scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight < PINNED_WITHIN_PX;
     };
     const resizes = new ResizeObserver(() => {
-      if (isPinned) scroller.scrollTop = scroller.scrollHeight;
+      // Following isn't the user scrolling, so it doesn't show the scrollbar.
+      if (isPinned) scrollQuietly(scroller, scroller.scrollHeight);
     });
     scroller.addEventListener('scroll', onScroll);
     resizes.observe(content);
