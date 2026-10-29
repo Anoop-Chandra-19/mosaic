@@ -90,6 +90,7 @@ const agent: MosaicAgent = {
   stop: (runId) => ipcRenderer.invoke(AGENT_CHANNELS.stop, runId),
   readMessages: (conversationId, page) =>
     ipcRenderer.invoke(AGENT_CHANNELS.readMessages, conversationId, page),
+  readLastConversationId: () => ipcRenderer.invoke(AGENT_CHANNELS.readLastConversationId),
   onEvent: (follow) => {
     const listener = (_event: unknown, envelope: AgentRunEnvelope) => follow(envelope);
     ipcRenderer.on(AGENT_EVENT, listener);

@@ -70,6 +70,8 @@ export interface MosaicAgent {
   /** Stops the run if it is still going; its end is stored as `cancelled`. */
   stop(runId: number): Promise<void>;
   readMessages(conversationId: number, page: MessagePage): Promise<TranscriptMessage[]>;
+  /** The conversation used last, which the pane opens on; null before the first run. */
+  readLastConversationId(): Promise<number | null>;
   /** Every run's events; returns the call that stops following them. */
   onEvent(follow: (envelope: AgentRunEnvelope) => void): () => void;
   /** The page's one tool runner; returns the call that removes it. */

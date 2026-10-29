@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { useResumeStore } from '@/stores/resumeStore';
+import { useRunStore } from '@/stores/runStore';
 import type { AgentToolResult } from '@shared/agent-tools/agentTools';
 import type { AgentStart, AgentToolCall } from '@shared/types/agentBridge';
 import { createAgentToolRun, type AgentToolRun } from './tools/agentToolRun';
@@ -35,10 +36,18 @@ async function answerToolCall(call: AgentToolCall): Promise<AgentToolResult> {
   return runAgentTool(run, call.name, call.args);
 }
 
-/** Answers the tool calls of runs asked for from this page, and forgets each run as it ends. */
+/** What the run left staged is kept; the rest of it goes. */
+function endToolRun(runId: number): void {
+  const run = toolRunById.get(runId);
+  if (!run) return;
+  useRunStore.getState().keepStagedIds(runId, [...run.suggestionIdByTarget.values()]);
+  toolRunById.delete(runId);
+}
+
+/** Answers the tool calls of runs asked for from this page, and ends each run's tools as it ends. */
 export function answerAgentToolCalls(): () => void {
   const stopFollowing = window.mosaic.agent.onEvent(({ runId, event }) => {
-    if (event.type === 'runEnded') void starting.then(() => toolRunById.delete(runId));
+    if (event.type === 'runEnded') void starting.then(() => endToolRun(runId));
   });
   const removeRunner = window.mosaic.agent.onToolCall(answerToolCall);
   return () => {

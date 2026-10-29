@@ -22,3 +22,13 @@ export function createConversation(db: Database, conversation: NewConversation):
     .run(conversation.provider, conversation.model, now, now);
   return Number(lastInsertRowid);
 }
+
+/** The conversation a run started in last, whichever template it was on; null for none yet. */
+export function readLastConversationId(db: Database): number | null {
+  return (
+    db
+      .prepare<[], number>('select id from conversations order by updated_at desc, id desc limit 1')
+      .pluck()
+      .get() ?? null
+  );
+}
