@@ -9,7 +9,7 @@ const messages = (rows: [number | null, TranscriptMessageBody][]): TranscriptMes
     runId,
     runModel: runId === null ? null : { provider: 'ollama', model: 'qwen3.5:9b' },
     body,
-    createdAt: 0,
+    createdAt: (i + 1) * 1000,
   }));
 
 describe('buildRunView', () => {
@@ -54,6 +54,7 @@ describe('buildRunView', () => {
       {
         runId: 1,
         model: { provider: 'ollama', model: 'qwen3.5:9b' },
+        startedAt: 1000,
         ask: 'Tighten my bullets.',
         switchedTo: null,
         parts: [
@@ -70,14 +71,17 @@ describe('buildRunView', () => {
           { type: 'text', text: 'Done.' },
         ],
         stop: null,
+        stoppedAt: null,
       },
       {
         runId: 2,
         model: { provider: 'ollama', model: 'qwen3.5:9b' },
+        startedAt: 6000,
         ask: null,
         switchedTo: { templateId: 't2', label: 'Data, startups' },
         parts: [{ type: 'text', text: 'Cut' }],
         stop,
+        stoppedAt: 8000,
       },
     ]);
   });

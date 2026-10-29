@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { useAgentNoticeStore } from '@/stores/agentNoticeStore';
 import { startNewConversation, useConversationStore } from '@/stores/conversationStore';
 import { useResumeStore } from '@/stores/resumeStore';
 import type { AgentStart } from '@shared/types/agentBridge';
@@ -42,7 +43,7 @@ describe('sending from the prompt box', () => {
     start = { ok: true, conversationId: 7, runId: 1 };
     log.append(7, 1, userBody('Tighten my bullets.'));
 
-    expect(await sendMessage('  Tighten my bullets.\n')).toBeNull();
+    expect(await sendMessage('  Tighten my bullets.\n', null)).toBe(true);
     expect(window.mosaic.agent.start).toHaveBeenCalledWith({
       conversationId: null,
       text: 'Tighten my bullets.',
@@ -56,7 +57,11 @@ describe('sending from the prompt box', () => {
 
   it('says why main didn’t start it, and stays where it was', async () => {
     start = { ok: false, reason: 'noApiKey' };
-    expect(await sendMessage('Tighten my bullets.')).toBe('noApiKey');
+    expect(await sendMessage('Tighten my bullets.', null)).toBe(false);
+    expect(useAgentNoticeStore.getState().refusal).toMatchObject({
+      conversationId: null,
+      reason: 'noApiKey',
+    });
     expect(useConversationStore.getState().conversationId).toBeNull();
   });
 });

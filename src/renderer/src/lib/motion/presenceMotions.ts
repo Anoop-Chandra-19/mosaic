@@ -40,6 +40,24 @@ export const pop: PresenceMotion = (element, phase, from) => {
   return animation;
 };
 
+/**
+ * A box that arrives with its own CSS and, leaving, folds its space away: its height and
+ * padding close to nothing while what is below moves up. Clip its overflow.
+ */
+export const foldAway: PresenceMotion = (element, phase) => {
+  if (phase === 'enter' || prefersReducedMotion()) return null;
+  const style = getComputedStyle(element);
+  const animation = element.animate(
+    [
+      { height: style.height, paddingTop: style.paddingTop, paddingBottom: style.paddingBottom },
+      { height: '0px', paddingTop: '0px', paddingBottom: '0px' },
+    ],
+    { duration: MOTION_MS.foldAway, easing: MOTION_EASE, fill: 'both' }
+  );
+  animation.id = 'presence-exit';
+  return animation;
+};
+
 /** A notice fades without moving the controls around it. */
 export const fade: PresenceMotion = (element, phase, from) => {
   if (prefersReducedMotion()) return null;

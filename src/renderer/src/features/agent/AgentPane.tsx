@@ -26,7 +26,8 @@ function Spark() {
 
 /**
  * The assistant, on the right of the preview, drawn only while AI is on: the open
- * conversation (`transcript/`), the prompt box and why a message didn't go (`prompt-box/`),
+ * conversation (`transcript/`), the prompt box (`prompt-box/`) with the one notice over it
+ * for a message that didn't go or a run that stopped (`notices/`),
  * and which provider and model the next run uses. It opens on the conversation used last.
  * The runs themselves are followed by `followAgentRuns` and their tools answered by
  * `agentRunTools` (`tools/`), from the shell. On a window too narrow for editor, preview,

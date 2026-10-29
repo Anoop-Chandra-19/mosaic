@@ -1,19 +1,53 @@
+import {
+  noteSendFailed,
+  noteSendRefused,
+  noteSendStarted,
+  noteSendStarting,
+  type NoticeSource,
+} from '@/stores/agentNoticeStore';
 import { openSentConversation, useConversationStore } from '@/stores/conversationStore';
-import type { AgentStartRefusal } from '@shared/types/agentBridge';
-import { askAgent } from '../agentRunTools';
+import type { AgentStart } from '@shared/types/agentBridge';
+import { askAgent, carryOnAgent } from '../agentRunTools';
 
 /*
- * What the prompt box sends. One run at a time: while one is going, the box can stop it
- * but not send. A message main turns down stays in the box, so nothing typed is lost.
+ * What the prompt box sends: a message, or Send again from a notice. One run at a time:
+ * while one is going, the box can stop it but not send. A message main turns down stays
+ * in the box, so nothing typed is lost, and the notice says why. A send made while a
+ * notice showed (`answering`) is told apart by its answer (`agentNoticeStore`).
  */
 
 export const canSendMessage = (text: string, isRunning: boolean): boolean =>
   !isRunning && text.trim() !== '';
 
-/** Sends in the open conversation, or starts one; null once it is on its way. */
-export async function sendMessage(text: string): Promise<AgentStartRefusal | null> {
-  const start = await askAgent(text.trim(), useConversationStore.getState().conversationId);
-  if (!start.ok) return start.reason;
-  await openSentConversation(start.conversationId);
-  return null;
+async function startSend(
+  conversationId: number | null,
+  answering: NoticeSource | null,
+  start: () => Promise<AgentStart>
+): Promise<boolean> {
+  noteSendStarting(conversationId, answering);
+  let started: AgentStart;
+  try {
+    started = await start();
+  } catch (error) {
+    noteSendFailed();
+    throw error;
+  }
+  if (!started.ok) {
+    noteSendRefused(conversationId, started.reason);
+    return false;
+  }
+  noteSendStarted(started.runId);
+  await openSentConversation(started.conversationId);
+  return true;
+}
+
+/** Sends in the open conversation, or starts one; true once it is on its way. */
+export function sendMessage(text: string, answering: NoticeSource | null): Promise<boolean> {
+  const { conversationId } = useConversationStore.getState();
+  return startSend(conversationId, answering, () => askAgent(text.trim(), conversationId));
+}
+
+/** Sends the open conversation again with no new message, after a stop. */
+export function sendAgain(conversationId: number, answering: NoticeSource): Promise<boolean> {
+  return startSend(conversationId, answering, () => carryOnAgent(conversationId));
 }
