@@ -22,10 +22,19 @@ export interface AgentToolRun {
   repairedTargets: Set<string>;
 }
 
-export const createAgentToolRun = (requestText: string): AgentToolRun => ({
+/**
+ * What a conversation's runs pass on: the model still has its last read in the log, so a
+ * follow-up ask works from it, with the same handles, until another resume is open.
+ */
+export type ConversationReading = Pick<AgentToolRun, 'handles' | 'receipt'>;
+
+export const createAgentToolRun = (
+  requestText: string,
+  reading: ConversationReading = { handles: createResumeHandles(), receipt: null }
+): AgentToolRun => ({
   requestText,
-  handles: createResumeHandles(),
-  receipt: null,
+  handles: reading.handles,
+  receipt: reading.receipt,
   suggestionIdByTarget: new Map(),
   repairedTargets: new Set(),
 });

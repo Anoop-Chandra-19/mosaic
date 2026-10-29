@@ -116,6 +116,7 @@ export async function runToolRound(round: ToolRound): Promise<ToolRoundEnd> {
     outcomes.push(outcome);
     onEvent({ type: 'toolResult', callId: call.callId, isError: outcome.isError });
   }
+  stop ??= limits.noteStep(outcomes.filter((outcome) => outcome.status !== 'cancelled'));
 
   storeToolAnswers(
     round.db,

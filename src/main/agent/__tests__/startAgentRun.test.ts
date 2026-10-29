@@ -205,6 +205,22 @@ describe('stopping a run', () => {
     expect(readRun(1)).toMatchObject({ status: 'failed', error: 'repeatedCall' });
   });
 
+  it('lets the model hear a step’s refusals, however many calls it made', async () => {
+    const rewrites = ['c1', 'c2', 'c3', 'c4', 'c5', 'c6'].map((id) =>
+      callTool(id, 'propose_rewrite', { id: 'b1', text: id })
+    );
+    const { run, model } = ask({
+      replies: [
+        [...rewrites, DONE],
+        [{ type: 'textDelta', text: 'I’ll read it first.' }, DONE],
+      ],
+      answer: () => refused('Read the resume first, with read_document.'),
+    });
+
+    expect(await run).toEqual({ stopReason: undefined });
+    expect(model.requests).toHaveLength(2);
+  });
+
   it('stops at the step limit', async () => {
     const step = (id: string) => [callTool(id, 'read_document'), DONE];
     const { run, model } = ask({

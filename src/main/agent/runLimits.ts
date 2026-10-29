@@ -8,8 +8,11 @@ import type { RunStopReason } from '@shared/types/agentConversation';
 export const RUN_LIMITS = {
   /** The same call refused with the same answer: the 2nd time is warned, this one stops. */
   sameRefusalsBeforeStop: 3,
-  /** Refused calls with nothing done between them. */
-  refusalsInARow: 5,
+  /**
+   * Steps whose calls were all refused, with nothing done between them. Counted by step,
+   * not call: a step's calls are made together, before the model hears any answer.
+   */
+  refusedStepsInARow: 3,
   /** Tool rounds in one run. */
   steps: 40,
   /** A request that failed in a way worth trying again waits this long before each retry. */
@@ -31,13 +34,16 @@ export interface ToolAnswerVerdict {
   stop?: { reason: RunStopReason; detail: string };
 }
 
+interface ToolAnswerFacts {
+  content: string;
+  isError: boolean;
+}
+
 export interface RunLimits {
   /** Counts one answered call; the warning goes on the answer, a stop ends the run. */
-  noteAnswer(
-    name: string,
-    args: unknown,
-    answer: { content: string; isError: boolean }
-  ): ToolAnswerVerdict;
+  noteAnswer(name: string, args: unknown, answer: ToolAnswerFacts): ToolAnswerVerdict;
+  /** Counts a step by its answered calls, once they are all in. */
+  noteStep(answers: ToolAnswerFacts[]): ToolAnswerVerdict['stop'];
 }
 
 /** Object keys sorted, so the same arguments in another order count as the same call. */
@@ -52,15 +58,11 @@ function writeStableJson(value: unknown): string {
 
 export function createRunLimits(limits: RunLimitSettings = RUN_LIMITS): RunLimits {
   const refusalsByCall = new Map<string, { content: string; count: number }>();
-  let refusalsInARow = 0;
+  let refusedStepsInARow = 0;
 
   return {
     noteAnswer(name, args, { content, isError }) {
-      if (!isError) {
-        refusalsInARow = 0;
-        return { content };
-      }
-      refusalsInARow += 1;
+      if (!isError) return { content };
       const callKey = `${name} ${writeStableJson(args)}`;
       const earlier = refusalsByCall.get(callKey);
       const count = earlier?.content === content ? earlier.count + 1 : 1;
@@ -69,10 +71,20 @@ export function createRunLimits(limits: RunLimitSettings = RUN_LIMITS): RunLimit
       if (count >= limits.sameRefusalsBeforeStop) {
         return { content, stop: { reason: 'repeatedCall', detail: content } };
       }
-      if (refusalsInARow >= limits.refusalsInARow) {
-        return { content, stop: { reason: 'refusalsInARow', detail: content } };
-      }
       return count > 1 ? { content: `${content}\n${REPEAT_WARNING}` } : { content };
+    },
+
+    noteStep(answers) {
+      const lastAnswer = answers.at(-1);
+      if (!lastAnswer) return undefined;
+      if (answers.some((answer) => !answer.isError)) {
+        refusedStepsInARow = 0;
+        return undefined;
+      }
+      refusedStepsInARow += 1;
+      return refusedStepsInARow >= limits.refusedStepsInARow
+        ? { reason: 'refusalsInARow', detail: lastAnswer.content }
+        : undefined;
     },
   };
 }
