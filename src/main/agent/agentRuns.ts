@@ -1,4 +1,5 @@
 import type { Database } from 'better-sqlite3';
+import type { RunLimitSettings } from '@shared/agent/runLimitSettings';
 import type {
   AgentCarryOnRequest,
   AgentRunEnvelope,
@@ -15,7 +16,6 @@ import type { ModelProvider } from '../model-providers/modelProvider';
 import type { Wait } from './abortableWaits';
 import { createIpcToolBridge, type IpcToolBridge } from './ipcToolBridge';
 import { readModelChoice } from './readModelChoice';
-import type { RunLimitSettings } from './runLimits';
 import { startAgentRun, type AgentAsk } from './startAgentRun';
 
 /*

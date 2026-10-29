@@ -12,11 +12,11 @@ import type { RunPart, RunView } from '@/types/agentRunView';
  */
 export function buildRunView(messages: TranscriptMessage[]): RunView[] {
   const runs: RunView[] = [];
-  for (const { runId, body } of messages) {
+  for (const { runId, runModel, body } of messages) {
     if (runId === null) continue;
     let run = runs.at(-1);
     if (run?.runId !== runId) {
-      run = { runId, ask: null, switchedTo: null, parts: [], stop: null };
+      run = { runId, model: runModel, ask: null, switchedTo: null, parts: [], stop: null };
       runs.push(run);
     }
     addToRun(run, body);

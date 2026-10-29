@@ -3,6 +3,7 @@ import type { MessageBody } from '@shared/types/agentConversation';
 import { openDatabase, type Database } from '../../connection';
 import { createConversation } from '../conversations';
 import { appendMessage, readConversationLog, readMessagePage, readToolResult } from '../messages';
+import { startUserRun } from '../runLog';
 
 let db: Database;
 let conversationId: number;
@@ -78,6 +79,21 @@ describe('readMessagePage', () => {
     ]);
     expect(texts(readMessagePage(db, conversationId, { beforeSeq: 2, limit: 2 }))).toEqual([
       'message 1',
+    ]);
+  });
+
+  it('names the provider and model of the run each message is in', () => {
+    appendUserMessages(1);
+    startUserRun(db, {
+      conversationId,
+      templateId: null,
+      provider: 'anthropic',
+      model: 'claude-sonnet-5-5',
+      text: 'Tighten my summary.',
+    });
+    expect(readMessagePage(db, conversationId, { limit: 2 }).map((each) => each.runModel)).toEqual([
+      null,
+      { provider: 'anthropic', model: 'claude-sonnet-5-5' },
     ]);
   });
 

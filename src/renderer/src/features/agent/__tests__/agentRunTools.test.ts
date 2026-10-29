@@ -5,7 +5,7 @@ import { useRunStore } from '@/stores/runStore';
 import type { AgentToolResult } from '@shared/agent-tools/agentTools';
 import type { AgentRunEnvelope, AgentStart, AgentToolCall } from '@shared/types/agentBridge';
 import { makeResume } from '../../suggestions/proposals/__tests__/proposalFixtures';
-import { answerAgentToolCalls, askAgent } from '../agentRunTools';
+import { answerAgentToolCalls, askAgent, carryOnAgent } from '../agentRunTools';
 
 let runTool: (call: AgentToolCall) => Promise<AgentToolResult>;
 let follow: (envelope: AgentRunEnvelope) => void;
@@ -17,6 +17,7 @@ beforeEach(() => {
     mosaic: {
       agent: {
         start: vi.fn(() => new Promise<AgentStart>((resolve) => (finishStart = resolve))),
+        carryOn: vi.fn(() => new Promise<AgentStart>((resolve) => (finishStart = resolve))),
         onEvent: (given: typeof follow) => {
           follow = given;
           return () => {};
@@ -90,7 +91,7 @@ describe('the page’s side of a run', () => {
     expect(useRunStore.getState().stagedIdsByRun[4]).toEqual(staged);
   });
 
-  it('lets a follow-up ask suggest from the read before it, in its conversation only', async () => {
+  it('lets a follow-up ask or Send again suggest from the read before it, in its conversation only', async () => {
     const rewrite = (runId: number) =>
       runTool({
         runId,
@@ -116,5 +117,15 @@ describe('the page’s side of a run', () => {
 
     await ask(3, 8);
     expect(await rewrite(8)).toMatchObject({ isError: true });
+
+    await end(2, 7);
+    const carried = carryOnAgent(2);
+    expect(window.mosaic.agent.carryOn).toHaveBeenCalledWith({
+      conversationId: 2,
+      templateId: 't1',
+    });
+    finishStart({ ok: true, conversationId: 2, runId: 9 });
+    await carried;
+    expect(await rewrite(9)).toMatchObject({ isError: false });
   });
 });

@@ -72,6 +72,12 @@ interface MessageRow {
   created_at: number;
 }
 
+/** Null provider and model for a message written outside a run. */
+interface TranscriptRow extends MessageRow {
+  provider: string | null;
+  model: string | null;
+}
+
 /** Only what the pane shows; the rest stays in main rather than in the window's memory. */
 function toTranscriptBody(body: MessageBody): TranscriptMessageBody {
   switch (body.type) {
@@ -103,16 +109,21 @@ export function readMessagePage(
   page: MessagePage
 ): TranscriptMessage[] {
   const rows = db
-    .prepare<[number, number, number], MessageRow>(
-      `select id, seq, run_id, body, created_at from messages
-        where conversation_id = ? and seq < ?
-        order by seq desc limit ?`
+    .prepare<[number, number, number], TranscriptRow>(
+      `select m.id, m.seq, m.run_id, m.body, m.created_at, r.provider, r.model
+         from messages m left join runs r on r.id = m.run_id
+        where m.conversation_id = ? and m.seq < ?
+        order by m.seq desc limit ?`
     )
     .all(conversationId, page.beforeSeq ?? Number.MAX_SAFE_INTEGER, page.limit);
   return rows.reverse().map((row) => ({
     id: row.id,
     seq: row.seq,
     runId: row.run_id,
+    runModel:
+      row.provider === null || row.model === null
+        ? null
+        : { provider: row.provider, model: row.model },
     body: toTranscriptBody(parseStoredMessageBody(row.body)),
     createdAt: row.created_at,
   }));

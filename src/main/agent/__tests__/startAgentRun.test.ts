@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { RUN_LIMITS } from '@shared/agent/runLimitSettings';
 import { createDefaultResume } from '@shared/resume/defaultResume';
 import type { AgentRunEvent } from '@shared/types/agentRunEvents';
 import type { ModelStreamEvent } from '@shared/types/modelReply';
@@ -8,7 +9,7 @@ import { readConversationLog } from '../../db/conversations/messages';
 import { createTemplate } from '../../db/resumes/templates';
 import { STALE_READ } from '../assembleModelContext';
 import { startAgentRun, type AgentRunRequest } from '../startAgentRun';
-import { REPEAT_WARNING, RUN_LIMITS } from '../runLimits';
+import { REPEAT_WARNING } from '../runLimits';
 import {
   callTool,
   DONE,

@@ -1,4 +1,5 @@
 import type { Database } from 'better-sqlite3';
+import { RUN_LIMITS, type RunLimitSettings } from '@shared/agent/runLimitSettings';
 import { AGENT_TOOLS } from '@shared/agent-tools/agentTools';
 import type { RunStopReason } from '@shared/types/agentConversation';
 import type { AgentRunEvent } from '@shared/types/agentRunEvents';
@@ -19,7 +20,7 @@ import { assembleModelContext, type DraftStamp } from './assembleModelContext';
 import { buildSystemPrompt } from './buildSystemPrompt';
 import { waitUnlessAborted, type Wait } from './abortableWaits';
 import { requestModelReply } from './requestModelReply';
-import { createRunLimits, RUN_LIMITS, type RunLimitSettings } from './runLimits';
+import { createRunLimits } from './runLimits';
 import { runToolRound, type ToolBridge, type ToolCallPart } from './runToolRound';
 
 /*
