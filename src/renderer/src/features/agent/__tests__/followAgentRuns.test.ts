@@ -4,8 +4,13 @@ import { useRunStore } from '@/stores/runStore';
 import type { AgentRunEnvelope } from '@shared/types/agentBridge';
 import type { AgentRunEvent } from '@shared/types/agentRunEvents';
 import { createFakeAgentLog, replyBody, userBody } from '@/stores/__tests__/fakeAgentLog';
-import { buildRunView } from '../buildRunView';
+import { buildRunView } from '../transcript/buildRunView';
 import { followAgentRuns } from '../followAgentRuns';
+
+// Where the pane was left is a setting; here it keeps nothing.
+vi.mock('@/lib/storage/settingsStorage', () => ({
+  settingsStorage: { getItem: () => null, setItem: () => {}, removeItem: () => {} },
+}));
 
 let log: ReturnType<typeof createFakeAgentLog>;
 let follow: (envelope: AgentRunEnvelope) => void;

@@ -1,4 +1,5 @@
 import { expect, type Page } from '@playwright/test';
+import { runDevTool } from '../harness/devTools';
 import { test, withApp } from '../harness/launch';
 
 const mosaic = withApp();
@@ -29,7 +30,7 @@ test('the assistant pane appears on the right only while AI is on', async () => 
 
   await setAiEnabled(page, true);
   await expect(pane).toBeVisible();
-  await expect(pane.getByText('Not built yet.')).toBeVisible();
+  await expect(pane.getByText(/Ask for a change in your own words/)).toBeVisible();
   await expect(pane.getByText('OpenAI · gpt-5.6-terra')).toBeVisible();
 
   // It sits right of the preview.
@@ -56,6 +57,29 @@ test('the assistant pane appears on the right only while AI is on', async () => 
   await settings.getByRole('button', { name: 'Close settings' }).click();
   await expect(pane).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Toggle assistant' })).toHaveCount(0);
+  expect(errors).toEqual([]);
+});
+
+test('asking in the prompt box shows the ask and the reply, and the box is ready again', async () => {
+  const { page, errors } = mosaic();
+  await runDevTool(page, 'exampleResume');
+  await runDevTool(page, 'scriptedModel', { isOn: true });
+  await setAiEnabled(page, true);
+  const pane = page.getByRole('complementary', { name: 'Assistant' });
+  const box = pane.getByRole('textbox', { name: 'Message' });
+
+  await box.fill('Tighten my bullets.');
+  await box.press('Enter');
+
+  const conversation = pane.getByRole('region', { name: 'Conversation' });
+  await expect(conversation.getByText('Tighten my bullets.')).toBeVisible();
+  await expect(conversation.getByText('Done. They’re waiting for your review.')).toBeVisible();
+  await expect(box).toHaveValue('');
+  await expect(pane.getByRole('button', { name: 'Send' })).toBeVisible();
+  await expect(page.getByRole('button', { name: '2 suggestions waiting' })).toBeVisible();
+
+  await pane.getByRole('button', { name: 'New conversation' }).click();
+  await expect(conversation.getByText('Tighten my bullets.')).toHaveCount(0);
   expect(errors).toEqual([]);
 });
 

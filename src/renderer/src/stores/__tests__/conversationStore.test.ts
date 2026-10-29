@@ -4,12 +4,19 @@ import {
   catchUpConversation,
   openConversation,
   openLastConversation,
+  openLeftConversation,
   openSentConversation,
   readOlderMessages,
   startNewConversation,
   useConversationStore,
 } from '../conversationStore';
+import { useUiStore } from '../uiStore';
 import { createFakeAgentLog, replyBody, userBody } from './fakeAgentLog';
+
+// Where the pane was left is a setting; here it keeps nothing.
+vi.mock('@/lib/storage/settingsStorage', () => ({
+  settingsStorage: { getItem: () => null, setItem: () => {}, removeItem: () => {} },
+}));
 
 let log: ReturnType<typeof createFakeAgentLog>;
 let lastConversationId: number | null;
@@ -54,6 +61,24 @@ describe('reading the conversation in pages', () => {
 
     await readOlderMessages();
     expect(shown()).toEqual({ conversationId: 1, seqs: seqsFrom(1, 120), hasOlder: false });
+  });
+
+  it('opens where the pane was left, a new conversation included', async () => {
+    addRun(1, 1, 2);
+    addRun(2, 2, 2);
+    await openConversation(2);
+    expect(useUiStore.getState().agentPaneConversation).toBe(2);
+    await openLeftConversation();
+    expect(shown().conversationId).toBe(2);
+
+    startNewConversation();
+    expect(useUiStore.getState().agentPaneConversation).toBe('new');
+    await openLeftConversation();
+    expect(shown().conversationId).toBeNull();
+
+    useUiStore.getState().setAgentPaneConversation(9);
+    await openLeftConversation();
+    expect(shown()).toEqual({ conversationId: null, seqs: [], hasOlder: false });
   });
 
   it('starts a new conversation before the first run', async () => {

@@ -1,11 +1,13 @@
 import { create } from 'zustand';
 import type { TranscriptMessage } from '@shared/types/agentConversation';
+import { useUiStore } from './uiStore';
 
 /*
  * The conversation open in the pane and the part of its log read so far, oldest first.
  * The log is read in pages, never whole: the newest page on opening, older ones as the
  * user scrolls back, and what a run in it wrote as it starts and once it ends. Only a send
- * moves the pane to another conversation; a run elsewhere never does. Reads go one at a
+ * moves the pane to another conversation; a run elsewhere never does. Where the pane was
+ * left (`uiStore`'s `agentPaneConversation`) is where it opens next launch. Reads go one at a
  * time, and one that finishes after the pane moved on is dropped.
  */
 
@@ -64,9 +66,15 @@ async function readNewest(conversationId: number): Promise<void> {
   if (isOpen(conversationId)) useConversationStore.setState(page);
 }
 
+/** Shows a conversation, or a new one, and remembers it as where the pane was left. */
+function showConversation(conversationId: number | null): void {
+  useConversationStore.setState({ conversationId, messages: [], hasOlder: false });
+  useUiStore.getState().setAgentPaneConversation(conversationId ?? 'new');
+}
+
 /** Opens a conversation on its newest page. */
 export function openConversation(conversationId: number): Promise<void> {
-  useConversationStore.setState({ conversationId, messages: [], hasOlder: false });
+  showConversation(conversationId);
   return readInTurn(() => readNewest(conversationId));
 }
 
@@ -85,9 +93,32 @@ export async function openLastConversation(): Promise<void> {
   else await openConversation(conversationId);
 }
 
+/**
+ * Opens where the pane was left, a new conversation included. Before it has been left
+ * anywhere, the conversation used last; one no longer there gives way to a new one.
+ */
+export async function openLeftConversation(): Promise<void> {
+  const left = useUiStore.getState().agentPaneConversation;
+  if (left === null) return openLastConversation();
+  if (left === 'new') return startNewConversation();
+  await openConversation(left);
+  if (isOpen(left) && useConversationStore.getState().messages.length === 0) {
+    startNewConversation();
+  }
+}
+
+let hasOpenedPane = false;
+
+/** The first time the pane shows in a session; after that it keeps its place. */
+export function openPaneConversation(): Promise<void> {
+  if (hasOpenedPane) return Promise.resolve();
+  hasOpenedPane = true;
+  return openLeftConversation();
+}
+
 /** The next run starts a new conversation. */
 export function startNewConversation(): void {
-  useConversationStore.setState({ conversationId: null, messages: [], hasOlder: false });
+  showConversation(null);
 }
 
 /** The page before the oldest message read so far. */

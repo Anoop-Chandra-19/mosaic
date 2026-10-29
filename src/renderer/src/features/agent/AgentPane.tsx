@@ -1,16 +1,20 @@
-import { useRef } from 'react';
-import { Sparkles, X } from 'lucide-react';
+import { useEffect, useRef } from 'react';
+import { Sparkles, SquarePen, X } from 'lucide-react';
 import { AppButton, AppTooltip, Text } from '@/components/ui-kit';
-import { MODEL_PROVIDER_OPTION_BY_ID } from '@/features/settings/sections/ai/modelProviderOptions';
 import { formatPaneWidth, startPaneResize } from '@/features/shell/paneResize';
 import { useShortcutLabel } from '@/features/shortcuts/shortcutBindings';
 import { useIsSideHandover } from '@/features/view-transitions/sideHandover';
 import { transitionClasses } from '@/features/view-transitions/transitionClasses';
 import { useIsWorkspaceReplaced } from '@/features/view-transitions/useShownSurface';
 import { cn } from '@/lib/utils';
-import { DEFAULT_MODEL_BY_PROVIDER, useAgentSettingsStore } from '@/stores/agentSettingsStore';
+import { openPaneConversation, startNewConversation } from '@/stores/conversationStore';
 import { useOverlayStore } from '@/stores/overlayStore';
+import { explainFailure, showToast } from '@/stores/toastStore';
 import { AGENT_PANE_WIDTH, useUiStore } from '@/stores/uiStore';
+import { AgentPromptBox } from './prompt-box/AgentPromptBox';
+import { AgentTranscript } from './transcript/AgentTranscript';
+import { useChosenModel } from './useChosenModel';
+import { stopAgentRun, useRunningRun } from './useRunningRun';
 
 function Spark() {
   return (
@@ -21,26 +25,40 @@ function Spark() {
 }
 
 /**
- * The assistant, on the right of the preview — drawn only while AI is on. The agent that
- * answers in it is still to come, so for now the pane says so, and which provider it will
- * use. On a window too narrow for editor, preview, and pane, it lies over the preview.
+ * The assistant, on the right of the preview, drawn only while AI is on: the open
+ * conversation (`transcript/`), the prompt box and why a message didn't go (`prompt-box/`),
+ * and which provider and model the next run uses. It opens on the conversation used last.
+ * The runs themselves are followed by `followAgentRuns` and their tools answered by
+ * `agentRunTools` (`tools/`), from the shell. On a window too narrow for editor, preview,
+ * and pane, it lies over the preview.
  */
 export function AgentPane() {
   const widthPx = useUiStore((s) => s.agentPaneWidthPx);
   const setWidthPx = useUiStore((s) => s.setAgentPaneWidthPx);
   const close = useUiStore((s) => s.toggleAgentPane);
-  const provider = useAgentSettingsStore((s) => s.provider);
-  const model = useAgentSettingsStore((s) => s.modelsByProvider[s.provider]);
+  const { providerLabel, model } = useChosenModel();
+  const running = useRunningRun();
   const openSettings = useOverlayStore((s) => s.openSettings);
   const paneRef = useRef<HTMLElement>(null);
   const closeKeys = useShortcutLabel('toggleAssistant');
   const isSideHandover = useIsSideHandover();
   const isWorkspaceReplaced = useIsWorkspaceReplaced();
 
+  useEffect(() => {
+    openPaneConversation().catch((error: unknown) =>
+      showToast(explainFailure(error, 'Couldn’t open the conversation'), 'error')
+    );
+  }, []);
+
   return (
     <aside
       ref={paneRef}
       aria-label="Assistant"
+      onKeyDown={(event) => {
+        if (event.key !== 'Escape' || !running || event.defaultPrevented) return;
+        event.preventDefault();
+        stopAgentRun(running.runId);
+      }}
       className={cn(
         'relative flex shrink-0 flex-col border-l border-line bg-pane @max-5xl/workspace:absolute @max-5xl/workspace:inset-y-0 @max-5xl/workspace:right-0 @max-5xl/workspace:z-20 @max-5xl/workspace:shadow-overlay',
         // Hands its column to the suggestion review's inspector, and takes it back.
@@ -75,29 +93,37 @@ export function AgentPane() {
             Assistant
           </Text>
         </div>
-        <AppButton
-          variant="ghost"
-          size="xs"
-          shape="square"
-          onClick={close}
-          aria-label="Close assistant"
-          title={`Close  ${closeKeys}`.trim()}
-        >
-          <X className="size-3.5" />
-        </AppButton>
+        <div className="flex items-center gap-0.5">
+          <AppTooltip content="New conversation">
+            <AppButton
+              variant="ghost"
+              size="xs"
+              shape="square"
+              onClick={startNewConversation}
+              aria-label="New conversation"
+            >
+              <SquarePen className="size-3.5" />
+            </AppButton>
+          </AppTooltip>
+          <AppButton
+            variant="ghost"
+            size="xs"
+            shape="square"
+            onClick={close}
+            aria-label="Close assistant"
+            title={`Close  ${closeKeys}`.trim()}
+          >
+            <X className="size-3.5" />
+          </AppButton>
+        </div>
       </header>
 
-      <div className="flex-1 overflow-y-auto p-4">
-        <Text as="p" variant="body" className="text-pretty">
-          Not built yet. This is where you’ll ask for changes and attach job postings, and every
-          suggestion will come back for review before it touches the page.
-        </Text>
-      </div>
+      <AgentTranscript />
+      <AgentPromptBox />
 
       <footer className="border-t border-line px-4 py-2.5">
         <Text as="p" variant="secondary" className="text-ink-faint">
-          {MODEL_PROVIDER_OPTION_BY_ID[provider].label} ·{' '}
-          <Text variant="meta">{model || DEFAULT_MODEL_BY_PROVIDER[provider]}</Text>
+          {providerLabel} · <Text variant="meta">{model}</Text>
           {' · '}
           <AppButton
             variant="link"
