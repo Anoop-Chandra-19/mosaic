@@ -18,13 +18,17 @@ describe('createRunLimits', () => {
     });
   });
 
-  it('stops after five refusals in a row, and an answer resets the count', () => {
+  it('stops after three steps refused in a row, however many calls each made', () => {
     const limits = createRunLimits();
-    const refuse = (id: string) => limits.noteAnswer('propose_rewrite', { id }, refusal(id)).stop;
+    const answered = { content: 'Name: Ada Quill', isError: false };
+    const refusedStep = ['b1', 'b2', 'b3', 'b4', 'b5', 'b6'].map(refusal);
 
-    ['b1', 'b2', 'b3', 'b4'].forEach((id) => expect(refuse(id)).toBeUndefined());
-    limits.noteAnswer('read_document', {}, { content: 'Name: Ada Quill', isError: false });
-    ['b5', 'b6', 'b7', 'b8'].forEach((id) => expect(refuse(id)).toBeUndefined());
-    expect(refuse('b9')).toEqual({ reason: 'refusalsInARow', detail: 'b9' });
+    expect(limits.noteStep(refusedStep)).toBeUndefined();
+    expect(limits.noteStep(refusedStep)).toBeUndefined();
+    expect(limits.noteStep([refusal('b1'), answered])).toBeUndefined();
+    expect(limits.noteStep([])).toBeUndefined();
+    expect(limits.noteStep(refusedStep)).toBeUndefined();
+    expect(limits.noteStep(refusedStep)).toBeUndefined();
+    expect(limits.noteStep(refusedStep)).toEqual({ reason: 'refusalsInARow', detail: 'b6' });
   });
 });

@@ -89,4 +89,32 @@ describe('the page’s side of a run', () => {
     expect(staged).toHaveLength(1);
     expect(useRunStore.getState().stagedIdsByRun[4]).toEqual(staged);
   });
+
+  it('lets a follow-up ask suggest from the read before it, in its conversation only', async () => {
+    const rewrite = (runId: number) =>
+      runTool({
+        runId,
+        callId: 'c2',
+        name: 'propose_rewrite',
+        args: { id: 'b1', text: 'Led billing' },
+      });
+    const ask = async (conversationId: number, runId: number) => {
+      const asked = askAgent('Tighten my bullets.', conversationId);
+      finishStart({ ok: true, conversationId, runId });
+      await asked;
+    };
+    const end = async (conversationId: number, runId: number) => {
+      follow({ conversationId, runId, seq: 5, event: { type: 'runEnded' } });
+      await Promise.resolve();
+    };
+
+    await ask(2, 6);
+    await runTool(readCall(6));
+    await end(2, 6);
+    await ask(2, 7);
+    expect(await rewrite(7)).toMatchObject({ isError: false });
+
+    await ask(3, 8);
+    expect(await rewrite(8)).toMatchObject({ isError: true });
+  });
 });
