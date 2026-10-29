@@ -1,0 +1,74 @@
+import { beforeEach, describe, expect, it } from 'vitest';
+import type { AgentRunEvent } from '@shared/types/agentRunEvents';
+import { useRunStore } from '../runStore';
+
+beforeEach(() => useRunStore.setState({ live: null, stagedIdsByRun: {} }));
+
+function follow(runId: number, events: AgentRunEvent[]): void {
+  events.forEach((event, i) =>
+    useRunStore.getState().followRunEvent({ conversationId: 1, runId, seq: i + 1, event })
+  );
+}
+
+describe('the live run', () => {
+  it('builds the run’s parts from its events', () => {
+    follow(4, [
+      { type: 'stepStarted', step: 1 },
+      { type: 'reasoningStart' },
+      { type: 'reasoningEnd', durationMs: 3400 },
+      { type: 'textDelta', text: 'Reading ' },
+      { type: 'textDelta', text: 'it first.' },
+      { type: 'toolCall', callId: 'c1', name: 'read_document' },
+      { type: 'toolCall', callId: 'c2', name: 'propose_rewrite' },
+      { type: 'toolResult', callId: 'c1', isError: false },
+      { type: 'toolResult', callId: 'c2', isError: true },
+      { type: 'stepStarted', step: 2 },
+      { type: 'reasoningStart' },
+    ]);
+
+    expect(useRunStore.getState().live).toMatchObject({
+      runId: 4,
+      step: 2,
+      hasEnded: false,
+      parts: [
+        { type: 'reasoning', durationMs: 3400 },
+        { type: 'text', text: 'Reading it first.' },
+        { type: 'toolCall', callId: 'c1', name: 'read_document', status: 'done' },
+        { type: 'toolCall', callId: 'c2', name: 'propose_rewrite', status: 'refused' },
+        { type: 'reasoning', durationMs: null },
+      ],
+    });
+  });
+
+  it('drops what a step streamed when it is retried, until the request says anything', () => {
+    const error = { reason: 'unreachable' } as const;
+    follow(4, [
+      { type: 'stepStarted', step: 1 },
+      { type: 'textDelta', text: 'Kept.' },
+      { type: 'stepStarted', step: 2 },
+      { type: 'textDelta', text: 'Cut off' },
+      { type: 'stepRetrying', attempt: 1, waitMs: 1000, error },
+    ]);
+    expect(useRunStore.getState().live).toMatchObject({
+      parts: [{ type: 'text', text: 'Kept.' }],
+      retrying: { attempt: 1, waitMs: 1000, error },
+    });
+
+    follow(4, [{ type: 'textDelta', text: 'Again.' }]);
+    expect(useRunStore.getState().live).toMatchObject({
+      parts: [
+        { type: 'text', text: 'Kept.' },
+        { type: 'text', text: 'Again.' },
+      ],
+      retrying: null,
+    });
+  });
+
+  it('starts again for the next run', () => {
+    follow(4, [{ type: 'textDelta', text: 'First run.' }, { type: 'runEnded' }]);
+    expect(useRunStore.getState().live?.hasEnded).toBe(true);
+
+    follow(5, [{ type: 'stepStarted', step: 1 }]);
+    expect(useRunStore.getState().live).toMatchObject({ runId: 5, parts: [], hasEnded: false });
+  });
+});

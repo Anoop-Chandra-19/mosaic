@@ -6,6 +6,7 @@ import { PreviewPanel } from './PreviewPanel';
 import { Toast } from './Toast';
 import { AgentPane } from '@/features/agent/AgentPane';
 import { useAnswerAgentToolCalls } from '@/features/agent/agentRunTools';
+import { useFollowAgentRuns } from '@/features/agent/followAgentRuns';
 import { DevTools } from '@/features/dev-tools/DevTools';
 import { SuggestionReview } from '@/features/suggestions/review/SuggestionReview';
 import { RestoreBackupDialog } from '@/features/backup/RestoreBackupDialog';
@@ -53,6 +54,7 @@ export function AppShell() {
   useKeyboardNavigationMark();
   useHelpMenu();
   useAnswerAgentToolCalls();
+  useFollowAgentRuns();
   const hasTemplates = useTemplateStore((s) => s.templates.length > 0);
   const surface = useOverlayStore((s) => s.surface);
   const shownSurface = useShownSurface();

@@ -9,6 +9,7 @@ import {
 } from '@shared/types/agentBridge';
 import type { TranscriptMessage } from '@shared/types/agentConversation';
 import type { AgentRuns, RunPage } from '../agent/agentRuns';
+import { readLastConversationId } from '../db/conversations/conversations';
 import { readMessagePage } from '../db/conversations/messages';
 
 /*
@@ -27,6 +28,7 @@ export interface AgentHandlers {
   carryOn(page: RunPage, request: unknown): Promise<AgentStart>;
   stop(runId: unknown): void;
   readMessages(conversationId: unknown, page: unknown): TranscriptMessage[];
+  readLastConversationId(): number | null;
   answerTool(runId: unknown, callId: unknown, answer: unknown): void;
 }
 
@@ -116,6 +118,7 @@ export function createAgentHandlers(runs: AgentRuns, currentDb: () => Database):
     stop: (runId) => runs.stop(rowId(runId, 'runId')),
     readMessages: (conversationId, page) =>
       readMessagePage(currentDb(), rowId(conversationId, 'conversationId'), messagePage(page)),
+    readLastConversationId: () => readLastConversationId(currentDb()),
     answerTool: (runId, callId, answer) =>
       runs.answerTool(rowId(runId, 'runId'), id(callId, 'callId'), toolAnswer(answer)),
   };

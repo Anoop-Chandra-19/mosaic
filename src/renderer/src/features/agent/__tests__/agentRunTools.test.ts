@@ -1,5 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { useProposalStore } from '@/stores/proposalStore';
 import { useResumeStore } from '@/stores/resumeStore';
+import { useRunStore } from '@/stores/runStore';
 import type { AgentToolResult } from '@shared/agent-tools/agentTools';
 import type { AgentRunEnvelope, AgentStart, AgentToolCall } from '@shared/types/agentBridge';
 import { makeResume } from '../../suggestions/proposals/__tests__/proposalFixtures';
@@ -67,5 +69,24 @@ describe('the page’s side of a run', () => {
     follow({ conversationId: 1, runId: 4, seq: 3, event: { type: 'runEnded' } });
     await Promise.resolve();
     await expect(runTool(readCall(4))).rejects.toThrow('Run 4 wasn’t asked for');
+  });
+
+  it('keeps what a run left staged when it ends', async () => {
+    const asked = askAgent('Tighten my bullets.');
+    finishStart({ ok: true, conversationId: 1, runId: 4 });
+    await asked;
+    await runTool(readCall(4));
+    await runTool({
+      runId: 4,
+      callId: 'c2',
+      name: 'propose_rewrite',
+      args: { id: 'b1', text: 'Led billing' },
+    });
+
+    follow({ conversationId: 1, runId: 4, seq: 5, event: { type: 'runEnded' } });
+    await Promise.resolve();
+    const staged = useProposalStore.getState().byTemplate.t1.map((proposal) => proposal.id);
+    expect(staged).toHaveLength(1);
+    expect(useRunStore.getState().stagedIdsByRun[4]).toEqual(staged);
   });
 });

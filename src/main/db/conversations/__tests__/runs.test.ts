@@ -1,8 +1,8 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createDefaultResume } from '@shared/resume/defaultResume';
 import { openDatabase, type Database } from '../../connection';
 import { createTemplate, removeTemplate } from '../../resumes/templates';
-import { createConversation } from '../conversations';
+import { createConversation, readLastConversationId } from '../conversations';
 import { appendMessage, readMessagePage } from '../messages';
 import { finishRun, listUsedModels, startRun } from '../runs';
 
@@ -78,6 +78,26 @@ describe('listUsedModels', () => {
       { provider: 'openai', model: 'gpt-6-luna' },
       { provider: 'openrouter', model: 'openai/gpt-5.6-terra' },
     ]);
+  });
+});
+
+describe('readLastConversationId', () => {
+  afterEach(() => vi.useRealTimers());
+
+  it('is the conversation a run started in last', () => {
+    vi.useFakeTimers({ now: Date.now() + 1_000 });
+    const first = createConversation(db, { provider: 'ollama', model: 'm' });
+    const second = createConversation(db, { provider: 'ollama', model: 'm' });
+    expect(readLastConversationId(db)).toBe(second);
+
+    vi.advanceTimersByTime(1_000);
+    startRun(db, { conversationId: first, templateId: null, provider: 'ollama', model: 'm' });
+    expect(readLastConversationId(db)).toBe(first);
+  });
+
+  it('is null before the first conversation', () => {
+    db.prepare('delete from conversations').run();
+    expect(readLastConversationId(db)).toBeNull();
   });
 });
 
