@@ -10,7 +10,8 @@ export function createFakeAgentLog() {
   const append = (conversationId: number, runId: number | null, body: TranscriptMessageBody) => {
     const log = byConversation.get(conversationId) ?? [];
     byConversation.set(conversationId, log);
-    log.push({ id: nextId++, seq: log.length + 1, runId, body, createdAt: 0 });
+    const runModel = runId === null ? null : { provider: 'ollama', model: 'qwen3.5:9b' };
+    log.push({ id: nextId++, seq: log.length + 1, runId, runModel, body, createdAt: 0 });
   };
 
   const readMessages = vi.fn(async (conversationId: number, page: MessagePage) => {

@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { RUN_LIMITS } from '@shared/agent/runLimitSettings';
 import { createDefaultResume } from '@shared/resume/defaultResume';
 import type { AgentRunEnvelope, AgentToolAnswer, AgentToolCall } from '@shared/types/agentBridge';
 import { AGENT_SETTINGS_KEY } from '@shared/types/modelProviders';
@@ -7,7 +8,6 @@ import { readConversationLog } from '../../db/conversations/messages';
 import { createTemplate } from '../../db/resumes/templates';
 import { setSetting } from '../../db/settings';
 import { createAgentRuns, type AgentRuns, type RunPage } from '../agentRuns';
-import { RUN_LIMITS } from '../runLimits';
 import { callTool, DONE, hang, say, scriptedModel, type ScriptedReply } from './scriptedRun';
 
 let db: Database;

@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
+import { RUN_LIMITS } from '@shared/agent/runLimitSettings';
 import type { AgentRunEvent } from '@shared/types/agentRunEvents';
 import type { ModelProviderError, ModelStreamEvent } from '@shared/types/modelReply';
 import { requestModelReply, type ReplyRequest } from '../requestModelReply';
-import { RUN_LIMITS } from '../runLimits';
 import { callTool, DONE, hang, say, scriptedModel, type ScriptedReply } from './scriptedRun';
 
 const failWith = (error: ModelProviderError): ModelStreamEvent[] => [{ type: 'error', error }];

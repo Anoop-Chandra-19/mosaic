@@ -100,11 +100,19 @@ export type TranscriptMessageBody =
   | (Omit<AssistantMessageBody, 'content'> & { content: TranscriptReplyPart[] })
   | { type: 'toolResults'; results: Omit<ToolResult, 'content'>[] };
 
+/** As the run recorded them when it started. */
+export interface RunModel {
+  provider: string;
+  model: string;
+}
+
 export interface TranscriptMessage {
   id: number;
   seq: number;
   /** Null for one written outside a run. */
   runId: number | null;
+  /** The provider and model its run used, which a stop's notice names; null outside a run. */
+  runModel: RunModel | null;
   body: TranscriptMessageBody;
   createdAt: number;
 }

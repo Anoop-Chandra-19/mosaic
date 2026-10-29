@@ -123,7 +123,10 @@ function listTurns(runs: RunView[], liveRunId: number | null): Turn[] {
   const shown =
     liveRunId === null || runs.some((run) => run.runId === liveRunId)
       ? runs
-      : [...runs, { runId: liveRunId, ask: null, switchedTo: null, parts: [], stop: null }];
+      : [
+          ...runs,
+          { runId: liveRunId, model: null, ask: null, switchedTo: null, parts: [], stop: null },
+        ];
   return shown.flatMap((run) => listRunTurns(run, run.runId === liveRunId));
 }
 

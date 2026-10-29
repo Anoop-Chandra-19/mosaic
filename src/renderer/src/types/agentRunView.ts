@@ -1,4 +1,4 @@
-import type { RunStoppedMessageBody } from '@shared/types/agentConversation';
+import type { RunModel, RunStoppedMessageBody } from '@shared/types/agentConversation';
 
 /** A tool call's state: waiting for its result, done, or refused by the tool. */
 export type RunToolStatus = 'running' | 'done' | 'refused';
@@ -17,6 +17,8 @@ export type RunPart =
 /** One run of the transcript: what was asked, what the run did, and how it ended. */
 export interface RunView {
   runId: number;
+  /** Null for the live run until its first message is read. */
+  model: RunModel | null;
   /** What the user sent; null for Send again, which carries on with no message. */
   ask: string | null;
   /** The resume the run moved to, when it was another one than the run before. */

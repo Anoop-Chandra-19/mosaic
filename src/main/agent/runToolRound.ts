@@ -1,4 +1,5 @@
 import type { Database } from 'better-sqlite3';
+import type { RunLimitSettings } from '@shared/agent/runLimitSettings';
 import type { AgentToolResult } from '@shared/agent-tools/agentTools';
 import type { AgentToolCall } from '@shared/types/agentBridge';
 import type { RunStopReason } from '@shared/types/agentConversation';
@@ -9,7 +10,7 @@ import type { ConversationRun } from '../db/conversations/runs';
 import type { ToolCallEnd } from '../db/conversations/toolCalls';
 import { ABORTED, untilAborted } from './abortableWaits';
 import type { DraftStamp } from './assembleModelContext';
-import type { RunLimitSettings, RunLimits } from './runLimits';
+import type { RunLimits } from './runLimits';
 
 /*
  * One step's tool round: each call the model made, in order, sent to the page that runs

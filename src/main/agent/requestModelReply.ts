@@ -1,3 +1,4 @@
+import type { RunLimitSettings } from '@shared/agent/runLimitSettings';
 import type { RunStopReason } from '@shared/types/agentConversation';
 import type { AgentRunEvent } from '@shared/types/agentRunEvents';
 import type {
@@ -8,7 +9,6 @@ import type {
 } from '@shared/types/modelReply';
 import type { ModelProvider, ModelRequest } from '../model-providers/modelProvider';
 import type { Wait } from './abortableWaits';
-import type { RunLimitSettings } from './runLimits';
 
 /*
  * One step's request: streamed into the reply's parts, sent again when it failed in a

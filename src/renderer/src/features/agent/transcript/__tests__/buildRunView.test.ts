@@ -3,7 +3,14 @@ import type { TranscriptMessage, TranscriptMessageBody } from '@shared/types/age
 import { buildRunView } from '../buildRunView';
 
 const messages = (rows: [number | null, TranscriptMessageBody][]): TranscriptMessage[] =>
-  rows.map(([runId, body], i) => ({ id: i + 1, seq: i + 1, runId, body, createdAt: 0 }));
+  rows.map(([runId, body], i) => ({
+    id: i + 1,
+    seq: i + 1,
+    runId,
+    runModel: runId === null ? null : { provider: 'ollama', model: 'qwen3.5:9b' },
+    body,
+    createdAt: 0,
+  }));
 
 describe('buildRunView', () => {
   it('folds each run’s stored messages into one view, in order', () => {
@@ -46,6 +53,7 @@ describe('buildRunView', () => {
     expect(runs).toEqual([
       {
         runId: 1,
+        model: { provider: 'ollama', model: 'qwen3.5:9b' },
         ask: 'Tighten my bullets.',
         switchedTo: null,
         parts: [
@@ -65,6 +73,7 @@ describe('buildRunView', () => {
       },
       {
         runId: 2,
+        model: { provider: 'ollama', model: 'qwen3.5:9b' },
         ask: null,
         switchedTo: { templateId: 't2', label: 'Data, startups' },
         parts: [{ type: 'text', text: 'Cut' }],
