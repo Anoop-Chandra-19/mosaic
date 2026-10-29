@@ -3,16 +3,20 @@ import { LayoutTemplate, Sparkles } from 'lucide-react';
 import { Text } from '@/components/ui-kit';
 import { useActiveTemplate } from '@/features/templates/useActiveTemplate';
 import { cn } from '@/lib/utils';
+import { useAgentSettingsStore } from '@/stores/agentSettingsStore';
 import { useConversationStore } from '@/stores/conversationStore';
 import { useRunStore } from '@/stores/runStore';
 import type { RunPart, RunView } from '@/types/agentRunView';
+import { describeStop } from '../notices/stopWords';
 import { buildRunView } from './buildRunView';
 import { ReplyText } from './ReplyText';
+import { RunRecord } from './RunRecord';
 import { useStickToNewest } from './useStickToNewest';
 
 /*
- * The open conversation, a run at a time: the resume it moved to, what was asked, and what
- * the assistant wrote. The run under way reads from `runStore`, so only its reply re-renders
+ * The open conversation, a run at a time: the resume it moved to, what was asked, what
+ * the assistant wrote, and the record line a stop leaves (`RunRecord`, worded by
+ * `notices/stopWords.ts`; the notice over the box says the rest). The run under way reads from `runStore`, so only its reply re-renders
  * as it streams; once stored, it reads from the transcript like the rest.
  */
 
@@ -93,8 +97,24 @@ function LiveReply() {
 
 const hasText = (run: RunView) => run.parts.some((part) => part.type === 'text');
 
+/** What a stopped run's record line says; null for one that finished, or the user's Stop. */
+type ReadStopRecord = (run: RunView) => string | null;
+
+/** The reply, between the lines a Send again and a stop leave in the run. */
+function StoredReply({ run, stopRecord }: { run: RunView; stopRecord: string | null }) {
+  return (
+    <>
+      {run.ask === null && <RunRecord text="Sent again" at={run.startedAt} isAgain />}
+      {hasText(run) && <ReplyText parts={run.parts} />}
+      {stopRecord !== null && run.stoppedAt !== null && (
+        <RunRecord text={`Stopped: ${stopRecord}`} at={run.stoppedAt} />
+      )}
+    </>
+  );
+}
+
 /** A run's turns, in order; the run under way always has its reply, even before any text. */
-function listRunTurns(run: RunView, isLive: boolean): Turn[] {
+function listRunTurns(run: RunView, isLive: boolean, readStopRecord: ReadStopRecord): Turn[] {
   const turns: Turn[] = [];
   if (run.switchedTo) {
     turns.push({
@@ -106,12 +126,15 @@ function listRunTurns(run: RunView, isLive: boolean): Turn[] {
   if (run.ask !== null) {
     turns.push({ key: `${run.runId}-ask`, kind: 'ask', node: <AskBubble text={run.ask} /> });
   }
-  if (isLive || hasText(run)) {
+  const stopRecord = isLive ? null : readStopRecord(run);
+  if (isLive || hasText(run) || stopRecord !== null || run.ask === null) {
     turns.push({
       key: `${run.runId}-reply`,
       kind: 'reply',
       node: (
-        <AssistantTurn>{isLive ? <LiveReply /> : <ReplyText parts={run.parts} />}</AssistantTurn>
+        <AssistantTurn>
+          {isLive ? <LiveReply /> : <StoredReply run={run} stopRecord={stopRecord} />}
+        </AssistantTurn>
       ),
     });
   }
@@ -119,15 +142,28 @@ function listRunTurns(run: RunView, isLive: boolean): Turn[] {
 }
 
 /** The stored runs, and the one under way when the transcript hasn't read it yet. */
-function listTurns(runs: RunView[], liveRunId: number | null): Turn[] {
+function listTurns(
+  runs: RunView[],
+  liveRunId: number | null,
+  readStopRecord: ReadStopRecord
+): Turn[] {
   const shown =
     liveRunId === null || runs.some((run) => run.runId === liveRunId)
       ? runs
       : [
           ...runs,
-          { runId: liveRunId, model: null, ask: null, switchedTo: null, parts: [], stop: null },
+          {
+            runId: liveRunId,
+            model: null,
+            startedAt: 0,
+            ask: null,
+            switchedTo: null,
+            parts: [],
+            stop: null,
+            stoppedAt: null,
+          },
         ];
-  return shown.flatMap((run) => listRunTurns(run, run.runId === liveRunId));
+  return shown.flatMap((run) => listRunTurns(run, run.runId === liveRunId, readStopRecord));
 }
 
 function EmptyConversation() {
@@ -155,9 +191,12 @@ export function AgentTranscript() {
   );
   const scrollRef = useRef<HTMLElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
+  const ollamaAddress = useAgentSettingsStore((s) => s.ollamaAddress);
   useStickToNewest(scrollRef, contentRef);
 
-  const turns = listTurns(buildRunView(messages), liveRunId);
+  const readStopRecord = (run: RunView) =>
+    run.stop && (describeStop(run.stop, run.model, ollamaAddress)?.record ?? null);
+  const turns = listTurns(buildRunView(messages), liveRunId, readStopRecord);
   return (
     <section
       ref={scrollRef}

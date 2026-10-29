@@ -12,19 +12,28 @@ import type { RunPart, RunView } from '@/types/agentRunView';
  */
 export function buildRunView(messages: TranscriptMessage[]): RunView[] {
   const runs: RunView[] = [];
-  for (const { runId, runModel, body } of messages) {
+  for (const { runId, runModel, body, createdAt } of messages) {
     if (runId === null) continue;
     let run = runs.at(-1);
     if (run?.runId !== runId) {
-      run = { runId, model: runModel, ask: null, switchedTo: null, parts: [], stop: null };
+      run = {
+        runId,
+        model: runModel,
+        startedAt: createdAt,
+        ask: null,
+        switchedTo: null,
+        parts: [],
+        stop: null,
+        stoppedAt: null,
+      };
       runs.push(run);
     }
-    addToRun(run, body);
+    addToRun(run, body, createdAt);
   }
   return runs;
 }
 
-function addToRun(run: RunView, body: TranscriptMessageBody): void {
+function addToRun(run: RunView, body: TranscriptMessageBody, createdAt: number): void {
   switch (body.type) {
     case 'templateSwitched':
       run.switchedTo = { templateId: body.templateId, label: body.label };
@@ -45,6 +54,7 @@ function addToRun(run: RunView, body: TranscriptMessageBody): void {
       return;
     case 'runStopped':
       run.stop = body;
+      run.stoppedAt = createdAt;
   }
 }
 

@@ -55,3 +55,19 @@ export const KEY_PAGE_URLS: Record<KeyedProvider, string> = {
   google: 'https://aistudio.google.com/apikey',
   openrouter: 'https://openrouter.ai/keys',
 };
+
+/** Where each provider shows credits and quota. */
+export const BILLING_PAGE_URLS: Record<KeyedProvider, string> = {
+  anthropic: 'https://console.anthropic.com/settings/billing',
+  openai: 'https://platform.openai.com/settings/organization/billing',
+  google: 'https://aistudio.google.com/usage',
+  openrouter: 'https://openrouter.ai/settings/credits',
+};
+
+/** Where each provider says whether its service is up. */
+export const STATUS_PAGE_URLS: Record<KeyedProvider, string> = {
+  anthropic: 'https://status.anthropic.com',
+  openai: 'https://status.openai.com',
+  google: 'https://aistudio.google.com/status',
+  openrouter: 'https://status.openrouter.ai',
+};

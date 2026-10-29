@@ -1,28 +1,20 @@
 import type { AgentStartRefusal } from '@shared/types/agentBridge';
+import type { NoticeAction, NoticeWords } from './noticeWords';
 
 /*
  * What the pane says when main won't start a run. Each needs the user before anything can
- * run, so each is a "Can’t run" notice over the prompt box, and the message stays in the box.
+ * run, so each is a "Can’t run" notice, and the message stays in the box.
  */
 
-/** `again` sends the box's message again; `openRunning` goes to the conversation running. */
-export type StartNoticeActionKind = 'settings' | 'again' | 'openRunning';
-
-export interface StartNoticeAction {
-  kind: StartNoticeActionKind;
-  label: string;
-}
-
-export interface StartRefusalWords {
+interface RefusalWords {
   sentence: string;
-  /** What Mosaic did, and what happened to the message. */
   did: string;
-  actions: StartNoticeAction[];
+  actions: NoticeAction[];
 }
 
 const NOT_SENT = 'Not sent. Your message is still in the box.';
 
-const WORDS: Record<AgentStartRefusal, (provider: string) => StartRefusalWords> = {
+const WORDS: Record<AgentStartRefusal, (provider: string) => RefusalWords> = {
   noApiKey: (provider) => ({
     sentence: `Add your ${provider} API key in Settings to use it.`,
     did: NOT_SENT,
@@ -48,7 +40,21 @@ const WORDS: Record<AgentStartRefusal, (provider: string) => StartRefusalWords> 
   }),
 };
 
-export const describeStartRefusal = (
+/** For the provider and model chosen now, which the message would have used. */
+export function describeStartRefusal(
   refusal: AgentStartRefusal,
-  provider: string
-): StartRefusalWords => WORDS[refusal](provider);
+  chosen: { providerLabel: string; model: string }
+): NoticeWords {
+  return {
+    ...WORDS[refusal](chosen.providerLabel),
+    kind: refusal,
+    level: 'cantRun',
+    who: `${chosen.providerLabel} · ${chosen.model}`,
+    quoted: null,
+    isKeptShown: false,
+  };
+}
+
+/** A send that came back the same: nothing was sent, so it was checked. */
+export const formatCheckedAgain = (time: string): string =>
+  `Checked again at ${time}. Same answer.`;

@@ -38,7 +38,8 @@ Use what exists before adding a motion:
   `shown`, key its element by the retained content, attach `ref`, and make it inert
   while `isLeaving`. Its second type parameter selects the element type (a div by
   default). It retains content through all exit animations and cancels stale exits
-  on replacement. `presenceMotions.ts` supplies `pop` (the default) and `fade`;
+  on replacement. `presenceMotions.ts` supplies `pop` (the default), `fade`, and
+  `foldAway` (exit only: the box's space closes, for a slot whose content rises in CSS);
   `staggerPresence.ts` supplies `stagger` for children of `data-presence-list` and
   an optional `data-presence-stretch`. Interrupted motions resume from each element's
   visible frame.

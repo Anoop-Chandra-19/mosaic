@@ -148,6 +148,7 @@
   --color-warn-soft: var(--warn-soft);
   --color-warn-line: var(--warn-line);
   --color-warn-ink: var(--warn-ink);
+  --color-warn-text: var(--warn-text);
   --color-add-word: var(--add-word);
   --color-del-word: var(--del-word);
   --color-paper-changed: var(--paper-changed);
@@ -272,6 +273,21 @@
     from {
       opacity: 0;
       translate: 0 0.375rem;
+    }
+  }
+
+  /* The same notice coming back for a send made while it showed: a ring, once. */
+  --animate-notice-pulse: notice-pulse 700ms ease;
+
+  @keyframes notice-pulse {
+    0% {
+      box-shadow: 0 0 0 0 var(--warn-line);
+    }
+    40% {
+      box-shadow: 0 0 0 0.25rem var(--warn-soft);
+    }
+    100% {
+      box-shadow: 0 0 0 0 transparent;
     }
   }
 
@@ -460,6 +476,8 @@
   --warn-line: oklch(0.58 0.17 45 / 32%);
   /* Text on a warn fill. */
   --warn-ink: oklch(0.99 0 0);
+  /* Warn as words on a warn-soft tint: darker than warn in light, to read. */
+  --warn-text: oklch(0.52 0.17 45);
   /* The words that changed inside a line already tinted add or del; the same in both themes. */
   --add-word: oklch(0.76 0.15 155 / 30%);
   --del-word: oklch(0.7 0.17 22 / 30%);
@@ -584,6 +602,7 @@
   --warn-soft: oklch(0.7 0.17 45 / 15%);
   --warn-line: oklch(0.7 0.17 45 / 34%);
   --warn-ink: oklch(0.18 0.03 45);
+  --warn-text: var(--warn);
   --overlay-shadow: 0 24px 60px -12px oklch(0 0 0 / 70%), 0 2px 6px oklch(0 0 0 / 40%);
   --floating-shadow: 0 1px 2px oklch(0 0 0 / 40%), 0 8px 24px -8px oklch(0 0 0 / 55%);
   --print-link: #38bdf8;

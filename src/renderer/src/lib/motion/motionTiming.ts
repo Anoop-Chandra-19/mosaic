@@ -17,6 +17,7 @@ export const MOTION_MS = {
   leave: 140,
   presenceEnter: 200,
   presenceExit: 150,
+  foldAway: 180,
   travel: 260,
   fold: 220,
   carryTint: 900,

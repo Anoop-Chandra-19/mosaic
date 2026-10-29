@@ -19,6 +19,8 @@ export interface RunView {
   runId: number;
   /** Null for the live run until its first message is read. */
   model: RunModel | null;
+  /** When its first message was stored, in ms since the epoch. */
+  startedAt: number;
   /** What the user sent; null for Send again, which carries on with no message. */
   ask: string | null;
   /** The resume the run moved to, when it was another one than the run before. */
@@ -26,4 +28,5 @@ export interface RunView {
   parts: RunPart[];
   /** Why it stopped before the model finished; null when it finished or is still going. */
   stop: RunStoppedMessageBody | null;
+  stoppedAt: number | null;
 }
