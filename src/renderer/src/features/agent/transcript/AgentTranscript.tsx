@@ -61,7 +61,7 @@ function AskBubble({ text }: { text: string }) {
       <Text
         as="p"
         variant="body"
-        className="max-w-[90%] rounded-[0.6875rem_0.6875rem_0.1875rem_0.6875rem] border border-line bg-pane-raised px-2.75 py-2.25 whitespace-pre-wrap text-foreground [overflow-wrap:anywhere]"
+        className="max-w-[90%] rounded-[0.6875rem_0.6875rem_0.1875rem_0.6875rem] border border-line bg-pane-raised px-2.75 py-2.25 wrap-break-word whitespace-pre-wrap text-foreground"
       >
         {text}
       </Text>

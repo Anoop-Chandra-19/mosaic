@@ -1,23 +1,5 @@
-import { Text } from '@/components/ui-kit';
 import type { RunPart } from '@/types/agentRunView';
-
-/** Each step's text, split at its blank lines. */
-function readParagraphs(parts: RunPart[]): string[] {
-  return parts
-    .flatMap((part) => (part.type === 'text' ? part.text.split(/\n\s*\n/) : []))
-    .map((paragraph) => paragraph.trim())
-    .filter((paragraph) => paragraph !== '');
-}
-
-/** The end of a reply still being written. */
-function Caret() {
-  return (
-    <i
-      aria-hidden
-      className="ml-0.5 inline-block h-3 w-1.5 animate-caret-blink bg-amber align-[-0.125rem] motion-reduce:animate-none"
-    />
-  );
-}
+import { ReplyMarkdown } from './ReplyMarkdown';
 
 interface ReplyTextProps {
   parts: RunPart[];
@@ -25,28 +7,21 @@ interface ReplyTextProps {
   isWriting?: boolean;
 }
 
-/** What the assistant wrote in a run, as paragraphs. */
+/**
+ * What the assistant wrote in a run, a block for each step's text. Only the newest block
+ * changes as it streams, so the finished ones above it aren't drawn again.
+ */
 export function ReplyText({ parts, isWriting = false }: ReplyTextProps) {
-  const paragraphs = readParagraphs(parts);
-  if (paragraphs.length === 0) {
-    return isWriting ? (
-      <p>
-        <Caret />
-      </p>
-    ) : null;
-  }
+  const texts = parts.flatMap((part) => (part.type === 'text' ? [part.text] : []));
+  if (texts.length === 0) return isWriting ? <ReplyMarkdown text="" isWriting /> : null;
   return (
     <div className="space-y-1.5">
-      {paragraphs.map((paragraph, index) => (
-        <Text
+      {texts.map((text, index) => (
+        <ReplyMarkdown
           key={index}
-          as="p"
-          variant="body"
-          className="whitespace-pre-wrap [overflow-wrap:anywhere] text-pretty"
-        >
-          {paragraph}
-          {isWriting && index === paragraphs.length - 1 && <Caret />}
-        </Text>
+          text={text}
+          isWriting={isWriting && index === texts.length - 1}
+        />
       ))}
     </div>
   );
