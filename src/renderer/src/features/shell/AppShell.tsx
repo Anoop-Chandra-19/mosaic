@@ -64,7 +64,14 @@ export function AppShell() {
   const shouldShowPreview = useUiStore((s) => s.shouldShowPreview);
   // Deferred, like the surface, so hiding and showing them is a view transition.
   const isSidebarCollapsed = useDeferredValue(useUiStore((s) => s.sidebarCollapsed));
-  const showAgentPane = useDeferredValue(isAgentEnabled && agentPaneOpen);
+  const isAgentPaneOn = isAgentEnabled && agentPaneOpen;
+  const deferredAgentPaneOn = useDeferredValue(isAgentPaneOn);
+  // Under Settings or a dialog the pane comes and goes at once: its slide would paint it,
+  // and the workspace around it, over the layer covering them until the slide ends.
+  const isWorkspaceCovered = useOverlayStore(
+    (s) => s.settingsSection !== null || s.dialog !== null
+  );
+  const showAgentPane = isWorkspaceCovered ? isAgentPaneOn : deferredAgentPaneOn;
 
   return (
     // Editor and preview side by side, at every window size; the assistant joins them on

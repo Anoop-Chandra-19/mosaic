@@ -624,7 +624,8 @@
       scrollbar-color: transparent transparent;
     }
 
-    html[data-scrollbar-active='true'] * {
+    /* Only the box that is scrolling (`lib/scrollbarReveal.ts`). */
+    [data-scrollbar-active='true'] {
       scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
     }
   }
@@ -649,20 +650,20 @@
         border-color 220ms ease;
     }
 
-    html[data-scrollbar-active='true'] *::-webkit-scrollbar-track {
+    [data-scrollbar-active='true']::-webkit-scrollbar-track {
       background-color: var(--scrollbar-track);
     }
 
-    html[data-scrollbar-active='true'] *::-webkit-scrollbar-thumb {
+    [data-scrollbar-active='true']::-webkit-scrollbar-thumb {
       background-color: var(--scrollbar-thumb);
       border-color: var(--scrollbar-track);
     }
 
-    html[data-scrollbar-active='true'] *::-webkit-scrollbar-thumb:hover {
+    [data-scrollbar-active='true']::-webkit-scrollbar-thumb:hover {
       background-color: var(--scrollbar-thumb-hover);
     }
 
-    html[data-scrollbar-active='true'] *::-webkit-scrollbar-thumb:active {
+    [data-scrollbar-active='true']::-webkit-scrollbar-thumb:active {
       background-color: var(--scrollbar-thumb-active);
     }
 
@@ -671,7 +672,7 @@
       transition: background-color 220ms ease;
     }
 
-    html[data-scrollbar-active='true'] *::-webkit-scrollbar-corner {
+    [data-scrollbar-active='true']::-webkit-scrollbar-corner {
       background-color: var(--scrollbar-track);
     }
   }
