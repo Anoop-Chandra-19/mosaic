@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
-import { storage, useStored } from '@/lib/storage/storageService';
+import { storage, useStored } from '@/lib/services/storageService';
 import { usePreviewStore } from '@/stores/previewStore';
 import { flushDraft, saveDraftOrStop, useResumeStore } from '@/stores/resumeStore';
 import { useUiStore } from '@/stores/uiStore';

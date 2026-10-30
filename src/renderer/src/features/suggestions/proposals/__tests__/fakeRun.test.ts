@@ -7,12 +7,12 @@ import { createDbHandlers, settle } from '../../../../../../main/ipc/dbHandlers'
 import { makeResume, rewrite } from './proposalFixtures';
 
 const db = vi.hoisted(() => ({ current: undefined as MosaicDb | undefined }));
-vi.mock('@/lib/storage/mosaicDb', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@/lib/storage/mosaicDb')>()),
+vi.mock('@/lib/services/mosaicDb', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/services/mosaicDb')>()),
   getDb: () => db.current,
 }));
 
-const { unwrapBridge } = await import('@/lib/storage/mosaicDb');
+const { unwrapBridge } = await import('@/lib/services/mosaicDb');
 const { flushDraft, useResumeStore } = await import('@/stores/resumeStore');
 const { useTemplateStore } = await import('@/stores/templateStore');
 const { DEFAULT_PREFERENCES, useUiStore } = await import('@/stores/uiStore');

@@ -14,7 +14,7 @@ export it as `architecture.png` at 2× scale.
 
 - **Renderer** (`src/renderer/`): React UI, Zustand stores, import readers, and exporters.
   Sandboxed: no Node, no raw IPC, no network. It reaches the rest of the app only through
-  `window.mosaic`, wrapped by `lib/storage/mosaicDb.ts` and `settingsStorage.ts`.
+  `window.mosaic`, wrapped by `lib/services/mosaicDb.ts` and `settingsStorage.ts`.
 - **Preload** (`src/preload/index.ts`): the only bridge. It exposes `db` (one method per
   entry in `DB_METHODS`), `files`, `secrets`, `ai`, and `app`, each a narrow typed call.
   `secrets` can save, check, and remove a key, but has no way to read one.

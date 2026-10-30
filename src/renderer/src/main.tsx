@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client';
 import './index.css';
 import App from './App.tsx';
 import { BootFailure } from '@/features/shell/BootFailure';
-import { getDb } from '@/lib/storage/mosaicDb';
+import { getDb } from '@/lib/services/mosaicDb';
 import { hydrateStores } from '@/stores/hydrateStores';
 import { flushDraft } from '@/stores/resumeStore';
 import { useTemplateStore } from '@/stores/templateStore';

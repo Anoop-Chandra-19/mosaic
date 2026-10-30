@@ -8,12 +8,12 @@ import { openDatabase, type Database } from '../../../../main/db/connection';
 import { createDbHandlers, settle } from '../../../../main/ipc/dbHandlers';
 
 const db = vi.hoisted(() => ({ current: undefined as MosaicDb | undefined }));
-vi.mock('@/lib/storage/mosaicDb', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@/lib/storage/mosaicDb')>()),
+vi.mock('@/lib/services/mosaicDb', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/services/mosaicDb')>()),
   getDb: () => db.current,
 }));
 
-const { DbError, unwrapBridge } = await import('@/lib/storage/mosaicDb');
+const { DbError, unwrapBridge } = await import('@/lib/services/mosaicDb');
 const { flushDraft, UnsavedDraftError, useResumeStore } = await import('../resumeStore');
 const { readVersion, readVersionHistory, useTemplateStore } = await import('../templateStore');
 const { DEFAULT_PREFERENCES, useUiStore } = await import('../uiStore');

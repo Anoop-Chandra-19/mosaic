@@ -8,7 +8,7 @@ import {
   type ShortcutBindings,
   type ShortcutId,
 } from '@/lib/shortcutCatalog';
-import { settingsStorage } from '@/lib/storage/settingsStorage';
+import { settingsStorage } from '@/lib/services/settingsStorage';
 import {
   HISTORY_TIP_IDS,
   type HistoryComparison,

@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 
 // The store's settings storage is the window's; here it keeps nothing.
-vi.mock('@/lib/storage/settingsStorage', () => ({
+vi.mock('@/lib/services/settingsStorage', () => ({
   settingsStorage: { getItem: () => null, setItem: () => {}, removeItem: () => {} },
 }));
 

@@ -8,7 +8,7 @@ import { buildRunView } from '../transcript/buildRunView';
 import { followAgentRuns } from '../followAgentRuns';
 
 // Where the pane was left is a setting; here it keeps nothing.
-vi.mock('@/lib/storage/settingsStorage', () => ({
+vi.mock('@/lib/services/settingsStorage', () => ({
   settingsStorage: { getItem: () => null, setItem: () => {}, removeItem: () => {} },
 }));
 

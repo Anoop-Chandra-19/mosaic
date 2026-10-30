@@ -1,5 +1,5 @@
 import { applyDensityClass, applyThemeClass, isThemeDark } from '@/lib/appearance';
-import { seedSettings } from '@/lib/storage/settingsStorage';
+import { seedSettings } from '@/lib/services/settingsStorage';
 import type { BootState } from '@shared/types/db';
 import { useAgentSettingsStore } from './agentSettingsStore';
 import { useOverlayStore } from './overlayStore';

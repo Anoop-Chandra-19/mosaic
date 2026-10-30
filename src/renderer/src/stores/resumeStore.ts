@@ -1,8 +1,8 @@
 import { current } from 'immer';
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
-import { DbError } from '@/lib/storage/mosaicDb';
-import { storage } from '@/lib/storage/storageService';
+import { DbError } from '@/lib/services/mosaicDb';
+import { storage } from '@/lib/services/storageService';
 import { createEmptyResume } from '@shared/resume/defaultResume';
 import { createHeaderItem, createHeaderLine } from '@shared/resume/resumeHeader';
 import type { Draft } from '@shared/types/db';

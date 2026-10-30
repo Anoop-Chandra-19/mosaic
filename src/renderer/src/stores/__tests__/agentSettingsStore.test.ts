@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 const stored = vi.hoisted(() => ({ value: null as string | null }));
 
 // The store's settings storage is the window's; here it holds one record.
-vi.mock('@/lib/storage/settingsStorage', () => ({
+vi.mock('@/lib/services/settingsStorage', () => ({
   settingsStorage: { getItem: () => stored.value, setItem: () => {}, removeItem: () => {} },
 }));
 

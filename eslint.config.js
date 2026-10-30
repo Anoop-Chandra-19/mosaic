@@ -65,7 +65,7 @@ const UI_KIT_IMPORTS = {
 
 /** Stored data is read and written through its store; only stores reach the database. */
 const STORAGE_IMPORTS = {
-  regex: '(^|/)lib/storage/',
+  regex: '(^|/)lib/services/(storageService|mosaicDb|readCache|settingsStorage)$',
   allowImportNames: ['DbError'],
   message:
     'Read and write stored data through its store (templateStore, …), which exports what features need.',
@@ -73,9 +73,9 @@ const STORAGE_IMPORTS = {
 
 /** Stores reach the database through the storage service, which keeps its reads fresh. */
 const DB_CLIENT_IMPORTS = {
-  regex: '(^|/)lib/storage/(mosaicDb|readCache)$',
+  regex: '(^|/)lib/services/(mosaicDb|readCache)$',
   allowImportNames: ['DbError'],
-  message: 'Use `storage` from lib/storage/storageService, adding what it is missing there.',
+  message: 'Use `storage` from lib/services/storageService, adding what it is missing there.',
 };
 
 /** In main, only db/ talks to SQLite; everything else passes the handle to db/'s functions. */
