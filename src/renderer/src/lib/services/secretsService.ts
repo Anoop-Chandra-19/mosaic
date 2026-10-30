@@ -1,4 +1,5 @@
-import type { KeyedProvider, SaveKeyOptions } from '@shared/types/secrets';
+import type { KeyedProvider, ModelListing, SaveKeyOptions } from '@shared/types/secrets';
+import { readOr } from './readOr';
 
 /*
  * API keys, kept by main: a key goes in and never comes back out. `stores/secretsStore.ts`
@@ -12,6 +13,11 @@ export const secretsService = {
   check: (provider: KeyedProvider) => window.mosaic.secrets.check(provider),
   remove: (provider: KeyedProvider) => window.mosaic.secrets.remove(provider),
   forgetAll: () => window.mosaic.secrets.forgetAll(),
+  /** The chat models the saved key can use. Never rejects. */
   listModels: (provider: KeyedProvider, refresh: boolean) =>
-    window.mosaic.secrets.listModels(provider, refresh),
+    readOr<ModelListing>(
+      () => window.mosaic.secrets.listModels(provider, refresh),
+      { ok: false, reason: 'failed' },
+      'Could not list the models'
+    ),
 };

@@ -13,6 +13,7 @@ import {
   Text,
   textVariantClasses,
 } from '@/components/ui-kit';
+import { modelsService } from '@/lib/services/modelsService';
 import { cn } from '@/lib/utils';
 import { formatRelativeTime } from '@/features/templates/formatRelativeTime';
 import type { KeyedProvider, ModelListing } from '@shared/types/secrets';
@@ -146,11 +147,7 @@ export function ModelCombobox({
     if (isOpen) return;
     setQuery('');
     // Read each time it opens: a run since may have used another model.
-    window.mosaic.modelProviders.usedModels().then(
-      (models) =>
-        setUsed(models.filter((each) => each.provider === provider).map((each) => each.model)),
-      (error: unknown) => console.error('Could not read the models used before', error)
-    );
+    void modelsService.usedBefore(provider).then(setUsed);
   };
   const close = () => setQuery(null);
   const pick = (picked: string) => {

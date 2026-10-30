@@ -1,0 +1,26 @@
+import type { AgentToolResult } from '@shared/agent-tools/agentTools';
+import type {
+  AgentCarryOnRequest,
+  AgentRunEnvelope,
+  AgentStartRequest,
+  AgentToolCall,
+  MessagePage,
+} from '@shared/types/agentBridge';
+
+/*
+ * The assistant's runs, which happen in main, and the conversation log they write. Stores
+ * read the log; `features/agent/` starts, stops and follows the runs.
+ */
+export const agentService = {
+  start: (request: AgentStartRequest) => window.mosaic.agent.start(request),
+  carryOn: (request: AgentCarryOnRequest) => window.mosaic.agent.carryOn(request),
+  stop: (runId: number) => window.mosaic.agent.stop(runId),
+  readMessages: (conversationId: number, page: MessagePage) =>
+    window.mosaic.agent.readMessages(conversationId, page),
+  readLastConversationId: () => window.mosaic.agent.readLastConversationId(),
+  /** Every run's events; returns the call that stops following them. */
+  onEvent: (follow: (envelope: AgentRunEnvelope) => void) => window.mosaic.agent.onEvent(follow),
+  /** The page's one tool runner; returns the call that removes it. */
+  onToolCall: (run: (call: AgentToolCall) => Promise<AgentToolResult>) =>
+    window.mosaic.agent.onToolCall(run),
+};

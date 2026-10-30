@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { agentService } from '@/lib/services/agentService';
 import type { TranscriptMessage } from '@shared/types/agentConversation';
 import { useUiStore } from './uiStore';
 
@@ -51,7 +52,7 @@ function keepWholeRuns(page: TranscriptMessage[]): TranscriptMessage[] {
 }
 
 const requestPage = (conversationId: number, beforeSeq: number | undefined) =>
-  window.mosaic.agent.readMessages(conversationId, {
+  agentService.readMessages(conversationId, {
     ...(beforeSeq === undefined ? {} : { beforeSeq }),
     limit: MESSAGE_PAGE_SIZE,
   });
@@ -88,7 +89,7 @@ export function openSentConversation(conversationId: number): Promise<void> {
 
 /** Opens the conversation used last, or a new one before the first run. */
 export async function openLastConversation(): Promise<void> {
-  const conversationId = await window.mosaic.agent.readLastConversationId();
+  const conversationId = await agentService.readLastConversationId();
   if (conversationId === null) startNewConversation();
   else await openConversation(conversationId);
 }

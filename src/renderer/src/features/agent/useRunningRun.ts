@@ -1,4 +1,6 @@
+import { agentService } from '@/lib/services/agentService';
 import { useRunStore } from '@/stores/runStore';
+import { attempt } from '@/stores/toastStore';
 
 /** The run still going, in whichever conversation; null when none is. */
 export function useRunningRun(): { runId: number; conversationId: number } | null {
@@ -8,5 +10,5 @@ export function useRunningRun(): { runId: number; conversationId: number } | nul
 }
 
 export function stopAgentRun(runId: number): void {
-  void window.mosaic.agent.stop(runId);
+  void attempt(agentService.stop(runId), 'Couldn’t stop the run');
 }
