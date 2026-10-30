@@ -13,15 +13,34 @@ import { KeyedModelRow } from './ai/KeyedModelRow';
 import { KeyStatus } from './ai/KeyStatus';
 import { MODEL_PROVIDER_OPTION_BY_ID } from './ai/modelProviderOptions';
 import { OllamaAddressRow, OllamaContextRow, OllamaModelRow } from './ai/OllamaRows';
+import { OpenAiCompatibleAddressRow, OpenAiCompatibleModelRow } from './ai/OpenAiCompatibleRows';
 import { ProviderMenu } from './ai/ProviderMenu';
 import { useOllamaModels } from './ai/useOllamaModels';
 
 /*
  * Settings › AI assistant: the switch, the provider menu, and that provider's rows under its
  * heading, all from `ai/`. A keyed provider gets the key row (`ApiKeyRow` and its messages)
- * and the model list (`KeyedModelRow`, `ModelCombobox`); Ollama gets `OllamaRows`. Outside
- * Settings, only `ai/modelProviderOptions.ts` is used.
+ * and the model list (`KeyedModelRow`, `ModelCombobox`); Ollama gets `OllamaRows`, and an
+ * OpenAI-compatible server `OpenAiCompatibleRows`. Outside Settings, only
+ * `ai/modelProviderOptions.ts` is used.
  */
+
+function describeProviderChoice(
+  provider: ModelProviderId,
+  ollamaAddress: string,
+  openAiCompatibleAddress: string
+): string {
+  if (provider === 'ollama' && !isLocalServerAddress(ollamaAddress)) {
+    return 'Bring your own key. Ollama runs on your own hardware, here on your network.';
+  }
+  if (provider === 'openaiCompatible') {
+    return isLocalServerAddress(openAiCompatibleAddress)
+      ? 'Bring your own key. A server on your computer keeps everything on it.'
+      : 'Bring your own key. This server isn’t on your computer, so your resume text goes to it.';
+  }
+  return 'Bring your own key. Ollama runs entirely on your computer, so nothing leaves it.';
+}
+
 export function AiSection() {
   const enabled = useAgentSettingsStore((s) => s.enabled);
   const provider = useAgentSettingsStore((s) => s.provider);
@@ -33,6 +52,8 @@ export function AiSection() {
   const setOllamaAddress = useAgentSettingsStore((s) => s.setOllamaAddress);
   const ollamaContextTokens = useAgentSettingsStore((s) => s.ollamaContextTokens);
   const setOllamaContextTokens = useAgentSettingsStore((s) => s.setOllamaContextTokens);
+  const openAiCompatibleAddress = useAgentSettingsStore((s) => s.openAiCompatibleAddress);
+  const setOpenAiCompatibleAddress = useAgentSettingsStore((s) => s.setOpenAiCompatibleAddress);
   const { status, loadFailed } = useSecretsStatus();
 
   const active = MODEL_PROVIDER_OPTION_BY_ID[provider];
@@ -75,11 +96,7 @@ export function AiSection() {
         <div>
           <SettingRow
             label="Provider"
-            description={
-              provider === 'ollama' && !isLocalServerAddress(ollamaAddress)
-                ? 'Bring your own key. Ollama runs on your own hardware, here on your network.'
-                : 'Bring your own key. Ollama runs entirely on your computer, so nothing leaves it.'
-            }
+            description={describeProviderChoice(provider, ollamaAddress, openAiCompatibleAddress)}
           >
             <ProviderMenu provider={provider} status={status} onChange={setProvider} />
           </SettingRow>
@@ -93,7 +110,7 @@ export function AiSection() {
           {keyState && <KeyStatus state={keyState} className="ml-auto" />}
         </div>
 
-        {isKeyedProvider(provider) ? (
+        {isKeyedProvider(provider) && (
           <>
             {/* Keyed by provider: switching starts that provider's rows afresh. */}
             <ApiKeyRow
@@ -113,7 +130,8 @@ export function AiSection() {
               onChange={setModel}
             />
           </>
-        ) : (
+        )}
+        {provider === 'ollama' && (
           <>
             <OllamaAddressRow address={ollamaAddress} onChange={setOllamaAddress} />
             <OllamaModelRow
@@ -128,6 +146,20 @@ export function AiSection() {
               details={ollamaModelDetails}
               contextTokens={ollamaContextTokens}
               onChange={setOllamaContextTokens}
+            />
+          </>
+        )}
+        {provider === 'openaiCompatible' && (
+          <>
+            <OpenAiCompatibleAddressRow
+              address={openAiCompatibleAddress}
+              onChange={setOpenAiCompatibleAddress}
+            />
+            <OpenAiCompatibleModelRow
+              active={enabled}
+              address={openAiCompatibleAddress}
+              model={modelFor('openaiCompatible')}
+              onChange={setModel}
             />
           </>
         )}

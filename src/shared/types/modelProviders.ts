@@ -1,4 +1,10 @@
-export type ModelProviderId = 'openai' | 'anthropic' | 'google' | 'ollama' | 'openrouter';
+export type ModelProviderId =
+  | 'openai'
+  | 'anthropic'
+  | 'google'
+  | 'ollama'
+  | 'openrouter'
+  | 'openaiCompatible';
 
 /** The setting the renderer keeps the assistant's settings in; main reads it to start a run. */
 export const AGENT_SETTINGS_KEY = 'agentSettings';
@@ -46,4 +52,6 @@ export interface MosaicModelProviders {
    * on the network. Embedding-only models are left out.
    */
   ollamaModels(address: string): Promise<OllamaModels>;
+  /** The models the OpenAI-compatible server at `address` lists. */
+  openAiCompatibleModels(address: string): Promise<OpenAiCompatibleModels>;
 }

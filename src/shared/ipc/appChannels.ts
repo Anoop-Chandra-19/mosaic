@@ -29,6 +29,7 @@ export const BACKUP_CHANNELS = {
 export const MODEL_PROVIDERS_CHANNELS = {
   usedModels: 'model-providers:used-models',
   ollamaModels: 'model-providers:ollama-models',
+  openAiCompatibleModels: 'model-providers:openai-compatible-models',
 } as const satisfies Record<keyof MosaicModelProviders, string>;
 
 /** Renderer → main: `MosaicSecrets`, one channel per method. */

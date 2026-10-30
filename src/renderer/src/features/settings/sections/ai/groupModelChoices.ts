@@ -1,4 +1,4 @@
-import type { KeyedProvider } from '@shared/types/secrets';
+import type { ModelProviderId } from '@shared/types/modelProviders';
 
 export interface ModelChoice {
   model: string;
@@ -15,12 +15,12 @@ export interface ModelChoiceGroup {
 }
 
 interface ModelChoiceSources {
-  provider: KeyedProvider;
-  /** Mosaic's pick for the provider. */
-  suggested: string;
+  provider: ModelProviderId;
+  /** Mosaic's pick for the provider; a server the user runs has none. */
+  suggested: string | null;
   /** Models the assistant has run with on this provider, the most recent first. */
   used: string[];
-  /** What the provider lists for the key, newest first; empty without a list. */
+  /** What the provider lists, newest first; empty without a list. */
   listed: string[];
   query: string;
 }
@@ -44,7 +44,8 @@ function groupByVendor(models: string[]): ModelChoiceGroup[] {
 
 /**
  * The model list's groups, each model once: Mosaic's pick, then Used before, then the rest of
- * what the key lists (by vendor on OpenRouter). A query keeps the models whose names hold it.
+ * what the key or server lists (by vendor on OpenRouter). A query keeps the models whose
+ * names hold it.
  */
 export function groupModelChoices({
   provider,
@@ -54,11 +55,11 @@ export function groupModelChoices({
   query,
 }: ModelChoiceSources): ModelChoiceGroup[] {
   const usedBefore = used.filter((model) => model !== suggested);
-  const shown = new Set([suggested, ...usedBefore]);
+  const shown = new Set<string | null>([suggested, ...usedBefore]);
   const rest = listed.filter((model) => !shown.has(model) && matchesQuery(model, query));
   const groups: ModelChoiceGroup[] = [];
 
-  if (matchesQuery(suggested, query)) {
+  if (suggested !== null && matchesQuery(suggested, query)) {
     groups.push({ heading: null, choices: [{ model: suggested, tag: 'Mosaic’s pick' }] });
   }
   const usedMatches = usedBefore.filter((model) => matchesQuery(model, query));
@@ -68,7 +69,8 @@ export function groupModelChoices({
   if (provider === 'openrouter') {
     groups.push(...groupByVendor(rest));
   } else if (rest.length > 0) {
-    groups.push({ heading: 'From your key', choices: rest.map((model) => ({ model })) });
+    const heading = provider === 'openaiCompatible' ? 'On this server' : 'From your key';
+    groups.push({ heading, choices: rest.map((model) => ({ model })) });
   }
   return groups;
 }

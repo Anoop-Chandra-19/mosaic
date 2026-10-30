@@ -16,6 +16,7 @@ import {
   type NoticeWords,
   type QuotedWords,
 } from './noticeWords';
+import { shortModelName } from '../shortModelName';
 
 /*
  * What the pane says about a run that stopped on its own, from the facts its stop stored:
@@ -44,15 +45,25 @@ export interface StopWords extends NoticeWords {
   record: string;
 }
 
+/** Where the servers the user runs listen, as Settings has them now. */
+export interface ServerAddresses {
+  ollama: string;
+  openaiCompatible: string;
+}
+
 interface StopFacts {
   stop: RunStoppedMessageBody;
+  /** The name a notice opens with: "OpenAI-compatible". */
+  providerLabel: string;
+  /** Who the sentences talk about: "OpenAI", or "The server". */
   provider: string;
-  /** Null for Ollama, which has no account pages. */
+  /** Null for a server the user runs, which has no account pages. */
   keyedProvider: KeyedProvider | null;
   isOllama: boolean;
+  isOpenAiCompatible: boolean;
   model: string;
-  /** Where Ollama listens, as the address line reads it. */
-  address: string;
+  /** Where a server the user runs listens, as the address line reads it; else null. */
+  address: string | null;
   /** "Tried 4 times.", when the step was tried more than once. */
   tries: string | null;
   /** When a key was saved for this provider, if that came after the stop. */
@@ -260,6 +271,47 @@ const KIND_WORDS: Record<StopKind, (facts: StopFacts) => KindWords> = {
   }),
 };
 
+/**
+ * Where a server the user runs differs: it has no account or status page, and what fixes it
+ * is a setting on the server, which only the user can reach.
+ */
+const OPENAI_COMPATIBLE_WORDS: Partial<Record<StopKind, (facts: StopFacts) => KindWords>> = {
+  cantReach: (facts) => ({
+    sentence: `Couldn’t reach the server at ${facts.address}. Check that it’s running.`,
+    record: 'Couldn’t reach the server',
+    did: facts.tries,
+    actions: [{ ...again, isPrimary: true }],
+  }),
+  keyRefused: () => ({
+    sentence:
+      'The server wants an API key. Mosaic doesn’t send one to OpenAI-compatible servers yet.',
+    record: 'The server wants an API key',
+    actions: [settings()],
+  }),
+  credits: () => ({
+    sentence: 'The server says it’s out of credits or over its quota.',
+    record: 'The server is out of credits',
+    actions: [again],
+  }),
+  modelMissing: (facts) => ({
+    sentence: `The server has no model called ${facts.model}.`,
+    record: `No model called ${facts.model}`,
+    actions: [settings('Choose a model'), again],
+  }),
+  noTools: (facts) => ({
+    sentence: `${facts.model} on this server can’t use tools, and the assistant needs them.`,
+    record: `${facts.model} can’t use tools`,
+    did: 'llama.cpp needs --jinja; vLLM needs --enable-auto-tool-choice and a --tool-call-parser.',
+    actions: [settings('Choose a model'), again],
+  }),
+  tooLong: (facts) => ({
+    sentence: `This conversation is too long for ${facts.model}.`,
+    record: `Too long for ${facts.model}`,
+    did: 'Its context size is set on the server: llama.cpp -c, vLLM --max-model-len.',
+    actions: [{ kind: 'newConversation', label: 'New conversation' }],
+  }),
+};
+
 function copyError({ stop }: StopFacts): NoticeAction[] {
   return stop.detail ? [{ kind: 'copy', label: 'Copy the error', text: stop.detail }] : [];
 }
@@ -276,21 +328,30 @@ const PROVIDER_LABELS = new Map<string, string>(
   MODEL_PROVIDER_OPTIONS.map((option) => [option.id, option.label])
 );
 
+function readServerAddress(providerId: string, addresses: ServerAddresses): string | null {
+  if (providerId !== 'ollama' && providerId !== 'openaiCompatible') return null;
+  return addresses[providerId].replace(/^https?:\/\//, '');
+}
+
 function readStopFacts(
   stop: RunStoppedMessageBody,
   runModel: RunModel | null,
-  ollamaAddress: string,
+  serverAddresses: ServerAddresses,
   newKeySavedAt: number | null
 ): StopFacts {
   const providerId = runModel?.provider ?? '';
+  const providerLabel = PROVIDER_LABELS.get(providerId) ?? (providerId || 'The provider');
+  const isOpenAiCompatible = providerId === 'openaiCompatible';
   return {
     newKeySavedAt,
     stop,
-    provider: PROVIDER_LABELS.get(providerId) ?? (providerId || 'The provider'),
+    providerLabel,
+    provider: isOpenAiCompatible ? 'The server' : providerLabel,
     keyedProvider: KEYED_PROVIDERS.find((keyed) => keyed === providerId) ?? null,
     isOllama: providerId === 'ollama',
-    model: runModel?.model ?? 'the model',
-    address: ollamaAddress.replace(/^https?:\/\//, ''),
+    isOpenAiCompatible,
+    model: runModel ? shortModelName(runModel.model) : 'the model',
+    address: readServerAddress(providerId, serverAddresses),
     tries: describeTries(stop),
   };
 }
@@ -307,23 +368,24 @@ export function findKeySavedSince(
 
 /**
  * The words for a run's stop, for the provider and model that run used; null for the
- * user's own Stop. Ollama's address is the one Settings has now: runs don't store it.
+ * user's own Stop. A server's address is the one Settings has now: runs don't store it.
  */
 export function describeStop(
   stop: RunStoppedMessageBody,
   runModel: RunModel | null,
-  ollamaAddress: string,
+  serverAddresses: ServerAddresses,
   newKeySavedAt: number | null = null
 ): StopWords | null {
   const kind = readStopKind(stop);
   if (kind === null) return null;
-  const facts = readStopFacts(stop, runModel, ollamaAddress, newKeySavedAt);
-  const words = KIND_WORDS[kind](facts);
+  const facts = readStopFacts(stop, runModel, serverAddresses, newKeySavedAt);
+  const describe = (facts.isOpenAiCompatible && OPENAI_COMPATIBLE_WORDS[kind]) || KIND_WORDS[kind];
+  const words = describe(facts);
   const level = LEVELS[kind];
   return {
     kind,
     level,
-    who: [facts.provider, facts.model, facts.isOllama && facts.address].filter(Boolean).join(' · '),
+    who: [facts.providerLabel, facts.model, facts.address].filter(Boolean).join(' · '),
     sentence: words.sentence,
     record: words.record,
     quoted: words.quoted === undefined ? quoteProvider(facts) : words.quoted,

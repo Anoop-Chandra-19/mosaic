@@ -9,9 +9,7 @@ import {
   AppSelectTrigger,
   AppSelectValue,
   Text,
-  textVariantClasses,
 } from '@/components/ui-kit';
-import { cn } from '@/lib/utils';
 import {
   DEFAULT_OLLAMA_ADDRESS,
   isLocalServerAddress,
@@ -20,38 +18,14 @@ import {
 } from '@shared/model-providers/serverAddress';
 import type { OllamaModel } from '@shared/types/modelProviders';
 import { SettingRow } from '../../SettingRow';
+import { ServerAddressRow, ServerCommand, ServerNote } from './ServerAddressRow';
 import type { OllamaModelsAnswer } from './useOllamaModels';
 
 function gigabytes(bytes: number): string | null {
   return bytes > 0 ? `${(bytes / 1e9).toFixed(1)} GB` : null;
 }
 
-function Command({ children }: { children: ReactNode }) {
-  return (
-    <code
-      className={cn(
-        textVariantClasses('key'),
-        'rounded-xs bg-line px-1 whitespace-nowrap text-foreground'
-      )}
-    >
-      {children}
-    </code>
-  );
-}
-
-function Note({ tone, children }: { tone: 'error' | 'warning'; children: ReactNode }) {
-  return (
-    <span className={tone === 'error' ? 'mt-1 block text-del' : 'mt-1 block text-warn'}>
-      {children}
-    </span>
-  );
-}
-
-/**
- * Where Ollama is: this machine by default, or a box on the network. The address is saved
- * on Enter or when the field is left — never mid-typing, so a half-typed address is never
- * asked for anything — and the description says where resume text will go.
- */
+/** Where Ollama is, and where resume text will go from there. */
 export function OllamaAddressRow({
   address,
   onChange,
@@ -59,61 +33,20 @@ export function OllamaAddressRow({
   address: string;
   onChange: (address: string) => void;
 }) {
-  // What is being typed; null while the field shows the saved address.
-  const [draft, setDraft] = useState<string | null>(null);
-  const invalid = draft !== null && draft.trim() !== '' && normalizeOllamaAddress(draft) === null;
-
-  const commit = () => {
-    if (draft === null) return;
-    const next = normalizeOllamaAddress(draft);
-    if (next !== null) onChange(next);
-    // An empty field goes back to the saved address; a bad one stays for fixing.
-    if (next !== null || draft.trim() === '') setDraft(null);
-  };
-
   return (
-    <SettingRow
+    <ServerAddressRow
       label="Ollama address"
+      address={address}
+      defaultAddress={DEFAULT_OLLAMA_ADDRESS}
+      normalize={normalizeOllamaAddress}
+      example="192.168.1.50:11434"
       description={
-        <>
-          {isLocalServerAddress(address)
-            ? 'Ollama on your computer, so your resume text never leaves it.'
-            : `Ollama at ${serverHost(address)}, so your resume text goes there, on your network, when you ask for something.`}
-          {invalid && (
-            <Note tone="error">
-              That isn’t an address. For example: <Command>192.168.1.50:11434</Command>
-            </Note>
-          )}
-        </>
+        isLocalServerAddress(address)
+          ? 'Ollama on your computer, so your resume text never leaves it.'
+          : `Ollama at ${serverHost(address)}, so your resume text goes there, on your network, when you ask for something.`
       }
-    >
-      <AppInput
-        value={draft ?? address}
-        onChange={(event) => setDraft(event.target.value)}
-        onBlur={commit}
-        onKeyDown={(event) => {
-          if (event.key === 'Enter') commit();
-          if (event.key === 'Escape') setDraft(null);
-        }}
-        aria-label="Ollama address"
-        aria-invalid={invalid}
-        spellCheck={false}
-        autoComplete="off"
-        className="w-54 font-mono text-meta"
-      />
-      {address !== DEFAULT_OLLAMA_ADDRESS && (
-        <AppButton
-          variant="ghost"
-          size="sm"
-          onClick={() => {
-            setDraft(null);
-            onChange(DEFAULT_OLLAMA_ADDRESS);
-          }}
-        >
-          Use this computer
-        </AppButton>
-      )}
-    </SettingRow>
+      onChange={onChange}
+    />
   );
 }
 
@@ -148,13 +81,15 @@ export function OllamaModelRow({
   } else if (active && result?.ok && pulled.length === 0) {
     note = (
       <>
-        No chat models are pulled yet. Run <Command>ollama pull {model}</Command>, then refresh.
+        No chat models are pulled yet. Run <ServerCommand>ollama pull {model}</ServerCommand>, then
+        refresh.
       </>
     );
   } else if (knownMissing) {
     note = (
       <>
-        “{model}” isn’t pulled. Pick one above, or run <Command>ollama pull {model}</Command>.
+        “{model}” isn’t pulled. Pick one above, or run{' '}
+        <ServerCommand>ollama pull {model}</ServerCommand>.
       </>
     );
   }
@@ -165,7 +100,7 @@ export function OllamaModelRow({
       description={
         <>
           Models pulled into that Ollama.
-          {note && <Note tone="warning">{note}</Note>}
+          {note && <ServerNote tone="warning">{note}</ServerNote>}
         </>
       }
     >
@@ -262,9 +197,9 @@ export function OllamaContextRow({
           {maxTokens !== null &&
             ` ${model} supports up to ${TOKEN_COUNT_FORMAT.format(maxTokens)} tokens.`}
           {invalid && (
-            <Note tone="error">
-              That isn’t a number of tokens. For example: <Command>32768</Command>
-            </Note>
+            <ServerNote tone="error">
+              That isn’t a number of tokens. For example: <ServerCommand>32768</ServerCommand>
+            </ServerNote>
           )}
         </>
       }

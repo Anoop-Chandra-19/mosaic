@@ -1,4 +1,8 @@
-import type { ModelProviderId, OllamaModels } from '@shared/types/modelProviders';
+import type {
+  ModelProviderId,
+  OllamaModels,
+  OpenAiCompatibleModels,
+} from '@shared/types/modelProviders';
 import { readOr } from './readOr';
 
 /* The models Settings offers, beyond what a key lists (`secretsService.listModels`). */
@@ -9,6 +13,13 @@ export const modelsService = {
       () => window.mosaic.modelProviders.ollamaModels(address),
       { ok: false, reason: 'failed' },
       'Could not list Ollama models'
+    ),
+  /** The models the OpenAI-compatible server at `address` lists. Never rejects. */
+  openAiCompatibleModels: (address: string) =>
+    readOr<OpenAiCompatibleModels>(
+      () => window.mosaic.modelProviders.openAiCompatibleModels(address),
+      { ok: false, reason: 'failed' },
+      'Could not list the server’s models'
     ),
   /** The models runs have used with this provider. Never rejects. */
   usedBefore: (provider: ModelProviderId) =>

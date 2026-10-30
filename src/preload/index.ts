@@ -120,6 +120,8 @@ const agent: MosaicAgent = {
 const modelProviders: MosaicModelProviders = {
   usedModels: () => ipcRenderer.invoke(MODEL_PROVIDERS_CHANNELS.usedModels),
   ollamaModels: (address) => ipcRenderer.invoke(MODEL_PROVIDERS_CHANNELS.ollamaModels, address),
+  openAiCompatibleModels: (address) =>
+    ipcRenderer.invoke(MODEL_PROVIDERS_CHANNELS.openAiCompatibleModels, address),
 };
 
 /** Development builds only: main passes the argument to their page alone. */

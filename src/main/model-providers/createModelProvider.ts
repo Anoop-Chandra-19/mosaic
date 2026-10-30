@@ -1,6 +1,6 @@
 import type { ModelProviderRefusal } from '@shared/types/agentBridge';
 import type { ModelProviderId } from '@shared/types/modelProviders';
-import { isKeyedProvider, type KeyedProvider } from '@shared/types/secrets';
+import type { KeyedProvider } from '@shared/types/secrets';
 import { KeychainError } from '../secrets/apiKeys';
 import {
   createAnthropicModelProvider,
@@ -9,6 +9,7 @@ import {
 import { createGoogleModelProvider, type GoogleFetch } from './adapters/googleModelProvider';
 import { createOllamaModelProvider } from './adapters/ollamaModelProvider';
 import type { OpenAiFetch } from './adapters/openAiClient';
+import { createOpenAiCompatibleModelProvider } from './adapters/openAiCompatibleModelProvider';
 import { createOpenAiModelProvider } from './adapters/openAiModelProvider';
 import { createOpenRouterModelProvider } from './adapters/openRouterModelProvider';
 import type { OllamaFetch } from './model-lists/ollamaModels';
@@ -23,6 +24,10 @@ export interface ModelChoice {
     address: string;
     /** Null leaves the window to Ollama's own setting. */
     contextTokens: number | null;
+  };
+  openAiCompatible: {
+    /** Already checked with `normalizeOpenAiCompatibleAddress`. */
+    address: string;
   };
 }
 
@@ -49,7 +54,9 @@ const CREATE_KEYED_PROVIDER: Record<KeyedProvider, CreateKeyedProvider> = {
 };
 
 export const isModelProviderId = (value: unknown): value is ModelProviderId =>
-  value === 'ollama' || (typeof value === 'string' && Object.hasOwn(CREATE_KEYED_PROVIDER, value));
+  value === 'ollama' ||
+  value === 'openaiCompatible' ||
+  (typeof value === 'string' && Object.hasOwn(CREATE_KEYED_PROVIDER, value));
 
 const refused = (reason: ModelProviderRefusal): ModelProviderOpening => ({ ok: false, reason });
 
@@ -58,10 +65,10 @@ const refused = (reason: ModelProviderRefusal): ModelProviderOpening => ({ ok: f
  * ask first). Refused when there's no key, or the keychain won't give it back.
  */
 export async function createModelProvider(
-  { provider, ollama }: ModelChoice,
+  { provider, ollama, openAiCompatible }: ModelChoice,
   { fetch, readApiKey }: ModelProviderNeeds
 ): Promise<ModelProviderOpening> {
-  if (!isKeyedProvider(provider)) {
+  if (provider === 'ollama') {
     const contextTokens = ollama.contextTokens ?? undefined;
     const modelProvider = createOllamaModelProvider({
       address: ollama.address,
@@ -69,6 +76,10 @@ export async function createModelProvider(
       contextTokens,
     });
     return { ok: true, modelProvider };
+  }
+  if (provider === 'openaiCompatible') {
+    const { address } = openAiCompatible;
+    return { ok: true, modelProvider: createOpenAiCompatibleModelProvider({ address, fetch }) };
   }
   let apiKey: string | undefined;
   try {

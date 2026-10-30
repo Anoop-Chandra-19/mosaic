@@ -134,6 +134,53 @@ test('Ollama’s model is picked from the chat models pulled on this machine', a
   expect(errors).toEqual([]);
 });
 
+test('an OpenAI-compatible server’s address and model reach the run that uses them', async () => {
+  const { app, page, errors } = mosaic();
+  // Stand in for a server at the address typed: main asks it for its list, then for a reply.
+  await app.evaluate(({ net }) => {
+    const asked: string[] = [];
+    (globalThis as { serverAsked?: string[] }).serverAsked = asked;
+    net.fetch = async (input, init) => {
+      const url = String(input instanceof Request ? input.url : input);
+      if (url.endsWith('/v1/models')) {
+        asked.push(url);
+        return Response.json({ data: [{ id: 'local-a' }, { id: 'local-b' }] });
+      }
+      const body = input instanceof Request ? await input.text() : String(init?.body);
+      asked.push(`${url} ${(JSON.parse(body) as { model: string }).model}`);
+      return Response.json({ error: { message: 'Stop here' } }, { status: 400 });
+    };
+  });
+  await page.getByRole('button', { name: /Blank resume/ }).click();
+
+  const settings = await openSettings(page, 'AI assistant');
+  await settings.getByRole('switch', { name: 'Enable AI assistant' }).click();
+  await settings.getByRole('button', { name: 'Provider' }).click();
+  await page.getByRole('menuitemradio', { name: /^OpenAI-compatible/ }).click();
+
+  const address = settings.getByRole('textbox', { name: 'Server address' });
+  await address.fill('gpu-box:1234/v1');
+  await address.press('Enter');
+  await expect(address).toHaveValue('http://gpu-box:1234');
+  await expect(settings.getByText(/A server at gpu-box:1234, so your resume text/)).toBeVisible();
+
+  await settings.getByRole('combobox', { name: 'OpenAI-compatible model' }).click();
+  await page.getByRole('option', { name: 'local-b' }).click();
+  await settings.getByRole('button', { name: 'Close settings' }).click();
+
+  const box = page.getByRole('textbox', { name: 'Message' });
+  await box.fill('Tighten my summary.');
+  await box.press('Enter');
+  await expect(page.getByText('The server refused the request.')).toBeVisible();
+
+  const asked = await app.evaluate(
+    () => (globalThis as { serverAsked?: string[] }).serverAsked ?? []
+  );
+  expect(asked).toContain('http://gpu-box:1234/v1/models');
+  expect(asked).toContain('http://gpu-box:1234/v1/chat/completions local-b');
+  expect(errors).toEqual([]);
+});
+
 test('Ollama can live elsewhere on the network, and Settings says where text goes', async () => {
   const { app, page } = mosaic();
   // Remember every address main asks, and answer as an Ollama with nothing pulled.

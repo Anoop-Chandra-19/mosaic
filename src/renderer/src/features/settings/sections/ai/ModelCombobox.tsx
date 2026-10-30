@@ -15,54 +15,33 @@ import {
 } from '@/components/ui-kit';
 import { modelsService } from '@/lib/services/modelsService';
 import { cn } from '@/lib/utils';
-import { formatRelativeTime } from '@/features/templates/formatRelativeTime';
-import type { KeyedProvider, ModelListing } from '@shared/types/secrets';
-import type { KeyState } from './apiKeyWords';
+import type { ModelProviderId } from '@shared/types/modelProviders';
 import { findQueryInName, groupModelChoices } from './groupModelChoices';
 import { MODEL_PROVIDER_OPTION_BY_ID } from './modelProviderOptions';
-import type { ModelListAnswer } from './useModelList';
 
-/** What a provider's list leaves out, said after how many it hid. */
-const HIDDEN_KINDS: Record<KeyedProvider, string> = {
-  anthropic: 'embeddings, speech, images',
-  openai: 'embeddings, speech, images',
-  google: 'embeddings, speech, images',
-  openrouter: 'no tool use',
-};
-
-const LIST_FAILURES: Record<
-  Extract<ModelListing, { ok: false }>['reason'],
-  (label: string, httpStatus?: number) => string
-> = {
-  refused: (label) => `${label} turned the key down, so there is no list.`,
-  unreachable: (label) => `Couldn’t reach ${label} for the list.`,
-  failed: (label, httpStatus) =>
-    `${label} answered with an error${httpStatus ? ` (${httpStatus})` : ''}, so there is no list.`,
-  keychain: () => 'The keychain didn’t hand over the key, so there is no list.',
-  'no-key': () => 'Save a key to see every model it can reach.',
-};
-
-function describeListing(provider: KeyedProvider, listing: ModelListing): string {
-  const label = MODEL_PROVIDER_OPTION_BY_ID[provider].label;
-  if (!listing.ok) return LIST_FAILURES[listing.reason](label, listing.httpStatus);
-  const { models, hiddenCount, listedAt } = listing.list;
-  const count = `${models.length} chat ${models.length === 1 ? 'model' : 'models'}`;
-  const others = hiddenCount === 1 ? '1 other' : `${hiddenCount} others`;
-  const hidden = hiddenCount > 0 ? `, ${others} hidden (${HIDDEN_KINDS[provider]})` : '';
-  return `${count} listed by ${label} ${formatRelativeTime(listedAt)}${hidden}`;
-}
-
-/** The footer's words, before any list or while one is on its way. */
-function describeMissingList(
-  provider: KeyedProvider,
-  keyState: KeyState | null,
-  isLoading: boolean
-) {
-  const label = MODEL_PROVIDER_OPTION_BY_ID[provider].label;
-  if (isLoading) return `Asking ${label} for its models…`;
-  return keyState === 'unchecked' || keyState === 'refused'
-    ? 'Check the key to see every model it can reach.'
-    : 'Save a key to see every model it can reach.';
+/** What the list's footer says of a list that came, or didn't, and the way to ask again. */
+export function ModelListResult({
+  words,
+  actionLabel,
+  onAction,
+}: {
+  words: string;
+  actionLabel: string;
+  onAction: () => void;
+}) {
+  return (
+    <>
+      <span>{words}</span>
+      <AppButton
+        variant="link"
+        size="xs"
+        onClick={onAction}
+        className="h-auto shrink-0 p-0 text-ink-muted hover:text-foreground hover:no-underline"
+      >
+        {actionLabel}
+      </AppButton>
+    </>
+  );
 }
 
 /** A model's name with the part the query matched marked. */
@@ -114,25 +93,27 @@ function ModelRow({
 }
 
 interface ModelComboboxProps {
-  provider: KeyedProvider;
+  provider: ModelProviderId;
   model: string;
-  /** Mosaic's pick for the provider. */
-  suggested: string;
-  keyState: KeyState | null;
-  modelList: ModelListAnswer;
+  /** Mosaic's pick for the provider, if it has one. */
+  suggested: string | null;
+  /** What the provider lists; empty without a list. */
+  listed: string[];
+  /** Says where the list came from, under it. */
+  footer: ReactNode;
   onChange: (model: string) => void;
 }
 
 /**
  * The model field, which is also the search: Mosaic's pick and the models used before come
- * first, then what the provider lists for the key. Any name can be used, listed or not.
+ * first, then what the provider lists. Any name can be used, listed or not.
  */
 export function ModelCombobox({
   provider,
   model,
   suggested,
-  keyState,
-  modelList,
+  listed,
+  footer,
   onChange,
 }: ModelComboboxProps) {
   const label = MODEL_PROVIDER_OPTION_BY_ID[provider].label;
@@ -141,7 +122,6 @@ export function ModelCombobox({
   const [used, setUsed] = useState<string[]>([]);
   const fieldRef = useRef<HTMLDivElement>(null);
   const isOpen = query !== null;
-  const { listing, isLoading, refresh } = modelList;
 
   const open = () => {
     if (isOpen) return;
@@ -160,29 +140,12 @@ export function ModelCombobox({
     provider,
     suggested,
     used,
-    listed: listing?.ok ? listing.list.models : [],
+    listed,
     query: typed,
   });
   const isTypedListed = groups.some((group) =>
     group.choices.some((choice) => choice.model === typed)
   );
-
-  let footer: ReactNode = describeMissingList(provider, keyState, isLoading);
-  if (listing && !isLoading) {
-    footer = (
-      <>
-        <span>{describeListing(provider, listing)}</span>
-        <AppButton
-          variant="link"
-          size="xs"
-          onClick={refresh}
-          className="h-auto shrink-0 p-0 text-ink-muted hover:text-foreground hover:no-underline"
-        >
-          {listing.ok ? 'Refresh' : 'Try again'}
-        </AppButton>
-      </>
-    );
-  }
 
   return (
     <AppCommand label={`${label} models`} className="h-auto w-auto overflow-visible">
@@ -200,7 +163,7 @@ export function ModelCombobox({
                   open();
                 }
               }}
-              placeholder={isOpen ? 'Search models' : suggested}
+              placeholder={isOpen ? 'Search models' : (suggested ?? undefined)}
               aria-label={`${label} model`}
               spellCheck={false}
               autoComplete="off"

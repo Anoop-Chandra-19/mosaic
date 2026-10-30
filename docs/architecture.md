@@ -68,6 +68,7 @@ limit is what can be read back: JavaScript's longest string, about 512 MB.
 The renderer makes no requests. Main makes only these:
 
 - `ollamaModels`: `/api/tags` and `/api/show` on the Ollama address in Settings.
+- `openAiCompatibleModels`: `/v1/models` on the server address in Settings.
 - `testApiKey` and `listModels`: the provider's model list (and OpenRouter's key endpoint),
   when a key is checked or the model list is opened. They cost no tokens, with the key in a header and
   never in the URL.

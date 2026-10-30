@@ -30,6 +30,22 @@ describe('readModelChoice', () => {
       provider: 'ollama',
       model: 'qwen3.5:9b',
       ollama: { address: 'http://gpu-box:11434', contextTokens: 32_768 },
+      // Saved before this provider existed.
+      openAiCompatible: { address: 'http://127.0.0.1:8080' },
+    });
+  });
+
+  it('reads an OpenAI-compatible server’s model and address', () => {
+    store({
+      ...SETTINGS,
+      provider: 'openaiCompatible',
+      modelsByProvider: { openaiCompatible: 'local-model' },
+      openAiCompatibleAddress: 'gpu-box',
+    });
+    expect(readModelChoice(db)).toMatchObject({
+      provider: 'openaiCompatible',
+      model: 'local-model',
+      openAiCompatible: { address: 'http://gpu-box:8080' },
     });
   });
 
@@ -38,6 +54,7 @@ describe('readModelChoice', () => {
     ['an unknown provider', { ...SETTINGS, provider: 'toString' }],
     ['no model for the provider', { ...SETTINGS, modelsByProvider: {} }],
     ['an address that isn’t one', { ...SETTINGS, ollamaAddress: 'ftp://gpu-box' }],
+    ['a server address that isn’t one', { ...SETTINGS, openAiCompatibleAddress: 'ftp://gpu-box' }],
     ['a window of 0 tokens', { ...SETTINGS, ollamaContextTokens: 0 }],
   ])('is null with %s', (_, state) => {
     store(state);

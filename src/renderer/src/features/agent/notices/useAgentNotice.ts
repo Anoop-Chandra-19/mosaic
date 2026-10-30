@@ -1,5 +1,4 @@
 import { useAgentNoticeStore } from '@/stores/agentNoticeStore';
-import { useAgentSettingsStore } from '@/stores/agentSettingsStore';
 import { useConversationStore } from '@/stores/conversationStore';
 import { useRunStore } from '@/stores/runStore';
 import { useSecretsStatus } from '@/stores/secretsStore';
@@ -10,6 +9,7 @@ import { useChosenModel } from '../useChosenModel';
 import { pickNotice, type LiveRunFacts, type NoticeChoice } from './pickNotice';
 import { describeStartRefusal } from './startRefusalWords';
 import { describeStop, findKeySavedSince } from './stopWords';
+import { useServerAddresses } from './useServerAddresses';
 
 /** The open conversation's run under way, as plain facts. */
 function useLiveRunFacts(conversationId: number | null): LiveRunFacts | null {
@@ -27,7 +27,7 @@ export function useAgentNotice(): NoticeChoice {
   const messages = useConversationStore((s) => s.messages);
   const live = useLiveRunFacts(conversationId);
   const { refusal, resend, dismissedRunIds } = useAgentNoticeStore();
-  const ollamaAddress = useAgentSettingsStore((s) => s.ollamaAddress);
+  const serverAddresses = useServerAddresses();
   const savedKeys = useSecretsStatus().status?.saved ?? {};
   const chosen = useChosenModel();
 
@@ -40,7 +40,7 @@ export function useAgentNotice(): NoticeChoice {
     dismissedRunIds,
     describeRun: (run: RunView) =>
       run.stop &&
-      describeStop(run.stop, run.model, ollamaAddress, findKeySavedSince(run, savedKeys)),
+      describeStop(run.stop, run.model, serverAddresses, findKeySavedSince(run, savedKeys)),
     describeRefusal: (reason: AgentStartRefusal) => describeStartRefusal(reason, chosen),
   });
 }
