@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { RUN_LIMITS } from '@shared/agent/runLimitSettings';
 import type { AgentRunEvent } from '@shared/types/agentRunEvents';
 import type { ModelProviderError, ModelStreamEvent } from '@shared/types/modelReply';
+import { createOpenAiCompatibleModelProvider } from '../../model-providers/adapters/openAiCompatibleModelProvider';
 import { requestModelReply, type ReplyRequest } from '../requestModelReply';
 import { callTool, DONE, hang, say, scriptedModel, type ScriptedReply } from './scriptedRun';
 
@@ -25,7 +26,42 @@ function request(replies: ScriptedReply[], overrides: Partial<ReplyRequest> = {}
   return { reply: requestModelReply(options), model, events, waits };
 }
 
+/** An OpenAI-compatible server that thinks for a while, a piece at a time, and then answers. */
+function thinkingServer(pieces: number, msApart: number) {
+  const encoder = new TextEncoder();
+  const send = (delta: object, finish: string | null = null) =>
+    encoder.encode(
+      `data: ${JSON.stringify({ choices: [{ index: 0, delta, finish_reason: finish }] })}\n\n`
+    );
+  return createOpenAiCompatibleModelProvider({
+    address: 'http://127.0.0.1:8080',
+    fetch: async () => {
+      const body = new ReadableStream<Uint8Array>({
+        async start(controller) {
+          for (let piece = 0; piece < pieces; piece++) {
+            await new Promise((resolve) => setTimeout(resolve, msApart));
+            controller.enqueue(send({ reasoning_content: 'Hmm. ' }));
+          }
+          controller.enqueue(send({ content: 'Done.' }));
+          controller.enqueue(send({}, 'stop'));
+          controller.close();
+        },
+      });
+      return new Response(body, { headers: { 'content-type': 'text/event-stream' } });
+    },
+  });
+}
+
 describe('requestModelReply', () => {
+  it('doesn’t call a long think a stall while its pieces keep arriving', async () => {
+    const { reply, events } = request([], {
+      provider: thinkingServer(10, 20),
+      limits: { ...RUN_LIMITS, stallMs: 80, retryWaitsMs: [] },
+    });
+    expect(await reply).toMatchObject({ ok: true });
+    expect(events.map(({ type }) => type)).not.toContain('stepRetrying');
+  });
+
   it('collects the stream into parts, joining text that arrived in pieces', async () => {
     const { reply, events } = request([
       [say('Tight'), say('ened.'), callTool('c1', 'read_document'), DONE],

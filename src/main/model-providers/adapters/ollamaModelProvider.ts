@@ -3,6 +3,7 @@ import type { ModelProviderError, ModelStreamEvent } from '@shared/types/modelRe
 import type { ModelTool } from '@shared/types/modelTool';
 import { describeNetworkError } from '../describeNetworkError';
 import type { AssistantMessage, ModelMessage, ModelProvider, ModelRequest } from '../modelProvider';
+import { noteArrivals } from '../noteArrivals';
 import { readRateLimit } from '../readRateLimit';
 import type { OllamaFetch } from '../model-lists/ollamaModels';
 
@@ -61,7 +62,7 @@ export function createOllamaModelProvider({
         return;
       }
       try {
-        yield* readChatEvents(readJsonLines(response.body), now);
+        yield* readChatEvents(noteArrivals(readJsonLines(response.body), request), now);
       } catch (error) {
         if (request.signal.aborted) return;
         const message = error instanceof Error ? error.message : String(error);

@@ -21,6 +21,7 @@ import type {
 import type { ModelTool } from '@shared/types/modelTool';
 import { describeNetworkError } from '../describeNetworkError';
 import type { ModelMessage, ModelProvider, ModelRequest } from '../modelProvider';
+import { noteArrivals } from '../noteArrivals';
 import { PROVIDER_API_URL } from '../providerEndpoints';
 
 /*
@@ -91,7 +92,7 @@ export function createGoogleModelProvider({
     async *streamReply(request) {
       try {
         const chunks = await client.models.generateContentStream(buildContentRequest(request));
-        yield* readReplyChunks(chunks, now);
+        yield* readReplyChunks(noteArrivals(chunks, request), now);
       } catch (error) {
         if (request.signal.aborted) return;
         yield { type: 'error', error: describeGoogleError(error) };

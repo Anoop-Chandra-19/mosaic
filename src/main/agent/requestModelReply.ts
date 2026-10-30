@@ -118,14 +118,16 @@ async function streamOnce({
   onEvent,
   limits,
 }: ReplyRequest): Promise<Attempt> {
-  // The one timeout on a reply, from before the request goes until its last event, so no
-  // provider needs its own. A stall ends this attempt only; the user's Stop ends the run.
+  // The one timeout on a reply, from before the request goes until its last event, restarted
+  // by anything that arrives, so no provider needs its own. A stall ends this attempt only;
+  // the user's Stop ends the run.
   const stall = createRestartableDeadline(limits.stallMs);
   const parts: ModelReplyPart[] = [];
   const callStartedAt = new Map<string, number>();
   try {
     const attemptSignal = AbortSignal.any([signal, stall.signal]);
-    for await (const event of provider.streamReply({ ...request, signal: attemptSignal })) {
+    const attempt = { ...request, signal: attemptSignal, onArrival: stall.restart };
+    for await (const event of provider.streamReply(attempt)) {
       stall.restart();
       if (event.type === 'finish')
         return { ok: true, parts, finish: event.reason, usage: event.usage, callStartedAt };
