@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import type { KeyTest } from '../../model-providers/testApiKey';
+import type { KeyTest } from '../../model-providers/model-lists/testApiKey';
 import { createApiKeys } from '../../secrets/apiKeys';
 import { fakeKeyring, memoryStorage } from '../../secrets/__tests__/fakeKeyring';
 import { createSecretsHandlers, type SecretsHandlers } from '../secretsHandlers';

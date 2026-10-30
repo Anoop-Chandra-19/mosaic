@@ -1,5 +1,5 @@
 import type { KeyedProvider } from '@shared/types/secrets';
-import { PROVIDER_API_URL } from './providerEndpoints';
+import { PROVIDER_API_URL } from '../providerEndpoints';
 
 /** `fetch`, narrowed to what a key check or a model list sends. Main passes Electron's `net.fetch`. */
 export type ModelListFetch = (

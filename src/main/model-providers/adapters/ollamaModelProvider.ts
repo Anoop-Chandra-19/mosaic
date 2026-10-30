@@ -1,10 +1,10 @@
 import { randomUUID } from 'node:crypto';
 import type { ModelProviderError, ModelStreamEvent } from '@shared/types/modelReply';
 import type { ModelTool } from '@shared/types/modelTool';
-import { describeNetworkError } from './describeNetworkError';
-import type { AssistantMessage, ModelMessage, ModelProvider, ModelRequest } from './modelProvider';
-import type { OllamaFetch } from './ollamaModels';
-import { readRateLimit } from './readRateLimit';
+import { describeNetworkError } from '../describeNetworkError';
+import type { AssistantMessage, ModelMessage, ModelProvider, ModelRequest } from '../modelProvider';
+import { readRateLimit } from '../readRateLimit';
+import type { OllamaFetch } from '../model-lists/ollamaModels';
 
 interface OllamaChatChunk {
   message?: {

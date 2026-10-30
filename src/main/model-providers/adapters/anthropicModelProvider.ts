@@ -20,11 +20,11 @@ import type {
   ModelUsage,
 } from '@shared/types/modelReply';
 import type { ModelTool } from '@shared/types/modelTool';
-import { describeNetworkError } from './describeNetworkError';
-import type { ModelMessage, ModelProvider, ModelRequest } from './modelProvider';
-import { parseToolArguments } from './parseToolArguments';
-import { PROVIDER_API_URL, REPLY_START_TIMEOUT_MS } from './providerEndpoints';
-import { readRateLimit } from './readRateLimit';
+import { describeNetworkError } from '../describeNetworkError';
+import type { ModelMessage, ModelProvider, ModelRequest } from '../modelProvider';
+import { parseToolArguments } from '../parseToolArguments';
+import { PROVIDER_API_URL, REPLY_START_TIMEOUT_MS } from '../providerEndpoints';
+import { readRateLimit } from '../readRateLimit';
 
 /*
  * Anthropic, through its Messages API. Each request sends the whole conversation, with

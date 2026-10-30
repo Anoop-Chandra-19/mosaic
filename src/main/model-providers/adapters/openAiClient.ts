@@ -1,5 +1,5 @@
 import OpenAI from 'openai';
-import { REPLY_START_TIMEOUT_MS } from './providerEndpoints';
+import { REPLY_START_TIMEOUT_MS } from '../providerEndpoints';
 
 /** Electron's `net.fetch` takes no `URL` objects; the SDK only ever passes a string. */
 export type OpenAiFetch = (url: string, init?: RequestInit) => Promise<Response>;

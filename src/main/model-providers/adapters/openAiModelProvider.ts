@@ -17,12 +17,12 @@ import type {
   ModelUsage,
 } from '@shared/types/modelReply';
 import type { ModelTool } from '@shared/types/modelTool';
-import { describeNetworkError } from './describeNetworkError';
-import type { ModelMessage, ModelProvider, ModelRequest } from './modelProvider';
+import { describeNetworkError } from '../describeNetworkError';
+import type { ModelMessage, ModelProvider, ModelRequest } from '../modelProvider';
 import { createOpenAiClient, type OpenAiFetch } from './openAiClient';
-import { parseToolArguments } from './parseToolArguments';
-import { PROVIDER_API_URL } from './providerEndpoints';
-import { readRateLimit } from './readRateLimit';
+import { parseToolArguments } from '../parseToolArguments';
+import { PROVIDER_API_URL } from '../providerEndpoints';
+import { readRateLimit } from '../readRateLimit';
 
 /*
  * OpenAI, through its Responses API. Nothing is kept on OpenAI's side (`store: false`), so
