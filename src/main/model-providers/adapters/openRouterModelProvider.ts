@@ -14,6 +14,7 @@ import {
 } from './chatCompletionsStream';
 import type { ModelProvider, ModelRequest } from '../modelProvider';
 import { createOpenAiClient, type OpenAiFetch } from './openAiClient';
+import { noteArrivals } from '../noteArrivals';
 import { PROVIDER_API_URL } from '../providerEndpoints';
 import { readRateLimit } from '../readRateLimit';
 
@@ -101,7 +102,7 @@ export function createOpenRouterModelProvider({
         const chunks = await client.chat.completions.create(buildRequestBody(request), {
           signal: request.signal,
         });
-        yield* readChatCompletionsStream(chunks, OPENROUTER_STREAM, now);
+        yield* readChatCompletionsStream(noteArrivals(chunks, request), OPENROUTER_STREAM, now);
       } catch (error) {
         if (request.signal.aborted) return;
         yield { type: 'error', error: describeChatCompletionsError(error, sortApiError) };

@@ -37,6 +37,45 @@ function hangUntilAborted(onSent: () => void): HungFetch {
     });
 }
 
+const sse = (...pieces: object[]) =>
+  pieces.map((piece) => `data: ${JSON.stringify(piece)}\n\n`).join('');
+
+/** Three pieces of each provider's stream that hold nothing to show yet. */
+const SILENT_STREAMS: Record<string, string> = {
+  OpenAI: sse(
+    ...Array.from({ length: 3 }, () => ({
+      type: 'response.function_call_arguments.delta',
+      item_id: 'fc_1',
+      delta: '{',
+    }))
+  ),
+  OpenRouter: sse({ choices: [] }, { choices: [] }, { choices: [] }),
+  Anthropic: Array.from(
+    { length: 3 },
+    () =>
+      'event: content_block_delta\ndata: {"type":"content_block_delta","index":0,"delta":{"type":"thinking_delta","thinking":"Hmm"}}\n\n'
+  ).join(''),
+  Google: sse({ candidates: [] }, { candidates: [] }, { candidates: [] }),
+  Ollama: '{"message":{"thinking":"Hmm"}}\n'.repeat(3),
+  'OpenAI-compatible': sse({ choices: [] }, { choices: [] }, { choices: [] }),
+};
+
+describe('a stream that says nothing yet', () => {
+  it.each(Object.keys(ADAPTERS))('%s still says that each piece arrived', async (name) => {
+    let arrivals = 0;
+    const provider = ADAPTERS[name](
+      async () =>
+        new Response(SILENT_STREAMS[name], { headers: { 'content-type': 'text/event-stream' } })
+    );
+    const silent = {
+      ...request(new AbortController().signal),
+      onArrival: () => (arrivals += 1),
+    };
+    for await (const event of provider.streamReply(silent)) void event;
+    expect(arrivals).toBe(3);
+  });
+});
+
 describe('a request that gets no answer', () => {
   it.each(Object.keys(ADAPTERS))('%s ends quietly on its signal', async (name) => {
     const attempt = new AbortController();

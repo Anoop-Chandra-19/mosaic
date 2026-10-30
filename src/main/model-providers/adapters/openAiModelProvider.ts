@@ -20,6 +20,7 @@ import type { ModelTool } from '@shared/types/modelTool';
 import { describeNetworkError } from '../describeNetworkError';
 import type { ModelMessage, ModelProvider, ModelRequest } from '../modelProvider';
 import { createOpenAiClient, type OpenAiFetch } from './openAiClient';
+import { noteArrivals } from '../noteArrivals';
 import { parseToolArguments } from '../parseToolArguments';
 import { PROVIDER_API_URL } from '../providerEndpoints';
 import { readRateLimit } from '../readRateLimit';
@@ -67,7 +68,7 @@ export function createOpenAiModelProvider({
         const events = await client.responses.create(buildResponseBody(request), {
           signal: request.signal,
         });
-        yield* readResponseEvents(events, now);
+        yield* readResponseEvents(noteArrivals(events, request), now);
       } catch (error) {
         if (request.signal.aborted) return;
         yield { type: 'error', error: describeOpenAiError(error) };

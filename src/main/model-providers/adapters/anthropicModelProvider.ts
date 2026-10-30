@@ -22,6 +22,7 @@ import type {
 import type { ModelTool } from '@shared/types/modelTool';
 import { describeNetworkError } from '../describeNetworkError';
 import type { ModelMessage, ModelProvider, ModelRequest } from '../modelProvider';
+import { noteArrivals } from '../noteArrivals';
 import { parseToolArguments } from '../parseToolArguments';
 import { PROVIDER_API_URL } from '../providerEndpoints';
 import { readRateLimit } from '../readRateLimit';
@@ -79,7 +80,7 @@ export function createAnthropicModelProvider({
         const events = await client.messages.create(buildMessageBody(request), {
           signal: request.signal,
         });
-        yield* readMessageEvents(events, now);
+        yield* readMessageEvents(noteArrivals(events, request), now);
       } catch (error) {
         if (request.signal.aborted) return;
         yield { type: 'error', error: describeAnthropicError(error) };

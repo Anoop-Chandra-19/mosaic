@@ -32,6 +32,8 @@ export interface ModelRequest {
    */
   cacheKey: string;
   signal: AbortSignal;
+  /** Called as each piece of the stream arrives (`noteArrivals.ts`), whatever it holds. */
+  onArrival?: () => void;
 }
 
 export interface ModelProvider {

@@ -130,10 +130,11 @@ No ORM: `db/` is the layer every other module goes through, and ESLint enforces 
   are stored), the run's signal on each request, and every setting the SDK would take from
   the environment given: only Settings decides where requests go.
 - **One timeout on a reply: the loop's stall check** (`RUN_LIMITS.stallMs`, in
-  `agent/requestModelReply.ts`), from before the request goes until its last event. An
-  adapter sets no timeout of its own and makes no timers or `AbortController`s; it passes
-  the signal it is given to its request, which is how the stall reaches it
-  (`adapters/__tests__/waitingRequest.test.ts`). A one-off call elsewhere, such as a model
+  `agent/requestModelReply.ts`), from before the request goes until its last event, and
+  restarted by anything that arrives. An adapter sets no timeout of its own and makes no
+  timers or `AbortController`s; it passes the signal it is given to its request, which is
+  how the stall reaches it, and reads its stream through `noteArrivals`, so a long think
+  isn't a stall (`adapters/__tests__/waitingRequest.test.ts`). A one-off call elsewhere, such as a model
   list, uses `AbortSignal.timeout`, with its duration in `providerEndpoints.ts`.
 - No HTTP client of our own.
 

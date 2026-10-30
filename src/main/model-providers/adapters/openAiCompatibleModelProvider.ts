@@ -3,6 +3,7 @@ import type { ChatCompletionCreateParamsStreaming } from 'openai/resources/chat/
 import { isRecord } from '@shared/resume/validateResume';
 import type { ModelProviderError } from '@shared/types/modelReply';
 import type { ModelProvider, ModelRequest } from '../modelProvider';
+import { noteArrivals } from '../noteArrivals';
 import { readRateLimit } from '../readRateLimit';
 import {
   buildChatCompletionsBody,
@@ -79,7 +80,7 @@ export function createOpenAiCompatibleModelProvider({
         const chunks = await client.chat.completions.create(buildRequestBody(request), {
           signal: request.signal,
         });
-        yield* readChatCompletionsStream(chunks, SERVER_STREAM, now);
+        yield* readChatCompletionsStream(noteArrivals(chunks, request), SERVER_STREAM, now);
       } catch (error) {
         if (request.signal.aborted) return;
         yield { type: 'error', error: describeChatCompletionsError(error, sortApiError) };
