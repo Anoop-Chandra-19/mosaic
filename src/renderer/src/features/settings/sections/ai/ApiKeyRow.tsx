@@ -155,6 +155,7 @@ export function ApiKeyRow({
         )}
         {saved && !showsField && !isConfirmingRemove && (
           <SavedKeySummary
+            label={label}
             saved={saved}
             keychain={status?.keychain ?? 'unknown'}
             isChecking={isChecking}
@@ -180,7 +181,7 @@ export function ApiKeyRow({
               </>
             ) : (
               <>
-                {saved.checkedAt === null && (
+                {(saved.checkedAt === null || saved.refusedAt !== undefined) && (
                   <AppButton
                     variant="outline"
                     size="xs"
@@ -382,18 +383,20 @@ function KeyField({
 }
 
 function SavedKeySummary({
+  label,
   saved,
   keychain,
   isChecking,
   isFresh,
 }: {
+  label: string;
   saved: SavedKey;
   keychain: SecretsStatus['keychain'];
   isChecking: boolean;
   isFresh: boolean;
 }) {
-  const { savedLine, checkedLine } = describeSavedKey(saved, keychain);
-  const isChecked = saved.checkedAt !== null;
+  const { savedLine, checkedLine } = describeSavedKey(saved, keychain, label);
+  const isChecked = saved.checkedAt !== null && saved.refusedAt === undefined;
   return (
     <div className="flex min-h-8 items-center gap-2">
       <span

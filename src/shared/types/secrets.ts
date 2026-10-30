@@ -30,6 +30,8 @@ export interface SavedKey {
   savedAt: number;
   /** Null: saved without checking, and not checked since. */
   checkedAt: number | null;
+  /** The provider turned it down in a run; gone once a check passes or a run finishes. */
+  refusedAt?: number;
 }
 
 export interface SecretsStatus {

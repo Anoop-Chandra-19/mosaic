@@ -37,6 +37,7 @@ function parseDates(value: unknown): KeyDates | undefined {
   return {
     savedAt: dates.savedAt,
     checkedAt: typeof dates.checkedAt === 'number' ? dates.checkedAt : null,
+    ...(typeof dates.refusedAt === 'number' && { refusedAt: dates.refusedAt }),
   };
 }
 
@@ -77,6 +78,10 @@ export interface ApiKeys {
   save(provider: KeyedProvider, key: string, options: SaveOptions): Promise<SecretsStatus>;
   /** Notes that the key saved at `savedAt` passed a check; a key saved since is left alone. */
   markChecked(provider: KeyedProvider, savedAt: number): Promise<SecretsStatus>;
+  /** Notes that a run started at `runStartedAt` had its key refused; a key saved since is left alone. */
+  markRefused(provider: KeyedProvider, runStartedAt: number): Promise<void>;
+  /** A run finished on the key, so an earlier refusal no longer says anything about it. */
+  clearRefused(provider: KeyedProvider): Promise<void>;
   remove(provider: KeyedProvider): Promise<SecretsStatus>;
   /** Rejects if a key on record won't go; one not on record that won't is reported. */
   forgetAll(): Promise<ForgetResult>;
@@ -135,10 +140,29 @@ export function createApiKeys(
       saved[provider as KeyedProvider] = { where: 'keychain', ...dates };
     }
     // A session key is the one in use, even if an older copy is still in the keychain.
-    for (const [provider, { savedAt, checkedAt }] of session) {
-      saved[provider] = { where: 'session', savedAt, checkedAt };
+    for (const [provider, { savedAt, checkedAt, refusedAt }] of session) {
+      saved[provider] = {
+        where: 'session',
+        savedAt,
+        checkedAt,
+        ...(refusedAt !== undefined && { refusedAt }),
+      };
     }
     return { keychain, saved };
+  };
+
+  /** Rewrites a key's dates where they are kept; the same dates back writes nothing. */
+  const updateDates = (provider: KeyedProvider, update: (dates: KeyDates) => KeyDates) => {
+    const inSession = session.get(provider);
+    if (inSession) {
+      session.set(provider, { key: inSession.key, ...update(inSession) });
+      return;
+    }
+    const index = load();
+    const dates = index.keychain[provider];
+    if (!dates) return;
+    const updated = update(dates);
+    if (updated !== dates) store(withKeychainEntry(index, provider, updated));
   };
 
   /** False, and the keychain marked unavailable, if it refuses the key. */
@@ -223,16 +247,27 @@ export function createApiKeys(
     markChecked: (provider, savedAt) =>
       change(async () => {
         const checkedAt = now();
-        const inSession = session.get(provider);
-        if (inSession) {
-          if (inSession.savedAt === savedAt) session.set(provider, { ...inSession, checkedAt });
-          return snapshot();
-        }
-        const index = load();
-        if (index.keychain[provider]?.savedAt === savedAt) {
-          store(withKeychainEntry(index, provider, { savedAt, checkedAt }));
-        }
+        updateDates(provider, (dates) =>
+          dates.savedAt === savedAt ? { savedAt, checkedAt } : dates
+        );
         return snapshot();
+      }),
+
+    markRefused: (provider, runStartedAt) =>
+      change(async () => {
+        const refusedAt = now();
+        updateDates(provider, (dates) =>
+          dates.savedAt > runStartedAt ? dates : { ...dates, refusedAt }
+        );
+      }),
+
+    clearRefused: (provider) =>
+      change(async () => {
+        updateDates(provider, (dates) =>
+          dates.refusedAt === undefined
+            ? dates
+            : { savedAt: dates.savedAt, checkedAt: dates.checkedAt }
+        );
       }),
 
     remove: (provider) =>

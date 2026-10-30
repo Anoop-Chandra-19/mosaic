@@ -107,6 +107,36 @@ describe('API keys', () => {
     expect((await keys.status()).saved.anthropic).toMatchObject({ checkedAt: null });
   });
 
+  it.each<[string, SaveOptions]>([
+    ['in the keychain', CHECKED],
+    ['for the session', FORGET],
+  ])('note a refusal of a key %s until a run finishes or a check passes', async (_, options) => {
+    await keys.save('openai', SECRET, options);
+    clock = 5_000;
+
+    await keys.markRefused('openai', 1_000);
+    expect((await keys.status()).saved.openai).toMatchObject({ refusedAt: 5_000 });
+
+    await keys.clearRefused('openai');
+    expect((await keys.status()).saved.openai).not.toHaveProperty('refusedAt');
+
+    await keys.markRefused('openai', 1_000);
+    await keys.markChecked('openai', 1_000);
+    expect((await keys.status()).saved.openai).not.toHaveProperty('refusedAt');
+  });
+
+  it('keep a refusal across launches, and never put it on a key saved after the run began', async () => {
+    await keys.save('openai', SECRET, CHECKED);
+    clock = 5_000;
+    await keys.markRefused('openai', 1_000);
+    const relaunched = createApiKeys(os.keyring, storage, () => clock);
+    expect((await relaunched.status()).saved.openai).toMatchObject({ refusedAt: 5_000 });
+
+    await keys.save('openai', 'sk-newer', CHECKED);
+    await keys.markRefused('openai', 1_000);
+    expect((await keys.status()).saved.openai).not.toHaveProperty('refusedAt');
+  });
+
   it('are removed from wherever they are', async () => {
     await keys.save('anthropic', SECRET, CHECKED);
     await keys.save('openai', 'sk-openai', FORGET);

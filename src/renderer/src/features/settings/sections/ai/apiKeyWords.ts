@@ -9,7 +9,7 @@ import {
 import { MODEL_PROVIDER_OPTION_BY_ID } from './modelProviderOptions';
 
 /** Where a provider stands, as its status dot and words say it. */
-export type KeyState = 'local' | 'none' | 'unchecked' | 'saved' | 'savedForSession';
+export type KeyState = 'local' | 'none' | 'refused' | 'unchecked' | 'saved' | 'savedForSession';
 
 /** Null while the status is still loading. */
 export function readKeyState(
@@ -20,6 +20,7 @@ export function readKeyState(
   if (!status) return null;
   const saved = status.saved[provider];
   if (!saved) return 'none';
+  if (saved.refusedAt !== undefined) return 'refused';
   if (saved.checkedAt === null) return 'unchecked';
   return saved.where === 'session' ? 'savedForSession' : 'saved';
 }
@@ -42,17 +43,20 @@ function describeWhere(saved: SavedKey, keychain: SecretsStatus['keychain']): st
     : 'for this session, forgotten when Mosaic closes';
 }
 
-/** A saved key's two lines: when and where it was saved, and when it last passed a check. */
+function describeChecked({ checkedAt, refusedAt }: SavedKey, label: string, now: number): string {
+  if (refusedAt !== undefined) return `${label} refused it ${formatRelativeTime(refusedAt, now)}`;
+  return checkedAt === null ? 'Not checked yet' : `Checked ${formatRelativeTime(checkedAt, now)}`;
+}
+
+/** A saved key's two lines: when and where it was saved, and what last said it works or not. */
 export function describeSavedKey(
   saved: SavedKey,
   keychain: SecretsStatus['keychain'],
+  label: string,
   now: number = Date.now()
 ): { savedLine: string; checkedLine: string } {
   return {
     savedLine: `Saved ${formatRelativeTime(saved.savedAt, now)} ${describeWhere(saved, keychain)}`,
-    checkedLine:
-      saved.checkedAt === null
-        ? 'Not checked yet'
-        : `Checked ${formatRelativeTime(saved.checkedAt, now)}`,
+    checkedLine: describeChecked(saved, label, now),
   };
 }

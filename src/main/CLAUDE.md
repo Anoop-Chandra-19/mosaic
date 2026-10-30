@@ -99,9 +99,11 @@ No ORM: `db/` is the layer every other module goes through, and ESLint enforces 
   save, check, and remove a key but has no way to read one; main makes every call that
   needs it. Saving checks the key with the provider first and keeps it only if it passes,
   unless the user saves without checking after the provider couldn't be reached.
-- Main notes only which providers the keychain holds, with when each key was saved and last
-  passed a check (`app.apiKeys`), so status never touches the keychain and opening Settings
-  can't raise a prompt. A keychain that refuses a write counts as unavailable until the next
+- Main notes only which providers the keychain holds, with when each key was saved, last
+  passed a check, and was last refused in a run (`app.apiKeys`), so status never touches the
+  keychain and opening Settings can't raise a prompt. A refusal is a fact about that key: it
+  goes when a check passes or a run finishes, and never lands on a key saved after the run
+  began. A keychain that refuses a write counts as unavailable until the next
   launch; keys stay in memory, with a notice.
 - On Linux without a Secret Service, @napi-rs/keyring silently writes to the kernel
   keyring, which forgets keys at logout. `osKeyring.ts` spots that in `/proc/keys`, undoes

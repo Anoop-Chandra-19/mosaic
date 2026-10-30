@@ -6,9 +6,16 @@ import {
 } from '@/features/settings/sections/ai/modelProviderOptions';
 import { RUN_LIMITS } from '@shared/agent/runLimitSettings';
 import type { RunModel, RunStoppedMessageBody } from '@shared/types/agentConversation';
+import type { RunView } from '@/types/agentRunView';
 import type { ModelProviderError } from '@shared/types/modelReply';
-import { KEYED_PROVIDERS, type KeyedProvider } from '@shared/types/secrets';
-import type { NoticeAction, NoticeLevel, NoticeWords, QuotedWords } from './noticeWords';
+import { KEYED_PROVIDERS, type KeyedProvider, type SecretsStatus } from '@shared/types/secrets';
+import {
+  formatNoticeTime,
+  type NoticeAction,
+  type NoticeLevel,
+  type NoticeWords,
+  type QuotedWords,
+} from './noticeWords';
 
 /*
  * What the pane says about a run that stopped on its own, from the facts its stop stored:
@@ -48,6 +55,8 @@ interface StopFacts {
   address: string;
   /** "Tried 4 times.", when the step was tried more than once. */
   tries: string | null;
+  /** When a key was saved for this provider, if that came after the stop. */
+  newKeySavedAt: number | null;
 }
 
 interface KindWords {
@@ -170,8 +179,19 @@ const KIND_WORDS: Record<StopKind, (facts: StopFacts) => KindWords> = {
   keyRefused: (facts) => ({
     sentence: `${facts.provider} didn’t accept your API key.`,
     record: `${facts.provider} didn’t accept your API key`,
-    did: 'Used the API key you saved in Settings.',
-    actions: [settings(), ...providerPage(facts, 'Keys page', KEY_PAGE_URLS), again],
+    ...(facts.newKeySavedAt === null
+      ? {
+          did: 'Used the API key you saved in Settings.',
+          actions: [settings(), ...providerPage(facts, 'Keys page', KEY_PAGE_URLS), again],
+        }
+      : {
+          did: `New key saved at ${formatNoticeTime(facts.newKeySavedAt)}.`,
+          actions: [
+            { ...again, isPrimary: true },
+            settings(),
+            ...providerPage(facts, 'Keys page', KEY_PAGE_URLS),
+          ],
+        }),
   }),
   credits: (facts) => ({
     sentence: `Your ${facts.provider} account is out of credits or over its quota.`,
@@ -259,10 +279,12 @@ const PROVIDER_LABELS = new Map<string, string>(
 function readStopFacts(
   stop: RunStoppedMessageBody,
   runModel: RunModel | null,
-  ollamaAddress: string
+  ollamaAddress: string,
+  newKeySavedAt: number | null
 ): StopFacts {
   const providerId = runModel?.provider ?? '';
   return {
+    newKeySavedAt,
     stop,
     provider: PROVIDER_LABELS.get(providerId) ?? (providerId || 'The provider'),
     keyedProvider: KEYED_PROVIDERS.find((keyed) => keyed === providerId) ?? null,
@@ -273,6 +295,16 @@ function readStopFacts(
   };
 }
 
+/** When the run's provider got a key saved after the run stopped, if it did. */
+export function findKeySavedSince(
+  { model, stoppedAt }: Pick<RunView, 'model' | 'stoppedAt'>,
+  saved: SecretsStatus['saved']
+): number | null {
+  const provider = KEYED_PROVIDERS.find((keyed) => keyed === model?.provider);
+  const savedAt = provider && saved[provider]?.savedAt;
+  return savedAt && stoppedAt !== null && savedAt > stoppedAt ? savedAt : null;
+}
+
 /**
  * The words for a run's stop, for the provider and model that run used; null for the
  * user's own Stop. Ollama's address is the one Settings has now: runs don't store it.
@@ -280,11 +312,12 @@ function readStopFacts(
 export function describeStop(
   stop: RunStoppedMessageBody,
   runModel: RunModel | null,
-  ollamaAddress: string
+  ollamaAddress: string,
+  newKeySavedAt: number | null = null
 ): StopWords | null {
   const kind = readStopKind(stop);
   if (kind === null) return null;
-  const facts = readStopFacts(stop, runModel, ollamaAddress);
+  const facts = readStopFacts(stop, runModel, ollamaAddress, newKeySavedAt);
   const words = KIND_WORDS[kind](facts);
   const level = LEVELS[kind];
   return {

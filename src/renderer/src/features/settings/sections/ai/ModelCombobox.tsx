@@ -59,7 +59,7 @@ function describeMissingList(
 ) {
   const label = MODEL_PROVIDER_OPTION_BY_ID[provider].label;
   if (isLoading) return `Asking ${label} for its models…`;
-  return keyState === 'unchecked'
+  return keyState === 'unchecked' || keyState === 'refused'
     ? 'Check the key to see every model it can reach.'
     : 'Save a key to see every model it can reach.';
 }

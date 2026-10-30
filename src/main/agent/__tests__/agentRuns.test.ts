@@ -7,7 +7,13 @@ import { openDatabase, type Database } from '../../db/connection';
 import { readConversationLog } from '../../db/conversations/messages';
 import { createTemplate } from '../../db/resumes/templates';
 import { setSetting } from '../../db/settings';
-import { createAgentRuns, type AgentRuns, type RunPage } from '../agentRuns';
+import {
+  createAgentRuns,
+  type AgentRuns,
+  type AgentRunsNeeds,
+  type KeyAnswer,
+  type RunPage,
+} from '../agentRuns';
 import { callTool, DONE, hang, say, scriptedModel, type ScriptedReply } from './scriptedRun';
 
 let db: Database;
@@ -45,6 +51,7 @@ const answered = (content: string): AgentToolAnswer => ({
 
 interface Setup {
   replies: ScriptedReply[];
+  noteKeyAnswer?: AgentRunsNeeds['noteKeyAnswer'];
   /** How the page answers each call; left out, it never does. */
   answer?: (call: AgentToolCall, runs: AgentRuns) => void;
   toolAnswerMs?: number;
@@ -52,7 +59,13 @@ interface Setup {
   providerOpened?: Promise<void>;
 }
 
-function setUp({ replies, answer, toolAnswerMs = RUN_LIMITS.toolAnswerMs, providerOpened }: Setup) {
+function setUp({
+  replies,
+  noteKeyAnswer,
+  answer,
+  toolAnswerMs = RUN_LIMITS.toolAnswerMs,
+  providerOpened,
+}: Setup) {
   const model = scriptedModel(replies);
   const envelopes: AgentRunEnvelope[] = [];
   const runs = createAgentRuns({
@@ -63,6 +76,7 @@ function setUp({ replies, answer, toolAnswerMs = RUN_LIMITS.toolAnswerMs, provid
         ? { ok: true, modelProvider: model.provider }
         : { ok: false, reason: 'noApiKey' };
     },
+    noteKeyAnswer,
     limits: { ...RUN_LIMITS, toolAnswerMs },
     wait: async () => {},
   });
@@ -87,6 +101,32 @@ function setUp({ replies, answer, toolAnswerMs = RUN_LIMITS.toolAnswerMs, provid
 }
 
 describe('a run started from the page', () => {
+  it.each<[string, ScriptedReply, KeyAnswer | null]>([
+    [
+      'a refused key',
+      [{ type: 'error', error: { reason: 'keyRefused', message: 'Bad key', httpStatus: 401 } }],
+      'refused',
+    ],
+    ['a finished run', [say('Done.'), DONE], 'worked'],
+    ['a provider’s other refusal', [{ type: 'error', error: { reason: 'model-not-found' } }], null],
+  ])('says what %s means for the key it started with', async (_, reply, expected) => {
+    const noteKeyAnswer = vi.fn();
+    const { ask, ended, runs } = setUp({ replies: [reply], noteKeyAnswer });
+    await ask();
+    await ended;
+    await runs.stopAll();
+
+    if (expected) {
+      expect(noteKeyAnswer).toHaveBeenCalledExactlyOnceWith(
+        expect.objectContaining({ provider: 'ollama' }),
+        expected,
+        expect.any(Number)
+      );
+    } else {
+      expect(noteKeyAnswer).not.toHaveBeenCalled();
+    }
+  });
+
   it('runs to its end in a new conversation, its events numbered, its calls answered', async () => {
     const { ask, ended, envelopes } = setUp({
       replies: [
