@@ -1,8 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { useAgentNoticeStore } from '@/stores/agentNoticeStore';
+import { useAgentNoticeStore, type NoticeSource } from '@/stores/agentNoticeStore';
 import { startNewConversation, useConversationStore } from '@/stores/conversationStore';
 import { useResumeStore } from '@/stores/resumeStore';
+import { useRunStore } from '@/stores/runStore';
 import type { AgentStart } from '@shared/types/agentBridge';
+import type { AgentRunEvent } from '@shared/types/agentRunEvents';
 import { createFakeAgentLog, userBody } from '@/stores/__tests__/fakeAgentLog';
 import { makeResume } from '../../../suggestions/proposals/__tests__/proposalFixtures';
 import { canSendMessage, sendMessage } from '../sendMessage';
@@ -63,5 +65,36 @@ describe('sending from the prompt box', () => {
       reason: 'noApiKey',
     });
     expect(useConversationStore.getState().conversationId).toBeNull();
+  });
+
+  describe('a send made while a notice showed', () => {
+    const answering: NoticeSource = { type: 'run', runId: 4 };
+    const followRun = (event: AgentRunEvent) =>
+      useRunStore.getState().followRunEvent({ conversationId: 7, runId: 5, seq: 0, event });
+
+    beforeEach(() => {
+      vi.useFakeTimers();
+      useRunStore.setState({ live: null });
+      start = { ok: true, conversationId: 7, runId: 5 };
+    });
+    afterEach(() => vi.useRealTimers());
+
+    it('holds the notice a few seconds, then lets go of a run that is still silent', async () => {
+      await sendMessage('Tighten my bullets.', answering);
+      followRun({ type: 'stepStarted', step: 1 });
+
+      vi.advanceTimersByTime(4999);
+      expect(useAgentNoticeStore.getState().resend).toMatchObject({ runId: 5 });
+      vi.advanceTimersByTime(1);
+      expect(useAgentNoticeStore.getState().resend).toBeNull();
+    });
+
+    it('keeps what it needs to answer a run that ended in time', async () => {
+      await sendMessage('Tighten my bullets.', answering);
+      followRun({ type: 'runEnded', stopReason: 'providerError' });
+
+      vi.advanceTimersByTime(5000);
+      expect(useAgentNoticeStore.getState().resend).toMatchObject({ runId: 5 });
+    });
   });
 });

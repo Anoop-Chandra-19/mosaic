@@ -88,7 +88,7 @@ describe('what each notice says', () => {
       sentence: 'Couldn’t reach Ollama at localhost:11434. Check that it’s running.',
       record: 'Couldn’t reach Ollama',
       quoted: { label: 'Your computer said', code: null },
-      did: 'Tried 4 times over 21 s.',
+      did: 'Tried 4 times.',
       actions: [{ kind: 'command', command: 'ollama serve' }, { kind: 'again' }],
     });
 

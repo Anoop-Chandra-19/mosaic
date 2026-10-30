@@ -10,7 +10,8 @@ import { formatSentAgain } from './stopWords';
  * start comes first; then the open conversation's last run, if it stopped and nothing has
  * started since. A send made while a notice showed keeps it, sending, until the answer:
  * gone once the new run gets going, in place with the time when it stops the same way,
- * or swapped for another.
+ * or swapped for another. `sendMessage` ends the wait for a run that stays silent, and a
+ * later stop of that run is a notice of its own.
  */
 
 export interface ShownNotice {

@@ -55,6 +55,13 @@ export function noteSendStarted(runId: number): void {
   }));
 }
 
+/** The new run has said nothing yet: the transcript shows it from here, and the notice lets go. */
+export function letNoticeGo(runId: number): void {
+  useAgentNoticeStore.setState((state) =>
+    state.resend?.runId === runId ? { resend: null } : state
+  );
+}
+
 /** Main wouldn't start it. The same refusal again is a check made again, which the notice says. */
 export function noteSendRefused(conversationId: number | null, reason: AgentStartRefusal): void {
   useAgentNoticeStore.setState(({ resend }) => {
