@@ -1,8 +1,7 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import type { ModelStreamEvent } from '@shared/types/modelReply';
 import { createGoogleModelProvider, type GoogleFetch } from '../googleModelProvider';
 import type { ModelRequest } from '../../modelProvider';
-import { REPLY_START_TIMEOUT_MS } from '../../providerEndpoints';
 
 const API_KEY = 'AIza-test-0000';
 
@@ -380,49 +379,6 @@ describe('createGoogleModelProvider', () => {
         },
       },
     ]);
-  });
-
-  describe('waiting for the reply', () => {
-    beforeEach(() => vi.useFakeTimers());
-    afterEach(() => vi.useRealTimers());
-
-    it('gives up when Google doesn’t start answering in time', async () => {
-      const { provider } = google(
-        (init) =>
-          new Promise((_resolve, reject) =>
-            init?.signal?.addEventListener('abort', () =>
-              reject(new DOMException('', 'AbortError'))
-            )
-          )
-      );
-      const events = collect(provider.streamReply(request()));
-      await vi.advanceTimersByTimeAsync(REPLY_START_TIMEOUT_MS);
-      expect(await events).toEqual([
-        {
-          type: 'error',
-          error: { reason: 'unreachable', message: 'Google didn’t start answering in time' },
-        },
-      ]);
-    });
-
-    it('lets a reply that has started run on past that', async () => {
-      const encoder = new TextEncoder();
-      const slowBody = new ReadableStream({
-        async start(controller) {
-          controller.enqueue(
-            encoder.encode(`data: ${JSON.stringify(chunk([{ text: 'Led' }]))}\r\n\r\n`)
-          );
-          await new Promise((resolve) => setTimeout(resolve, REPLY_START_TIMEOUT_MS * 2));
-          const last = chunk([{ text: ' a team.' }], 'STOP');
-          controller.enqueue(encoder.encode(`data: ${JSON.stringify(last)}\r\n\r\n`));
-          controller.close();
-        },
-      });
-      const { provider } = google(() => new Response(slowBody));
-      const events = collect(provider.streamReply(request()));
-      await vi.advanceTimersByTimeAsync(REPLY_START_TIMEOUT_MS * 2);
-      expect((await events).at(-1)).toEqual({ type: 'finish', reason: 'complete', usage: USAGE });
-    });
   });
 
   it('ends quietly when stopped', async () => {

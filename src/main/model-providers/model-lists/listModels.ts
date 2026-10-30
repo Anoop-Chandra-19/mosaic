@@ -1,5 +1,5 @@
 import type { KeyedProvider } from '@shared/types/secrets';
-import { PROVIDER_API_URL } from '../providerEndpoints';
+import { MODEL_LIST_TIMEOUT_MS, PROVIDER_API_URL } from '../providerEndpoints';
 
 /** `fetch`, narrowed to what a key check or a model list sends. Main passes Electron's `net.fetch`. */
 export type ModelListFetch = (
@@ -19,7 +19,6 @@ export type ModelListAnswer =
 
 type Failure = Extract<ModelListAnswer, { ok: false }>;
 
-const TIMEOUT_MS = 10_000;
 /** Far beyond any provider's list; this only stops a list that never ends. */
 const MAX_PAGES = 20;
 
@@ -159,7 +158,7 @@ export async function requestWithKey(
   fetch: ModelListFetch
 ): Promise<Response | Failure> {
   try {
-    return await fetch(url, { headers, signal: AbortSignal.timeout(TIMEOUT_MS) });
+    return await fetch(url, { headers, signal: AbortSignal.timeout(MODEL_LIST_TIMEOUT_MS) });
   } catch {
     return { ok: false, reason: 'unreachable' };
   }

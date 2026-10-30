@@ -1,7 +1,6 @@
 import { normalizeOpenAiCompatibleAddress } from '@shared/model-providers/serverAddress';
 import type { OpenAiCompatibleModels } from '@shared/types/modelProviders';
-
-const TIMEOUT_MS = 3000;
+import { SERVER_MODELS_TIMEOUT_MS } from '../providerEndpoints';
 
 /** `fetch`, narrowed to what this call sends. Main passes Electron's `net.fetch`. */
 export type OpenAiCompatibleModelsFetch = (
@@ -35,7 +34,9 @@ export async function listOpenAiCompatibleModels(
 
   let response: Response;
   try {
-    response = await fetch(`${address}/v1/models`, { signal: AbortSignal.timeout(TIMEOUT_MS) });
+    response = await fetch(`${address}/v1/models`, {
+      signal: AbortSignal.timeout(SERVER_MODELS_TIMEOUT_MS),
+    });
   } catch {
     return { ok: false, reason: 'unreachable' };
   }

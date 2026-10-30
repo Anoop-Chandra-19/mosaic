@@ -21,7 +21,7 @@ import type {
 import type { ModelTool } from '@shared/types/modelTool';
 import { describeNetworkError } from '../describeNetworkError';
 import type { ModelMessage, ModelProvider, ModelRequest } from '../modelProvider';
-import { PROVIDER_API_URL, REPLY_START_TIMEOUT_MS } from '../providerEndpoints';
+import { PROVIDER_API_URL } from '../providerEndpoints';
 
 /*
  * Google, through the Gemini API's native `streamGenerateContent` (its OpenAI-compatible
@@ -103,34 +103,25 @@ export function createGoogleModelProvider({
 /**
  * Every setting the SDK would otherwise take from the environment (a key, Vertex AI, a
  * project, a base URL) is given, so only Settings decides where requests go and with which
- * key. No `timeout`: the SDK's would cut the stream itself; `untilReplyStarts` bounds the wait.
- * No `retryOptions`, so the SDK doesn't retry.
+ * key. No `retryOptions`, so the SDK doesn't retry.
  */
 function createGoogleClient(apiKey: string, fetch: GoogleFetch): GoogleGenAI {
   return new GoogleGenAI({
     apiKey,
     vertexai: false,
     apiVersion: 'v1beta',
-    httpOptions: { baseUrl: PROVIDER_API_URL.google, fetch: untilReplyStarts(fetch) },
+    httpOptions: { baseUrl: PROVIDER_API_URL.google, fetch: markNoAnswer(fetch) },
   });
 }
 
-/** Gives up when Google hasn't started answering in time; once it has, the reply runs on. */
-function untilReplyStarts(fetch: GoogleFetch): Fetch {
+/** A fetch that failed, as an error `describeGoogleError` can tell from the SDK's. */
+function markNoAnswer(fetch: GoogleFetch): Fetch {
   return async (url, init) => {
-    const waited = new AbortController();
-    const timer = setTimeout(() => waited.abort(), REPLY_START_TIMEOUT_MS);
-    const signal = init?.signal ? AbortSignal.any([init.signal, waited.signal]) : waited.signal;
     try {
-      return await fetch(String(url), { ...init, signal });
+      return await fetch(String(url), init);
     } catch (error) {
       if (init?.signal?.aborted) throw error;
-      const message = waited.signal.aborted
-        ? 'Google didn’t start answering in time'
-        : describeNetworkError(error);
-      throw new NoAnswerError(message);
-    } finally {
-      clearTimeout(timer);
+      throw new NoAnswerError(describeNetworkError(error));
     }
   };
 }

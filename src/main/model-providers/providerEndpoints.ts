@@ -11,5 +11,11 @@ export const PROVIDER_API_URL: Record<KeyedProvider, string> = {
   google: 'https://generativelanguage.googleapis.com',
 };
 
-/** A model's reply, until it starts; once it streams, the loop's stall check watches it. */
-export const REPLY_START_TIMEOUT_MS = 60_000;
+/**
+ * A key check or a provider's model list, over the internet. Replies have no timeout here:
+ * the loop's stall check (`RUN_LIMITS.stallMs`) covers every provider.
+ */
+export const MODEL_LIST_TIMEOUT_MS = 10_000;
+
+/** A model list from a server the user runs, usually on this computer. */
+export const SERVER_MODELS_TIMEOUT_MS = 3000;

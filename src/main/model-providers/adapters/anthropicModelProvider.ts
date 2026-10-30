@@ -23,7 +23,7 @@ import type { ModelTool } from '@shared/types/modelTool';
 import { describeNetworkError } from '../describeNetworkError';
 import type { ModelMessage, ModelProvider, ModelRequest } from '../modelProvider';
 import { parseToolArguments } from '../parseToolArguments';
-import { PROVIDER_API_URL, REPLY_START_TIMEOUT_MS } from '../providerEndpoints';
+import { PROVIDER_API_URL } from '../providerEndpoints';
 import { readRateLimit } from '../readRateLimit';
 
 /*
@@ -99,7 +99,6 @@ function createAnthropicClient(apiKey: string, fetch: AnthropicFetch): Anthropic
     baseURL: PROVIDER_API_URL.anthropic,
     webhookKey: null,
     maxRetries: 0,
-    timeout: REPLY_START_TIMEOUT_MS,
     logLevel: 'off',
     openTelemetry: false,
   });
