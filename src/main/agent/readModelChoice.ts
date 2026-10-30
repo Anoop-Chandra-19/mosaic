@@ -1,6 +1,6 @@
 import type { Database } from 'better-sqlite3';
 import { isRecord } from '@shared/resume/validateResume';
-import { normalizeOllamaAddress } from '@shared/model-providers/ollamaAddress';
+import { normalizeOllamaAddress } from '@shared/model-providers/serverAddress';
 import { AGENT_SETTINGS_KEY } from '@shared/types/modelProviders';
 import { getSetting } from '../db/settings';
 import { isModelProviderId, type ModelChoice } from '../model-providers/createModelProvider';

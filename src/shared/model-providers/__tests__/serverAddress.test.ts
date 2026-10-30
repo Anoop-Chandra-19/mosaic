@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { isLocalOllamaAddress, normalizeOllamaAddress, ollamaHost } from '../ollamaAddress';
+import {
+  isLocalServerAddress,
+  normalizeOllamaAddress,
+  normalizeOpenAiCompatibleAddress,
+  serverHost,
+} from '../serverAddress';
 
 describe('normalizeOllamaAddress', () => {
   it('fills in what people leave out', () => {
@@ -50,18 +55,27 @@ describe('normalizeOllamaAddress', () => {
   });
 });
 
-describe('isLocalOllamaAddress', () => {
-  it('knows this machine from the network', () => {
-    expect(isLocalOllamaAddress('http://127.0.0.1:11434')).toBe(true);
-    expect(isLocalOllamaAddress('http://localhost:11434')).toBe(true);
-    expect(isLocalOllamaAddress('http://[::1]:11434')).toBe(true);
-    expect(isLocalOllamaAddress('http://192.168.1.50:11434')).toBe(false);
-    expect(isLocalOllamaAddress('http://gpu-box:11434')).toBe(false);
+describe('normalizeOpenAiCompatibleAddress', () => {
+  it('fills in its own port, and drops a pasted /v1', () => {
+    expect(normalizeOpenAiCompatibleAddress('localhost')).toBe('http://localhost:8080');
+    expect(normalizeOpenAiCompatibleAddress('http://127.0.0.1:1234/v1')).toBe(
+      'http://127.0.0.1:1234'
+    );
   });
 });
 
-describe('ollamaHost', () => {
+describe('isLocalServerAddress', () => {
+  it('knows this machine from the network', () => {
+    expect(isLocalServerAddress('http://127.0.0.1:11434')).toBe(true);
+    expect(isLocalServerAddress('http://localhost:11434')).toBe(true);
+    expect(isLocalServerAddress('http://[::1]:11434')).toBe(true);
+    expect(isLocalServerAddress('http://192.168.1.50:11434')).toBe(false);
+    expect(isLocalServerAddress('http://gpu-box:11434')).toBe(false);
+  });
+});
+
+describe('serverHost', () => {
   it('drops the scheme', () => {
-    expect(ollamaHost('http://192.168.1.50:11434')).toBe('192.168.1.50:11434');
+    expect(serverHost('http://192.168.1.50:11434')).toBe('192.168.1.50:11434');
   });
 });

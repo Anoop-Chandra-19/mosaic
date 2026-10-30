@@ -22,7 +22,7 @@ import { parseToolArguments } from '../parseToolArguments';
 
 /*
  * OpenAI's Chat Completions, streamed through the `openai` SDK, for the adapters that
- * speak it (OpenRouter's). The request body from our messages and tools; the stream's
+ * speak it (OpenRouter's, and OpenAI-compatible servers'). The request body from our messages and tools; the stream's
  * chunks as our events, with calls assembled by index and usage from the last chunk; and
  * the SDK's errors. What a server adds (how it sends reasoning, its own request fields,
  * how it sorts an error status) comes from its adapter.

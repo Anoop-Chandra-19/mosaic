@@ -14,10 +14,10 @@ import {
 import { cn } from '@/lib/utils';
 import {
   DEFAULT_OLLAMA_ADDRESS,
-  isLocalOllamaAddress,
+  isLocalServerAddress,
   normalizeOllamaAddress,
-  ollamaHost,
-} from '@shared/model-providers/ollamaAddress';
+  serverHost,
+} from '@shared/model-providers/serverAddress';
 import type { OllamaModel } from '@shared/types/modelProviders';
 import { SettingRow } from '../../SettingRow';
 import type { OllamaModelsAnswer } from './useOllamaModels';
@@ -76,9 +76,9 @@ export function OllamaAddressRow({
       label="Ollama address"
       description={
         <>
-          {isLocalOllamaAddress(address)
+          {isLocalServerAddress(address)
             ? 'Ollama on your computer, so your resume text never leaves it.'
-            : `Ollama at ${ollamaHost(address)}, so your resume text goes there, on your network, when you ask for something.`}
+            : `Ollama at ${serverHost(address)}, so your resume text goes there, on your network, when you ask for something.`}
           {invalid && (
             <Note tone="error">
               That isn’t an address. For example: <Command>192.168.1.50:11434</Command>
@@ -137,7 +137,7 @@ export function OllamaModelRow({
   const isPulled = pulled.some((m) => m.name === model);
   // Only a list from a running Ollama can say a model is missing.
   const knownMissing = result?.ok === true && !isPulled;
-  const host = ollamaHost(address);
+  const host = serverHost(address);
 
   let note: ReactNode = null;
   if (active && result && !result.ok) {

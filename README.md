@@ -85,7 +85,7 @@ src/
     types/        # Cross-process contracts and data types; db.ts is the database contract
     resume/       # Defaults, migration, validation, header logic, section presets
     vault/        # Bundle parsing, used by renderer and main
-    model-providers/ # Ollama address handling
+    model-providers/ # The address of a model server the user runs
   renderer/
     index.html    # Renderer entry HTML
     public/       # Static assets
