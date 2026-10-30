@@ -21,6 +21,8 @@ export type StepReply =
       parts: ModelReplyPart[];
       finish: 'complete' | 'outputLimit';
       usage: ModelUsage | null;
+      /** When each call began, or arrived whole from a provider that can't say sooner. */
+      callStartedAt: ReadonlyMap<string, number>;
     }
   /** Stopped by the user; `parts` is what had arrived, to keep. */
   | { ok: false; reason: 'cancelled'; parts: ModelReplyPart[] }
@@ -48,6 +50,7 @@ type Attempt =
       parts: ModelReplyPart[];
       finish: 'complete' | 'outputLimit';
       usage: ModelUsage | null;
+      callStartedAt: ReadonlyMap<string, number>;
     }
   | { ok: false; cancelled: true; parts: ModelReplyPart[] }
   | { ok: false; cancelled: false; error: ModelProviderError };
@@ -75,6 +78,7 @@ function addText(parts: ModelReplyPart[], text: string): void {
 /** Collects one event into the parts, and passes on what a live view shows. */
 function takeEvent(
   parts: ModelReplyPart[],
+  callStartedAt: Map<string, number>,
   event: ModelStreamEvent,
   onEvent: (event: AgentRunEvent) => void
 ): void {
@@ -95,7 +99,12 @@ function takeEvent(
       });
       onEvent({ type: 'reasoningEnd', durationMs: event.durationMs });
       return;
+    case 'toolCallStart':
+      callStartedAt.set(event.callId, Date.now());
+      onEvent({ type: 'toolCall', callId: event.callId, name: event.name });
+      return;
     case 'toolCall':
+      if (!callStartedAt.has(event.callId)) callStartedAt.set(event.callId, Date.now());
       parts.push({ type: 'toolCall', callId: event.callId, name: event.name, args: event.args });
       onEvent({ type: 'toolCall', callId: event.callId, name: event.name });
       return;
@@ -113,14 +122,15 @@ async function streamOnce({
   // provider needs its own. A stall ends this attempt only; the user's Stop ends the run.
   const stall = createRestartableDeadline(limits.stallMs);
   const parts: ModelReplyPart[] = [];
+  const callStartedAt = new Map<string, number>();
   try {
     const attemptSignal = AbortSignal.any([signal, stall.signal]);
     for await (const event of provider.streamReply({ ...request, signal: attemptSignal })) {
       stall.restart();
       if (event.type === 'finish')
-        return { ok: true, parts, finish: event.reason, usage: event.usage };
+        return { ok: true, parts, finish: event.reason, usage: event.usage, callStartedAt };
       if (event.type === 'error') return { ok: false, cancelled: false, error: event.error };
-      takeEvent(parts, event, onEvent);
+      takeEvent(parts, callStartedAt, event, onEvent);
     }
     if (signal.aborted) return { ok: false, cancelled: true, parts };
     return { ok: false, cancelled: false, error: stall.signal.aborted ? STALLED : ENDED_EARLY };

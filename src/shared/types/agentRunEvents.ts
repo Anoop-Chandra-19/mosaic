@@ -15,7 +15,14 @@ export type AgentRunEvent =
   | { type: 'textDelta'; text: string }
   | { type: 'reasoningStart' }
   | { type: 'reasoningEnd'; durationMs: number }
+  /** Said once when the call begins, if its provider can tell, and again when it is whole. */
   | { type: 'toolCall'; callId: string; name: string }
-  | { type: 'toolResult'; callId: string; isError: boolean; target?: ToolTarget }
+  | {
+      type: 'toolResult';
+      callId: string;
+      isError: boolean;
+      target?: ToolTarget;
+      durationMs?: number;
+    }
   /** `stopReason` is absent when the model finished. */
   | { type: 'runEnded'; stopReason?: RunStopReason };

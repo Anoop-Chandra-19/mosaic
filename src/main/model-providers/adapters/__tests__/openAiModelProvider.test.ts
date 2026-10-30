@@ -183,15 +183,25 @@ describe('createOpenAiModelProvider', () => {
           item: { ...REASONING_ITEM, encrypted_content: null },
         },
         { type: 'response.output_item.done', item: REASONING_ITEM },
+        {
+          type: 'response.output_item.added',
+          item: {
+            type: 'function_call',
+            call_id: 'call_1',
+            name: 'propose_rewrite',
+            arguments: '',
+          },
+        },
         { type: 'response.function_call_arguments.delta', item_id: 'fc_call_1', delta: '{"id"' },
         call('call_1', 'propose_rewrite', '{"id":"b1","text":"Led five."}'),
         call('call_2', 'propose_rewrite', '{"id": "b2", "text": '),
         completed,
       ])
     );
-    expect((await collect(provider.streamReply(request()))).slice(0, 4)).toEqual([
+    expect((await collect(provider.streamReply(request()))).slice(0, 5)).toEqual([
       { type: 'reasoningStart' },
       { type: 'reasoningEnd', durationMs: 400, providerState: REASONING_ITEM },
+      { type: 'toolCallStart', callId: 'call_1', name: 'propose_rewrite' },
       {
         type: 'toolCall',
         callId: 'call_1',

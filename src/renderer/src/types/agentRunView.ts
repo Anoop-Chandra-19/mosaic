@@ -1,7 +1,7 @@
-import type { RunModel, RunStoppedMessageBody } from '@shared/types/agentConversation';
+import type { RunModel, RunStoppedMessageBody, ToolTarget } from '@shared/types/agentConversation';
 
-/** A tool call's state: waiting for its result, done, or refused by the tool. */
-export type RunToolStatus = 'running' | 'done' | 'refused';
+/** A tool call's state: waiting for its result, done, refused by the tool, or never run. */
+export type RunToolStatus = 'running' | 'done' | 'refused' | 'notRun';
 
 /**
  * One thing a run did, in order, as the pane shows it. The same shape comes from the
@@ -9,10 +9,23 @@ export type RunToolStatus = 'running' | 'done' | 'refused';
  */
 export type RunPart =
   | { type: 'text'; text: string }
-  /** `durationMs` is null while the model is still thinking. */
-  | { type: 'reasoning'; durationMs: number | null }
-  /** `args` once the call is stored; events carry the name only. */
-  | { type: 'toolCall'; callId: string; name: string; args?: unknown; status: RunToolStatus };
+  /** `durationMs` is null while the model is still thinking; `startedAt` is only known live. */
+  | { type: 'reasoning'; durationMs: number | null; startedAt?: number }
+  /**
+   * `args` once the call is stored, since events carry the name only; `target` once it is
+   * answered; `startedAt` only live.
+   */
+  | {
+      type: 'toolCall';
+      callId: string;
+      name: string;
+      args?: unknown;
+      status: RunToolStatus;
+      target?: ToolTarget;
+      startedAt?: number;
+      /** Once it is answered; absent on calls stored before steps were timed. */
+      durationMs?: number;
+    };
 
 /** One run of the transcript: what was asked, what the run did, and how it ended. */
 export interface RunView {
@@ -21,6 +34,8 @@ export interface RunView {
   model: RunModel | null;
   /** When its first message was stored, in ms since the epoch. */
   startedAt: number;
+  /** When its last message was stored: how long it took, with `startedAt`. */
+  lastAt: number;
   /** What the user sent; null for Send again, which carries on with no message. */
   ask: string | null;
   /** The resume the run moved to, when it was another one than the run before. */

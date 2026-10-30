@@ -86,7 +86,13 @@ function toTranscriptBody(body: MessageBody): TranscriptMessageBody {
     case 'toolResults':
       return {
         type: 'toolResults',
-        results: body.results.map(({ callId, isError, target }) => ({ callId, isError, target })),
+        results: body.results.map(({ callId, isError, target, notRun, durationMs }) => ({
+          callId,
+          isError,
+          target,
+          notRun,
+          durationMs,
+        })),
       };
     default:
       return body;

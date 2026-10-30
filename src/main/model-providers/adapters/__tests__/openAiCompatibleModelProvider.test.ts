@@ -80,6 +80,7 @@ describe('createOpenAiCompatibleModelProvider', () => {
       { type: 'reasoningStart' },
       { type: 'reasoningEnd', text: 'The summary is long.', durationMs: 500 },
       { type: 'textDelta', text: 'Reading it first.' },
+      { type: 'toolCallStart', callId: 'c1', name: 'read_document' },
       { type: 'toolCall', callId: 'c1', name: 'read_document', args: {} },
       {
         type: 'finish',

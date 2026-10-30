@@ -38,12 +38,33 @@ describe('requestModelReply', () => {
       ],
       finish: 'complete',
       usage: { inputTokens: 100, outputTokens: 10 },
+      callStartedAt: new Map([['c1', expect.any(Number)]]),
     });
     expect(events).toEqual([
       { type: 'textDelta', text: 'Tight' },
       { type: 'textDelta', text: 'ened.' },
       { type: 'toolCall', callId: 'c1', name: 'read_document' },
     ]);
+  });
+
+  it('times a call from when it began, and tells the page then', async () => {
+    const whole = callTool('c1', 'read_document');
+    const begun = { type: 'toolCallStart', callId: 'c1', name: 'read_document' } as const;
+    const { reply, events } = request([
+      async function* () {
+        yield begun;
+        expect(events).toEqual([{ type: 'toolCall', callId: 'c1', name: 'read_document' }]);
+        await new Promise((resolve) => setTimeout(resolve, 20));
+        yield whole;
+        yield DONE;
+      },
+    ]);
+    const before = Date.now();
+    const finished = await reply;
+    if (!finished.ok) throw new Error('not finished');
+    expect(finished.callStartedAt.get('c1')).toBeLessThan(before + 15);
+    // Only one call stored, whichever way it was told of.
+    expect(finished.parts).toHaveLength(1);
   });
 
   it('retries a lost connection, a server error and a stalled reply after 1, 4 and 16 seconds, then gives up', async () => {

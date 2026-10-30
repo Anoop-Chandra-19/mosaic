@@ -275,13 +275,16 @@ describe('createAnthropicModelProvider', () => {
       },
       { type: 'reasoningStart' },
       { type: 'reasoningEnd', durationMs: 400, providerState: REDACTED_BLOCK },
+      { type: 'toolCallStart', callId: 'toolu_1', name: 'propose_rewrite' },
       {
         type: 'toolCall',
         callId: 'toolu_1',
         name: 'propose_rewrite',
         args: { id: 'b1', text: 'Led five.' },
       },
+      { type: 'toolCallStart', callId: 'toolu_2', name: 'propose_rewrite' },
       { type: 'toolCall', callId: 'toolu_2', name: 'propose_rewrite', args: {} },
+      { type: 'toolCallStart', callId: 'toolu_3', name: 'propose_rewrite' },
       // Won't parse: goes on as written, for the repair round.
       {
         type: 'toolCall',

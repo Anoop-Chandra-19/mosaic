@@ -5,6 +5,7 @@ import { Square, SquareCheck } from 'lucide-react';
 import { Text, textVariantClasses } from '@/components/ui-kit';
 import { cn } from '@/lib/utils';
 import { appendCaret, CARET_CLASS } from './appendCaret';
+import { TracingDots } from './TracingDots';
 
 /*
  * The assistant's text as the markdown it writes, drawn in the pane's own type: no HTML
@@ -125,19 +126,21 @@ interface ReplyMarkdownProps {
   text: string;
   /** Still being written: unclosed markers are closed for now, and the caret follows the text. */
   isWriting?: boolean;
+  /** Text written between a run's steps sits among them at their size. */
+  variant?: 'body' | 'secondary';
 }
 
-export function ReplyMarkdown({ text, isWriting = false }: ReplyMarkdownProps) {
+export function ReplyMarkdown({ text, isWriting = false, variant = 'body' }: ReplyMarkdownProps) {
   if (isWriting && text.trim() === '') {
     return (
       <p>
-        <Caret />
+        <TracingDots />
       </p>
     );
   }
   return (
     <div
-      className={cn(textVariantClasses('body'), 'wrap-break-word [&>*+*]:mt-2.25 [&>p+p]:mt-1.5')}
+      className={cn(textVariantClasses(variant), 'wrap-break-word [&>*+*]:mt-2.25 [&>p+p]:mt-1.5')}
     >
       <Markdown
         remarkPlugins={PLUGINS}

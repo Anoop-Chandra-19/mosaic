@@ -51,6 +51,8 @@ export type ModelStreamEvent =
   | { type: 'textDelta'; text: string }
   | { type: 'reasoningStart' }
   | { type: 'reasoningEnd'; text?: string; durationMs: number; providerState?: unknown }
+  /** A call has begun and its arguments are on their way, from a provider that streams them. */
+  | { type: 'toolCallStart'; callId: string; name: string }
   | { type: 'toolCall'; callId: string; name: string; args: unknown }
   | { type: 'finish'; reason: 'complete' | 'outputLimit'; usage: ModelUsage | null }
   | { type: 'error'; error: ModelProviderError };

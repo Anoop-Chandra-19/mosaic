@@ -32,6 +32,8 @@ export interface ToolRound {
   db: Database;
   run: ConversationRun;
   calls: ToolCallPart[];
+  /** When each call began, which its time on the run line counts from. */
+  callStartedAt: ReadonlyMap<string, number>;
   bridge: ToolBridge;
   signal: AbortSignal;
   limits: RunLimits;
@@ -53,6 +55,7 @@ interface CallOutcome {
   checkName?: string;
   draft: DraftStamp | null;
   target?: ToolTarget;
+  durationMs?: number;
 }
 
 const NOT_RUN: Record<'cancelled' | 'stopped', string> = {
@@ -114,15 +117,18 @@ export async function runToolRound(round: ToolRound): Promise<ToolRoundEnd> {
       const verdict = limits.noteAnswer(call.name, call.args, outcome);
       outcome.content = verdict.content;
       stop = verdict.stop;
+      const startedAt = round.callStartedAt.get(call.callId);
+      if (startedAt !== undefined) outcome.durationMs = Math.max(0, Date.now() - startedAt);
+      onEvent({
+        type: 'toolResult',
+        callId: call.callId,
+        isError: outcome.isError,
+        target: outcome.target,
+        durationMs: outcome.durationMs,
+      });
     }
     draft = outcome.draft;
     outcomes.push(outcome);
-    onEvent({
-      type: 'toolResult',
-      callId: call.callId,
-      isError: outcome.isError,
-      target: outcome.target,
-    });
   }
   stop ??= limits.noteStep(outcomes.filter((outcome) => outcome.status !== 'cancelled'));
 

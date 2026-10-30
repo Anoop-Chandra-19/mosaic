@@ -103,7 +103,9 @@ const isToolResult: Check = (result) =>
   isString(result.callId) &&
   isString(result.content) &&
   isOptional(result.isError, (isError) => typeof isError === 'boolean') &&
-  isOptional(result.target, isToolTarget);
+  isOptional(result.target, isToolTarget) &&
+  isOptional(result.notRun, (notRun) => typeof notRun === 'boolean') &&
+  isOptional(result.durationMs, isCount);
 
 const CHECK_BY_MESSAGE_TYPE: Record<MessageBody['type'], Check> = {
   user: (body) =>

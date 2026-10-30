@@ -228,11 +228,25 @@ describe('a run started from the page', () => {
     expect(results.map(({ body }) => body)).toEqual([
       {
         type: 'toolResults',
-        results: [{ callId: 'c1', content: 'The tool did not answer in time.', isError: true }],
+        results: [
+          {
+            callId: 'c1',
+            content: 'The tool did not answer in time.',
+            isError: true,
+            durationMs: expect.any(Number),
+          },
+        ],
       },
       {
         type: 'toolResults',
-        results: [{ callId: 'c2', content: 'The tool failed: Error: no view', isError: true }],
+        results: [
+          {
+            callId: 'c2',
+            content: 'The tool failed: Error: no view',
+            isError: true,
+            durationMs: expect.any(Number),
+          },
+        ],
       },
     ]);
   });
@@ -253,17 +267,25 @@ describe('a run started from the page', () => {
     const [stored] = readConversationLog(db, 1).filter(({ body }) => body.type === 'toolResults');
     expect(stored.body).toEqual({
       type: 'toolResults',
-      results: [{ callId: 'c1', content: 'Newest version: v3', target }],
+      results: [
+        {
+          callId: 'c1',
+          content: 'Newest version: v3',
+          target,
+          durationMs: expect.any(Number),
+        },
+      ],
     });
     expect(envelopes.map(({ event }) => event)).toContainEqual({
       type: 'toolResult',
       callId: 'c1',
       isError: false,
       target,
+      durationMs: expect.any(Number),
     });
     expect(readMessagePage(db, 1, { limit: 50 }).map(({ body }) => body)).toContainEqual({
       type: 'toolResults',
-      results: [{ callId: 'c1', isError: undefined, target }],
+      results: [{ callId: 'c1', isError: undefined, target, durationMs: expect.any(Number) }],
     });
     expect(JSON.stringify(model.requests.at(-1)?.messages)).not.toContain('"target"');
   });
