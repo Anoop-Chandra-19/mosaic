@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { AgentStartRefusal } from '@shared/types/agentBridge';
 import type { RunStopReason, RunStoppedMessageBody } from '@shared/types/agentConversation';
 import type { ModelProviderError } from '@shared/types/modelReply';
+import { shortModelName } from '../../shortModelName';
 import type { NoticeWords } from '../noticeWords';
 import { describeStartRefusal } from '../startRefusalWords';
 import { describeStop, findKeySavedSince } from '../stopWords';
@@ -9,7 +10,8 @@ import { describeStop, findKeySavedSince } from '../stopWords';
 const dated = (savedAt: number) => ({ where: 'keychain' as const, savedAt, checkedAt: savedAt });
 const ANTHROPIC = { provider: 'anthropic', model: 'claude-sonnet-5-5' };
 const OLLAMA = { provider: 'ollama', model: 'llama3.1:8b' };
-const ADDRESS = 'http://localhost:11434';
+const COMPATIBLE = { provider: 'openaiCompatible', model: 'local-model' };
+const ADDRESSES = { ollama: 'http://localhost:11434', openaiCompatible: 'http://127.0.0.1:8080' };
 
 const PROVIDER_ERRORS: Record<ModelProviderError['reason'], ModelProviderError> = {
   unreachable: { reason: 'unreachable', message: 'connect ECONNREFUSED 127.0.0.1:11434' },
@@ -51,7 +53,7 @@ describe('what each notice says', () => {
   it('gives every stop and refusal a sentence and a way forward, in Mosaic’s words', () => {
     const notices: NoticeWords[] = [
       ...listStops().flatMap((stop) =>
-        [ANTHROPIC, OLLAMA].map((model) => describeStop(stop, model, ADDRESS)!)
+        [ANTHROPIC, OLLAMA, COMPATIBLE].map((model) => describeStop(stop, model, ADDRESSES)!)
       ),
       ...(['noApiKey', 'keychainRefused', 'runInProgress', 'assistantOff'] as const).map(
         (refusal: AgentStartRefusal) =>
@@ -67,7 +69,7 @@ describe('what each notice says', () => {
 
   it('leaves the user’s own Stop to the run, not a notice', () => {
     expect(
-      describeStop({ type: 'runStopped', reason: 'cancelled' }, ANTHROPIC, ADDRESS)
+      describeStop({ type: 'runStopped', reason: 'cancelled' }, ANTHROPIC, ADDRESSES)
     ).toBeNull();
   });
 
@@ -81,7 +83,7 @@ describe('what each notice says', () => {
         waitedMs: 21_000,
       },
       OLLAMA,
-      ADDRESS
+      ADDRESSES
     );
     expect(reach).toMatchObject({
       level: 'cantRun',
@@ -96,7 +98,7 @@ describe('what each notice says', () => {
     const credits = describeStop(
       { type: 'runStopped', reason: 'providerError', providerError: PROVIDER_ERRORS.quotaExceeded },
       { provider: 'openrouter', model: 'deepseek/deepseek-chat' },
-      ADDRESS
+      ADDRESSES
     );
     expect(credits).toMatchObject({
       sentence: 'Your OpenRouter account is out of credits or over its quota.',
@@ -121,11 +123,11 @@ describe('what each notice says', () => {
     expect(findKeySavedSince(stopped, { openai: dated(savedAt) })).toBeNull();
     expect(findKeySavedSince(stopped, { anthropic: dated(savedAt) })).toBe(savedAt);
 
-    expect(describeStop(stop, ANTHROPIC, ADDRESS)).toMatchObject({
+    expect(describeStop(stop, ANTHROPIC, ADDRESSES)).toMatchObject({
       did: 'Used the API key you saved in Settings.',
       actions: [{ kind: 'settings' }, { kind: 'link' }, { kind: 'again' }],
     });
-    const words = describeStop(stop, ANTHROPIC, ADDRESS, savedAt);
+    const words = describeStop(stop, ANTHROPIC, ADDRESSES, savedAt);
     expect(words?.did).toMatch(/^New key saved at .+\.$/);
     expect(words?.actions).toMatchObject([
       { kind: 'again', isPrimary: true },
@@ -138,7 +140,7 @@ describe('what each notice says', () => {
     const repeating = describeStop(
       { type: 'runStopped', reason: 'repeatedCall', detail: 'Outside this turn.' },
       ANTHROPIC,
-      ADDRESS
+      ADDRESSES
     );
     expect(repeating).toMatchObject({
       level: 'stopped',
@@ -146,7 +148,47 @@ describe('what each notice says', () => {
       quoted: { label: 'Why Mosaic refused it', text: 'Outside this turn.' },
     });
     expect(
-      describeStop({ type: 'runStopped', reason: 'stepLimit' }, ANTHROPIC, ADDRESS)
+      describeStop({ type: 'runStopped', reason: 'stepLimit' }, ANTHROPIC, ADDRESSES)
     ).toMatchObject({ sentence: 'Stopped after 40 steps without finishing.', quoted: null });
+  });
+
+  it.each<[ModelProviderError['reason'], object]>([
+    [
+      'unreachable',
+      { sentence: 'Couldn’t reach the server at 127.0.0.1:8080. Check that it’s running.' },
+    ],
+    ['keyRefused', { sentence: expect.stringContaining('wants an API key') }],
+    ['model-not-found', { sentence: 'The server has no model called local-model.' }],
+    ['toolsUnsupported', { did: expect.stringContaining('--jinja') }],
+    ['context-too-long', { did: expect.stringContaining('llama.cpp -c') }],
+    ['failed', { sentence: 'The server refused the request.' }],
+  ])('talks about the user’s own server when it answers %s', (reason, expected) => {
+    const stop: RunStoppedMessageBody = {
+      type: 'runStopped',
+      reason: 'providerError',
+      providerError: PROVIDER_ERRORS[reason],
+    };
+    expect(describeStop(stop, COMPATIBLE, ADDRESSES)).toMatchObject({
+      who: 'OpenAI-compatible · local-model · 127.0.0.1:8080',
+      ...expected,
+    });
+  });
+
+  it('names a model loaded from a file by the file, and leaves other names whole', () => {
+    expect(
+      ['/models/qwen-Q4.gguf', 'C:\\models\\qwen-Q4.gguf', 'Qwen/Qwen3', 'qwen3.5:9b'].map(
+        shortModelName
+      )
+    ).toEqual(['qwen-Q4.gguf', 'qwen-Q4.gguf', 'Qwen/Qwen3', 'qwen3.5:9b']);
+  });
+
+  it('quotes the server as the server, and offers no account pages', () => {
+    const words = describeStop(
+      { type: 'runStopped', reason: 'providerError', providerError: PROVIDER_ERRORS.failed },
+      COMPATIBLE,
+      ADDRESSES
+    );
+    expect(words?.quoted).toMatchObject({ label: 'The server said', code: '400' });
+    expect(words?.actions).toEqual([expect.objectContaining({ kind: 'again' })]);
   });
 });

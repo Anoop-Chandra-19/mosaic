@@ -50,7 +50,7 @@ Paths below are relative to the repository root. Read the relevant files before 
   `@/` maps to `src/renderer/src/`; `@shared/` maps to `src/shared/`.
 - Renderer has no Node, raw IPC, or network. Use only `window.mosaic`, through the services
   in `src/renderer/CLAUDE.md`: `db`, `files` (main's Save/Open dialogs), `backup`, `secrets`
-  (write-only keys), `modelProviders` (Ollama's pulled models), `agent` (the assistant's runs,
+  (write-only keys), `modelProviders` (the models on a server the user runs), `agent` (the assistant's runs,
   which happen in main; the page runs their tools), and `app`. Main owns SQLite and validates
   every argument; database refusals use `DbResult` codes (`not-found`, `stale-rev`,
   `invalid-argument`).

@@ -1,6 +1,10 @@
 import type { Database } from 'better-sqlite3';
 import { isRecord } from '@shared/resume/validateResume';
-import { normalizeOllamaAddress } from '@shared/model-providers/serverAddress';
+import {
+  DEFAULT_OPENAI_COMPATIBLE_ADDRESS,
+  normalizeOllamaAddress,
+  normalizeOpenAiCompatibleAddress,
+} from '@shared/model-providers/serverAddress';
 import { AGENT_SETTINGS_KEY } from '@shared/types/modelProviders';
 import { getSetting } from '../db/settings';
 import { isModelProviderId, type ModelChoice } from '../model-providers/createModelProvider';
@@ -28,6 +32,12 @@ function parseStoredState(stored: string | null): unknown {
   }
 }
 
+/** Settings saved before this address existed don't hold it, and only need it once chosen. */
+function readOpenAiCompatibleAddress(stored: unknown): string | null {
+  if (stored === undefined) return DEFAULT_OPENAI_COMPATIBLE_ADDRESS;
+  return typeof stored === 'string' ? normalizeOpenAiCompatibleAddress(stored) : null;
+}
+
 /** What Settings chose; null while the assistant is off, or if the settings can't be read. */
 export function readModelChoice(db: Database): ModelChoice | null {
   const state = parseStoredState(getSetting(db, AGENT_SETTINGS_KEY));
@@ -37,8 +47,19 @@ export function readModelChoice(db: Database): ModelChoice | null {
   const model = modelsByProvider[provider];
   const address =
     typeof state.ollamaAddress === 'string' ? normalizeOllamaAddress(state.ollamaAddress) : null;
-  if (!isModelName(model) || address === null || !isContextTokens(ollamaContextTokens)) {
+  const compatibleAddress = readOpenAiCompatibleAddress(state.openAiCompatibleAddress);
+  if (
+    !isModelName(model) ||
+    address === null ||
+    compatibleAddress === null ||
+    !isContextTokens(ollamaContextTokens)
+  ) {
     return null;
   }
-  return { provider, model, ollama: { address, contextTokens: ollamaContextTokens } };
+  return {
+    provider,
+    model,
+    ollama: { address, contextTokens: ollamaContextTokens },
+    openAiCompatible: { address: compatibleAddress },
+  };
 }

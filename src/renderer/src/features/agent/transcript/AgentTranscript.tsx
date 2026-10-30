@@ -3,11 +3,11 @@ import { LayoutTemplate, Sparkles } from 'lucide-react';
 import { Text } from '@/components/ui-kit';
 import { useActiveTemplate } from '@/features/templates/useActiveTemplate';
 import { cn } from '@/lib/utils';
-import { useAgentSettingsStore } from '@/stores/agentSettingsStore';
 import { useConversationStore } from '@/stores/conversationStore';
 import { useRunStore } from '@/stores/runStore';
 import type { RunPart, RunView } from '@/types/agentRunView';
 import { describeStop } from '../notices/stopWords';
+import { useServerAddresses } from '../notices/useServerAddresses';
 import { buildRunView } from './buildRunView';
 import { ReplyText } from './ReplyText';
 import { RunRecord } from './RunRecord';
@@ -191,11 +191,11 @@ export function AgentTranscript() {
   );
   const scrollRef = useRef<HTMLElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
-  const ollamaAddress = useAgentSettingsStore((s) => s.ollamaAddress);
+  const serverAddresses = useServerAddresses();
   useStickToNewest(scrollRef, contentRef);
 
   const readStopRecord = (run: RunView) =>
-    run.stop && (describeStop(run.stop, run.model, ollamaAddress)?.record ?? null);
+    run.stop && (describeStop(run.stop, run.model, serverAddresses)?.record ?? null);
   const turns = listTurns(buildRunView(messages), liveRunId, readStopRecord);
   return (
     <section

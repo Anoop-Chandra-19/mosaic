@@ -5,6 +5,7 @@ import { MODEL_PROVIDERS_CHANNELS } from '@shared/ipc/appChannels';
 import { listUsedModels } from '../db/conversations/runs';
 import { isModelProviderId } from '../model-providers/createModelProvider';
 import { listOllamaModels } from '../model-providers/model-lists/ollamaModels';
+import { listOpenAiCompatibleModels } from '../model-providers/model-lists/openAiCompatibleModels';
 
 /** Runs recorded with a provider this build no longer knows are left out. */
 function readUsedModels(db: Database | undefined): UsedModel[] {
@@ -27,5 +28,9 @@ export function registerModelProviderHandlers(
   ipcMain.handle(MODEL_PROVIDERS_CHANNELS.ollamaModels, (event, address: unknown) => {
     refuseOtherFrames(event);
     return listOllamaModels(net.fetch, address);
+  });
+  ipcMain.handle(MODEL_PROVIDERS_CHANNELS.openAiCompatibleModels, (event, address: unknown) => {
+    refuseOtherFrames(event);
+    return listOpenAiCompatibleModels(net.fetch, address);
   });
 }

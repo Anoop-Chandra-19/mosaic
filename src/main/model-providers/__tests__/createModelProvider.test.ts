@@ -13,7 +13,17 @@ const choice = (provider: ModelProviderId): ModelChoice => ({
   provider,
   model: 'gpt-5.6-terra',
   ollama: { address: 'http://127.0.0.1:11434', contextTokens: null },
+  openAiCompatible: { address: 'http://127.0.0.1:8080' },
 });
+
+const REQUEST = {
+  model: 'gpt-5.6-terra',
+  system: '',
+  messages: [{ role: 'user' as const, text: 'Tighten my summary.' }],
+  tools: [],
+  cacheKey: 'mosaic-conversation-1',
+  signal: new AbortController().signal,
+};
 
 type ReadApiKey = ModelProviderNeeds['readApiKey'];
 
@@ -39,11 +49,17 @@ describe('createModelProvider', () => {
     });
   });
 
-  it('opens Ollama without asking for a key', async () => {
+  it.each([
+    ['ollama', 'http://127.0.0.1:11434/api/chat'],
+    ['openaiCompatible', 'http://127.0.0.1:8080/v1/chat/completions'],
+  ] as const)('opens %s at its address without asking for a key', async (provider, expectedUrl) => {
     const readApiKey = vi.fn(async () => undefined);
-    expect(await createModelProvider(choice('ollama'), needs(readApiKey))).toMatchObject({
-      ok: true,
-    });
+    const opened = needs(readApiKey);
+    const created = await createModelProvider(choice(provider), opened);
+    if (!created.ok) throw new Error('not opened');
+    await created.modelProvider.streamReply(REQUEST)[Symbol.asyncIterator]().next();
+
+    expect(opened.fetch.mock.calls[0][0]).toBe(expectedUrl);
     expect(readApiKey).not.toHaveBeenCalled();
   });
 
@@ -60,15 +76,7 @@ describe('createModelProvider', () => {
     const opened = needs(async () => 'sk-test-0000');
     const created = await createModelProvider(choice(provider), opened);
     if (!created.ok) throw new Error('not opened');
-    const request = {
-      model: 'gpt-5.6-terra',
-      system: '',
-      messages: [{ role: 'user' as const, text: 'Tighten my summary.' }],
-      tools: [],
-      cacheKey: 'mosaic-conversation-1',
-      signal: new AbortController().signal,
-    };
-    await created.modelProvider.streamReply(request)[Symbol.asyncIterator]().next();
+    await created.modelProvider.streamReply(REQUEST)[Symbol.asyncIterator]().next();
 
     const [url, init] = opened.fetch.mock.calls[0];
     expect(url).toBe(expectedUrl);

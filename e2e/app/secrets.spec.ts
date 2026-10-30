@@ -126,7 +126,7 @@ test('a pasted key with spaces is caught before anything is sent', async ({ laun
     const settings = await goToAiSettings(page);
     await settings.getByRole('switch', { name: 'Enable AI assistant' }).click();
     await settings.getByRole('button', { name: 'Provider' }).click();
-    await page.getByRole('menuitemradio', { name: /^OpenAI/ }).click();
+    await page.getByRole('menuitemradio', { name: /^OpenAI(?!-)/ }).click();
 
     await settings.getByRole('textbox', { name: 'OpenAI API key' }).fill('sk-part one');
     await settings.getByRole('button', { name: 'Save' }).click();

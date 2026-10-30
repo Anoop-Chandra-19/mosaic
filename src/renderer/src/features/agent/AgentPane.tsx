@@ -12,6 +12,7 @@ import { useOverlayStore } from '@/stores/overlayStore';
 import { explainFailure, showToast } from '@/stores/toastStore';
 import { AGENT_PANE_WIDTH, useUiStore } from '@/stores/uiStore';
 import { AgentPromptBox } from './prompt-box/AgentPromptBox';
+import { shortModelName } from './shortModelName';
 import { AgentTranscript } from './transcript/AgentTranscript';
 import { useChosenModel } from './useChosenModel';
 import { stopAgentRun, useRunningRun } from './useRunningRun';
@@ -124,7 +125,7 @@ export function AgentPane() {
 
       <footer className="border-t border-line px-4 py-2.5">
         <Text as="p" variant="secondary" className="text-ink-faint">
-          {providerLabel} · <Text variant="meta">{model}</Text>
+          {providerLabel} · <Text variant="meta">{shortModelName(model)}</Text>
           {' · '}
           <AppButton
             variant="link"

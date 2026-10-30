@@ -41,6 +41,12 @@ export const MODEL_PROVIDER_OPTIONS: ModelProviderOption[] = [
     trust: 'Local',
     hint: 'Runs locally for maximum privacy.',
   },
+  {
+    id: 'openaiCompatible',
+    label: 'OpenAI-compatible',
+    trust: 'Local',
+    hint: 'Your own server: LM Studio, llama.cpp, vLLM and others.',
+  },
 ];
 
 export const MODEL_PROVIDER_OPTION_BY_ID = MODEL_PROVIDER_OPTIONS.reduce(

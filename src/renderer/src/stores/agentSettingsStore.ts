@@ -1,13 +1,18 @@
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
-import { DEFAULT_OLLAMA_ADDRESS } from '@shared/model-providers/serverAddress';
+import {
+  DEFAULT_OLLAMA_ADDRESS,
+  DEFAULT_OPENAI_COMPATIBLE_ADDRESS,
+} from '@shared/model-providers/serverAddress';
 import { settingsStorage } from '@/lib/services/settingsStorage';
 import { AGENT_SETTINGS_KEY, type ModelProviderId } from '@shared/types/modelProviders';
 
 /**
  * Each provider's current mid tier — capable enough for resume writing, without the top
  * tier's price. Checked against the providers' model lists on 2026-09-14. Ollama's has to
- * be pulled first (`ollama pull qwen3.5:9b`); Test checks the others can be reached.
+ * be pulled first (`ollama pull qwen3.5:9b`); Test checks the others can be reached. An
+ * OpenAI-compatible server's models are its own, so that one is only a name to send until
+ * one is picked: llama.cpp runs what it loaded whatever the name, and the others say so.
  */
 export const DEFAULT_MODEL_BY_PROVIDER: Record<ModelProviderId, string> = {
   openai: 'gpt-5.6-terra',
@@ -15,6 +20,7 @@ export const DEFAULT_MODEL_BY_PROVIDER: Record<ModelProviderId, string> = {
   google: 'gemini-3.8-flash',
   ollama: 'qwen3.5:9b',
   openrouter: 'openai/gpt-5.6-terra',
+  openaiCompatible: 'default',
 };
 
 const DEFAULT_AGENT_SETTINGS = {
@@ -25,6 +31,7 @@ const DEFAULT_AGENT_SETTINGS = {
   ollamaAddress: DEFAULT_OLLAMA_ADDRESS,
   /** Null leaves the window to Ollama's own setting. */
   ollamaContextTokens: null as number | null,
+  openAiCompatibleAddress: DEFAULT_OPENAI_COMPATIBLE_ADDRESS,
 };
 
 const isKnownProvider = (value: unknown): value is ModelProviderId =>
@@ -46,10 +53,13 @@ interface AgentSettingsState {
   modelsByProvider: Record<ModelProviderId, string>;
   ollamaAddress: string;
   ollamaContextTokens: number | null;
+  openAiCompatibleAddress: string;
   setEnabled: (enabled: boolean) => void;
   /** Takes an address already checked with `normalizeOllamaAddress`. */
   setOllamaAddress: (address: string) => void;
   setOllamaContextTokens: (tokens: number | null) => void;
+  /** Takes an address already checked with `normalizeOpenAiCompatibleAddress`. */
+  setOpenAiCompatibleAddress: (address: string) => void;
   setProvider: (provider: ModelProviderId) => void;
   setModelForProvider: (provider: ModelProviderId, model: string) => void;
   setModelForActiveProvider: (model: string) => void;
@@ -62,6 +72,7 @@ export const useAgentSettingsStore = create<AgentSettingsState>()(
       setEnabled: (enabled) => set({ enabled }),
       setOllamaAddress: (ollamaAddress) => set({ ollamaAddress }),
       setOllamaContextTokens: (ollamaContextTokens) => set({ ollamaContextTokens }),
+      setOpenAiCompatibleAddress: (openAiCompatibleAddress) => set({ openAiCompatibleAddress }),
       setProvider: (provider) => set({ provider }),
       setModelForProvider: (provider, model) =>
         set((state) => ({

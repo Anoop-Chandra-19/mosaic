@@ -41,7 +41,8 @@ before anything is saved.
 ### AI when you want it
 
 AI is optional and off by default. The resume builder is complete without it. Configuration
-for local models through Ollama is in place, and AI features are in progress.
+for local models through Ollama or an OpenAI-compatible server is in place, and AI features
+are in progress.
 
 ### Who it's for
 
@@ -77,7 +78,7 @@ src/
     window/       # The window, its page and menu, and saving before it closes
     agent/        # The assistant's runs: the loop, tool rounds through the page, stop layers
     model-providers/ # The model providers: picking one for Settings' choice
-      adapters/   # One per provider (Anthropic, Google, Ollama, OpenAI, OpenRouter)
+      adapters/   # One per provider (Anthropic, Google, Ollama, OpenAI, OpenAI-compatible, OpenRouter)
       model-lists/ # Model lists for Settings, and API key tests
   preload/        # The only bridge to the renderer: window.mosaic
   shared/
