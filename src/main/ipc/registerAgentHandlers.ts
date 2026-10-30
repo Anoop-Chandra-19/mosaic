@@ -16,6 +16,7 @@ import type { DevSwitches } from '@shared/types/devTools';
 import { createAgentRuns, type AgentRuns, type RunPage } from '../agent/agentRuns';
 import { createScriptedModelProvider } from '../dev/scriptedModelProvider';
 import { createModelProvider } from '../model-providers/createModelProvider';
+import { isKeyedProvider } from '@shared/types/secrets';
 import type { ApiKeys } from '../secrets/apiKeys';
 import { createAgentHandlers } from './agentHandlers';
 
@@ -71,6 +72,16 @@ export function registerAgentHandlers(
       readDevSwitches?.().scriptedModel
         ? { ok: true, modelProvider: createScriptedModelProvider() }
         : createModelProvider(choice, { fetch: net.fetch, readApiKey: apiKeys.read }),
+    noteKeyAnswer: ({ provider }, answer, runStartedAt) => {
+      if (!isKeyedProvider(provider)) return;
+      const noted =
+        answer === 'refused'
+          ? apiKeys.markRefused(provider, runStartedAt)
+          : apiKeys.clearRefused(provider);
+      noted.catch((error: unknown) =>
+        console.warn(`Couldn't note the ${provider} key's answer.`, error)
+      );
+    },
   });
   const handlers = createAgentHandlers(runs, openDb);
   const handle = (

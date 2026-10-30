@@ -16,7 +16,7 @@ import type { ModelProvider } from '../model-providers/modelProvider';
 import type { Wait } from './abortableWaits';
 import { createIpcToolBridge, type IpcToolBridge } from './ipcToolBridge';
 import { readModelChoice } from './readModelChoice';
-import { startAgentRun, type AgentAsk } from './startAgentRun';
+import { startAgentRun, type AgentAsk, type AgentRunEnd } from './startAgentRun';
 
 /*
  * The assistant's runs as the page sees them, and this module's entry: one at a time,
@@ -40,9 +40,13 @@ export interface AgentRunsNeeds {
   /** Asked at each start: Erase swaps the connection for a fresh file. */
   currentDb: () => Database;
   createProvider: (choice: ModelChoice) => Promise<ModelProviderOpening>;
+  /** What a run's end said about the key it started with. */
+  noteKeyAnswer?: (choice: ModelChoice, answer: KeyAnswer, runStartedAt: number) => void;
   limits?: RunLimitSettings;
   wait?: Wait;
 }
+
+export type KeyAnswer = 'refused' | 'worked';
 
 export interface AgentRuns {
   start(page: RunPage, request: AgentStartRequest): Promise<AgentStart>;
@@ -78,6 +82,12 @@ interface RunSetup {
 }
 
 const refused = (reason: AgentStartRefusal): AgentStart => ({ ok: false, reason });
+
+/** Only a refusal or a finished run says anything about the key; any other stop may not. */
+function readKeyAnswer({ stopReason, providerErrorReason }: AgentRunEnd): KeyAnswer | null {
+  if (providerErrorReason === 'keyRefused') return 'refused';
+  return stopReason === undefined ? 'worked' : null;
+}
 
 /** Numbers each event within its run, from 1. */
 function numberEvents(page: RunPage) {
@@ -115,6 +125,7 @@ export function createAgentRuns(needs: AgentRunsNeeds): AgentRuns {
     const stop = new AbortController();
     const bridge = createIpcToolBridge((call) => page.sendToolCall(call));
     const onEvent = numberEvents(page);
+    const startedAt = Date.now();
     const run = startAgentRun({
       db,
       ask,
@@ -130,7 +141,10 @@ export function createAgentRuns(needs: AgentRunsNeeds): AgentRuns {
     const stopWatchingPage = page.watchGone(() => stop.abort());
     const ended = run.ended
       .then(
-        () => {},
+        (end) => {
+          const answer = readKeyAnswer(end);
+          if (answer) needs.noteKeyAnswer?.(choice, answer, startedAt);
+        },
         (error: unknown) => {
           // Already stored as the run's stop; the page still has to hear the run ended.
           console.error('The assistant’s run failed:', error);

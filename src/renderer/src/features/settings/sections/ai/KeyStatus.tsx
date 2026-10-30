@@ -5,6 +5,7 @@ import type { KeyState } from './apiKeyWords';
 const KEY_STATES: Record<KeyState, { label: string; text: string; dot: string }> = {
   local: { label: 'On this computer', text: 'text-ink-faint', dot: 'bg-ink-muted' },
   none: { label: 'No key', text: 'text-ink-faint', dot: 'bg-line-heavy' },
+  refused: { label: 'Key refused', text: 'text-warn-text', dot: 'bg-warn' },
   unchecked: {
     label: 'Saved, not checked',
     text: 'text-ink-faint',

@@ -150,7 +150,7 @@ describe('a run', () => {
     const { run } = ask({
       replies: [[{ type: 'error', error: { reason: 'keyRefused', httpStatus: 401 } }]],
     });
-    expect(await run).toEqual({ stopReason: 'providerError' });
+    expect(await run).toEqual({ stopReason: 'providerError', providerErrorReason: 'keyRefused' });
 
     const carryOn = ask({
       replies: [[say('Here it is.'), DONE]],

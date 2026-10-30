@@ -3,7 +3,7 @@ import { RUN_LIMITS, type RunLimitSettings } from '@shared/agent/runLimitSetting
 import { AGENT_TOOLS } from '@shared/agent-tools/agentTools';
 import type { RunStopReason } from '@shared/types/agentConversation';
 import type { AgentRunEvent } from '@shared/types/agentRunEvents';
-import type { ModelUsage } from '@shared/types/modelReply';
+import type { ModelProviderError, ModelUsage } from '@shared/types/modelReply';
 import { readConversationLog } from '../db/conversations/messages';
 import {
   endRun,
@@ -60,6 +60,8 @@ export interface AgentRunRequest {
 export interface AgentRunEnd {
   /** Absent when the model finished. */
   stopReason?: RunStopReason;
+  /** Why the provider turned the run down, when it did. */
+  providerErrorReason?: ModelProviderError['reason'];
 }
 
 /** A run stored as started; `ended` settles once its end is stored too. */
@@ -190,7 +192,7 @@ async function runToEnd(request: AgentRunRequest, run: StartedRun): Promise<Agen
     const stop = await loopSteps(request, run, usage);
     endRun(db, run, stop, usage.total);
     request.onEvent?.({ type: 'runEnded', stopReason: stop?.reason }, run);
-    return { stopReason: stop?.reason };
+    return { stopReason: stop?.reason, providerErrorReason: stop?.providerError?.reason };
   } catch (error) {
     failRun(db, run, describeFault(error), usage.total);
     throw error;

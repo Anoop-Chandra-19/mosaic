@@ -4,8 +4,9 @@ import type { RunStopReason, RunStoppedMessageBody } from '@shared/types/agentCo
 import type { ModelProviderError } from '@shared/types/modelReply';
 import type { NoticeWords } from '../noticeWords';
 import { describeStartRefusal } from '../startRefusalWords';
-import { describeStop } from '../stopWords';
+import { describeStop, findKeySavedSince } from '../stopWords';
 
+const dated = (savedAt: number) => ({ where: 'keychain' as const, savedAt, checkedAt: savedAt });
 const ANTHROPIC = { provider: 'anthropic', model: 'claude-sonnet-5-5' };
 const OLLAMA = { provider: 'ollama', model: 'llama3.1:8b' };
 const ADDRESS = 'http://localhost:11434';
@@ -105,6 +106,32 @@ describe('what each notice says', () => {
         { kind: 'again' },
       ],
     });
+  });
+
+  it('says so when a new key was saved after a refusal, and leads with sending again', () => {
+    const stop: RunStoppedMessageBody = {
+      type: 'runStopped',
+      reason: 'providerError',
+      providerError: PROVIDER_ERRORS.keyRefused,
+    };
+    const stopped = { model: ANTHROPIC, stoppedAt: 1_000 };
+    const savedAt = new Date(2026, 9, 29, 14, 6).getTime();
+
+    expect(findKeySavedSince(stopped, { anthropic: dated(500) })).toBeNull();
+    expect(findKeySavedSince(stopped, { openai: dated(savedAt) })).toBeNull();
+    expect(findKeySavedSince(stopped, { anthropic: dated(savedAt) })).toBe(savedAt);
+
+    expect(describeStop(stop, ANTHROPIC, ADDRESS)).toMatchObject({
+      did: 'Used the API key you saved in Settings.',
+      actions: [{ kind: 'settings' }, { kind: 'link' }, { kind: 'again' }],
+    });
+    const words = describeStop(stop, ANTHROPIC, ADDRESS, savedAt);
+    expect(words?.did).toMatch(/^New key saved at .+\.$/);
+    expect(words?.actions).toMatchObject([
+      { kind: 'again', isPrimary: true },
+      { kind: 'settings' },
+      { kind: 'link' },
+    ]);
   });
 
   it('says the limit a stop layer counted to, and why Mosaic refused', () => {
