@@ -1,4 +1,5 @@
 import type { ProcessMemory } from '@shared/types/devTools';
+import { devService } from '../devService';
 
 export interface MemoryRow {
   name: string;
@@ -52,7 +53,7 @@ function sumByName(processes: readonly ProcessMemory[]): ProcessMemory[] {
 
 /** What each process holds now, and the change since the check before. */
 export async function runMemoryCheck(): Promise<MemoryCheck> {
-  const processes = sumByName((await window.mosaic.dev?.readMemory()) ?? []);
+  const processes = sumByName(await devService.readMemory());
   const before = lastCheck;
   const rows = processes.map((process) =>
     compareRow(process.name, process.isUtility, toMegabytes(process.kilobytes), before)

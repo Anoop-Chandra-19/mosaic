@@ -4,10 +4,11 @@ import { useResumeStore } from '@/stores/resumeStore';
 import { useTemplateStore } from '@/stores/templateStore';
 import { showToast } from '@/stores/toastStore';
 import { useViewPlaceStore } from '@/stores/viewPlaceStore';
+import { devService } from '../devService';
 
 /** Goes back to the view the window was last on; one that is gone says why in a toast. */
 export async function reopenLastView(): Promise<void> {
-  const address = await window.mosaic.dev?.readReopenAddress();
+  const address = await devService.readReopenAddress();
   if (!address) return;
   const resolution = await goToViewAddress(address);
   if ('error' in resolution) {
@@ -27,7 +28,7 @@ export function keepViewForReopen(): () => void {
     const address = describeCurrentView();
     if (address === kept) return;
     kept = address;
-    void window.mosaic.dev?.saveReopenAddress(address);
+    void devService.saveReopenAddress(address);
   };
   keep();
   const stops = PLACE_STORES.map((store) => store.subscribe(keep));

@@ -13,6 +13,7 @@ import {
 } from '@/components/ui-kit';
 import { backUpNow, chooseBackup, fileFailure } from '@/features/backup/backupFiles';
 import { formatRelativeTime } from '@/features/templates/formatRelativeTime';
+import { filesService } from '@/lib/services/filesService';
 import { useOverlayStore } from '@/stores/overlayStore';
 import { explainFailure, showToast } from '@/stores/toastStore';
 import { saveDraftOrStop, useResumeStore } from '@/stores/resumeStore';
@@ -42,7 +43,7 @@ export function ImportExportSection({ onCloseSettings }: { onCloseSettings: () =
 
   useEffect(() => {
     let isCurrent = true;
-    void window.mosaic.backup.status().then((status) => {
+    void filesService.backupStatus().then((status) => {
       if (isCurrent) setBackup(status);
     });
     return () => {
@@ -151,7 +152,7 @@ export function ImportExportSection({ onCloseSettings }: { onCloseSettings: () =
           value={backup?.frequency ?? 'off'}
           disabled={!backup}
           onValueChange={(value) =>
-            void changeSchedule(() => window.mosaic.backup.setFrequency(value as BackupFrequency))
+            void changeSchedule(() => filesService.setBackupFrequency(value as BackupFrequency))
           }
         >
           <AppSelectTrigger className="w-28" aria-label="Scheduled backup">
@@ -184,7 +185,7 @@ export function ImportExportSection({ onCloseSettings }: { onCloseSettings: () =
           <AppButton
             variant="outline"
             size="sm"
-            onClick={() => void changeSchedule(() => window.mosaic.backup.chooseFolder())}
+            onClick={() => void changeSchedule(() => filesService.chooseBackupFolder())}
           >
             Change…
           </AppButton>

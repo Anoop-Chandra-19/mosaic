@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { ShieldCheck } from 'lucide-react';
 import { AppButton, Note } from '@/components/ui-kit';
 import { ConfirmDeleteDialog } from '@/components/ConfirmDeleteDialog';
+import { appService } from '@/lib/services/appService';
 import { forgetApiKeys, useSecretsStatus } from '@/stores/secretsStore';
 import { attempt, showToast } from '@/stores/toastStore';
 import { useUiStore } from '@/stores/uiStore';
@@ -37,8 +38,7 @@ export function PrivacySection() {
 
   const erase = async () => {
     setErasing(true);
-    // Main forgets the keys first, then deletes the database.
-    const erasure = window.mosaic.app.eraseAll();
+    const erasure = appService.eraseAll();
     if (!(await attempt(erasure, 'Could not erase everything'))) {
       setErasing(false);
       return;

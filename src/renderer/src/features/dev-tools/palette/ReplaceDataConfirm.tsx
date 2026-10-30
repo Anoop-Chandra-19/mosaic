@@ -4,6 +4,7 @@ import { formatCount } from '@/features/import/formatCount';
 import { ShortcutKeys } from '@/features/shortcuts/ShortcutKeys';
 import { cn } from '@/lib/utils';
 import { useTemplateStore } from '@/stores/templateStore';
+import { devService } from '../devService';
 import type { DataReplacement } from '../tools/devTool';
 
 interface ReplaceDataConfirmProps {
@@ -28,7 +29,7 @@ export function ReplaceDataConfirm({ replacement, onCancel, onReplace }: Replace
   const here = useDataHere();
   const [folder, setFolder] = useState<string | null>(null);
   useEffect(() => {
-    void window.mosaic.dev?.readDataFolder().then(setFolder);
+    void devService.readDataFolder().then(setFolder);
   }, []);
 
   return (

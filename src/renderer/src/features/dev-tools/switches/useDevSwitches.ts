@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { devService } from '../devService';
 import { useDevToolsStore } from '../devToolsStore';
 import { formatDevWindowTitle } from './devSwitches';
 import { showMeasuredBoxOutlines } from './outlineMeasuredBoxes';
@@ -12,7 +13,7 @@ let keptSwitchesLoad: Promise<void> | null = null;
  */
 function loadKeptSwitches(): Promise<void> {
   keptSwitchesLoad ??= (async () => {
-    const switches = await window.mosaic.dev?.readSwitches();
+    const switches = await devService.readSwitches();
     if (!switches) return;
     if (switches.reopenView) await reopenLastView();
     useDevToolsStore.setState({ switches });

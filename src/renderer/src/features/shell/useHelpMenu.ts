@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { copyViewAddress } from '@/features/view-address/viewAddress';
+import { appService } from '@/lib/services/appService';
 import { useOverlayStore } from '@/stores/overlayStore';
 import { attempt, showToast } from '@/stores/toastStore';
 import type { HelpMenuCommand } from '@shared/ipc/appChannels';
@@ -17,6 +18,6 @@ const HELP_ACTIONS: Record<HelpMenuCommand, () => void> = {
 /** Answers the menu bar's Help, in every build. */
 export function useHelpMenu(): void {
   useEffect(() => {
-    window.mosaic.app.onHelpMenu((command) => HELP_ACTIONS[command]());
+    appService.onHelpMenu((command) => HELP_ACTIONS[command]());
   }, []);
 }

@@ -1,4 +1,5 @@
 import { goToView } from '@/features/view-address/viewAddress';
+import { appService } from '@/lib/services/appService';
 import { showProgressToast } from '@/stores/toastStore';
 import { useTemplateStore } from '@/stores/templateStore';
 import type { BundleTemplate, ImportMode } from '@shared/types/bundle';
@@ -22,7 +23,7 @@ let isLoading = false;
 
 /** As Settings' Erase does: everything goes, and the app starts again as on first run. */
 async function eraseEverything(): Promise<string> {
-  await window.mosaic.app.eraseAll();
+  await appService.eraseAll();
   window.location.reload();
   return '';
 }

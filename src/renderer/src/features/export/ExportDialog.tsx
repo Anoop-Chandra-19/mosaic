@@ -28,6 +28,7 @@ import {
 import { CHOICE_CARD_CLASSES } from '@/components/kit/controlStyles';
 import { useActiveTemplate } from '@/features/templates/useActiveTemplate';
 import { buildExportName, toFileName } from '@/lib/files/fileNames';
+import { filesService } from '@/lib/services/filesService';
 import { HeaderLinkControls } from '@/components/HeaderLinkControls';
 import { describeLinkLook } from '@shared/resume/resumeHeader';
 import { easeHeightChanges } from '@/lib/motion/easeHeightChanges';
@@ -128,7 +129,7 @@ function ExportForm({ version, onDone }: { version: ExportVersion | null; onDone
     const fileName = toFileName(name, format.extension);
     try {
       const content = await renderExport(format.id, source(), options);
-      const saved = await window.mosaic.files.save(format.fileType, fileName, content);
+      const saved = await filesService.save(format.fileType, fileName, content);
       // Cancelled: stay, so a different name or format is one click away.
       if (saved === null) return;
       showToast(`Saved ${saved}`);
