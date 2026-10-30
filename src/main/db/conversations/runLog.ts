@@ -54,6 +54,7 @@ export type ToolAnswer = Omit<ToolCallEnd, 'runId' | 'resultMessageId'> & {
   content: string;
   isError: boolean;
   target?: ToolTarget;
+  durationMs?: number;
 };
 
 export type RunStop = Omit<RunStoppedMessageBody, 'type'>;
@@ -167,11 +168,13 @@ export function storeToolAnswers(db: Database, run: ConversationRun, answers: To
       runId: run.runId,
       body: {
         type: 'toolResults',
-        results: answers.map(({ callId, content, isError, target }) => ({
+        results: answers.map(({ callId, content, isError, target, status, durationMs }) => ({
           callId,
           content,
           ...(isError ? { isError: true } : {}),
           ...(target ? { target } : {}),
+          ...(status === 'cancelled' ? { notRun: true } : {}),
+          ...(durationMs === undefined ? {} : { durationMs }),
         })),
       },
     });

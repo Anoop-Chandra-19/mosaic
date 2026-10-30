@@ -20,6 +20,7 @@ export function buildRunView(messages: TranscriptMessage[]): RunView[] {
         runId,
         model: runModel,
         startedAt: createdAt,
+        lastAt: createdAt,
         ask: null,
         switchedTo: null,
         parts: [],
@@ -28,6 +29,7 @@ export function buildRunView(messages: TranscriptMessage[]): RunView[] {
       };
       runs.push(run);
     }
+    run.lastAt = createdAt;
     addToRun(run, body, createdAt);
   }
   return runs;
@@ -49,13 +51,21 @@ function addToRun(run: RunView, body: TranscriptMessageBody, createdAt: number):
         const call = run.parts.find(
           (part) => part.type === 'toolCall' && part.callId === result.callId
         );
-        if (call?.type === 'toolCall') call.status = result.isError ? 'refused' : 'done';
+        if (call?.type !== 'toolCall') continue;
+        call.status = readToolStatus(result);
+        if (result.target) call.target = result.target;
+        if (result.durationMs !== undefined) call.durationMs = result.durationMs;
       }
       return;
     case 'runStopped':
       run.stop = body;
       run.stoppedAt = createdAt;
   }
+}
+
+function readToolStatus({ isError, notRun }: { isError?: boolean; notRun?: boolean }) {
+  if (notRun) return 'notRun';
+  return isError ? 'refused' : 'done';
 }
 
 function toRunPart(part: TranscriptReplyPart): RunPart {

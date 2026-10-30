@@ -62,6 +62,10 @@ export interface ToolResult {
   isError?: boolean;
   /** Absent in older bodies, and for a call that named nothing the run could find. */
   target?: ToolTarget;
+  /** The run ended before this call ran, so its error says nothing about the call. */
+  notRun?: boolean;
+  /** From the call beginning, its arguments included, to its answer. Absent in older bodies. */
+  durationMs?: number;
 }
 
 export interface ToolResultsMessageBody {

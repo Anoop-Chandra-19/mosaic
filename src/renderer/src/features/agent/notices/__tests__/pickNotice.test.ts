@@ -11,6 +11,7 @@ const run = (runId: number, stop: RunStopReason | null, hasText = false): RunVie
   runId,
   model: { provider: 'anthropic', model: 'claude-sonnet-5-5' },
   startedAt: 0,
+  lastAt: 0,
   ask: null,
   switchedTo: null,
   parts: hasText ? [{ type: 'text', text: 'Rewriting the Twilio bullet.' }] : [],

@@ -221,6 +221,9 @@ async function* readMessageEvents(
         if (block?.type === 'thinking' || block?.type === 'redactedThinking') {
           yield { type: 'reasoningStart' };
         }
+        if (block?.type === 'toolUse') {
+          yield { type: 'toolCallStart', callId: block.callId, name: block.name };
+        }
         break;
       }
       case 'content_block_delta': {

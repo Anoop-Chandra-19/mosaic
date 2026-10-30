@@ -37,7 +37,12 @@ describe('ReplyMarkdown', () => {
     expect(render('Read [the posting](https://exa', true)).toBe(
       '<div><p>Read the posting▍</p></div>'
     );
-    expect(render('', true)).toBe('<p>▍</p>');
+  });
+
+  it('while writing nothing yet, shows the wait, with no caret', () => {
+    const markup = render('', true);
+    expect(markup).toContain('<svg');
+    expect(markup).not.toContain('▍');
   });
 
   it('while writing, holds back a line of markers alone until its words come', () => {

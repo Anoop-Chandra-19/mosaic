@@ -122,11 +122,13 @@ interface CallUnderWay {
   callId: string;
   name: string;
   args: string;
+  isAnnounced: boolean;
 }
 
 /**
- * The stream's chunks as our events. Calls arrive in pieces by index and go on whole at
- * the end; usage comes in the last chunk, after the finish reason.
+ * The stream's chunks as our events. Calls arrive in pieces by index: each is announced once
+ * its id and name are here, and goes on whole at the end. Usage comes in the last chunk,
+ * after the finish reason.
  */
 export async function* readChatCompletionsStream<Piece>(
   chunks: AsyncIterable<ChatCompletionChunk>,
@@ -156,7 +158,13 @@ export async function* readChatCompletionsStream<Piece>(
       reasoning = null;
     }
     if (delta.content) yield { type: 'textDelta', text: delta.content };
-    for (const piece of delta.tool_calls ?? []) addCallPiece(calls, piece);
+    for (const piece of delta.tool_calls ?? []) {
+      const call = addCallPiece(calls, piece);
+      if (!call.isAnnounced && call.callId && call.name) {
+        call.isAnnounced = true;
+        yield { type: 'toolCallStart', callId: call.callId, name: call.name };
+      }
+    }
     finishReason = choice.finish_reason ?? finishReason;
   }
   if (reasoning) yield endReasoning(reasoning, dialect.reasoning, now);
@@ -185,12 +193,13 @@ function endReasoning<Piece>(
 function addCallPiece(
   calls: Map<number, CallUnderWay>,
   piece: ChatCompletionChunk.Choice.Delta.ToolCall
-): void {
-  const call = calls.get(piece.index) ?? { callId: '', name: '', args: '' };
+): CallUnderWay {
+  const call = calls.get(piece.index) ?? { callId: '', name: '', args: '', isAnnounced: false };
   call.callId = piece.id ?? call.callId;
   call.name = piece.function?.name ?? call.name;
   call.args += piece.function?.arguments ?? '';
   calls.set(piece.index, call);
+  return call;
 }
 
 function finishEvent(finishReason: string, usage: CompletionUsage | undefined): ModelStreamEvent {

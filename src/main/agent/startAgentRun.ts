@@ -164,6 +164,7 @@ async function loopSteps(
       db,
       run,
       calls,
+      callStartedAt: reply.callStartedAt,
       bridge,
       signal,
       limits,

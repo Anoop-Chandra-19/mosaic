@@ -197,8 +197,13 @@ describe('stopping a run', () => {
       {
         type: 'toolResults',
         results: [
-          { callId: 'c3', content: 'order mixes lists', isError: true },
-          { callId: 'c4', content: 'Not run: the run stopped.', isError: true },
+          {
+            callId: 'c3',
+            content: 'order mixes lists',
+            isError: true,
+            durationMs: expect.any(Number),
+          },
+          { callId: 'c4', content: 'Not run: the run stopped.', isError: true, notRun: true },
         ],
       },
       { type: 'runStopped', reason: 'repeatedCall', detail: 'order mixes lists' },

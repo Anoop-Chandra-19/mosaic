@@ -55,6 +55,7 @@ describe('buildRunView', () => {
         runId: 1,
         model: { provider: 'ollama', model: 'qwen3.5:9b' },
         startedAt: 1000,
+        lastAt: 4000,
         ask: 'Tighten my bullets.',
         switchedTo: null,
         parts: [
@@ -77,12 +78,45 @@ describe('buildRunView', () => {
         runId: 2,
         model: { provider: 'ollama', model: 'qwen3.5:9b' },
         startedAt: 6000,
+        lastAt: 8000,
         ask: null,
         switchedTo: { templateId: 't2', label: 'Data, startups' },
         parts: [{ type: 'text', text: 'Cut' }],
         stop,
         stoppedAt: 8000,
       },
+    ]);
+  });
+
+  it('keeps what each call was about, and tells a call never run from a refused one', () => {
+    const target = { kind: 'version', version: 'v3' } as const;
+    const [run] = buildRunView(
+      messages([
+        [
+          3,
+          {
+            type: 'assistant',
+            content: [
+              { type: 'toolCall', callId: 'c1', name: 'read_newest_version', args: {} },
+              { type: 'toolCall', callId: 'c2', name: 'read_document', args: {} },
+            ],
+          },
+        ],
+        [
+          3,
+          {
+            type: 'toolResults',
+            results: [
+              { callId: 'c1', target, durationMs: 1200 },
+              { callId: 'c2', isError: true, notRun: true },
+            ],
+          },
+        ],
+      ])
+    );
+    expect(run.parts).toMatchObject([
+      { callId: 'c1', status: 'done', target, durationMs: 1200 },
+      { callId: 'c2', status: 'notRun' },
     ]);
   });
 

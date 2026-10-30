@@ -32,6 +32,9 @@ export interface LiveRun {
   stepStart: number;
   retrying: RunRetry | null;
   hasEnded: boolean;
+  /** When it ended, and whether anything stopped it before the model finished. */
+  endedAt: number | null;
+  wasStopped: boolean;
 }
 
 interface RunState {
@@ -53,6 +56,8 @@ const startLiveRun = ({ conversationId, runId }: AgentRunEnvelope): LiveRun => (
   stepStart: 0,
   retrying: null,
   hasEnded: false,
+  endedAt: null,
+  wasStopped: false,
 });
 
 const findToolCall = (run: LiveRun, callId: string) =>
@@ -84,26 +89,33 @@ function applyRunEvent(run: LiveRun, event: AgentRunEvent): void {
       else run.parts.push({ type: 'text', text: event.text });
       return;
     case 'reasoningStart':
-      run.parts.push({ type: 'reasoning', durationMs: null });
+      run.parts.push({ type: 'reasoning', durationMs: null, startedAt: Date.now() });
       return;
     case 'reasoningEnd':
       if (last?.type === 'reasoning') last.durationMs = event.durationMs;
       return;
     case 'toolCall':
+      if (findToolCall(run, event.callId)) return;
       run.parts.push({
         type: 'toolCall',
         callId: event.callId,
         name: event.name,
         status: 'running',
+        startedAt: Date.now(),
       });
       return;
     case 'toolResult': {
       const call = findToolCall(run, event.callId);
-      if (call?.type === 'toolCall') call.status = event.isError ? 'refused' : 'done';
+      if (call?.type !== 'toolCall') return;
+      call.status = event.isError ? 'refused' : 'done';
+      if (event.target) call.target = event.target;
+      if (event.durationMs !== undefined) call.durationMs = event.durationMs;
       return;
     }
     case 'runEnded':
       run.hasEnded = true;
+      run.endedAt = Date.now();
+      run.wasStopped = event.stopReason !== undefined;
   }
 }
 

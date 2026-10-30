@@ -5,19 +5,20 @@ import { useActiveTemplate } from '@/features/templates/useActiveTemplate';
 import { cn } from '@/lib/utils';
 import { useConversationStore } from '@/stores/conversationStore';
 import { useRunStore } from '@/stores/runStore';
-import type { RunPart, RunView } from '@/types/agentRunView';
+import type { RunView } from '@/types/agentRunView';
 import { describeStop } from '../notices/stopWords';
 import { useServerAddresses } from '../notices/useServerAddresses';
+import { RunActivity } from '../run-line/RunActivity';
 import { buildRunView } from './buildRunView';
-import { ReplyText } from './ReplyText';
 import { RunRecord } from './RunRecord';
 import { useStickToNewest } from './useStickToNewest';
 
 /*
  * The open conversation, a run at a time: the resume it moved to, what was asked, what
- * the assistant wrote, and the record line a stop leaves (`RunRecord`, worded by
- * `notices/stopWords.ts`; the notice over the box says the rest). The run under way reads from `runStore`, so only its reply re-renders
- * as it streams; once stored, it reads from the transcript like the rest.
+ * the assistant did and wrote (`run-line/`), and the record line a stop leaves (`RunRecord`,
+ * worded by `notices/stopWords.ts`; the notice over the box says the rest). The run under
+ * way reads from `runStore`, so only its reply re-renders as it streams; once stored, it
+ * reads from the transcript like the rest.
  */
 
 type TurnKind = 'switch' | 'ask' | 'reply';
@@ -37,8 +38,6 @@ interface Turn {
   kind: TurnKind;
   node: ReactNode;
 }
-
-const NO_PARTS: RunPart[] = [];
 
 function TurnSpark() {
   return (
@@ -89,23 +88,36 @@ function SwitchRow({ label }: { label: string }) {
   );
 }
 
-function LiveReply() {
-  const parts = useRunStore((s) => s.live?.parts ?? NO_PARTS);
-  const isWriting = useRunStore((s) => s.live !== null && !s.live.hasEnded);
-  return <ReplyText parts={parts} isWriting={isWriting} />;
-}
-
-const hasText = (run: RunView) => run.parts.some((part) => part.type === 'text');
-
 /** What a stopped run's record line says; null for one that finished, or the user's Stop. */
 type ReadStopRecord = (run: RunView) => string | null;
 
-/** The reply, between the lines a Send again and a stop leave in the run. */
-function StoredReply({ run, stopRecord }: { run: RunView; stopRecord: string | null }) {
+interface RunReplyProps {
+  run: RunView;
+  isLive: boolean;
+  stopRecord: string | null;
+}
+
+/**
+ * The reply, between the lines a Send again and a stop leave in the run. One element whether
+ * the run is under way or stored, so the run line keeps its place when the run ends. The
+ * live run comes from `runStore`, so only this re-renders as it streams.
+ */
+function RunReply({ run, isLive, stopRecord }: RunReplyProps) {
+  const live = useRunStore((s) => (isLive ? s.live : null));
+  const startedAt = live?.startedAt ?? run.startedAt;
+  const endedAt = live ? (live.endedAt ?? startedAt) : run.lastAt;
   return (
     <>
-      {run.ask === null && <RunRecord text="Sent again" at={run.startedAt} isAgain />}
-      {hasText(run) && <ReplyText parts={run.parts} />}
+      {!isLive && run.ask === null && <RunRecord text="Sent again" at={run.startedAt} isAgain />}
+      <RunActivity
+        parts={live?.parts ?? run.parts}
+        state={{
+          isRunning: live !== null && !live.hasEnded,
+          isStopped: live ? live.wasStopped : run.stop !== null,
+        }}
+        startedAt={startedAt}
+        elapsedMs={endedAt - startedAt}
+      />
       {stopRecord !== null && run.stoppedAt !== null && (
         <RunRecord text={`Stopped: ${stopRecord}`} at={run.stoppedAt} />
       )}
@@ -127,13 +139,13 @@ function listRunTurns(run: RunView, isLive: boolean, readStopRecord: ReadStopRec
     turns.push({ key: `${run.runId}-ask`, kind: 'ask', node: <AskBubble text={run.ask} /> });
   }
   const stopRecord = isLive ? null : readStopRecord(run);
-  if (isLive || hasText(run) || stopRecord !== null || run.ask === null) {
+  if (isLive || run.parts.length > 0 || stopRecord !== null || run.ask === null) {
     turns.push({
       key: `${run.runId}-reply`,
       kind: 'reply',
       node: (
         <AssistantTurn>
-          {isLive ? <LiveReply /> : <StoredReply run={run} stopRecord={stopRecord} />}
+          <RunReply run={run} isLive={isLive} stopRecord={stopRecord} />
         </AssistantTurn>
       ),
     });
@@ -156,6 +168,7 @@ function listTurns(
             runId: liveRunId,
             model: null,
             startedAt: 0,
+            lastAt: 0,
             ask: null,
             switchedTo: null,
             parts: [],

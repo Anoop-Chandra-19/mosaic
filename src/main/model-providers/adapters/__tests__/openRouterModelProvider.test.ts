@@ -212,7 +212,7 @@ describe('createOpenRouterModelProvider', () => {
     });
   });
 
-  it('merges reasoning pieces to send back, and passes on calls whole once they end', async () => {
+  it('merges reasoning pieces to send back, says a call began, and passes it on whole at the end', async () => {
     const piece = (detail: Delta) =>
       chunk({ reasoning: detail.text ?? null, reasoning_details: [detail] });
     const callPiece = (index: number, call: Delta) => chunk({ tool_calls: [{ index, ...call }] });
@@ -250,6 +250,8 @@ describe('createOpenRouterModelProvider', () => {
         durationMs: 400,
         providerState: { type: 'openrouter', details: [SIGNED_THINKING] },
       },
+      { type: 'toolCallStart', callId: 'call_1', name: 'propose_rewrite' },
+      { type: 'toolCallStart', callId: 'call_2', name: 'propose_rewrite' },
       {
         type: 'toolCall',
         callId: 'call_1',

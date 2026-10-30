@@ -153,6 +153,9 @@ async function* readResponseEvents(
           reasoningStartedAt = now();
           yield { type: 'reasoningStart' };
         }
+        if (event.item.type === 'function_call') {
+          yield { type: 'toolCallStart', callId: event.item.call_id, name: event.item.name };
+        }
         break;
       // Whole items, so a call's arguments arrive complete rather than in deltas.
       case 'response.output_item.done':

@@ -40,6 +40,12 @@ describe('the live run', () => {
     });
   });
 
+  it('keeps one row for a call told of as it begins and again once whole', () => {
+    const begun = { type: 'toolCall', callId: 'c1', name: 'read_document' } as const;
+    follow(4, [{ type: 'stepStarted', step: 1 }, begun, begun]);
+    expect(useRunStore.getState().live?.parts).toHaveLength(1);
+  });
+
   it('drops what a step streamed when it is retried, until the request says anything', () => {
     const error = { reason: 'unreachable' } as const;
     follow(4, [
