@@ -3,10 +3,10 @@ import { AppSwitch, Note, Text } from '@/components/ui-kit';
 import { isLocalServerAddress } from '@shared/model-providers/serverAddress';
 import { cn } from '@/lib/utils';
 import { DEFAULT_MODEL_BY_PROVIDER, useAgentSettingsStore } from '@/stores/agentSettingsStore';
+import { useSecretsStatus } from '@/stores/secretsStore';
 import type { ModelProviderId } from '@shared/types/modelProviders';
 import { isKeyedProvider, type KeyedProvider } from '@shared/types/secrets';
 import { SettingRow } from '../SettingRow';
-import { useSecretsStatus } from '../useSecretsStatus';
 import { ApiKeyRow } from './ai/ApiKeyRow';
 import { readKeyState } from './ai/apiKeyWords';
 import { KeyedModelRow } from './ai/KeyedModelRow';
@@ -33,7 +33,7 @@ export function AiSection() {
   const setOllamaAddress = useAgentSettingsStore((s) => s.setOllamaAddress);
   const ollamaContextTokens = useAgentSettingsStore((s) => s.ollamaContextTokens);
   const setOllamaContextTokens = useAgentSettingsStore((s) => s.setOllamaContextTokens);
-  const { status, loadFailed, show } = useSecretsStatus();
+  const { status, loadFailed } = useSecretsStatus();
 
   const active = MODEL_PROVIDER_OPTION_BY_ID[provider];
   const modelFor = (id: ModelProviderId) =>
@@ -101,7 +101,6 @@ export function AiSection() {
               provider={provider}
               status={status}
               loadFailed={loadFailed}
-              onStatus={show}
               onKeyChecked={handleKeyChecked}
             />
             <KeyedModelRow

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { secretsService } from '@/lib/services/secretsService';
 import type { KeyedProvider, ModelListing, SavedKey } from '@shared/types/secrets';
 
 export type ModelListAnswer = ReturnType<typeof useModelList>;
@@ -29,7 +30,7 @@ export function useModelList(
     const answered = (listing: ModelListing) => {
       if (current) setAnswer({ provider, savedAt, asked, listing });
     };
-    window.mosaic.secrets.listModels(provider, asked > 0).then(answered, (error: unknown) => {
+    secretsService.listModels(provider, asked > 0).then(answered, (error: unknown) => {
       console.error('Could not list the models', error);
       answered({ ok: false, reason: 'failed' });
     });

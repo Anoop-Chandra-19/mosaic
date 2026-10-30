@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { catchUpConversation } from '@/stores/conversationStore';
 import { useRunStore } from '@/stores/runStore';
+import { loadSecretsStatus } from '@/stores/secretsStore';
 import type { AgentRunEnvelope } from '@shared/types/agentBridge';
 
 /*
@@ -8,7 +9,8 @@ import type { AgentRunEnvelope } from '@shared/types/agentBridge';
  * (`runStore`). When its conversation is the open one, its first event shows what it
  * opened with (the user's message, a switch of resume), and at its end the transcript
  * reads what it stored; only then is the live copy dropped, so the run never blinks out
- * between the two. A run in another conversation carries on in the background.
+ * between the two. A run in another conversation carries on in the background. A run's
+ * end can also say something about its API key, so the saved keys are read again then.
  */
 
 const catchUp = (conversationId: number) =>
@@ -24,7 +26,10 @@ async function foldEndedRun({ conversationId, runId }: AgentRunEnvelope): Promis
 function followRunEnvelope(envelope: AgentRunEnvelope): void {
   useRunStore.getState().followRunEvent(envelope);
   if (envelope.seq === 1) void catchUp(envelope.conversationId);
-  if (envelope.event.type === 'runEnded') void foldEndedRun(envelope);
+  if (envelope.event.type === 'runEnded') {
+    void foldEndedRun(envelope);
+    void loadSecretsStatus();
+  }
 }
 
 /** Follows every run's events; returns the call that stops. */
