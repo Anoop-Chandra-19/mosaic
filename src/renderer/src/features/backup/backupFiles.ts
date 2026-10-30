@@ -1,4 +1,5 @@
 import { parseBundle, type BundleParseResult } from '@shared/vault/parseBundle';
+import { filesService } from '@/lib/services/filesService';
 import { saveDraftOrStop } from '@/stores/resumeStore';
 import type { BackupStatus } from '@shared/types/backup';
 import type { MosaicBundle, OpenedBackup } from '@shared/types/bundle';
@@ -27,7 +28,7 @@ export async function backUpNow(): Promise<
 > {
   // The backup should hold the edits still waiting to be saved.
   await saveDraftOrStop();
-  return window.mosaic.backup.backUpNow();
+  return filesService.backUpNow();
 }
 
 /** A chosen file Mosaic cannot restore; the message says why, for the user. */
@@ -57,7 +58,7 @@ export function readBackup(fileName: string, text: string): OpenedBackup {
  * with an `UnreadableBackupError` if the file is not one Mosaic can restore.
  */
 export async function chooseBackup(): Promise<OpenedBackup | null> {
-  const file = await window.mosaic.files.open('json');
+  const file = await filesService.open('json');
   return file && readBackup(file.name, decodeText(file.bytes));
 }
 

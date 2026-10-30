@@ -12,6 +12,7 @@ import {
 } from '@/components/ui-kit';
 import { fileFailure } from '@/features/backup/backupFiles';
 import { easeHeightChanges } from '@/lib/motion/easeHeightChanges';
+import { filesService } from '@/lib/services/filesService';
 
 import { cn } from '@/lib/utils';
 import { useDialog, useOverlayStore } from '@/stores/overlayStore';
@@ -113,7 +114,7 @@ function PickStep({
 
   const choose = async () => {
     try {
-      const file = await window.mosaic.files.open('import');
+      const file = await filesService.open('import');
       if (file) await onFile(file.name, file.bytes);
     } catch (error) {
       onFileError(unreadable(error, 'Mosaic couldn’t open that file.'));

@@ -41,6 +41,21 @@ read comes from (cache or main) and what a write makes stale are the service's c
 along with `getDb()` (ESLint refuses the rest, `DbError` aside). A component that reads
 as it renders sits inside a `ReadBoundary`.
 
+## Calling main
+
+Only service files touch `window.mosaic` (`platform` aside, which is a fact, not a call):
+`lib/services/`, and `features/dev-tools/devService.ts` for the tools' own. This is a
+convention, not a lint rule. A service is named for what it does and reads `window.mosaic`
+when called, never at import. State several screens share goes through a store
+(`secretsStore`); a call only one screen makes may use a service directly.
+
+- A read with a sensible answer when it fails goes through `readOr`: it logs, answers, and
+  never rejects, so the screen has no catch to write.
+- An action the user started rejects, and the screen says so, usually with `attempt`. Wording
+  and toasts never live in a service.
+- An answer main expects to give (a refused key check, a refused start) stays a result, not
+  a failure.
+
 ## UI foundation
 
 - Screens import shared primitives from `@/components/ui-kit`, grouping named imports into

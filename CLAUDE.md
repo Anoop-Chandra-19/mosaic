@@ -48,11 +48,12 @@ Paths below are relative to the repository root. Read the relevant files before 
   Build output is `out/`.
 - React 19 + React Compiler, TypeScript, Tailwind v4, Zustand, Radix/shadcn, Lucide.
   `@/` maps to `src/renderer/src/`; `@shared/` maps to `src/shared/`.
-- Renderer has no Node, raw IPC, or network. Use only `window.mosaic`: `db`, `files`
-  (main's Save/Open dialogs), `secrets` (write-only keys), `modelProviders` (Ollama's
-  pulled models), `agent` (the assistant's runs, which happen in main; the page runs their
-  tools), and `app`. Main owns SQLite and validates every argument; database refusals use
-  `DbResult` codes (`not-found`, `stale-rev`, `invalid-argument`).
+- Renderer has no Node, raw IPC, or network. Use only `window.mosaic`, through the services
+  in `src/renderer/CLAUDE.md`: `db`, `files` (main's Save/Open dialogs), `backup`, `secrets`
+  (write-only keys), `modelProviders` (Ollama's pulled models), `agent` (the assistant's runs,
+  which happen in main; the page runs their tools), and `app`. Main owns SQLite and validates
+  every argument; database refusals use `DbResult` codes (`not-found`, `stale-rev`,
+  `invalid-argument`).
 - `src/shared/` is for environment-neutral contracts and logic used across processes:
   no React, DOM, or Electron implementations. Renderer-only code stays in the renderer.
 - Keep feature code and tests together, folders flat until subfolders help navigation,

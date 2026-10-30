@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { ALL_DEV_SWITCHES_OFF, type DevSwitch, type DevSwitches } from '@shared/types/devTools';
+import { devService } from './devService';
 
 /**
  * What the tools show outside the palette: the switches on, and what is under way (a load),
@@ -23,6 +24,6 @@ export function showUnderWay(underWay: string | null): void {
 /** Turns a switch on or off and keeps it, main applying the motion ones at once. */
 export async function setDevSwitch(name: DevSwitch, isOn: boolean): Promise<void> {
   const switches = { ...useDevToolsStore.getState().switches, [name]: isOn };
-  await window.mosaic.dev?.saveSwitches(switches);
+  await devService.saveSwitches(switches);
   useDevToolsStore.setState({ switches });
 }

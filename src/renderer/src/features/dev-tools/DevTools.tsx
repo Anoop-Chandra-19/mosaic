@@ -2,6 +2,7 @@ import { useEffect, useEffectEvent, useState } from 'react';
 import { AppDialog } from '@/components/ui-kit';
 import { useTargetRequest, useTargetStore } from '@/stores/targetStore';
 import type { DevToolRun } from '@shared/types/devTools';
+import { devService } from './devService';
 import { installDevTestHook } from './devTestHook';
 import { DevToolsPalette } from './palette/DevToolsPalette';
 import { addRecentRun } from './palette/recentRuns';
@@ -46,8 +47,8 @@ export function DevTools() {
 
   useEffect(() => {
     installDevTestHook();
-    void window.mosaic.dev?.readRecent().then(setRecent);
-    window.mosaic.dev?.onOpenTools(() => useTargetStore.getState().requestTarget('devTools'));
+    void devService.readRecent().then(setRecent);
+    devService.onOpenTools(() => useTargetStore.getState().requestTarget('devTools'));
     // Captured, so a field or a dialog that handles its own keys still lets this one through.
     window.addEventListener('keydown', onKeyDown, { capture: true });
     return () => window.removeEventListener('keydown', onKeyDown, { capture: true });
@@ -56,7 +57,7 @@ export function DevTools() {
   const rememberRun = (run: DevToolRun) => {
     const next = addRecentRun(recent, run);
     setRecent(next);
-    void window.mosaic.dev?.saveRecent(next);
+    void devService.saveRecent(next);
   };
 
   return (
