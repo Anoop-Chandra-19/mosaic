@@ -1,6 +1,6 @@
 import { ShieldCheck } from 'lucide-react';
 import { AppSwitch, Note, Text } from '@/components/ui-kit';
-import { isLocalOllamaAddress } from '@shared/model-providers/ollamaAddress';
+import { isLocalServerAddress } from '@shared/model-providers/serverAddress';
 import { cn } from '@/lib/utils';
 import { DEFAULT_MODEL_BY_PROVIDER, useAgentSettingsStore } from '@/stores/agentSettingsStore';
 import type { ModelProviderId } from '@shared/types/modelProviders';
@@ -76,7 +76,7 @@ export function AiSection() {
           <SettingRow
             label="Provider"
             description={
-              provider === 'ollama' && !isLocalOllamaAddress(ollamaAddress)
+              provider === 'ollama' && !isLocalServerAddress(ollamaAddress)
                 ? 'Bring your own key. Ollama runs on your own hardware, here on your network.'
                 : 'Bring your own key. Ollama runs entirely on your computer, so nothing leaves it.'
             }

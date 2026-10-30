@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
-import { DEFAULT_OLLAMA_ADDRESS } from '@shared/model-providers/ollamaAddress';
+import { DEFAULT_OLLAMA_ADDRESS } from '@shared/model-providers/serverAddress';
 import { settingsStorage } from '@/lib/storage/settingsStorage';
 import { AGENT_SETTINGS_KEY, type ModelProviderId } from '@shared/types/modelProviders';
 

@@ -1,4 +1,4 @@
-import { normalizeOllamaAddress } from '@shared/model-providers/ollamaAddress';
+import { normalizeOllamaAddress } from '@shared/model-providers/serverAddress';
 import type { OllamaModel, OllamaModels } from '@shared/types/modelProviders';
 
 const TIMEOUT_MS = 3000;

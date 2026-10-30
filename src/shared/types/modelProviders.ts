@@ -16,13 +16,20 @@ export interface OllamaModel {
   loadedContextTokens: number | null;
 }
 
-export type OllamaModels =
-  | { ok: true; models: OllamaModel[] }
-  /**
-   * `unreachable`: nothing answered at the address. `failed`: something answered, but not
-   * like Ollama. `invalid-address`: the address isn't one (see `normalizeOllamaAddress`).
-   */
-  | { ok: false; reason: 'unreachable' | 'failed' | 'invalid-address' };
+/**
+ * `unreachable`: nothing answered at the address. `failed`: something answered, but not
+ * like the server it should be. `invalid-address`: the address isn't one
+ * (see `serverAddress.ts`).
+ */
+export type ServerModelsFailure = {
+  ok: false;
+  reason: 'unreachable' | 'failed' | 'invalid-address';
+};
+
+export type OllamaModels = { ok: true; models: OllamaModel[] } | ServerModelsFailure;
+
+/** The model names an OpenAI-compatible server lists, which is all it says about them. */
+export type OpenAiCompatibleModels = { ok: true; models: string[] } | ServerModelsFailure;
 
 /** A provider and model the assistant has run with. */
 export interface UsedModel {
