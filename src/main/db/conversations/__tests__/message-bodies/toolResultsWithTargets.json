@@ -1,0 +1,47 @@
+{
+  "type": "toolResults",
+  "results": [
+    {
+      "callId": "call-1",
+      "content": "Resume: Platform (the draft)",
+      "target": { "kind": "resume", "sections": ["Summary", "Experience"] }
+    },
+    {
+      "callId": "call-2",
+      "content": "Newest version: v3.1",
+      "target": { "kind": "version", "version": "v3.1" }
+    },
+    {
+      "callId": "call-3",
+      "content": "Staged.",
+      "target": { "kind": "place", "section": "Experience", "entry": "Lumen", "bullet": 3 }
+    },
+    {
+      "callId": "call-4",
+      "content": "Staged.",
+      "target": {
+        "kind": "place",
+        "section": "Experience",
+        "entry": "Lumen",
+        "bullet": 1,
+        "lastBullet": 2
+      }
+    },
+    {
+      "callId": "call-5",
+      "content": "Staged.",
+      "target": { "kind": "place", "section": "Skills", "line": 2, "show": false }
+    },
+    {
+      "callId": "call-6",
+      "content": "Staged.",
+      "target": { "kind": "list", "of": "bullet", "section": "Experience", "entry": "Lumen" }
+    },
+    {
+      "callId": "call-7",
+      "content": "\"Go\" is in no bullet or line.",
+      "isError": true,
+      "target": { "kind": "term", "find": "Go", "replace": "Golang", "count": 0 }
+    }
+  ]
+}

@@ -16,6 +16,7 @@ import { refuse, type AgentToolRun, type ToolAnswer, type ToolCallContext } from
 import { checkAgentToolArgs } from './checkAgentToolArgs';
 import { lookUpReceipt } from './lookUpReceipt';
 import { compileProposeCall } from './propose/compileProposeCall';
+import { describeProposeTarget } from './propose/describeProposeTarget';
 import { stageCompiledCall } from './propose/stageSuggestions';
 import { readAgentToolArgs } from './readAgentToolArgs';
 import { readDocument } from './read/readDocument';
@@ -32,7 +33,8 @@ import { readNewestVersion } from './read/readNewestVersion';
  *   draft is the run's receipt.
  * - `propose/` compiles the call (`compileProposeCall.ts`): the tool's own step turns it
  *   into what it can mean, and the rules every change goes through decide what is staged
- *   for review (`stageSuggestions.ts`).
+ *   for review (`stageSuggestions.ts`). What the call was about goes with its answer, for
+ *   the pane (`describeProposeTarget.ts`).
  *
  * Other modules use this file and `agentToolRun.ts`, which holds what a run's tools keep.
  */
@@ -71,7 +73,11 @@ function compileAndStage<N extends ProposeToolName>(
   const context = readToolCallContext(run);
   // The check held the arguments to the schema these types describe.
   const args = checkedArgs as ProposeToolArgs[N];
-  return stageCompiledCall(context, compileProposeCall(context, name, args));
+  const target = describeProposeTarget(context, name, args);
+  return {
+    ...stageCompiledCall(context, compileProposeCall(context, name, args)),
+    ...(target && { target }),
+  };
 }
 
 async function runWithCheckedArgs(

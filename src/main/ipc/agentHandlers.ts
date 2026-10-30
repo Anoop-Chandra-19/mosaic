@@ -11,6 +11,7 @@ import type { TranscriptMessage } from '@shared/types/agentConversation';
 import type { AgentRuns, RunPage } from '../agent/agentRuns';
 import { readLastConversationId } from '../db/conversations/conversations';
 import { readMessagePage } from '../db/conversations/messages';
+import { isToolTarget } from '../db/conversations/validateMessageBody';
 
 /*
  * Main's side of `MosaicAgent`, kept free of Electron so tests can drive it directly;
@@ -90,12 +91,21 @@ function toolAnswer(value: unknown): AgentToolAnswer {
     return { ok: false, message: answer.message.slice(0, MAX_TOOL_ANSWER_LENGTH) };
   }
   if (answer.ok !== true) throw new Error('an answer must say whether the tool ran');
-  const { content, isError, draft } = request(answer.result);
+  const { content, isError, draft, target } = request(answer.result);
   if (typeof content !== 'string' || content.length > MAX_TOOL_ANSWER_LENGTH) {
     throw new Error(`content must be text of at most ${MAX_TOOL_ANSWER_LENGTH} characters`);
   }
   if (typeof isError !== 'boolean') throw new Error('isError must be true or false');
-  return { ok: true, result: { content, isError, draft: draftStamp(draft) } };
+  return {
+    ok: true,
+    result: {
+      content,
+      isError,
+      draft: draftStamp(draft),
+      // Only for the pane to word: one that can't be read costs a note, not the model's answer.
+      ...(isToolTarget(target) && { target }),
+    },
+  };
 }
 
 export function createAgentHandlers(runs: AgentRuns, currentDb: () => Database): AgentHandlers {

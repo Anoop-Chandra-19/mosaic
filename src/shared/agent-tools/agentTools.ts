@@ -1,3 +1,4 @@
+import type { ToolTarget } from '../types/agentConversation';
 import type { ModelTool } from '../types/modelTool';
 import { PROPOSE_TOOLS, type ProposeToolArgs } from './proposeTools.ts';
 import { READ_TOOLS, type ReadToolArgs } from './readTools.ts';
@@ -27,6 +28,8 @@ export interface AgentToolResult {
   isError: boolean;
   /** The open draft when the call ran, which a later read is compared with. None open: null. */
   draft: { templateId: string; rev: number } | null;
+  /** What the call was about, for the pane; the model never reads it. */
+  target?: ToolTarget;
 }
 
 export const AGENT_TOOLS: Record<AgentToolName, ModelTool> = {

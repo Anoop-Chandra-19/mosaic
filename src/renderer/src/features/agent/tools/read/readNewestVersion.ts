@@ -46,6 +46,7 @@ export async function readNewestVersion(run: AgentToolRun): Promise<ToolAnswer> 
       describeChangesSince(version.doc, getResumeSnapshot()),
       '',
       formatResumeForModel(version.doc, run.handles),
-    ].join('\n')
+    ].join('\n'),
+    { kind: 'version', version: versionLabel(version) }
   );
 }

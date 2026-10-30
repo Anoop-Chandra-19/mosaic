@@ -1,4 +1,4 @@
-import type { RunStopReason } from './agentConversation';
+import type { RunStopReason, ToolTarget } from './agentConversation';
 import type { ModelProviderError } from './modelReply';
 
 /**
@@ -16,6 +16,6 @@ export type AgentRunEvent =
   | { type: 'reasoningStart' }
   | { type: 'reasoningEnd'; durationMs: number }
   | { type: 'toolCall'; callId: string; name: string }
-  | { type: 'toolResult'; callId: string; isError: boolean }
+  | { type: 'toolResult'; callId: string; isError: boolean; target?: ToolTarget }
   /** `stopReason` is absent when the model finished. */
   | { type: 'runEnded'; stopReason?: RunStopReason };

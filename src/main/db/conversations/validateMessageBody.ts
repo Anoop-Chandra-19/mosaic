@@ -1,5 +1,5 @@
 import { isRecord } from '@shared/resume/validateResume';
-import type { MessageBody, RunStopReason } from '@shared/types/agentConversation';
+import type { MessageBody, RunStopReason, ToolTarget } from '@shared/types/agentConversation';
 import type { ModelProviderError, ModelReplyPart } from '@shared/types/modelReply';
 
 /*
@@ -72,10 +72,38 @@ const isProviderError = (error: unknown) =>
   isOptional(error.httpStatus, isCount) &&
   CHECK_BY_PROVIDER_ERROR[error.reason as ModelProviderError['reason']](error);
 
+const isPositive = (value: unknown) => isCount(value) && (value as number) > 0;
+
+const LIST_UNITS: ReadonlySet<unknown> = new Set(['section', 'entry', 'bullet', 'line']);
+
+const CHECK_BY_TARGET_KIND: Record<ToolTarget['kind'], Check> = {
+  resume: (target) => Array.isArray(target.sections) && target.sections.every(isString),
+  version: (target) => isString(target.version),
+  place: (target) =>
+    isString(target.section) &&
+    isOptional(target.entry, isString) &&
+    isOptional(target.bullet, isPositive) &&
+    isOptional(target.lastBullet, isPositive) &&
+    isOptional(target.line, isPositive) &&
+    isOptional(target.show, (show) => typeof show === 'boolean'),
+  list: (target) =>
+    LIST_UNITS.has(target.of) &&
+    isOptional(target.section, isString) &&
+    isOptional(target.entry, isString),
+  term: (target) => isString(target.find) && isString(target.replace) && isCount(target.count),
+};
+
+export const isToolTarget = (target: unknown): target is ToolTarget =>
+  isRecord(target) &&
+  isString(target.kind) &&
+  Object.hasOwn(CHECK_BY_TARGET_KIND, target.kind) &&
+  CHECK_BY_TARGET_KIND[target.kind as ToolTarget['kind']](target);
+
 const isToolResult: Check = (result) =>
   isString(result.callId) &&
   isString(result.content) &&
-  isOptional(result.isError, (isError) => typeof isError === 'boolean');
+  isOptional(result.isError, (isError) => typeof isError === 'boolean') &&
+  isOptional(result.target, isToolTarget);
 
 const CHECK_BY_MESSAGE_TYPE: Record<MessageBody['type'], Check> = {
   user: (body) =>

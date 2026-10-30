@@ -2,7 +2,7 @@ import type { Database } from 'better-sqlite3';
 import type { RunLimitSettings } from '@shared/agent/runLimitSettings';
 import type { AgentToolResult } from '@shared/agent-tools/agentTools';
 import type { AgentToolCall } from '@shared/types/agentBridge';
-import type { RunStopReason } from '@shared/types/agentConversation';
+import type { RunStopReason, ToolTarget } from '@shared/types/agentConversation';
 import type { AgentRunEvent } from '@shared/types/agentRunEvents';
 import type { ModelReplyPart } from '@shared/types/modelReply';
 import { storeToolAnswers } from '../db/conversations/runLog';
@@ -52,6 +52,7 @@ interface CallOutcome {
   status: ToolCallEnd['status'];
   checkName?: string;
   draft: DraftStamp | null;
+  target?: ToolTarget;
 }
 
 const NOT_RUN: Record<'cancelled' | 'stopped', string> = {
@@ -89,6 +90,7 @@ async function askPage(round: ToolRound, call: ToolCallPart): Promise<CallOutcom
       isError: answer.isError,
       status: answer.isError ? 'error' : 'ok',
       draft: answer.draft,
+      target: answer.target,
     };
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
@@ -115,7 +117,12 @@ export async function runToolRound(round: ToolRound): Promise<ToolRoundEnd> {
     }
     draft = outcome.draft;
     outcomes.push(outcome);
-    onEvent({ type: 'toolResult', callId: call.callId, isError: outcome.isError });
+    onEvent({
+      type: 'toolResult',
+      callId: call.callId,
+      isError: outcome.isError,
+      target: outcome.target,
+    });
   }
   stop ??= limits.noteStep(outcomes.filter((outcome) => outcome.status !== 'cancelled'));
 

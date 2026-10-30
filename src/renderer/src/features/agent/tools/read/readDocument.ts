@@ -19,5 +19,8 @@ export function readDocument(run: AgentToolRun): ToolAnswer {
 
   const template = useTemplateStore.getState().templates.find(({ id }) => id === templateId);
   const title = `Resume: ${template?.name ?? 'untitled'} (the draft)`;
-  return answer(`${title}\n\n${formatResumeForModel(doc, run.handles)}`);
+  return answer(`${title}\n\n${formatResumeForModel(doc, run.handles)}`, {
+    kind: 'resume',
+    sections: [...doc.sections].sort((a, b) => a.order - b.order).map(({ label }) => label),
+  });
 }

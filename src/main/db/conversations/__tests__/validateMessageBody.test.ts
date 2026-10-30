@@ -27,6 +27,20 @@ describe('isMessageBody', () => {
     expect(isMessageBody(body)).toBe(true);
   });
 
+  it('reads stored results that say what each call was about', () => {
+    expect(isMessageBody(readFixture('toolResultsWithTargets.json'))).toBe(true);
+  });
+
+  it.each([
+    ['an unknown kind', { kind: 'toString' }],
+    ['a place with no section', { kind: 'place', bullet: 1 }],
+    ['a bullet numbered from 0', { kind: 'place', section: 'Experience', bullet: 0 }],
+    ['a list of something else', { kind: 'list', of: 'word' }],
+  ])('refuses a target with %s', (_, target) => {
+    const body = { type: 'toolResults', results: [{ callId: 'c', content: '', target }] };
+    expect(isMessageBody(body)).toBe(false);
+  });
+
   it.each<MessageBody>([
     { type: 'user', text: '', resume: [], isLimit: false },
     { type: 'assistant', content: [] },
