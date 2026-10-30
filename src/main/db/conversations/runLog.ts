@@ -1,5 +1,9 @@
 import type { Database } from 'better-sqlite3';
-import type { RunStoppedMessageBody, RunStopReason } from '@shared/types/agentConversation';
+import type {
+  RunStoppedMessageBody,
+  RunStopReason,
+  ToolTarget,
+} from '@shared/types/agentConversation';
 import type { ModelReplyPart, ModelUsage } from '@shared/types/modelReply';
 import { getTemplate } from '../resumes/templates';
 import { StorageError } from '../storageError';
@@ -49,6 +53,7 @@ export interface StoredModelReply {
 export type ToolAnswer = Omit<ToolCallEnd, 'runId' | 'resultMessageId'> & {
   content: string;
   isError: boolean;
+  target?: ToolTarget;
 };
 
 export type RunStop = Omit<RunStoppedMessageBody, 'type'>;
@@ -162,10 +167,11 @@ export function storeToolAnswers(db: Database, run: ConversationRun, answers: To
       runId: run.runId,
       body: {
         type: 'toolResults',
-        results: answers.map(({ callId, content, isError }) => ({
+        results: answers.map(({ callId, content, isError, target }) => ({
           callId,
           content,
           ...(isError ? { isError: true } : {}),
+          ...(target ? { target } : {}),
         })),
       },
     });

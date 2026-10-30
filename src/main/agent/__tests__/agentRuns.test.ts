@@ -4,7 +4,7 @@ import { createDefaultResume } from '@shared/resume/defaultResume';
 import type { AgentRunEnvelope, AgentToolAnswer, AgentToolCall } from '@shared/types/agentBridge';
 import { AGENT_SETTINGS_KEY } from '@shared/types/modelProviders';
 import { openDatabase, type Database } from '../../db/connection';
-import { readConversationLog } from '../../db/conversations/messages';
+import { readConversationLog, readMessagePage } from '../../db/conversations/messages';
 import { createTemplate } from '../../db/resumes/templates';
 import { setSetting } from '../../db/settings';
 import {
@@ -97,7 +97,7 @@ function setUp({
   const ask = () =>
     runs.start(page, { conversationId: null, text: 'Tighten my summary.', templateId });
   const reloadPage = () => goneWatchers.forEach((onGone) => onGone());
-  return { runs, ask, ended, envelopes, reloadPage, goneWatchers };
+  return { runs, ask, ended, envelopes, reloadPage, goneWatchers, model };
 }
 
 describe('a run started from the page', () => {
@@ -235,6 +235,37 @@ describe('a run started from the page', () => {
         results: [{ callId: 'c2', content: 'The tool failed: Error: no view', isError: true }],
       },
     ]);
+  });
+
+  it('stores what a call was about and tells the page, but not the model', async () => {
+    const target = { kind: 'version', version: 'v3' } as const;
+    const { runs, ask, ended, envelopes, model } = setUp({
+      replies: [[callTool('c1', 'read_newest_version'), DONE], [DONE]],
+      answer: ({ runId, callId }) =>
+        runs.answerTool(runId, callId, {
+          ok: true,
+          result: { content: 'Newest version: v3', isError: false, draft: null, target },
+        }),
+    });
+    await ask();
+    await ended;
+
+    const [stored] = readConversationLog(db, 1).filter(({ body }) => body.type === 'toolResults');
+    expect(stored.body).toEqual({
+      type: 'toolResults',
+      results: [{ callId: 'c1', content: 'Newest version: v3', target }],
+    });
+    expect(envelopes.map(({ event }) => event)).toContainEqual({
+      type: 'toolResult',
+      callId: 'c1',
+      isError: false,
+      target,
+    });
+    expect(readMessagePage(db, 1, { limit: 50 }).map(({ body }) => body)).toContainEqual({
+      type: 'toolResults',
+      results: [{ callId: 'c1', isError: undefined, target }],
+    });
+    expect(JSON.stringify(model.requests.at(-1)?.messages)).not.toContain('"target"');
   });
 
   it('tells the page a run ended when a fault in Mosaic ended it', async () => {

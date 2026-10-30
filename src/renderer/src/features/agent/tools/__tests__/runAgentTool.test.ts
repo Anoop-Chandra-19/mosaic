@@ -500,6 +500,99 @@ describe("checking the model's work", () => {
   });
 });
 
+describe('what each call was about', () => {
+  beforeEach(async () => {
+    openDraft(makeResumeWithLines());
+    await readTheResume();
+  });
+
+  const EXPERIENCE = { kind: 'place', section: 'Experience' };
+  const HARBOR = { ...EXPERIENCE, entry: 'Harbor Freight Labs' };
+
+  it.each<[string, Record<string, unknown>, object]>([
+    ['propose_rewrite', { id: 'b2', text: 'Cut p99 latency.' }, { ...HARBOR, bullet: 2 }],
+    [
+      'propose_rewrite',
+      { id: 'l3', text: 'Docker' },
+      { kind: 'place', section: 'Skills', line: 2 },
+    ],
+    ['propose_rename', { sectionId: 's1', label: 'Work history' }, EXPERIENCE],
+    [
+      'propose_replace_everywhere',
+      { find: 'Postgres', replace: 'PostgreSQL' },
+      { kind: 'term', find: 'Postgres', replace: 'PostgreSQL', count: 2 },
+    ],
+    [
+      'propose_split',
+      { bulletId: 'b4', secondStartsWith: 'caching' },
+      { ...EXPERIENCE, entry: 'Lantern Maps', bullet: 1 },
+    ],
+    [
+      'propose_merge',
+      { firstBulletId: 'b1', secondBulletId: 'b2', text: 'Migrated billing and cut latency.' },
+      { ...HARBOR, bullet: 1, lastBullet: 2 },
+    ],
+    [
+      'propose_select',
+      { id: 'e2', show: false },
+      { ...EXPERIENCE, entry: 'Lantern Maps', show: false },
+    ],
+    [
+      'propose_reorder',
+      { order: ['b3', 'b1', 'b2'] },
+      { kind: 'list', of: 'bullet', section: 'Experience', entry: 'Harbor Freight Labs' },
+    ],
+    ['propose_reorder', { order: ['l3', 'l2'] }, { kind: 'list', of: 'line', section: 'Skills' }],
+    [
+      'propose_reorder',
+      { order: ['e2', 'e1'] },
+      { kind: 'list', of: 'entry', section: 'Experience' },
+    ],
+    ['propose_reorder', { order: ['s2', 's1', 's3'] }, { kind: 'list', of: 'section' }],
+    [
+      'propose_entry',
+      { sectionId: 's1', title: 'Intern', organization: 'Acme' },
+      { ...EXPERIENCE, entry: 'Acme' },
+    ],
+    [
+      'propose_entry',
+      { sectionId: 's1', title: 'Consultant' },
+      { ...EXPERIENCE, entry: 'Consultant' },
+    ],
+  ])('%s %o', async (name, args, target) => {
+    expect((await callTool(name, args)).target).toEqual(target);
+  });
+
+  it('names what a refused call tried, and nothing for a handle the run can’t find', async () => {
+    const refused = await callTool('propose_merge', {
+      firstBulletId: 'b1',
+      secondBulletId: 'b3',
+      text: 'Joined.',
+    });
+    expect(refused.isError).toBe(true);
+    expect(refused.target).toEqual({ ...HARBOR, bullet: 1, lastBullet: 3 });
+
+    const unknown = await callTool('propose_rewrite', { id: 'b99', text: 'Anything.' });
+    expect(unknown.isError).toBe(true);
+    expect(unknown.target).toBeUndefined();
+  });
+
+  it('keeps it out of what the model reads', async () => {
+    const { content } = await callTool('propose_rewrite', { id: 'b2', text: 'Cut p99 latency.' });
+    expect(content).not.toContain('Harbor Freight Labs');
+  });
+
+  it('names the sections read, in the order the read gives them', async () => {
+    const doc = makeResumeWithLines();
+    doc.sections.reverse();
+    openDraft(doc);
+    expect((await readTheResume()).target).toEqual({
+      kind: 'resume',
+      sections: ['Experience', 'Summary', 'Skills'],
+    });
+  });
+});
+
 describe('read_newest_version', () => {
   const makeVersion = (doc: ResumeData): Version => ({
     id: 'v1',
@@ -520,8 +613,9 @@ describe('read_newest_version', () => {
     const version = makeVersion(withBulletText('b1', 'Helped migrate billing'));
     storedVersions.list = [version];
     storedVersions.doc = version.doc;
-    const { content, isError } = await callTool('read_newest_version');
+    const { content, isError, target } = await callTool('read_newest_version');
     expect(isError).toBe(false);
+    expect(target).toEqual({ kind: 'version', version: 'v4.1' });
     expect(content).toContain('Newest version: v4.1 "Sent to Harbor", saved 2026-10-20 14:03.');
     expect(content).toMatch(/Since then: .*\(in Experience\)\./);
     expect(content).toContain('- b1: Helped migrate billing');

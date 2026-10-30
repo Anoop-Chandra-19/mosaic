@@ -23,6 +23,19 @@ const page: RunPage = { sendEvent: () => {}, sendToolCall: () => {}, watchGone: 
 const answer = (result: unknown) => ({ ok: true, result });
 
 describe('agent handlers', () => {
+  it('pass on what a call was about, and drop one that can’t be read', () => {
+    const { runs, handlers } = setUp();
+    const target = { kind: 'version', version: 'v3' };
+    const result = { content: '', isError: false, draft: null };
+    handlers.answerTool(2, 'c1', answer({ ...result, target }));
+    handlers.answerTool(2, 'c2', answer({ ...result, target: { kind: 'toString' } }));
+
+    expect(vi.mocked(runs.answerTool).mock.calls).toEqual([
+      [2, 'c1', { ok: true, result: { ...result, target } }],
+      [2, 'c2', { ok: true, result }],
+    ]);
+  });
+
   it('pass checked arguments on', () => {
     const { runs, handlers } = setUp();
     handlers.start(page, { conversationId: null, text: 'Tighten it.', templateId: 't1' });

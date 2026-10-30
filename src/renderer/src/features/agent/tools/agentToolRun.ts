@@ -1,4 +1,5 @@
 import type { AgentToolResult } from '@shared/agent-tools/agentTools';
+import type { ToolTarget } from '@shared/types/agentConversation';
 import type { Proposal } from '@shared/types/agentProposal';
 import type { ResumeData } from '@shared/types/resume';
 import { createResumeHandles, type ResumeHandles } from './resumeHandles';
@@ -56,7 +57,11 @@ export interface ToolCallContext {
 /** What one tool says back to the model; `runAgentTool` adds where the draft stood. */
 export type ToolAnswer = Omit<AgentToolResult, 'draft'>;
 
-export const answer = (content: string): ToolAnswer => ({ content, isError: false });
+export const answer = (content: string, target?: ToolTarget): ToolAnswer => ({
+  content,
+  isError: false,
+  ...(target && { target }),
+});
 
 export const refuse = (content: string): ToolAnswer => ({ content, isError: true });
 

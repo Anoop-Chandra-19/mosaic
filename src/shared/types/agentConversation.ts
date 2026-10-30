@@ -30,10 +30,38 @@ export interface AssistantMessageBody {
   finish?: 'complete' | 'outputLimit';
 }
 
+/**
+ * What a tool call was about, as it stood when the call ran: names and numbers for the pane
+ * to word, never wording, and never sent to the model. Bullets and lines count from 1.
+ */
+export type ToolTarget =
+  /** `sections` are the headings of what was read. */
+  | { kind: 'resume'; sections: string[] }
+  /** `version` as the history shows it: "v3.1". */
+  | { kind: 'version'; version: string }
+  | {
+      kind: 'place';
+      section: string;
+      /** The organization, or the title when there is none. */
+      entry?: string;
+      bullet?: number;
+      /** For a merge: the bullet it joins `bullet` to. */
+      lastBullet?: number;
+      line?: number;
+      /** For a call that leaves it off the page (false) or puts it back (true). */
+      show?: boolean;
+    }
+  /** The list a reorder changes: the sections, a section's, or an entry's. */
+  | { kind: 'list'; of: 'section' | 'entry' | 'bullet' | 'line'; section?: string; entry?: string }
+  /** `count` is how many bullets and lines use `find`. */
+  | { kind: 'term'; find: string; replace: string; count: number };
+
 export interface ToolResult {
   callId: string;
   content: string;
   isError?: boolean;
+  /** Absent in older bodies, and for a call that named nothing the run could find. */
+  target?: ToolTarget;
 }
 
 export interface ToolResultsMessageBody {
