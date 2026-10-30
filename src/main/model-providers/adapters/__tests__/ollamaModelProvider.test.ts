@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import type { ModelProviderError, ModelStreamEvent } from '@shared/types/modelReply';
-import type { ModelRequest } from '../modelProvider';
+import type { ModelRequest } from '../../modelProvider';
 import { createOllamaModelProvider } from '../ollamaModelProvider';
-import type { OllamaFetch } from '../ollamaModels';
+import type { OllamaFetch } from '../../model-lists/ollamaModels';
 
 const OLLAMA_URL = 'http://127.0.0.1:11434';
 

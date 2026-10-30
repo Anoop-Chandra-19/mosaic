@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { ModelStreamEvent } from '@shared/types/modelReply';
 import { createAnthropicModelProvider, type AnthropicFetch } from '../anthropicModelProvider';
-import type { ModelRequest } from '../modelProvider';
+import type { ModelRequest } from '../../modelProvider';
 
 const API_KEY = 'sk-ant-test-0000';
 

@@ -110,7 +110,7 @@ No ORM: `db/` is the layer every other module goes through, and ESLint enforces 
   e2e launches have no D-Bus session, so they never reach the desktop's keychain.
 - macOS ties keychain access to the code signature: release builds need a stable signing
   identity, or users are asked again after each update.
-- A check (`model-providers/testApiKey.ts`) lists the models the key can use
+- A check (`model-providers/model-lists/testApiKey.ts`) lists the models the key can use
   (`listModels.ts`, chat models only; for OpenRouter, ones that call tools), which costs no
   tokens. Settings warns from that list when it lacks the model in settings. Main keeps each key's
   last list in memory until Mosaic closes. The key travels only in a

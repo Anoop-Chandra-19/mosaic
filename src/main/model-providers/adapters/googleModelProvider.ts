@@ -19,9 +19,9 @@ import type {
   ModelUsage,
 } from '@shared/types/modelReply';
 import type { ModelTool } from '@shared/types/modelTool';
-import { describeNetworkError } from './describeNetworkError';
-import type { ModelMessage, ModelProvider, ModelRequest } from './modelProvider';
-import { PROVIDER_API_URL, REPLY_START_TIMEOUT_MS } from './providerEndpoints';
+import { describeNetworkError } from '../describeNetworkError';
+import type { ModelMessage, ModelProvider, ModelRequest } from '../modelProvider';
+import { PROVIDER_API_URL, REPLY_START_TIMEOUT_MS } from '../providerEndpoints';
 
 /*
  * Google, through the Gemini API's native `streamGenerateContent` (its OpenAI-compatible

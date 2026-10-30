@@ -6,7 +6,7 @@ import {
   type ModelListAnswer,
   type ModelListFetch,
 } from './listModels';
-import { PROVIDER_API_URL } from './providerEndpoints';
+import { PROVIDER_API_URL } from '../providerEndpoints';
 
 /** What the provider said about a key, with the reasons `KeyCheck` gives. Never echoes the key. */
 export type KeyTest = ModelListAnswer;

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { ModelStreamEvent } from '@shared/types/modelReply';
-import type { ModelRequest } from '../modelProvider';
+import type { ModelRequest } from '../../modelProvider';
 import type { OpenAiFetch } from '../openAiClient';
 import { createOpenAiModelProvider } from '../openAiModelProvider';
 

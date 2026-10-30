@@ -76,7 +76,9 @@ src/
     ipc/          # Database, file-dialog and assistant handlers
     window/       # The window, its page and menu, and saving before it closes
     agent/        # The assistant's runs: the loop, tool rounds through the page, stop layers
-    model-providers/ # Ollama, OpenAI and OpenRouter chat, Ollama's model list, API key tests
+    model-providers/ # The model providers: picking one for Settings' choice
+      adapters/   # One per provider (Anthropic, Google, Ollama, OpenAI, OpenRouter)
+      model-lists/ # Model lists for Settings, and API key tests
   preload/        # The only bridge to the renderer: window.mosaic
   shared/
     ipc/          # Channel names shared by main and preload

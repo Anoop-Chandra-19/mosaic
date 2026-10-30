@@ -7,7 +7,7 @@ import {
   type ModelChoice,
   type ModelProviderNeeds,
 } from '../createModelProvider';
-import type { OpenAiFetch } from '../openAiClient';
+import type { OpenAiFetch } from '../adapters/openAiClient';
 
 const choice = (provider: ModelProviderId): ModelChoice => ({
   provider,

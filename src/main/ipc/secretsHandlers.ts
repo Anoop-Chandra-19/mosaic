@@ -8,8 +8,8 @@ import {
   type MosaicSecrets,
   type SaveKeyOptions,
 } from '@shared/types/secrets';
-import type { ProviderModels } from '../model-providers/listModels';
-import type { KeyTest } from '../model-providers/testApiKey';
+import type { ProviderModels } from '../model-providers/model-lists/listModels';
+import type { KeyTest } from '../model-providers/model-lists/testApiKey';
 import { KeychainError, type ApiKeys } from '../secrets/apiKeys';
 
 /*

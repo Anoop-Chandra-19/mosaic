@@ -12,10 +12,10 @@ import {
   type ChatDelta,
   type ChatStreamDialect,
 } from './chatCompletionsStream';
-import type { ModelProvider, ModelRequest } from './modelProvider';
+import type { ModelProvider, ModelRequest } from '../modelProvider';
 import { createOpenAiClient, type OpenAiFetch } from './openAiClient';
-import { PROVIDER_API_URL } from './providerEndpoints';
-import { readRateLimit } from './readRateLimit';
+import { PROVIDER_API_URL } from '../providerEndpoints';
+import { readRateLimit } from '../readRateLimit';
 
 /*
  * OpenRouter, through its OpenAI-compatible Chat Completions (`chatCompletionsStream.ts`).

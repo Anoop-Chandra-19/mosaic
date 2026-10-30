@@ -1,7 +1,7 @@
 import { ipcMain, net, type IpcMainInvokeEvent } from 'electron';
 import type { MosaicSecrets } from '@shared/types/secrets';
 import { SECRETS_CHANNELS } from '@shared/ipc/appChannels';
-import { testApiKey } from '../model-providers/testApiKey';
+import { testApiKey } from '../model-providers/model-lists/testApiKey';
 import type { ApiKeys } from '../secrets/apiKeys';
 import { createSecretsHandlers } from './secretsHandlers';
 

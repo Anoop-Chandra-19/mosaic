@@ -16,9 +16,9 @@ import type {
   ModelUsage,
 } from '@shared/types/modelReply';
 import type { ModelTool } from '@shared/types/modelTool';
-import { describeNetworkError } from './describeNetworkError';
-import type { ModelMessage, ModelRequest } from './modelProvider';
-import { parseToolArguments } from './parseToolArguments';
+import { describeNetworkError } from '../describeNetworkError';
+import type { ModelMessage, ModelRequest } from '../modelProvider';
+import { parseToolArguments } from '../parseToolArguments';
 
 /*
  * OpenAI's Chat Completions, streamed through the `openai` SDK, for the adapters that

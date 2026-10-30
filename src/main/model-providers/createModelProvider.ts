@@ -2,14 +2,17 @@ import type { ModelProviderRefusal } from '@shared/types/agentBridge';
 import type { ModelProviderId } from '@shared/types/modelProviders';
 import { isKeyedProvider, type KeyedProvider } from '@shared/types/secrets';
 import { KeychainError } from '../secrets/apiKeys';
-import { createAnthropicModelProvider, type AnthropicFetch } from './anthropicModelProvider';
-import { createGoogleModelProvider, type GoogleFetch } from './googleModelProvider';
+import {
+  createAnthropicModelProvider,
+  type AnthropicFetch,
+} from './adapters/anthropicModelProvider';
+import { createGoogleModelProvider, type GoogleFetch } from './adapters/googleModelProvider';
+import { createOllamaModelProvider } from './adapters/ollamaModelProvider';
+import type { OpenAiFetch } from './adapters/openAiClient';
+import { createOpenAiModelProvider } from './adapters/openAiModelProvider';
+import { createOpenRouterModelProvider } from './adapters/openRouterModelProvider';
+import type { OllamaFetch } from './model-lists/ollamaModels';
 import type { ModelProvider } from './modelProvider';
-import { createOllamaModelProvider } from './ollamaModelProvider';
-import type { OllamaFetch } from './ollamaModels';
-import type { OpenAiFetch } from './openAiClient';
-import { createOpenAiModelProvider } from './openAiModelProvider';
-import { createOpenRouterModelProvider } from './openRouterModelProvider';
 
 /** The provider and model a run uses, as the user chose them in Settings. */
 export interface ModelChoice {

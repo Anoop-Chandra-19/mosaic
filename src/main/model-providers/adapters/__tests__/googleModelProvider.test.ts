@@ -1,8 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ModelStreamEvent } from '@shared/types/modelReply';
 import { createGoogleModelProvider, type GoogleFetch } from '../googleModelProvider';
-import type { ModelRequest } from '../modelProvider';
-import { REPLY_START_TIMEOUT_MS } from '../providerEndpoints';
+import type { ModelRequest } from '../../modelProvider';
+import { REPLY_START_TIMEOUT_MS } from '../../providerEndpoints';
 
 const API_KEY = 'AIza-test-0000';
 
