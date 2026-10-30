@@ -1,7 +1,6 @@
 import { normalizeOllamaAddress } from '@shared/model-providers/serverAddress';
 import type { OllamaModel, OllamaModels } from '@shared/types/modelProviders';
-
-const TIMEOUT_MS = 3000;
+import { SERVER_MODELS_TIMEOUT_MS } from '../providerEndpoints';
 
 /** `fetch`, narrowed to what these calls send. Main passes Electron's `net.fetch`. */
 export type OllamaFetch = (
@@ -55,7 +54,7 @@ async function readModelDetails(
     const response = await fetch(`${address}/api/show`, {
       method: 'POST',
       body: JSON.stringify({ model: name }),
-      signal: AbortSignal.timeout(TIMEOUT_MS),
+      signal: AbortSignal.timeout(SERVER_MODELS_TIMEOUT_MS),
     });
     const { capabilities, model_info: modelInfo = {} } = (await response.json()) as {
       capabilities?: unknown;
@@ -79,7 +78,9 @@ async function readLoadedContextTokens(
 ): Promise<Map<string, number>> {
   const loaded = new Map<string, number>();
   try {
-    const response = await fetch(`${address}/api/ps`, { signal: AbortSignal.timeout(TIMEOUT_MS) });
+    const response = await fetch(`${address}/api/ps`, {
+      signal: AbortSignal.timeout(SERVER_MODELS_TIMEOUT_MS),
+    });
     const { models } = (await response.json()) as {
       models?: { name?: unknown; context_length?: unknown }[];
     };
@@ -107,7 +108,9 @@ export async function listOllamaModels(
 
   let response: Response;
   try {
-    response = await fetch(`${address}/api/tags`, { signal: AbortSignal.timeout(TIMEOUT_MS) });
+    response = await fetch(`${address}/api/tags`, {
+      signal: AbortSignal.timeout(SERVER_MODELS_TIMEOUT_MS),
+    });
   } catch {
     return { ok: false, reason: 'unreachable' };
   }

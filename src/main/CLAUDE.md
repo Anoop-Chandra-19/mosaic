@@ -125,9 +125,15 @@ No ORM: `db/` is the layer every other module goes through, and ESLint enforces 
   keeps the provider's message and HTTP status, and sorts its errors by a table (a refused
   key is `keyRefused`), so the pane never guesses from a status.
 - Each SDK client is made with `maxRetries: 0` (the loop retries, so the attempts show and
-  are stored), a request timeout, the run's signal on each request, and every setting the
-  SDK would take from the environment given: only Settings decides where requests go.
-- No HTTP client of our own; the loop's stall check covers every provider's stream.
+  are stored), the run's signal on each request, and every setting the SDK would take from
+  the environment given: only Settings decides where requests go.
+- **One timeout on a reply: the loop's stall check** (`RUN_LIMITS.stallMs`, in
+  `agent/requestModelReply.ts`), from before the request goes until its last event. An
+  adapter sets no timeout of its own and makes no timers or `AbortController`s; it passes
+  the signal it is given to its request, which is how the stall reaches it
+  (`adapters/__tests__/waitingRequest.test.ts`). A one-off call elsewhere, such as a model
+  list, uses `AbortSignal.timeout`, with its duration in `providerEndpoints.ts`.
+- No HTTP client of our own.
 
 ## The assistant's tables (`db/conversations/`)
 

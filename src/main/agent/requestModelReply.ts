@@ -8,7 +8,7 @@ import type {
   ModelUsage,
 } from '@shared/types/modelReply';
 import type { ModelProvider, ModelRequest } from '../model-providers/modelProvider';
-import type { Wait } from './abortableWaits';
+import { createRestartableDeadline, type Wait } from './abortableWaits';
 
 /*
  * One step's request: streamed into the reply's parts, sent again when it failed in a
@@ -109,20 +109,14 @@ async function streamOnce({
   onEvent,
   limits,
 }: ReplyRequest): Promise<Attempt> {
-  // A stall ends this attempt only; the user's Stop ends the run.
-  const stall = new AbortController();
-  let stallTimer: ReturnType<typeof setTimeout> | undefined;
-  const watchForStall = () => {
-    clearTimeout(stallTimer);
-    stallTimer = setTimeout(() => stall.abort(), limits.stallMs);
-  };
-
+  // The one timeout on a reply, from before the request goes until its last event, so no
+  // provider needs its own. A stall ends this attempt only; the user's Stop ends the run.
+  const stall = createRestartableDeadline(limits.stallMs);
   const parts: ModelReplyPart[] = [];
   try {
-    watchForStall();
     const attemptSignal = AbortSignal.any([signal, stall.signal]);
     for await (const event of provider.streamReply({ ...request, signal: attemptSignal })) {
-      watchForStall();
+      stall.restart();
       if (event.type === 'finish')
         return { ok: true, parts, finish: event.reason, usage: event.usage };
       if (event.type === 'error') return { ok: false, cancelled: false, error: event.error };
@@ -131,7 +125,7 @@ async function streamOnce({
     if (signal.aborted) return { ok: false, cancelled: true, parts };
     return { ok: false, cancelled: false, error: stall.signal.aborted ? STALLED : ENDED_EARLY };
   } finally {
-    clearTimeout(stallTimer);
+    stall.clear();
   }
 }
 
