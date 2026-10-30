@@ -2,18 +2,18 @@ import { useState } from 'react';
 import { ShieldCheck } from 'lucide-react';
 import { AppButton, Note } from '@/components/ui-kit';
 import { ConfirmDeleteDialog } from '@/components/ConfirmDeleteDialog';
+import { forgetApiKeys, useSecretsStatus } from '@/stores/secretsStore';
 import { attempt, showToast } from '@/stores/toastStore';
 import { useUiStore } from '@/stores/uiStore';
 import type { KeyedProvider } from '@shared/types/secrets';
 import { SettingRow } from '../SettingRow';
-import { useSecretsStatus } from '../useSecretsStatus';
 import { UnconfirmedKeysDialog } from './UnconfirmedKeysDialog';
 
 /** Start over from the empty database, as a fresh install does. */
 const startOver = () => window.location.reload();
 
 export function PrivacySection() {
-  const { status, show } = useSecretsStatus();
+  const { status } = useSecretsStatus();
   const resetInterface = useUiStore((s) => s.resetInterface);
   const [confirmingErase, setConfirmingErase] = useState(false);
   const [erasing, setErasing] = useState(false);
@@ -25,10 +25,9 @@ export function PrivacySection() {
   const hasKeys = Object.keys(status?.saved ?? {}).length > 0;
 
   const forgetKeys = async () => {
-    const forgetting = window.mosaic.secrets.forgetAll();
+    const forgetting = forgetApiKeys();
     if (!(await attempt(forgetting, 'Could not forget the keys'))) return;
     const result = await forgetting;
-    show(result.status);
     if (result.unconfirmed.length > 0) {
       setUnconfirmed({ providers: result.unconfirmed, isErased: false });
     } else {

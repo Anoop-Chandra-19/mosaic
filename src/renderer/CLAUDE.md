@@ -26,6 +26,8 @@ Each store holds one kind of state; put new state with its kind, not in the near
   never a store flag.
 - `viewPlaceStore`: where the user is inside a surface (the version being read, the
   suggestion chosen), reported by the surface while it is open, for the view's address.
+- `secretsStore`: which API keys main holds and what is known about them. A key never
+  reaches it. Screens read `useSecretsStatus` and change keys through its actions.
 
 Getting somewhere that takes more than one store (another template's history, a dialog on
 a template that isn't open, clearing what covers the app) goes through

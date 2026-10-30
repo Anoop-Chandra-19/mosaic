@@ -1,8 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { openConversation, useConversationStore } from '@/stores/conversationStore';
 import { useRunStore } from '@/stores/runStore';
+import { useSecretsStore } from '@/stores/secretsStore';
 import type { AgentRunEnvelope } from '@shared/types/agentBridge';
 import type { AgentRunEvent } from '@shared/types/agentRunEvents';
+import type { SecretsStatus } from '@shared/types/secrets';
 import { createFakeAgentLog, replyBody, userBody } from '@/stores/__tests__/fakeAgentLog';
 import { buildRunView } from '../transcript/buildRunView';
 import { followAgentRuns } from '../followAgentRuns';
@@ -11,6 +13,11 @@ import { followAgentRuns } from '../followAgentRuns';
 vi.mock('@/lib/services/settingsStorage', () => ({
   settingsStorage: { getItem: () => null, setItem: () => {}, removeItem: () => {} },
 }));
+
+const REFUSED_KEY: SecretsStatus = {
+  keychain: 'available',
+  saved: { openai: { where: 'keychain', savedAt: 1, checkedAt: 1, refusedAt: 2 } },
+};
 
 let log: ReturnType<typeof createFakeAgentLog>;
 let follow: (envelope: AgentRunEnvelope) => void;
@@ -29,6 +36,7 @@ beforeEach(() => {
           return () => {};
         },
       },
+      secrets: { status: async () => REFUSED_KEY },
     },
   });
   useRunStore.setState({ live: null });
@@ -63,5 +71,14 @@ describe('following a run', () => {
 
     await vi.waitFor(() => expect(useRunStore.getState().live).toBeNull());
     expect(shownRuns().at(-1)?.parts).toEqual([{ type: 'text', text: 'Done.' }]);
+  });
+
+  it('reads the saved keys again at its end, since it may have found one refused', async () => {
+    useSecretsStore.setState({ status: null });
+    send({ type: 'stepStarted', step: 1 });
+    expect(useSecretsStore.getState().status).toBeNull();
+
+    send({ type: 'runEnded', stopReason: 'providerError' });
+    await vi.waitFor(() => expect(useSecretsStore.getState().status).toEqual(REFUSED_KEY));
   });
 });

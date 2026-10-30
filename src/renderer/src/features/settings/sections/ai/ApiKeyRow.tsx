@@ -2,6 +2,7 @@ import { useState, type ClipboardEvent } from 'react';
 import { AlertTriangle, Check, ExternalLink, Eye, EyeOff, LoaderCircle } from 'lucide-react';
 import { AppButton, AppCheckbox, AppInput, Text } from '@/components/ui-kit';
 import { cn } from '@/lib/utils';
+import { checkApiKey, removeApiKey, saveApiKey } from '@/stores/secretsStore';
 import type { KeyCheck, KeyedProvider, SavedKey, SecretsStatus } from '@shared/types/secrets';
 import { ApiKeyMessage, type KeyMessageContext } from './ApiKeyMessage';
 import { describeSavedKey, withArticle } from './apiKeyWords';
@@ -14,7 +15,6 @@ interface ApiKeyRowProps {
   provider: KeyedProvider;
   status: SecretsStatus | null;
   loadFailed: boolean;
-  onStatus: (status: SecretsStatus) => void;
   /** A key passed a check, or was saved without one. */
   onKeyChecked: (provider: KeyedProvider) => void;
 }
@@ -24,13 +24,7 @@ interface ApiKeyRowProps {
  * key's dates, with Replace (the old key stays until the new one passes) and Remove (asked
  * once). Messages sit under the control, never in the description.
  */
-export function ApiKeyRow({
-  provider,
-  status,
-  loadFailed,
-  onStatus,
-  onKeyChecked,
-}: ApiKeyRowProps) {
+export function ApiKeyRow({ provider, status, loadFailed, onKeyChecked }: ApiKeyRowProps) {
   const label = MODEL_PROVIDER_OPTION_BY_ID[provider].label;
   const [draft, setDraft] = useState('');
   const [problem, setProblem] = useState<KeyProblem | null>(
@@ -52,7 +46,6 @@ export function ApiKeyRow({
       setProblem({ kind: 'checkFailed', provider: checked, failure: result });
       return;
     }
-    onStatus(result.status);
     setDraft('');
     setIsReplacing(false);
     setIsFresh(true);
@@ -88,21 +81,17 @@ export function ApiKeyRow({
     }
     void runCheck(
       target,
-      () => window.mosaic.secrets.save(target, key, { check, forgetOnClose }),
+      () => saveApiKey(target, key, { check, forgetOnClose }),
       'Could not save the key.'
     );
   };
 
   const checkSavedKey = () =>
-    void runCheck(
-      provider,
-      () => window.mosaic.secrets.check(provider),
-      'Could not check the key.'
-    );
+    void runCheck(provider, () => checkApiKey(provider), 'Could not check the key.');
 
   const remove = async () => {
     try {
-      onStatus(await window.mosaic.secrets.remove(provider));
+      await removeApiKey(provider);
       setIsConfirmingRemove(false);
       setProblem(null);
     } catch (error) {
