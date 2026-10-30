@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { agentService } from '@/lib/services/agentService';
 import { catchUpConversation } from '@/stores/conversationStore';
 import { useRunStore } from '@/stores/runStore';
 import { loadSecretsStatus } from '@/stores/secretsStore';
@@ -34,7 +35,7 @@ function followRunEnvelope(envelope: AgentRunEnvelope): void {
 
 /** Follows every run's events; returns the call that stops. */
 export function followAgentRuns(): () => void {
-  return window.mosaic.agent.onEvent(followRunEnvelope);
+  return agentService.onEvent(followRunEnvelope);
 }
 
 export function useFollowAgentRuns(): void {

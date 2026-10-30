@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { agentService } from '@/lib/services/agentService';
 import { useResumeStore } from '@/stores/resumeStore';
 import { useRunStore } from '@/stores/runStore';
 import type { AgentToolResult } from '@shared/agent-tools/agentTools';
@@ -47,14 +48,14 @@ function startToolRun(
 /** Starts a run on the resume open now, in the conversation given or a new one. */
 export function askAgent(text: string, conversationId: number | null = null): Promise<AgentStart> {
   const { templateId } = useResumeStore.getState();
-  return startToolRun(window.mosaic.agent.start({ conversationId, text, templateId }), () => text);
+  return startToolRun(agentService.start({ conversationId, text, templateId }), () => text);
 }
 
 /** Sends the conversation again with no new message: the run goes on from its log. */
 export function carryOnAgent(conversationId: number): Promise<AgentStart> {
   const { templateId } = useResumeStore.getState();
   return startToolRun(
-    window.mosaic.agent.carryOn({ conversationId, templateId }),
+    agentService.carryOn({ conversationId, templateId }),
     (lastRun) => lastRun?.requestText ?? ''
   );
 }
@@ -78,10 +79,10 @@ function endToolRun(runId: number): void {
 
 /** Answers the tool calls of runs asked for from this page, and ends each run's tools as it ends. */
 export function answerAgentToolCalls(): () => void {
-  const stopFollowing = window.mosaic.agent.onEvent(({ runId, event }) => {
+  const stopFollowing = agentService.onEvent(({ runId, event }) => {
     if (event.type === 'runEnded') void starting.then(() => endToolRun(runId));
   });
-  const removeRunner = window.mosaic.agent.onToolCall(answerToolCall);
+  const removeRunner = agentService.onToolCall(answerToolCall);
   return () => {
     stopFollowing();
     removeRunner();

@@ -1,4 +1,5 @@
 import { askAgent } from '@/features/agent/agentRunTools';
+import { agentService } from '@/lib/services/agentService';
 import { useAgentSettingsStore } from '@/stores/agentSettingsStore';
 import { showToast } from '@/stores/toastStore';
 import type { AgentStartRefusal } from '@shared/types/agentBridge';
@@ -14,7 +15,7 @@ const REFUSAL_WORDS: Record<AgentStartRefusal, string> = {
 
 /** Says how the run ended, in a toast: there is no pane to show it yet. */
 function toastWhenRunEnds(runId: number): void {
-  const stopFollowing = window.mosaic.agent.onEvent((envelope) => {
+  const stopFollowing = agentService.onEvent((envelope) => {
     if (envelope.runId !== runId || envelope.event.type !== 'runEnded') return;
     stopFollowing();
     const { stopReason } = envelope.event;
