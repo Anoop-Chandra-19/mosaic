@@ -34,7 +34,7 @@ a template that isn't open, clearing what covers the app) goes through
 
 Stored data goes features → stores → the storage service → main. Stores hold state and
 actions, and export their reads (`useVersion`, `readVersion`, …). Only stores use the
-service, and only `storage` and `useStored` from `lib/storage/storageService.ts`: where a
+service, and only `storage` and `useStored` from `lib/services/storageService.ts`: where a
 read comes from (cache or main) and what a write makes stale are the service's concern,
 along with `getDb()` (ESLint refuses the rest, `DbError` aside). A component that reads
 as it renders sits inside a `ReadBoundary`.

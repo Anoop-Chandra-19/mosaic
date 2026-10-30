@@ -18,7 +18,7 @@ import { ReadBoundary } from '@/components/ReadBoundary';
 import { useVersionDistance } from '@/features/history/useVersionDistance';
 import { versionLabel } from '@/features/history/versionLabel';
 import { easeHeightChanges } from '@/lib/motion/easeHeightChanges';
-import { DbError } from '@/lib/storage/mosaicDb';
+import { DbError } from '@/lib/services/mosaicDb';
 import { cn } from '@/lib/utils';
 import { useDialog, useOverlayStore } from '@/stores/overlayStore';
 import { attempt, showToast } from '@/stores/toastStore';

@@ -5,12 +5,12 @@ import type { ResumeData } from '@shared/types/resume';
 const save = vi.hoisted(() =>
   vi.fn<(templateId: string, doc: ResumeData, rev: number) => Promise<void>>(async () => {})
 );
-vi.mock('@/lib/storage/mosaicDb', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@/lib/storage/mosaicDb')>()),
+vi.mock('@/lib/services/mosaicDb', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/services/mosaicDb')>()),
   getDb: () => ({ drafts: { save }, settings: { set: async () => {} } }),
 }));
 
-const { DbError } = await import('@/lib/storage/mosaicDb');
+const { DbError } = await import('@/lib/services/mosaicDb');
 const { flushDraft, useResumeStore } = await import('../resumeStore');
 const { useUiStore } = await import('../uiStore');
 
