@@ -46,7 +46,7 @@ interface StopFacts {
   model: string;
   /** Where Ollama listens, as the address line reads it. */
   address: string;
-  /** "Tried 4 times over 21 s.", when the step was tried more than once. */
+  /** "Tried 4 times.", when the step was tried more than once. */
   tries: string | null;
 }
 
@@ -247,9 +247,9 @@ function copyError({ stop }: StopFacts): NoticeAction[] {
 /** A Send again that came back the same. */
 export const formatSentAgain = (time: string): string => `Sent again at ${time}. Same answer.`;
 
-function describeTries({ attempts, waitedMs }: RunStoppedMessageBody): string | null {
+function describeTries({ attempts }: RunStoppedMessageBody): string | null {
   if (attempts === undefined || attempts < 2) return null;
-  return `Tried ${attempts} times over ${Math.round((waitedMs ?? 0) / 1000)} s.`;
+  return `Tried ${attempts} times.`;
 }
 
 const PROVIDER_LABELS = new Map<string, string>(
