@@ -1,5 +1,5 @@
 import { Text } from '@/components/ui-kit';
-import type { ChangeTone } from '@shared/resume/changes/resumeChange';
+import type { ChangeTone } from '@/lib/resume/changes/resumeChange';
 
 /** "~2 +1 −1": edited, added and removed, each in its colour; a tone with none is left out. */
 export function ChangeCounts({ counts }: { counts: Record<ChangeTone, number> }) {

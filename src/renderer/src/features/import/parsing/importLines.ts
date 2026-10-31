@@ -1,4 +1,4 @@
-import type { EntryHeadingFields } from '@shared/resume/entryHeading';
+import type { EntryHeadingFields } from '@/lib/resume/entryHeading';
 import type { LinkColor, LinkStyle } from '@shared/types/resume';
 import { stripMailtoOrTelScheme, isSameAddress } from '@shared/resume/resumeHeader';
 import { isHeadingLength, matchSectionHeader } from './sectionHeaders';

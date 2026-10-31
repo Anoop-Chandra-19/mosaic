@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import type { ProposalChangeKind } from '@shared/types/agentProposal';
+import type { ProposalChangeKind } from '@/types/agentProposal';
 import { AddedTextBody } from './bodies/AddedTextBody';
 import { EntryFacts } from './bodies/EntryFacts';
 import { NewSectionBody } from './bodies/NewSectionBody';

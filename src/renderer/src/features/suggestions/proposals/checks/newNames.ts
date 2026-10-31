@@ -1,4 +1,4 @@
-import type { ProposalFlag } from '@shared/types/agentProposal';
+import type { ProposalFlag } from '@/types/agentProposal';
 import { readSpecificWords, readWordSet } from './readSpecificWords';
 
 /**

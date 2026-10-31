@@ -5,7 +5,7 @@ import type {
   ProposalChangeKind,
   ShowPlace,
   TextPlace,
-} from '@shared/types/agentProposal';
+} from '@/types/agentProposal';
 import type { ResumeData, ResumeEntry, ResumeSection } from '@shared/types/resume';
 import { findAnchorMismatch, findEntry, findSection } from '../proposalAnchor';
 

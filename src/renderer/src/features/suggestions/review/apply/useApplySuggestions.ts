@@ -5,7 +5,7 @@ import { attempt } from '@/stores/toastStore';
 import { useResumeStore } from '@/stores/resumeStore';
 import { useTemplateStore } from '@/stores/templateStore';
 import { useUiStore } from '@/stores/uiStore';
-import type { Proposal } from '@shared/types/agentProposal';
+import type { Proposal } from '@/types/agentProposal';
 import type { ResumeData } from '@shared/types/resume';
 import {
   applyAcceptedProposals,

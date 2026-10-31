@@ -25,7 +25,7 @@ See root `CLAUDE.md` for schema-version and data-safety rules.
   built-ins, with any number of each; `custom` is a user-named section.
 - An entry has a title, organization, location, and dates, all free text. It prints as one
   italic line: `formatEntryHeading` joins the first three with ", " on the left, and the
-  dates sit on the right (`src/shared/resume/entryHeading.ts`). Formats that carry only
+  dates sit on the right (`src/renderer/src/lib/resume/entryHeading.ts`). Formats that carry only
   that line read it back with `splitEntryHeading`: first part the title, second the
   organization, the rest the location.
 - What prints is chosen at three levels: a section's `hidden` (absent means on the

@@ -1,8 +1,8 @@
 import { useResumeStore } from '@/stores/resumeStore';
 import { useStoredDraft } from '@/stores/templateStore';
 import type { HistoryComparison } from '@/types/history';
-import { diffFormatting } from '@shared/resume/changes/diffFormatting';
-import { diffResumes } from '@shared/resume/changes/diffResumes';
+import { diffFormatting } from '@/lib/resume/changes/diffFormatting';
+import { diffResumes } from '@/lib/resume/changes/diffResumes';
 import type { Version, VersionMeta } from '@shared/types/db';
 import type { ResumeData } from '@shared/types/resume';
 

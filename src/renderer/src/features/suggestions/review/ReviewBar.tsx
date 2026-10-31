@@ -3,7 +3,7 @@ import { AppButton, AppToggleGroup, AppToggleGroupItem, Text } from '@/component
 import { transitionClasses } from '@/features/view-transitions/transitionClasses';
 import { cn } from '@/lib/utils';
 import type { ResumePreviewMeta } from '@/types/preview';
-import type { Proposal } from '@shared/types/agentProposal';
+import type { Proposal } from '@/types/agentProposal';
 import { acceptProposals, rejectProposals } from '../proposals/proposalActions';
 import type { PreviewLook } from './preview/suggestionPreview';
 import type { ReviewMode } from './ReviewInspector';

@@ -2,7 +2,7 @@ import { Check, Undo2 } from 'lucide-react';
 import { AppButton, Text } from '@/components/ui-kit';
 import { ShortcutKeys } from '@/features/shortcuts/ShortcutKeys';
 import { getShortcutCombos } from '@/features/shortcuts/shortcutBindings';
-import type { Proposal } from '@shared/types/agentProposal';
+import type { Proposal } from '@/types/agentProposal';
 import type { ApplyPlan } from '../../proposals/apply/planApply';
 import { HistoryRail } from './HistoryRail';
 import type { HistoryRow } from './planHistoryRows';

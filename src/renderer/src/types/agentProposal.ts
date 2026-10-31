@@ -1,4 +1,4 @@
-import type { ResumeEntry, SectionKind, SectionLayout } from './resume';
+import type { ResumeEntry, SectionKind, SectionLayout } from '@shared/types/resume';
 
 /*
  * What the assistant proposes. Nothing here changes the draft: a proposal waits until the

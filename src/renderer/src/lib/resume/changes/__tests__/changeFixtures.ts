@@ -1,4 +1,4 @@
-import type { ResumeData } from '../../../types/resume';
+import type { ResumeData } from '@shared/types/resume';
 import type { Change } from '../resumeChange';
 
 export const createChange = (fields: Partial<Change>): Change => ({

@@ -1,5 +1,5 @@
 import type { StagedChange } from '@/features/suggestions/proposals/proposalActions';
-import type { ProposalChange } from '@shared/types/agentProposal';
+import type { ProposalChange } from '@/types/agentProposal';
 import { createExampleResume, EXAMPLE_IDS } from './exampleResume';
 
 export const EXAMPLE_REQUEST =

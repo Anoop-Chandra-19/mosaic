@@ -1,4 +1,4 @@
-import type { ProposalFlag, ProposalFlagKind } from '@shared/types/agentProposal';
+import type { ProposalFlag, ProposalFlagKind } from '@/types/agentProposal';
 
 /*
  * What each check says about a suggestion, in the inspector and on its card, and which of

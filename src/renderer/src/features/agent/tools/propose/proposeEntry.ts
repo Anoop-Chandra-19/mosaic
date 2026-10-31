@@ -1,4 +1,4 @@
-import type { EntryFact } from '@shared/types/agentProposal';
+import type { EntryFact } from '@/types/agentProposal';
 import type { ResumeSection } from '@shared/types/resume';
 import type { ToolCallContext } from '../agentToolRun';
 import {

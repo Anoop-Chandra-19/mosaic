@@ -1,6 +1,6 @@
 import { prefersReducedMotion } from '@/lib/motion/motionTiming';
 import { flashChange } from '@/lib/motion/rowMotions';
-import type { Change } from '@shared/resume/changes/resumeChange';
+import type { Change } from '@/lib/resume/changes/resumeChange';
 
 /** Room left of a mark scrolled to sideways, so its line starts clear of the edge. */
 const SIDEWAYS_MARGIN_PX = 24;

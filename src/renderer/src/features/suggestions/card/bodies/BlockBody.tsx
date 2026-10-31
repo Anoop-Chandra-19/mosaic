@@ -1,8 +1,8 @@
 import { Eye, EyeOff } from 'lucide-react';
 import { Text } from '@/components/ui-kit';
 import { cn } from '@/lib/utils';
-import { formatEntryHeading } from '@shared/resume/entryHeading';
-import type { ShowPlace } from '@shared/types/agentProposal';
+import { formatEntryHeading } from '@/lib/resume/entryHeading';
+import type { ShowPlace } from '@/types/agentProposal';
 import type { ResumeData, ResumeEntry, ResumeSection } from '@shared/types/resume';
 import { findEntry, findSection } from '../../proposals/proposalAnchor';
 import { Caption, TagLine } from './BodyParts';

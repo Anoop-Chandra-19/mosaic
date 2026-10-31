@@ -1,5 +1,5 @@
 import { Fragment } from 'react';
-import type { TextPhrase } from '@shared/resume/changes/resumeChange';
+import type { TextPhrase } from '@/lib/resume/changes/resumeChange';
 
 interface PhraseTextProps {
   phrases: TextPhrase[];

@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import type { VersionMeta } from '@shared/types/db';
-import type { Proposal } from '@shared/types/agentProposal';
+import type { Proposal } from '@/types/agentProposal';
 import { useProposalStore } from '@/stores/proposalStore';
 import { useResumeStore } from '@/stores/resumeStore';
 import { useTemplateStore } from '@/stores/templateStore';

@@ -1,5 +1,5 @@
-import type { ChangeRow, DiffLine } from '@shared/resume/changes/diffResumes';
-import { trimPathToGroup } from '@shared/resume/changes/resumeChange';
+import type { ChangeRow, DiffLine } from '@/lib/resume/changes/diffResumes';
+import { trimPathToGroup } from '@/lib/resume/changes/resumeChange';
 
 export type HunkItem =
   | { kind: 'line'; line: DiffLine }

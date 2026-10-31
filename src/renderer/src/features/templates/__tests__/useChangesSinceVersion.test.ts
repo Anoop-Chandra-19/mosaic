@@ -4,7 +4,7 @@ import {
   editFixture,
   findEntry,
   findSection,
-} from '@shared/resume/changes/__tests__/changeFixtures';
+} from '@/lib/resume/changes/__tests__/changeFixtures';
 import { listChangesSinceVersion } from '../useChangesSinceVersion';
 
 const version = createChangeFixture();

@@ -1,4 +1,4 @@
-import type { ProposalChange } from '@shared/types/agentProposal';
+import type { ProposalChange } from '@/types/agentProposal';
 import { findTextInReceipt, isProblem } from './findInReceipt';
 import { TOOL_FACTS } from './toolFacts';
 import { oneReading, type ProposeTool } from './toolReadings';

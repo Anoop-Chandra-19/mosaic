@@ -16,7 +16,7 @@ import { matchesAction } from '@/features/shortcuts/shortcutBindings';
 import { isTypingField } from '@/lib/keyboardShortcuts';
 import { ListMotionContext, useSwapMotion } from '@/lib/motion/useListMotion';
 import { cn } from '@/lib/utils';
-import { formatEntryHeading } from '@shared/resume/entryHeading';
+import { formatEntryHeading } from '@/lib/resume/entryHeading';
 import type { ResumeEntry, SectionLayout } from '@shared/types/resume';
 import { useResumeStore } from '@/stores/resumeStore';
 import { useUiStore } from '@/stores/uiStore';

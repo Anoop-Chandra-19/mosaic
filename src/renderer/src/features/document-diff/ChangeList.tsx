@@ -24,9 +24,9 @@ import {
   describeChange,
   describeChangeTip,
   describeFormattingChange,
-} from '@shared/resume/changes/describeChanges';
-import type { ResumeDiff } from '@shared/resume/changes/diffResumes';
-import type { FormattingChange } from '@shared/resume/changes/diffFormatting';
+} from '@/lib/resume/changes/describeChanges';
+import type { ResumeDiff } from '@/lib/resume/changes/diffResumes';
+import type { FormattingChange } from '@/lib/resume/changes/diffFormatting';
 import {
   countChangesByTone,
   getChangeGlyph,
@@ -34,7 +34,7 @@ import {
   getChangeTone,
   type Change,
   type ChangeTone,
-} from '@shared/resume/changes/resumeChange';
+} from '@/lib/resume/changes/resumeChange';
 import { PhraseText } from './PhraseText';
 
 const TONE_TEXT: Record<ChangeTone, string> = {

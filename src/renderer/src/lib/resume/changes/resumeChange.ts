@@ -1,4 +1,4 @@
-import type { HeaderItemKind } from '../../types/resume';
+import type { HeaderItemKind } from '@shared/types/resume';
 
 /** The assistant writes these itself, so the short keys are what it is asked for. */
 export type TextPhrase =

@@ -1,4 +1,4 @@
-import type { Proposal, ProposalChange } from '@shared/types/agentProposal';
+import type { Proposal, ProposalChange } from '@/types/agentProposal';
 import type { ResumeData } from '@shared/types/resume';
 import { sortForApply } from '../../proposals/apply/applyProposalsToResume';
 import { findMovedIds } from '../../proposals/findMovedIds';

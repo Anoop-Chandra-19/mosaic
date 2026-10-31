@@ -1,4 +1,4 @@
-import { formatEntryHeading, type EntryHeadingFields } from '@shared/resume/entryHeading';
+import { formatEntryHeading, type EntryHeadingFields } from './entryHeading';
 import type { ResumeSection, SectionKind, SectionLayout } from '@shared/types/resume';
 
 export interface PrintableBullet {

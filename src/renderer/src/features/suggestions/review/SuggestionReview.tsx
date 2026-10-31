@@ -15,7 +15,7 @@ import { useResumeStore } from '@/stores/resumeStore';
 import { AGENT_PANE_WIDTH, useUiStore } from '@/stores/uiStore';
 import { useViewPlaceStore } from '@/stores/viewPlaceStore';
 import type { ResumePreviewMeta } from '@/types/preview';
-import type { Proposal } from '@shared/types/agentProposal';
+import type { Proposal } from '@/types/agentProposal';
 import { acceptProposals, rejectProposals, returnProposals } from '../proposals/proposalActions';
 import { ApplyBar } from './apply/ApplyBar';
 import { ApplyResult } from './apply/ApplyResult';

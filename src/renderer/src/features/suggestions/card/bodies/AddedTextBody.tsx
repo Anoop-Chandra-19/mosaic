@@ -1,6 +1,6 @@
 import { Info } from 'lucide-react';
 import { AppButton, Text } from '@/components/ui-kit';
-import type { AddPlace, Proposal } from '@shared/types/agentProposal';
+import type { AddPlace, Proposal } from '@/types/agentProposal';
 import type { ResumeData } from '@shared/types/resume';
 import { findEntry, findSection } from '../../proposals/proposalAnchor';
 import {

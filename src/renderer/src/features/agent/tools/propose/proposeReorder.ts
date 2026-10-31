@@ -5,7 +5,7 @@ import {
   readShowPlaceId,
 } from '@/features/suggestions/proposals/proposalAnchor';
 import type { HandleKind } from '@shared/agent-tools/handleKinds';
-import type { OrderPlace, ShowPlace } from '@shared/types/agentProposal';
+import type { OrderPlace, ShowPlace } from '@/types/agentProposal';
 import type { ResumeData } from '@shared/types/resume';
 import type { AgentToolRun, ToolCallContext } from '../agentToolRun';
 import {

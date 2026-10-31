@@ -6,7 +6,7 @@ import {
 import { getEntryHeadingWidthPt } from '@/features/export/pdf/entryHeadingWidth';
 import { HEADLESS_LAYOUT } from '@/lib/resume/headlessLayout';
 import type { PaperSize } from '@/types/paper';
-import { formatEntryHeading } from '@shared/resume/entryHeading';
+import { formatEntryHeading } from '@/lib/resume/entryHeading';
 import type { ResumeEntry } from '@shared/types/resume';
 
 let defaultMeasure: MeasureTextWidth | null | undefined;

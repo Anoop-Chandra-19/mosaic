@@ -1,4 +1,4 @@
-import type { Proposal, ProposalChangeKind, ProposalFlagKind } from '@shared/types/agentProposal';
+import type { Proposal, ProposalChangeKind, ProposalFlagKind } from '@/types/agentProposal';
 
 /** Each check's name, as the card and the list show it. */
 export const FLAG_LABELS: Record<ProposalFlagKind, string> = {

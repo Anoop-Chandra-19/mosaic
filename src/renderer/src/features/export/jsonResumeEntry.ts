@@ -6,7 +6,7 @@
  * for — a school's location, dates that aren't dates — the export records in `meta.mosaic`.
  */
 
-import type { EntryHeadingFields } from '@shared/resume/entryHeading';
+import type { EntryHeadingFields } from '@/lib/resume/entryHeading';
 
 /** The arrays an entry can go in. */
 export type ItemSource =

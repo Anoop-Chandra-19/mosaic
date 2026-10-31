@@ -1,6 +1,6 @@
 import type { ProposeToolArgs, ProposeToolName } from '@shared/agent-tools/proposeTools';
 import type { ToolTarget } from '@shared/types/agentConversation';
-import type { ShowPlace } from '@shared/types/agentProposal';
+import type { ShowPlace } from '@/types/agentProposal';
 import type { ResumeData, ResumeEntry } from '@shared/types/resume';
 import type { ToolCallContext } from '../agentToolRun';
 import { replaceEveryWholeWord } from '../replaceEveryWholeWord';

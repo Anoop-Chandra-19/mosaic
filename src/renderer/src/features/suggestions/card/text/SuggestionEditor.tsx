@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Check } from 'lucide-react';
 import { AppButton, AppTextarea, Text } from '@/components/ui-kit';
 import { ShortcutKeys } from '@/features/shortcuts/ShortcutKeys';
-import type { Proposal, ProposalChange } from '@shared/types/agentProposal';
+import type { Proposal, ProposalChange } from '@/types/agentProposal';
 import { GAP_MARK } from '../../proposals/checks/unfilledGap';
 import { checkProposalEdit, editProposal } from '../../proposals/proposalActions';
 import { resolveChange } from '../../proposals/reviewedChange';

@@ -11,7 +11,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { Chip } from '@/components/ui-kit';
-import type { ProposalChange } from '@shared/types/agentProposal';
+import type { ProposalChange } from '@/types/agentProposal';
 import { labelSuggestionKind } from '../proposals/describeSuggestion';
 
 const KIND_ICONS: Record<ProposalChange['kind'], LucideIcon> = {

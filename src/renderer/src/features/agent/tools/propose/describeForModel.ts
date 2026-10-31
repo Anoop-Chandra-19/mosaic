@@ -3,7 +3,7 @@ import type {
   ProposalChange,
   ProposalFlag,
   ProposalFlagKind,
-} from '@shared/types/agentProposal';
+} from '@/types/agentProposal';
 import { hasSameWords } from '@/lib/resume/hasSameWords';
 import {
   isPlaceShown,

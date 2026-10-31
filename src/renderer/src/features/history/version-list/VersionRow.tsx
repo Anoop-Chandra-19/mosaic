@@ -4,7 +4,7 @@ import { ChangeCounts } from '@/features/document-diff/ChangeCounts';
 import { tourTargetProps } from '@/features/onboarding/tourTargets';
 import { formatTimeOfDay } from '@shared/time/formatTime';
 import { cn } from '@/lib/utils';
-import type { ChangeTone } from '@shared/resume/changes/resumeChange';
+import type { ChangeTone } from '@/lib/resume/changes/resumeChange';
 import type { VersionMeta, VersionSource } from '@shared/types/db';
 import { useVersionPreviewComparison } from '../useVersionPreviewComparison';
 import { VersionActions } from './VersionActions';

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createDefaultResume } from '@shared/resume/defaultResume';
-import { diffResumes } from '@shared/resume/changes/diffResumes';
+import { diffResumes } from '@/lib/resume/changes/diffResumes';
 import type { ResumeData } from '@shared/types/resume';
 import { collectPageMarks, findMarks, putGoneBack } from '../pageMarks';
 

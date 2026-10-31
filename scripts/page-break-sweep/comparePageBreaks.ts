@@ -8,7 +8,7 @@ import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { formatEntryHeading } from '../../src/shared/resume/entryHeading.ts';
+import { formatEntryHeading } from '../../src/renderer/src/lib/resume/entryHeading.ts';
 import type { ResumeData } from '../../src/shared/types/resume.ts';
 import type { SweepResume } from './generateSweepResumes.ts';
 import { runDirectory, SWEEP_SEED } from './sweepOptions.ts';

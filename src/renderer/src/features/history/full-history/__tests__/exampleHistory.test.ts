@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { versionLabel } from '@/lib/versionLabel';
-import { diffResumes } from '@shared/resume/changes/diffResumes';
+import { diffResumes } from '@/lib/resume/changes/diffResumes';
 import { groupRevisions } from '../../groupVersionHistory';
 import { buildExampleHistory, EXAMPLE_OPENING_ID } from '../exampleHistory';
 

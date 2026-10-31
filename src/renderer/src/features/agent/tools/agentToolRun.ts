@@ -1,6 +1,6 @@
 import type { AgentToolResult } from '@shared/agent-tools/agentTools';
 import type { ToolTarget } from '@shared/types/agentConversation';
-import type { Proposal } from '@shared/types/agentProposal';
+import type { Proposal } from '@/types/agentProposal';
 import type { ResumeData } from '@shared/types/resume';
 import { createResumeHandles, type ResumeHandles } from './resumeHandles';
 

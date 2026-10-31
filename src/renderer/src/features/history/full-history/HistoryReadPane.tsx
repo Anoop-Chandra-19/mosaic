@@ -20,7 +20,7 @@ import type { ShortcutId } from '@/lib/shortcutCatalog';
 import { easeHeightChanges } from '@/lib/motion/easeHeightChanges';
 import { cn } from '@/lib/utils';
 import { HISTORY_READ_WIDTH, PREVIEW_DEFAULT_ZOOM, useUiStore } from '@/stores/uiStore';
-import type { ResumeDiff } from '@shared/resume/changes/diffResumes';
+import type { ResumeDiff } from '@/lib/resume/changes/diffResumes';
 import type { Version, VersionMeta, VersionSource } from '@shared/types/db';
 import type { ResumeData } from '@shared/types/resume';
 import type { HistoryComparison, ReadPaneView } from '@/types/history';

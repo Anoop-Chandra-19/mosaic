@@ -2,7 +2,7 @@ import { Check, Pencil, RotateCcw, Trash2, Undo2, X, type LucideIcon } from 'luc
 import { AppButton, Text } from '@/components/ui-kit';
 import { useShortcutLabel } from '@/features/shortcuts/shortcutBindings';
 import { cn } from '@/lib/utils';
-import type { Proposal } from '@shared/types/agentProposal';
+import type { Proposal } from '@/types/agentProposal';
 import {
   acceptProposals,
   placeProposalLast,

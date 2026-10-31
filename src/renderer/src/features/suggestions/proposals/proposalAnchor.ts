@@ -1,11 +1,11 @@
-import { formatEntryHeading } from '@shared/resume/entryHeading';
+import { formatEntryHeading } from '@/lib/resume/entryHeading';
 import type {
   AddPlace,
   OrderPlace,
   ProposalChange,
   ShowPlace,
   TextPlace,
-} from '@shared/types/agentProposal';
+} from '@/types/agentProposal';
 import type { ResumeData, ResumeEntry, ResumeSection } from '@shared/types/resume';
 
 export type AnchorMismatch = 'unknown-target' | 'changed-since-read';

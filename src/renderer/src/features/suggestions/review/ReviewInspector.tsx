@@ -5,7 +5,7 @@ import { ShortcutKeys } from '@/features/shortcuts/ShortcutKeys';
 import { getShortcutCombos, useShortcutLabel } from '@/features/shortcuts/shortcutBindings';
 import type { ShortcutId } from '@/lib/shortcutCatalog';
 import { cn } from '@/lib/utils';
-import type { Proposal } from '@shared/types/agentProposal';
+import type { Proposal } from '@/types/agentProposal';
 import type { ResumeData } from '@shared/types/resume';
 import { placeSuggestion } from '../proposals/describeSuggestion';
 import { DropReasons } from '../card/DropReasons';

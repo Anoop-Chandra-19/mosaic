@@ -1,5 +1,5 @@
 import { diffWords } from '@/lib/resume/diffWords';
-import type { ProposalFlag } from '@shared/types/agentProposal';
+import type { ProposalFlag } from '@/types/agentProposal';
 
 interface PlacedWord {
   word: string;

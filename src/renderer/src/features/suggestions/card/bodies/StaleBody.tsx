@@ -1,6 +1,6 @@
 import { Clock } from 'lucide-react';
 import { Text } from '@/components/ui-kit';
-import type { ProposalChange } from '@shared/types/agentProposal';
+import type { ProposalChange } from '@/types/agentProposal';
 import type { ResumeData } from '@shared/types/resume';
 import {
   findEntry,

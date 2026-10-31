@@ -1,4 +1,4 @@
-import type { ContactInfo, ResumeData, ResumeEntry, ResumeSection } from '../../types/resume';
+import type { ContactInfo, ResumeData, ResumeEntry, ResumeSection } from '@shared/types/resume';
 import { formatEntryHeading } from '../entryHeading';
 import type { ChangeTarget, EntryField } from './resumeChange';
 

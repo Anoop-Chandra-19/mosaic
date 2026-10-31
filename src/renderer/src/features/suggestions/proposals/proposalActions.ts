@@ -7,7 +7,7 @@ import type {
   ProposalReview,
   ProposalSource,
   ProposalStatus,
-} from '@shared/types/agentProposal';
+} from '@/types/agentProposal';
 import { useProposalStore } from '@/stores/proposalStore';
 import { getResumeSnapshot, useResumeStore } from '@/stores/resumeStore';
 import { checkProposal } from './checks/checkProposal';
