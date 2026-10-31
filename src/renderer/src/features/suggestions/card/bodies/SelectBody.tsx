@@ -14,7 +14,7 @@ export function SelectBody(props: SuggestionBodyProps) {
   return (
     <>
       <Caption>Suggested</Caption>
-      <SuggestedText className={cn(!change.selected && DIFF_MARKS.app.removed)}>
+      <SuggestedText className={cn(!change.selected && DIFF_MARKS.removed)}>
         {change.before}
       </SuggestedText>
       <TagLine icon={change.selected ? Eye : EyeOff}>

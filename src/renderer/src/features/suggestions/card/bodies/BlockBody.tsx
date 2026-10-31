@@ -99,11 +99,7 @@ export function BlockBody({ proposal, draft }: SuggestionBodyProps) {
         <div className="flex items-baseline gap-2.5">
           <Text
             variant={block.isSection ? 'strong' : 'body'}
-            className={cn(
-              'flex-1',
-              !block.isSection && 'italic',
-              !isBack && DIFF_MARKS.app.removed
-            )}
+            className={cn('flex-1', !block.isSection && 'italic', !isBack && DIFF_MARKS.removed)}
           >
             {block.heading}
           </Text>

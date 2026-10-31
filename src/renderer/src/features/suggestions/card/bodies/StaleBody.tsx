@@ -117,7 +117,7 @@ export function StaleBody({ proposal, draft }: SuggestionBodyProps) {
       {texts?.would !== undefined && (
         <>
           <Caption>{isAdded ? `Suggested, new ${change.place.unit}` : 'Suggested'}</Caption>
-          <SuggestedText className={isAdded ? 'text-ink-muted' : DIFF_MARKS.app.removed}>
+          <SuggestedText className={isAdded ? 'text-ink-muted' : DIFF_MARKS.removed}>
             {texts.would}
           </SuggestedText>
         </>

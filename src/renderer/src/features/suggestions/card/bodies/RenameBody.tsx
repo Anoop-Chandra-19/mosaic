@@ -26,11 +26,11 @@ export function RenameBody({ proposal, isEditing, onEditingChange }: SuggestionB
           className="flex flex-wrap items-center gap-x-2.25 gap-y-1.5"
           onDoubleClick={() => onEditingChange(true)}
         >
-          <Text variant="title" className={DIFF_MARKS.app.removed}>
+          <Text variant="title" className={DIFF_MARKS.removed}>
             {change.before}
           </Text>
           <ArrowRight className="size-3 text-ink-faint" />
-          <Text variant="title" className={cn(DIFF_MARKS.app.added, 'font-strong')}>
+          <Text variant="title" className={cn(DIFF_MARKS.added, 'font-strong')}>
             {change.after}
           </Text>
         </div>
