@@ -14,7 +14,7 @@ Mosaic has **two typography systems**, and neither reaches into the other:
 | Font            | Source Sans 3; Source Code Pro for meta and keys    | Arial-compatible sans                    |
 | Sizes           | Ten roles, as `text-*` tokens in `index.css`        | Exact point metrics                      |
 | Colour          | Ink tokens, the same names in both themes           | Black, with optional blue header links   |
-| Source of truth | `index.css` tokens, `Text`, and the `App*` wrappers | `HEADLESS_LAYOUT` in `headlessLayout.ts` |
+| Source of truth | `index.css` tokens, `Text`, and the `App*` wrappers | `RESUME_LAYOUT` in `resumeLayout.ts`     |
 | Adaptation      | Layout, wrapping and spacing change; sizes never do | Fixed page layout, visually scaled       |
 
 ## 1. Fonts
@@ -143,8 +143,8 @@ in `components/`, so a spacing the roles don't carry becomes a shared look (`Bad
 
 ## 7. Printed resume typography
 
-[`HEADLESS_LAYOUT`](../src/renderer/src/lib/resume/headlessLayout.ts) owns the shared metrics
-for the current "Headless Headhunter" format. See [resume-format.md](resume-format.md) for
+[`RESUME_LAYOUT`](../src/renderer/src/lib/resume/resumeLayout.ts) owns the shared metrics
+for the current resume format. See [resume-format.md](resume-format.md) for
 the contract; this section is a typography summary, not a replacement for those rules.
 
 | Resume role             | Size   | Leading         | Presentation                           |

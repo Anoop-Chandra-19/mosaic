@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import type { PaperSize } from '@/types/paper';
-import { HEADLESS_LAYOUT, PAPER_SIZE_PT } from '@/lib/resume/headlessLayout';
+import { RESUME_LAYOUT, PAPER_SIZE_PT } from '@/lib/resume/resumeLayout';
 
 interface PreviewPageProps {
   children: ReactNode;
@@ -38,9 +38,9 @@ export function PreviewPage({
           className="h-full font-normal tracking-normal text-black [font-kerning:none]"
           data-preview-page-content
           style={{
-            paddingTop: `${HEADLESS_LAYOUT.marginTop}px`,
-            paddingBottom: `${HEADLESS_LAYOUT.marginBottom}px`,
-            paddingInline: `${HEADLESS_LAYOUT.marginSide}px`,
+            paddingTop: `${RESUME_LAYOUT.marginTop}px`,
+            paddingBottom: `${RESUME_LAYOUT.marginBottom}px`,
+            paddingInline: `${RESUME_LAYOUT.marginSide}px`,
           }}
         >
           {children}

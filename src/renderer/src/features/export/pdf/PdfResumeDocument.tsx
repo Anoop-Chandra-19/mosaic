@@ -2,7 +2,7 @@ import { Fragment } from 'react';
 import { Document, Font, Link, Page, StyleSheet, Text, View } from '@react-pdf/renderer';
 import type { PaperSize } from '@/types/paper';
 import type { NormalizedResumeExport } from '@/lib/resume/normalizeResumeExport';
-import { HEADLESS_LAYOUT, getPageContentSizePt } from '@/lib/resume/headlessLayout';
+import { RESUME_LAYOUT, getPageContentSizePt } from '@/lib/resume/resumeLayout';
 import {
   breakLinesLikeWord,
   breakRunsLikeWord,
@@ -24,7 +24,7 @@ interface PdfResumeDocumentProps {
   measurers?: PdfTextMeasurers | null;
 }
 
-const LYT = HEADLESS_LAYOUT;
+const LYT = RESUME_LAYOUT;
 
 // Helvetica is one of the 14 fonts built into every PDF reader and is metrically
 // identical to Arial, so lines wrap at the same points without shipping a font file.

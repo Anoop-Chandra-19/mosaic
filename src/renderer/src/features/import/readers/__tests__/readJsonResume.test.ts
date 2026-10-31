@@ -138,7 +138,7 @@ describe('readJsonResume', () => {
     expect(parsed.warnings).toEqual([]);
   });
 
-  it('maps another tool’s file into sections, entries written the Headless way', () => {
+  it('maps another tool’s file into sections, entries written in our format', () => {
     const parsed = readJsonResume({
       basics: {
         name: 'Grace Hopper',

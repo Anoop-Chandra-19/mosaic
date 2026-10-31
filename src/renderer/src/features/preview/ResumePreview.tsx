@@ -24,7 +24,7 @@ import {
   paginateSections,
   type PaginationMeasurements,
 } from './pagination';
-import { PAPER_SIZE_PT, getPageContentSizePt } from '@/lib/resume/headlessLayout';
+import { PAPER_SIZE_PT, getPageContentSizePt } from '@/lib/resume/resumeLayout';
 
 interface ResumePreviewProps {
   paperSize: PaperSize;

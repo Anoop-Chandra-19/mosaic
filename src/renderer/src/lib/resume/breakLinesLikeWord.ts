@@ -1,4 +1,4 @@
-import { HEADLESS_LAYOUT } from '@/lib/resume/headlessLayout';
+import { RESUME_LAYOUT } from '@/lib/resume/resumeLayout';
 
 /** The width of a run of text, in points. */
 export type MeasureTextWidth = (text: string) => number;
@@ -91,7 +91,7 @@ export function createTextMeasurer(fontSize: number): MeasureTextWidth | null {
   if (typeof OffscreenCanvas === 'undefined') return null;
   const context = new OffscreenCanvas(1, 1).getContext('2d');
   if (!context) return null;
-  context.font = `${fontSize}px ${HEADLESS_LAYOUT.fontStack}`;
+  context.font = `${fontSize}px ${RESUME_LAYOUT.fontStack}`;
   // Word doesn't kern, and neither does the preview.
   context.fontKerning = 'none';
   return (text) => context.measureText(text).width;

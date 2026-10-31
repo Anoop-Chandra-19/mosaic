@@ -110,7 +110,7 @@ export function datesOf(dates: string): { startDate?: string; endDate?: string }
   return end ? { startDate: start, endDate: end } : null;
 }
 
-/** An ISO date as the Headless format writes it — "Jan 2021", or "2021" — else as it is. */
+/** An ISO date as the resume format writes it — "Jan 2021", or "2021" — else as it is. */
 export function formatDate(value: string): string {
   const match = /^(\d{4})(?:-(\d{2}))?/.exec(value);
   if (!match) return value;

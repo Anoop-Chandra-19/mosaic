@@ -1,4 +1,4 @@
-import { getPageContentSizePt, HEADLESS_LAYOUT } from '@/lib/resume/headlessLayout';
+import { getPageContentSizePt, RESUME_LAYOUT } from '@/lib/resume/resumeLayout';
 import type { PaperSize } from '@/types/paper';
 import type { MeasureTextWidth } from './breakLinesLikeWord';
 
@@ -9,5 +9,5 @@ export function getEntryHeadingWidthPt(
 ): number {
   const width = getPageContentSizePt(paper).width;
   const trimmed = dates.trim();
-  return trimmed ? width - measure(trimmed) - HEADLESS_LAYOUT.entryHeadingGap : width;
+  return trimmed ? width - measure(trimmed) - RESUME_LAYOUT.entryHeadingGap : width;
 }

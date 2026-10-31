@@ -1,18 +1,18 @@
-import { HEADLESS_LAYOUT, PAPER_SIZE_PT } from '@/lib/resume/headlessLayout';
+import { RESUME_LAYOUT, PAPER_SIZE_PT } from '@/lib/resume/resumeLayout';
 import { LINK_BLUE } from '@shared/resume/resumeHeader';
 import type { PaperSize } from '@/types/paper';
 import type { NormalizedResumeExport } from '@/lib/resume/normalizeResumeExport';
 import { zipFiles } from './zipFiles';
 
 /*
- * The resume as a Word file, in the "Headless Headhunter" format the PDF prints: the same
- * margins, sizes, and 1.5-line body grid, which were measured off that format's own Word
- * template (`headlessLayout.ts`). Everything is set through named paragraph styles (Title,
+ * The resume as a Word file, in the format the PDF prints: the same margins, sizes, and
+ * 1.5-line body grid, which were measured off that format's own Word template
+ * (`resumeLayout.ts`). Everything is set through named paragraph styles (Title,
  * Heading 1, List Bullet, and two of Mosaic's own) so the file stays easy to edit in Word,
  * and header links are real Word hyperlinks.
  */
 
-const LYT = HEADLESS_LAYOUT;
+const LYT = RESUME_LAYOUT;
 
 const W_NS = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
 const R_NS = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships';

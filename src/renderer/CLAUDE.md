@@ -122,7 +122,7 @@ when called, never at import. State several screens share goes through a store
 ## Type
 
 - The interface is set in Source Sans 3 and Source Code Pro (`public/fonts/`, SIL OFL, loaded
-  from disk). The resume page keeps Arial and `HEADLESS_LAYOUT`; nothing below reaches it.
+  from disk). The resume page keeps Arial and `RESUME_LAYOUT`; nothing below reaches it.
 - Ten roles from the design (`Type - Scale and Font`): heading, editor, title, body, strong,
   secondary, meta, eyebrow, tag, key. Each is a `text-*` token in `index.css` carrying size,
   line height, tracking and weight (`secondary`'s is `text-support`, since `text-secondary`

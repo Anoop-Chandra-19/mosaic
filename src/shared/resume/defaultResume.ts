@@ -11,7 +11,7 @@ function item(id: string, kind: HeaderItemKind, text: string, url = ''): HeaderI
  */
 export const DEFAULT_RESUME: ResumeData = {
   schemaVersion: 1,
-  // The Headless header: how to reach you on one line, where you can work on the next.
+  // The format's header: how to reach you on one line, where you can work on the next.
   contact: {
     name: 'Your Name',
     header: {
@@ -39,7 +39,7 @@ export const DEFAULT_RESUME: ResumeData = {
       ],
     },
   },
-  // Sections follow the Headless format: Education above Work History, no
+  // Sections follow the resume format: Education above Work History, no
   // Summary or Skills block. Bullets show the shape the format asks for --
   // a keyword, how it was used, then the result or reason.
   sections: [

@@ -14,7 +14,7 @@ export const STARTER_KINDS: BuiltInSectionKind[] = [
   'projects',
 ];
 
-/** The header items nearly everyone fills in, empty, in the Headless format's two lines. */
+/** The header items nearly everyone fills in, empty, in the resume format's two lines. */
 const STARTER_HEADER: HeaderItemKind[][] = [
   ['phone', 'email', 'linkedin'],
   ['auth', 'location'],

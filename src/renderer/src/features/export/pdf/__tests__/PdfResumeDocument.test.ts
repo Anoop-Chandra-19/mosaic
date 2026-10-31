@@ -11,7 +11,7 @@ import {
   resume,
   section,
 } from '@/features/import/__tests__/resumeFixtures';
-import { HEADLESS_LAYOUT, PAPER_SIZE_PT } from '@/lib/resume/headlessLayout';
+import { RESUME_LAYOUT, PAPER_SIZE_PT } from '@/lib/resume/resumeLayout';
 import { normalizeResumeForExport } from '@/lib/resume/normalizeResumeExport';
 import { PdfResumeDocument } from '../PdfResumeDocument';
 
@@ -74,7 +74,7 @@ describe('PdfResumeDocument', () => {
       const [page] = (await readPdfContent(pdf)).pages;
       const runs = page.runs.filter((run) => run.text.trim());
       const dates = runs.find((run) => run.text.includes('January 2020'))!;
-      const rightMargin = PAPER_SIZE_PT[paperSize].width - HEADLESS_LAYOUT.marginSide;
+      const rightMargin = PAPER_SIZE_PT[paperSize].width - RESUME_LAYOUT.marginSide;
 
       expect(dates.x + dates.width).toBeLessThanOrEqual(rightMargin + 0.5);
       const besideDates = runs.filter((run) => Math.abs(run.y - dates.y) < 1 && run !== dates);
@@ -127,7 +127,7 @@ describe('PdfResumeDocument', () => {
     );
 
     expect(pages.length).toBeGreaterThan(1);
-    const bottom = PAPER_SIZE_PT.letter.height - HEADLESS_LAYOUT.marginBottom;
+    const bottom = PAPER_SIZE_PT.letter.height - RESUME_LAYOUT.marginBottom;
     for (const runs of pages) {
       expect(runs.length).toBeGreaterThan(0);
       for (const run of runs) expect(run.y).toBeLessThan(bottom);
@@ -135,7 +135,7 @@ describe('PdfResumeDocument', () => {
     const printed = pages.flat().flatMap((run) => run.text.match(/\bw\d+\b/g) ?? []);
     expect(printed).toEqual(words);
     expect(pages.flat().filter((run) => run.text.trim() === '•')).toHaveLength(2);
-    const textLeft = HEADLESS_LAYOUT.marginSide + HEADLESS_LAYOUT.bulletTextIndent;
+    const textLeft = RESUME_LAYOUT.marginSide + RESUME_LAYOUT.bulletTextIndent;
     for (const runs of pages.slice(1)) {
       for (const run of runs) expect(run.x).toBeCloseTo(textLeft, 0);
     }
