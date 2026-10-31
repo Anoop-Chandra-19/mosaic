@@ -1,4 +1,4 @@
-import { useActiveTemplate } from './useActiveTemplate';
+import { useActiveTemplate } from '@/stores/useActiveTemplate';
 import { useVersionDistance } from '@/features/history/useVersionDistance';
 
 /**

@@ -3,7 +3,7 @@ import { isSameShortcut } from './keyboardShortcuts';
 /*
  * Every keyboard shortcut Mosaic has, with the keys it starts on, and the rules for
  * rebinding them. A person's own keys are a preference (`shortcutBindings` in uiStore);
- * handlers and labels read them through `features/shortcuts/shortcutBindings.ts`, never
+ * handlers and labels read them through `stores/shortcutBindings.ts`, never
  * these defaults directly, so a rebound key works and shows everywhere at once.
  */
 

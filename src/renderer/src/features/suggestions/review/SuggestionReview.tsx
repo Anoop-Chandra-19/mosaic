@@ -1,8 +1,8 @@
 import { useEffect, useEffectEvent, useMemo, useRef, useState } from 'react';
 import { Check } from 'lucide-react';
 import { AppButton, AppTooltip, Text } from '@/components/ui-kit';
-import { formatPaneWidth, startPaneResize } from '@/features/shell/paneResize';
-import { matchesAction } from '@/features/shortcuts/shortcutBindings';
+import { formatPaneWidth, startPaneResize } from '@/lib/paneResize';
+import { matchesAction } from '@/stores/shortcutBindings';
 import { changeInViewTransition } from '@/features/view-transitions/changeInViewTransition';
 import { transitionClasses, TRANSITION_TYPE } from '@/features/view-transitions/transitionClasses';
 import { isTypingField, isUndoKey } from '@/lib/keyboardShortcuts';

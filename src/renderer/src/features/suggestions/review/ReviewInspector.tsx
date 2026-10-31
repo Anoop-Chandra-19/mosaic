@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Info } from 'lucide-react';
 import { AppButton, Text } from '@/components/ui-kit';
 import { ShortcutKeys } from '@/features/shortcuts/ShortcutKeys';
-import { getShortcutCombos, useShortcutLabel } from '@/features/shortcuts/shortcutBindings';
+import { getShortcutCombos, useShortcutLabel } from '@/stores/shortcutBindings';
 import type { ShortcutId } from '@/lib/shortcutCatalog';
 import { cn } from '@/lib/utils';
 import type { Proposal } from '@/types/agentProposal';

@@ -17,7 +17,7 @@ import {
 } from '@/features/view-transitions/transitionClasses';
 import { endHistoryTour } from '@/features/onboarding/history/endHistoryTour';
 import { tourTargetProps } from '@/features/onboarding/tourTargets';
-import { matchesAction } from '@/features/shortcuts/shortcutBindings';
+import { matchesAction } from '@/stores/shortcutBindings';
 import { isTypingField } from '@/lib/keyboardShortcuts';
 import type { ShortcutId } from '@/lib/shortcutCatalog';
 import { cn } from '@/lib/utils';

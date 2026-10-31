@@ -32,7 +32,7 @@ import { SIDEBAR_TAB_TARGET, tourTargetProps } from '@/features/onboarding/tourT
 import { useIsSideHandover } from '@/features/view-transitions/sideHandover';
 import { transitionClasses } from '@/features/view-transitions/transitionClasses';
 import { useIsWorkspaceReplaced } from '@/features/view-transitions/useShownSurface';
-import { formatPaneWidth, startPaneResize } from './paneResize';
+import { formatPaneWidth, startPaneResize } from '@/lib/paneResize';
 
 const tabs: { id: SidebarTab; label: string; caption: string; icon: React.ReactNode }[] = [
   {

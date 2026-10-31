@@ -1,4 +1,4 @@
-import { useShortcutLabel } from './shortcutBindings';
+import { useShortcutLabel } from '@/stores/shortcutBindings';
 
 /**
  * `intro`, then how to open the sheet from anywhere, with the keys as this computer writes

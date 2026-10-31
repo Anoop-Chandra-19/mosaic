@@ -26,7 +26,7 @@ import {
   Text,
 } from '@/components/ui-kit';
 import { CHOICE_CARD_CLASSES } from '@/components/kit/controlStyles';
-import { useActiveTemplate } from '@/features/templates/useActiveTemplate';
+import { useActiveTemplate } from '@/stores/useActiveTemplate';
 import { buildExportName, toFileName } from '@/lib/files/fileNames';
 import { filesService } from '@/lib/services/filesService';
 import { HeaderLinkControls } from '@/components/HeaderLinkControls';

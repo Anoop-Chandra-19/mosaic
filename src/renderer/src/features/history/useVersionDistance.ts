@@ -1,5 +1,5 @@
 import { useResumeStore } from '@/stores/resumeStore';
-import { useActiveTemplate } from '@/features/templates/useActiveTemplate';
+import { useActiveTemplate } from '@/stores/useActiveTemplate';
 
 /**
  * How far the draft has moved from the newest version in history. `changes` is only worth

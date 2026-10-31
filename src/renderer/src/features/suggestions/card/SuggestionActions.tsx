@@ -1,6 +1,6 @@
 import { Check, Pencil, RotateCcw, Trash2, Undo2, X, type LucideIcon } from 'lucide-react';
 import { AppButton, Text } from '@/components/ui-kit';
-import { useShortcutLabel } from '@/features/shortcuts/shortcutBindings';
+import { useShortcutLabel } from '@/stores/shortcutBindings';
 import { cn } from '@/lib/utils';
 import type { Proposal } from '@/types/agentProposal';
 import {

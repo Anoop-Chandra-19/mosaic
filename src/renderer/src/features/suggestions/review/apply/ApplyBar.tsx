@@ -8,7 +8,7 @@ import {
   AppPopoverTrigger,
   Text,
 } from '@/components/ui-kit';
-import { useShortcutLabel } from '@/features/shortcuts/shortcutBindings';
+import { useShortcutLabel } from '@/stores/shortcutBindings';
 import { transitionClasses } from '@/features/view-transitions/transitionClasses';
 import { cn } from '@/lib/utils';
 import type { ApplyPlan } from '../../proposals/apply/planApply';

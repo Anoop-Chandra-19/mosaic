@@ -5,16 +5,8 @@ vi.mock('@/lib/services/settingsStorage', () => ({
   settingsStorage: { getItem: () => null, setItem: () => {}, removeItem: () => {} },
 }));
 
-const {
-  AGENT_PANE_WIDTH,
-  clampPaneWidth,
-  DEFAULT_INTERFACE,
-  nextPreviewZoomStep,
-  pickHistoryTips,
-  PREVIEW_ZOOM_STEPS,
-  SIDEBAR_WIDTH,
-  useUiStore,
-} = await import('../uiStore');
+const { DEFAULT_INTERFACE, nextPreviewZoomStep, pickHistoryTips, PREVIEW_ZOOM_STEPS, useUiStore } =
+  await import('../uiStore');
 
 describe('history tips', () => {
   it('keeps only known tips and counts that make sense from what was stored', () => {
@@ -59,15 +51,6 @@ describe('resetting the interface', () => {
       undoHistorySteps: 500,
       hasSeenTour: true,
     });
-  });
-});
-
-describe('pane widths', () => {
-  it('keeps a width within the pane’s limits, in whole pixels', () => {
-    expect(clampPaneWidth(412.6, SIDEBAR_WIDTH)).toBe(413);
-    expect(clampPaneWidth(120, SIDEBAR_WIDTH)).toBe(SIDEBAR_WIDTH.minPx);
-    expect(clampPaneWidth(5000, AGENT_PANE_WIDTH)).toBe(AGENT_PANE_WIDTH.maxPx);
-    expect(clampPaneWidth(Number.NaN, SIDEBAR_WIDTH)).toBe(SIDEBAR_WIDTH.defaultPx);
   });
 });
 

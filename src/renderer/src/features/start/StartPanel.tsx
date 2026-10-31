@@ -10,7 +10,7 @@ import { AppButton, Text, textVariantClasses } from '@/components/ui-kit';
 import { MosaicMark } from '@/components/MosaicMark';
 
 import { cn } from '@/lib/utils';
-import { matchesAction, useShortcutLabel } from '@/features/shortcuts/shortcutBindings';
+import { matchesAction, useShortcutLabel } from '@/stores/shortcutBindings';
 import { createBlankResume } from '@/lib/resume/blankResume';
 import { createDefaultResume } from '@shared/resume/defaultResume';
 import { useOverlayStore } from '@/stores/overlayStore';

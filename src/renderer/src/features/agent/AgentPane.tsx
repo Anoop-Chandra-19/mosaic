@@ -1,8 +1,8 @@
 import { useEffect, useRef } from 'react';
 import { Sparkles, SquarePen, X } from 'lucide-react';
 import { AppButton, AppTooltip, Text } from '@/components/ui-kit';
-import { formatPaneWidth, startPaneResize } from '@/features/shell/paneResize';
-import { useShortcutLabel } from '@/features/shortcuts/shortcutBindings';
+import { formatPaneWidth, startPaneResize } from '@/lib/paneResize';
+import { useShortcutLabel } from '@/stores/shortcutBindings';
 import { useIsSideHandover } from '@/features/view-transitions/sideHandover';
 import { transitionClasses } from '@/features/view-transitions/transitionClasses';
 import { useIsWorkspaceReplaced } from '@/features/view-transitions/useShownSurface';

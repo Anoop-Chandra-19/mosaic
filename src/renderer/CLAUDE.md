@@ -160,7 +160,7 @@ off; a spec that wants them passes `withApp({ showTour: true })` or
 - Every shortcut is an action in `lib/shortcutCatalog.ts`, with its default keys and the
   rules for rebinding (fixed keys, refused keys, conflicts). A person's own keys are user
   data: `shortcutBindings` in `uiStore`, kept by Reset interface, never in bundles.
-- Read keys through `features/shortcuts/shortcutBindings.ts`: `matchesAction(event, id)` in
+- Read keys through `stores/shortcutBindings.ts`: `matchesAction(event, id)` in
   handlers, `useShortcutLabel(id)` in tooltips and hints. Never match or print a default
   combination directly, or a rebound key stops working or shows the old keys.
 - A new shortcut is a catalog entry, a label and a group in `features/shortcuts/shortcutList.ts`.

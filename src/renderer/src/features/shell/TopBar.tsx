@@ -8,11 +8,11 @@ import { showToast } from '@/stores/toastStore';
 import { useResumeStore } from '@/stores/resumeStore';
 import { useIsDarkTheme } from './useAppearance';
 import { useUiStore } from '@/stores/uiStore';
-import { useActiveTemplate } from '@/features/templates/useActiveTemplate';
+import { useActiveTemplate } from '@/stores/useActiveTemplate';
 import { useTemplateStatus } from '@/features/templates/useTemplateStatus';
 import { TemplateStatusBadge } from '@/features/templates/TemplateStatusBadge';
 import { tourTargetProps } from '@/features/onboarding/tourTargets';
-import { useShortcutLabel } from '@/features/shortcuts/shortcutBindings';
+import { useShortcutLabel } from '@/stores/shortcutBindings';
 import { DevToolsWrench } from '@/features/dev-tools/DevToolsWrench';
 
 /** Reading an older version is a read mode: the draft is left where it is. */
