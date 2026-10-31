@@ -29,8 +29,8 @@ import {
 const THINKING_SHIMMER =
   'animate-thinking-shimmer bg-[linear-gradient(90deg,var(--ink-muted)_0%,var(--ink-muted)_38%,var(--foreground)_50%,var(--ink-muted)_62%,var(--ink-muted)_100%)] bg-size-[260%_100%] bg-clip-text text-transparent motion-reduce:animate-none motion-reduce:bg-none motion-reduce:text-ink-soft';
 
-const ROW_CLASSES =
-  'flex items-start gap-2.25 border-t border-line px-2.75 py-1.5 first:border-t-0';
+const STEP_ROW_CLASSES = 'border-t border-line px-2.75 py-1.5 first:border-t-0';
+const ROW_CLASSES = cn(STEP_ROW_CLASSES, 'flex items-start gap-2.25');
 
 const STEP_TONES: Record<RowState, string> = {
   run: 'relative overflow-hidden bg-linear-to-r from-amber-soft to-transparent to-60% text-foreground before:absolute before:inset-y-0 before:left-0 before:w-0.5 before:bg-amber after:absolute after:inset-x-0 after:bottom-0 after:h-px after:animate-step-sweep after:bg-linear-to-r after:from-transparent after:via-amber after:to-transparent motion-reduce:after:animate-none',
@@ -79,24 +79,18 @@ function RowTime({
   );
 }
 
+/** The note runs under the time as well: a pane is narrow, and it wraps rather than lose its end. */
 function StepRow({ row }: { row: Extract<RunLineRow, { kind: 'step' }> }) {
   return (
-    <div className={cn(ROW_CLASSES, STEP_TONES[row.state])}>
+    <div
+      className={cn(
+        STEP_ROW_CLASSES,
+        'grid grid-cols-[auto_minmax(0,1fr)_auto] items-start gap-x-2.25',
+        STEP_TONES[row.state]
+      )}
+    >
       <StepMark state={row.state} />
-      <span className="min-w-0 flex-1">
-        {row.words}
-        {row.note && (
-          <Text
-            variant="meta"
-            className={cn(
-              'mt-0.5 block truncate',
-              row.state === 'fail' ? 'text-warn' : 'text-ink-faint'
-            )}
-          >
-            {row.note}
-          </Text>
-        )}
-      </span>
+      <span>{row.words}</span>
       {row.state === 'run' && row.startedAt !== undefined && (
         <RowTime isRunning>
           <LiveTime since={row.startedAt} />
@@ -106,6 +100,17 @@ function StepRow({ row }: { row: Extract<RunLineRow, { kind: 'step' }> }) {
         row.durationMs !== undefined &&
         isTimeShown(row.durationMs) && <RowTime>{formatSeconds(row.durationMs)}</RowTime>}
       {row.state === 'cut' && <RowTime>stopped</RowTime>}
+      {row.note && (
+        <Text
+          variant="meta"
+          className={cn(
+            'col-span-2 col-start-2 mt-0.5 wrap-break-word',
+            row.state === 'fail' ? 'text-warn' : 'text-ink-faint'
+          )}
+        >
+          {row.note}
+        </Text>
+      )}
     </div>
   );
 }
