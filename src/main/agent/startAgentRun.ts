@@ -15,6 +15,7 @@ import {
 } from '../db/conversations/runLog';
 import type { ConversationRun } from '../db/conversations/runs';
 import { readToolCallStamps } from '../db/conversations/toolCalls';
+import { logRunStarted, logStepAsked, logStepFinished } from '../dev/logRunEvents';
 import type { ModelProvider } from '../model-providers/modelProvider';
 import { assembleModelContext, type DraftStamp } from './assembleModelContext';
 import { buildSystemPrompt } from './buildSystemPrompt';
@@ -76,10 +77,11 @@ interface StartedRun extends ConversationRun {
 
 function beginRun({ db, ask, templateId, model }: AgentRunRequest): StartedRun {
   const choice = { templateId, provider: model.provider, model: model.name };
-  const { conversationId, runId, template } =
+  const { conversationId, runId, runNumber, template } =
     ask.type === 'user'
       ? startUserRun(db, { ...choice, conversationId: ask.conversationId, text: ask.text })
       : startCarryOnRun(db, { ...choice, conversationId: ask.conversationId });
+  logRunStarted({ runId, conversationId, runNumber, provider: model.provider, model: model.name });
   return {
     conversationId,
     runId,
@@ -129,6 +131,7 @@ async function loopSteps(
       readToolCallStamps(db, conversationId),
       draft
     );
+    logStepAsked(run.runId, step, messages.length);
     const reply = await requestModelReply({
       provider: modelProvider,
       request: { model: modelName, system, messages, tools, cacheKey },
@@ -150,6 +153,7 @@ async function loopSteps(
 
     addUsage(usage, reply.usage);
     const { parts, finish } = reply;
+    logStepFinished(run.runId, reply.usage, finish);
     storeModelReply(db, run, {
       parts,
       finish,

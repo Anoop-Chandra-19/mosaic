@@ -14,6 +14,8 @@ import {
 } from '@shared/ipc/agentChannels';
 import type { DevSwitches } from '@shared/types/devTools';
 import { createAgentRuns, type AgentRuns, type RunPage } from '../agent/agentRuns';
+import { devLog, isDevLogOn } from '../dev/devLog';
+import { logRunEnvelope } from '../dev/logRunEvents';
 import { createScriptedModelProvider } from '../dev/scriptedModelProvider';
 import { createModelProvider } from '../model-providers/createModelProvider';
 import { isKeyedProvider } from '@shared/types/secrets';
@@ -44,7 +46,10 @@ function runPage(page: WebContents): RunPage {
     if (!page.isDestroyed()) page.send(channel, payload);
   };
   return {
-    sendEvent: (envelope) => send(AGENT_EVENT, envelope),
+    sendEvent: (envelope) => {
+      if (isDevLogOn()) logRunEnvelope(envelope);
+      send(AGENT_EVENT, envelope);
+    },
     sendToolCall: (call) => send(AGENT_TOOL_CALL, call),
     watchGone: (onGone) => watchPageGone(page, onGone),
   };
@@ -68,10 +73,13 @@ export function registerAgentHandlers(
   };
   const runs = createAgentRuns({
     currentDb: openDb,
-    createProvider: async (choice) =>
-      readDevSwitches?.().scriptedModel
-        ? { ok: true, modelProvider: createScriptedModelProvider() }
-        : createModelProvider(choice, { fetch: net.fetch, readApiKey: apiKeys.read }),
+    createProvider: async (choice) => {
+      if (!readDevSwitches?.().scriptedModel) {
+        return createModelProvider(choice, { fetch: net.fetch, readApiKey: apiKeys.read });
+      }
+      devLog('run', 'the Scripted model switch is on: no provider is asked');
+      return { ok: true, modelProvider: createScriptedModelProvider() };
+    },
     noteKeyAnswer: ({ provider }, answer, runStartedAt) => {
       if (!isKeyedProvider(provider)) return;
       const noted =

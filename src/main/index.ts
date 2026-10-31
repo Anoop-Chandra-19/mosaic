@@ -1,5 +1,7 @@
 import { app } from 'electron';
 import { closeAppDatabase, getAppDatabase, openAppDatabaseOrQuit } from './db/appDatabase';
+import { devLogStep } from './dev/devLog';
+import { isDevLogWanted, startDevLog } from './dev/startDevLog';
 import { redirectDevProfile } from './devProfile';
 import { registerAgentHandlers } from './ipc/registerAgentHandlers';
 import { registerBackupHandlers } from './ipc/registerBackupHandlers';
@@ -23,6 +25,7 @@ import {
 // `db/appDatabase`, the IPC handlers `ipc/`, and the window `window/`.
 
 redirectDevProfile();
+if (isDevLogWanted()) startDevLog();
 
 // One instance only: SQLite has a single writer, and a second window over the same data
 // would race it.
@@ -34,7 +37,7 @@ if (!app.requestSingleInstanceLock()) {
   app.on('will-quit', closeAppDatabase);
 
   void app.whenReady().then(() => {
-    if (!openAppDatabaseOrQuit()) return;
+    if (!devLogStep('main', 'database opened', openAppDatabaseOrQuit)) return;
     const apiKeys = createAppApiKeys();
     registerDbHandlers(getAppDatabase, isAppFrame);
     registerFileHandlers(isAppFrame);
