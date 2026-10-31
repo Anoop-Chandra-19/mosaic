@@ -1,6 +1,6 @@
 import { History } from 'lucide-react';
 import { Text, textVariantClasses } from '@/components/ui-kit';
-import { ShortcutKeys } from '@/features/shortcuts/ShortcutKeys';
+import { ShortcutKeys } from '@/components/ShortcutKeys';
 import { cn } from '@/lib/utils';
 import type { DevToolRun } from '@shared/types/devTools';
 import { DEV_TOOL_GROUPS, type DevTool } from '../tools/devTool';

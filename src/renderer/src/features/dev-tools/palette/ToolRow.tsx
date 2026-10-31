@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { ChevronRight } from 'lucide-react';
 import { AppSwitch, Chip, Text } from '@/components/ui-kit';
-import { ShortcutKeys } from '@/features/shortcuts/ShortcutKeys';
+import { ShortcutKeys } from '@/components/ShortcutKeys';
 import { cn } from '@/lib/utils';
 import type { DevSwitch } from '@shared/types/devTools';
 import type { DevTool } from '../tools/devTool';

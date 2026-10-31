@@ -1,6 +1,6 @@
 import { Check, Undo2 } from 'lucide-react';
 import { AppButton, Text } from '@/components/ui-kit';
-import { ShortcutKeys } from '@/features/shortcuts/ShortcutKeys';
+import { ShortcutKeys } from '@/components/ShortcutKeys';
 import { getShortcutCombos } from '@/stores/shortcutBindings';
 import type { Proposal } from '@/types/agentProposal';
 import type { ApplyPlan } from '../../proposals/apply/planApply';

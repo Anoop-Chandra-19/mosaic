@@ -1,7 +1,7 @@
 import { Pencil } from 'lucide-react';
 import { AppButton, Text } from '@/components/ui-kit';
+import { ShortcutKeys } from '@/components/ShortcutKeys';
 import { cn } from '@/lib/utils';
-import { ShortcutKeys } from './ShortcutKeys';
 
 interface ShortcutRowViewProps {
   label: string;

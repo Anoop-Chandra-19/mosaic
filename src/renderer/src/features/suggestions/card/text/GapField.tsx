@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { ShortcutKeys } from '@/features/shortcuts/ShortcutKeys';
+import { ShortcutKeys } from '@/components/ShortcutKeys';
 import { cn } from '@/lib/utils';
 
 /**
