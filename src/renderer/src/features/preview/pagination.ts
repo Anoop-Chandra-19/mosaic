@@ -22,7 +22,6 @@ type PaginatedBullet = PreviewBullet & { _lineStarts?: number[] };
 
 type PaginatedEntry = PreviewEntry & {
   _height?: number;
-  _sourceKey?: string;
   /** The line starts of what is left of a text-only entry carried onto a new page. */
   _lineStarts?: number[];
 };
@@ -66,14 +65,14 @@ export function normalizeSections(sections: ResumeSection[]): PreviewRenderableS
     entries: entries.map(
       ({ id, text, heading, dates, bullets, title, organization, location }): PaginatedEntry =>
         layout === 'lines'
-          ? { id, text, bullets: [], _sourceKey: id }
+          ? { id, sourceId: id, text, bullets: [] }
           : {
               id,
+              sourceId: id,
               heading,
               fields: { title, organization, location },
               dates,
               bullets,
-              _sourceKey: id,
             }
     ),
   }));
@@ -127,6 +126,7 @@ function splitBulletByLines(
     rest: {
       ...bullet,
       id: `${bullet.id}-cont-${continuationIndex}`,
+      sourceId: bullet.sourceId ?? bullet.id,
       text: bullet.text.slice(at),
       isContinued: true,
       _lineStarts: lineStarts.slice(kept).map((start) => start - at),
@@ -141,7 +141,7 @@ function getEntryHeight(
 ) {
   if (entry._height) return entry._height;
 
-  const sourceKey = entry._sourceKey ?? entry.id;
+  const sourceKey = entry.sourceId ?? entry.id;
   const entryKey = `${section.id}::${sourceKey}`;
   // A continued entry holds only some of the bullets the measured entry did.
   const isWholeEntry = sourceKey === entry.id;
@@ -178,8 +178,7 @@ function splitEntryByAvailableHeight(
   if (section.layout === 'lines') {
     const text = entry.text ?? '';
     const lineStarts =
-      entry._lineStarts ??
-      measurements.lineStarts[`${section.id}::${entry._sourceKey ?? entry.id}`];
+      entry._lineStarts ?? measurements.lineStarts[`${section.id}::${entry.sourceId ?? entry.id}`];
 
     if (lineStarts) {
       if (lineStarts.length * BODY_LINE_HEIGHT_PX <= availableHeight) {
@@ -239,7 +238,7 @@ function splitEntryByAvailableHeight(
     };
   }
 
-  const entryKey = `${section.id}::${entry._sourceKey ?? entry.id}`;
+  const entryKey = `${section.id}::${entry.sourceId ?? entry.id}`;
   const headingHeight =
     entry.heading || entry.dates
       ? (measurements.entryHeadingHeights[entryKey] ?? HEADING_LINE_HEIGHT_PX)
@@ -467,7 +466,7 @@ export function createFallbackMeasurements(
     sectionTitleHeights[section.id] = HEADLESS_LAYOUT.bodyLeading;
 
     for (const entry of section.entries as PaginatedEntry[]) {
-      const key = `${section.id}::${entry._sourceKey ?? entry.id}`;
+      const key = `${section.id}::${entry.sourceId ?? entry.id}`;
       entryHeights[key] =
         section.layout === 'lines'
           ? estimateTextHeight(entry.text ?? '', BODY_LINE_HEIGHT_PX)
