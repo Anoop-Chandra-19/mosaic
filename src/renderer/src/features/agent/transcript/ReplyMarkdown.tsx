@@ -5,6 +5,7 @@ import { Square, SquareCheck } from 'lucide-react';
 import { Text, textVariantClasses } from '@/components/ui-kit';
 import { cn } from '@/lib/utils';
 import { appendCaret, CARET_CLASS } from './appendCaret';
+import { splitFinishedBlocks } from './splitFinishedBlocks';
 import { TracingDots } from './TracingDots';
 
 /*
@@ -128,6 +129,24 @@ interface ReplyMarkdownProps {
   isWriting?: boolean;
 }
 
+/** One run of markdown. It draws no element of its own, so its blocks share the reply's spacing. */
+function MarkdownBlock({ text, isWriting }: { text: string; isWriting: boolean }) {
+  return (
+    <Markdown
+      remarkPlugins={PLUGINS}
+      rehypePlugins={isWriting ? WRITING_PLUGINS : undefined}
+      components={ELEMENTS}
+    >
+      {isWriting ? closeForNow(text) : text}
+    </Markdown>
+  );
+}
+
+/**
+ * While writing, a block at a time, so a finished block is never parsed again however long the
+ * reply grows. Once written, the text is parsed whole, since a link's address can be defined
+ * in another block.
+ */
 export function ReplyMarkdown({ text, isWriting = false }: ReplyMarkdownProps) {
   if (isWriting && text.trim() === '') {
     return (
@@ -136,17 +155,18 @@ export function ReplyMarkdown({ text, isWriting = false }: ReplyMarkdownProps) {
       </p>
     );
   }
+  const blocks = isWriting ? splitFinishedBlocks(text) : [text];
   return (
     <div
       className={cn(textVariantClasses('body'), 'wrap-break-word [&>*+*]:mt-2.25 [&>p+p]:mt-1.5')}
     >
-      <Markdown
-        remarkPlugins={PLUGINS}
-        rehypePlugins={isWriting ? WRITING_PLUGINS : undefined}
-        components={ELEMENTS}
-      >
-        {isWriting ? closeForNow(text) : text}
-      </Markdown>
+      {blocks.map((block, index) => (
+        <MarkdownBlock
+          key={index}
+          text={block}
+          isWriting={isWriting && index === blocks.length - 1}
+        />
+      ))}
     </div>
   );
 }

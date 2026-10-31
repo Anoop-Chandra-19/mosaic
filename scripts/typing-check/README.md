@@ -9,6 +9,10 @@ prints for each one:
 - **preview updated**: how many keys the preview redrew for (React skips some under load);
 - **caught up**: how long after the last key the preview showed it.
 
+One more run types into a 40-bullet resume while a long reply streams from a stubbed server,
+a small piece every 8ms, and prints the slowest key, how many times a second the reply
+redrew, its late frames, and the page's long tasks.
+
 Run by hand when the editor, the preview, or pagination changes, and compare with a run
 before the change. Never in CI.
 

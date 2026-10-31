@@ -39,6 +39,16 @@ describe('ReplyMarkdown', () => {
     );
   });
 
+  it('while writing, draws its finished blocks as the written reply does', () => {
+    const finished =
+      '**One.**\n\n- Go\n\n- SQL\n\n| Skill |\n| --- |\n| Go |\n\n```\ncode\n\nmore\n```\n\n';
+    // Line breaks between blocks draw nothing; a whole parse has them and separate ones don't.
+    const withoutBreaks = (markup: string) => markup.replaceAll('>\n<', '><');
+    expect(withoutBreaks(render(`${finished}Two.`, true).replace('▍', ''))).toBe(
+      withoutBreaks(render(`${finished}Two.`))
+    );
+  });
+
   it('while writing nothing yet, shows the wait, with no caret', () => {
     const markup = render('', true);
     expect(markup).toContain('<svg');
