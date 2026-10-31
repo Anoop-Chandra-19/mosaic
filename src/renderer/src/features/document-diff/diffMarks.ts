@@ -11,13 +11,16 @@ import { cn } from '@/lib/utils';
 export const QUIET_WHILE_SKIMMING =
   'transition-[background-color] duration-120 in-data-skimming:bg-transparent motion-reduce:transition-none';
 
+const ADDED_TINT = cn(
+  'rounded-[0.125rem] bg-add-soft no-underline [box-decoration-break:clone]',
+  QUIET_WHILE_SKIMMING
+);
+
 export const DIFF_MARKS = {
   removed: 'text-ink-muted line-through decoration-del decoration-[length:var(--diff-line,1.5px)]',
-  added: cn(
-    'rounded-[0.125rem] bg-add-soft no-underline [box-decoration-break:clone]',
-    'shadow-[inset_0_calc(var(--diff-line,1.5px)*-1)_0_var(--add-line)]',
-    QUIET_WHILE_SKIMMING
-  ),
+  added: cn(ADDED_TINT, 'shadow-[inset_0_calc(var(--diff-line,1.5px)*-1)_0_var(--add-line)]'),
+  /** A whole new line among lines that stay: its bar marks it, so it needs no underline. */
+  addedLine: ADDED_TINT,
 };
 
 /**

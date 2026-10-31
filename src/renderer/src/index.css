@@ -531,7 +531,7 @@
   /* An entry or section waiting to leave the page, in review. */
   --paper-faded: #8f8f8f;
   --paper-tag-line: #b9b9b9;
-  --paper-mark-hover: oklch(0.6 0 0 / 18%);
+  --paper-mark-hover: oklch(0 0 0 / 3.5%);
   /*
    * The assistant's suggestions on the page: a warm wash for changed text, the green above
    * for added text and kept ones, a dot in the margin for a check to look at.

@@ -4,9 +4,9 @@ import { cn } from '@/lib/utils';
 import { describeChangeTip } from '@/lib/resume/changes/describeChanges';
 import type { EntryHeadingFields } from '@/lib/resume/entryHeading';
 import { ENTRY_HEADING_SEPARATOR } from '@/lib/resume/entryHeading';
+import { readFieldPhrases } from '@/lib/resume/changes/readFieldPhrases';
 import {
   getChangeTone,
-  readWholeEdit,
   type Change,
   type ChangeMove,
   type ChangeTone,
@@ -26,7 +26,7 @@ const BAR_TONE: Record<ChangeTone, string> = {
   add: 'bg-paper-add',
   del: 'bg-paper-del',
 };
-const HOVER = 'cursor-help rounded-[2px] hover:shadow-[0_0_0_2px_var(--paper-mark-hover)]';
+const HOVER = 'cursor-help rounded-[2px] hover:bg-paper-mark-hover';
 
 const isGone = (change: Change) => change.kind === 'remove' || change.kind === 'hide';
 
@@ -47,6 +47,8 @@ interface TipProps {
   otherSide: string;
   /** How far the hover reaches into the margin, over the line's marks there; none if 0. */
   gutterReachPx?: number;
+  /** The whole line is the target, across its wraps; otherwise only this part of a line is. */
+  isWholeLine?: boolean;
   children: ReactNode;
 }
 
@@ -54,11 +56,11 @@ interface TipProps {
  * A marked line's one hover target: its text, and its marks in the margin up to the text.
  * The tip follows the pointer along the line, below it.
  */
-function Tip({ changes, otherSide, gutterReachPx = 0, children }: TipProps) {
+function Tip({ changes, otherSide, gutterReachPx = 0, isWholeLine = false, children }: TipProps) {
   const topLevel = changes.find((change) => !change.parentId && change.kind !== 'move');
   return (
     <AppTooltip content={describeTips(changes, otherSide)} shouldFollowPointer>
-      <span data-change-id={topLevel?.id} className={cn(HOVER, PAPER_INK)}>
+      <span data-change-id={topLevel?.id} className={cn(HOVER, PAPER_INK, isWholeLine && 'block')}>
         {gutterReachPx > 0 && (
           <span
             aria-hidden
@@ -107,7 +109,7 @@ function MoveGlyph({ move, gutter }: { move: Change; gutter: MarkGutter }) {
 }
 
 function ShortField({ change }: { change: Change }) {
-  return <PhraseText phrases={readWholeEdit(change)} side="both" />;
+  return <PhraseText phrases={readFieldPhrases(change)} side="both" />;
 }
 
 function MarkedContent({ change, text }: { change: Change; text: string }) {
@@ -124,7 +126,7 @@ function MarkedContent({ change, text }: { change: Change; text: string }) {
     );
   }
   if (change.kind === 'add' || change.kind === 'show') {
-    return <span className={DIFF_MARKS.added}>{text}</span>;
+    return <span className={DIFF_MARKS.addedLine}>{text}</span>;
   }
   if (change.kind !== 'edit') return text;
   if (!change.phrases) return <ShortField change={change} />;
@@ -155,6 +157,7 @@ export function MarkedLine({ changes, text, otherSide, gutter }: MarkedLineProps
         changes={changes}
         otherSide={otherSide}
         gutterReachPx={measureGutterReach(gutter, move !== undefined)}
+        isWholeLine
       >
         {change ? <MarkedContent change={change} text={text} /> : text}
       </Tip>
@@ -230,6 +233,7 @@ export function MarkedHeading({ changes, heading, fields, otherSide }: MarkedHea
         changes={changes}
         otherSide={otherSide}
         gutterReachPx={measureGutterReach(LINE_GUTTER, move !== undefined)}
+        isWholeLine
       >
         {entryChange ? (
           <MarkedContent change={entryChange} text={heading} />
