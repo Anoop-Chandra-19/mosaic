@@ -85,7 +85,7 @@ describe('normalizeSections', () => {
         layout: 'lines',
         label: 'Summary',
         entries: [
-          { id: 'summary-1', text: 'Focused builder.', bullets: [], _sourceKey: 'summary-1' },
+          { id: 'summary-1', sourceId: 'summary-1', text: 'Focused builder.', bullets: [] },
         ],
       },
       {
@@ -95,11 +95,11 @@ describe('normalizeSections', () => {
         entries: [
           {
             id: 'job-1',
+            sourceId: 'job-1',
             heading: 'Engineer, Mosaic',
             fields: { title: 'Engineer', organization: 'Mosaic', location: '' },
             dates: '2024',
             bullets: [{ id: 'b1', text: 'Built export flow' }],
-            _sourceKey: 'job-1',
           },
         ],
       },
@@ -155,6 +155,43 @@ describe('paginateSections', () => {
     expect(pages).toHaveLength(2);
     expect(pages[0][0].entries.map((entry) => entry.id)).toEqual(['job-1']);
     expect(pages[1][0].entries.map((entry) => entry.id)).toEqual(['job-2-cont-0']);
+  });
+
+  it('keeps naming the entry an entry carried to the next page came from', () => {
+    const [section] = normalizeSections([
+      {
+        id: 'experience',
+        kind: 'experience',
+        layout: 'entries',
+        label: 'Experience',
+        order: 0,
+        items: [
+          {
+            id: 'job-1',
+            selected: true,
+            title: 'Engineer',
+            bullets: [{ id: 'b1', selected: true, text: 'Built export flow' }],
+          },
+          {
+            id: 'job-2',
+            selected: true,
+            title: 'Analyst',
+            bullets: [{ id: 'b2', selected: true, text: 'Checked the tables' }],
+          },
+        ],
+      },
+    ]);
+    const pages = paginateSections(
+      [section],
+      createMeasurements({
+        sectionTitleHeights: { experience: 10 },
+        entryHeights: { 'experience::job-1': 40, 'experience::job-2': 40 },
+      }),
+      90
+    );
+    const carried = pages[1][0].entries[0];
+    expect(carried.id).not.toBe('job-2');
+    expect(carried.sourceId).toBe('job-2');
   });
 
   it('moves an entry with no bullets to the next page whole, rather than losing it', () => {

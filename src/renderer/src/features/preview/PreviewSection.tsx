@@ -6,14 +6,20 @@ import { cn } from '@/lib/utils';
 import type { PageDecorations } from './pageDecorations';
 
 export interface PreviewBullet {
+  /** This copy's, unique on the pages. */
   id: string;
+  /** The bullet it is part of, when the pages split it. */
+  sourceId?: string;
   text: string;
   /** The rest of a bullet carried over from the page before, so it has no marker. */
   isContinued?: boolean;
 }
 
 export interface PreviewEntry {
+  /** This copy's, unique on the pages. */
   id: string;
+  /** The entry it is all or part of, when the pages carry it over or split it. */
+  sourceId?: string;
   /** The printed left side: title, organization, and location (`formatEntryHeading`). */
   heading?: string;
   /** The heading's parts, for a surface that draws them one by one. */
@@ -47,6 +53,12 @@ const decorate = (
   id: string,
   text: string
 ) => (slot ? slot(id, text) : text);
+
+/**
+ * What the page's copy of a thing is called to everyone outside the page: a surface marks, finds
+ * and outlines the entry or bullet, wherever the pages put it or however they split it.
+ */
+const readSourceId = ({ id, sourceId }: { id: string; sourceId?: string }) => sourceId ?? id;
 
 export function PreviewSection({ section, decorations }: PreviewSectionProps) {
   const isTextOnly = section.layout === 'lines';
@@ -85,18 +97,18 @@ export function PreviewSection({ section, decorations }: PreviewSectionProps) {
               key={entry.id}
               className={positioned}
               style={bodyText}
-              data-preview-entry-id={entry.id}
-              data-preview-entry-key={`${section.id}::${entry.id}`}
+              data-preview-entry-id={readSourceId(entry)}
+              data-preview-entry-key={`${section.id}::${readSourceId(entry)}`}
               data-preview-section-id={section.id}
             >
-              {decorate(decorations?.line, entry.id, entry.text ?? '')}
+              {decorate(decorations?.line, readSourceId(entry), entry.text ?? '')}
             </p>
           ) : (
             <article
               key={entry.id}
-              className={decorations?.blockClassName?.(entry.id)}
-              data-preview-entry-id={entry.id}
-              data-preview-entry-key={`${section.id}::${entry.id}`}
+              className={decorations?.blockClassName?.(readSourceId(entry))}
+              data-preview-entry-id={readSourceId(entry)}
+              data-preview-entry-key={`${section.id}::${readSourceId(entry)}`}
               data-preview-section-id={section.id}
             >
               {(entry.heading || entry.dates) && (
@@ -110,16 +122,20 @@ export function PreviewSection({ section, decorations }: PreviewSectionProps) {
                     marginBottom:
                       entry.bullets.length > 0 ? `${LYT.entryHeadingMarginBottom}px` : 0,
                   }}
-                  data-preview-entry-heading-key={`${section.id}::${entry.id}`}
+                  data-preview-entry-heading-key={`${section.id}::${readSourceId(entry)}`}
                 >
                   <h3>
                     {decorations?.entryHeading
-                      ? decorations.entryHeading(entry.id, entry.heading ?? '', entry.fields)
+                      ? decorations.entryHeading(
+                          readSourceId(entry),
+                          entry.heading ?? '',
+                          entry.fields
+                        )
                       : entry.heading}
                   </h3>
                   {entry.dates && (
                     <p className="shrink-0 text-right">
-                      {decorate(decorations?.entryDates, entry.id, entry.dates)}
+                      {decorate(decorations?.entryDates, readSourceId(entry), entry.dates)}
                     </p>
                   )}
                 </div>
@@ -139,9 +155,9 @@ export function PreviewSection({ section, decorations }: PreviewSectionProps) {
                     <li
                       key={bullet.id}
                       className={cn(bullet.isContinued && 'list-none', positioned)}
-                      data-preview-bullet-id={bullet.id}
+                      data-preview-bullet-id={readSourceId(bullet)}
                     >
-                      {decorate(decorations?.bullet, bullet.id, bullet.text)}
+                      {decorate(decorations?.bullet, readSourceId(bullet), bullet.text)}
                     </li>
                   ))}
                 </ul>
