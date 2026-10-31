@@ -7,11 +7,8 @@ import type { Change, ChangeTarget } from '@/lib/resume/changes/resumeChange';
  */
 export type MarkPlace = 'name' | 'item' | 'section' | 'entry' | 'bullet';
 
-/** The changes the page marks, by the thing each sits on, and how hover tips name the other side. */
-export interface PageMarks {
-  otherSide: string;
-  byPlace: Map<string, Change[]>;
-}
+/** The changes the page marks, by the thing each sits on. */
+export type PageMarks = Map<string, Change[]>;
 
 /** How far into the left margin a mark's bar and move glyph sit, from the marked text. */
 export interface MarkGutter {
@@ -41,17 +38,17 @@ function placeKeyOf(target: ChangeTarget): string | null {
 }
 
 /** Every change, children included, by where it is marked. */
-export function collectPageMarks(changes: readonly Change[], otherSide: string): PageMarks {
-  const byPlace = new Map<string, Change[]>();
+export function collectPageMarks(changes: readonly Change[]): PageMarks {
+  const marks: PageMarks = new Map();
   for (const change of changes) {
     const key = placeKeyOf(change.target);
-    if (key) byPlace.set(key, [...(byPlace.get(key) ?? []), change]);
+    if (key) marks.set(key, [...(marks.get(key) ?? []), change]);
   }
-  return { otherSide, byPlace };
+  return marks;
 }
 
-export function findMarks(marks: PageMarks | undefined, place: MarkPlace, id: string): Change[] {
-  return marks?.byPlace.get(`${place}:${id}`) ?? [];
+export function findMarks(marks: PageMarks, place: MarkPlace, id: string): Change[] {
+  return marks.get(`${place}:${id}`) ?? [];
 }
 
 const isGone = (change: Change) => change.kind === 'remove' || change.kind === 'hide';

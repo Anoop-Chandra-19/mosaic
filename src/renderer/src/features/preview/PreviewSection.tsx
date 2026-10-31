@@ -1,10 +1,9 @@
 import type { ReactNode } from 'react';
 import type { EntryHeadingFields } from '@/lib/resume/entryHeading';
 import type { SectionLayout } from '@shared/types/resume';
-import { MarkedDates, MarkedHeading, MarkedLine } from '@/features/document-diff/PageMarkParts';
-import { findMarks, LINE_GUTTER, type PageMarks } from '@/features/document-diff/pageMarks';
 import { HEADLESS_LAYOUT as LYT } from '@/lib/resume/headlessLayout';
 import { cn } from '@/lib/utils';
+import type { PageDecorations } from './pageDecorations';
 
 export interface PreviewBullet {
   id: string;
@@ -17,7 +16,7 @@ export interface PreviewEntry {
   id: string;
   /** The printed left side: title, organization, and location (`formatEntryHeading`). */
   heading?: string;
-  /** The heading's parts, for marking the one that changed. */
+  /** The heading's parts, for a surface that draws them one by one. */
   fields?: EntryHeadingFields;
   dates?: string;
   text?: string;
@@ -33,25 +32,8 @@ export interface PreviewRenderableSection {
   isContinued?: boolean;
 }
 
-/**
- * A surface's own marks around the page's text, as the suggestion review draws them; each
- * wraps what would print, by the bullet's or entry's id. Exports never pass these.
- */
-export interface PageDecorations {
-  bullet?: (bulletId: string, text: ReactNode) => ReactNode;
-  /** A line of a lines section, by its item's id. */
-  line?: (lineId: string, text: ReactNode) => ReactNode;
-  entryHeading?: (entryId: string, heading: ReactNode) => ReactNode;
-  entryDates?: (entryId: string, dates: ReactNode) => ReactNode;
-  sectionLabel?: (sectionId: string, label: ReactNode) => ReactNode;
-  /** A class for a whole entry or section, by its id. It must not change the layout. */
-  blockClassName?: (id: string) => string | undefined;
-}
-
 interface PreviewSectionProps {
   section: PreviewRenderableSection;
-  /** What changed against another version, marked on the page; exports never pass this. */
-  marks?: PageMarks;
   decorations?: PageDecorations;
 }
 
@@ -61,26 +43,14 @@ const bodyText = {
 };
 
 const decorate = (
-  wrap: ((id: string, node: ReactNode) => ReactNode) | undefined,
+  slot: ((id: string, text: string) => ReactNode) | undefined,
   id: string,
-  node: ReactNode
-) => (wrap ? wrap(id, node) : node);
+  text: string
+) => (slot ? slot(id, text) : text);
 
-/** A bullet's marks sit past its marker, in the same margin as a heading's. */
-const BULLET_GUTTER = {
-  barPx: LYT.bulletTextIndent + LINE_GUTTER.barPx,
-  glyphPx: LYT.bulletTextIndent + LINE_GUTTER.glyphPx,
-};
-
-export function PreviewSection({ section, marks, decorations }: PreviewSectionProps) {
+export function PreviewSection({ section, decorations }: PreviewSectionProps) {
   const isTextOnly = section.layout === 'lines';
-  const otherSide = marks?.otherSide ?? '';
-  const markLine = (changes: ReturnType<typeof findMarks>, text: string, gutter = LINE_GUTTER) =>
-    marks ? (
-      <MarkedLine changes={changes} text={text} otherSide={otherSide} gutter={gutter} />
-    ) : (
-      text
-    );
+  const positioned = cn(decorations && 'relative');
 
   return (
     <section
@@ -100,15 +70,11 @@ export function PreviewSection({ section, marks, decorations }: PreviewSectionPr
       */}
       {!section.isContinued && (
         <h2
-          className={cn('font-bold', marks && 'relative')}
+          className={cn('font-bold', positioned)}
           style={bodyText}
           data-preview-section-title-id={section.id}
         >
-          {decorate(
-            decorations?.sectionLabel,
-            section.id,
-            markLine(findMarks(marks, 'section', section.id), section.label)
-          )}
+          {decorate(decorations?.sectionLabel, section.id, section.label)}
         </h2>
       )}
 
@@ -117,17 +83,13 @@ export function PreviewSection({ section, marks, decorations }: PreviewSectionPr
           isTextOnly ? (
             <p
               key={entry.id}
-              className={cn(marks && 'relative')}
+              className={positioned}
               style={bodyText}
               data-preview-entry-id={entry.id}
               data-preview-entry-key={`${section.id}::${entry.id}`}
               data-preview-section-id={section.id}
             >
-              {decorate(
-                decorations?.line,
-                entry.id,
-                markLine(findMarks(marks, 'entry', entry.id), entry.text ?? '')
-              )}
+              {decorate(decorations?.line, entry.id, entry.text ?? '')}
             </p>
           ) : (
             <article
@@ -141,7 +103,7 @@ export function PreviewSection({ section, marks, decorations }: PreviewSectionPr
                 // Job and project lines are italic, never bold. Only an entry
                 // that has bullets needs the gap beneath its title line.
                 <div
-                  className={cn('flex items-baseline justify-between italic', marks && 'relative')}
+                  className={cn('flex items-baseline justify-between italic', positioned)}
                   style={{
                     ...bodyText,
                     gap: `${LYT.entryHeadingGap}px`,
@@ -151,36 +113,13 @@ export function PreviewSection({ section, marks, decorations }: PreviewSectionPr
                   data-preview-entry-heading-key={`${section.id}::${entry.id}`}
                 >
                   <h3>
-                    {decorate(
-                      decorations?.entryHeading,
-                      entry.id,
-                      marks ? (
-                        <MarkedHeading
-                          changes={findMarks(marks, 'entry', entry.id)}
-                          heading={entry.heading ?? ''}
-                          fields={entry.fields ?? { title: '', organization: '', location: '' }}
-                          otherSide={otherSide}
-                        />
-                      ) : (
-                        entry.heading
-                      )
-                    )}
+                    {decorations?.entryHeading
+                      ? decorations.entryHeading(entry.id, entry.heading ?? '', entry.fields)
+                      : entry.heading}
                   </h3>
                   {entry.dates && (
                     <p className="shrink-0 text-right">
-                      {decorate(
-                        decorations?.entryDates,
-                        entry.id,
-                        marks ? (
-                          <MarkedDates
-                            changes={findMarks(marks, 'entry', entry.id)}
-                            dates={entry.dates}
-                            otherSide={otherSide}
-                          />
-                        ) : (
-                          entry.dates
-                        )
-                      )}
+                      {decorate(decorations?.entryDates, entry.id, entry.dates)}
                     </p>
                   )}
                 </div>
@@ -199,14 +138,10 @@ export function PreviewSection({ section, marks, decorations }: PreviewSectionPr
                   {entry.bullets.map((bullet) => (
                     <li
                       key={bullet.id}
-                      className={cn(bullet.isContinued && 'list-none', marks && 'relative')}
+                      className={cn(bullet.isContinued && 'list-none', positioned)}
                       data-preview-bullet-id={bullet.id}
                     >
-                      {decorate(
-                        decorations?.bullet,
-                        bullet.id,
-                        markLine(findMarks(marks, 'bullet', bullet.id), bullet.text, BULLET_GUTTER)
-                      )}
+                      {decorate(decorations?.bullet, bullet.id, bullet.text)}
                     </li>
                   ))}
                 </ul>

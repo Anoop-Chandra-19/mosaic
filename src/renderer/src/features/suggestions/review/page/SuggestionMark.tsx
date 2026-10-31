@@ -1,5 +1,5 @@
 import { use, type ReactNode } from 'react';
-import { GAP_MARK } from '../../proposals/checks/unfilledGap';
+import { FlaggedText } from '../../card/text/SuggestionText';
 import { labelSuggestionKind } from '../../proposals/describeSuggestion';
 import { cn } from '@/lib/utils';
 import type { SuggestionMark as Mark, SuggestionMove } from './suggestionPage';
@@ -27,20 +27,11 @@ const CURRENT_CLASSES: Record<Mark['look'], string> = {
 };
 
 /** A number only the user knows, shown as the gap the suggestion left for it. */
-function withGaps(text: ReactNode): ReactNode {
-  if (typeof text !== 'string' || !text.includes(GAP_MARK)) return text;
-  return text.split(GAP_MARK).flatMap((part, index) => [
-    index > 0 && (
-      <span
-        key={index}
-        className="inline-block min-w-3.25 rounded-[0.125rem] border border-dashed border-paper-flag px-0.5 text-center leading-2.75 font-bold text-paper-flag"
-      >
-        ?
-      </span>
-    ),
-    part,
-  ]);
-}
+const PAGE_GAP = (
+  <span className="inline-block min-w-3.25 rounded-[0.125rem] border border-dashed border-paper-flag px-0.5 text-center leading-2.75 font-bold text-paper-flag">
+    ?
+  </span>
+);
 
 /** Where a mark's flag dot sits: past a bullet's marker, or just before a line or heading. */
 export type FlagGutter = 'bullet' | 'line';
@@ -58,7 +49,7 @@ export function SuggestionMark({
 }: {
   mark: Mark;
   gutter?: FlagGutter;
-  children: ReactNode;
+  children: string;
 }) {
   const { selectedId, select } = use(SuggestionSelection);
   const { proposal, look } = mark;
@@ -105,7 +96,7 @@ export function SuggestionMark({
           )}
         />
       )}
-      {withGaps(children)}
+      <FlaggedText text={children} gap={PAGE_GAP} />
     </mark>
   );
 }
