@@ -1,4 +1,5 @@
 import { goToView } from '@/features/view-address/viewAddress';
+import { formatSeconds } from '@shared/time/formatTime';
 import { appService } from '@/lib/services/appService';
 import { showProgressToast } from '@/stores/toastStore';
 import { useTemplateStore } from '@/stores/templateStore';
@@ -78,8 +79,8 @@ async function writeProfile(name: GeneratedProfileName): Promise<string> {
   }
   if (!first) throw new Error(`${name} holds no templates`);
   await goToView({ kind: 'editor', template: first.template.name }, first.template.id);
-  const seconds = ((performance.now() - startedAt) / 1000).toFixed(1);
-  return `Loaded ${name} in ${seconds}s. ${templateCount} templates, ${first.versionCount} versions on ${first.template.name}.`;
+  const took = formatSeconds(performance.now() - startedAt);
+  return `Loaded ${name} in ${took}. ${templateCount} templates, ${first.versionCount} versions on ${first.template.name}.`;
 }
 
 /** Replaces all development data with the profile. One loads at a time. */

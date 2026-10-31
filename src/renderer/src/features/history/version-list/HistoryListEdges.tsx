@@ -1,8 +1,8 @@
 import { ChevronDown, ChevronUp, ExternalLink } from 'lucide-react';
 import { AppButton, Text } from '@/components/ui-kit';
+import { formatMonth } from '@shared/time/formatTime';
 import { cn } from '@/lib/utils';
 import type { VersionMeta } from '@shared/types/db';
-import { formatHistoryMonth } from '../groupVersionHistory';
 
 /** A link set in the meta line it sits in. */
 export const HISTORY_LINK =
@@ -39,7 +39,7 @@ export function HistoryCount({ versions, isCompact, onOpenFullHistory }: History
         <b className="font-strong text-ink-muted">{namedCount.toLocaleString()}</b> named
       </span>
       <span aria-hidden>·</span>
-      <span>since {formatHistoryMonth(versions.at(-1)!.createdAt)}</span>
+      <span>since {formatMonth(versions.at(-1)!.createdAt)}</span>
       {onOpenFullHistory && (
         <>
           <span aria-hidden>·</span>

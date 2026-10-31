@@ -14,7 +14,7 @@ import {
   Text,
 } from '@/components/ui-kit';
 import { CHOICE_CARD_CLASSES } from '@/components/kit/controlStyles';
-import { formatRelativeTime } from '@/features/templates/formatRelativeTime';
+import { formatRelativeTime } from '@shared/time/formatTime';
 import { easeHeightChanges } from '@/lib/motion/easeHeightChanges';
 
 import { cn } from '@/lib/utils';

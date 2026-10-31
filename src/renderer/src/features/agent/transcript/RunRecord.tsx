@@ -1,7 +1,7 @@
 import { RotateCcw, X } from 'lucide-react';
 import { Text } from '@/components/ui-kit';
+import { formatTimeOfDay } from '@shared/time/formatTime';
 import { cn } from '@/lib/utils';
-import { formatNoticeTime } from '../notices/noticeWords';
 
 interface RunRecordProps {
   text: string;
@@ -26,7 +26,7 @@ export function RunRecord({ text, at, isAgain = false }: RunRecordProps) {
       </span>
       <span className="min-w-0 flex-1">{text}</span>
       <Text variant="meta" className="whitespace-nowrap">
-        {formatNoticeTime(at)}
+        {formatTimeOfDay(at)}
       </Text>
     </Text>
   );

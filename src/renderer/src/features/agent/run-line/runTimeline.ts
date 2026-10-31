@@ -1,3 +1,4 @@
+import { formatSeconds, toSeconds } from '@shared/time/formatTime';
 import type { RunPart } from '@/types/agentRunView';
 import { describeStepNote, readStepWords } from './stepWords';
 
@@ -141,11 +142,6 @@ export function listRunTimeline(parts: RunPart[], { isRunning }: RunState): Time
 }
 
 const NO_TIME_UNDER_MS = 1000;
-
-const toSeconds = (ms: number) => (Math.max(0, ms) / 1000).toFixed(1);
-
-/** "3.4s". */
-export const formatSeconds = (ms: number) => `${toSeconds(ms)}s`;
 
 /** A time worth showing: under a second, a run feels instant, and nothing says otherwise. */
 export const isTimeShown = (ms: number) => ms >= NO_TIME_UNDER_MS;

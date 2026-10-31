@@ -10,6 +10,7 @@ import { formatViewAddress } from '@/features/view-address/formatViewAddress';
 import { listComparisons } from '@/features/view-address/resolveViewPlace';
 import { copyViewAddress, goToView, goToViewAddress } from '@/features/view-address/viewAddress';
 import type { AddressDialog, ViewPlace } from '@/features/view-address/viewPlace';
+import { formatShortDate } from '@shared/time/formatTime';
 import type { TourKind } from '@/stores/overlayStore';
 import { selectTemplateProposals, useProposalStore } from '@/stores/proposalStore';
 import { getResumeSnapshot, useResumeStore } from '@/stores/resumeStore';
@@ -24,8 +25,6 @@ import type { DevTool, DevToolStep } from './devTool';
  * choose is the view's address in plain values, so a run kept in Recent goes back to the same
  * view; `goToView` checks it against what exists first.
  */
-
-const DAY_FORMAT = new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric' });
 
 const listTemplates = () => useTemplateStore.getState().templates;
 const openTemplateName = () =>
@@ -59,7 +58,7 @@ const VERSION_STEP: DevToolStep = {
       label: versionLabel(version),
       detail: version.summary,
       isNamed: version.kind === 'named',
-      hint: index === 0 ? 'newest' : DAY_FORMAT.format(version.createdAt),
+      hint: index === 0 ? 'newest' : formatShortDate(version.createdAt),
       isDefault: index === 0,
     })),
 };

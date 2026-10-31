@@ -1,3 +1,4 @@
+import { DAY, startOfDay } from '@shared/time/calendar';
 import { DEFAULT_RESUME } from '@shared/resume/defaultResume';
 import type { Version, VersionKind, VersionMeta, VersionSource } from '@shared/types/db';
 import type { ResumeData } from '@shared/types/resume';
@@ -12,9 +13,6 @@ export const EXAMPLE_TEMPLATE_ID = 'example-history';
 export const EXAMPLE_TEMPLATE_NAME = 'Senior SWE, Striped';
 /** The tour opens on a sitting's last revision, the one kept just before an apply. */
 export const EXAMPLE_OPENING_ID = 'example-v11.3';
-
-const MINUTE = 60_000;
-const DAY = 24 * 60 * MINUTE;
 
 /** The bullets as each version had them, oldest first: each step changes the last. */
 const BULLETS: readonly (readonly string[])[] = [
@@ -220,10 +218,6 @@ function buildExampleResume(bullets: readonly string[]): ResumeData {
     },
   ];
   return resume;
-}
-
-function startOfDay(ms: number): number {
-  return new Date(ms).setHours(0, 0, 0, 0);
 }
 
 function parseLabel(label: string): { number: number; revision: number } {

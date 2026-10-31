@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatRelativeTime } from '../formatRelativeTime';
+import { formatRelativeTime, formatTimeInDay } from '../formatTime';
 
 // Sunday 13 September 2026, 15:30 local time.
 const now = new Date(2026, 8, 13, 15, 30).getTime();
@@ -21,5 +21,12 @@ describe('formatRelativeTime', () => {
   it('gives the date for anything older, with the year only when it differs', () => {
     expect(formatRelativeTime(at(2, 4, 10), now)).toMatch(/Mar 4|4 Mar/);
     expect(formatRelativeTime(at(2, 4, 10, 0, 2025), now)).toMatch(/2025/);
+  });
+});
+
+describe('formatTimeInDay', () => {
+  it('counts back today, and gives the time of day before today', () => {
+    expect(formatTimeInDay(at(8, 13, 15, 18), now)).toBe('12 min ago');
+    expect(formatTimeInDay(at(8, 12, 21, 12), now)).toMatch(/^9:12/);
   });
 });

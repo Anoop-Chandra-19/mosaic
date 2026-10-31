@@ -1,7 +1,8 @@
+import { formatTimeOfDay } from '@shared/time/formatTime';
 import type { NoticeRefusal, NoticeResend, NoticeSource } from '@/stores/agentNoticeStore';
 import type { RunView } from '@/types/agentRunView';
 import type { AgentStartRefusal } from '@shared/types/agentBridge';
-import { formatNoticeTime, type NoticeWords } from './noticeWords';
+import type { NoticeWords } from './noticeWords';
 import { formatCheckedAgain } from './startRefusalWords';
 import { formatSentAgain } from './stopWords';
 
@@ -86,7 +87,7 @@ function showRefusal(facts: NoticeFacts, refusal: NoticeRefusal): NoticeChoice {
   return {
     notice: {
       ...notice,
-      checked: formatCheckedAgain(formatNoticeTime(refusal.checkedAt)),
+      checked: formatCheckedAgain(formatTimeOfDay(refusal.checkedAt)),
       pulseKey: refusal.checkedAt,
     },
     announcement: 'Same answer.',
@@ -118,7 +119,7 @@ function answerResend(facts: NoticeFacts, resend: NoticeResend): NoticeChoice | 
   return {
     notice: {
       ...after,
-      checked: formatSentAgain(formatNoticeTime(resend.sentAt)),
+      checked: formatSentAgain(formatTimeOfDay(resend.sentAt)),
       pulseKey: resend.sentAt,
     },
     announcement: 'Same answer.',

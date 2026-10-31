@@ -1,4 +1,4 @@
-import { formatRelativeTime } from '@/features/templates/formatRelativeTime';
+import { formatRelativeTime } from '@shared/time/formatTime';
 import type { ModelProviderId } from '@shared/types/modelProviders';
 import {
   isKeyedProvider,

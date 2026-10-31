@@ -1,3 +1,5 @@
+import { formatSeconds } from '@shared/time/formatTime';
+
 /*
  * A line of the development log, two ways: to read in a terminal, or as JSON for whatever it
  * is piped into. Both come from the same facts, so nothing is only in one of them except
@@ -32,7 +34,7 @@ const paint = (color: keyof typeof COLOR, text: string) => `${COLOR[color]}${tex
 
 /** "12ms", or "3.4s" from a second up. */
 export const formatDuration = (ms: number): string =>
-  ms < 1000 ? `${Math.round(ms)}ms` : `${(ms / 1000).toFixed(1)}s`;
+  ms < 1000 ? `${Math.round(ms)}ms` : formatSeconds(ms);
 
 const RUN_NAME_FIELDS = ['conversation', 'run', 'runId', 'provider', 'model'];
 const RUN_NAME_MESSAGES = new Set(['run started', 'run ended']);

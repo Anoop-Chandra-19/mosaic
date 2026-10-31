@@ -4,18 +4,13 @@ import {
   MODEL_PROVIDER_OPTIONS,
   STATUS_PAGE_URLS,
 } from '@/features/settings/sections/ai/modelProviderOptions';
+import { formatTimeOfDay } from '@shared/time/formatTime';
 import { RUN_LIMITS } from '@shared/agent/runLimitSettings';
 import type { RunModel, RunStoppedMessageBody } from '@shared/types/agentConversation';
 import type { RunView } from '@/types/agentRunView';
 import type { ModelProviderError } from '@shared/types/modelReply';
 import { KEYED_PROVIDERS, type KeyedProvider, type SecretsStatus } from '@shared/types/secrets';
-import {
-  formatNoticeTime,
-  type NoticeAction,
-  type NoticeLevel,
-  type NoticeWords,
-  type QuotedWords,
-} from './noticeWords';
+import type { NoticeAction, NoticeLevel, NoticeWords, QuotedWords } from './noticeWords';
 import { shortModelName } from '../shortModelName';
 
 /*
@@ -196,7 +191,7 @@ const KIND_WORDS: Record<StopKind, (facts: StopFacts) => KindWords> = {
           actions: [settings(), ...providerPage(facts, 'Keys page', KEY_PAGE_URLS), again],
         }
       : {
-          did: `New key saved at ${formatNoticeTime(facts.newKeySavedAt)}.`,
+          did: `New key saved at ${formatTimeOfDay(facts.newKeySavedAt)}.`,
           actions: [
             { ...again, isPrimary: true },
             settings(),

@@ -2,6 +2,7 @@ import { Fragment, useLayoutEffect, useRef, useState } from 'react';
 import { ChevronRight } from 'lucide-react';
 import { AppButton, Text } from '@/components/ui-kit';
 import { startHistoryTour } from '@/features/onboarding/history/startHistoryTour';
+import { formatMonth, formatTimeInDay } from '@shared/time/formatTime';
 import { usePresenceMotion } from '@/lib/motion/usePresenceMotion';
 import { cn } from '@/lib/utils';
 import { useOverlayStore } from '@/stores/overlayStore';
@@ -16,13 +17,7 @@ import {
   listHistorySections,
   NO_HISTORY_FILTER,
 } from '../filterVersionHistory';
-import {
-  findFoldCutoff,
-  formatHistoryMonth,
-  formatTimeInDay,
-  groupVersionHistory,
-  type HistoryGroup,
-} from '../groupVersionHistory';
+import { findFoldCutoff, groupVersionHistory, type HistoryGroup } from '../groupVersionHistory';
 import { HistoryTip } from '../learning/HistoryTip';
 import { historyItemKey, useHistoryTip } from '../learning/useHistoryTip';
 import { versionLabel } from '../versionLabel';
@@ -243,7 +238,7 @@ export function VersionList({
 
   const months: HistoryMonth[] = [];
   for (const group of groups) {
-    const label = formatHistoryMonth(group.key);
+    const label = formatMonth(group.key);
     if (months.at(-1)?.label !== label) months.push({ label, key: group.key });
   }
   // The strip is sticky, so a scrolled-to heading stops below it rather than under it, and
@@ -446,7 +441,7 @@ export function VersionList({
         <HistoryRangeEdge
           direction="earlier"
           count={hiddenCount}
-          oldestMonth={formatHistoryMonth(matched.at(-1)!.createdAt)}
+          oldestMonth={formatMonth(matched.at(-1)!.createdAt)}
           onShow={() => setRange(showEarlierInVisibleRange)}
         />
       ) : hiddenCount > 0 && onOpenFullHistory ? (
@@ -457,7 +452,7 @@ export function VersionList({
               : 'Open the full history'
           }
           hiddenCount={hiddenCount}
-          oldestMonth={formatHistoryMonth(matched.at(-1)!.createdAt)}
+          oldestMonth={formatMonth(matched.at(-1)!.createdAt)}
           isCompact={isCompact}
           // The view opens on the matches the sidebar was showing.
           onOpenFullHistory={() => onOpenFullHistory(isFiltering ? filter : NO_HISTORY_FILTER)}
@@ -466,7 +461,7 @@ export function VersionList({
         shown.length > END_LINE_ROWS && (
           <Text as="p" variant="meta" className="mt-2.5 mb-0.5 ml-5.5">
             That is all {shown.length.toLocaleString()} of them, back to{' '}
-            {formatHistoryMonth(shown.at(-1)!.createdAt)}.
+            {formatMonth(shown.at(-1)!.createdAt)}.
           </Text>
         )
       )}

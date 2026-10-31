@@ -1,12 +1,12 @@
 import { Save } from 'lucide-react';
 import { AppButton, Text, textVariantClasses } from '@/components/ui-kit';
+import { formatDay } from '@shared/time/formatTime';
 import { cn } from '@/lib/utils';
 import { useUiStore } from '@/stores/uiStore';
 import type { VersionMeta } from '@shared/types/db';
 import {
   countFoldedByMonth,
   findFoldCutoff,
-  formatHistoryDay,
   groupVersionHistory,
   listHistoryMonths,
 } from '../groupVersionHistory';
@@ -66,7 +66,7 @@ export function HistoryIndex({
           <span className="min-w-0 flex-1">
             {version.summary}
             <Text variant="meta" className="mt-0.5 block">
-              {versionLabel(version)} · {formatHistoryDay(version.createdAt)}
+              {versionLabel(version)} · {formatDay(version.createdAt)}
             </Text>
           </span>
         </AppButton>

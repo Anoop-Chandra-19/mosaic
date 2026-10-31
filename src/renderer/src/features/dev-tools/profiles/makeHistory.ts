@@ -1,6 +1,7 @@
 import { useOverlayStore } from '@/stores/overlayStore';
 import { useResumeStore } from '@/stores/resumeStore';
 import { useTemplateStore } from '@/stores/templateStore';
+import { HOUR } from '@shared/time/calendar';
 import type { BundleTemplate } from '@shared/types/bundle';
 import { formatBundleText } from '@shared/vault/formatBundle';
 import { createExampleResume } from '../tools/exampleResume';
@@ -27,7 +28,6 @@ export interface HistorySpec {
 }
 
 const DEFAULT_TEMPLATE_NAME = 'Rowan Vale (history)';
-const HOUR = 3_600_000;
 
 /** The example resume, then each version's change, an hour apart, the newest an hour ago. */
 export function planHistory(spec: HistorySpec, now: number): Promise<BundleTemplate> {

@@ -1,11 +1,12 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useMemo, type ReactNode } from 'react';
 import { PanelLeft, PanelRight, type LucideIcon } from 'lucide-react';
 import { AppButton, AppTooltip } from '@/components/ui-kit';
-import { formatRelativeTime } from '@/features/templates/formatRelativeTime';
 import { useActiveTemplate } from '@/features/templates/useActiveTemplate';
 import { useVersionDistance, type VersionDistance } from '@/features/history/useVersionDistance';
 import { versionLabel } from '@/features/history/versionLabel';
 import { useShortcutLabel } from '@/features/shortcuts/shortcutBindings';
+import { formatRelativeTime } from '@shared/time/formatTime';
+import { useNow } from '@/lib/hooks/useNow';
 import type { ShortcutId } from '@/lib/shortcutCatalog';
 import { cn } from '@/lib/utils';
 import { countSuggestions } from '@/features/suggestions/suggestionState';
@@ -16,16 +17,6 @@ import { usePreviewStore } from '@/stores/previewStore';
 import { useResumeStore } from '@/stores/resumeStore';
 import { useUiStore } from '@/stores/uiStore';
 import { countWords } from './wordCount';
-
-/** The current time, refreshed often enough for "2 min ago" to stay true. */
-function useNow(intervalMs: number): number {
-  const [now, setNow] = useState(Date.now);
-  useEffect(() => {
-    const timer = setInterval(() => setNow(Date.now()), intervalMs);
-    return () => clearInterval(timer);
-  }, [intervalMs]);
-  return now;
-}
 
 function PaneToggle({
   label,

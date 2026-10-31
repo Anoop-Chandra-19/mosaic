@@ -8,12 +8,12 @@ import {
   Text,
   textVariantClasses,
 } from '@/components/ui-kit';
+import { formatSeconds } from '@shared/time/formatTime';
 import { cn } from '@/lib/utils';
 import { LiveTime } from './LiveTime';
 import {
   describeRunLine,
   describeThinking,
-  formatSeconds,
   isThinkingNow,
   isTimeShown,
   type RowState,
