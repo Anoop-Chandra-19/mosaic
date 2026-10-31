@@ -6,10 +6,12 @@ import type { EntryHeadingFields } from '@/lib/resume/entryHeading';
 import { ENTRY_HEADING_SEPARATOR } from '@/lib/resume/entryHeading';
 import {
   getChangeTone,
+  readWholeEdit,
   type Change,
   type ChangeMove,
   type ChangeTone,
 } from '@/lib/resume/changes/resumeChange';
+import { DIFF_MARKS } from './diffMarks';
 import { LINE_GUTTER, type MarkGutter } from './pageMarks';
 import { PhraseText } from './PhraseText';
 
@@ -24,10 +26,6 @@ const BAR_TONE: Record<ChangeTone, string> = {
   add: 'bg-paper-add',
   del: 'bg-paper-del',
 };
-const ADDED = 'rounded-[2px] bg-paper-add-soft [box-decoration-break:clone]';
-const REMOVED = 'text-paper-del-text line-through decoration-paper-del decoration-1';
-const INSERTED_WORDS = 'rounded-[1.5px] border-b border-paper-add bg-paper-add-soft';
-const DELETED_WORDS = 'text-paper-del line-through decoration-1';
 const HOVER = 'cursor-help rounded-[2px] hover:shadow-[0_0_0_2px_var(--paper-mark-hover)]';
 
 const isGone = (change: Change) => change.kind === 'remove' || change.kind === 'hide';
@@ -108,22 +106,15 @@ function MoveGlyph({ move, gutter }: { move: Change; gutter: MarkGutter }) {
   );
 }
 
-/** A short field as old, struck, then new: never a word diff. */
 function ShortField({ change }: { change: Change }) {
-  return (
-    <>
-      {change.before && <span className={DELETED_WORDS}>{change.before}</span>}
-      {change.before && change.after ? ' ' : null}
-      {change.after && <span className={INSERTED_WORDS}>{change.after}</span>}
-    </>
-  );
+  return <PhraseText phrases={readWholeEdit(change)} side="both" ink="paper" />;
 }
 
 function MarkedContent({ change, text }: { change: Change; text: string }) {
   if (isGone(change)) {
     return (
       <>
-        <span className={REMOVED}>{text}</span>
+        <span className={DIFF_MARKS.paper.removed}>{text}</span>
         {change.kind === 'hide' && (
           <span className="ml-1.5 rounded-[3px] border-[0.5px] border-paper-tag-line px-[3px] align-[1px] font-sans text-[7.5px] font-bold tracking-[0.05em] text-paper-tag uppercase not-italic">
             hidden
@@ -132,19 +123,14 @@ function MarkedContent({ change, text }: { change: Change; text: string }) {
       </>
     );
   }
-  if (change.kind === 'add' || change.kind === 'show') return <span className={ADDED}>{text}</span>;
+  if (change.kind === 'add' || change.kind === 'show') {
+    return <span className={DIFF_MARKS.paper.added}>{text}</span>;
+  }
   if (change.kind !== 'edit') return text;
   if (!change.phrases) return <ShortField change={change} />;
   // A line split across pages prints part of its text; only the whole one carries its words.
   if (change.after !== text) return text;
-  return (
-    <PhraseText
-      phrases={change.phrases}
-      side="both"
-      deletedClassName={DELETED_WORDS}
-      insertedClassName={INSERTED_WORDS}
-    />
-  );
+  return <PhraseText phrases={change.phrases} side="both" ink="paper" />;
 }
 
 interface MarkedLineProps {
@@ -274,7 +260,9 @@ export function MarkedDates({
     (change) => change.target.type === 'entry' && change.kind !== 'move'
   );
   const datesChange = changes.find((change) => change.target.field === 'dates');
-  if (entryChange && isGone(entryChange)) return <span className={REMOVED}>{dates}</span>;
+  if (entryChange && isGone(entryChange)) {
+    return <span className={DIFF_MARKS.paper.removed}>{dates}</span>;
+  }
   if (!datesChange) return dates;
   return (
     <Tip changes={[datesChange]} otherSide={otherSide}>

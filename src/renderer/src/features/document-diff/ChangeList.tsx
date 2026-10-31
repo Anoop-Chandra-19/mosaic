@@ -35,6 +35,7 @@ import {
   type Change,
   type ChangeTone,
 } from '@/lib/resume/changes/resumeChange';
+import { DIFF_MARKS } from './diffMarks';
 import { PhraseText } from './PhraseText';
 
 const TONE_TEXT: Record<ChangeTone, string> = {
@@ -84,13 +85,7 @@ function groupByPlace(changes: Change[]) {
 
 function ChangeExcerpt({ change }: { change: Change }) {
   if (change.phrases) {
-    return (
-      <PhraseText
-        phrases={change.phrases}
-        side="after"
-        insertedClassName="rounded-xs bg-add-soft text-ink-soft"
-      />
-    );
+    return <PhraseText phrases={change.phrases} side="after" />;
   }
   if (change.kind === 'move') return null;
   const isText = ['bullet', 'summaryLine', 'textLine'].includes(change.target.type);
@@ -220,7 +215,7 @@ export function ChangeList({
                     <span
                       className={cn(
                         'truncate text-ink-faint',
-                        tone === 'del' && 'line-through decoration-del-line'
+                        tone === 'del' && DIFF_MARKS.app.removed
                       )}
                     >
                       <ChangeExcerpt change={change} />

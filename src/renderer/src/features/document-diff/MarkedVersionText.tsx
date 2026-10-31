@@ -6,10 +6,12 @@ import type { DiffLine, ResumeDiff } from '@/lib/resume/changes/diffResumes';
 import {
   getChangeTone,
   isShortFieldChange,
+  readWholeEdit,
   type Change,
   type ChangeTargetType,
   type ChangeTone,
 } from '@/lib/resume/changes/resumeChange';
+import { DIFF_MARKS } from './diffMarks';
 import { PhraseText } from './PhraseText';
 
 /** A changed line keeps a bar at its left edge, in the chrome's colours. */
@@ -18,7 +20,6 @@ const LINE_TONE: Record<ChangeTone, string> = {
   add: 'bg-add-soft text-foreground shadow-[-9px_0_0_-7px_var(--color-add)]',
   del: 'shadow-[-9px_0_0_-7px_var(--color-del)]',
 };
-const GONE = 'text-ink-faint line-through decoration-del-line';
 const TEXT_LINE =
   'relative mt-0.75 rounded-[3px] pl-3 text-pretty before:absolute before:top-2 before:left-0.75 before:size-0.75 before:rounded-full before:bg-ink-faint';
 
@@ -47,26 +48,9 @@ const isGone = (change: Change) => change.kind === 'remove' || change.kind === '
 function LineText({ line }: { line: DiffLine }) {
   const { change } = line;
   if (!change) return line.row.text;
-  if (change.phrases) {
-    return (
-      <PhraseText
-        phrases={change.phrases}
-        side="both"
-        deletedClassName="text-del line-through"
-        insertedClassName="rounded-xs bg-add-soft text-foreground"
-      />
-    );
-  }
+  if (change.phrases) return <PhraseText phrases={change.phrases} side="both" />;
   if (!isShortFieldChange(change)) return change.after || change.before;
-  return (
-    <>
-      {change.before && <span className="text-del line-through">{change.before}</span>}
-      {change.before && change.after ? ' ' : null}
-      {change.after && (
-        <span className="rounded-xs bg-add-soft text-foreground">{change.after}</span>
-      )}
-    </>
-  );
+  return <PhraseText phrases={readWholeEdit(change)} side="both" />;
 }
 
 /** A field or header item names itself, since it stands apart from the line it belongs to. */
@@ -88,7 +72,7 @@ function MarkedRow({ line, otherSide }: { line: DiffLine; otherSide: string }) {
       className={cn(
         className,
         change && LINE_TONE[getChangeTone(change)],
-        change && isGone(change) && GONE
+        change && isGone(change) && DIFF_MARKS.app.removed
       )}
     >
       {isField && change && <FieldLabel change={change} />}

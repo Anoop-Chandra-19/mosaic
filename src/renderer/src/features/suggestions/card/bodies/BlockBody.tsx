@@ -1,5 +1,6 @@
 import { Eye, EyeOff } from 'lucide-react';
 import { Text } from '@/components/ui-kit';
+import { ADDED_ROW, DIFF_MARKS } from '@/features/document-diff/diffMarks';
 import { cn } from '@/lib/utils';
 import { formatEntryHeading } from '@/lib/resume/entryHeading';
 import type { ShowPlace } from '@/types/agentProposal';
@@ -92,7 +93,7 @@ export function BlockBody({ proposal, draft }: SuggestionBodyProps) {
       <div
         className={cn(
           'rounded-sm border border-line bg-pane-raised px-2.25 pt-1.75 pb-2',
-          isBack && 'bg-add-soft shadow-[inset_2px_0_0_var(--add)]'
+          isBack && ADDED_ROW
         )}
       >
         <div className="flex items-baseline gap-2.5">
@@ -101,7 +102,7 @@ export function BlockBody({ proposal, draft }: SuggestionBodyProps) {
             className={cn(
               'flex-1',
               !block.isSection && 'italic',
-              !isBack && 'line-through decoration-del decoration-[1.5px]'
+              !isBack && DIFF_MARKS.app.removed
             )}
           >
             {block.heading}

@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { Pencil } from 'lucide-react';
 import { AppButton, AppInput, Text } from '@/components/ui-kit';
+import { ADDED_ROW } from '@/features/document-diff/diffMarks';
+import { cn } from '@/lib/utils';
 import type { ResumeData } from '@shared/types/resume';
 import { renameProposedSection } from '../../proposals/proposalActions';
 import { resolveChange } from '../../proposals/reviewedChange';
@@ -73,10 +75,7 @@ function SectionPlace({
   return (
     <div className="flex flex-col overflow-hidden rounded-sm border border-line bg-pane-raised [&>*+*]:border-t [&>*+*]:border-line">
       {previous && neighbour(previous)}
-      <Text
-        variant="strong"
-        className="bg-add-soft px-2.25 py-1.25 shadow-[inset_2px_0_0_var(--add)]"
-      >
+      <Text variant="strong" className={cn('px-2.25 py-1.25', ADDED_ROW)}>
         {label}
       </Text>
       {next && neighbour(next)}

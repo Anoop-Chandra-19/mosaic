@@ -1,5 +1,7 @@
 import { ArrowRight } from 'lucide-react';
 import { Text } from '@/components/ui-kit';
+import { DIFF_MARKS } from '@/features/document-diff/diffMarks';
+import { cn } from '@/lib/utils';
 import { clearProposalEdit } from '../../proposals/proposalActions';
 import { resolveChange } from '../../proposals/reviewedChange';
 import { BackLink, Caption, CaptionTag, Hint } from './BodyParts';
@@ -24,17 +26,11 @@ export function RenameBody({ proposal, isEditing, onEditingChange }: SuggestionB
           className="flex flex-wrap items-center gap-x-2.25 gap-y-1.5"
           onDoubleClick={() => onEditingChange(true)}
         >
-          <Text
-            variant="title"
-            className="text-ink-muted line-through decoration-del decoration-[1.5px]"
-          >
+          <Text variant="title" className={DIFF_MARKS.app.removed}>
             {change.before}
           </Text>
           <ArrowRight className="size-3 text-ink-faint" />
-          <Text
-            variant="title"
-            className="rounded-[0.125rem] bg-add-soft px-0.5 font-strong shadow-[inset_0_-1.5px_0_var(--add-line)]"
-          >
+          <Text variant="title" className={cn(DIFF_MARKS.app.added, 'font-strong')}>
             {change.after}
           </Text>
         </div>
