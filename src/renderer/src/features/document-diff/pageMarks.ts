@@ -16,8 +16,8 @@ export interface MarkGutter {
   glyphPx: number;
 }
 
-/** A heading's, a section name's, or a text line's: the design's 23px bar, its glyph further out. */
-export const LINE_GUTTER: MarkGutter = { barPx: 23, glyphPx: 34 };
+/** A heading's, a section name's, or a text line's: the margin's lanes, from the section's edge. */
+export const LINE_GUTTER: MarkGutter = { barPx: 24, glyphPx: 38 };
 
 function placeKeyOf(target: ChangeTarget): string | null {
   switch (target.type) {

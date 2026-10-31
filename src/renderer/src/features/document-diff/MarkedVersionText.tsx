@@ -3,10 +3,10 @@ import { AppTooltip, ReadingColumn, Text, textVariantClasses } from '@/component
 import { cn } from '@/lib/utils';
 import { describeChange, describeChangeTip } from '@/lib/resume/changes/describeChanges';
 import type { DiffLine, ResumeDiff } from '@/lib/resume/changes/diffResumes';
+import { readFieldPhrases } from '@/lib/resume/changes/readFieldPhrases';
 import {
   getChangeTone,
   isShortFieldChange,
-  readWholeEdit,
   type Change,
   type ChangeTargetType,
   type ChangeTone,
@@ -50,7 +50,7 @@ function LineText({ line }: { line: DiffLine }) {
   if (!change) return line.row.text;
   if (change.phrases) return <PhraseText phrases={change.phrases} side="both" />;
   if (!isShortFieldChange(change)) return change.after || change.before;
-  return <PhraseText phrases={readWholeEdit(change)} side="both" />;
+  return <PhraseText phrases={readFieldPhrases(change)} side="both" />;
 }
 
 /** A field or header item names itself, since it stands apart from the line it belongs to. */

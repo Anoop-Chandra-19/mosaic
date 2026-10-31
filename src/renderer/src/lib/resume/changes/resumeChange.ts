@@ -71,11 +71,6 @@ export const getChangeGlyph = (change: Change) => GLYPHS[change.kind];
 
 export const isShortFieldChange = (change: Change) => change.kind === 'edit' && !change.phrases;
 
-/** A short field's edit as one swap: it shows whole, never word by word. */
-export const readWholeEdit = ({ before, after }: Change): TextPhrase[] => [
-  { k: 'edit', del: before, ins: after },
-];
-
 /** Whether a change adds to the page being read, takes from it, or edits it. */
 export function getChangeTone(change: Change): ChangeTone {
   switch (change.kind) {
