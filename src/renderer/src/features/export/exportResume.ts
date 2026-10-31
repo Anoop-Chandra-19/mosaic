@@ -7,7 +7,10 @@ import type { PaperSize } from '@/types/paper';
 import { createDocxExport } from './docx/createDocxExport';
 import { createJsonResumeExport } from './jsonResumeExport';
 import { createMarkdownExport } from './markdownExport';
-import { normalizeResumeForExport, type ExportContentOptions } from './normalizeResumeExport';
+import {
+  normalizeResumeForExport,
+  type ExportContentOptions,
+} from '@/lib/resume/normalizeResumeExport';
 import { renderResumePdf } from './pdf/renderResumePdf';
 import { createPlaintextExport } from './plaintextExport';
 

@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { ReadingColumn, Text } from '@/components/ui-kit';
-import { normalizeResumeForExport } from '@/features/export/normalizeResumeExport';
+import { normalizeResumeForExport } from '@/lib/resume/normalizeResumeExport';
 import type { ResumeData } from '@shared/types/resume';
 
 interface VersionAsTextProps {

@@ -24,7 +24,7 @@ import {
   paginateSections,
   type PaginationMeasurements,
 } from './pagination';
-import { PAPER_DIMENSIONS_PT, getPageContentSize } from './pageGeometry';
+import { PAPER_SIZE_PT, getPageContentSizePt } from '@/lib/resume/headlessLayout';
 
 interface ResumePreviewProps {
   paperSize: PaperSize;
@@ -156,8 +156,8 @@ export function ResumePreview({
   const [availableWidth, setAvailableWidth] = useState(0);
 
   // The sheet is a known fixed size in points, so there is nothing to measure.
-  const paper = PAPER_DIMENSIONS_PT[paperSize];
-  const pageContentSize = getPageContentSize(paperSize);
+  const paper = PAPER_SIZE_PT[paperSize];
+  const pageContentSize = getPageContentSizePt(paperSize);
 
   const activeSections = useMemo(() => normalizeSections(sections), [sections]);
 

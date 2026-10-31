@@ -2,7 +2,7 @@ import { Fragment, useState } from 'react';
 import { AppButton, AppCollapsible, AppCollapsibleTrigger, Text } from '@/components/ui-kit';
 import { getPrintableHeaderLines } from '@shared/resume/resumeHeader';
 import type { ContactInfo } from '@shared/types/resume';
-import { formatCount } from './formatCount';
+import { formatCount } from '@/lib/formatCount';
 import { ReviewFold, RowCaret } from './ReviewFold';
 
 /** The name, then each header line as it will print: a header is lines, not fields. */

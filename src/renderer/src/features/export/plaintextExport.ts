@@ -3,7 +3,7 @@ import {
   isSameAddress,
   type PrintedHeaderLine,
 } from '@shared/resume/resumeHeader';
-import type { NormalizedResumeExport } from './normalizeResumeExport';
+import type { NormalizedResumeExport } from '@/lib/resume/normalizeResumeExport';
 
 /**
  * A header line with each link after its text, "LinkedIn (https://linkedin.com/in/ada)",

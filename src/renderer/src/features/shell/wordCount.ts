@@ -1,4 +1,4 @@
-import { normalizeResumeForExport } from '@/features/export/normalizeResumeExport';
+import { normalizeResumeForExport } from '@/lib/resume/normalizeResumeExport';
 import { formatHeaderLineText } from '@shared/resume/resumeHeader';
 import type { ResumeData } from '@shared/types/resume';
 

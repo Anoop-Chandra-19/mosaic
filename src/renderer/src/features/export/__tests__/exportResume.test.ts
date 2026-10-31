@@ -3,7 +3,7 @@ import { createDefaultResume } from '@shared/resume/defaultResume';
 import { createDocxExport } from '../docx/createDocxExport';
 import { renderResumePdf } from '../pdf/renderResumePdf';
 import { renderExport } from '../exportResume';
-import { normalizeResumeForExport } from '../normalizeResumeExport';
+import { normalizeResumeForExport } from '@/lib/resume/normalizeResumeExport';
 
 vi.mock('@/stores/resumeStore', () => ({ saveDraftOrStop: vi.fn() }));
 vi.mock('../pdf/renderResumePdf', () => ({

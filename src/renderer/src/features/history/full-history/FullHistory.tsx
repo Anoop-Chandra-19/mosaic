@@ -10,7 +10,7 @@ import {
 import { Clock, List, X } from 'lucide-react';
 import { AppButton, Text } from '@/components/ui-kit';
 import { ReadBoundary } from '@/components/ReadBoundary';
-import { PAPER_DIMENSIONS_PT } from '@/features/preview/pageGeometry';
+import { PAPER_SIZE_PT } from '@/lib/resume/headlessLayout';
 import {
   SLIDE_AWAY_MOTION,
   transitionClasses,
@@ -373,7 +373,7 @@ function FullHistoryFrame({
 
   const indexWidth = isIndexOpen ? INDEX_WIDTH_PX : 0;
   const maxReadWidth = windowWidth - indexWidth - LIST_MIN_WIDTH_PX;
-  const pageNeedsPx = LEGIBLE_PAGE_SCALE * PAPER_DIMENSIONS_PT[paperSize].width + 48;
+  const pageNeedsPx = LEGIBLE_PAGE_SCALE * PAPER_SIZE_PT[paperSize].width + 48;
 
   const restore = async (version: VersionMeta) => {
     if (isExample) return;

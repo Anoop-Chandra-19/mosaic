@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { createDefaultResume } from '@shared/resume/defaultResume';
 import type { ResumeData } from '@shared/types/resume';
-import { normalizeResumeForExport } from '../../normalizeResumeExport';
+import { normalizeResumeForExport } from '@/lib/resume/normalizeResumeExport';
 import { findCharactersPdfCannotDraw } from '../findCharactersPdfCannotDraw';
 
 function resumeWith(name: string, bullet: string): ResumeData {

@@ -1,11 +1,15 @@
 import { Fragment } from 'react';
 import { Document, Font, Link, Page, StyleSheet, Text, View } from '@react-pdf/renderer';
 import type { PaperSize } from '@/types/paper';
-import type { NormalizedResumeExport } from '../normalizeResumeExport';
+import type { NormalizedResumeExport } from '@/lib/resume/normalizeResumeExport';
 import { HEADLESS_LAYOUT, getPageContentSizePt } from '@/lib/resume/headlessLayout';
-import { breakLinesLikeWord, breakRunsLikeWord, type MeasureTextWidth } from './breakLinesLikeWord';
+import {
+  breakLinesLikeWord,
+  breakRunsLikeWord,
+  type MeasureTextWidth,
+} from '@/lib/resume/breakLinesLikeWord';
 import { LINK_BLUE } from '@shared/resume/resumeHeader';
-import { getEntryHeadingWidthPt } from './entryHeadingWidth';
+import { getEntryHeadingWidthPt } from '@/lib/resume/entryHeadingWidth';
 
 /** Text widths at the body's and the header lines' sizes. */
 export interface PdfTextMeasurers {

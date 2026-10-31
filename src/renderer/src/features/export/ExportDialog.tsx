@@ -46,7 +46,7 @@ import {
   type ExportFormat,
   type ExportFormatInfo,
 } from './exportResume';
-import { normalizeResumeForExport } from './normalizeResumeExport';
+import { normalizeResumeForExport } from '@/lib/resume/normalizeResumeExport';
 import { findCharactersPdfCannotDraw } from './pdf/findCharactersPdfCannotDraw';
 
 const FORMAT_ICONS: Record<ExportFormat, LucideIcon> = {
