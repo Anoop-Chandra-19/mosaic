@@ -72,7 +72,7 @@ function MarkedRow({ line, otherSide }: { line: DiffLine; otherSide: string }) {
       className={cn(
         className,
         change && LINE_TONE[getChangeTone(change)],
-        change && isGone(change) && DIFF_MARKS.app.removed
+        change && isGone(change) && DIFF_MARKS.removed
       )}
     >
       {isField && change && <FieldLabel change={change} />}

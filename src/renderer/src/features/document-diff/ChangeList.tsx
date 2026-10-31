@@ -215,7 +215,7 @@ export function ChangeList({
                     <span
                       className={cn(
                         'truncate text-ink-faint',
-                        tone === 'del' && DIFF_MARKS.app.removed
+                        tone === 'del' && DIFF_MARKS.removed
                       )}
                     >
                       <ChangeExcerpt change={change} />

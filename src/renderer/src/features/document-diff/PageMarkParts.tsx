@@ -11,7 +11,7 @@ import {
   type ChangeMove,
   type ChangeTone,
 } from '@/lib/resume/changes/resumeChange';
-import { DIFF_MARKS } from './diffMarks';
+import { DIFF_MARKS, PAPER_INK } from './diffMarks';
 import { LINE_GUTTER, type MarkGutter } from './pageMarks';
 import { PhraseText } from './PhraseText';
 
@@ -58,7 +58,7 @@ function Tip({ changes, otherSide, gutterReachPx = 0, children }: TipProps) {
   const topLevel = changes.find((change) => !change.parentId && change.kind !== 'move');
   return (
     <AppTooltip content={describeTips(changes, otherSide)} shouldFollowPointer>
-      <span data-change-id={topLevel?.id} className={HOVER}>
+      <span data-change-id={topLevel?.id} className={cn(HOVER, PAPER_INK)}>
         {gutterReachPx > 0 && (
           <span
             aria-hidden
@@ -107,14 +107,14 @@ function MoveGlyph({ move, gutter }: { move: Change; gutter: MarkGutter }) {
 }
 
 function ShortField({ change }: { change: Change }) {
-  return <PhraseText phrases={readWholeEdit(change)} side="both" ink="paper" />;
+  return <PhraseText phrases={readWholeEdit(change)} side="both" />;
 }
 
 function MarkedContent({ change, text }: { change: Change; text: string }) {
   if (isGone(change)) {
     return (
       <>
-        <span className={DIFF_MARKS.paper.removed}>{text}</span>
+        <span className={DIFF_MARKS.removed}>{text}</span>
         {change.kind === 'hide' && (
           <span className="ml-1.5 rounded-[3px] border-[0.5px] border-paper-tag-line px-[3px] align-[1px] font-sans text-[7.5px] font-bold tracking-[0.05em] text-paper-tag uppercase not-italic">
             hidden
@@ -124,13 +124,13 @@ function MarkedContent({ change, text }: { change: Change; text: string }) {
     );
   }
   if (change.kind === 'add' || change.kind === 'show') {
-    return <span className={DIFF_MARKS.paper.added}>{text}</span>;
+    return <span className={DIFF_MARKS.added}>{text}</span>;
   }
   if (change.kind !== 'edit') return text;
   if (!change.phrases) return <ShortField change={change} />;
   // A line split across pages prints part of its text; only the whole one carries its words.
   if (change.after !== text) return text;
-  return <PhraseText phrases={change.phrases} side="both" ink="paper" />;
+  return <PhraseText phrases={change.phrases} side="both" />;
 }
 
 interface MarkedLineProps {
@@ -261,7 +261,7 @@ export function MarkedDates({
   );
   const datesChange = changes.find((change) => change.target.field === 'dates');
   if (entryChange && isGone(entryChange)) {
-    return <span className={DIFF_MARKS.paper.removed}>{dates}</span>;
+    return <span className={cn(DIFF_MARKS.removed, PAPER_INK)}>{dates}</span>;
   }
   if (!datesChange) return dates;
   return (
