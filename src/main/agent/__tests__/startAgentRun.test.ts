@@ -202,6 +202,7 @@ describe('stopping a run', () => {
             content: 'order mixes lists',
             isError: true,
             durationMs: expect.any(Number),
+            startedAt: expect.any(Number),
           },
           { callId: 'c4', content: 'Not run: the run stopped.', isError: true, notRun: true },
         ],

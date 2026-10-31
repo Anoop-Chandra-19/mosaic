@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { formatSeconds, isTimeShown } from './runLineItems';
+import { formatSeconds, isTimeShown } from './runTimeline';
 
 const TICK_MS = 100;
 

@@ -66,6 +66,8 @@ export interface ToolResult {
   notRun?: boolean;
   /** From the call beginning, its arguments included, to its answer. Absent in older bodies. */
   durationMs?: number;
+  /** When the call began, in ms since the epoch. Absent in older bodies. */
+  startedAt?: number;
 }
 
 export interface ToolResultsMessageBody {

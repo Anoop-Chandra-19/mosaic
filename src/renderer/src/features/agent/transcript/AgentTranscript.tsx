@@ -114,8 +114,9 @@ function RunReply({ run, isLive, stopRecord }: RunReplyProps) {
         state={{
           isRunning: live !== null && !live.hasEnded,
           isStopped: live ? live.wasStopped : run.stop !== null,
+          isCancelled: live ? live.wasCancelled : run.stop?.reason === 'cancelled',
         }}
-        startedAt={startedAt}
+        waitingSince={live?.lastEventAt ?? startedAt}
         elapsedMs={endedAt - startedAt}
       />
       {stopRecord !== null && run.stoppedAt !== null && (

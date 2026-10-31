@@ -56,6 +56,7 @@ interface CallOutcome {
   draft: DraftStamp | null;
   target?: ToolTarget;
   durationMs?: number;
+  startedAt?: number;
 }
 
 const NOT_RUN: Record<'cancelled' | 'stopped', string> = {
@@ -118,13 +119,17 @@ export async function runToolRound(round: ToolRound): Promise<ToolRoundEnd> {
       outcome.content = verdict.content;
       stop = verdict.stop;
       const startedAt = round.callStartedAt.get(call.callId);
-      if (startedAt !== undefined) outcome.durationMs = Math.max(0, Date.now() - startedAt);
+      if (startedAt !== undefined) {
+        outcome.startedAt = startedAt;
+        outcome.durationMs = Math.max(0, Date.now() - startedAt);
+      }
       onEvent({
         type: 'toolResult',
         callId: call.callId,
         isError: outcome.isError,
         target: outcome.target,
         durationMs: outcome.durationMs,
+        startedAt: outcome.startedAt,
       });
     }
     draft = outcome.draft;

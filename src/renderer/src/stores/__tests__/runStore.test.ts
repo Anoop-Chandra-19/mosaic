@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { AgentRunEvent } from '@shared/types/agentRunEvents';
 import { useRunStore } from '../runStore';
 
@@ -68,6 +68,15 @@ describe('the live run', () => {
       ],
       retrying: null,
     });
+  });
+
+  it('notes when the run last said anything, which a wait for the model counts from', () => {
+    vi.useFakeTimers({ now: 1000 });
+    follow(4, [{ type: 'stepStarted', step: 1 }]);
+    vi.setSystemTime(5000);
+    follow(4, [{ type: 'toolResult', callId: 'c1', isError: false }]);
+    expect(useRunStore.getState().live).toMatchObject({ startedAt: 1000, lastEventAt: 5000 });
+    vi.useRealTimers();
   });
 
   it('starts again for the next run', () => {

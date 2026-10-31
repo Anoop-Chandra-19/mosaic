@@ -234,6 +234,7 @@ describe('a run started from the page', () => {
             content: 'The tool did not answer in time.',
             isError: true,
             durationMs: expect.any(Number),
+            startedAt: expect.any(Number),
           },
         ],
       },
@@ -245,6 +246,7 @@ describe('a run started from the page', () => {
             content: 'The tool failed: Error: no view',
             isError: true,
             durationMs: expect.any(Number),
+            startedAt: expect.any(Number),
           },
         ],
       },
@@ -273,6 +275,7 @@ describe('a run started from the page', () => {
           content: 'Newest version: v3',
           target,
           durationMs: expect.any(Number),
+          startedAt: expect.any(Number),
         },
       ],
     });
@@ -282,10 +285,19 @@ describe('a run started from the page', () => {
       isError: false,
       target,
       durationMs: expect.any(Number),
+      startedAt: expect.any(Number),
     });
     expect(readMessagePage(db, 1, { limit: 50 }).map(({ body }) => body)).toContainEqual({
       type: 'toolResults',
-      results: [{ callId: 'c1', isError: undefined, target, durationMs: expect.any(Number) }],
+      results: [
+        {
+          callId: 'c1',
+          isError: undefined,
+          target,
+          durationMs: expect.any(Number),
+          startedAt: expect.any(Number),
+        },
+      ],
     });
     expect(JSON.stringify(model.requests.at(-1)?.messages)).not.toContain('"target"');
   });

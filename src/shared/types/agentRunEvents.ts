@@ -23,6 +23,7 @@ export type AgentRunEvent =
       isError: boolean;
       target?: ToolTarget;
       durationMs?: number;
+      startedAt?: number;
     }
   /** `stopReason` is absent when the model finished. */
   | { type: 'runEnded'; stopReason?: RunStopReason };
