@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { AppButton, Text } from '@/components/ui-kit';
 import { cn } from '@/lib/utils';
-import type { Proposal } from '@shared/types/agentProposal';
+import type { Proposal } from '@/types/agentProposal';
 import type { ResumeData } from '@shared/types/resume';
 import { placeSuggestion } from '../../proposals/describeSuggestion';
 import { KeyHint } from '../ReviewInspector';

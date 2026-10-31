@@ -5,10 +5,10 @@ import {
   describeChange,
   describeChangeTip,
   describeFormattingChange,
-} from '@shared/resume/changes/describeChanges';
-import type { DiffLine, ResumeDiff } from '@shared/resume/changes/diffResumes';
-import type { FormattingChange } from '@shared/resume/changes/diffFormatting';
-import { getChangeTone, type Change } from '@shared/resume/changes/resumeChange';
+} from '@/lib/resume/changes/describeChanges';
+import type { DiffLine, ResumeDiff } from '@/lib/resume/changes/diffResumes';
+import type { FormattingChange } from '@/lib/resume/changes/diffFormatting';
+import { getChangeTone, type Change } from '@/lib/resume/changes/resumeChange';
 import { groupDiffLinesIntoHunks } from './groupDiffLines';
 import { PhraseText } from './PhraseText';
 

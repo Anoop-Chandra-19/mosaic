@@ -10,7 +10,7 @@ import {
   textOf,
   type XmlElement,
 } from '../parseXml';
-import { formatEntryHeading } from '@shared/resume/entryHeading';
+import { formatEntryHeading } from '@/lib/resume/entryHeading';
 import { readDocx, readDocxContent } from '../readDocx';
 import { replaceMarkedLinksWithText } from '../../../parsing/importLines';
 import type { ParsedResume } from '../../../parsing/parseResume';

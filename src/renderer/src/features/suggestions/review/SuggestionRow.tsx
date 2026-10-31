@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { Lock, TriangleAlert } from 'lucide-react';
 import { AppButton, Text } from '@/components/ui-kit';
 import { cn } from '@/lib/utils';
-import type { Proposal, ProposalChange } from '@shared/types/agentProposal';
+import type { Proposal, ProposalChange } from '@/types/agentProposal';
 import { labelSuggestionKind } from '../proposals/describeSuggestion';
 import { FLAG_LABELS, needsNumber, readSuggestionState, STATE_TONES } from '../suggestionState';
 

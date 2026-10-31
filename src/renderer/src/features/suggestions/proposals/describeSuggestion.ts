@@ -1,4 +1,4 @@
-import type { Proposal, ProposalChange, TextPlace } from '@shared/types/agentProposal';
+import type { Proposal, ProposalChange, TextPlace } from '@/types/agentProposal';
 import type { ResumeData, ResumeEntry, ResumeSection } from '@shared/types/resume';
 import { findEntry, findSection } from './proposalAnchor';
 

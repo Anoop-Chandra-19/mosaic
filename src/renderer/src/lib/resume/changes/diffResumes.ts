@@ -11,7 +11,7 @@
  * Other modules use diffResumes, describeChanges, diffFormatting, changePhrases and
  * resumeChange; the rest are its steps.
  */
-import type { ResumeData } from '../../types/resume';
+import type { ResumeData } from '@shared/types/resume';
 import { diffTextsAsPhrases } from './diffTextsAsPhrases';
 import { findMoves, type Move } from './findMoves';
 import { listChangeRows, type ChangeRow } from './listChangeRows';

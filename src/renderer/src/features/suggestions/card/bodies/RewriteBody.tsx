@@ -1,6 +1,6 @@
 import { Info } from 'lucide-react';
 import { AppButton, Text } from '@/components/ui-kit';
-import type { Proposal } from '@shared/types/agentProposal';
+import type { Proposal } from '@/types/agentProposal';
 import {
   cancelStaleReview,
   chooseVersionWithoutNumber,

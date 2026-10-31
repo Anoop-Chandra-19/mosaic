@@ -7,7 +7,7 @@ import { usePresenceMotion } from '@/lib/motion/usePresenceMotion';
 import { cn } from '@/lib/utils';
 import { useOverlayStore } from '@/stores/overlayStore';
 import { useUiStore } from '@/stores/uiStore';
-import type { ChangeTone } from '@shared/resume/changes/resumeChange';
+import type { ChangeTone } from '@/lib/resume/changes/resumeChange';
 import type { VersionMeta } from '@shared/types/db';
 import type { HistoryFilter } from '@/types/history';
 import { chooseVisibleVersions } from './chooseVisibleVersions';

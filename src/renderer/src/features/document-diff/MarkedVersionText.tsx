@@ -1,15 +1,15 @@
 import type { ReactNode } from 'react';
 import { AppTooltip, ReadingColumn, Text, textVariantClasses } from '@/components/ui-kit';
 import { cn } from '@/lib/utils';
-import { describeChange, describeChangeTip } from '@shared/resume/changes/describeChanges';
-import type { DiffLine, ResumeDiff } from '@shared/resume/changes/diffResumes';
+import { describeChange, describeChangeTip } from '@/lib/resume/changes/describeChanges';
+import type { DiffLine, ResumeDiff } from '@/lib/resume/changes/diffResumes';
 import {
   getChangeTone,
   isShortFieldChange,
   type Change,
   type ChangeTargetType,
   type ChangeTone,
-} from '@shared/resume/changes/resumeChange';
+} from '@/lib/resume/changes/resumeChange';
 import { PhraseText } from './PhraseText';
 
 /** A changed line keeps a bar at its left edge, in the chrome's colours. */

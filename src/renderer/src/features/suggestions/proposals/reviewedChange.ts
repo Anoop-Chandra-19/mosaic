@@ -1,4 +1,4 @@
-import type { EntryDraft, EntryFact, Proposal, ProposalChange } from '@shared/types/agentProposal';
+import type { EntryDraft, EntryFact, Proposal, ProposalChange } from '@/types/agentProposal';
 import { GAP_MARK } from './checks/unfilledGap';
 
 const ENTRY_FACTS: EntryFact[] = ['title', 'organization', 'location', 'dates'];

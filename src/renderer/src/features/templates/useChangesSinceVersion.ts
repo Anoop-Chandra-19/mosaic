@@ -1,10 +1,10 @@
 import { versionLabel } from '@/lib/versionLabel';
 import { useResumeStore } from '@/stores/resumeStore';
 import { useVersion } from '@/stores/templateStore';
-import { describeChange, describeFormattingChange } from '@shared/resume/changes/describeChanges';
-import { diffFormatting } from '@shared/resume/changes/diffFormatting';
-import { diffResumes } from '@shared/resume/changes/diffResumes';
-import { getChangeGroup, type Change } from '@shared/resume/changes/resumeChange';
+import { describeChange, describeFormattingChange } from '@/lib/resume/changes/describeChanges';
+import { diffFormatting } from '@/lib/resume/changes/diffFormatting';
+import { diffResumes } from '@/lib/resume/changes/diffResumes';
+import { getChangeGroup, type Change } from '@/lib/resume/changes/resumeChange';
 import type { VersionMeta } from '@shared/types/db';
 import type { ResumeData } from '@shared/types/resume';
 

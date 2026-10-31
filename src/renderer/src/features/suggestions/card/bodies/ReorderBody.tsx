@@ -1,7 +1,7 @@
 import { Move } from 'lucide-react';
 import { Chip, Text } from '@/components/ui-kit';
 import { cn } from '@/lib/utils';
-import type { ProposalChange } from '@shared/types/agentProposal';
+import type { ProposalChange } from '@/types/agentProposal';
 import type { ResumeData } from '@shared/types/resume';
 import { findMovedIds } from '../../proposals/findMovedIds';
 import { findEntry, findSection } from '../../proposals/proposalAnchor';

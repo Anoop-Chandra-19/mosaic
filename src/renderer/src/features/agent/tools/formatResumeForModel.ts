@@ -1,4 +1,4 @@
-import { formatEntryHeading } from '@shared/resume/entryHeading';
+import { formatEntryHeading } from '@/lib/resume/entryHeading';
 import type { Bullet, ResumeData, ResumeEntry, ResumeSection } from '@shared/types/resume';
 import { handleFor, type ResumeHandles } from './resumeHandles';
 

@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import type { EntryHeadingFields } from '@shared/resume/entryHeading';
+import type { EntryHeadingFields } from '@/lib/resume/entryHeading';
 import type { SectionLayout } from '@shared/types/resume';
 import { MarkedDates, MarkedHeading, MarkedLine } from '@/features/document-diff/PageMarkParts';
 import { findMarks, LINE_GUTTER, type PageMarks } from '@/features/document-diff/pageMarks';

@@ -1,5 +1,5 @@
-import type { HeaderItemKind } from '../../types/resume';
-import { HEADER_ALIGNS, LINK_COLORS, LINK_STYLES } from '../resumeHeader';
+import type { HeaderItemKind } from '@shared/types/resume';
+import { HEADER_ALIGNS, LINK_COLORS, LINK_STYLES } from '@shared/resume/resumeHeader';
 import type { FormattingChange, FormattingSetting } from './diffFormatting';
 import {
   getChangeTone,

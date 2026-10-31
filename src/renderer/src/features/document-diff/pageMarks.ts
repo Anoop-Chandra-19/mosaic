@@ -1,5 +1,5 @@
 import type { ResumeData, ResumeEntry, ResumeSection } from '@shared/types/resume';
-import type { Change, ChangeTarget } from '@shared/resume/changes/resumeChange';
+import type { Change, ChangeTarget } from '@/lib/resume/changes/resumeChange';
 
 /**
  * Where marks sit on the page: the name, a header item, a section's heading, an entry or

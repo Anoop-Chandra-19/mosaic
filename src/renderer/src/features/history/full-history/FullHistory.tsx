@@ -26,7 +26,7 @@ import { attempt, showToast } from '@/stores/toastStore';
 import { readVersion, useTemplateStore, useVersionHistory } from '@/stores/templateStore';
 import { useUiStore } from '@/stores/uiStore';
 import { useViewPlaceStore } from '@/stores/viewPlaceStore';
-import { countChangesByTone } from '@shared/resume/changes/resumeChange';
+import { countChangesByTone } from '@/lib/resume/changes/resumeChange';
 import type { TemplateSummary, Version, VersionMeta } from '@shared/types/db';
 import type { ResumeData } from '@shared/types/resume';
 import type { HistoryComparison, HistoryFilter, ReadPaneView } from '@/types/history';

@@ -1,5 +1,5 @@
 import { discardProposals, stageProposals } from '@/features/suggestions/proposals/proposalActions';
-import type { Proposal } from '@shared/types/agentProposal';
+import type { Proposal } from '@/types/agentProposal';
 import type { AgentToolRun, ToolAnswer, ToolCallContext } from '../agentToolRun';
 import { targetKeyOf } from './changeRules';
 import type { CompiledCall } from './compileProposeCall';

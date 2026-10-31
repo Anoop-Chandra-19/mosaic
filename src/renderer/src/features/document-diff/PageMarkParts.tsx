@@ -1,15 +1,15 @@
 import type { ReactNode } from 'react';
 import { AppTooltip } from '@/components/ui-kit';
 import { cn } from '@/lib/utils';
-import { describeChangeTip } from '@shared/resume/changes/describeChanges';
-import type { EntryHeadingFields } from '@shared/resume/entryHeading';
-import { ENTRY_HEADING_SEPARATOR } from '@shared/resume/entryHeading';
+import { describeChangeTip } from '@/lib/resume/changes/describeChanges';
+import type { EntryHeadingFields } from '@/lib/resume/entryHeading';
+import { ENTRY_HEADING_SEPARATOR } from '@/lib/resume/entryHeading';
 import {
   getChangeTone,
   type Change,
   type ChangeMove,
   type ChangeTone,
-} from '@shared/resume/changes/resumeChange';
+} from '@/lib/resume/changes/resumeChange';
 import { LINE_GUTTER, type MarkGutter } from './pageMarks';
 import { PhraseText } from './PhraseText';
 

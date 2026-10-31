@@ -1,7 +1,7 @@
 import { checkProposal } from '@/features/suggestions/proposals/checks/checkProposal';
 import { readShowPlaceId, readTextPlaceId } from '@/features/suggestions/proposals/proposalAnchor';
 import { validateProposal } from '@/features/suggestions/proposals/validateProposal';
-import type { OrderPlace, ProposalChange, ProposalFlagKind } from '@shared/types/agentProposal';
+import type { OrderPlace, ProposalChange, ProposalFlagKind } from '@/types/agentProposal';
 import type { ToolCallContext } from '../agentToolRun';
 import { describeFlag, describeNoChange, describeTarget } from './describeForModel';
 import { diagnose, type Diagnostic } from './toolDiagnostics';

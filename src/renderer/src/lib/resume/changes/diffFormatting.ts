@@ -1,5 +1,5 @@
-import type { ResumeData } from '../../types/resume';
-import { getPrintableHeaderLines } from '../resumeHeader';
+import type { ResumeData } from '@shared/types/resume';
+import { getPrintableHeaderLines } from '@shared/resume/resumeHeader';
 
 export type FormattingSetting = 'linkStyle' | 'linkColor' | 'align' | 'separator';
 

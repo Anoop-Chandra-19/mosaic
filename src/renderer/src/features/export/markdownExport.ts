@@ -1,4 +1,4 @@
-import { formatEntryHeading } from '@shared/resume/entryHeading';
+import { formatEntryHeading } from '@/lib/resume/entryHeading';
 import type { PrintedHeaderLine } from '@shared/resume/resumeHeader';
 import type { ExportEntry, NormalizedResumeExport } from './normalizeResumeExport';
 

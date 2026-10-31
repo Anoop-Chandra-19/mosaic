@@ -1,4 +1,4 @@
-import type { Proposal, ProposalChange } from '@shared/types/agentProposal';
+import type { Proposal, ProposalChange } from '@/types/agentProposal';
 import { createEmptyResume } from '@shared/resume/defaultResume';
 import type { ResumeData } from '@shared/types/resume';
 

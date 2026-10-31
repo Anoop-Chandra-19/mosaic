@@ -1,4 +1,4 @@
-import type { Proposal } from '@shared/types/agentProposal';
+import type { Proposal } from '@/types/agentProposal';
 import type { AppliedHistory } from '@shared/types/db';
 import { canAddToVersion } from '@shared/history/canAddToVersion';
 import { useProposalStore } from '@/stores/proposalStore';

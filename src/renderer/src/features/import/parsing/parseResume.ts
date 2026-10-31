@@ -2,7 +2,7 @@ import {
   ENTRY_HEADING_SEPARATOR,
   splitEntryHeading,
   type EntryHeadingFields,
-} from '@shared/resume/entryHeading';
+} from '@/lib/resume/entryHeading';
 import {
   HEADER_SEPARATORS,
   createHeaderItem,

@@ -12,8 +12,8 @@ import {
   describeDifference,
   describeFormattingDifference,
   type DifferencePhrase,
-} from '@shared/resume/changes/describeChanges';
-import type { ChangeTone } from '@shared/resume/changes/resumeChange';
+} from '@/lib/resume/changes/describeChanges';
+import type { ChangeTone } from '@/lib/resume/changes/resumeChange';
 import type { VersionPreviewComparison } from './useVersionPreviewComparison';
 
 /** Each swatch is drawn as the mark its phrase stands for on the page. */

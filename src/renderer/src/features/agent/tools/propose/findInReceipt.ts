@@ -1,6 +1,6 @@
 import { readShowPlaceId, readShownName } from '@/features/suggestions/proposals/proposalAnchor';
 import type { HandleKind } from '@shared/agent-tools/handleKinds';
-import type { ShowPlace } from '@shared/types/agentProposal';
+import type { ShowPlace } from '@/types/agentProposal';
 import type { Bullet, ResumeData, ResumeEntry, ResumeSection } from '@shared/types/resume';
 import {
   NO_RESUME_OPEN,

@@ -1,5 +1,5 @@
-import { formatEntryHeading } from '@shared/resume/entryHeading';
-import type { AddPlace, ProposalChange, TextPlace } from '@shared/types/agentProposal';
+import { formatEntryHeading } from '@/lib/resume/entryHeading';
+import type { AddPlace, ProposalChange, TextPlace } from '@/types/agentProposal';
 import type { ResumeData, ResumeEntry } from '@shared/types/resume';
 import { findEntry, findSection } from '../../proposals/proposalAnchor';
 

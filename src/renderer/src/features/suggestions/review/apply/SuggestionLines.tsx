@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { Text } from '@/components/ui-kit';
 import { cn } from '@/lib/utils';
-import type { Proposal } from '@shared/types/agentProposal';
+import type { Proposal } from '@/types/agentProposal';
 
 /** A suggestion as one line: its kind, then where. */
 export interface SuggestionName {

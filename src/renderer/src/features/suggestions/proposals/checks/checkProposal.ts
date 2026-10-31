@@ -1,10 +1,5 @@
-import { formatEntryHeading } from '@shared/resume/entryHeading';
-import type {
-  AddPlace,
-  EntryDraft,
-  ProposalChange,
-  ProposalFlag,
-} from '@shared/types/agentProposal';
+import { formatEntryHeading } from '@/lib/resume/entryHeading';
+import type { AddPlace, EntryDraft, ProposalChange, ProposalFlag } from '@/types/agentProposal';
 import type { ResumeData } from '@shared/types/resume';
 import { checkClaimsMore } from './claimsMore';
 import { checkDoubledWords } from './doubledWords';

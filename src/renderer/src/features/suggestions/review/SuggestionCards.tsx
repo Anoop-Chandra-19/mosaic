@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import { Text } from '@/components/ui-kit';
 import { transitionClasses } from '@/features/view-transitions/transitionClasses';
 import { cn } from '@/lib/utils';
-import type { Proposal } from '@shared/types/agentProposal';
+import type { Proposal } from '@/types/agentProposal';
 import type { ResumeData } from '@shared/types/resume';
 import { placeSuggestion } from '../proposals/describeSuggestion';
 import { SuggestionActions } from '../card/SuggestionActions';
