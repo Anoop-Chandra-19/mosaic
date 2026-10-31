@@ -16,7 +16,7 @@ import {
 } from '@/components/ui-kit';
 import { ReadBoundary } from '@/components/ReadBoundary';
 import { useVersionDistance } from '@/features/history/useVersionDistance';
-import { versionLabel } from '@/features/history/versionLabel';
+import { versionLabel } from '@/lib/versionLabel';
 import { easeHeightChanges } from '@/lib/motion/easeHeightChanges';
 import { DbError } from '@/lib/services/mosaicDb';
 import { cn } from '@/lib/utils';

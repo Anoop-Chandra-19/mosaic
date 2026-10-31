@@ -33,8 +33,8 @@ import { validateProposal, type ProposalRefusal } from './validateProposal';
  * it as one undo step, with a version either side.
  *
  * Other modules use this file, `apply/planApply.ts`, `apply/applyAcceptedProposals.ts`,
- * `reviewedChange.ts`, `describeSuggestion.ts`, and `diffWords.ts` for marks. State is
- * `stores/proposalStore.ts`, which only these files write.
+ * `reviewedChange.ts` and `describeSuggestion.ts`. State is `stores/proposalStore.ts`, which
+ * only these files write.
  */
 
 export interface StagedChange {

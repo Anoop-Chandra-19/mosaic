@@ -3,12 +3,12 @@ import { AlertTriangle, Check, ExternalLink, Eye, EyeOff, LoaderCircle } from 'l
 import { AppButton, AppCheckbox, AppInput, Text } from '@/components/ui-kit';
 import { cn } from '@/lib/utils';
 import { checkApiKey, removeApiKey, saveApiKey } from '@/stores/secretsStore';
+import { KEY_PAGE_URLS, MODEL_PROVIDER_OPTION_BY_ID } from '@/lib/modelProviderOptions';
 import type { KeyCheck, KeyedProvider, SavedKey, SecretsStatus } from '@shared/types/secrets';
 import { ApiKeyMessage, type KeyMessageContext } from './ApiKeyMessage';
 import { describeSavedKey, withArticle } from './apiKeyWords';
 import { detectKeyProvider } from './detectKeyProvider';
 import type { KeyProblem } from './keyProblem';
-import { KEY_PAGE_URLS, MODEL_PROVIDER_OPTION_BY_ID } from './modelProviderOptions';
 import { SettingRow } from '../../SettingRow';
 
 interface ApiKeyRowProps {

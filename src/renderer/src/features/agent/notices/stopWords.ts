@@ -3,7 +3,7 @@ import {
   KEY_PAGE_URLS,
   MODEL_PROVIDER_OPTIONS,
   STATUS_PAGE_URLS,
-} from '@/features/settings/sections/ai/modelProviderOptions';
+} from '@/lib/modelProviderOptions';
 import { formatTimeOfDay } from '@shared/time/formatTime';
 import { RUN_LIMITS } from '@shared/agent/runLimitSettings';
 import type { RunModel, RunStoppedMessageBody } from '@shared/types/agentConversation';

@@ -1,4 +1,4 @@
-import { MODEL_PROVIDER_OPTION_BY_ID } from '@/features/settings/sections/ai/modelProviderOptions';
+import { MODEL_PROVIDER_OPTION_BY_ID } from '@/lib/modelProviderOptions';
 import { DEFAULT_MODEL_BY_PROVIDER, useAgentSettingsStore } from '@/stores/agentSettingsStore';
 
 /** The provider and model Settings names, which the next run uses. */

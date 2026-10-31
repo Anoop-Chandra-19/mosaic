@@ -2,7 +2,7 @@ import {
   labelSuggestionKind,
   placeSuggestion,
 } from '@/features/suggestions/proposals/describeSuggestion';
-import { versionLabel } from '@/features/history/versionLabel';
+import { versionLabel } from '@/lib/versionLabel';
 import { GETTING_STARTED_STEPS } from '@/features/onboarding/getting-started/gettingStartedSteps';
 import { HISTORY_TOUR_STEPS } from '@/features/onboarding/history/historyTourSteps';
 import { SETTINGS_GROUPS } from '@/features/settings/settingsNav';

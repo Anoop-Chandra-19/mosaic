@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
+import { diffWords } from '@/lib/resume/diffWords';
 import { GAP_MARK } from '../../proposals/checks/unfilledGap';
-import { diffWords } from '../../proposals/diffWords';
 
 /*
  * A suggestion's words as the inspector shows them: what it removes struck, what it adds

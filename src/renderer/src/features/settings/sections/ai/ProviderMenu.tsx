@@ -8,11 +8,11 @@ import {
   AppMenuTrigger,
   Text,
 } from '@/components/ui-kit';
+import { MODEL_PROVIDER_OPTION_BY_ID, MODEL_PROVIDER_OPTIONS } from '@/lib/modelProviderOptions';
 import type { ModelProviderId } from '@shared/types/modelProviders';
 import type { SecretsStatus } from '@shared/types/secrets';
 import { readKeyState } from './apiKeyWords';
 import { KeyStatus } from './KeyStatus';
-import { MODEL_PROVIDER_OPTION_BY_ID, MODEL_PROVIDER_OPTIONS } from './modelProviderOptions';
 
 /** The provider choice, with each provider's key status so all of them show without switching. */
 export function ProviderMenu({

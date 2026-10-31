@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { attempt, showToast } from '@/stores/toastStore';
 import { useTemplateStore } from '@/stores/templateStore';
 import type { VersionMeta } from '@shared/types/db';
-import { versionLabel } from '../versionLabel';
+import { versionLabel } from '@/lib/versionLabel';
 import type { VersionRowMode } from './VersionRow';
 
 /** How long a row just named keeps its wash: the animation's 1.6s, and a little to spare. */

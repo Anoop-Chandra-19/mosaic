@@ -1,5 +1,6 @@
 import { ShieldCheck } from 'lucide-react';
 import { AppSwitch, Note, Text } from '@/components/ui-kit';
+import { MODEL_PROVIDER_OPTION_BY_ID } from '@/lib/modelProviderOptions';
 import { isLocalServerAddress } from '@shared/model-providers/serverAddress';
 import { cn } from '@/lib/utils';
 import { DEFAULT_MODEL_BY_PROVIDER, useAgentSettingsStore } from '@/stores/agentSettingsStore';
@@ -11,7 +12,6 @@ import { ApiKeyRow } from './ai/ApiKeyRow';
 import { readKeyState } from './ai/apiKeyWords';
 import { KeyedModelRow } from './ai/KeyedModelRow';
 import { KeyStatus } from './ai/KeyStatus';
-import { MODEL_PROVIDER_OPTION_BY_ID } from './ai/modelProviderOptions';
 import { OllamaAddressRow, OllamaContextRow, OllamaModelRow } from './ai/OllamaRows';
 import { OpenAiCompatibleAddressRow, OpenAiCompatibleModelRow } from './ai/OpenAiCompatibleRows';
 import { ProviderMenu } from './ai/ProviderMenu';
@@ -21,8 +21,7 @@ import { useOllamaModels } from './ai/useOllamaModels';
  * Settings › AI assistant: the switch, the provider menu, and that provider's rows under its
  * heading, all from `ai/`. A keyed provider gets the key row (`ApiKeyRow` and its messages)
  * and the model list (`KeyedModelRow`, `ModelCombobox`); Ollama gets `OllamaRows`, and an
- * OpenAI-compatible server `OpenAiCompatibleRows`. Outside Settings, only
- * `ai/modelProviderOptions.ts` is used.
+ * OpenAI-compatible server `OpenAiCompatibleRows`.
  */
 
 function describeProviderChoice(

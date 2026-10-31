@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
+import { versionLabel } from '@/lib/versionLabel';
 import { diffResumes } from '@shared/resume/changes/diffResumes';
 import { groupRevisions } from '../../groupVersionHistory';
 import { buildExampleHistory, EXAMPLE_OPENING_ID } from '../exampleHistory';
-import { versionLabel } from '../../versionLabel';
 
 describe('the example history', () => {
   const example = buildExampleHistory(new Date(2026, 9, 10, 12).getTime());

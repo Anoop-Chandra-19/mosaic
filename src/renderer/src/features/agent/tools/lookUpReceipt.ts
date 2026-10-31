@@ -1,4 +1,4 @@
-import { hasSameWords } from '@/features/suggestions/proposals/diffWords';
+import { hasSameWords } from '@/lib/resume/diffWords';
 import type { AgentToolRun } from './agentToolRun';
 import { readEntryHeading } from './formatResumeForModel';
 import type { ResumeLookup } from './readAgentToolArgs';

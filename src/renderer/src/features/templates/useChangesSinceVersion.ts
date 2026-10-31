@@ -1,4 +1,4 @@
-import { versionLabel } from '@/features/history/versionLabel';
+import { versionLabel } from '@/lib/versionLabel';
 import { useResumeStore } from '@/stores/resumeStore';
 import { useVersion } from '@/stores/templateStore';
 import { describeChange, describeFormattingChange } from '@shared/resume/changes/describeChanges';

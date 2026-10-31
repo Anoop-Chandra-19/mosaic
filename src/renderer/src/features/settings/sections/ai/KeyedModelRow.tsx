@@ -5,7 +5,7 @@ import { SettingRow } from '../../SettingRow';
 import { KeyMessageLine } from './ApiKeyMessage';
 import { isModelListed } from './groupModelChoices';
 import { readKeyState, type KeyState } from './apiKeyWords';
-import { MODEL_PROVIDER_OPTION_BY_ID } from './modelProviderOptions';
+import { MODEL_PROVIDER_OPTION_BY_ID } from '@/lib/modelProviderOptions';
 import { ModelCombobox, ModelListResult } from './ModelCombobox';
 import { useModelList, type ModelListAnswer } from './useModelList';
 

@@ -1,4 +1,4 @@
-import { versionLabel } from '@/features/history/versionLabel';
+import { versionLabel } from '@/lib/versionLabel';
 import { canAddToVersion } from '@shared/history/canAddToVersion';
 import type { AppliedHistory, VersionMeta } from '@shared/types/db';
 
