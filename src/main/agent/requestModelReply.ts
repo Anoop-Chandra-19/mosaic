@@ -21,7 +21,10 @@ export type StepReply =
       parts: ModelReplyPart[];
       finish: 'complete' | 'outputLimit';
       usage: ModelUsage | null;
-      /** When each call began, or arrived whole from a provider that can't say sooner. */
+      /**
+       * When each call began. A provider that sends calls whole can't say, so theirs count from
+       * the last thing the model did before it: the time it spent writing the call.
+       */
       callStartedAt: ReadonlyMap<string, number>;
     }
   /** Stopped by the user; `parts` is what had arrived, to keep. */
@@ -80,6 +83,7 @@ function takeEvent(
   parts: ModelReplyPart[],
   callStartedAt: Map<string, number>,
   event: ModelStreamEvent,
+  lastEventAt: number,
   onEvent: (event: AgentRunEvent) => void
 ): void {
   switch (event.type) {
@@ -104,7 +108,7 @@ function takeEvent(
       onEvent({ type: 'toolCall', callId: event.callId, name: event.name });
       return;
     case 'toolCall':
-      if (!callStartedAt.has(event.callId)) callStartedAt.set(event.callId, Date.now());
+      if (!callStartedAt.has(event.callId)) callStartedAt.set(event.callId, lastEventAt);
       parts.push({ type: 'toolCall', callId: event.callId, name: event.name, args: event.args });
       onEvent({ type: 'toolCall', callId: event.callId, name: event.name });
       return;
@@ -124,6 +128,7 @@ async function streamOnce({
   const stall = createRestartableDeadline(limits.stallMs);
   const parts: ModelReplyPart[] = [];
   const callStartedAt = new Map<string, number>();
+  let lastEventAt = Date.now();
   try {
     const attemptSignal = AbortSignal.any([signal, stall.signal]);
     const attempt = { ...request, signal: attemptSignal, onArrival: stall.restart };
@@ -132,7 +137,8 @@ async function streamOnce({
       if (event.type === 'finish')
         return { ok: true, parts, finish: event.reason, usage: event.usage, callStartedAt };
       if (event.type === 'error') return { ok: false, cancelled: false, error: event.error };
-      takeEvent(parts, callStartedAt, event, onEvent);
+      takeEvent(parts, callStartedAt, event, lastEventAt, onEvent);
+      lastEventAt = Date.now();
     }
     if (signal.aborted) return { ok: false, cancelled: true, parts };
     return { ok: false, cancelled: false, error: stall.signal.aborted ? STALLED : ENDED_EARLY };

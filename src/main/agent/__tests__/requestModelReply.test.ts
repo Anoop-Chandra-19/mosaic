@@ -103,6 +103,39 @@ describe('requestModelReply', () => {
     expect(finished.parts).toHaveLength(1);
   });
 
+  it('times a call sent whole from the last thing the model did before it', async () => {
+    let wroteAt = 0;
+    const { reply } = request([
+      async function* () {
+        await new Promise((resolve) => setTimeout(resolve, 20));
+        yield say('Reading.');
+        wroteAt = Date.now();
+        await new Promise((resolve) => setTimeout(resolve, 20));
+        yield callTool('c1', 'read_document');
+        yield callTool('c2', 'read_document');
+        yield DONE;
+      },
+    ]);
+    const finished = await reply;
+    if (!finished.ok) throw new Error('not finished');
+    expect(finished.callStartedAt.get('c1')).toBeLessThanOrEqual(wroteAt + 5);
+    expect(finished.callStartedAt.get('c2')).toBeGreaterThanOrEqual(wroteAt + 15);
+  });
+
+  it('times a first call sent whole from the request', async () => {
+    const before = Date.now();
+    const { reply } = request([
+      async function* () {
+        await new Promise((resolve) => setTimeout(resolve, 50));
+        yield callTool('c1', 'read_document');
+        yield DONE;
+      },
+    ]);
+    const finished = await reply;
+    if (!finished.ok) throw new Error('not finished');
+    expect(finished.callStartedAt.get('c1')).toBeLessThan(before + 40);
+  });
+
   it('retries a lost connection, a server error and a stalled reply after 1, 4 and 16 seconds, then gives up', async () => {
     const lost = failWith({ reason: 'unreachable' });
     const serverError = failWith({ reason: 'failed', message: 'Bad gateway', httpStatus: 502 });
