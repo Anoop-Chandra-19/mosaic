@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useRef, type ReactNode } from 'react';
-import type { PageDecorations } from '@/features/preview/PreviewSection';
+import { useEffect, useMemo, useRef } from 'react';
+import type { PageDecorations } from '@/features/preview/pageDecorations';
 import { ReviewPaper } from './ReviewPaper';
 import {
   SuggestionBackChip,
@@ -19,32 +19,32 @@ const LEAVING_BLOCK_CLASSES =
 /** The page's marks, built once per page so selecting one never lays the page out again. */
 function decorateSuggestions(page: SuggestionPage): PageDecorations {
   /** Text or a heading in its mark, with the chips a move or a return leaves beside it. */
-  const markWithChips = (gutter: FlagGutter) => (id: string, node: ReactNode) => {
+  const markWithChips = (gutter: FlagGutter) => (id: string, text: string) => {
     const mark = page.marks.get(id);
     const move = page.moves.get(id);
-    if (!mark && !move) return node;
+    if (!mark && !move) return text;
     return (
       <>
         {mark ? (
           <SuggestionMark mark={mark} gutter={gutter}>
-            {node}
+            {text}
           </SuggestionMark>
         ) : (
-          node
+          text
         )}
         {mark?.block === 'back' && <SuggestionBackChip mark={mark} />}
         {move && <SuggestionMoveChip move={move} />}
       </>
     );
   };
-  const markOnly = (id: string, node: ReactNode) => {
+  const markOnly = (id: string, text: string) => {
     const mark = page.marks.get(id);
     return mark ? (
       <SuggestionMark mark={mark} gutter="line">
-        {node}
+        {text}
       </SuggestionMark>
     ) : (
-      node
+      text
     );
   };
   return {

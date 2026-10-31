@@ -1,7 +1,5 @@
 import { Fragment } from 'react';
 import { AppTooltip } from '@/components/ui-kit';
-import { HeaderLineBar, MarkedItem, MarkedLine } from '@/features/document-diff/PageMarkParts';
-import { findMarks, LINE_GUTTER, type PageMarks } from '@/features/document-diff/pageMarks';
 import type { ContactInfo } from '@shared/types/resume';
 import { HEADLESS_LAYOUT as L } from '@/lib/resume/headlessLayout';
 import {
@@ -10,11 +8,11 @@ import {
   type PrintedHeaderLine,
 } from '@shared/resume/resumeHeader';
 import { cn } from '@/lib/utils';
+import type { PageDecorations } from './pageDecorations';
 
 interface PreviewHeaderProps {
   contact: ContactInfo;
-  /** A version being read: its name and items marked like the rest of the page. */
-  marks?: PageMarks;
+  decorations?: PageDecorations;
 }
 
 /**
@@ -22,11 +20,8 @@ interface PreviewHeaderProps {
  * point values rendered as pixels, so this block occupies exactly the height it will occupy
  * in the export. A link opens outside the app: main hands it to the system.
  */
-export function PreviewHeader({ contact, marks }: PreviewHeaderProps) {
+export function PreviewHeader({ contact, decorations }: PreviewHeaderProps) {
   const displayName = contact.name?.trim() || 'Your Name';
-  const nameChanges = findMarks(marks, 'name', '');
-  // A name that went prints the placeholder here; the mark strikes the one it had.
-  const nameText = nameChanges[0]?.kind === 'remove' ? nameChanges[0].before : displayName;
 
   return (
     <header
@@ -39,7 +34,7 @@ export function PreviewHeader({ contact, marks }: PreviewHeaderProps) {
       data-preview-header
     >
       <h1
-        className={cn('font-bold', marks && 'relative')}
+        className={cn('font-bold', decorations && 'relative')}
         style={{
           fontSize: `${L.nameFontSize}px`,
           lineHeight: L.nameLineHeight,
@@ -47,33 +42,20 @@ export function PreviewHeader({ contact, marks }: PreviewHeaderProps) {
           marginBottom: `${L.nameMarginBottom}px`,
         }}
       >
-        {marks ? (
-          <MarkedLine
-            changes={nameChanges}
-            text={nameText}
-            otherSide={marks.otherSide}
-            gutter={LINE_GUTTER}
-          />
-        ) : (
-          displayName
-        )}
+        {decorations?.name ? decorations.name(displayName) : displayName}
       </h1>
       {getPrintableHeaderLines(contact.header).map((line) => (
         <p
           key={line.id}
-          className={cn(marks && 'relative')}
+          className={cn(decorations && 'relative')}
           style={{
             fontSize: `${L.contactFontSize}px`,
             lineHeight: L.contactLineHeight,
             textAlign: line.align,
           }}
         >
-          {marks && (
-            <HeaderLineBar
-              changes={line.items.flatMap((item) => findMarks(marks, 'item', item.id))}
-            />
-          )}
-          <HeaderLineItems contact={contact} line={line} marks={marks} />
+          {decorations?.headerLine?.(line.items.map((item) => item.id))}
+          <HeaderLineItems contact={contact} line={line} decorations={decorations} />
         </p>
       ))}
     </header>
@@ -83,37 +65,34 @@ export function PreviewHeader({ contact, marks }: PreviewHeaderProps) {
 function HeaderLineItems({
   contact,
   line,
-  marks,
+  decorations,
 }: {
   contact: ContactInfo;
   line: PrintedHeaderLine;
-  marks?: PageMarks;
+  decorations?: PageDecorations;
 }) {
   const underline = contact.header.linkStyle === 'underline';
   const isBlue = contact.header.linkColor === 'blue';
   return line.items.map((item, index) => {
-    const change = marks && findMarks(marks, 'item', item.id)[0];
+    const printed = item.href ? (
+      <AppTooltip content={item.href}>
+        <a
+          href={item.href}
+          target="_blank"
+          rel="noreferrer"
+          className={cn('text-inherit', underline ? 'underline' : 'no-underline')}
+          style={isBlue ? { color: LINK_BLUE } : undefined}
+        >
+          {item.text}
+        </a>
+      </AppTooltip>
+    ) : (
+      item.text
+    );
     return (
       <Fragment key={item.id}>
         {index > 0 && <span className="whitespace-pre">{line.separator}</span>}
-        {change ? (
-          // Marked, it says what changed on hover instead of where it links.
-          <MarkedItem change={change} text={item.text} otherSide={marks.otherSide} />
-        ) : item.href ? (
-          <AppTooltip content={item.href}>
-            <a
-              href={item.href}
-              target="_blank"
-              rel="noreferrer"
-              className={cn('text-inherit', underline ? 'underline' : 'no-underline')}
-              style={isBlue ? { color: LINK_BLUE } : undefined}
-            >
-              {item.text}
-            </a>
-          </AppTooltip>
-        ) : (
-          item.text
-        )}
+        {decorations?.headerItem ? decorations.headerItem(item.id, printed, item.text) : printed}
       </Fragment>
     );
   });

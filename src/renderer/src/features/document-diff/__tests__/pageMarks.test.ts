@@ -19,7 +19,7 @@ function readVersion(edit: (resume: ResumeData) => void) {
   const version = createFilledResume();
   edit(version);
   const { all } = diffResumes(draft, version);
-  return { page: putGoneBack(version, draft, all), marks: collectPageMarks(all, 'your draft') };
+  return { page: putGoneBack(version, draft, all), marks: collectPageMarks(all) };
 }
 
 const job = (resume: ResumeData) => resume.sections[1].items[0];

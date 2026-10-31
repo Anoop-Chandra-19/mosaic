@@ -7,7 +7,6 @@ import {
   useRef,
   useState,
 } from 'react';
-import type { PageMarks } from '@/features/document-diff/pageMarks';
 import { cn } from '@/lib/utils';
 import { useLiveEditStore } from '@/stores/liveEditStore';
 import { useResumeStore } from '@/stores/resumeStore';
@@ -16,7 +15,8 @@ import type { PaperSize } from '@/types/paper';
 import type { ResumePreviewMeta } from '@/types/preview';
 import { PreviewHeader } from './PreviewHeader';
 import { PreviewPage } from './PreviewPage';
-import { PreviewSection, type PageDecorations } from './PreviewSection';
+import type { PageDecorations } from './pageDecorations';
+import { PreviewSection } from './PreviewSection';
 import {
   createFallbackMeasurements,
   MAX_PREVIEW_PAGES,
@@ -34,9 +34,7 @@ interface ResumePreviewProps {
   doc?: ResumeData;
   /** Ease a change of zoom rather than jump; off while the user zooms, which must track. */
   isZoomEased?: boolean;
-  /** What changed against another version, marked on the page; exports never pass this. */
-  marks?: PageMarks;
-  /** A surface's own marks around the text. Keep it the same object while they are. */
+  /** A surface's own marks on the text. Keep it the same object while they are. */
   decorations?: PageDecorations;
   /**
    * The page is laid out from its own measurements, before it paints. Called again each
@@ -50,7 +48,6 @@ interface MeasuredPage {
   measurements: PaginationMeasurements;
   contact: ResumeData['contact'];
   sections: ReturnType<typeof normalizeSections>;
-  marks: PageMarks | undefined;
   decorations: PageDecorations | undefined;
 }
 
@@ -140,7 +137,6 @@ export function ResumePreview({
   onMetaChange,
   doc,
   isZoomEased = false,
-  marks,
   decorations,
   onLaidOut,
 }: ResumePreviewProps) {
@@ -167,13 +163,13 @@ export function ResumePreview({
 
   // Measured before paint, so a change shows once, already paginated: never first with
   // the old heights and then again. A version stepped to in the history moves in laid out.
-  // Marks change the words drawn, so turning them on or off measures again.
+  // Decorations can change the words drawn, so turning them on or off measures again.
   useLayoutEffect(() => {
     const root = measureRootRef.current;
     if (!root) return;
     const measurements = measurePagination(root, pageContentSize.height);
-    setMeasured({ measurements, contact, sections: activeSections, marks, decorations });
-  }, [contact, activeSections, pageContentSize.width, pageContentSize.height, marks, decorations]);
+    setMeasured({ measurements, contact, sections: activeSections, decorations });
+  }, [contact, activeSections, pageContentSize.width, pageContentSize.height, decorations]);
 
   // Track only how much room the panel gives us, so a page wider than the panel
   // can be scaled down to fit instead of overflowing. Measured before paint, so the first
@@ -196,7 +192,6 @@ export function ResumePreview({
   const isMeasured =
     measured?.contact === contact &&
     measured.sections === activeSections &&
-    measured.marks === marks &&
     measured.decorations === decorations;
 
   const paginated = useMemo(
@@ -272,12 +267,11 @@ export function ResumePreview({
                 pageCount={meta.totalPages}
                 pageCountIsPartial={meta.hasMorePages}
               >
-                {pageIndex === 0 && <PreviewHeader contact={contact} marks={marks} />}
+                {pageIndex === 0 && <PreviewHeader contact={contact} decorations={decorations} />}
                 {pageSections.map((section) => (
                   <PreviewSection
                     key={`${section.id}-${pageIndex}`}
                     section={section}
-                    marks={marks}
                     decorations={decorations}
                   />
                 ))}
@@ -305,13 +299,12 @@ export function ResumePreview({
           className="flow-root font-normal tracking-normal [font-kerning:none]"
           style={{ width: `${pageContentSize.width}px` }}
         >
-          {/* Marked as on the page, since a struck word takes room. */}
-          <PreviewHeader contact={contact} marks={marks} />
+          {/* Decorated as on the page, since a struck word takes room. */}
+          <PreviewHeader contact={contact} decorations={decorations} />
           {activeSections.map((section) => (
             <PreviewSection
               key={`measure-${section.id}`}
               section={section}
-              marks={marks}
               decorations={decorations}
             />
           ))}

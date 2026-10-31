@@ -8,7 +8,8 @@ import { useStoredPreviewZoom } from '@/features/preview/pageZoom';
 import { usePreviewCanvas } from '@/features/preview/usePreviewCanvas';
 import { cn } from '@/lib/utils';
 import type { PaperSize } from '@/types/paper';
-import { collectPageMarks, putGoneBack } from '@/features/document-diff/pageMarks';
+import { decorateChanges } from '@/features/document-diff/changeDecorations';
+import { putGoneBack } from '@/features/document-diff/pageMarks';
 import {
   useVersionPreviewComparison,
   type VersionPreviewComparison,
@@ -34,7 +35,7 @@ function readVersionPage({ preview, draft, diff }: VersionPreviewComparison, isM
   if (!isMarked || diff.all.length === 0) return { doc: versionDoc };
   return {
     doc: putGoneBack(versionDoc, draft, diff.all),
-    marks: collectPageMarks(diff.all, 'your draft'),
+    decorations: decorateChanges(diff.all, 'your draft'),
   };
 }
 

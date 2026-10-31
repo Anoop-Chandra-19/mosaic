@@ -4,7 +4,8 @@ import { AppButton, AppTooltip, Text } from '@/components/ui-kit';
 import { ChangeList } from '@/features/document-diff/ChangeList';
 import { tourTargetProps } from '@/features/onboarding/tourTargets';
 import { MarkedVersionText } from '@/features/document-diff/MarkedVersionText';
-import { collectPageMarks, putGoneBack } from '@/features/document-diff/pageMarks';
+import { decorateChanges } from '@/features/document-diff/changeDecorations';
+import { putGoneBack } from '@/features/document-diff/pageMarks';
 import { revealChangeMark } from '@/features/document-diff/revealChangeMark';
 import { UnifiedDiff } from '@/features/document-diff/UnifiedDiff';
 import { PAPER_DIMENSIONS_PT } from '@/features/preview/pageGeometry';
@@ -159,7 +160,7 @@ function VersionPage({
         paperSize={paperSize}
         previewZoom={zoom}
         doc={marked ? putGoneBack(version.doc, marked.base, marked.diff.all) : version.doc}
-        marks={marked ? collectPageMarks(marked.diff.all, otherSide) : undefined}
+        decorations={marked ? decorateChanges(marked.diff.all, otherSide) : undefined}
         onMetaChange={ignorePreviewMeta}
         onLaidOut={onLaidOut}
       />

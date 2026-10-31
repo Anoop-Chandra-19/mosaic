@@ -2,7 +2,7 @@ import type { ReactNode, RefObject } from 'react';
 import { Text } from '@/components/ui-kit';
 import { PageZoomControl } from '@/features/preview/PageZoomControl';
 import { useStoredPreviewZoom } from '@/features/preview/pageZoom';
-import type { PageDecorations } from '@/features/preview/PreviewSection';
+import type { PageDecorations } from '@/features/preview/pageDecorations';
 import { ResumePreview } from '@/features/preview/ResumePreview';
 import { usePreviewCanvas } from '@/features/preview/usePreviewCanvas';
 import { transitionClasses } from '@/features/view-transitions/transitionClasses';
