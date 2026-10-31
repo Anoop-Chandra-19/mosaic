@@ -14,6 +14,7 @@ import { usePreviewCanvas, type PreviewCanvas } from '@/features/preview/usePrev
 import { startPaneResize } from '@/features/shell/paneResize';
 import { transitionClasses } from '@/features/view-transitions/transitionClasses';
 import { matchesAction } from '@/features/shortcuts/shortcutBindings';
+import { formatDay, formatTimeOfDay } from '@shared/time/formatTime';
 import { isTypingField } from '@/lib/keyboardShortcuts';
 import type { ShortcutId } from '@/lib/shortcutCatalog';
 import { easeHeightChanges } from '@/lib/motion/easeHeightChanges';
@@ -23,7 +24,6 @@ import type { ResumeDiff } from '@shared/resume/changes/diffResumes';
 import type { Version, VersionMeta, VersionSource } from '@shared/types/db';
 import type { ResumeData } from '@shared/types/resume';
 import type { HistoryComparison, ReadPaneView } from '@/types/history';
-import { formatHistoryDay, formatTimeOfDay } from '../groupVersionHistory';
 import type { VersionPair } from './prepareHistoryOpening';
 import { ReadPaneControls } from './ReadPaneControls';
 import { findReadingPlace, restoreReadingPlace, type ReadingPlace } from './readingPlace';
@@ -345,7 +345,7 @@ export function HistoryReadPane({
             </>
           )}
           <span>
-            {formatHistoryDay(version.createdAt)}, {formatTimeOfDay(version.createdAt)}
+            {formatDay(version.createdAt)},{formatTimeOfDay(version.createdAt)}
           </span>
           {draftChangeCount !== null && (
             <>

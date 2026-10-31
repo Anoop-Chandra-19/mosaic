@@ -27,6 +27,7 @@ import {
   Text,
 } from '@/components/ui-kit';
 import { ReadBoundary } from '@/components/ReadBoundary';
+import { formatRelativeTime } from '@shared/time/formatTime';
 import { cn } from '@/lib/utils';
 import { useOverlayStore } from '@/stores/overlayStore';
 import { usePreviewStore } from '@/stores/previewStore';
@@ -35,7 +36,6 @@ import { useResumeStore } from '@/stores/resumeStore';
 import { readVersion, useTemplateStore, useVersionHistory } from '@/stores/templateStore';
 import type { TemplateSummary, VersionMeta } from '@shared/types/db';
 import { DeleteTemplateDialog } from './DeleteTemplateDialog';
-import { formatRelativeTime } from './formatRelativeTime';
 import type { HistoryFilter } from '@/types/history';
 import { versionLabel } from '@/features/history/versionLabel';
 import { VersionList } from '@/features/history/version-list/VersionList';

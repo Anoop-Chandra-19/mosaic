@@ -3,6 +3,7 @@ import { getResumeSnapshot, useResumeStore } from '@/stores/resumeStore';
 import { readVersion, readVersionHistory } from '@/stores/templateStore';
 import { describeDraftChanges } from '@shared/resume/describeDraftChanges';
 import { encodeResumeCanonically } from '@shared/resume/encodeResumeCanonically';
+import { formatDateTimeDashed } from '@shared/time/calendar';
 import type { ResumeData } from '@shared/types/resume';
 import {
   NO_RESUME_OPEN,
@@ -12,14 +13,6 @@ import {
   type ToolAnswer,
 } from '../agentToolRun';
 import { formatResumeForModel } from '../formatResumeForModel';
-
-/** "2026-10-20 14:03", in the user's time. */
-function formatSavedAt(ms: number): string {
-  const savedAt = new Date(ms);
-  const twoDigits = (value: number) => String(value).padStart(2, '0');
-  const day = `${savedAt.getFullYear()}-${twoDigits(savedAt.getMonth() + 1)}-${twoDigits(savedAt.getDate())}`;
-  return `${day} ${twoDigits(savedAt.getHours())}:${twoDigits(savedAt.getMinutes())}`;
-}
 
 function describeChangesSince(version: ResumeData, draft: ResumeData): string {
   if (encodeResumeCanonically(version) === encodeResumeCanonically(draft)) {
@@ -39,7 +32,7 @@ export async function readNewestVersion(run: AgentToolRun): Promise<ToolAnswer> 
   const version = await readVersion(newestInHistory.id);
 
   const quotedName = version.kind === 'named' ? ` "${version.summary}"` : '';
-  const savedAt = formatSavedAt(version.createdAt);
+  const savedAt = formatDateTimeDashed(new Date(version.createdAt));
   return answer(
     [
       `Newest version: ${versionLabel(version)}${quotedName}, saved ${savedAt}.`,

@@ -12,7 +12,7 @@ import {
   Text,
 } from '@/components/ui-kit';
 import { backUpNow, chooseBackup, fileFailure } from '@/features/backup/backupFiles';
-import { formatRelativeTime } from '@/features/templates/formatRelativeTime';
+import { formatRelativeTime } from '@shared/time/formatTime';
 import { filesService } from '@/lib/services/filesService';
 import { useOverlayStore } from '@/stores/overlayStore';
 import { explainFailure, showToast } from '@/stores/toastStore';

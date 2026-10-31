@@ -2,6 +2,7 @@ import { Fragment, useState, type RefObject } from 'react';
 import { ChevronDown, ChevronUp, Eye, History } from 'lucide-react';
 import { AppButton, Text } from '@/components/ui-kit';
 import { revealChangeMark } from '@/features/document-diff/revealChangeMark';
+import { formatTimeOfDay } from '@shared/time/formatTime';
 import { cn } from '@/lib/utils';
 import { useOverlayStore } from '@/stores/overlayStore';
 import { usePreviewStore } from '@/stores/previewStore';
@@ -13,7 +14,6 @@ import {
   type DifferencePhrase,
 } from '@shared/resume/changes/describeChanges';
 import type { ChangeTone } from '@shared/resume/changes/resumeChange';
-import { formatTimeOfDay } from './groupVersionHistory';
 import type { VersionPreviewComparison } from './useVersionPreviewComparison';
 
 /** Each swatch is drawn as the mark its phrase stands for on the page. */

@@ -1,6 +1,6 @@
+import { DAY, startOfDay, startOfMonth } from '@shared/time/calendar';
+import { formatDay, formatMonth } from '@shared/time/formatTime';
 import type { VersionMeta } from '@shared/types/db';
-
-const MINUTE = 60_000;
 
 /** Fewer rows than this past the fold age stay plain: a fold would be as tall and say less. */
 export const FOLD_MIN_ROWS = 2;
@@ -34,61 +34,6 @@ export function groupRevisions(versions: VersionMeta[]): VersionMeta[][] {
   return numbers;
 }
 
-function startOfDay(ms: number): number {
-  return new Date(ms).setHours(0, 0, 0, 0);
-}
-
-function startOfMonth(ms: number): number {
-  const date = new Date(ms);
-  date.setDate(1);
-  return date.setHours(0, 0, 0, 0);
-}
-
-// Made once: a formatter is slow to make, and every row on screen formats its time on each
-// step through the history.
-const DAY_FORMAT = new Intl.DateTimeFormat(undefined, {
-  weekday: 'short',
-  month: 'short',
-  day: 'numeric',
-});
-const DAY_IN_YEAR_FORMAT = new Intl.DateTimeFormat(undefined, {
-  weekday: 'short',
-  month: 'short',
-  day: 'numeric',
-  year: 'numeric',
-});
-const MONTH_FORMAT = new Intl.DateTimeFormat(undefined, { month: 'short', year: 'numeric' });
-const TIME_FORMAT = new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit' });
-
-export function formatHistoryDay(ms: number, now: number = Date.now()): string {
-  const today = startOfDay(now);
-  const day = startOfDay(ms);
-  if (day === today) return 'Today';
-  if (day === startOfDay(today - 1)) return 'Yesterday';
-  const sameYear = new Date(ms).getFullYear() === new Date(now).getFullYear();
-  return (sameYear ? DAY_FORMAT : DAY_IN_YEAR_FORMAT).format(ms);
-}
-
-export function formatHistoryMonth(ms: number): string {
-  return MONTH_FORMAT.format(ms);
-}
-
-export function formatTimeOfDay(ms: number): string {
-  return TIME_FORMAT.format(ms);
-}
-
-/** A row's time under its day's header: "12 min ago" or "3h ago" today, "9:12 PM" before. */
-export function formatTimeInDay(ms: number, now: number = Date.now()): string {
-  const ago = now - ms;
-  if (ago < MINUTE) return 'just now';
-  if (ms >= startOfDay(now)) {
-    return ago < 60 * MINUTE
-      ? `${Math.floor(ago / MINUTE)} min ago`
-      : `${Math.floor(ago / (60 * MINUTE))}h ago`;
-  }
-  return formatTimeOfDay(ms);
-}
-
 export interface HistoryMonthSummary {
   label: string;
   newest: VersionMeta;
@@ -99,7 +44,7 @@ export interface HistoryMonthSummary {
 export function listHistoryMonths(versions: VersionMeta[]): HistoryMonthSummary[] {
   const months: HistoryMonthSummary[] = [];
   for (const version of versions) {
-    const label = formatHistoryMonth(version.createdAt);
+    const label = formatMonth(version.createdAt);
     const last = months.at(-1);
     if (last?.label === label) last.count += 1;
     else months.push({ label, newest: version, count: 1 });
@@ -109,7 +54,7 @@ export function listHistoryMonths(versions: VersionMeta[]): HistoryMonthSummary[
 
 /** The moment before which automatic snapshots fold: the start of the day `days` ago. */
 export function findFoldCutoff(days: number | null, now: number = Date.now()): number {
-  return days === null ? -Infinity : startOfDay(now) - days * 24 * 60 * MINUTE;
+  return days === null ? -Infinity : startOfDay(now) - days * DAY;
 }
 
 interface GroupOptions {
@@ -124,7 +69,7 @@ function startGroup(at: number, isMonth: boolean, isPastFold: boolean, now: numb
   const key = isMonth ? startOfMonth(at) : startOfDay(at);
   return {
     key,
-    label: isMonth ? formatHistoryMonth(at) : formatHistoryDay(at, now),
+    label: isMonth ? formatMonth(at) : formatDay(at, now),
     isToday: !isMonth && key === startOfDay(now),
     isPastFold,
     count: 0,

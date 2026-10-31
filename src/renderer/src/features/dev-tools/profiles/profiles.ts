@@ -1,5 +1,6 @@
 import { parseResumeText } from '@/features/import/parsing/parseResume';
 import { CURRENT_SCHEMA_VERSION } from '@shared/resume/migrateResume';
+import { HOUR, MINUTE } from '@shared/time/calendar';
 import type { BundleTemplate } from '@shared/types/bundle';
 import type { ResumeData } from '@shared/types/resume';
 import { createExampleResume } from '../tools/exampleResume';
@@ -111,8 +112,6 @@ const VERSION_NAMES = [
   'Two pages, all roles',
 ];
 
-const MINUTE = 60_000;
-const HOUR = 60 * MINUTE;
 /** Versions report back this often, letting the window draw. */
 const VERSIONS_PER_REPORT = 20;
 

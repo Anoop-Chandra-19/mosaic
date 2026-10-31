@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { formatRelativeTime } from '@/features/templates/formatRelativeTime';
+import { formatRelativeTime } from '@shared/time/formatTime';
 import type { KeyedProvider, ModelListing, SecretsStatus } from '@shared/types/secrets';
 import { SettingRow } from '../../SettingRow';
 import { KeyMessageLine } from './ApiKeyMessage';

@@ -51,7 +51,3 @@ export const NOTICE_TAGS: Record<NoticeLevel, string> = {
   cantRun: 'Can’t run',
   stopped: 'Run stopped',
 };
-
-const TIME_OF_DAY = new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit' });
-
-export const formatNoticeTime = (ms: number): string => TIME_OF_DAY.format(ms);

@@ -1,14 +1,13 @@
 import { formatViewAddress } from '@/features/view-address/formatViewAddress';
 import type { ViewPlace } from '@/features/view-address/viewPlace';
+import { formatShortDate } from '@shared/time/formatTime';
 import type { TemplateSummary } from '@shared/types/db';
 import { AddressRow } from './AddressRow';
 import type { PaletteSection } from './paletteSection';
 import type { AddressCheck } from './useAddressCheck';
 
-const DAY_FORMAT = new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric' });
-
 const describeTemplate = (template: TemplateSummary) =>
-  `${template.versionCount} versions, made ${DAY_FORMAT.format(template.createdAt)}`;
+  `${template.versionCount} versions, made ${formatShortDate(template.createdAt)}`;
 
 /** A row that goes nowhere, saying why. */
 function failedSection(address: string, error: string): PaletteSection {

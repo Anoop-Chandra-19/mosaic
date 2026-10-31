@@ -3,6 +3,7 @@ import path from 'node:path';
 import type { Database } from 'better-sqlite3';
 import type { BackupFrequency, BackupRecord, BackupStatus } from '@shared/types/backup';
 import { BACKUP_FREQUENCIES } from '@shared/types/backup';
+import { DAY, formatDateDashed, startOfDay } from '@shared/time/calendar';
 import { MAX_TEXT_BYTES } from '@shared/types/files';
 import { formatBundle } from '@shared/vault/formatBundle';
 import { writeNewFileSafely } from '../replaceFileSafely';
@@ -107,12 +108,6 @@ export function setBackupFolder(db: Database, folder: string): void {
   removeSetting(db, FAILURE_KEY);
 }
 
-function formatDateDashed(date: Date): string {
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${date.getFullYear()}-${month}-${day}`;
-}
-
 /** A full backup's file name: "mosaic-backup-2026-09-22.json". */
 export function buildBackupFileName(now: Date = new Date()): string {
   return `mosaic-backup-${formatDateDashed(now)}.json`;
@@ -156,7 +151,6 @@ export function recordBackup(db: Database, record: BackupRecord): void {
   setSetting(db, LAST_BACKUP_KEY, JSON.stringify(record));
 }
 
-const DAY_MS = 24 * 60 * 60 * 1000;
 const INTERVAL_DAYS: Record<Exclude<BackupFrequency, 'off'>, number> = { daily: 1, weekly: 7 };
 
 /**
@@ -164,8 +158,7 @@ const INTERVAL_DAYS: Record<Exclude<BackupFrequency, 'off'>, number> = { daily: 
  * counts as a new day.
  */
 function daysBetween(from: number, to: number): number {
-  const startOfDay = (ms: number) => new Date(ms).setHours(0, 0, 0, 0);
-  return Math.round((startOfDay(to) - startOfDay(from)) / DAY_MS);
+  return Math.round((startOfDay(to) - startOfDay(from)) / DAY);
 }
 
 /**

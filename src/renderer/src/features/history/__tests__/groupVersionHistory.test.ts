@@ -3,7 +3,6 @@ import type { VersionMeta, VersionSource } from '@shared/types/db';
 import {
   countFoldedByMonth,
   findFoldCutoff,
-  formatTimeInDay,
   groupVersionHistory,
   listHistoryMonths,
   type HistoryGroup,
@@ -165,14 +164,5 @@ describe('listHistoryMonths', () => {
       [2, 'v4'],
       [2, 'v2'],
     ]);
-  });
-});
-
-describe('formatTimeInDay', () => {
-  it('counts back today, and gives the time of day before today', () => {
-    expect(formatTimeInDay(NOW - 20_000, NOW)).toBe('just now');
-    expect(formatTimeInDay(NOW - 12 * 60_000, NOW)).toBe('12 min ago');
-    expect(formatTimeInDay(at(22, 9), NOW)).toBe('9h ago');
-    expect(formatTimeInDay(at(21, 21, 12), NOW)).toMatch(/9:12/);
   });
 });

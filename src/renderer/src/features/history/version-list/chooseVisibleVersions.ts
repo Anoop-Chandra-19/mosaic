@@ -1,3 +1,4 @@
+import { DAY } from '@shared/time/calendar';
 import type { VersionMeta } from '@shared/types/db';
 
 /** Above this many versions the sidebar stops holding the whole history and hands off. */
@@ -9,7 +10,6 @@ export const COMPACT_ROWS = 12;
 const RECENT_DAYS = 30;
 const RECENT_MIN_ROWS = 40;
 const RECENT_MAX_ROWS = 140;
-const DAY_MS = 86_400_000;
 
 export interface VisibleVersions {
   /** Newest first: always the newest of the matches, never a window in the middle. */
@@ -53,7 +53,7 @@ export function chooseVisibleVersions(
       mode: isFiltering ? 'found' : 'whole',
     };
   }
-  const cutoff = now - RECENT_DAYS * DAY_MS;
+  const cutoff = now - RECENT_DAYS * DAY;
   const inWindow = matched.filter((version) => version.createdAt >= cutoff).length;
   const count = Math.min(
     matched.length,
