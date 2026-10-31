@@ -1,4 +1,3 @@
-import os from 'node:os';
 import path from 'node:path';
 import { app, BrowserWindow, ipcMain, type IpcMainInvokeEvent, type WebContents } from 'electron';
 import { DEV_CHANNELS } from '@shared/ipc/appChannels';
@@ -6,6 +5,7 @@ import { ALL_DEV_SWITCHES_OFF, type DevSwitches } from '@shared/types/devTools';
 import { databaseFile } from '../db/appDatabase';
 import { applyDevMotion } from '../dev/applyDevMotion';
 import { describeProcessMemory, type PageProcess } from '../dev/describeProcessMemory';
+import { formatHomePath } from '../dev/formatHomePath';
 import {
   parseDevSwitches,
   parseDevToolRuns,
@@ -87,9 +87,7 @@ export function registerDevHandlers(
   });
   ipcMain.handle(DEV_CHANNELS.readDataFolder, (event) => {
     refuseOthers(event);
-    const folder = path.dirname(databaseFile());
-    const home = os.homedir();
-    return folder.startsWith(home + path.sep) ? `~${folder.slice(home.length)}` : folder;
+    return formatHomePath(path.dirname(databaseFile()));
   });
   return () => switchesNow;
 }

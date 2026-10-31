@@ -31,6 +31,8 @@ export interface LaunchOptions {
    * test clicks next; only the tips' own tests want them.
    */
   showHistoryTips?: boolean;
+  /** Command-line switches of the app's own, for a test of what they do. */
+  extraArgs?: string[];
 }
 
 type LaunchApp = (existingUserDataDir?: string, options?: LaunchOptions) => Promise<LaunchedApp>;
@@ -75,7 +77,7 @@ export const test = base.extend<object, WorkerFixtures>({
 async function launchApp(
   workerDisplay: string | undefined,
   existingUserDataDir?: string,
-  { showTour = false, showHistoryTips = false }: LaunchOptions = {}
+  { showTour = false, showHistoryTips = false, extraArgs = [] }: LaunchOptions = {}
 ): Promise<LaunchedApp> {
   if (process.platform === 'linux' && !workerDisplay) {
     throw new Error(
@@ -87,7 +89,7 @@ async function launchApp(
   for (const [key, value] of Object.entries(process.env)) {
     if (value !== undefined) env[key] = value;
   }
-  const args = [APP_DIR, `--user-data-dir=${userDataDir}`];
+  const args = [APP_DIR, `--user-data-dir=${userDataDir}`, ...extraArgs];
   if (process.platform === 'linux') {
     // Never inherit the host desktop, even when the test runner is itself under xvfb-run.
     env.DISPLAY = workerDisplay!;

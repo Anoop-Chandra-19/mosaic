@@ -1,6 +1,7 @@
 import path from 'node:path';
 import { app, ipcMain, type IpcMainInvokeEvent, type WebContents } from 'electron';
 import { devLog, turnOnDevLog } from './devLog';
+import { formatHomePath } from './formatHomePath';
 import { withBridgeLog } from './logBridgeCalls';
 
 /*
@@ -74,7 +75,7 @@ export function startDevLog(): void {
   app.commandLine.appendSwitch('log-level', '3');
   devLog('main', 'started', {
     electron: process.versions.electron,
-    dataFolder: app.getPath('userData'),
+    dataFolder: formatHomePath(app.getPath('userData')),
   });
   logBridgeCalls();
   watchApp();

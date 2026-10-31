@@ -11,7 +11,8 @@ import {
  * (`formatDevLog.ts`). `startDevLog.ts` turns it on and connects what can be watched from
  * outside; everywhere else only calls `devLog`, which does nothing until then, so an installed
  * Mosaic and the e2e tests pay one check. Facts only: names, times, sizes and statuses, never
- * an API key, a resume's text or what the model wrote.
+ * an API key, a resume's text or what the model wrote. An error's own message is the
+ * exception: it prints as written, and may quote what it failed on.
  */
 
 export type { DevLogFields, DevLogLevel };
