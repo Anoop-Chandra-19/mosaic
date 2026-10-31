@@ -1,8 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { checkPhrases } from '../changePhrases';
 import { describeChange, describeDifference } from '../describeChanges';
 import { diffResumes } from '../diffResumes';
-import { createChangeFixture, editFixture, findEntry, findSection } from './changeFixtures';
+import {
+  createChangeFixture,
+  editFixture,
+  findEntry,
+  findSection,
+  joinPhrases,
+} from './changeFixtures';
 
 const before = createChangeFixture();
 const diff = (edit: Parameters<typeof editFixture>[0]) => diffResumes(before, editFixture(edit));
@@ -53,9 +58,8 @@ describe('diffResumes', () => {
         after: 'Checked every table twice by hand.',
       },
     ]);
-    expect(
-      checkPhrases(changes[0], 'Checked every table by hand.', 'Checked every table twice by hand.')
-    ).toBe(true);
+    expect(joinPhrases(changes[0].phrases!, 'before')).toBe('Checked every table by hand.');
+    expect(joinPhrases(changes[0].phrases!, 'after')).toBe('Checked every table twice by hand.');
     expect(describeChange(changes[0])).toEqual({ noun: 'Bullet 2', verb: 'edited', detail: null });
   });
 

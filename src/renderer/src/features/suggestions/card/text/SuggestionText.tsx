@@ -1,14 +1,12 @@
 import type { ReactNode } from 'react';
-import { diffWords } from '@/lib/resume/diffWords';
+import { PhraseText } from '@/features/document-diff/PhraseText';
+import { diffTextsAsPhrases } from '@/lib/resume/changes/diffTextsAsPhrases';
 import { GAP_MARK } from '../../proposals/checks/unfilledGap';
 
 /*
  * A suggestion's words as the inspector shows them: what it removes struck, what it adds
  * highlighted, the words a check is about underlined, and the number gap as a field.
  */
-
-/** Stands in for the gap while diffing, so the gap stays one token. */
-const GAP_TOKEN = '⁇';
 
 const escapeForRegExp = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
@@ -47,7 +45,6 @@ interface FlaggedTextProps {
 export function FlaggedText({ text, words = [], gap }: FlaggedTextProps) {
   const pattern = matchWords(words);
   return text
-    .replaceAll(GAP_TOKEN, GAP_MARK)
     .split(GAP_MARK)
     .flatMap((part, index) => [
       index > 0 && <span key={`gap-${index}`}>{gap ?? '?'}</span>,
@@ -62,32 +59,16 @@ export function MarkedText({
   words,
   gap,
 }: Omit<FlaggedTextProps, 'text'> & { before: string; after: string }) {
-  const parts = diffWords(
-    before.replaceAll(GAP_MARK, GAP_TOKEN),
-    after.replaceAll(GAP_MARK, GAP_TOKEN)
+  const phrases = diffTextsAsPhrases(before, after).map((phrase) =>
+    phrase.k === 'edit' ? { ...phrase, del: phrase.del.replaceAll(GAP_MARK, '?') } : phrase
   );
-  return parts.map((part, index) => {
-    if (part.kind === 'same') {
-      return <FlaggedText key={index} text={part.text} words={words} gap={gap} />;
-    }
-    if (part.kind === 'removed') {
-      const isFollowed = parts[index + 1]?.kind === 'added' || /\s$/.test(part.text);
-      return (
-        <span key={index}>
-          <del className="text-ink-muted decoration-del decoration-[1.5px]">
-            {part.text.trim().replaceAll(GAP_TOKEN, '?')}
-          </del>
-          {isFollowed && ' '}
-        </span>
-      );
-    }
-    return (
-      <ins
-        key={index}
-        className="rounded-[0.125rem] bg-add-soft px-px no-underline shadow-[inset_0_-1.5px_0_var(--add-line)]"
-      >
-        <FlaggedText text={part.text} words={words} gap={gap} />
-      </ins>
-    );
-  });
+  return (
+    <PhraseText
+      phrases={phrases}
+      side="both"
+      deletedClassName="text-ink-muted line-through decoration-del decoration-[1.5px]"
+      insertedClassName="rounded-[0.125rem] bg-add-soft px-px shadow-[inset_0_-1.5px_0_var(--add-line)]"
+      renderWords={(text) => <FlaggedText text={text} words={words} gap={gap} />}
+    />
+  );
 }

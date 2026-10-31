@@ -1,14 +1,13 @@
 /*
- * What changed between two resumes, as the history shows it, and later as the assistant
- * proposes it. Start here.
+ * What changed between two resumes, as the history shows it. Start here.
  *
  * diffResumes lists each side's editor fields as rows (listChangeRows), then finds what
  * came, went, was left off, was edited (diffTextsAsPhrases, word by word) and moved
  * (findMoves, on measureCommonRuns). The result is `Change`s (resumeChange): for display
- * only, never stored or sent to a model. describeChanges words them, diffFormatting compares
- * what isn't words, and changePhrases checks and folds an edit's phrases.
+ * only, never stored or sent to a model. describeChanges words them, and diffFormatting
+ * compares what isn't words.
  *
- * Other modules use diffResumes, describeChanges, diffFormatting, changePhrases and
+ * Other modules use diffResumes, diffTextsAsPhrases, describeChanges, diffFormatting and
  * resumeChange; the rest are its steps.
  */
 import type { ResumeData } from '@shared/types/resume';
@@ -88,10 +87,9 @@ function describeRowChange(
     displayName: row.displayName,
     before: before?.text ?? '',
     after: after?.text ?? '',
-    origin: 'diff',
   };
   if (change.kind === 'edit' && !SHORT_TARGETS.has(row.target.type)) {
-    change.phrases = diffTextsAsPhrases(change.before, change.after, `${row.key}:`);
+    change.phrases = diffTextsAsPhrases(change.before, change.after);
   }
   return change;
 }
@@ -137,7 +135,6 @@ function describeMove(row: ChangeRow, rowBefore: ChangeRow, move: ChangeMove): C
     before: rowBefore.text,
     after: row.text,
     move,
-    origin: 'diff',
   };
 }
 

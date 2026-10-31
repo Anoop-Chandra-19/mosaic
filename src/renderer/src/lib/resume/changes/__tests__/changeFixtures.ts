@@ -1,5 +1,5 @@
 import type { ResumeData } from '@shared/types/resume';
-import type { Change } from '../resumeChange';
+import type { Change, TextPhrase } from '../resumeChange';
 
 export const createChange = (fields: Partial<Change>): Change => ({
   id: 'c',
@@ -9,9 +9,16 @@ export const createChange = (fields: Partial<Change>): Change => ({
   number: 1,
   before: '',
   after: '',
-  origin: 'diff',
   ...fields,
 });
+
+export const joinPhrases = (phrases: TextPhrase[], side: 'before' | 'after') =>
+  phrases
+    .map((phrase) => {
+      if (phrase.k === 'keep') return phrase.t;
+      return side === 'before' ? phrase.del : phrase.ins;
+    })
+    .join('');
 
 /** A fictional resume with every kind of row: header items, a summary, entries, a skills list. */
 export function createChangeFixture(): ResumeData {
