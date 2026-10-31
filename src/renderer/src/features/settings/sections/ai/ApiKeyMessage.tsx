@@ -2,10 +2,10 @@ import type { ReactNode } from 'react';
 import { AlertTriangle, Info, X, type LucideIcon } from 'lucide-react';
 import { AppButton, Text } from '@/components/ui-kit';
 import { cn } from '@/lib/utils';
+import { MODEL_PROVIDER_OPTION_BY_ID } from '@/lib/modelProviderOptions';
 import type { KeyedProvider } from '@shared/types/secrets';
 import { withArticle } from './apiKeyWords';
 import type { KeyCheckFailure, KeyProblem } from './keyProblem';
-import { MODEL_PROVIDER_OPTION_BY_ID } from './modelProviderOptions';
 
 type Tone = 'del' | 'warn' | 'info';
 

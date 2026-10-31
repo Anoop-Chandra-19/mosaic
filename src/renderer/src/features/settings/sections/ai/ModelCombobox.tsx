@@ -15,9 +15,9 @@ import {
 } from '@/components/ui-kit';
 import { modelsService } from '@/lib/services/modelsService';
 import { cn } from '@/lib/utils';
+import { MODEL_PROVIDER_OPTION_BY_ID } from '@/lib/modelProviderOptions';
 import type { ModelProviderId } from '@shared/types/modelProviders';
 import { findQueryInName, groupModelChoices } from './groupModelChoices';
-import { MODEL_PROVIDER_OPTION_BY_ID } from './modelProviderOptions';
 
 /** What the list's footer says of a list that came, or didn't, and the way to ask again. */
 export function ModelListResult({

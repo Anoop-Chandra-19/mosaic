@@ -4,7 +4,7 @@ import { AppButton, Text } from '@/components/ui-kit';
 import { formatShortDate } from '@shared/time/formatTime';
 import { cn } from '@/lib/utils';
 import type { VersionMeta } from '@shared/types/db';
-import { versionLabel } from '../versionLabel';
+import { versionLabel } from '@/lib/versionLabel';
 
 /** "Aug 3 to Aug 28" for a fold of a month. */
 function describeSpan(oldest: VersionMeta, newest: VersionMeta): string {

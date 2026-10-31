@@ -1,3 +1,4 @@
+import { MODEL_PROVIDER_OPTION_BY_ID } from '@/lib/modelProviderOptions';
 import { formatRelativeTime } from '@shared/time/formatTime';
 import type { ModelProviderId } from '@shared/types/modelProviders';
 import {
@@ -6,7 +7,6 @@ import {
   type SavedKey,
   type SecretsStatus,
 } from '@shared/types/secrets';
-import { MODEL_PROVIDER_OPTION_BY_ID } from './modelProviderOptions';
 
 /** Where a provider stands, as its status dot and words say it. */
 export type KeyState = 'local' | 'none' | 'refused' | 'unchecked' | 'saved' | 'savedForSession';

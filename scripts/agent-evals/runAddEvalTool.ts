@@ -10,7 +10,7 @@
  */
 import { replaceEveryWholeWord } from '../../src/renderer/src/features/agent/tools/replaceEveryWholeWord.ts';
 import type { ResumeLookup } from '../../src/renderer/src/features/agent/tools/readAgentToolArgs.ts';
-import { hasSameWords } from '../../src/renderer/src/features/suggestions/proposals/diffWords.ts';
+import { hasSameWords } from '../../src/renderer/src/lib/resume/diffWords.ts';
 import { SECTION_PRESETS } from '../../src/shared/resume/sectionPresets.ts';
 import type { BuiltInSectionKind, SectionKind } from '../../src/shared/types/resume.ts';
 import {

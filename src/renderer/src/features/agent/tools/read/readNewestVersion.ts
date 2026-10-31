@@ -1,4 +1,4 @@
-import { versionLabel } from '@/features/history/versionLabel';
+import { versionLabel } from '@/lib/versionLabel';
 import { getResumeSnapshot, useResumeStore } from '@/stores/resumeStore';
 import { readVersion, readVersionHistory } from '@/stores/templateStore';
 import { describeDraftChanges } from '@shared/resume/describeDraftChanges';

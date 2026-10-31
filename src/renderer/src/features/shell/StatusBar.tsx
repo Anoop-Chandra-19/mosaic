@@ -3,7 +3,7 @@ import { PanelLeft, PanelRight, type LucideIcon } from 'lucide-react';
 import { AppButton, AppTooltip } from '@/components/ui-kit';
 import { useActiveTemplate } from '@/features/templates/useActiveTemplate';
 import { useVersionDistance, type VersionDistance } from '@/features/history/useVersionDistance';
-import { versionLabel } from '@/features/history/versionLabel';
+import { versionLabel } from '@/lib/versionLabel';
 import { useShortcutLabel } from '@/features/shortcuts/shortcutBindings';
 import { formatRelativeTime } from '@shared/time/formatTime';
 import { useNow } from '@/lib/hooks/useNow';

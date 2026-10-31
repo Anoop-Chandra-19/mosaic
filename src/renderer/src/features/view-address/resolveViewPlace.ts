@@ -1,5 +1,5 @@
 import { findComparedBase } from '@/features/history/full-history/prepareHistoryOpening';
-import { versionLabel } from '@/features/history/versionLabel';
+import { versionLabel } from '@/lib/versionLabel';
 import { GETTING_STARTED_STEPS } from '@/features/onboarding/getting-started/gettingStartedSteps';
 import { HISTORY_TOUR_STEPS } from '@/features/onboarding/history/historyTourSteps';
 import type { AppPlace } from '@/features/navigation/appPlace';

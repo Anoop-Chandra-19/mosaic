@@ -10,7 +10,7 @@ import {
   groupVersionHistory,
   listHistoryMonths,
 } from '../groupVersionHistory';
-import { versionLabel } from '../versionLabel';
+import { versionLabel } from '@/lib/versionLabel';
 
 interface HistoryIndexProps {
   /** Newest first. */

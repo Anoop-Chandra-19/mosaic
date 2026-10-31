@@ -11,6 +11,11 @@ For resume content, preview, or exports, also read `docs/resume-format.md` (repo
   or being a hook, is not by itself a reason to move code there or into `src/shared/`.
 - `src/components/` is feature-independent UI; `src/stores/` is shared renderer state;
   `src/types/` is renderer-only types. Keep components small and focused.
+- A feature imports another feature only to show its screen or call an action it owns. A
+  helper several features use leaves the feature that wrote it first: `src/lib/` is the
+  renderer's own common code; `src/stores/` if it reads a store; `src/components/` if it is
+  UI or DOM behaviour that reads one. Only code more than one process uses goes in the root
+  `src/shared/`.
 
 ## Shared state
 

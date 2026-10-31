@@ -31,7 +31,7 @@ import type { TemplateSummary, Version, VersionMeta } from '@shared/types/db';
 import type { ResumeData } from '@shared/types/resume';
 import type { HistoryComparison, HistoryFilter, ReadPaneView } from '@/types/history';
 import { VersionList, type HistoryReveal } from '../version-list/VersionList';
-import { versionLabel } from '../versionLabel';
+import { versionLabel } from '@/lib/versionLabel';
 import {
   buildExampleHistory,
   EXAMPLE_OPENING_ID,

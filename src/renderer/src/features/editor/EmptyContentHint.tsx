@@ -7,7 +7,7 @@ import {
   AppMenuSeparator,
   AppMenuTrigger,
 } from '@/components/ui-kit';
-import { STARTER_KINDS } from '@/features/start/blankResume';
+import { STARTER_KINDS } from '@/lib/resume/blankResume';
 import { SECTION_PRESETS } from '@shared/resume/sectionPresets';
 import { useOutlineStore } from '@/stores/outlineStore';
 import { useResumeStore } from '@/stores/resumeStore';

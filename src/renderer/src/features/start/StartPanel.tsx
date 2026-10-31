@@ -11,10 +11,10 @@ import { MosaicMark } from '@/components/MosaicMark';
 
 import { cn } from '@/lib/utils';
 import { matchesAction, useShortcutLabel } from '@/features/shortcuts/shortcutBindings';
+import { createBlankResume } from '@/lib/resume/blankResume';
 import { createDefaultResume } from '@shared/resume/defaultResume';
 import { useOverlayStore } from '@/stores/overlayStore';
 import { useTemplateStore } from '@/stores/templateStore';
-import { createBlankResume } from './blankResume';
 import { useStartResume } from './useStartResume';
 
 /*

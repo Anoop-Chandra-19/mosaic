@@ -4,7 +4,7 @@ import type {
   ProposalFlag,
   ProposalFlagKind,
 } from '@shared/types/agentProposal';
-import { hasSameWords } from '@/features/suggestions/proposals/diffWords';
+import { hasSameWords } from '@/lib/resume/diffWords';
 import {
   isPlaceShown,
   readShowPlaceId,

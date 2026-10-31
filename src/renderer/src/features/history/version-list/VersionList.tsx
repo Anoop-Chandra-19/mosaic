@@ -20,7 +20,7 @@ import {
 import { findFoldCutoff, groupVersionHistory, type HistoryGroup } from '../groupVersionHistory';
 import { HistoryTip } from '../learning/HistoryTip';
 import { historyItemKey, useHistoryTip } from '../learning/useHistoryTip';
-import { versionLabel } from '../versionLabel';
+import { versionLabel } from '@/lib/versionLabel';
 import { HistoryFilterBar, type HistoryMonth } from './HistoryFilterBar';
 import { HISTORY_LINK, HistoryCount, HistoryHandoff, HistoryRangeEdge } from './HistoryListEdges';
 import { useVersionEdits } from './useVersionEdits';
