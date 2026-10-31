@@ -1,7 +1,7 @@
 import { Fragment } from 'react';
 import { AppTooltip } from '@/components/ui-kit';
 import type { ContactInfo } from '@shared/types/resume';
-import { HEADLESS_LAYOUT as L } from '@/lib/resume/headlessLayout';
+import { RESUME_LAYOUT as L } from '@/lib/resume/resumeLayout';
 import {
   getPrintableHeaderLines,
   LINK_BLUE,

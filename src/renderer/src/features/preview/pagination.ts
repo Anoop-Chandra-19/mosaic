@@ -1,5 +1,5 @@
 import type { ResumeSection } from '@shared/types/resume';
-import { HEADLESS_LAYOUT } from '@/lib/resume/headlessLayout';
+import { RESUME_LAYOUT } from '@/lib/resume/resumeLayout';
 import { selectPrintableSections } from '@/lib/resume/selectPrintableSections';
 import type { PreviewBullet, PreviewEntry, PreviewRenderableSection } from './PreviewSection';
 
@@ -26,16 +26,16 @@ type PaginatedEntry = PreviewEntry & {
   _lineStarts?: number[];
 };
 
-// The Headless format puts everything on a single 18pt leading grid: one blank
+// The resume format puts everything on a single 18pt leading grid: one blank
 // line above each section header, and no gaps anywhere else. Spacing between
 // bullets and between entries comes from the leading itself, so the gaps below
 // are zero on purpose -- adding any pushes the page off the grid.
-const SECTION_TOP_PADDING_PX = HEADLESS_LAYOUT.bodyLeading;
+const SECTION_TOP_PADDING_PX = RESUME_LAYOUT.bodyLeading;
 const SECTION_CONTENT_TOP_PADDING_PX = 0;
 const TEXT_ONLY_SECTION_CONTENT_TOP_PADDING_PX = 0;
 const ENTRY_GAP_PX = 0;
 const TEXT_ONLY_ENTRY_GAP_PX = 0;
-const ENTRY_INTERNAL_GAP_PX = HEADLESS_LAYOUT.entryHeadingMarginBottom;
+const ENTRY_INTERNAL_GAP_PX = RESUME_LAYOUT.entryHeadingMarginBottom;
 const BULLET_GAP_PX = 0;
 
 // Estimates are used before DOM measurements exist and when splitting overflow
@@ -43,8 +43,8 @@ const BULLET_GAP_PX = 0;
 // column fits ~89 characters and a bullet's 432pt column fits ~82.
 const TEXT_CHARS_PER_LINE = 89;
 const BULLET_CHARS_PER_LINE = 82;
-const BODY_LINE_HEIGHT_PX = HEADLESS_LAYOUT.bodyLeading;
-const HEADING_LINE_HEIGHT_PX = HEADLESS_LAYOUT.bodyLeading;
+const BODY_LINE_HEIGHT_PX = RESUME_LAYOUT.bodyLeading;
+const HEADING_LINE_HEIGHT_PX = RESUME_LAYOUT.bodyLeading;
 /** Lines a paragraph keeps on each side of a page break: react-pdf's and Word's default. */
 const MIN_LINES_AT_BREAK = 2;
 
@@ -355,7 +355,7 @@ export function paginateSections(
       let page = pages[pages.length - 1];
       const pageSection = page.sections.find((item) => item.id === section.id);
       const sectionTitleHeight =
-        measurements.sectionTitleHeights[section.id] ?? HEADLESS_LAYOUT.bodyLeading;
+        measurements.sectionTitleHeights[section.id] ?? RESUME_LAYOUT.bodyLeading;
       const sectionBodyTopPadding =
         section.layout === 'lines'
           ? TEXT_ONLY_SECTION_CONTENT_TOP_PADDING_PX
@@ -463,7 +463,7 @@ export function createFallbackMeasurements(
   const entryHeights: Record<string, number> = {};
 
   for (const section of sections) {
-    sectionTitleHeights[section.id] = HEADLESS_LAYOUT.bodyLeading;
+    sectionTitleHeights[section.id] = RESUME_LAYOUT.bodyLeading;
 
     for (const entry of section.entries as PaginatedEntry[]) {
       const key = `${section.id}::${entry.sourceId ?? entry.id}`;

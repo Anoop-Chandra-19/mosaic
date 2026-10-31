@@ -1,7 +1,7 @@
 /**
- * Page metrics for the "Headless Headhunter" resume format.
+ * Page metrics for the resume format.
  *
- * Every number here was measured off the official Word template rather than
+ * Every number here was measured off the format's Word template rather than
  * eyeballed, so the export lands on the same grid the format expects:
  *
  *   margins        0.5in top / 1in sides / 0.94in bottom  (the docx pgMar)
@@ -27,7 +27,7 @@
 const BODY_FONT_SIZE = 10.5;
 const BODY_LEADING = 18;
 
-export const HEADLESS_LAYOUT = {
+export const RESUME_LAYOUT = {
   // Page margins, in points, straight from the template's <w:pgMar>.
   marginTop: 36,
   marginSide: 72,
@@ -66,7 +66,7 @@ export const HEADLESS_LAYOUT = {
   fontStack: 'Arial, "Liberation Sans", Helvetica, sans-serif',
 } as const;
 
-export type HeadlessLayout = typeof HEADLESS_LAYOUT;
+export type ResumeLayout = typeof RESUME_LAYOUT;
 
 /** Page sizes in points, matching @react-pdf's 'LETTER' and 'A4'. */
 export const PAPER_SIZE_PT = {
@@ -78,7 +78,7 @@ export const PAPER_SIZE_PT = {
 export function getPageContentSizePt(paper: keyof typeof PAPER_SIZE_PT) {
   const { width, height } = PAPER_SIZE_PT[paper];
   return {
-    width: width - HEADLESS_LAYOUT.marginSide * 2,
-    height: height - HEADLESS_LAYOUT.marginTop - HEADLESS_LAYOUT.marginBottom,
+    width: width - RESUME_LAYOUT.marginSide * 2,
+    height: height - RESUME_LAYOUT.marginTop - RESUME_LAYOUT.marginBottom,
   };
 }

@@ -505,7 +505,7 @@ function arraysLeftEmpty(meta: MosaicJsonResumeMeta): ReadonlySet<string> {
 /**
  * A JSON Resume file as a resume to review. Mosaic's own export comes back exactly, through
  * `meta.mosaic`; any other file is read from its standard fields, each array into the
- * section it means, entries written the Headless way.
+ * section it means, entries written in our format.
  */
 export function readJsonResume(resume: Json): ParsedResume {
   const basics = isRecord(resume.basics) ? resume.basics : {};

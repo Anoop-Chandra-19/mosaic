@@ -9,7 +9,7 @@ import { decorateChanges } from '@/features/document-diff/changeDecorations';
 import { putGoneBack } from '@/features/document-diff/pageMarks';
 import { revealChangeMark } from '@/features/document-diff/revealChangeMark';
 import { UnifiedDiff } from '@/features/document-diff/UnifiedDiff';
-import { PAPER_SIZE_PT } from '@/lib/resume/headlessLayout';
+import { PAPER_SIZE_PT } from '@/lib/resume/resumeLayout';
 import { useOwnPageZoom, type PageZoom } from '@/features/preview/pageZoom';
 import { ResumePreview } from '@/features/preview/ResumePreview';
 import { usePreviewCanvas, type PreviewCanvas } from '@/features/preview/usePreviewCanvas';

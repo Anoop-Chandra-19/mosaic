@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import type { EntryHeadingFields } from '@/lib/resume/entryHeading';
 import type { SectionLayout } from '@shared/types/resume';
-import { HEADLESS_LAYOUT as LYT } from '@/lib/resume/headlessLayout';
+import { RESUME_LAYOUT as LYT } from '@/lib/resume/resumeLayout';
 import { cn } from '@/lib/utils';
 import type { PageDecorations } from './pageDecorations';
 

@@ -10,7 +10,7 @@ import {
 import { Clock, List, X } from 'lucide-react';
 import { AppButton, Text } from '@/components/ui-kit';
 import { ReadBoundary } from '@/components/ReadBoundary';
-import { PAPER_SIZE_PT } from '@/lib/resume/headlessLayout';
+import { PAPER_SIZE_PT } from '@/lib/resume/resumeLayout';
 import {
   SLIDE_AWAY_MOTION,
   transitionClasses,

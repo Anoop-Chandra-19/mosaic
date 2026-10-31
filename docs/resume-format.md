@@ -33,10 +33,10 @@ See root `CLAUDE.md` for schema-version and data-safety rules.
   entries' own choices, so putting it back restores exactly what was picked. Preview,
   every export, the word count, and the version diff all skip what is off; Mosaic JSON and
   bundles keep it, since they hold the whole document.
-- `src/renderer/src/lib/resume/headlessLayout.ts` is the single source of page metrics:
+- `src/renderer/src/lib/resume/resumeLayout.ts` is the single source of page metrics:
   margins, font sizes, leading, indents. Preview and PDF read it; change numbers there,
   not in components.
-- "Headless Headhunter" format: section headers are the only bold text below the name;
+- The resume format: section headers are the only bold text below the name;
   job/project lines are italic; all text is black, but header links when the header asks
   for blue ones. Never add `letter-spacing` or
   `text-transform: uppercase` to section headers: both break ATS text extraction.

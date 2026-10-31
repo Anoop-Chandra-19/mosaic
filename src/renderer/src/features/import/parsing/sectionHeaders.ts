@@ -23,7 +23,7 @@ const HEADER_ALIASES: Record<BuiltInSectionKind, string[]> = {
     'academic background',
     'academics',
     'education & training',
-    // The Headless format's own heading, as the example resume has it.
+    // The resume format's own heading, as the example resume has it.
     'education & certificates',
     'education & certifications',
     'education and certifications',

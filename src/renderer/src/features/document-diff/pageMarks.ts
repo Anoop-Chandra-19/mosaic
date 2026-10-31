@@ -1,5 +1,5 @@
 import type { ResumeData, ResumeEntry, ResumeSection } from '@shared/types/resume';
-import { HEADLESS_LAYOUT } from '@/lib/resume/headlessLayout';
+import { RESUME_LAYOUT } from '@/lib/resume/resumeLayout';
 import type { Change, ChangeTarget } from '@/lib/resume/changes/resumeChange';
 
 /**
@@ -23,9 +23,9 @@ export const LINE_GUTTER: MarkGutter = { flagPx: 14, barPx: 24, glyphPx: 38 };
 
 /** A bullet's sit past its marker, in the same lanes. */
 export const BULLET_GUTTER: MarkGutter = {
-  flagPx: HEADLESS_LAYOUT.bulletTextIndent + LINE_GUTTER.flagPx,
-  barPx: HEADLESS_LAYOUT.bulletTextIndent + LINE_GUTTER.barPx,
-  glyphPx: HEADLESS_LAYOUT.bulletTextIndent + LINE_GUTTER.glyphPx,
+  flagPx: RESUME_LAYOUT.bulletTextIndent + LINE_GUTTER.flagPx,
+  barPx: RESUME_LAYOUT.bulletTextIndent + LINE_GUTTER.barPx,
+  glyphPx: RESUME_LAYOUT.bulletTextIndent + LINE_GUTTER.glyphPx,
 };
 
 /** Room past the outermost margin mark, so it is easy to hover. */

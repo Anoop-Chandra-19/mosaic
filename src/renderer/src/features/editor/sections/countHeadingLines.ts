@@ -4,7 +4,7 @@ import {
   type MeasureTextWidth,
 } from '@/lib/resume/breakLinesLikeWord';
 import { getEntryHeadingWidthPt } from '@/lib/resume/entryHeadingWidth';
-import { HEADLESS_LAYOUT } from '@/lib/resume/headlessLayout';
+import { RESUME_LAYOUT } from '@/lib/resume/resumeLayout';
 import type { PaperSize } from '@/types/paper';
 import { formatEntryHeading } from '@/lib/resume/entryHeading';
 import type { ResumeEntry } from '@shared/types/resume';
@@ -15,7 +15,7 @@ let defaultMeasure: MeasureTextWidth | null | undefined;
 export function countHeadingLines(
   entry: Pick<ResumeEntry, 'title' | 'organization' | 'location' | 'dates'>,
   paper: PaperSize,
-  measure = (defaultMeasure ??= createTextMeasurer(HEADLESS_LAYOUT.bodyFontSize))
+  measure = (defaultMeasure ??= createTextMeasurer(RESUME_LAYOUT.bodyFontSize))
 ): number | null {
   if (!measure) return null;
   const heading = formatEntryHeading(entry);
