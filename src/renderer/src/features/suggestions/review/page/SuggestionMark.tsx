@@ -1,29 +1,41 @@
-import { use, type ReactNode } from 'react';
-import { FlaggedText } from '../../card/text/SuggestionText';
-import { labelSuggestionKind } from '../../proposals/describeSuggestion';
+import { use, type MouseEvent, type ReactNode } from 'react';
+import { AppTooltip } from '@/components/ui-kit';
+import { DIFF_MARKS } from '@/features/document-diff/diffMarks';
+import {
+  GutterMarks,
+  MarkTarget,
+  MoveGlyph,
+  type BarFill,
+} from '@/features/document-diff/PageMarkParts';
+import { measureGutterReach, type MarkGutter } from '@/features/document-diff/pageMarks';
+import type { ChangeTone } from '@/lib/resume/changes/resumeChange';
 import { cn } from '@/lib/utils';
-import type { SuggestionMark as Mark, SuggestionMove } from './suggestionPage';
-import { SuggestionSelection } from '../suggestionSelection';
+import { FlaggedText, MarkedText } from '../../card/text/SuggestionText';
 import { needsNumber, readSuggestionState, type SuggestionState } from '../../suggestionState';
+import { SuggestionSelection } from '../suggestionSelection';
+import { describeMarkTip } from './describeMarkTip';
+import type { SuggestionMark as Mark, SuggestionLook, SuggestionMove } from './suggestionPage';
 
-const LOOK_CLASSES: Record<Mark['look'], string> = {
-  edit: 'bg-paper-suggested-soft border-paper-suggested hover:bg-paper-suggested-hover',
-  add: 'bg-paper-add-soft border-paper-add',
-  hide: 'bg-paper-del-soft border-paper-del',
-};
+const LOOK_TONES: Record<SuggestionLook, ChangeTone> = { edit: 'edit', add: 'add', hide: 'del' };
 
-/** Kept reads as added; dropped and out of date fall back to the draft's own words. */
-const STATE_CLASSES: Partial<Record<SuggestionState, string>> = {
-  kept: 'bg-paper-add-soft border-paper-add hover:bg-paper-add-soft',
-  held: 'bg-paper-add-soft border-paper-add hover:bg-paper-add-soft',
-  dropped: 'bg-transparent border-dashed border-paper-tag-line text-paper-tag',
-  stale: 'bg-transparent border-dashed border-paper-stale-line text-paper-stale-text',
-};
-
-const CURRENT_CLASSES: Record<Mark['look'], string> = {
-  edit: 'bg-paper-suggested-current ring-2 ring-paper-suggested',
-  add: 'bg-paper-add-current ring-2 ring-paper-add',
-  hide: 'bg-paper-suggested-current ring-2 ring-paper-suggested',
+/**
+ * The bar's tone says what changed and its fill what was decided. Dropped and out-of-date
+ * lines print the user's words, with one quiet underline and no bar.
+ */
+const STATE_LINES: Record<SuggestionState, { fill: BarFill | null; lineClassName?: string }> = {
+  waiting: { fill: 'dashed' },
+  kept: { fill: 'solid' },
+  held: { fill: 'hollow' },
+  dropped: {
+    fill: null,
+    lineClassName:
+      'underline decoration-paper-tag-line decoration-dotted decoration-1 underline-offset-3',
+  },
+  stale: {
+    fill: null,
+    lineClassName:
+      'underline decoration-paper-stale-line decoration-dashed decoration-1 underline-offset-3',
+  },
 };
 
 /** A number only the user knows, shown as the gap the suggestion left for it. */
@@ -33,100 +45,152 @@ const PAGE_GAP = (
   </span>
 );
 
-/** Where a mark's flag dot sits: past a bullet's marker, or just before a line or heading. */
-export type FlagGutter = 'bullet' | 'line';
+/** Marks wash in as the review lands. */
+const WASHES_IN = 'group-data-landing/review:**:animate-mark-in motion-reduce:**:animate-none';
+const COMES_IN =
+  'contents group-data-landing/review:**:animate-flag-in motion-reduce:**:animate-none';
 
-const FLAG_GUTTER_CLASSES: Record<FlagGutter, string> = {
-  bullet: '-left-7.75',
-  line: '-left-3',
-};
+const FLAG = 'pointer-events-none absolute top-1 size-1.5';
 
-/** A suggestion's mark on the page: click it to read it in the inspector. */
-export function SuggestionMark({
-  mark,
-  gutter = 'bullet',
-  children,
-}: {
-  mark: Mark;
-  gutter?: FlagGutter;
-  children: string;
-}) {
-  const { selectedId, select } = use(SuggestionSelection);
-  const { proposal, look } = mark;
+/** The flag lane: a dot to look at, a square for a number to fill, a ring for out of date. */
+function MarginFlag({ mark, gutter }: { mark: Mark; gutter: MarkGutter }) {
+  const { proposal } = mark;
   const state = readSuggestionState(proposal);
-  const isLive = state !== 'dropped' && state !== 'stale';
-  const flagCount = isLive ? proposal.flags.length : 0;
-  const isCurrent = selectedId === proposal.id;
-  const isLeavingBlock = mark.block === 'leaving' && isLive;
-  const title =
-    state === 'stale'
-      ? 'Out of date: you changed this after it was suggested'
-      : `${labelSuggestionKind(proposal.change)}${flagCount ? ` · ${flagCount} to check` : ''}`;
-  return (
-    <mark
-      data-suggestion-id={proposal.id}
-      title={title}
-      onClick={(event) => {
-        event.stopPropagation();
-        select(proposal.id);
-      }}
-      className={cn(
-        // The scroll margin keeps a selected mark clear of the floating apply bar.
-        'relative cursor-pointer scroll-mb-20 rounded-[0.125rem] border-b-[1.5px] px-px text-inherit transition-colors duration-100 group-data-landing/review:animate-mark-in motion-reduce:animate-none',
-        LOOK_CLASSES[look],
-        STATE_CLASSES[state],
-        isCurrent && CURRENT_CLASSES[look],
-        look === 'hide' &&
-          isLive &&
-          !isLeavingBlock &&
-          'line-through decoration-paper-del opacity-50',
-        // The heading of a whole entry or section leaving: struck, on the block's faded ink.
-        isLeavingBlock && 'static bg-transparent text-paper-tag line-through decoration-paper-del'
-      )}
-    >
-      {flagCount > 0 && (
-        <span
-          aria-hidden
-          className={cn(
-            'absolute top-1 size-1.5 group-data-landing/review:animate-flag-in motion-reduce:animate-none',
-            FLAG_GUTTER_CLASSES[gutter],
-            needsNumber(proposal)
-              ? 'rounded-[0.0625rem] bg-white shadow-[inset_0_0_0_1.5px_var(--paper-flag)]'
-              : 'rounded-full bg-paper-flag shadow-[0_0_0_2px_white]'
-          )}
-        />
-      )}
-      <FlaggedText text={children} gap={PAGE_GAP} />
-    </mark>
-  );
-}
-
-/** A small chip on the page beside what a suggestion moves or brings back. */
-function PageChip({ proposalId, children }: { proposalId: string; children: ReactNode }) {
-  const { select } = use(SuggestionSelection);
+  const style = { left: -gutter.flagPx };
+  if (state === 'stale') {
+    return (
+      <span
+        aria-hidden
+        className={cn(
+          FLAG,
+          'rounded-full bg-white shadow-[inset_0_0_0_1.5px_var(--paper-stale-line)]'
+        )}
+        style={style}
+      />
+    );
+  }
+  if (state === 'dropped' || proposal.flags.length === 0) return null;
   return (
     <span
+      aria-hidden
+      className={cn(
+        FLAG,
+        needsNumber(proposal)
+          ? 'rounded-[0.0625rem] bg-white shadow-[inset_0_0_0_1.5px_var(--paper-flag)]'
+          : 'rounded-full bg-paper-flag shadow-[0_0_0_2px_white]'
+      )}
+      style={style}
+    />
+  );
+}
+
+/** The words of a line a suggestion marks. A line split across pages prints part of its text. */
+function MarkedWords({ mark, text }: { mark: Mark; text: string }): ReactNode {
+  if (mark.look === 'hide') return <span className={DIFF_MARKS.removed}>{text}</span>;
+  if (mark.look === 'add') {
+    return (
+      <span className={DIFF_MARKS.addedLine}>
+        <FlaggedText text={text} gap={PAGE_GAP} />
+      </span>
+    );
+  }
+  const { words } = mark;
+  if (words?.after === text && readSuggestionState(mark.proposal) !== 'stale') {
+    return <MarkedText before={words.before} after={text} gap={PAGE_GAP} />;
+  }
+  return <FlaggedText text={text} gap={PAGE_GAP} />;
+}
+
+const readDirection = (move: SuggestionMove) => (move.to < move.from ? 'up' : 'down');
+
+/** The arrow of a move on a line another suggestion marks: its own target, for its own suggestion. */
+function MoveTarget({ move, gutter }: { move: SuggestionMove; gutter: MarkGutter }) {
+  const { selectedId, select } = use(SuggestionSelection);
+  return (
+    <AppTooltip content={describeMarkTip(undefined, move)} shouldFollowPointer>
+      <MoveGlyph
+        direction={readDirection(move)}
+        gutter={gutter}
+        data-suggestion-id={move.proposal.id}
+        aria-current={selectedId === move.proposal.id || undefined}
+        onClick={(event) => {
+          event.stopPropagation();
+          select(move.proposal.id);
+        }}
+        className={cn('pointer-events-auto z-1 cursor-pointer', DIFF_MARKS.currentLine)}
+      />
+    </AppTooltip>
+  );
+}
+
+interface SuggestionLineProps {
+  /** What a suggestion does to the line's words; a move may be all that marks it. */
+  mark?: Mark;
+  move?: SuggestionMove;
+  text: string;
+  gutter: MarkGutter;
+}
+
+/**
+ * A line a suggestion marks, in the same lanes as a version's: the line is the target, for
+ * the tip and to read it in the inspector. Its box must be positioned. The lines of a whole
+ * entry or section have no outline of their own, and those leaving no bar: the block draws them.
+ */
+export function SuggestionLine({ mark, move, text, gutter }: SuggestionLineProps) {
+  const { selectedId, select } = use(SuggestionSelection);
+  const proposal = mark?.proposal ?? move?.proposal;
+  if (!proposal) return text;
+  const { fill, lineClassName } = STATE_LINES[readSuggestionState(proposal)];
+  const selectLine = (event: MouseEvent) => {
+    event.stopPropagation();
+    select(proposal.id);
+  };
+  const lineMoveGlyph = move && (
+    <MoveGlyph aria-hidden direction={readDirection(move)} gutter={gutter} />
+  );
+  return (
+    <>
+      <span className={COMES_IN}>
+        <GutterMarks
+          tone={mark ? LOOK_TONES[mark.look] : 'edit'}
+          fill={mark?.block === 'leaving' ? null : fill}
+          moveGlyph={mark && move ? <MoveTarget move={move} gutter={gutter} /> : lineMoveGlyph}
+          gutter={gutter}
+        />
+        {mark && <MarginFlag mark={mark} gutter={gutter} />}
+      </span>
+      <MarkTarget
+        tip={describeMarkTip(mark, move)}
+        gutterReachPx={measureGutterReach(gutter, move !== undefined)}
+        isWholeLine
+        isOutlined={!mark?.block}
+        data-suggestion-id={proposal.id}
+        aria-current={selectedId === proposal.id || undefined}
+        onClick={selectLine}
+        // The scroll margin keeps a selected line clear of the floating apply bar.
+        className={cn('scroll-mb-20', WASHES_IN, lineClassName)}
+      >
+        {mark ? <MarkedWords mark={mark} text={text} /> : text}
+      </MarkTarget>
+    </>
+  );
+}
+
+/** An entry's dates, marked with it when it is new, put back, or leaving. */
+export function SuggestionDates({ mark, dates }: { mark: Mark; dates: string }) {
+  const { select } = use(SuggestionSelection);
+  if (mark.look === 'edit') return dates;
+  return (
+    <MarkTarget
+      tip={describeMarkTip(mark)}
+      isOutlined={false}
       onClick={(event) => {
         event.stopPropagation();
-        select(proposalId);
+        select(mark.proposal.id);
       }}
-      className="ml-1.25 inline-flex cursor-pointer items-center gap-0.75 rounded-[0.1875rem] border border-paper-add bg-paper-add-soft px-1 align-[1.5px] font-sans text-[0.5rem] font-bold tracking-[0.03em] whitespace-nowrap text-paper-add not-italic uppercase"
+      className={WASHES_IN}
     >
-      {children}
-    </span>
+      <MarkedWords mark={mark} text={dates} />
+    </MarkTarget>
   );
-}
-
-/** The chip a reorder leaves beside a bullet, entry or section it moves. */
-export function SuggestionMoveChip({ move }: { move: SuggestionMove }) {
-  return (
-    <PageChip proposalId={move.proposal.id}>
-      moved {move.from}→{move.to}
-    </PageChip>
-  );
-}
-
-/** Beside the heading of an entry or section a suggestion puts back on the page. */
-export function SuggestionBackChip({ mark }: { mark: Mark }) {
-  return <PageChip proposalId={mark.proposal.id}>back on the page</PageChip>;
 }

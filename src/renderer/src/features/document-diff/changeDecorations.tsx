@@ -1,21 +1,14 @@
 import type { PageDecorations } from '@/features/preview/pageDecorations';
 import type { Change } from '@/lib/resume/changes/resumeChange';
 import type { EntryHeadingFields } from '@/lib/resume/entryHeading';
-import { HEADLESS_LAYOUT as LYT } from '@/lib/resume/headlessLayout';
 import { HeaderLineBar, MarkedDates, MarkedHeading, MarkedItem, MarkedLine } from './PageMarkParts';
 import {
+  BULLET_GUTTER,
   collectPageMarks,
   findMarks,
   LINE_GUTTER,
-  type MarkGutter,
   type MarkPlace,
 } from './pageMarks';
-
-/** A bullet's marks sit past its marker, in the same margin as a heading's. */
-const BULLET_GUTTER: MarkGutter = {
-  barPx: LYT.bulletTextIndent + LINE_GUTTER.barPx,
-  glyphPx: LYT.bulletTextIndent + LINE_GUTTER.glyphPx,
-};
 
 const NO_FIELDS: EntryHeadingFields = { title: '', organization: '', location: '' };
 

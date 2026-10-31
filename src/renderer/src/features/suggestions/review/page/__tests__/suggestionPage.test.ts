@@ -54,12 +54,34 @@ describe('buildSuggestionPage', () => {
 
     const [first, second] = page.doc.sections[0].items[0].bullets;
     expect([first.text, second.text]).toEqual(['Assisted in migrating billing', 'to Postgres']);
-    expect(page.marks.get(second.id)?.proposal.id).toBe('split');
+    expect(page.marks.get('b1')).toMatchObject({
+      look: 'edit',
+      words: { before: B1, after: 'Assisted in migrating billing' },
+    });
+    expect(page.marks.get(second.id)).toMatchObject({ proposal: { id: 'split' }, look: 'add' });
     expect(page.marks.get('b2')).toMatchObject({ look: 'hide' });
     expect(page.doc.sections[0].items[0].bullets.find((b) => b.id === 'b2')?.selected).toBe(true);
   });
 
-  it('shows the first of two rewrites of one bullet, and chips the bullets a reorder moves', () => {
+  it('marks a merge’s words against both bullets it joins', () => {
+    const page = buildSuggestionPage(makeResume(), [
+      proposal('merge', {
+        kind: 'merge',
+        sectionId: 's1',
+        entryId: 'e1',
+        firstId: 'b1',
+        secondId: 'b2',
+        before: [B1, B2],
+        after: 'Moved billing to Postgres and cut latency',
+      }),
+    ]);
+    expect(page.marks.get('b1')?.words).toEqual({
+      before: `${B1} ${B2}`,
+      after: 'Moved billing to Postgres and cut latency',
+    });
+  });
+
+  it('shows the first of two rewrites of one bullet, and marks the bullets a reorder moves', () => {
     const reorder: ProposalChange = {
       kind: 'reorder',
       place: { unit: 'bullets', sectionId: 's1', entryId: 'e1' },
@@ -90,7 +112,8 @@ describe('buildSuggestionPage', () => {
 
     const added = page.doc.sections[0].items[2];
     expect(page.marks.get(added.id)).toMatchObject({ look: 'add' });
-    expect(page.marks.get(added.bullets[0].id)).toMatchObject({ look: 'add' });
+    expect(page.marks.get(added.bullets[0].id)).toMatchObject({ look: 'add', block: 'new' });
+    expect(page.blocks.get(added.id)?.proposal.id).toBe('new');
   });
 });
 
@@ -126,6 +149,43 @@ describe('buildSuggestionPage, whole entries and sections', () => {
     expect(page.doc.sections[0].items.map((entry) => entry.selected)).toEqual([true, true]);
     expect(page.marks.get('e1')).toMatchObject({ look: 'hide', block: 'leaving' });
     expect(page.marks.get('e2')).toMatchObject({ look: 'add', block: 'back' });
+    expect(page.blocks.get('e1')).toMatchObject({ proposal: { id: 'leave' }, isLeaving: true });
+    expect(page.blocks.get('e2')).toMatchObject({ proposal: { id: 'back' }, isLeaving: false });
+  });
+
+  it('lets an entry leaving keep its own lines in a section that is leaving too', () => {
+    const page = buildSuggestionPage(makeResume(), [
+      proposal('entry', {
+        kind: 'select',
+        place: { unit: 'entry', sectionId: 's1', entryId: 'e1' },
+        before: 'Backend Engineer, Harbor Freight Labs',
+        selected: false,
+      }),
+      proposal('section', {
+        kind: 'select',
+        place: { unit: 'section', sectionId: 's1' },
+        before: 'Experience',
+        selected: false,
+      }),
+    ]);
+    expect(page.marks.get('s1')?.proposal.id).toBe('section');
+    expect(page.marks.get('e1')?.proposal.id).toBe('entry');
+    expect(page.marks.get('b1')?.proposal.id).toBe('entry');
+  });
+
+  it('marks every line of an entry leaving, over a suggestion inside it', () => {
+    const page = buildSuggestionPage(makeResume(), [
+      proposal('led', rewrite('b1', B1, 'Led the billing migration to Postgres')),
+      proposal('leave', {
+        kind: 'select',
+        place: { unit: 'entry', sectionId: 's1', entryId: 'e1' },
+        before: 'Backend Engineer, Harbor Freight Labs',
+        selected: false,
+      }),
+    ]);
+    for (const id of ['e1', 'b1', 'b2']) {
+      expect(page.marks.get(id)).toMatchObject({ proposal: { id: 'leave' }, block: 'leaving' });
+    }
   });
 });
 
