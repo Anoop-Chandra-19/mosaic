@@ -4,13 +4,13 @@
  * suggestions applied. A refusal states facts, written per kind of problem: what a handle
  * is, which list it is in, what the tool takes and which tool does the other thing; never a
  * guess at what the user asked. Only a call that can't be turned into one change is
- * refused: one that changes nothing (`diffWords` finds no word changed) answers so, and a
+ * refused: one that changes nothing (`hasSameWords`) answers so, and a
  * new bullet into a section with one entry goes into that entry. Split and merge are
  * answered but not simulated: no case asks for them, so the scorer counts them as wrong.
  */
 import { replaceEveryWholeWord } from '../../src/renderer/src/features/agent/tools/replaceEveryWholeWord.ts';
 import type { ResumeLookup } from '../../src/renderer/src/features/agent/tools/readAgentToolArgs.ts';
-import { hasSameWords } from '../../src/renderer/src/lib/resume/diffWords.ts';
+import { hasSameWords } from '../../src/renderer/src/lib/resume/hasSameWords.ts';
 import { SECTION_PRESETS } from '../../src/shared/resume/sectionPresets.ts';
 import type { BuiltInSectionKind, SectionKind } from '../../src/shared/types/resume.ts';
 import {
