@@ -206,7 +206,9 @@ export function AgentNotice({
           <Text
             as="p"
             variant="meta"
-            className="mt-0.5 wrap-anywhere whitespace-pre-wrap text-ink-soft"
+            // A provider's message can be any length; it scrolls, so the actions stay near.
+            className="mt-0.5 max-h-24 overflow-y-auto wrap-anywhere whitespace-pre-wrap text-ink-soft"
+            tabIndex={0}
           >
             {words.quoted.text}
           </Text>
@@ -236,7 +238,10 @@ interface AgentNoticeSlotProps {
   onDismiss: () => void;
 }
 
-/** Where the notice sits, just before the prompt box, so Shift+Tab from the box reaches it. */
+/**
+ * Where the notice sits, just before the prompt box, so Shift+Tab from the box reaches it.
+ * In a short window it scrolls rather than push the box out of the pane.
+ */
 export function AgentNoticeSlot({ choice, onAction, onDismiss }: AgentNoticeSlotProps) {
   const { shown, isLeaving, ref } = usePresenceMotion(
     choice.notice,
@@ -255,7 +260,7 @@ export function AgentNoticeSlot({ choice, onAction, onDismiss }: AgentNoticeSlot
           data-notice-slot
           inert={isLeaving}
           aria-hidden={isLeaving || undefined}
-          className="shrink-0 overflow-hidden border-t border-line bg-pane px-2.75 pt-2.25"
+          className="min-h-0 overflow-y-auto border-t border-line bg-pane px-2.75 pt-2.25"
         >
           <AgentNotice
             key={shown.pulseKey}

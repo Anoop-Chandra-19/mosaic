@@ -92,6 +92,66 @@ test('asking in the prompt box shows the ask and the reply, and the box is ready
   expect(errors).toEqual([]);
 });
 
+test('a very long error leaves the prompt box and its way forward in reach, even in a short window', async () => {
+  const { app, page, errors } = mosaic();
+  // Stand in for a server that refuses with far more words than fit.
+  await app.evaluate(({ net }) => {
+    net.fetch = async (input) => {
+      const url = String(input instanceof Request ? input.url : input);
+      if (url.endsWith('/v1/models')) return Response.json({ data: [] });
+      const message = 'The server has a great deal to say about this.\n'.repeat(200);
+      return Response.json({ error: { message } }, { status: 400 });
+    };
+  });
+  await runDevTool(page, 'exampleResume');
+  await page.getByRole('button', { name: 'Open settings' }).click();
+  const settings = page.getByRole('dialog', { name: 'Settings' });
+  await settings
+    .getByRole('navigation')
+    .getByRole('button', { name: /AI assistant/ })
+    .click();
+  await settings.getByRole('switch', { name: 'Enable AI assistant' }).click();
+  await settings.getByRole('button', { name: 'Provider' }).click();
+  await page.getByRole('menuitemradio', { name: /^OpenAI-compatible/ }).click();
+  await settings.getByRole('button', { name: 'Close settings' }).click();
+
+  const pane = page.getByRole('complementary', { name: 'Assistant' });
+  const box = pane.getByRole('textbox', { name: 'Message' });
+  await box.fill('Tighten my summary.');
+  await box.press('Enter');
+  const notice = pane.getByRole('status');
+  await expect(notice).toContainText('The server refused the request.');
+
+  const paneBottom = async () => {
+    const paneBox = await pane.boundingBox();
+    return paneBox!.y + paneBox!.height;
+  };
+  const expectInPane = async (control: ReturnType<typeof pane.getByRole>) => {
+    await control.scrollIntoViewIfNeeded();
+    const controlBox = await control.boundingBox();
+    expect(controlBox!.y + controlBox!.height).toBeLessThanOrEqual(await paneBottom());
+  };
+  const send = pane.getByRole('button', { name: 'Send', exact: true });
+  const sendAgain = pane.getByRole('button', { name: 'Send again' });
+  const quoted = notice.getByText(/great deal to say/);
+
+  // The message scrolls by itself, so the notice stays a size that fits beside the rest.
+  expect(await quoted.evaluate((element) => element.scrollHeight > element.clientHeight)).toBe(
+    true
+  );
+  await expectInPane(send);
+  await expectInPane(sendAgain);
+
+  // The smallest window: the notice gives way, never the box or the conversation's floor.
+  await page.setViewportSize({ width: 800, height: 540 });
+  await expectInPane(send);
+  await expectInPane(sendAgain);
+  await expect(box).toBeInViewport({ ratio: 1 });
+  const conversation = await pane.getByRole('region', { name: 'Conversation' }).boundingBox();
+  expect(conversation!.height).toBeGreaterThanOrEqual(120);
+  expect(errors).toEqual([]);
+});
+
 test('on a narrow window the assistant lies over the preview instead of squeezing it', async () => {
   const { page } = mosaic();
   await page.getByRole('button', { name: /Blank resume/ }).click();
