@@ -1,6 +1,6 @@
 import { Text } from '@/components/ui-kit';
 import type { RunPart } from '@/types/agentRunView';
-import { ReplyMarkdown } from '../transcript/ReplyMarkdown';
+import { PacedReply } from '../transcript/PacedReply';
 import { TracingDots } from '../transcript/TracingDots';
 import { LiveTime } from './LiveTime';
 import { RunLine } from './RunLine';
@@ -52,11 +52,7 @@ export function RunActivity({ parts, state, waitingSince, elapsedMs }: RunActivi
       </span>
       {timeline.map((item) =>
         item.kind === 'text' ? (
-          <ReplyMarkdown
-            key={item.key}
-            text={item.text}
-            isWriting={state.isRunning && item.isLast}
-          />
+          <PacedReply key={item.key} text={item.text} isWriting={state.isRunning && item.isLast} />
         ) : (
           <RunLine key={item.key} line={item.line} runState={state} isLast={item.isLast} />
         )
