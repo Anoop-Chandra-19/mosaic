@@ -36,6 +36,8 @@ export interface UserAsk extends Omit<RunAsk, 'conversationId'> {
 export interface RunStart {
   conversationId: number;
   runId: number;
+  /** Its number in its conversation, from 1. */
+  runNumber: number;
   /** The open template as the run starts on it; null with none open. */
   template: { id: string; name: string; rev: number } | null;
 }
@@ -95,6 +97,7 @@ function openRun(db: Database, ask: RunAsk): RunStart {
   return {
     conversationId,
     runId: run.id,
+    runNumber: run.seq,
     template: template && { id: template.id, name: template.name, rev: template.rev },
   };
 }

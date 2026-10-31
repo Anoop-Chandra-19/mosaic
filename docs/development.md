@@ -79,6 +79,46 @@ Mosaic's profile. Quit the app before `bun run dev:reset`, which deletes that da
 API keys dev runs saved in the keychain (the `Mosaic (dev)` service, never an installed
 Mosaic's).
 
+## Development log
+
+`bun run dev` prints what the app is doing to its terminal, as a server's log would
+(`src/main/dev/devLog.ts`):
+
+```text
+20:14:25.085  run      run started  conversation=12 run=1 runId=17 provider=ollama model=qwen3.5:9b
+20:14:25.086  run        asking the model  step=1 messages=1
+20:14:25.354  run        first reply 268ms  step=1
+20:14:25.354  run        tool started  step=1 tool=read_document
+20:14:25.361  bridge   agent:tool-answer 0ms
+20:14:25.361  run        tool finished 7ms  step=1 tool=read_document
+20:14:29.053  run      run ended 4.0s  conversation=12 run=1 runId=17 provider=ollama model=qwen3.5:9b step=2 outcome=finished steps=2 tools=1 refusals=0 tokensIn=5596 tokensOut=456
+```
+
+Piped into something else, each line is one JSON object with every fact, so it can be
+filtered. `time`, `level` (`info`, `warn`, `error`), `context`, `message`, and the facts of
+that line. `context` is one of:
+
+- `main`: starting up, windows, quitting, and main's own uncaught errors.
+- `bridge`: each call from the page: its `channel`, `durationMs`, and `outcome`. The preload
+  only passes calls on, so this is its log too.
+- `run`: each assistant run: its model, how long the model took to first answer, each step's
+  tokens, each tool, and how the run ended. Every line names its `conversation`, its `run`
+  in that conversation, and its `runId` in the database.
+- `page`: the page's warnings and errors, uncaught ones and failed promises included, and
+  whether the page failed to load.
+- `preload`: a preload that failed to load.
+
+To pick out a run, or leave out the lines from Chromium and electron-vite that aren't JSON:
+
+```sh
+bun run dev | jq -cR 'fromjson? | select(.context == "run" and .conversation == 7)'
+```
+
+It holds facts, not content: arguments, answers, keys, resume text and what the model wrote
+are never read for it. The exception is `page`, which prints an error's own message as
+written. An installed Mosaic never turns it on, and neither do launches that name their own
+profile, such as e2e, unless they also pass `--dev-log`.
+
 ## Developer tools
 
 Every build except a release has the developer tools: a palette opened with Ctrl+Shift+D
