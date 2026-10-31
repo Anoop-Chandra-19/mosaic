@@ -114,10 +114,13 @@ To pick out a run, or leave out the lines from Chromium and electron-vite that a
 bun run dev | jq -cR 'fromjson? | select(.context == "run" and .conversation == 7)'
 ```
 
-It holds facts, not content: arguments, answers, keys, resume text and what the model wrote
-are never read for it. The exception is `page`, which prints an error's own message as
-written. An installed Mosaic never turns it on, and neither do launches that name their own
-profile, such as e2e, unless they also pass `--dev-log`.
+It holds facts, not content: a call's arguments and answers, keys, resume text and what the
+model wrote are never read for it. Errors are the exception: a failed bridge call, an error in
+main and anything from the page print their own message as written, with a stack where there
+is one, and those can hold file paths or quoted text. Read a log before sharing it.
+
+An installed Mosaic never turns it on, and neither do launches that name their own profile,
+such as e2e, unless they also pass `--dev-log`.
 
 ## Developer tools
 
