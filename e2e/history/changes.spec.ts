@@ -200,6 +200,15 @@ test('the page marks what changed in place, and an export from it carries no mar
   await page.keyboard.press('n');
   await expect(reading).toContainText('2 of 2');
 
+  // n and a click on a line move the one outline, and the page keeps its place.
+  const current = sheet.locator('[aria-current="true"]');
+  await expect(current).toHaveCount(1);
+  const steppedTo = await current.getAttribute('data-change-id');
+  await sheet.locator(`[data-change-id]:not([data-change-id="${steppedTo}"])`).first().click();
+  await expect(reading).toContainText('1 of 2');
+  await expect(current).toHaveCount(1);
+  await expect(current).not.toHaveAttribute('data-change-id', steppedTo ?? '');
+
   // The version exports as it was: nothing put back, nothing marked.
   await app.evaluate(({ clipboard }) => clipboard.writeText(''));
   await reading.getByRole('button', { name: 'Export this version' }).click();

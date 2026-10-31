@@ -1,7 +1,8 @@
-import { useEffect, useEffectEvent, useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useEffectEvent, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Copy, Download, History } from 'lucide-react';
 import { AppButton, AppTooltip, Text } from '@/components/ui-kit';
 import { ChangeList } from '@/features/document-diff/ChangeList';
+import { CurrentChange, useChangeCursor } from '@/features/document-diff/changeCursor';
 import { tourTargetProps } from '@/features/onboarding/tourTargets';
 import { MarkedVersionText } from '@/features/document-diff/MarkedVersionText';
 import { decorateChanges } from '@/features/document-diff/changeDecorations';
@@ -131,6 +132,20 @@ interface VersionPageProps {
   onLaidOut: () => void;
 }
 
+/** The version's page, with what differs from `base` marked. */
+function markVersionPage(
+  doc: ResumeData,
+  base: ResumeData | null,
+  diff: ResumeDiff | null,
+  otherSide: string
+) {
+  if (!base || !diff || diff.all.length === 0) return { doc };
+  return {
+    doc: putGoneBack(doc, base, diff.all),
+    decorations: decorateChanges(diff.all, otherSide),
+  };
+}
+
 /** The version as the printed page, or as text when the pane is too narrow to read one. */
 function VersionPage({
   version,
@@ -145,11 +160,16 @@ function VersionPage({
   onLaidOut,
 }: VersionPageProps) {
   const paperSize = useUiStore((s) => s.paperSize);
-  const marked = isMarked && diff && base && diff.all.length > 0 ? { diff, base } : null;
+  const markedDiff = isMarked ? diff : null;
+  // By hand, as a new one lays the page out again: the compiler would rebuild it with the note.
+  const page = useMemo(
+    () => markVersionPage(version.doc, base, markedDiff, otherSide),
+    [version.doc, base, markedDiff, otherSide]
+  );
   const note = <TextReadNote text={textReadNote} onShowPage={onShowPage} />;
   if (isTextRead) {
-    return marked ? (
-      <MarkedVersionText diff={marked.diff} otherSide={otherSide} note={note} />
+    return markedDiff && page.decorations ? (
+      <MarkedVersionText diff={markedDiff} otherSide={otherSide} note={note} />
     ) : (
       <VersionAsText resume={version.doc} note={note} />
     );
@@ -159,8 +179,8 @@ function VersionPage({
       <ResumePreview
         paperSize={paperSize}
         previewZoom={zoom}
-        doc={marked ? putGoneBack(version.doc, marked.base, marked.diff.all) : version.doc}
-        decorations={marked ? decorateChanges(marked.diff.all, otherSide) : undefined}
+        doc={page.doc}
+        decorations={page.decorations}
         onMetaChange={ignorePreviewMeta}
         onLaidOut={onLaidOut}
       />
@@ -223,13 +243,13 @@ export function HistoryReadPane({
 
   // The change stepped to starts over for each version and each comparison.
   const cursorKey = `${version.id}:${otherSide}`;
-  const [cursorAt, setCursorAt] = useState({ key: cursorKey, index: 0 });
-  const cursor = cursorAt.key === cursorKey ? cursorAt.index : 0;
   const changes = diff?.changes ?? [];
+  const changeCursor = useChangeCursor(changes, cursorKey, 0);
+  const cursor = changeCursor.index;
   const goToChange = (index: number) => {
     if (changes.length === 0) return;
     const wrapped = (index + changes.length) % changes.length;
-    setCursorAt({ key: cursorKey, index: wrapped });
+    changeCursor.moveTo(wrapped);
     revealChangeMark(bodyRef.current, changes[wrapped]);
   };
 
@@ -442,29 +462,37 @@ export function HistoryReadPane({
             key={cursorKey}
             diff={diff}
             formatting={formatting}
-            cursorId={changes[cursor]?.id ?? null}
+            cursorId={changeCursor.currentId}
             onPick={(change) => goToChange(changes.indexOf(change))}
             otherSide={otherSide}
             isDetailed={isDetailed}
           />
         )}
         {loaded && view === 'page' && (
-          <VersionPage
-            version={loaded}
-            base={comparison.base}
-            diff={diff}
-            otherSide={otherSide}
-            isMarked={isMarkShown}
-            isTextRead={isTextRead}
-            textReadNote={
-              canWidenToPage
-                ? 'Widen this pane to read it as the printed page.'
-                : 'This window is too narrow to show the printed page. Reading it as text instead.'
-            }
-            onShowPage={() => setIsPageChosen(true)}
-            zoom={ownZoom.zoom}
-            onLaidOut={onPageLaidOut}
-          />
+          <CurrentChange
+            value={{
+              currentId: changeCursor.currentId,
+              // With the page held to pan, a click is the end of a drag.
+              pick: (id) => !canvas.readyToPan && changeCursor.pick(id),
+            }}
+          >
+            <VersionPage
+              version={loaded}
+              base={comparison.base}
+              diff={diff}
+              otherSide={otherSide}
+              isMarked={isMarkShown}
+              isTextRead={isTextRead}
+              textReadNote={
+                canWidenToPage
+                  ? 'Widen this pane to read it as the printed page.'
+                  : 'This window is too narrow to show the printed page. Reading it as text instead.'
+              }
+              onShowPage={() => setIsPageChosen(true)}
+              zoom={ownZoom.zoom}
+              onLaidOut={onPageLaidOut}
+            />
+          </CurrentChange>
         )}
       </div>
 

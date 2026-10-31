@@ -11,6 +11,7 @@ import {
   type ChangeMove,
   type ChangeTone,
 } from '@/lib/resume/changes/resumeChange';
+import { useLineCursor } from './changeCursor';
 import { DIFF_MARKS, PAPER_INK } from './diffMarks';
 import { LINE_GUTTER, type MarkGutter } from './pageMarks';
 import { PhraseText } from './PhraseText';
@@ -26,7 +27,7 @@ const BAR_TONE: Record<ChangeTone, string> = {
   add: 'bg-paper-add',
   del: 'bg-paper-del',
 };
-const HOVER = 'cursor-help rounded-[2px] hover:bg-paper-mark-hover';
+const HOVER = 'cursor-pointer rounded-[2px] hover:bg-paper-mark-hover';
 
 const isGone = (change: Change) => change.kind === 'remove' || change.kind === 'hide';
 
@@ -44,6 +45,8 @@ function measureGutterReach(gutter: MarkGutter, hasMove: boolean): number {
 
 interface TipProps {
   changes: Change[];
+  /** The changes this target stands for, when its tip tells of more of them. */
+  ownChanges?: Change[];
   otherSide: string;
   /** How far the hover reaches into the margin, over the line's marks there; none if 0. */
   gutterReachPx?: number;
@@ -54,13 +57,25 @@ interface TipProps {
 
 /**
  * A marked line's one hover target: its text, and its marks in the margin up to the text.
- * The tip follows the pointer along the line, below it.
+ * The tip follows the pointer along the line, below it. A click makes it the current change.
  */
-function Tip({ changes, otherSide, gutterReachPx = 0, isWholeLine = false, children }: TipProps) {
-  const topLevel = changes.find((change) => !change.parentId && change.kind !== 'move');
+function Tip({
+  changes,
+  ownChanges = changes,
+  otherSide,
+  gutterReachPx = 0,
+  isWholeLine = false,
+  children,
+}: TipProps) {
+  const { markIds, isCurrent, pickLine } = useLineCursor(ownChanges, changes);
   return (
     <AppTooltip content={describeTips(changes, otherSide)} shouldFollowPointer>
-      <span data-change-id={topLevel?.id} className={cn(HOVER, PAPER_INK, isWholeLine && 'block')}>
+      <span
+        data-change-id={markIds}
+        aria-current={isCurrent || undefined}
+        onClick={pickLine}
+        className={cn(HOVER, PAPER_INK, DIFF_MARKS.currentLine, isWholeLine && 'block')}
+      >
         {gutterReachPx > 0 && (
           <span
             aria-hidden
@@ -99,7 +114,6 @@ function MoveGlyph({ move, gutter }: { move: Change; gutter: MarkGutter }) {
   return (
     <i
       aria-hidden
-      data-change-id={move.parentId ? undefined : move.id}
       className="pointer-events-none absolute top-0 font-sans text-[9px] leading-[inherit] font-bold text-paper-changed not-italic"
       style={{ left: -gutter.glyphPx }}
     >
@@ -231,6 +245,8 @@ export function MarkedHeading({ changes, heading, fields, otherSide }: MarkedHea
       <GutterMarks tone={toneOfEntry(entryChange, fieldChanges)} move={move} gutter={LINE_GUTTER} />
       <Tip
         changes={changes}
+        // Changed dates are their own target, at the other end of the line.
+        ownChanges={changes.filter((change) => change.target.field !== 'dates')}
         otherSide={otherSide}
         gutterReachPx={measureGutterReach(LINE_GUTTER, move !== undefined)}
         isWholeLine

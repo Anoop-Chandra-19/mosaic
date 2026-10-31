@@ -8,13 +8,15 @@
  *
  * On the page, pageMarks says what each place is marked with and puts back what only the
  * other side printed; changeDecorations gives the page its marks, drawn with PageMarkParts.
- * MarkedVersionText is the same marks on the page read as text. revealChangeMark steps to a
- * change's mark. diffMarks and PhraseText are the one look of a diff, wherever it shows.
+ * MarkedVersionText is the same marks on the page read as text. changeCursor holds the change
+ * being read and shares it with the marks; revealChangeMark steps to a change's mark.
+ * diffMarks and PhraseText are the one look of a diff, wherever it shows.
  *
  * ChangeCounts is the "~2 +1 −1" both the list and a history row show.
  *
  * Other modules use ChangeList, ChangeCounts, UnifiedDiff, pageMarks, changeDecorations,
- * MarkedVersionText, revealChangeMark, diffMarks and PhraseText; the rest are their steps.
+ * changeCursor, MarkedVersionText, revealChangeMark, diffMarks and PhraseText; the rest are
+ * their steps.
  */
 import type { ReactNode } from 'react';
 import { ChevronDown } from 'lucide-react';
