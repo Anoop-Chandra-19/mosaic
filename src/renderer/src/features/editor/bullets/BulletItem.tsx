@@ -22,7 +22,7 @@ import {
 } from '@/components/ui-kit';
 import { SuggestionDot } from '@/features/suggestions/SuggestionDot';
 import { useSuggestionDot } from '@/features/suggestions/useSuggestionDot';
-import { matchesAction } from '@/features/shortcuts/shortcutBindings';
+import { matchesAction } from '@/stores/shortcutBindings';
 import { carryTint, travelFrom } from '@/lib/motion/rowMotions';
 import { ListMotionContext, useSwapMotion } from '@/lib/motion/useListMotion';
 import { cn } from '@/lib/utils';

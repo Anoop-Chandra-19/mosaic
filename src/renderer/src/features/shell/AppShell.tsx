@@ -32,7 +32,7 @@ import {
   useShownSurface,
 } from '@/features/view-transitions/useShownSurface';
 import { ShortcutsDialog } from '@/features/shortcuts/ShortcutsDialog';
-import { matchesAction } from '@/features/shortcuts/shortcutBindings';
+import { matchesAction } from '@/stores/shortcutBindings';
 import { isRedoKey, isTypingField, isUndoKey } from '@/lib/keyboardShortcuts';
 import { SHORTCUT_PLACES, type ShortcutId, type ShortcutPlace } from '@/lib/shortcutCatalog';
 import { useAgentSettingsStore } from '@/stores/agentSettingsStore';

@@ -1,7 +1,7 @@
 import { useRef, type ReactNode } from 'react';
 import { LayoutTemplate, Sparkles } from 'lucide-react';
 import { Text } from '@/components/ui-kit';
-import { useActiveTemplate } from '@/features/templates/useActiveTemplate';
+import { useActiveTemplate } from '@/stores/useActiveTemplate';
 import { cn } from '@/lib/utils';
 import { useConversationStore } from '@/stores/conversationStore';
 import { useRunStore } from '@/stores/runStore';

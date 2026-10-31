@@ -12,7 +12,7 @@ import {
 import { ConfirmDeleteDialog } from '@/components/ConfirmDeleteDialog';
 import { SuggestionDot } from '@/features/suggestions/SuggestionDot';
 import { useSuggestionDot } from '@/features/suggestions/useSuggestionDot';
-import { matchesAction } from '@/features/shortcuts/shortcutBindings';
+import { matchesAction } from '@/stores/shortcutBindings';
 import { isTypingField } from '@/lib/keyboardShortcuts';
 import { ListMotionContext, useSwapMotion } from '@/lib/motion/useListMotion';
 import { cn } from '@/lib/utils';

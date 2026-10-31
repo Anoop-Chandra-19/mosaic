@@ -1,10 +1,10 @@
 import { useMemo, type ReactNode } from 'react';
 import { PanelLeft, PanelRight, type LucideIcon } from 'lucide-react';
 import { AppButton, AppTooltip } from '@/components/ui-kit';
-import { useActiveTemplate } from '@/features/templates/useActiveTemplate';
+import { useActiveTemplate } from '@/stores/useActiveTemplate';
 import { useVersionDistance, type VersionDistance } from '@/features/history/useVersionDistance';
 import { versionLabel } from '@/lib/versionLabel';
-import { useShortcutLabel } from '@/features/shortcuts/shortcutBindings';
+import { useShortcutLabel } from '@/stores/shortcutBindings';
 import { formatRelativeTime } from '@shared/time/formatTime';
 import { useNow } from '@/lib/hooks/useNow';
 import type { ShortcutId } from '@/lib/shortcutCatalog';

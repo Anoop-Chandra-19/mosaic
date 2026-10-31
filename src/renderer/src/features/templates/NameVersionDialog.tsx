@@ -25,7 +25,7 @@ import { attempt, showToast } from '@/stores/toastStore';
 import { useTemplateStore } from '@/stores/templateStore';
 import { canAddToVersion } from '@shared/history/canAddToVersion';
 import type { NamingMode, VersionMeta } from '@shared/types/db';
-import { useActiveTemplate } from './useActiveTemplate';
+import { useActiveTemplate } from '@/stores/useActiveTemplate';
 import { useChangesSinceVersion, type NamingChangeRow } from './useChangesSinceVersion';
 import { useTemplateStatus } from './useTemplateStatus';
 

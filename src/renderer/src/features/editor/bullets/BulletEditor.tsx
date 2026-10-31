@@ -10,7 +10,7 @@ import {
 } from 'react';
 import { Info, Merge, Split } from 'lucide-react';
 import { AppButton, AppToggleGroup, AppToggleGroupItem, Chip, Text } from '@/components/ui-kit';
-import { matchesAction, useShortcutCombo } from '@/features/shortcuts/shortcutBindings';
+import { matchesAction, useShortcutCombo } from '@/stores/shortcutBindings';
 import { formatShortcutKeys } from '@/lib/keyboardShortcuts';
 import { cn } from '@/lib/utils';
 import type { LiveEdit } from '@/stores/liveEditStore';

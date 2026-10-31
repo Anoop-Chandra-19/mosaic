@@ -7,14 +7,9 @@ import {
   AppToggleGroupItem,
   Text,
 } from '@/components/ui-kit';
-import {
-  AGENT_PANE_WIDTH,
-  clampPaneWidth,
-  SIDEBAR_WIDTH,
-  useUiStore,
-  type PaneWidthLimits,
-} from '@/stores/uiStore';
+import { AGENT_PANE_WIDTH, SIDEBAR_WIDTH, useUiStore } from '@/stores/uiStore';
 import type { InterfaceDensity, ThemeChoice } from '@/lib/appearance';
+import { clampPaneWidth, type PaneWidthLimits } from '@/lib/paneResize';
 import { SettingRow } from '../SettingRow';
 
 export function AppearanceSection() {

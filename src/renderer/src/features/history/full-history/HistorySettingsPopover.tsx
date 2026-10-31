@@ -11,7 +11,7 @@ import {
 } from '@/components/ui-kit';
 import { startHistoryTour } from '@/features/onboarding/history/startHistoryTour';
 import { tourTargetProps } from '@/features/onboarding/tourTargets';
-import { useShortcutLabel } from '@/features/shortcuts/shortcutBindings';
+import { useShortcutLabel } from '@/stores/shortcutBindings';
 import { useOverlayStore } from '@/stores/overlayStore';
 import { useUiStore } from '@/stores/uiStore';
 import {
