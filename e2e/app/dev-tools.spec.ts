@@ -1,9 +1,18 @@
 import fs from 'node:fs';
-import { expect } from '@playwright/test';
+import { expect, type Page } from '@playwright/test';
 import { expectViewAt, goToView, makeHistory, runDevTool } from '../harness/devTools';
 import { test, withApp } from '../harness/launch';
 
 const mosaic = withApp();
+
+/**
+ * Waits for the field: the palette can open late, behind a view's transition, and keys pressed
+ * before it has focus go to the page.
+ */
+async function openToolsSearching(page: Page, text: string) {
+  await page.keyboard.press('Control+Shift+D');
+  await page.getByRole('combobox', { name: 'Search developer tools' }).fill(text);
+}
 
 test('the developer tools open over the full history, run from the keyboard, and repeat from Recent', async () => {
   const { app, page, errors } = mosaic();
@@ -15,10 +24,9 @@ test('the developer tools open over the full history, run from the keyboard, and
   await expect(history).toBeVisible();
 
   // Over the full history, which covers the top bar and its wrench.
-  await page.keyboard.press('Control+Shift+D');
+  await openToolsSearching(page, 'stage');
   const tools = page.getByRole('dialog', { name: 'Developer tools' });
   await expect(tools).toBeVisible();
-  await page.keyboard.type('stage');
   await expect(tools.getByRole('option', { selected: true })).toContainText(
     'Stage one of each suggestion'
   );
@@ -51,8 +59,7 @@ test('views are reached by their address: by steps, pasted, from a test, and cop
   const tools = page.getByRole('dialog', { name: 'Developer tools' });
 
   // Steps, each a chip; Ctrl+Enter takes the defaults until one has none.
-  await page.keyboard.press('Control+Shift+D');
-  await page.keyboard.type('full history');
+  await openToolsSearching(page, 'full history');
   await page.keyboard.press('Enter');
   await expect(tools.getByPlaceholder('Which template')).toBeVisible();
   await page.keyboard.press('Control+Enter');
@@ -104,8 +111,7 @@ test('a made history reads as asked, and a profile replaces it only on Ctrl+Ente
   await expect(history.getByRole('heading', { name: 'Second', exact: true })).toBeVisible();
 
   const tools = page.getByRole('dialog', { name: 'Developer tools' });
-  await page.keyboard.press('Control+Shift+D');
-  await page.keyboard.type('profile');
+  await openToolsSearching(page, 'profile');
   await page.keyboard.press('Enter');
   await page.keyboard.type('everyday');
   await page.keyboard.press('Enter');
@@ -138,8 +144,7 @@ test('switches stay on across launches, named in the title, and the memory check
     const { page } = first;
     await runDevTool(page, 'exampleResume');
     const tools = page.getByRole('dialog', { name: 'Developer tools' });
-    await page.keyboard.press('Control+Shift+D');
-    await page.keyboard.type('memory');
+    await openToolsSearching(page, 'memory');
     await page.keyboard.press('Enter');
     const memory = tools.getByRole('region', { name: 'Memory check' });
     await expect(memory.getByRole('row').first()).toHaveText(/^Main\d+ MB$/);
