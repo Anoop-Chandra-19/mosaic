@@ -78,13 +78,14 @@ test('asking in the prompt box shows the ask and the reply, and the box is ready
   await expect(pane.getByRole('button', { name: 'Send' })).toBeVisible();
   await expect(page.getByRole('button', { name: '2 suggestions waiting' })).toBeVisible();
 
-  // The run line opens on what the run did, named from what each call was about.
-  const runLine = conversation.getByRole('button', { name: /^3 steps/ });
-  // Three steps open it as they go, and it folds a moment after the run ends.
+  // One step is that step by name; two fold into a line that opens on what they did, named from
+  // what each call was about. The run's total comes once, at the end.
+  await expect(conversation.getByText('Read your resume')).toBeVisible();
+  const runLine = conversation.getByRole('button', { name: /^2 steps/ });
   await expect(runLine).toHaveAttribute('aria-expanded', 'false');
   await runLine.click();
-  await expect(conversation.getByText('Read your resume')).toBeVisible();
   await expect(conversation.getByText('Rewrote a bullet')).toBeVisible();
+  await expect(conversation.getByText(/^3 steps/)).toBeVisible();
   await expect(conversation.getByText('Harbor Freight Labs · 1st bullet')).toBeVisible();
 
   await pane.getByRole('button', { name: 'New conversation' }).click();

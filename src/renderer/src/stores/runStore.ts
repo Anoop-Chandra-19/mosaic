@@ -25,6 +25,8 @@ export interface LiveRun {
   conversationId: number;
   runId: number;
   startedAt: number;
+  /** When it last said anything: how long a wait for the model has gone on. */
+  lastEventAt: number;
   /** The step under way, from 1; 0 before the first. */
   step: number;
   parts: RunPart[];
@@ -35,6 +37,8 @@ export interface LiveRun {
   /** When it ended, and whether anything stopped it before the model finished. */
   endedAt: number | null;
   wasStopped: boolean;
+  /** The user's Stop, rather than anything else that ended it early. */
+  wasCancelled: boolean;
 }
 
 interface RunState {
@@ -51,6 +55,7 @@ const startLiveRun = ({ conversationId, runId }: AgentRunEnvelope): LiveRun => (
   conversationId,
   runId,
   startedAt: Date.now(),
+  lastEventAt: Date.now(),
   step: 0,
   parts: [],
   stepStart: 0,
@@ -58,6 +63,7 @@ const startLiveRun = ({ conversationId, runId }: AgentRunEnvelope): LiveRun => (
   hasEnded: false,
   endedAt: null,
   wasStopped: false,
+  wasCancelled: false,
 });
 
 const findToolCall = (run: LiveRun, callId: string) =>
@@ -70,6 +76,7 @@ const findToolCall = (run: LiveRun, callId: string) =>
 function applyRunEvent(run: LiveRun, event: AgentRunEvent): void {
   const last = run.parts.length > run.stepStart ? run.parts.at(-1) : undefined;
   if (event.type !== 'stepRetrying') run.retrying = null;
+  run.lastEventAt = Date.now();
   switch (event.type) {
     case 'stepStarted':
       run.step = event.step;
@@ -110,12 +117,14 @@ function applyRunEvent(run: LiveRun, event: AgentRunEvent): void {
       call.status = event.isError ? 'refused' : 'done';
       if (event.target) call.target = event.target;
       if (event.durationMs !== undefined) call.durationMs = event.durationMs;
+      if (event.startedAt !== undefined) call.startedAt = event.startedAt;
       return;
     }
     case 'runEnded':
       run.hasEnded = true;
       run.endedAt = Date.now();
       run.wasStopped = event.stopReason !== undefined;
+      run.wasCancelled = event.stopReason === 'cancelled';
   }
 }
 

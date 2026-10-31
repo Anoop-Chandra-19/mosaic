@@ -1,17 +1,17 @@
 import { useEffect, useRef, useState } from 'react';
-import { findAutoOpenAt, readFoldDelay, type RunState } from './runLineItems';
+import { findAutoOpenAt, readFoldDelay, type RunState } from './runTimeline';
 
 type AutoOpen = 'notYet' | 'open' | 'folded';
 
 /**
- * Whether the line is open: the user's choice once they have made one. Until then, a long
- * run opens it in place while it works on its steps, and it folds once words take over or the
- * run ends. A run opens it once at most, and never while the model is writing: a line that
- * opens as the answer starts would only close again. A stop folds it at once.
+ * Whether a line is open: the user's choice once they have made one. Until then, it opens in
+ * place while it works on its steps, and folds once words take over or the run ends. It opens
+ * once at most, and never while the model is writing: a line that opens as words start would
+ * only close again. A stop folds it at once.
  */
 export function useRunLineOpen(
   stepStarts: readonly number[],
-  { isRunning, isStopped }: RunState,
+  { isRunning, isStopped, isCancelled }: RunState,
   isWritingWords: boolean
 ): { isOpen: boolean; setIsOpen: (isOpen: boolean) => void } {
   const [choice, setChoice] = useState<boolean | null>(null);
@@ -36,10 +36,10 @@ export function useRunLineOpen(
     if (isOnSteps || autoOpen !== 'open') return;
     const timer = setTimeout(
       () => setAutoOpen('folded'),
-      readFoldDelay({ isRunning, isStopped }, Date.now() - openedAt.current)
+      readFoldDelay({ isRunning, isStopped, isCancelled }, Date.now() - openedAt.current)
     );
     return () => clearTimeout(timer);
-  }, [isOnSteps, autoOpen, isRunning, isStopped]);
+  }, [isOnSteps, autoOpen, isRunning, isStopped, isCancelled]);
 
   return { isOpen: choice ?? autoOpen === 'open', setIsOpen: setChoice };
 }

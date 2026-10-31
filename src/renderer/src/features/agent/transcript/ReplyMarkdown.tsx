@@ -126,11 +126,9 @@ interface ReplyMarkdownProps {
   text: string;
   /** Still being written: unclosed markers are closed for now, and the caret follows the text. */
   isWriting?: boolean;
-  /** Text written between a run's steps sits among them at their size. */
-  variant?: 'body' | 'secondary';
 }
 
-export function ReplyMarkdown({ text, isWriting = false, variant = 'body' }: ReplyMarkdownProps) {
+export function ReplyMarkdown({ text, isWriting = false }: ReplyMarkdownProps) {
   if (isWriting && text.trim() === '') {
     return (
       <p>
@@ -140,7 +138,7 @@ export function ReplyMarkdown({ text, isWriting = false, variant = 'body' }: Rep
   }
   return (
     <div
-      className={cn(textVariantClasses(variant), 'wrap-break-word [&>*+*]:mt-2.25 [&>p+p]:mt-1.5')}
+      className={cn(textVariantClasses('body'), 'wrap-break-word [&>*+*]:mt-2.25 [&>p+p]:mt-1.5')}
     >
       <Markdown
         remarkPlugins={PLUGINS}

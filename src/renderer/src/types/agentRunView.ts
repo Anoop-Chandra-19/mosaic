@@ -13,7 +13,8 @@ export type RunPart =
   | { type: 'reasoning'; durationMs: number | null; startedAt?: number }
   /**
    * `args` once the call is stored, since events carry the name only; `target` once it is
-   * answered; `startedAt` only live.
+   * answered. `startedAt` is when the page heard of it until it is answered, then when it began;
+   * absent on calls stored before steps were timed.
    */
   | {
       type: 'toolCall';

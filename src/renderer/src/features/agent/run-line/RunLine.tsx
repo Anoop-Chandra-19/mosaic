@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { Check, ChevronDown, ChevronRight, SquareTerminal, X } from 'lucide-react';
 import {
   AppButton,
@@ -8,32 +9,46 @@ import {
   textVariantClasses,
 } from '@/components/ui-kit';
 import { cn } from '@/lib/utils';
-import { ReplyMarkdown } from '../transcript/ReplyMarkdown';
 import { LiveTime } from './LiveTime';
 import {
   describeRunLine,
+  describeThinking,
   formatSeconds,
+  isThinkingNow,
   isTimeShown,
   type RowState,
   type RunLineItems,
-  type RunLineRow,
   type RunState,
-} from './runLineItems';
+  type StepRow,
+  type ThinkRow,
+} from './runTimeline';
+import { useRunLineOpen } from './useRunLineOpen';
 
 /*
- * The run line: one element for every run length. It is absent with no steps or thinking,
- * one line for a short run, and the same line opening in place into its rows for a long one,
- * so finishing a run moves nothing. Screen readers hear the start and the end only.
+ * One line of a run's timeline, by what it holds. Only thinking is plain words. One step is that
+ * step by name, with no box, so a model that writes before every step reads as words with marks
+ * in their margin. Two or more fold into a box, which opens on its own while it works.
  */
 
 const THINKING_SHIMMER =
   'animate-thinking-shimmer bg-[linear-gradient(90deg,var(--ink-muted)_0%,var(--ink-muted)_38%,var(--foreground)_50%,var(--ink-muted)_62%,var(--ink-muted)_100%)] bg-size-[260%_100%] bg-clip-text text-transparent motion-reduce:animate-none motion-reduce:bg-none motion-reduce:text-ink-soft';
 
-const STEP_ROW_CLASSES = 'border-t border-line px-2.75 py-1.5 first:border-t-0';
-const ROW_CLASSES = cn(STEP_ROW_CLASSES, 'flex items-start gap-2.25');
+const BOX_ROW_CLASSES = 'border-t border-line px-2.75 py-1.5 first:border-t-0';
 
-const STEP_TONES: Record<RowState, string> = {
+/** A line with no box, the height of a step in one. */
+const BARE_LINE_CLASSES = cn(textVariantClasses('secondary'), 'min-h-6.5 py-1');
+
+const STEP_FRAME_CLASSES = 'grid grid-cols-[auto_minmax(0,1fr)_auto] items-start gap-x-2.25';
+
+const BOX_STEP_TONES: Record<RowState, string> = {
   run: 'relative overflow-hidden bg-linear-to-r from-amber-soft to-transparent to-60% text-foreground before:absolute before:inset-y-0 before:left-0 before:w-0.5 before:bg-amber after:absolute after:inset-x-0 after:bottom-0 after:h-px after:animate-step-sweep after:bg-linear-to-r after:from-transparent after:via-amber after:to-transparent motion-reduce:after:animate-none',
+  done: 'text-ink-soft',
+  fail: 'text-ink-muted',
+  cut: 'text-ink-faint',
+};
+
+const BARE_STEP_TONES: Record<RowState, string> = {
+  run: 'text-foreground',
   done: 'text-ink-soft',
   fail: 'text-ink-muted',
   cut: 'text-ink-faint',
@@ -62,13 +77,19 @@ function StepMark({ state }: { state: RowState }) {
   );
 }
 
-function RowTime({
-  children,
-  isRunning = false,
-}: {
-  children: React.ReactNode;
-  isRunning?: boolean;
-}) {
+function ThinkMark({ isGoing }: { isGoing: boolean }) {
+  return (
+    <span
+      aria-hidden
+      className={cn(
+        'mt-0.5 size-3.25 shrink-0 rounded-full border-[1.5px]',
+        isGoing ? 'border-ink-faint' : 'border-dotted border-line-heavy'
+      )}
+    />
+  );
+}
+
+function RowTime({ children, isRunning = false }: { children: ReactNode; isRunning?: boolean }) {
   return (
     <Text
       variant="meta"
@@ -79,27 +100,27 @@ function RowTime({
   );
 }
 
+function StepTime({ row }: { row: StepRow }) {
+  if (row.state === 'cut') return <RowTime>stopped</RowTime>;
+  if (row.state === 'run') {
+    if (row.startedAt === undefined) return null;
+    return (
+      <RowTime isRunning>
+        <LiveTime since={row.startedAt} />
+      </RowTime>
+    );
+  }
+  if (row.durationMs === undefined || !isTimeShown(row.durationMs)) return null;
+  return <RowTime>{formatSeconds(row.durationMs)}</RowTime>;
+}
+
 /** The note runs under the time as well: a pane is narrow, and it wraps rather than lose its end. */
-function StepRow({ row }: { row: Extract<RunLineRow, { kind: 'step' }> }) {
+function StepFrame({ row, className, time }: { row: StepRow; className: string; time: ReactNode }) {
   return (
-    <div
-      className={cn(
-        STEP_ROW_CLASSES,
-        'grid grid-cols-[auto_minmax(0,1fr)_auto] items-start gap-x-2.25',
-        STEP_TONES[row.state]
-      )}
-    >
+    <div className={cn(STEP_FRAME_CLASSES, className)}>
       <StepMark state={row.state} />
       <span>{row.words}</span>
-      {row.state === 'run' && row.startedAt !== undefined && (
-        <RowTime isRunning>
-          <LiveTime since={row.startedAt} />
-        </RowTime>
-      )}
-      {(row.state === 'done' || row.state === 'fail') &&
-        row.durationMs !== undefined &&
-        isTimeShown(row.durationMs) && <RowTime>{formatSeconds(row.durationMs)}</RowTime>}
-      {row.state === 'cut' && <RowTime>stopped</RowTime>}
+      {time}
       {row.note && (
         <Text
           variant="meta"
@@ -115,16 +136,10 @@ function StepRow({ row }: { row: Extract<RunLineRow, { kind: 'step' }> }) {
   );
 }
 
-function ThinkRow({ row }: { row: Extract<RunLineRow, { kind: 'think' }> }) {
+function ThinkInBox({ row }: { row: ThinkRow }) {
   return (
-    <div className={cn(ROW_CLASSES, 'text-ink-faint')}>
-      <span
-        aria-hidden
-        className={cn(
-          'mt-0.5 size-3.25 shrink-0 rounded-full border-[1.5px]',
-          row.state === 'run' ? 'border-ink-faint' : 'border-dotted border-line-heavy'
-        )}
-      />
+    <div className={cn(BOX_ROW_CLASSES, 'flex items-start gap-2.25 text-ink-faint')}>
+      <ThinkMark isGoing={row.state === 'run'} />
       <span className="min-w-0 flex-1">
         {row.state === 'run' ? <span className={THINKING_SHIMMER}>Thinking</span> : 'Thought'}
       </span>
@@ -141,115 +156,126 @@ function ThinkRow({ row }: { row: Extract<RunLineRow, { kind: 'think' }> }) {
   );
 }
 
-function SaidBetween({ text }: { text: string }) {
+function ThinkingLine({ line }: { line: RunLineItems }) {
+  const newest = line.rows.at(-1);
+  const isGoing = isThinkingNow(line);
   return (
-    <div className="border-t border-line px-2.75 pt-2.25 pb-2 text-ink-soft first:border-t-0">
-      <ReplyMarkdown text={text} variant="secondary" />
+    <div className={cn(BARE_LINE_CLASSES, 'flex items-start gap-2.25 text-ink-faint')}>
+      <ThinkMark isGoing={isGoing} />
+      <span className="min-w-0 flex-1">
+        {isGoing ? <span className={THINKING_SHIMMER}>Thinking</span> : describeThinking(line)}
+      </span>
+      {isGoing && newest?.startedAt !== undefined && (
+        <RowTime isRunning>
+          <LiveTime since={newest.startedAt} />
+        </RowTime>
+      )}
+      {newest?.state === 'cut' && <RowTime>stopped</RowTime>}
     </div>
   );
 }
 
-const ROW_BY_KIND = {
-  step: StepRow,
-  think: ThinkRow,
-} as const;
-
-function Row({ row }: { row: RunLineRow }) {
-  if (row.kind === 'text') return <SaidBetween text={row.text} />;
-  const Listed = ROW_BY_KIND[row.kind] as (props: { row: RunLineRow }) => React.ReactNode;
-  return <Listed row={row} />;
-}
-
-interface RunLineProps {
-  items: RunLineItems;
-  state: RunState;
-  /** When the run began, which a running line's time climbs from. */
-  startedAt: number;
-  /** How long a finished run took. */
-  elapsedMs: number;
-  isOpen: boolean;
-  onOpenChange: (isOpen: boolean) => void;
-}
-
-const HEADER_CLASSES = cn(
-  textVariantClasses('secondary'),
-  'flex w-full items-start gap-2 px-2.25 py-1.5 text-left'
-);
-
-export function RunLine({
-  items,
-  state,
-  startedAt,
-  elapsedMs,
-  isOpen,
-  onOpenChange,
-}: RunLineProps) {
-  const hasSteps = items.stepCount > 0;
-  const isShownOpen = isOpen && hasSteps;
-  const label = describeRunLine(items, state, isShownOpen, elapsedMs);
-  const contents = (
-    <>
-      <SquareTerminal
-        aria-hidden
-        className={cn(
-          'mt-0.5 size-3 shrink-0',
-          state.isRunning && !label.isThinking ? 'text-amber' : 'text-ink-faint'
-        )}
-      />
-      <span className="min-w-0 flex-1">
-        <span className={cn(label.isThinking && THINKING_SHIMMER)}>{label.text}</span>
-        <Text variant="meta" className="text-ink-faint tabular-nums">
-          {label.showsTime && state.isRunning && <LiveTime since={startedAt} prefix=" · " />}
-          {label.showsTime &&
-            !state.isRunning &&
-            isTimeShown(elapsedMs) &&
-            ` · ${formatSeconds(elapsedMs)}`}
-          {!state.isRunning && state.isStopped && ' · stopped'}
-        </Text>
-      </span>
-      {hasSteps &&
-        (isShownOpen ? (
-          <ChevronDown aria-hidden className="mt-0.5 size-3 shrink-0" />
+function OneStepLine({ line, step }: { line: RunLineItems; step: StepRow }) {
+  return (
+    <StepFrame
+      row={step}
+      className={cn(BARE_LINE_CLASSES, BARE_STEP_TONES[step.state])}
+      time={
+        isThinkingNow(line) ? (
+          <span className={THINKING_SHIMMER}>Thinking</span>
         ) : (
-          <ChevronRight aria-hidden className="mt-0.5 size-3 shrink-0" />
-        ))}
-    </>
+          <StepTime row={step} />
+        )
+      }
+    />
   );
+}
 
+interface LineProps {
+  line: RunLineItems;
+  /** The run this line belongs to, which folds it when it ends. */
+  runState: RunState;
+  /** Nothing has come after it yet. */
+  isLast: boolean;
+}
+
+function LineTime({ line, isGoing }: { line: RunLineItems; isGoing: boolean }) {
+  const isCut = line.rows.some((row) => row.state === 'cut');
+  return (
+    <Text variant="meta" className="text-ink-faint tabular-nums">
+      {isGoing && line.startedAt !== undefined && <LiveTime since={line.startedAt} prefix=" · " />}
+      {!isGoing &&
+        line.durationMs !== null &&
+        isTimeShown(line.durationMs) &&
+        ` · ${formatSeconds(line.durationMs)}`}
+      {!isGoing && isCut && ' · stopped'}
+    </Text>
+  );
+}
+
+function BoxedLine({ line, runState, isLast }: LineProps) {
+  const stepStarts = line.steps.flatMap(({ startedAt }) =>
+    startedAt === undefined ? [] : [startedAt]
+  );
+  const { isOpen, setIsOpen } = useRunLineOpen(stepStarts, runState, !isLast);
+  const isGoing = runState.isRunning && isLast;
+  const label = describeRunLine(line, isGoing, isOpen);
   return (
     <AppCollapsible
-      open={isShownOpen}
-      onOpenChange={onOpenChange}
+      open={isOpen}
+      onOpenChange={setIsOpen}
       className="overflow-hidden rounded-sm border border-line"
     >
-      <span className="sr-only" aria-live="polite">
-        {label.spoken}
-      </span>
-      {hasSteps ? (
-        <AppCollapsibleTrigger asChild>
-          <AppButton
-            variant="plain"
+      <AppCollapsibleTrigger asChild>
+        <AppButton
+          variant="plain"
+          className={cn(
+            textVariantClasses('secondary'),
+            'flex h-auto w-full items-start gap-2 px-2.25 py-1.5 text-left whitespace-normal hover:bg-line hover:text-ink-soft',
+            isGoing ? 'text-ink-soft' : 'text-ink-muted'
+          )}
+        >
+          <SquareTerminal
+            aria-hidden
             className={cn(
-              HEADER_CLASSES,
-              'h-auto whitespace-normal hover:bg-line hover:text-ink-soft',
-              state.isRunning ? 'text-ink-soft' : 'text-ink-muted'
+              'mt-0.5 size-3 shrink-0',
+              isGoing && !label.isThinking ? 'text-amber' : 'text-ink-faint'
             )}
-          >
-            {contents}
-          </AppButton>
-        </AppCollapsibleTrigger>
-      ) : (
-        <div className={cn(HEADER_CLASSES, state.isRunning ? 'text-ink-soft' : 'text-ink-muted')}>
-          {contents}
-        </div>
-      )}
+          />
+          <span className="min-w-0 flex-1">
+            <span className={cn(label.isThinking && THINKING_SHIMMER)}>{label.text}</span>
+            <LineTime line={line} isGoing={isGoing} />
+          </span>
+          {isOpen ? (
+            <ChevronDown aria-hidden className="mt-0.5 size-3 shrink-0" />
+          ) : (
+            <ChevronRight aria-hidden className="mt-0.5 size-3 shrink-0" />
+          )}
+        </AppButton>
+      </AppCollapsibleTrigger>
       <AppCollapsibleContent className="overflow-hidden duration-240 ease-settle data-[state=closed]:animate-collapsible-up data-[state=open]:animate-collapsible-down motion-reduce:animate-none">
         <div className={cn(textVariantClasses('secondary'), 'border-t border-line bg-pane-raised')}>
-          {items.rows.map((row) => (
-            <Row key={row.key} row={row} />
-          ))}
+          {line.rows.map((row) =>
+            row.kind === 'step' ? (
+              <StepFrame
+                key={row.key}
+                row={row}
+                className={cn(BOX_ROW_CLASSES, BOX_STEP_TONES[row.state])}
+                time={<StepTime row={row} />}
+              />
+            ) : (
+              <ThinkInBox key={row.key} row={row} />
+            )
+          )}
         </div>
       </AppCollapsibleContent>
     </AppCollapsible>
   );
+}
+
+export function RunLine({ line, runState, isLast }: LineProps) {
+  const [firstStep, secondStep] = line.steps;
+  if (!firstStep) return <ThinkingLine line={line} />;
+  if (!secondStep) return <OneStepLine line={line} step={firstStep} />;
+  return <BoxedLine line={line} runState={runState} isLast={isLast} />;
 }

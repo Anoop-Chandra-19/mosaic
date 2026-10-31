@@ -55,6 +55,7 @@ function addToRun(run: RunView, body: TranscriptMessageBody, createdAt: number):
         call.status = readToolStatus(result);
         if (result.target) call.target = result.target;
         if (result.durationMs !== undefined) call.durationMs = result.durationMs;
+        if (result.startedAt !== undefined) call.startedAt = result.startedAt;
       }
       return;
     case 'runStopped':
