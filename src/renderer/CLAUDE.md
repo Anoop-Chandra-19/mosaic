@@ -76,7 +76,7 @@ when called, never at import. State several screens share goes through a store
   never back through `ui-kit.ts`. Their unit tests live in `components/kit/__tests__/`;
   `components/__tests__/ui-kit.test.ts` stays with the public entry point.
 - Higher-level components `ConfirmDeleteDialog`, `HeaderLinkControls`, `ReadBoundary`,
-  `MosaicMark`, and the hook `useNoSelectionBehindLayers` stay at the `components/` root,
+  `MosaicMark`, `ShortcutKeys`, and the hook `useNoSelectionBehindLayers` stay at the `components/` root,
   use direct imports, and are not exported by `ui-kit.ts`. Raw shadcn parts remain in
   `components/ui/`, separate from the app's implementations in `components/kit/`.
 - Use Radix/shadcn primitives (new-york, zinc base), not hand-rolled equivalents, through

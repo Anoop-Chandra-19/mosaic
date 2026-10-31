@@ -1,6 +1,6 @@
 import { Check } from 'lucide-react';
 import { AppButton, textVariantClasses } from '@/components/ui-kit';
-import { ShortcutKeys } from '@/features/shortcuts/ShortcutKeys';
+import { ShortcutKeys } from '@/components/ShortcutKeys';
 import { cn } from '@/lib/utils';
 
 /** A key the footer lists: its keycaps, and what it does. */

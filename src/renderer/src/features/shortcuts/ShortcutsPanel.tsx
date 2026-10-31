@@ -12,7 +12,7 @@ import {
 import { cn } from '@/lib/utils';
 import { useUiStore } from '@/stores/uiStore';
 import { ShortcutCapture } from './ShortcutCapture';
-import { ShortcutKeys } from './ShortcutKeys';
+import { ShortcutKeys } from '@/components/ShortcutKeys';
 import { ShortcutRowView } from './ShortcutRowView';
 import {
   listPlaceShortcuts,
