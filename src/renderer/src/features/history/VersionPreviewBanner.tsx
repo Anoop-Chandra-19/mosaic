@@ -1,4 +1,4 @@
-import { Fragment, useState, type RefObject } from 'react';
+import { Fragment, type RefObject } from 'react';
 import { ChevronDown, ChevronUp, Eye, History } from 'lucide-react';
 import { AppButton, Text } from '@/components/ui-kit';
 import { revealChangeMark } from '@/features/document-diff/revealChangeMark';
@@ -81,21 +81,21 @@ function DifferenceSentence({ comparison }: { comparison: VersionPreviewComparis
 interface PlaceStepperProps {
   comparison: VersionPreviewComparison;
   pageRef: RefObject<HTMLElement | null>;
+  /** The place being read, by its place in the changes; -1 until there is one. */
+  cursor: number;
+  onCursorChange: (index: number) => void;
 }
 
 /** Steps through the places the version differs, on the page. */
-function PlaceStepper({ comparison, pageRef }: PlaceStepperProps) {
+function PlaceStepper({ comparison, pageRef, cursor, onCursorChange }: PlaceStepperProps) {
   const isMarked = usePreviewStore((s) => s.arePreviewMarksShown);
   const toggleMarks = usePreviewStore((s) => s.togglePreviewMarks);
-  /** -1 until the first step. */
-  const [stepped, setStepped] = useState(-1);
   const { changes } = comparison.diff;
-  const cursor = stepped < changes.length ? stepped : -1;
 
   const step = (direction: 1 | -1) => {
     const firstIndex = direction > 0 ? 0 : changes.length - 1;
     const index = cursor < 0 ? firstIndex : (cursor + direction + changes.length) % changes.length;
-    setStepped(index);
+    onCursorChange(index);
     if (isMarked) {
       revealChangeMark(pageRef.current, changes[index]);
       return;
@@ -154,13 +154,20 @@ interface VersionPreviewBannerProps {
   comparison: VersionPreviewComparison;
   /** The scrolling box the page is in, for stepping to a place. */
   pageRef: RefObject<HTMLElement | null>;
+  cursor: number;
+  onCursorChange: (index: number) => void;
 }
 
 /**
  * Over the sheet while a version is being read: which one, how it differs from the draft,
  * where, and the ways out. Restoring is a decision made after reading, never before.
  */
-export function VersionPreviewBanner({ comparison, pageRef }: VersionPreviewBannerProps) {
+export function VersionPreviewBanner({
+  comparison,
+  pageRef,
+  cursor,
+  onCursorChange,
+}: VersionPreviewBannerProps) {
   const setPreview = usePreviewStore((s) => s.setPreview);
   const openSurface = useOverlayStore((s) => s.openSurface);
   const restoreVersion = useTemplateStore((s) => s.restoreVersion);
@@ -208,7 +215,12 @@ export function VersionPreviewBanner({ comparison, pageRef }: VersionPreviewBann
         </span>
       </Text>
       {comparison.diff.changes.length > 0 && (
-        <PlaceStepper comparison={comparison} pageRef={pageRef} />
+        <PlaceStepper
+          comparison={comparison}
+          pageRef={pageRef}
+          cursor={cursor}
+          onCursorChange={onCursorChange}
+        />
       )}
       <AppButton variant="ghost" size="xs" title="Open the full history" onClick={openFullHistory}>
         Full history

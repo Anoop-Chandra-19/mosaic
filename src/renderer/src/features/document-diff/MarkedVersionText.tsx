@@ -11,6 +11,7 @@ import {
   type ChangeTargetType,
   type ChangeTone,
 } from '@/lib/resume/changes/resumeChange';
+import { useLineCursor } from './changeCursor';
 import { DIFF_MARKS } from './diffMarks';
 import { PhraseText } from './PhraseText';
 
@@ -66,11 +67,15 @@ function MarkedRow({ line, otherSide }: { line: DiffLine; otherSide: string }) {
   const { row, change } = line;
   const { as: Tag, className } = ROW_STYLES[row.target.type];
   const isField = row.target.type === 'entryField' || row.target.type === 'headerItem';
+  const { markIds, isCurrent, pickLine } = useLineCursor(change ? [change] : []);
   const element = (
     <Tag
-      data-change-id={change && !change.parentId ? change.id : undefined}
+      data-change-id={markIds}
+      aria-current={isCurrent || undefined}
+      onClick={change ? pickLine : undefined}
       className={cn(
         className,
+        change && cn('cursor-pointer', DIFF_MARKS.currentLine),
         change && LINE_TONE[getChangeTone(change)],
         change && isGone(change) && DIFF_MARKS.removed
       )}

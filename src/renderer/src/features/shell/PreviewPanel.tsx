@@ -8,6 +8,7 @@ import { useStoredPreviewZoom } from '@/features/preview/pageZoom';
 import { usePreviewCanvas } from '@/features/preview/usePreviewCanvas';
 import { cn } from '@/lib/utils';
 import type { PaperSize } from '@/types/paper';
+import { CurrentChange, useChangeCursor } from '@/features/document-diff/changeCursor';
 import { decorateChanges } from '@/features/document-diff/changeDecorations';
 import { putGoneBack } from '@/features/document-diff/pageMarks';
 import {
@@ -48,6 +49,12 @@ export function PreviewPanel() {
   const isMarked = usePreviewStore((s) => s.arePreviewMarksShown);
   const comparison = useVersionPreviewComparison();
   const preview = comparison?.preview;
+  // No place is being read until the first step or click.
+  const changeCursor = useChangeCursor(
+    comparison?.diff.changes ?? [],
+    preview?.version.id ?? '',
+    -1
+  );
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const canvas = usePreviewCanvas(scrollRef, useStoredPreviewZoom());
   const shown = useFitPreviewForHandoff(scrollRef);
@@ -75,6 +82,8 @@ export function PreviewPanel() {
           key={comparison.preview.version.id}
           comparison={comparison}
           pageRef={scrollRef}
+          cursor={changeCursor.index}
+          onCursorChange={changeCursor.moveTo}
         />
       )}
       <div className="flex h-10 shrink-0 items-center justify-between gap-2.5 border-b border-line bg-background px-3">
@@ -155,13 +164,21 @@ export function PreviewPanel() {
           transitionClasses({ name: 'page', motion: 'handoff', isActive: !isPageHandedOff })
         )}
       >
-        <ResumePreview
-          paperSize={paperSize}
-          previewZoom={shown.zoom}
-          isZoomEased={shown.isZoomEased}
-          onMetaChange={setMeta}
-          {...(comparison && readVersionPage(comparison, isMarked))}
-        />
+        <CurrentChange
+          value={{
+            currentId: changeCursor.currentId,
+            // With the page held to pan, a click is the end of a drag.
+            pick: (id) => !canvas.readyToPan && changeCursor.pick(id),
+          }}
+        >
+          <ResumePreview
+            paperSize={paperSize}
+            previewZoom={shown.zoom}
+            isZoomEased={shown.isZoomEased}
+            onMetaChange={setMeta}
+            {...(comparison && readVersionPage(comparison, isMarked))}
+          />
+        </CurrentChange>
       </div>
     </main>
   );

@@ -10,15 +10,15 @@ interface PhraseTextProps {
   renderWords?: (text: string) => ReactNode;
 }
 
-/** The space around deleted words stays out of the mark: it isn't what was deleted. */
-function DeletedWords({ text }: { text: string }) {
+/** The space around changed words stays out of their mark: it isn't what changed. */
+function MarkedWords({ text, mark }: { text: string; mark: (words: string) => ReactNode }) {
   const words = text.trim();
   if (!words) return text;
   const start = text.indexOf(words);
   return (
     <>
       {text.slice(0, start)}
-      <del className={DIFF_MARKS.removed}>{words}</del>
+      {mark(words)}
       {text.slice(start + words.length)}
     </>
   );
@@ -31,10 +31,18 @@ export function PhraseText({ phrases, side, renderWords = (text) => text }: Phra
     const needsSpace = side === 'both' && phrase.del && phrase.ins && !/\s$/.test(phrase.del);
     return (
       <Fragment key={index}>
-        {side !== 'after' && phrase.del && <DeletedWords text={phrase.del} />}
+        {side !== 'after' && phrase.del && (
+          <MarkedWords
+            text={phrase.del}
+            mark={(words) => <del className={DIFF_MARKS.removed}>{words}</del>}
+          />
+        )}
         {needsSpace && ' '}
         {side !== 'before' && phrase.ins && (
-          <ins className={DIFF_MARKS.added}>{renderWords(phrase.ins)}</ins>
+          <MarkedWords
+            text={phrase.ins}
+            mark={(words) => <ins className={DIFF_MARKS.added}>{renderWords(words)}</ins>}
+          />
         )}
       </Fragment>
     );

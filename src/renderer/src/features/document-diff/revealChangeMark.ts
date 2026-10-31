@@ -9,7 +9,8 @@ const SHOWN_WIDTH_SHARE = 0.6;
 
 /** The change's mark on the page or in a list: not the preview's offscreen copy. */
 function findChangeMark(container: HTMLElement | null, change: Change): Element | undefined {
-  const marks = container?.querySelectorAll(`[data-change-id="${CSS.escape(change.id)}"]`) ?? [];
+  // One line can stand for several changes, so the attribute is a list of ids.
+  const marks = container?.querySelectorAll(`[data-change-id~="${CSS.escape(change.id)}"]`) ?? [];
   return [...marks].find((mark) => !mark.closest('[data-preview-measure]'));
 }
 
