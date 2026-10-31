@@ -1,6 +1,6 @@
+import { findMoves } from '@/lib/resume/changes/findMoves';
 import type { Proposal, ProposalChange } from '@/types/agentProposal';
 import type { ResumeData } from '@shared/types/resume';
-import { findMovedIds } from '../../proposals/findMovedIds';
 import { layInProposal } from '../../proposals/apply/layInProposal';
 import { planApply, type ApplyPlan } from '../../proposals/apply/planApply';
 import { readShowPlaceId, readTextPlaceId } from '../../proposals/proposalAnchor';
@@ -158,7 +158,7 @@ function readAboutIds(change: ProposalChange): string[] {
 function readHeadingIds(change: ProposalChange): string[] {
   if (change.kind === 'rename') return [change.sectionId];
   if (change.kind === 'reorder' && change.place.unit === 'sections') {
-    return findMovedIds(change.before, change.after);
+    return findMoves(change.before, change.after).map(({ id }) => id);
   }
   return [];
 }

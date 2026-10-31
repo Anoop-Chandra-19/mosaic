@@ -1,8 +1,8 @@
+import { findMoves } from '@/lib/resume/changes/findMoves';
 import type { Proposal, ProposalChange } from '@/types/agentProposal';
 import { useAgentSettingsStore } from '@/stores/agentSettingsStore';
 import { selectTemplateProposals, useProposalStore } from '@/stores/proposalStore';
 import { useResumeStore } from '@/stores/resumeStore';
-import { findMovedIds } from './proposals/findMovedIds';
 import { readShowPlaceId, readTextPlaceId } from './proposals/proposalAnchor';
 
 /** The suggestion an editor bullet, line, entry or section points to, and why. */
@@ -49,8 +49,8 @@ function readDots(change: ProposalChange): [string, string][] {
       return [];
     case 'reorder': {
       if (change.place.unit !== 'sections') return [];
-      const moved = findMovedIds(change.before, change.after);
-      return moved.map((id) => [id, 'A suggestion moves this section.']);
+      const moved = findMoves(change.before, change.after);
+      return moved.map(({ id }) => [id, 'A suggestion moves this section.']);
     }
   }
 }

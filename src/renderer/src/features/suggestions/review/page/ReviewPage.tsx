@@ -1,62 +1,48 @@
 import { useEffect, useMemo, useRef } from 'react';
+import type { MarkGutter } from '@/features/document-diff/pageMarks';
+import { BULLET_GUTTER, LINE_GUTTER } from '@/features/document-diff/pageMarks';
 import type { PageDecorations } from '@/features/preview/pageDecorations';
+import { cn } from '@/lib/utils';
 import { ReviewPaper } from './ReviewPaper';
-import {
-  SuggestionBackChip,
-  SuggestionMark,
-  SuggestionMoveChip,
-  type FlagGutter,
-} from './SuggestionMark';
+import { SuggestionDates, SuggestionLine } from './SuggestionMark';
 import type { SuggestionPage } from './suggestionPage';
+import { readSuggestionState } from '../../suggestionState';
 
-/**
- * A whole entry or section waiting to leave: its text faded, one bracket down its side in
- * the margin. Kept, it stays the same until Apply.
- */
-const LEAVING_BLOCK_CLASSES =
-  'relative text-paper-faded before:pointer-events-none before:absolute before:inset-y-0.75 before:-left-3.25 before:w-1.25 before:rounded-l-[0.125rem] before:border-[1.5px] before:border-r-0 before:border-paper-del';
+/** A whole entry or section one suggestion is about: one outline when it is selected. */
+const BLOCK =
+  'rounded-[2px] has-[[aria-current=true]]:outline-[1.5px] has-[[aria-current=true]]:outline-offset-[3px] has-[[aria-current=true]]:outline-paper-changed';
+/** Leaving, it has one bar down its side, in the bar's lane: dashed until it is kept. */
+const LEAVING_BLOCK =
+  'relative before:pointer-events-none before:absolute before:top-0.75 before:bottom-0.75 before:-left-6 before:w-[2.5px] before:rounded-[2px]';
+const LEAVING_WAITING =
+  'before:bg-[repeating-linear-gradient(to_bottom,var(--paper-del)_0_3px,transparent_3px_5.5px)]';
+const LEAVING_KEPT = 'before:bg-paper-del';
 
 /** The page's marks, built once per page so selecting one never lays the page out again. */
 function decorateSuggestions(page: SuggestionPage): PageDecorations {
-  /** Text or a heading in its mark, with the chips a move or a return leaves beside it. */
-  const markWithChips = (gutter: FlagGutter) => (id: string, text: string) => {
-    const mark = page.marks.get(id);
-    const move = page.moves.get(id);
-    if (!mark && !move) return text;
-    return (
-      <>
-        {mark ? (
-          <SuggestionMark mark={mark} gutter={gutter}>
-            {text}
-          </SuggestionMark>
-        ) : (
-          text
-        )}
-        {mark?.block === 'back' && <SuggestionBackChip mark={mark} />}
-        {move && <SuggestionMoveChip move={move} />}
-      </>
-    );
-  };
-  const markOnly = (id: string, text: string) => {
-    const mark = page.marks.get(id);
-    return mark ? (
-      <SuggestionMark mark={mark} gutter="line">
-        {text}
-      </SuggestionMark>
-    ) : (
-      text
-    );
-  };
+  const markLine = (gutter: MarkGutter) => (id: string, text: string) => (
+    <SuggestionLine
+      mark={page.marks.get(id)}
+      move={page.moves.get(id)}
+      text={text}
+      gutter={gutter}
+    />
+  );
   return {
-    bullet: markWithChips('bullet'),
-    line: markWithChips('line'),
-    entryHeading: markWithChips('line'),
-    entryDates: markOnly,
-    sectionLabel: markWithChips('line'),
-    blockClassName: (id) => {
+    bullet: markLine(BULLET_GUTTER),
+    line: markLine(LINE_GUTTER),
+    entryHeading: markLine(LINE_GUTTER),
+    sectionLabel: markLine(LINE_GUTTER),
+    entryDates: (id, dates) => {
       const mark = page.marks.get(id);
-      const isLeaving = mark?.block === 'leaving' && !mark.proposal.isStale;
-      return isLeaving && mark.proposal.status !== 'rejected' ? LEAVING_BLOCK_CLASSES : undefined;
+      return mark ? <SuggestionDates mark={mark} dates={dates} /> : dates;
+    },
+    blockClassName: (id) => {
+      const block = page.blocks.get(id);
+      if (!block) return undefined;
+      if (!block.isLeaving) return BLOCK;
+      const isWaiting = readSuggestionState(block.proposal) === 'waiting';
+      return cn(BLOCK, LEAVING_BLOCK, isWaiting ? LEAVING_WAITING : LEAVING_KEPT);
     },
   };
 }

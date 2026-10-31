@@ -28,7 +28,7 @@ function findIdsInPlace(before: string[], after: string[]): Set<string> {
 }
 
 /** What moved: the ids in both lists that are off the longest run both keep in order. */
-export function findMoves(beforeIds: string[], afterIds: string[]): Move[] {
+export function findMoves(beforeIds: readonly string[], afterIds: readonly string[]): Move[] {
   const inBefore = new Set(beforeIds);
   const inAfter = new Set(afterIds);
   const before = beforeIds.filter((id) => inAfter.has(id));

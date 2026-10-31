@@ -155,18 +155,11 @@
   --color-paper-del: var(--paper-del);
   --color-paper-del-text: var(--paper-del-text);
   --color-paper-tag: var(--paper-tag);
-  --color-paper-faded: var(--paper-faded);
   --color-paper-tag-line: var(--paper-tag-line);
   --color-paper-mark-hover: var(--paper-mark-hover);
   --color-paper-suggested: var(--paper-suggested);
-  --color-paper-suggested-soft: var(--paper-suggested-soft);
-  --color-paper-suggested-hover: var(--paper-suggested-hover);
-  --color-paper-suggested-current: var(--paper-suggested-current);
-  --color-paper-add-current: var(--paper-add-current);
-  --color-paper-del-soft: var(--paper-del-soft);
   --color-paper-flag: var(--paper-flag);
   --color-paper-stale-line: var(--paper-stale-line);
-  --color-paper-stale-text: var(--paper-stale-text);
   --color-paper-outline: var(--paper-outline);
   --color-paper-outline-open: var(--paper-outline-open);
   --color-swatch-add: var(--swatch-add);
@@ -528,23 +521,15 @@
   --paper-del: #b04a3a;
   --paper-del-text: #8a4a40;
   --paper-tag: #6b6b6b;
-  /* An entry or section waiting to leave the page, in review. */
-  --paper-faded: #8f8f8f;
   --paper-tag-line: #b9b9b9;
   --paper-mark-hover: oklch(0 0 0 / 3.5%);
   /*
-   * The assistant's suggestions on the page: a warm wash for changed text, the green above
-   * for added text and kept ones, a dot in the margin for a check to look at.
+   * The assistant's suggestions on the page: a dot in the margin for a check to look at, and
+   * a quiet underline on one that is out of date. Amber is Preview's open outline.
    */
   --paper-suggested: #d18a1f;
-  --paper-suggested-soft: oklch(0.93 0.13 95 / 42%);
-  --paper-suggested-hover: oklch(0.93 0.13 95 / 62%);
-  --paper-suggested-current: oklch(0.93 0.13 95 / 78%);
-  --paper-add-current: oklch(0.86 0.14 150 / 58%);
-  --paper-del-soft: oklch(0.8 0.12 30 / 26%);
   --paper-flag: #c2620f;
   --paper-stale-line: #9a9a9a;
-  --paper-stale-text: #555;
   /* Preview's outline round what a suggestion made: dashed on hover, washed while open. */
   --paper-outline: #8a8a8a;
   --paper-outline-open: oklch(0.93 0.13 80 / 22%);

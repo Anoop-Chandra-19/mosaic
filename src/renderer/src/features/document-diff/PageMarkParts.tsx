@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import type { ComponentProps, ReactNode } from 'react';
 import { AppTooltip } from '@/components/ui-kit';
 import { cn } from '@/lib/utils';
 import { describeChangeTip } from '@/lib/resume/changes/describeChanges';
@@ -13,19 +13,27 @@ import {
 } from '@/lib/resume/changes/resumeChange';
 import { useLineCursor } from './changeCursor';
 import { DIFF_MARKS, PAPER_INK } from './diffMarks';
-import { LINE_GUTTER, type MarkGutter } from './pageMarks';
+import { LINE_GUTTER, measureGutterReach, type MarkGutter } from './pageMarks';
 import { PhraseText } from './PhraseText';
 
 /*
  * Marks drawn on the printed page, in paper ink. Moves are a glyph in the left margin and
- * changed lines a bar there, so marking a page never reflows it.
+ * changed lines a bar there, so marking a page never reflows it. MarkTarget, GutterMarks and
+ * MoveGlyph are the line both a version's marks and the suggestions' are drawn with.
  */
 
 const BAR = 'pointer-events-none absolute top-0.75 bottom-0.75 w-[2.5px] rounded-[2px] not-italic';
 const BAR_TONE: Record<ChangeTone, string> = {
-  edit: 'bg-paper-changed',
-  add: 'bg-paper-add',
-  del: 'bg-paper-del',
+  edit: '[--bar:var(--paper-changed)]',
+  add: '[--bar:var(--paper-add)]',
+  del: '[--bar:var(--paper-del)]',
+};
+/** Whether it is settled: a version's always is; a suggestion's says what was decided. */
+export type BarFill = 'solid' | 'dashed' | 'hollow';
+const BAR_FILL: Record<BarFill, string> = {
+  solid: 'bg-(--bar)',
+  dashed: 'bg-[repeating-linear-gradient(to_bottom,var(--bar)_0_3px,transparent_3px_5.5px)]',
+  hollow: '-ml-[0.75px] w-1 bg-white shadow-[inset_0_0_0_1.25px_var(--bar)]',
 };
 const HOVER = 'cursor-pointer rounded-[2px] hover:bg-paper-mark-hover';
 
@@ -35,46 +43,40 @@ function describeTips(changes: Change[], otherSide: string): ReactNode {
   return changes.map((change, index) => <p key={index}>{describeChangeTip(change, otherSide)}</p>);
 }
 
-/** Room past the outermost margin mark, so it is easy to hover. */
-const GUTTER_REACH_PX = 4;
-
-/** How far into the left margin a line's hover reaches: past its bar, or its move glyph. */
-function measureGutterReach(gutter: MarkGutter, hasMove: boolean): number {
-  return (hasMove ? gutter.glyphPx : gutter.barPx) + GUTTER_REACH_PX;
-}
-
-interface TipProps {
-  changes: Change[];
-  /** The changes this target stands for, when its tip tells of more of them. */
-  ownChanges?: Change[];
-  otherSide: string;
+interface MarkTargetProps extends ComponentProps<'span'> {
+  tip: ReactNode;
   /** How far the hover reaches into the margin, over the line's marks there; none if 0. */
   gutterReachPx?: number;
   /** The whole line is the target, across its wraps; otherwise only this part of a line is. */
   isWholeLine?: boolean;
-  children: ReactNode;
+  /** Being current draws an outline; off when something around it draws the outline instead. */
+  isOutlined?: boolean;
 }
 
 /**
- * A marked line's one hover target: its text, and its marks in the margin up to the text.
- * The tip follows the pointer along the line, below it. A click makes it the current change.
+ * A marked line's one target: its text, and its marks in the margin up to the text. The tip
+ * follows the pointer along the line, below it.
  */
-function Tip({
-  changes,
-  ownChanges = changes,
-  otherSide,
+export function MarkTarget({
+  tip,
   gutterReachPx = 0,
   isWholeLine = false,
+  isOutlined = true,
+  className,
   children,
-}: TipProps) {
-  const { markIds, isCurrent, pickLine } = useLineCursor(ownChanges, changes);
+  ...spanProps
+}: MarkTargetProps) {
   return (
-    <AppTooltip content={describeTips(changes, otherSide)} shouldFollowPointer>
+    <AppTooltip content={tip} shouldFollowPointer>
       <span
-        data-change-id={markIds}
-        aria-current={isCurrent || undefined}
-        onClick={pickLine}
-        className={cn(HOVER, PAPER_INK, DIFF_MARKS.currentLine, isWholeLine && 'block')}
+        {...spanProps}
+        className={cn(
+          HOVER,
+          PAPER_INK,
+          isOutlined && DIFF_MARKS.currentLine,
+          isWholeLine && 'block',
+          className
+        )}
       >
         {gutterReachPx > 0 && (
           <span
@@ -89,37 +91,79 @@ function Tip({
   );
 }
 
-/** The bar and any move glyph in the margin; hovering them is hovering the line's tip. */
-function GutterMarks({
-  tone,
-  move,
-  gutter,
-}: {
+interface TipProps {
+  changes: Change[];
+  /** The changes this target stands for, when its tip tells of more of them. */
+  ownChanges?: Change[];
+  otherSide: string;
+  gutterReachPx?: number;
+  isWholeLine?: boolean;
+  children: ReactNode;
+}
+
+/** A version's marked line: its tip says what changed, and a click makes it the current change. */
+function Tip({ changes, ownChanges = changes, otherSide, ...targetProps }: TipProps) {
+  const { markIds, isCurrent, pickLine } = useLineCursor(ownChanges, changes);
+  return (
+    <MarkTarget
+      {...targetProps}
+      tip={describeTips(changes, otherSide)}
+      data-change-id={markIds}
+      aria-current={isCurrent || undefined}
+      onClick={pickLine}
+    />
+  );
+}
+
+interface GutterMarksProps {
   tone: ChangeTone;
-  move?: Change;
+  /** How the bar is drawn; null: the line has none. */
+  fill?: BarFill | null;
+  moveGlyph?: ReactNode;
   gutter: MarkGutter;
-}) {
+}
+
+/** The bar and any move glyph in the margin; hovering them is hovering the line's tip. */
+export function GutterMarks({ tone, fill = 'solid', moveGlyph, gutter }: GutterMarksProps) {
   return (
     <>
-      <span aria-hidden className={cn(BAR, BAR_TONE[tone])} style={{ left: -gutter.barPx }} />
-      {move && <MoveGlyph move={move} gutter={gutter} />}
+      {fill && (
+        <span
+          aria-hidden
+          className={cn(BAR, BAR_TONE[tone], BAR_FILL[fill])}
+          style={{ left: -gutter.barPx }}
+        />
+      )}
+      {moveGlyph}
     </>
   );
 }
 
 const MOVE_GLYPHS: Record<ChangeMove['direction'], string> = { up: '↑', down: '↓', across: '⇄' };
 
-function MoveGlyph({ move, gutter }: { move: Change; gutter: MarkGutter }) {
-  const glyph = MOVE_GLYPHS[move.move?.direction ?? 'down'];
+interface MoveGlyphProps extends ComponentProps<'i'> {
+  direction: ChangeMove['direction'];
+  gutter: MarkGutter;
+}
+
+/** Part of its line unless given a target of its own: then it needs `pointer-events-auto`. */
+export function MoveGlyph({ direction, gutter, className, ...glyphProps }: MoveGlyphProps) {
   return (
     <i
-      aria-hidden
-      className="pointer-events-none absolute top-0 font-sans text-[9px] leading-[inherit] font-bold text-paper-changed not-italic"
+      {...glyphProps}
+      className={cn(
+        'pointer-events-none absolute top-0 font-sans text-[9px] leading-[inherit] font-bold text-paper-changed not-italic',
+        className
+      )}
       style={{ left: -gutter.glyphPx }}
     >
-      {glyph}
+      {MOVE_GLYPHS[direction]}
     </i>
   );
+}
+
+function ChangeMoveGlyph({ move, gutter }: { move: Change; gutter: MarkGutter }) {
+  return <MoveGlyph aria-hidden direction={move.move?.direction ?? 'down'} gutter={gutter} />;
 }
 
 function ShortField({ change }: { change: Change }) {
@@ -166,7 +210,11 @@ export function MarkedLine({ changes, text, otherSide, gutter }: MarkedLineProps
   if (!change && !move) return text;
   return (
     <>
-      <GutterMarks tone={change ? getChangeTone(change) : 'edit'} move={move} gutter={gutter} />
+      <GutterMarks
+        tone={change ? getChangeTone(change) : 'edit'}
+        moveGlyph={move && <ChangeMoveGlyph move={move} gutter={gutter} />}
+        gutter={gutter}
+      />
       <Tip
         changes={changes}
         otherSide={otherSide}
@@ -242,7 +290,11 @@ export function MarkedHeading({ changes, heading, fields, otherSide }: MarkedHea
     .filter((part) => part !== null);
   return (
     <>
-      <GutterMarks tone={toneOfEntry(entryChange, fieldChanges)} move={move} gutter={LINE_GUTTER} />
+      <GutterMarks
+        tone={toneOfEntry(entryChange, fieldChanges)}
+        moveGlyph={move && <ChangeMoveGlyph move={move} gutter={LINE_GUTTER} />}
+        gutter={LINE_GUTTER}
+      />
       <Tip
         changes={changes}
         // Changed dates are their own target, at the other end of the line.

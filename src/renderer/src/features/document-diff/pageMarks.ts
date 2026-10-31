@@ -1,4 +1,5 @@
 import type { ResumeData, ResumeEntry, ResumeSection } from '@shared/types/resume';
+import { HEADLESS_LAYOUT } from '@/lib/resume/headlessLayout';
 import type { Change, ChangeTarget } from '@/lib/resume/changes/resumeChange';
 
 /**
@@ -10,14 +11,30 @@ export type MarkPlace = 'name' | 'item' | 'section' | 'entry' | 'bullet';
 /** The changes the page marks, by the thing each sits on. */
 export type PageMarks = Map<string, Change[]>;
 
-/** How far into the left margin a mark's bar and move glyph sit, from the marked text. */
+/** How far into the left margin a mark's flag, bar and move glyph sit, from the marked text. */
 export interface MarkGutter {
+  flagPx: number;
   barPx: number;
   glyphPx: number;
 }
 
 /** A heading's, a section name's, or a text line's: the margin's lanes, from the section's edge. */
-export const LINE_GUTTER: MarkGutter = { barPx: 24, glyphPx: 38 };
+export const LINE_GUTTER: MarkGutter = { flagPx: 14, barPx: 24, glyphPx: 38 };
+
+/** A bullet's sit past its marker, in the same lanes. */
+export const BULLET_GUTTER: MarkGutter = {
+  flagPx: HEADLESS_LAYOUT.bulletTextIndent + LINE_GUTTER.flagPx,
+  barPx: HEADLESS_LAYOUT.bulletTextIndent + LINE_GUTTER.barPx,
+  glyphPx: HEADLESS_LAYOUT.bulletTextIndent + LINE_GUTTER.glyphPx,
+};
+
+/** Room past the outermost margin mark, so it is easy to hover. */
+const GUTTER_REACH_PX = 4;
+
+/** How far into the left margin a line's hover reaches: past its bar, or its move glyph. */
+export function measureGutterReach(gutter: MarkGutter, hasMove: boolean): number {
+  return (hasMove ? gutter.glyphPx : gutter.barPx) + GUTTER_REACH_PX;
+}
 
 function placeKeyOf(target: ChangeTarget): string | null {
   switch (target.type) {
