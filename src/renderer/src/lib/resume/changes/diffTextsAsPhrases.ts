@@ -24,42 +24,77 @@ function alignWords(before: string[], after: string[]): Step[] {
   return steps;
 }
 
+/**
+ * A run of kept tokens between two edits that holds at most one word reads as part of one
+ * edit: "Reduced latency by" → "Cut p99 latency by" is one swap, not two.
+ */
+function foldShortKeptRuns(steps: Step[]): Step[] {
+  const folded: Step[] = [];
+  let index = 0;
+  while (index < steps.length) {
+    if (steps[index].op !== 'same') {
+      folded.push(steps[index++]);
+      continue;
+    }
+    let end = index;
+    while (end < steps.length && steps[end].op === 'same') end++;
+    const run = steps.slice(index, end);
+    const isBetweenEdits = index > 0 && end < steps.length;
+    const wordCount = run.filter(({ token }) => /\S/.test(token)).length;
+    if (isBetweenEdits && wordCount <= 1) {
+      for (const { token } of run) folded.push({ op: 'del', token }, { op: 'ins', token });
+    } else {
+      folded.push(...run);
+    }
+    index = end;
+  }
+  return folded;
+}
+
+function addKept(phrases: TextPhrase[], text: string) {
+  const last = phrases.at(-1);
+  if (last?.k === 'keep') last.t += text;
+  else phrases.push({ k: 'keep', t: text });
+}
+
+/** Space both sides of an edit end with isn't part of it, so it goes to the kept text after. */
+function addEdit(phrases: TextPhrase[], del: string, ins: string) {
+  const sharedSpace = del.match(/\s+$/)?.[0];
+  if (sharedSpace && ins.endsWith(sharedSpace)) {
+    phrases.push({
+      k: 'edit',
+      del: del.slice(0, -sharedSpace.length),
+      ins: ins.slice(0, -sharedSpace.length),
+    });
+    addKept(phrases, sharedSpace);
+  } else {
+    phrases.push({ k: 'edit', del, ins });
+  }
+}
+
 const toWords = (text: string) => text.split(/(\s+)/).filter(Boolean);
 
-/** A lone space between two edits joins them, so "a b" → "c d" reads as one swap, not two. */
-export function diffTextsAsPhrases(before: string, after: string, idPrefix = 'w'): TextPhrase[] {
-  const steps = alignWords(toWords(before), toWords(after));
+/**
+ * The one word diff: what `before` and `after` keep, and what each edit swaps. Spaces are kept,
+ * so the keeps and dels join into `before`, and the keeps and inses into `after`.
+ */
+export function diffTextsAsPhrases(before: string, after: string): TextPhrase[] {
+  const steps = foldShortKeptRuns(alignWords(toWords(before), toWords(after)));
   const phrases: TextPhrase[] = [];
   let del = '';
   let ins = '';
-  let edits = 0;
-  const flush = () => {
-    if (del || ins) phrases.push({ k: 'edit', id: `${idPrefix}${edits++}`, del, ins });
-    del = '';
-    ins = '';
-  };
-  steps.forEach((step, index) => {
-    const isBridge =
-      step.op === 'same' &&
-      /^\s+$/.test(step.token) &&
-      index > 0 &&
-      index < steps.length - 1 &&
-      steps[index - 1].op !== 'same' &&
-      steps[index + 1].op !== 'same';
-    if (isBridge) {
-      del += step.token;
-      ins += step.token;
-    } else if (step.op === 'same') {
-      flush();
-      const last = phrases.at(-1);
-      if (last?.k === 'keep') last.t += step.token;
-      else phrases.push({ k: 'keep', t: step.token });
-    } else if (step.op === 'del') {
-      del += step.token;
+  for (const { op, token } of steps) {
+    if (op === 'del') {
+      del += token;
+    } else if (op === 'ins') {
+      ins += token;
     } else {
-      ins += step.token;
+      if (del || ins) addEdit(phrases, del, ins);
+      del = '';
+      ins = '';
+      addKept(phrases, token);
     }
-  });
-  flush();
+  }
+  if (del || ins) addEdit(phrases, del, ins);
   return phrases;
 }

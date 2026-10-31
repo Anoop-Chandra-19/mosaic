@@ -1,9 +1,6 @@
 import type { HeaderItemKind } from '@shared/types/resume';
 
-/** The assistant writes these itself, so the short keys are what it is asked for. */
-export type TextPhrase =
-  | { k: 'keep'; t: string }
-  | { k: 'edit'; id: string; del: string; ins: string };
+export type TextPhrase = { k: 'keep'; t: string } | { k: 'edit'; del: string; ins: string };
 
 export type ChangeKind = 'edit' | 'add' | 'remove' | 'show' | 'hide' | 'move';
 
@@ -41,10 +38,7 @@ export type ChangeMove =
 
 export type ChangeTone = 'add' | 'del' | 'edit';
 
-/**
- * One change from an earlier resume to a later one, or one the assistant proposes. History's
- * own changes (`origin: 'diff'`) are worked out after the fact, so their phrases are read-only.
- */
+/** One change from an earlier resume to a later one. */
 export interface Change {
   id: string;
   kind: ChangeKind;
@@ -62,8 +56,6 @@ export interface Change {
   move?: ChangeMove;
   /** Inside an entry or section that itself came, went, or was hidden: drawn, not counted. */
   parentId?: string;
-  origin: 'assistant' | 'diff';
-  turn?: number;
 }
 
 const GLYPHS: Record<ChangeKind, string> = {

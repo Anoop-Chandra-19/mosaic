@@ -1,4 +1,4 @@
-import { diffWords } from '@/lib/resume/diffWords';
+import { diffTextsAsPhrases } from '@/lib/resume/changes/diffTextsAsPhrases';
 import type { ProposalFlag } from '@/types/agentProposal';
 
 interface PlacedWord {
@@ -25,10 +25,10 @@ function stemWord(word: string): string {
 function findAddedRanges(before: string, after: string): [number, number][] {
   const ranges: [number, number][] = [];
   let at = 0;
-  for (const part of diffWords(before, after)) {
-    if (part.kind === 'removed') continue;
-    if (part.kind === 'added') ranges.push([at, at + part.text.length]);
-    at += part.text.length;
+  for (const phrase of diffTextsAsPhrases(before, after)) {
+    const text = phrase.k === 'keep' ? phrase.t : phrase.ins;
+    if (phrase.k === 'edit' && text) ranges.push([at, at + text.length]);
+    at += text.length;
   }
   return ranges;
 }

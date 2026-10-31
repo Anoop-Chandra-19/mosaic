@@ -10,7 +10,7 @@ describe('change tone and group', () => {
   });
 
   it('reads a long text edit as an edit, whatever it lost or gained', () => {
-    const phrases = [{ k: 'edit' as const, id: 'w0', del: '', ins: 'New' }];
+    const phrases = [{ k: 'edit' as const, del: '', ins: 'New' }];
     expect(getChangeTone(createChange({ before: '', after: 'New', phrases }))).toBe('edit');
   });
 
