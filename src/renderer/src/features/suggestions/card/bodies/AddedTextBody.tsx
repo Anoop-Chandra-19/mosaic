@@ -1,5 +1,7 @@
 import { Info } from 'lucide-react';
 import { AppButton, Text } from '@/components/ui-kit';
+import { ADDED_ROW } from '@/features/document-diff/diffMarks';
+import { cn } from '@/lib/utils';
 import type { AddPlace, Proposal } from '@/types/agentProposal';
 import type { ResumeData } from '@shared/types/resume';
 import { findEntry, findSection } from '../../proposals/proposalAnchor';
@@ -84,7 +86,7 @@ export function AddedTextBody({
       </Caption>
       <div className="flex flex-col overflow-hidden rounded-sm border border-line bg-pane-raised [&>*+*]:border-t [&>*+*]:border-line">
         {previous && <Neighbour text={previous.text} marker={marker} />}
-        <div className="flex items-start gap-1.75 bg-add-soft px-2.25 py-1.25 shadow-[inset_2px_0_0_var(--add)]">
+        <div className={cn('flex items-start gap-1.75 px-2.25 py-1.25', ADDED_ROW)}>
           {marker && (
             <Text variant="meta" className="min-w-2.5 text-ink-faint">
               {marker}

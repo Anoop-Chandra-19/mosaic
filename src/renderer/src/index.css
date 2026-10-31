@@ -149,8 +149,6 @@
   --color-warn-line: var(--warn-line);
   --color-warn-ink: var(--warn-ink);
   --color-warn-text: var(--warn-text);
-  --color-add-word: var(--add-word);
-  --color-del-word: var(--del-word);
   --color-paper-changed: var(--paper-changed);
   --color-paper-add: var(--paper-add);
   --color-paper-add-soft: var(--paper-add-soft);
@@ -518,9 +516,6 @@
   --warn-ink: oklch(0.99 0 0);
   /* Warn as words on a warn-soft tint: darker than warn in light, to read. */
   --warn-text: oklch(0.52 0.17 45);
-  /* The words that changed inside a line already tinted add or del; the same in both themes. */
-  --add-word: oklch(0.76 0.15 155 / 30%);
-  --del-word: oklch(0.7 0.17 22 / 30%);
   /* A change stepped to, held a moment. */
   --change-flash: oklch(0.93 0.13 95 / 70%);
   /*

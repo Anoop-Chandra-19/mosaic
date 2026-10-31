@@ -10,6 +10,7 @@ import type { DiffLine, ResumeDiff } from '@/lib/resume/changes/diffResumes';
 import type { FormattingChange } from '@/lib/resume/changes/diffFormatting';
 import { getChangeTone, type Change } from '@/lib/resume/changes/resumeChange';
 import { groupDiffLinesIntoHunks } from './groupDiffLines';
+import { QUIET_WHILE_SKIMMING } from './diffMarks';
 import { PhraseText } from './PhraseText';
 
 interface UnifiedDiffProps {
@@ -21,18 +22,10 @@ interface UnifiedDiffProps {
   isDetailed: boolean;
 }
 
-/**
- * Tints go quiet while the history is skimming (`data-skimming`, a held key): marks jumping
- * many times a second strobe. They ease back when it stops.
- */
-const QUIET_WHILE_SKIMMING =
-  'transition-[background-color] duration-120 in-data-skimming:bg-transparent motion-reduce:transition-none';
 const ADDED_LINE = cn('bg-add-soft text-foreground', QUIET_WHILE_SKIMMING);
 const REMOVED_LINE = cn('bg-del-soft text-ink-soft', QUIET_WHILE_SKIMMING);
-const DELETED_WORDS = cn('rounded-xs bg-del-word text-foreground', QUIET_WHILE_SKIMMING);
 /** The narrow label a field or setting names itself with, before its value. */
 const FIELD_LABEL = 'mr-2 inline-block min-w-18.5';
-const INSERTED_WORDS = cn('rounded-xs bg-add-word text-foreground', QUIET_WHILE_SKIMMING);
 
 /** Each line: before and after numbers when detailed, a sign, then the text. */
 function lineGrid(isDetailed: boolean) {
@@ -130,11 +123,7 @@ function ChangeLines({
         >
           <FieldLabel change={change} />
           {text(
-            change.phrases ? (
-              <PhraseText phrases={change.phrases} side="before" deletedClassName={DELETED_WORDS} />
-            ) : (
-              change.before
-            )
+            change.phrases ? <PhraseText phrases={change.phrases} side="before" /> : change.before
           )}
         </Line>
         <Line
@@ -146,15 +135,7 @@ function ChangeLines({
         >
           <FieldLabel change={change} />
           {text(
-            change.phrases ? (
-              <PhraseText
-                phrases={change.phrases}
-                side="after"
-                insertedClassName={INSERTED_WORDS}
-              />
-            ) : (
-              change.after
-            )
+            change.phrases ? <PhraseText phrases={change.phrases} side="after" /> : change.after
           )}
         </Line>
       </>

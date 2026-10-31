@@ -1,5 +1,6 @@
 import { Clock } from 'lucide-react';
 import { Text } from '@/components/ui-kit';
+import { DIFF_MARKS } from '@/features/document-diff/diffMarks';
 import type { ProposalChange } from '@/types/agentProposal';
 import type { ResumeData } from '@shared/types/resume';
 import {
@@ -116,7 +117,7 @@ export function StaleBody({ proposal, draft }: SuggestionBodyProps) {
       {texts?.would !== undefined && (
         <>
           <Caption>{isAdded ? `Suggested, new ${change.place.unit}` : 'Suggested'}</Caption>
-          <SuggestedText className={isAdded ? 'text-ink-muted' : 'text-ink-muted line-through'}>
+          <SuggestedText className={isAdded ? 'text-ink-muted' : DIFF_MARKS.app.removed}>
             {texts.would}
           </SuggestedText>
         </>

@@ -66,8 +66,6 @@ export function MarkedText({
     <PhraseText
       phrases={phrases}
       side="both"
-      deletedClassName="text-ink-muted line-through decoration-del decoration-[1.5px]"
-      insertedClassName="rounded-[0.125rem] bg-add-soft px-px shadow-[inset_0_-1.5px_0_var(--add-line)]"
       renderWords={(text) => <FlaggedText text={text} words={words} gap={gap} />}
     />
   );

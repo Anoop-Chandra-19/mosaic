@@ -1,4 +1,5 @@
 import { Eye, EyeOff } from 'lucide-react';
+import { DIFF_MARKS } from '@/features/document-diff/diffMarks';
 import { cn } from '@/lib/utils';
 import { BlockBody } from './BlockBody';
 import { Caption, SuggestedText, TagLine } from './BodyParts';
@@ -13,9 +14,7 @@ export function SelectBody(props: SuggestionBodyProps) {
   return (
     <>
       <Caption>Suggested</Caption>
-      <SuggestedText
-        className={cn(!change.selected && 'text-ink-muted line-through decoration-del')}
-      >
+      <SuggestedText className={cn(!change.selected && DIFF_MARKS.app.removed)}>
         {change.before}
       </SuggestedText>
       <TagLine icon={change.selected ? Eye : EyeOff}>
