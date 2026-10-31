@@ -266,12 +266,13 @@
     }
   }
 
-  /* Waiting for the assistant's first words: a dotted line loops in a rectangle's shape. */
-  --animate-dots-trace: dots-trace 1.4s linear infinite;
+  /* Waiting for the assistant's first words: each dot is lit for half the way round. */
+  --animate-dots-trace: dots-trace 800ms steps(1) infinite;
 
   @keyframes dots-trace {
-    to {
-      stroke-dashoffset: -100;
+    50%,
+    100% {
+      opacity: 0;
     }
   }
 

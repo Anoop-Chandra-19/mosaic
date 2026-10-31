@@ -1,24 +1,31 @@
-/** Five dots close together, then the rest of the way round, as a share of the path's length. */
-const DOTTED_LINE = '0 7 0 7 0 7 0 7 0 72';
+const STEP_MS = 100;
 
-/** Waiting for the assistant's first words: a short dotted line loops in a rectangle's shape. */
+/** A grid two dots wide and four tall, in the order the light goes round it. */
+const PLACES = [
+  { x: 4, y: 1 },
+  { x: 4, y: 4 },
+  { x: 4, y: 7 },
+  { x: 4, y: 10 },
+  { x: 1, y: 10 },
+  { x: 1, y: 7 },
+  { x: 1, y: 4 },
+  { x: 1, y: 1 },
+];
+
+/** Waiting for the assistant's first words: half the dots go round the edge, a place at a time. */
 export function TracingDots() {
   return (
-    <svg
-      aria-hidden
-      viewBox="0 0 8 14"
-      className="ml-0.5 inline-block h-5 w-3 fill-none stroke-[1.5] align-[-0.3125rem] [stroke-linecap:round]"
-    >
-      <rect
-        x="1"
-        y="1"
-        width="6"
-        height="12"
-        rx="1"
-        pathLength={100}
-        strokeDasharray={DOTTED_LINE}
-        className="animate-dots-trace stroke-amber motion-reduce:animate-none"
-      />
+    <svg aria-hidden viewBox="0 0 5 11" className="ml-0.5 inline-block h-2.75 w-1.25 fill-amber">
+      {PLACES.map(({ x, y }, index) => (
+        <circle
+          key={`${x}-${y}`}
+          cx={x}
+          cy={y}
+          r="1"
+          className="animate-dots-trace motion-reduce:animate-none"
+          style={{ animationDelay: `${(index - PLACES.length) * STEP_MS}ms` }}
+        />
+      ))}
     </svg>
   );
 }
