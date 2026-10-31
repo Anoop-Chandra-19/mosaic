@@ -2,8 +2,8 @@ import {
   createTextMeasurer,
   findLineStarts,
   type MeasureTextWidth,
-} from '@/features/export/pdf/breakLinesLikeWord';
-import { getEntryHeadingWidthPt } from '@/features/export/pdf/entryHeadingWidth';
+} from '@/lib/resume/breakLinesLikeWord';
+import { getEntryHeadingWidthPt } from '@/lib/resume/entryHeadingWidth';
 import { HEADLESS_LAYOUT } from '@/lib/resume/headlessLayout';
 import type { PaperSize } from '@/types/paper';
 import { formatEntryHeading } from '@/lib/resume/entryHeading';

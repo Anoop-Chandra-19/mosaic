@@ -1,7 +1,7 @@
 import { createElement as h } from 'react';
 import { Document, Link, Page, renderToBuffer, Text } from '@react-pdf/renderer';
 import { describe, expect, it } from 'vitest';
-import { normalizeResumeForExport } from '@/features/export/normalizeResumeExport';
+import { normalizeResumeForExport } from '@/lib/resume/normalizeResumeExport';
 import { PdfResumeDocument } from '@/features/export/pdf/PdfResumeDocument';
 import { createDefaultResume } from '@shared/resume/defaultResume';
 import type { ResumeData } from '@shared/types/resume';

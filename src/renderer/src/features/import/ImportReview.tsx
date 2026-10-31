@@ -20,7 +20,7 @@ import { LeftOutLines } from './LeftOutLines';
 import type { ParsedResume } from './parsing/parseResume';
 import { ReviewContactRow } from './ReviewContactRow';
 import { ReviewSectionRow } from './ReviewSectionRow';
-import { formatCount as count } from './formatCount';
+import { formatCount as count } from '@/lib/formatCount';
 
 export interface ReadResume {
   /** A file's name, or "pasted text". */

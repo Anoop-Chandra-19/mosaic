@@ -2,7 +2,7 @@ import {
   createTextMeasurer,
   findLineStarts,
   type MeasureTextWidth,
-} from '@/features/export/pdf/breakLinesLikeWord';
+} from '@/lib/resume/breakLinesLikeWord';
 import { getPageContentSizePt, HEADLESS_LAYOUT } from '@/lib/resume/headlessLayout';
 import type { PaperSize } from '@/types/paper';
 

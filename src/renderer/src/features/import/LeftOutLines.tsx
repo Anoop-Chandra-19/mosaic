@@ -16,7 +16,7 @@ import { copyText } from '@/features/export/exportResume';
 import type { SectionLayout } from '@shared/types/resume';
 import { newSectionNameFor, type PlaceTarget } from './applyImportChoices';
 import type { LeftOutLine, LeftOutReason } from './parsing/importLines';
-import { formatCount as count } from './formatCount';
+import { formatCount as count } from '@/lib/formatCount';
 import { ReviewFold, RowCaret } from './ReviewFold';
 
 const COPY_LABELS = { idle: 'Copy', copied: 'Copied', failed: 'Couldn’t copy' } as const;

@@ -10,7 +10,7 @@ import {
 import { recordPlaces, slideFromRecordedPlaces } from '@/lib/motion/slideToNewPlaces';
 import { cn } from '@/lib/utils';
 import type { ResumeEntry, ResumeSection } from '@shared/types/resume';
-import { formatCount as count } from './formatCount';
+import { formatCount as count } from '@/lib/formatCount';
 import type { SourceLine } from './parsing/importLines';
 import type { ParsedResume } from './parsing/parseResume';
 import { ReviewCheckbox } from './ReviewCheckbox';

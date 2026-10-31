@@ -1,4 +1,4 @@
-import type { NormalizedResumeExport } from '../normalizeResumeExport';
+import type { NormalizedResumeExport } from '@/lib/resume/normalizeResumeExport';
 
 /**
  * Beyond Latin-1, what the PDF's built-in Helvetica can draw: Windows-1252's typographic

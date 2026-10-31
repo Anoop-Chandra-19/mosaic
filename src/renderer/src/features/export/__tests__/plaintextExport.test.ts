@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createPlaintextExport } from '../plaintextExport';
-import type { NormalizedResumeExport } from '../normalizeResumeExport';
+import type { NormalizedResumeExport } from '@/lib/resume/normalizeResumeExport';
 import type { PrintedHeaderLine } from '@shared/resume/resumeHeader';
 import { createExportEntry } from './exportEntries';
 

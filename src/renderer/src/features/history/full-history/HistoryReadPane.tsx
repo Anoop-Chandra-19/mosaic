@@ -9,7 +9,7 @@ import { decorateChanges } from '@/features/document-diff/changeDecorations';
 import { putGoneBack } from '@/features/document-diff/pageMarks';
 import { revealChangeMark } from '@/features/document-diff/revealChangeMark';
 import { UnifiedDiff } from '@/features/document-diff/UnifiedDiff';
-import { PAPER_DIMENSIONS_PT } from '@/features/preview/pageGeometry';
+import { PAPER_SIZE_PT } from '@/lib/resume/headlessLayout';
 import { useOwnPageZoom, type PageZoom } from '@/features/preview/pageZoom';
 import { ResumePreview } from '@/features/preview/ResumePreview';
 import { usePreviewCanvas, type PreviewCanvas } from '@/features/preview/usePreviewCanvas';
@@ -265,7 +265,7 @@ export function HistoryReadPane({
 
   const isIdentical = draftChangeCount === 0 && !hasDraftFormatting;
   const isSameAsBase = diff !== null && changes.length === 0 && formatting.length === 0;
-  const pageScale = (bodyWidth - PAGE_GUTTER_PX * 2) / PAPER_DIMENSIONS_PT[paperSize].width;
+  const pageScale = (bodyWidth - PAGE_GUTTER_PX * 2) / PAPER_SIZE_PT[paperSize].width;
   const isLegible = bodyWidth === 0 || pageScale >= LEGIBLE_PAGE_SCALE;
   const isTextRead = view === 'page' && !isLegible && !isPageChosen;
   const isPageShown = loaded !== null && view === 'page' && !isTextRead;

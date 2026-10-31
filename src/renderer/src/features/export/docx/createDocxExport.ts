@@ -1,7 +1,7 @@
 import { HEADLESS_LAYOUT, PAPER_SIZE_PT } from '@/lib/resume/headlessLayout';
 import { LINK_BLUE } from '@shared/resume/resumeHeader';
 import type { PaperSize } from '@/types/paper';
-import type { NormalizedResumeExport } from '../normalizeResumeExport';
+import type { NormalizedResumeExport } from '@/lib/resume/normalizeResumeExport';
 import { zipFiles } from './zipFiles';
 
 /*

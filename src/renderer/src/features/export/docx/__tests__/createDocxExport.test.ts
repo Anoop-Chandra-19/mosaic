@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { createDefaultResume } from '@shared/resume/defaultResume';
 import type { ResumeData } from '@shared/types/resume';
-import { normalizeResumeForExport } from '../../normalizeResumeExport';
+import { normalizeResumeForExport } from '@/lib/resume/normalizeResumeExport';
 import { createDocxExport } from '../createDocxExport';
 import { openZip } from '@/features/import/readers/docx/openZip';
 import { readDocx } from '@/features/import/readers/docx/readDocx';

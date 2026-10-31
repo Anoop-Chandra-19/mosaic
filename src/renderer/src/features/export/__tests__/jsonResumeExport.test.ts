@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createJsonResumeExport } from '../jsonResumeExport';
-import type { ExportEntry, NormalizedResumeExport } from '../normalizeResumeExport';
+import type { ExportEntry, NormalizedResumeExport } from '@/lib/resume/normalizeResumeExport';
 import type { EntryTextPart } from '../jsonResumeEntry';
 import type { HeaderItemKind } from '@shared/types/resume';
 import { createExportEntry } from './exportEntries';

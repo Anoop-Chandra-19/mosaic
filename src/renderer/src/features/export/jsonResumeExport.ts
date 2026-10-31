@@ -17,7 +17,11 @@ import {
   type ItemSource,
   type JsonResumeItem,
 } from './jsonResumeEntry';
-import type { ExportEntry, ExportSection, NormalizedResumeExport } from './normalizeResumeExport';
+import type {
+  ExportEntry,
+  ExportSection,
+  NormalizedResumeExport,
+} from '@/lib/resume/normalizeResumeExport';
 
 /**
  * Minimal subset of the JSON Resume schema (jsonresume.org, v1.0.0). Every field is

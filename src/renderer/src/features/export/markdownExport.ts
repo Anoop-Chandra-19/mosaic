@@ -1,6 +1,6 @@
 import { formatEntryHeading } from '@/lib/resume/entryHeading';
 import type { PrintedHeaderLine } from '@shared/resume/resumeHeader';
-import type { ExportEntry, NormalizedResumeExport } from './normalizeResumeExport';
+import type { ExportEntry, NormalizedResumeExport } from '@/lib/resume/normalizeResumeExport';
 
 const WORD_CHARACTER = /[\p{L}\p{N}]/u;
 

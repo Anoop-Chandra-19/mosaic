@@ -1,8 +1,8 @@
 import { pdf } from '@react-pdf/renderer';
 import { HEADLESS_LAYOUT } from '@/lib/resume/headlessLayout';
 import type { PaperSize } from '@/types/paper';
-import type { NormalizedResumeExport } from '../normalizeResumeExport';
-import { createTextMeasurer } from './breakLinesLikeWord';
+import type { NormalizedResumeExport } from '@/lib/resume/normalizeResumeExport';
+import { createTextMeasurer } from '@/lib/resume/breakLinesLikeWord';
 import { PdfResumeDocument } from './PdfResumeDocument';
 
 export interface PdfExportRequest {

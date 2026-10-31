@@ -1,5 +1,5 @@
 import { formatEntryHeading } from '@/lib/resume/entryHeading';
-import type { ExportEntry } from '../normalizeResumeExport';
+import type { ExportEntry } from '@/lib/resume/normalizeResumeExport';
 
 type ExportEntryParts = Partial<Omit<ExportEntry, 'id' | 'heading'>>;
 

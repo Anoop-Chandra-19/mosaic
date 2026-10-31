@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import type { PaperSize } from '@/types/paper';
-import { PAGE_MARGINS_PT, PAPER_DIMENSIONS_PT } from './pageGeometry';
+import { HEADLESS_LAYOUT, PAPER_SIZE_PT } from '@/lib/resume/headlessLayout';
 
 interface PreviewPageProps {
   children: ReactNode;
@@ -24,7 +24,7 @@ export function PreviewPage({
   pageCount,
   pageCountIsPartial,
 }: PreviewPageProps) {
-  const paper = PAPER_DIMENSIONS_PT[paperSize];
+  const paper = PAPER_SIZE_PT[paperSize];
 
   return (
     // The number sits below the sheet, so it hangs outside the paper's own clipping.
@@ -38,9 +38,9 @@ export function PreviewPage({
           className="h-full font-normal tracking-normal text-black [font-kerning:none]"
           data-preview-page-content
           style={{
-            paddingTop: `${PAGE_MARGINS_PT.top}px`,
-            paddingBottom: `${PAGE_MARGINS_PT.bottom}px`,
-            paddingInline: `${PAGE_MARGINS_PT.side}px`,
+            paddingTop: `${HEADLESS_LAYOUT.marginTop}px`,
+            paddingBottom: `${HEADLESS_LAYOUT.marginBottom}px`,
+            paddingInline: `${HEADLESS_LAYOUT.marginSide}px`,
           }}
         >
           {children}

@@ -12,7 +12,7 @@ import {
   section,
 } from '@/features/import/__tests__/resumeFixtures';
 import { HEADLESS_LAYOUT, PAPER_SIZE_PT } from '@/lib/resume/headlessLayout';
-import { normalizeResumeForExport } from '../../normalizeResumeExport';
+import { normalizeResumeForExport } from '@/lib/resume/normalizeResumeExport';
 import { PdfResumeDocument } from '../PdfResumeDocument';
 
 const renderPdf = async (data: ResumeData) =>

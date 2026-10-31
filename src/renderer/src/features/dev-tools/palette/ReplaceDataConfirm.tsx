@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { AppButton, Text, textVariantClasses } from '@/components/ui-kit';
-import { formatCount } from '@/features/import/formatCount';
+import { formatCount } from '@/lib/formatCount';
 import { ShortcutKeys } from '@/features/shortcuts/ShortcutKeys';
 import { cn } from '@/lib/utils';
 import { useTemplateStore } from '@/stores/templateStore';
