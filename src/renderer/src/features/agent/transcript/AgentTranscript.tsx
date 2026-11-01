@@ -118,6 +118,8 @@ function RunReply({ run, isLive, stopRecord }: RunReplyProps) {
         }}
         waitingSince={live?.lastEventAt ?? startedAt}
         elapsedMs={endedAt - startedAt}
+        retry={live?.retrying ?? null}
+        runModel={run.model}
       />
       {stopRecord !== null && run.stoppedAt !== null && (
         <RunRecord text={`Stopped: ${stopRecord}`} at={run.stoppedAt} />

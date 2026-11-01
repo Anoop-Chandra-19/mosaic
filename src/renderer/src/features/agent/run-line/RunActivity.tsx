@@ -1,5 +1,8 @@
 import { Text } from '@/components/ui-kit';
+import type { RunRetry } from '@/stores/runStore';
 import type { RunPart } from '@/types/agentRunView';
+import type { RunModel } from '@shared/types/agentConversation';
+import { RetryNotice } from '../notices/RetryNotice';
 import { PacedReply } from '../transcript/PacedReply';
 import { TracingDots } from '../transcript/TracingDots';
 import { LiveTime } from './LiveTime';
@@ -10,6 +13,7 @@ import {
   isWaitingForModel,
   listRunTimeline,
   type RunState,
+  type TimelineItem,
 } from './runTimeline';
 
 /*
@@ -24,6 +28,9 @@ interface RunActivityProps {
   /** When the run last heard anything, which a wait for the model counts from. */
   waitingSince: number;
   elapsedMs: number;
+  /** The wait before a request goes again, while there is one. */
+  retry: RunRetry | null;
+  runModel: RunModel | null;
 }
 
 /** A row the height of a step, the dots where its mark goes, so the first step lands in place. */
@@ -40,7 +47,20 @@ function WaitingRow({ since }: { since: number }) {
   );
 }
 
-export function RunActivity({ parts, state, waitingSince, elapsedMs }: RunActivityProps) {
+/** A notice that follows a line of two or more steps hangs from that line's box. */
+function endsInBox(timeline: TimelineItem[]): boolean {
+  const newest = timeline.at(-1);
+  return newest?.kind === 'line' && newest.line.steps.length > 1;
+}
+
+export function RunActivity({
+  parts,
+  state,
+  waitingSince,
+  elapsedMs,
+  retry,
+  runModel,
+}: RunActivityProps) {
   const timeline = listRunTimeline(parts, state);
   const isWaiting = isWaitingForModel(parts, state);
   const total = describeRunTotal(timeline, state, elapsedMs);
@@ -57,7 +77,8 @@ export function RunActivity({ parts, state, waitingSince, elapsedMs }: RunActivi
           <RunLine key={item.key} line={item.line} runState={state} isLast={item.isLast} />
         )
       )}
-      {isWaiting && <WaitingRow since={waitingSince} />}
+      <RetryNotice retry={retry} runModel={runModel} isAttached={endsInBox(timeline)} />
+      {isWaiting && !retry && <WaitingRow since={waitingSince} />}
       {total !== null && (
         <Text as="p" variant="meta" className="text-ink-faint tabular-nums">
           {total}

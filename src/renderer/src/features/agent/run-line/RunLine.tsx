@@ -42,6 +42,7 @@ const STEP_FRAME_CLASSES = 'grid grid-cols-[auto_minmax(0,1fr)_auto] items-start
 
 const BOX_STEP_TONES: Record<RowState, string> = {
   run: 'relative overflow-hidden bg-linear-to-r from-amber-soft to-transparent to-60% text-foreground before:absolute before:inset-y-0 before:left-0 before:w-0.5 before:bg-amber after:absolute after:inset-x-0 after:bottom-0 after:h-px after:animate-step-sweep after:bg-linear-to-r after:from-transparent after:via-amber after:to-transparent motion-reduce:after:animate-none',
+  wait: 'text-ink-soft',
   done: 'text-ink-soft',
   fail: 'text-ink-muted',
   cut: 'text-ink-faint',
@@ -49,6 +50,7 @@ const BOX_STEP_TONES: Record<RowState, string> = {
 
 const BARE_STEP_TONES: Record<RowState, string> = {
   run: 'text-foreground',
+  wait: 'text-ink-soft',
   done: 'text-ink-soft',
   fail: 'text-ink-muted',
   cut: 'text-ink-faint',
@@ -56,6 +58,7 @@ const BARE_STEP_TONES: Record<RowState, string> = {
 
 const MARK_TONES: Record<RowState, string> = {
   run: 'border-transparent text-amber',
+  wait: 'border-line-heavy',
   done: 'border-add bg-add text-background',
   fail: 'border-warn bg-warn text-background',
   cut: 'border-dashed border-line-heavy',
@@ -102,6 +105,7 @@ function RowTime({ children, isRunning = false }: { children: ReactNode; isRunni
 
 function StepTime({ row }: { row: StepRow }) {
   if (row.state === 'cut') return <RowTime>stopped</RowTime>;
+  if (row.state === 'wait') return null;
   if (row.state === 'run') {
     if (row.startedAt === undefined) return null;
     return (

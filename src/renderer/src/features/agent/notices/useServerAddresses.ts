@@ -1,7 +1,7 @@
 import { useAgentSettingsStore } from '@/stores/agentSettingsStore';
-import type { ServerAddresses } from './stopWords';
+import type { ServerAddresses } from './runSource';
 
-/** The addresses a stop's words name. */
+/** The addresses a notice's words name. */
 export function useServerAddresses(): ServerAddresses {
   const ollama = useAgentSettingsStore((s) => s.ollamaAddress);
   const openaiCompatible = useAgentSettingsStore((s) => s.openAiCompatibleAddress);

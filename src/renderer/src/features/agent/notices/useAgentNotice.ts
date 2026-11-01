@@ -16,7 +16,10 @@ function useLiveRunFacts(conversationId: number | null): LiveRunFacts | null {
   const runId = useRunStore((s) =>
     s.live && s.live.conversationId === conversationId ? s.live.runId : null
   );
-  const hasProgress = useRunStore((s) => (s.live?.parts.length ?? 0) > 0);
+  const hasProgress = useRunStore(
+    (s) =>
+      s.live?.parts.some((part) => part.type !== 'toolCall' || part.status !== 'waiting') ?? false
+  );
   const hasEnded = useRunStore((s) => s.live?.hasEnded ?? false);
   return runId === null ? null : { runId, hasProgress, hasEnded };
 }

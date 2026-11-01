@@ -1,7 +1,10 @@
 import type { RunModel, RunStoppedMessageBody, ToolTarget } from '@shared/types/agentConversation';
 
-/** A tool call's state: waiting for its result, done, refused by the tool, or never run. */
-export type RunToolStatus = 'running' | 'done' | 'refused' | 'notRun';
+/**
+ * A tool call's state: waiting for its result, done, refused by the tool, or never run.
+ * `waiting` is only live: the model was writing it when the request failed, and a retry is coming.
+ */
+export type RunToolStatus = 'running' | 'waiting' | 'done' | 'refused' | 'notRun';
 
 /**
  * One thing a run did, in order, as the pane shows it. The same shape comes from the
