@@ -1,15 +1,26 @@
-import { useEffect, useRef, type KeyboardEvent } from 'react';
+import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { TriangleAlert } from 'lucide-react';
 import { AppButton, Note, Text } from '@/components/ui-kit';
+import { useListMotion, useSwapMotion } from '@/lib/motion/useListMotion';
+import { agentService } from '@/lib/services/agentService';
 import { cn } from '@/lib/utils';
-import { ConversationRow, ROW_ATTRIBUTE, ROW_GRID } from './ConversationRow';
-import { groupConversations } from './conversationListWords';
+import { showToast } from '@/stores/toastStore';
+import type { ConversationSummary } from '@shared/types/agentBridge';
+import {
+  ConversationRow,
+  LIST_MOTION_ATTRIBUTE,
+  ROW_ATTRIBUTE,
+  ROW_GRID,
+  type RowFailure,
+} from './ConversationRow';
+import { groupConversations, titleConversation } from './conversationListWords';
 import { CONVERSATION_PAGE_SIZE, useConversationPages } from './useConversationPages';
 
 /** How near the end the next page is asked for: about two rows. */
 const NEAR_END_PX = 80;
 
 const OPEN_FAILED = 'Couldn’t open it. Nothing was changed.';
+const DELETE_FAILED = 'Couldn’t delete it. It’s still on your computer.';
 
 /** Comes in only if the read is slow enough to see, so a quick one never flashes it. */
 const PLACEHOLDER =
@@ -95,6 +106,9 @@ function rowsIn(list: HTMLElement | null): HTMLElement[] {
   return list ? [...list.querySelectorAll<HTMLElement>(`[${ROW_ATTRIBUTE}]`)] : [];
 }
 
+const matchesRow = (row: HTMLElement, conversationId: number) =>
+  row.getAttribute(ROW_ATTRIBUTE) === String(conversationId);
+
 /** The arrow keys' next row; null for a key that isn't theirs. */
 function findRowForKey(key: string, rows: HTMLElement[], at: number): HTMLElement | null {
   const places: Record<string, number> = {
@@ -117,11 +131,15 @@ interface ConversationListProps {
   onOpen: (conversationId: number) => void;
   onOpenNew: () => void;
   onBack: () => void;
+  onStop: (runId: number) => void;
+  /** It's gone from the disk: the pane leaves it if it was open. */
+  onDeleted: (conversationId: number) => void;
 }
 
 /**
  * Every conversation, most recently active first, over everything in the pane below its
- * header. Keys: ↑ ↓ Home End move, Enter opens, Esc goes back.
+ * header. Keys: ↑ ↓ Home End move, Enter opens, Esc goes back, Delete asks to delete, Shift+F10
+ * opens a row's menu.
  */
 export function ConversationList({
   currentId,
@@ -130,10 +148,73 @@ export function ConversationList({
   onOpen,
   onOpenNew,
   onBack,
+  onStop,
+  onDeleted,
 }: ConversationListProps) {
-  const { pages, readNextPage, tryAgain } = useConversationPages(running?.runId ?? null);
+  const { pages, readNextPage, tryAgain, removeRow } = useConversationPages(running?.runId ?? null);
   const listRef = useRef<HTMLDivElement>(null);
   const isReady = pages.readState === 'ready';
+  const [confirmingId, setConfirmingId] = useState<number | null>(null);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [failedDeleteId, setFailedDeleteId] = useState<number | null>(null);
+  const [motionRef, motion] = useListMotion(String(pages.moves), LIST_MOTION_ATTRIBUTE);
+  const beginConfirmSwap = useSwapMotion(confirmingId, motion);
+  // Where the keyboard goes once the row it was on has changed: a row, or the first.
+  const keyboardTo = useRef<number | 'first' | null>(null);
+
+  useEffect(() => {
+    const place = keyboardTo.current;
+    if (place === null) return;
+    keyboardTo.current = null;
+    const rows = rowsIn(listRef.current);
+    const row =
+      place === 'first' ? rows[0] : rows.find((candidate) => matchesRow(candidate, place));
+    row?.focus();
+  });
+
+  const askDelete = (conversationId: number) => {
+    beginConfirmSwap();
+    setFailedDeleteId(null);
+    setConfirmingId(conversationId);
+  };
+
+  const keep = (conversationId: number) => {
+    keyboardTo.current = conversationId;
+    beginConfirmSwap();
+    setConfirmingId(null);
+  };
+
+  const deleteRow = async ({ id, title }: ConversationSummary) => {
+    const wasRunning = running?.conversationId === id;
+    const rowAbove = pages.rows[pages.rows.findIndex((row) => row.id === id) - 1];
+    setDeletingId(id);
+    try {
+      await agentService.deleteConversation(id);
+      keyboardTo.current = rowAbove?.id ?? 'first';
+      setConfirmingId(null);
+      removeRow(id);
+      onDeleted(id);
+      const words = titleConversation(title, 34);
+      showToast(wasRunning ? `Stopped and deleted “${words}”` : `Deleted “${words}”`);
+    } catch (error) {
+      console.error('Couldn’t delete the conversation', error);
+      keyboardTo.current = id;
+      setConfirmingId(null);
+      setFailedDeleteId(id);
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  const findFailure = (conversationId: number): RowFailure | null => {
+    if (conversationId === failedOpenId) {
+      return { words: OPEN_FAILED, onTryAgain: () => onOpen(conversationId) };
+    }
+    if (conversationId === failedDeleteId) {
+      return { words: DELETE_FAILED, onTryAgain: () => askDelete(conversationId) };
+    }
+    return null;
+  };
 
   // Focus waits here for the rows, then lands on the conversation you came from.
   useEffect(() => {
@@ -192,35 +273,48 @@ export function ConversationList({
           }}
           className="min-h-0 flex-1 overflow-y-auto px-2 pt-0.5 pb-3 @min-[30rem]/list:px-3"
         >
-          {currentId === null && <NewConversationRow onOpenNew={onOpenNew} />}
-          {groupConversations(pages.rows).map(({ label, rows }) => (
-            <div key={label} role="presentation">
-              <Text
-                as="p"
-                aria-hidden
-                variant="eyebrow"
-                className="px-2 pt-3 pb-1 pl-6.5 text-ink-faint"
-              >
-                {label}
+          <div ref={motionRef}>
+            {currentId === null && (
+              <div {...{ [LIST_MOTION_ATTRIBUTE]: 'new' }}>
+                <NewConversationRow onOpenNew={onOpenNew} />
+              </div>
+            )}
+            {groupConversations(pages.rows).map(({ label, rows }) => (
+              <div key={label} role="presentation">
+                <Text
+                  as="p"
+                  aria-hidden
+                  variant="eyebrow"
+                  className="px-2 pt-3 pb-1 pl-6.5 text-ink-faint"
+                  {...{ [LIST_MOTION_ATTRIBUTE]: label }}
+                >
+                  {label}
+                </Text>
+                {rows.map((conversation) => (
+                  <ConversationRow
+                    key={conversation.id}
+                    conversation={conversation}
+                    isCurrent={conversation.id === currentId}
+                    isRunning={conversation.id === running?.conversationId}
+                    isConfirming={conversation.id === confirmingId}
+                    isDeleting={conversation.id === deletingId}
+                    failure={findFailure(conversation.id)}
+                    onOpen={() => onOpen(conversation.id)}
+                    onStop={() => running && onStop(running.runId)}
+                    onAskDelete={() => askDelete(conversation.id)}
+                    onDelete={() => void deleteRow(conversation)}
+                    onKeep={() => keep(conversation.id)}
+                  />
+                ))}
+              </div>
+            ))}
+            {pages.hasMore && <Placeholders count={2} />}
+            {!pages.hasMore && pages.rows.length > CONVERSATION_PAGE_SIZE && (
+              <Text as="p" variant="secondary" className="px-2 pt-3 pb-0.5 pl-6.5 text-ink-faint">
+                That’s every conversation.
               </Text>
-              {rows.map((conversation) => (
-                <ConversationRow
-                  key={conversation.id}
-                  conversation={conversation}
-                  isCurrent={conversation.id === currentId}
-                  isRunning={conversation.id === running?.conversationId}
-                  failure={conversation.id === failedOpenId ? OPEN_FAILED : null}
-                  onOpen={() => onOpen(conversation.id)}
-                />
-              ))}
-            </div>
-          ))}
-          {pages.hasMore && <Placeholders count={2} />}
-          {!pages.hasMore && pages.rows.length > CONVERSATION_PAGE_SIZE && (
-            <Text as="p" variant="secondary" className="px-2 pt-3 pb-0.5 pl-6.5 text-ink-faint">
-              That’s every conversation.
-            </Text>
-          )}
+            )}
+          </div>
         </div>
       )}
     </div>

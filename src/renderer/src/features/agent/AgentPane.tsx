@@ -59,7 +59,7 @@ export function AgentPane() {
   const conversationId = useConversationStore((s) => s.conversationId);
   const storedTitle = useConversationStore((s) => s.title);
   const title = conversationId === null ? 'New conversation' : (storedTitle ?? UNTITLED);
-  const { isListOpen, failedOpenId, switchRef, openList, goBack, startNew, open } =
+  const { isListOpen, failedOpenId, switchRef, openList, goBack, startNew, open, leaveDeleted } =
     useConversationSwitch();
   const {
     shown: listShown,
@@ -213,6 +213,8 @@ export function AgentPane() {
               onOpen={open}
               onOpenNew={startNew}
               onBack={goBack}
+              onStop={stopAgentRun}
+              onDeleted={leaveDeleted}
             />
           </div>
         )}

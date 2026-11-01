@@ -5,6 +5,21 @@ import type { ConversationSummary } from '@shared/types/agentBridge';
 /** A conversation whose first message has no words to name it by. */
 export const UNTITLED = 'No words to name it by';
 
+/** What a delete takes with it, which its question has to say. */
+export type DeleteCase = 'plain' | 'open' | 'running' | 'openRunning';
+
+export function pickDeleteCase(isOpen: boolean, isRunning: boolean): DeleteCase {
+  if (isRunning) return isOpen ? 'openRunning' : 'running';
+  return isOpen ? 'open' : 'plain';
+}
+
+/** The conversation's name, cut at a word to fit a question or a toast. */
+export function titleConversation(title: string | null, mostChars: number): string {
+  const words = title ?? UNTITLED;
+  if (words.length <= mostChars) return words;
+  return `${words.slice(0, mostChars).replace(/\s+\S*$/, '')}…`;
+}
+
 /** "Today", "Yesterday", the month this year, then the year. */
 function labelGroup(lastActiveAt: number, now: number): string {
   const today = startOfDay(now);

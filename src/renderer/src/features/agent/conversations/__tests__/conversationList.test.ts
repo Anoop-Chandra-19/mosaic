@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import type { ConversationSummary } from '@shared/types/agentBridge';
-import { formatLastActive, formatResumeNames, groupConversations } from '../conversationListWords';
+import {
+  formatLastActive,
+  formatResumeNames,
+  groupConversations,
+  titleConversation,
+} from '../conversationListWords';
 import {
   CONVERSATION_PAGE_SIZE,
   mergeFirstPage,
@@ -59,12 +64,22 @@ describe('formatResumeNames', () => {
   });
 });
 
+describe('titleConversation', () => {
+  it('leaves a short name, and cuts a long one at a word', () => {
+    expect(titleConversation('Make Skills shorter', 44)).toBe('Make Skills shorter');
+    expect(titleConversation('Does the Harbor Freight entry read as senior?', 20)).toBe(
+      'Does the Harbor…'
+    );
+  });
+});
+
 describe('mergeFirstPage', () => {
   const held = (rows: ConversationSummary[], hasMore: boolean): ConversationPages => ({
     rows,
     hasMore,
     readState: 'ready',
     failure: null,
+    moves: 0,
   });
 
   it('moves a conversation to the top without losing the pages read past the first', () => {
@@ -74,6 +89,13 @@ describe('mergeFirstPage', () => {
     ]);
     expect(merged.rows.map(({ id }) => id)).toEqual([1, 3, 2]);
     expect(merged.hasMore).toBe(true);
+    expect(merged.moves).toBe(1);
+  });
+
+  it('moves nothing when the order holds, or on the first read', () => {
+    const rows = [row(2, 200), row(1, 100)];
+    expect(mergeFirstPage(held(rows, false), rows).moves).toBe(0);
+    expect(mergeFirstPage({ ...held([], false), readState: 'loading' }, rows).moves).toBe(0);
   });
 
   it('says more are there from the page, when none past it are held', () => {
