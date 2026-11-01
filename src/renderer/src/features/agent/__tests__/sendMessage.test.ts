@@ -6,7 +6,7 @@ import { useRunStore } from '@/stores/runStore';
 import type { AgentStart } from '@shared/types/agentBridge';
 import type { AgentRunEvent } from '@shared/types/agentRunEvents';
 import { createFakeAgentLog, userBody } from '@/stores/__tests__/fakeAgentLog';
-import { makeResume } from '../../../suggestions/proposals/__tests__/proposalFixtures';
+import { makeResume } from '../../suggestions/proposals/__tests__/proposalFixtures';
 import { canSendMessage, sendMessage } from '../sendMessage';
 
 // Where the pane was left is a setting; here it keeps nothing.

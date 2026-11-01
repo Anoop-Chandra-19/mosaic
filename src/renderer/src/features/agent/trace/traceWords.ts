@@ -1,6 +1,6 @@
 import type { StepRetry } from '@shared/types/agentConversation';
 import type { ModelUsage } from '@shared/types/modelReply';
-import type { RowState } from '../run-line/runTimeline';
+import type { RowState } from '../run-view/runTimeline';
 
 /*
  * How the Trace words the facts a run stored. The record is for someone reading closely, so

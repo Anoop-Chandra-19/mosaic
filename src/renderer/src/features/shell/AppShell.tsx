@@ -5,7 +5,7 @@ import { StatusBar } from './StatusBar';
 import { PreviewPanel } from './PreviewPanel';
 import { Toast } from './Toast';
 import { AgentPane } from '@/features/agent/AgentPane';
-import { useAnswerAgentToolCalls } from '@/features/agent/agentRunTools';
+import { useAnswerAgentToolCalls } from '@/features/agent/tools/agentRunTools';
 import { useFollowAgentRuns } from '@/features/agent/followAgentRuns';
 import { DevTools } from '@/features/dev-tools/DevTools';
 import { SuggestionReview } from '@/features/suggestions/review/SuggestionReview';

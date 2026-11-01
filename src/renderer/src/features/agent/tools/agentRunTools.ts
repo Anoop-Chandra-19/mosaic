@@ -4,15 +4,15 @@ import { useResumeStore } from '@/stores/resumeStore';
 import { useRunStore } from '@/stores/runStore';
 import type { AgentToolResult } from '@shared/agent-tools/agentTools';
 import type { AgentStart, AgentToolCall } from '@shared/types/agentBridge';
-import { createAgentToolRun, type AgentToolRun } from './tools/agentToolRun';
-import { runAgentTool } from './tools/runAgentTool';
+import { createAgentToolRun, type AgentToolRun } from './agentToolRun';
+import { runAgentTool } from './runAgentTool';
 
 /*
  * The page's side of the assistant's runs, which happen in main. A run asked for here
  * (`askAgent`, or `carryOnAgent` for Send again) gets its own `AgentToolRun`, so the
  * repairs last the whole run, and starts from the reading its conversation's last run
  * left: the handles and the receipt. Each tool call main sends is answered with
- * `runAgentTool` (`tools/`). The shell answers calls through `useAnswerAgentToolCalls`.
+ * `runAgentTool`. The shell answers calls through `useAnswerAgentToolCalls`.
  */
 
 interface ToolRunEntry {

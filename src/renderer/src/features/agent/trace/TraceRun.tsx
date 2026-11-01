@@ -10,8 +10,8 @@ import { RetryNotice } from '../notices/RetryNotice';
 import { quoteProviderError, readRunSource } from '../notices/runSource';
 import { describeStop } from '../notices/stopWords';
 import { useServerAddresses } from '../notices/useServerAddresses';
-import { LiveTime } from '../run-line/LiveTime';
-import { ThinkMark } from '../run-line/RunLine';
+import { LiveTime } from '../run-view/LiveTime';
+import { ThinkMark } from '../run-view/RunLine';
 import {
   countRunSteps,
   countSteps,
@@ -19,7 +19,7 @@ import {
   type RunLineItems,
   type RunState,
   type ThinkRow,
-} from '../run-line/runTimeline';
+} from '../run-view/runTimeline';
 import { TraceStep } from './TraceStep';
 import { describeRetry, formatThinkingLength, formatTokens, formatTraceTime } from './traceWords';
 

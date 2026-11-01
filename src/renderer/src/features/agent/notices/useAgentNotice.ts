@@ -5,7 +5,7 @@ import { useSecretsStatus } from '@/stores/secretsStore';
 import { useChosenModel } from '@/stores/useChosenModel';
 import type { RunView } from '@/types/agentRunView';
 import type { AgentStartRefusal } from '@shared/types/agentBridge';
-import { buildRunView } from '../transcript/buildRunView';
+import { buildRunView } from '../run-view/buildRunView';
 import { pickNotice, type LiveRunFacts, type NoticeChoice } from './pickNotice';
 import { describeStartRefusal } from './startRefusalWords';
 import { describeStop, findKeySavedSince } from './stopWords';

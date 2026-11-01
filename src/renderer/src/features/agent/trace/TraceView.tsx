@@ -2,7 +2,7 @@ import { useRef, useState } from 'react';
 import { Text } from '@/components/ui-kit';
 import { useConversationStore } from '@/stores/conversationStore';
 import { useRunStore } from '@/stores/runStore';
-import { addLiveRun, buildRunView } from '../transcript/buildRunView';
+import { addLiveRun, buildRunView } from '../run-view/buildRunView';
 import { NewestButton } from '../transcript/NewestButton';
 import { useMessagePages } from '../transcript/useMessagePages';
 import { useStickToNewest } from '../transcript/useStickToNewest';
