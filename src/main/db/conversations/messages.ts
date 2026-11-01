@@ -76,6 +76,7 @@ interface MessageRow {
 interface TranscriptRow extends MessageRow {
   provider: string | null;
   model: string | null;
+  run_number: number | null;
   input_tokens: number | null;
   cached_input_tokens: number | null;
   output_tokens: number | null;
@@ -140,7 +141,7 @@ export function readMessagePage(
   const rows = db
     .prepare<[number, number, number], TranscriptRow>(
       `select m.id, m.seq, m.run_id, m.body, m.created_at, r.provider, r.model,
-              m.input_tokens, m.cached_input_tokens, m.output_tokens
+              r.seq as run_number, m.input_tokens, m.cached_input_tokens, m.output_tokens
          from messages m left join runs r on r.id = m.run_id
         where m.conversation_id = ? and m.seq < ?
         order by m.seq desc limit ?`
@@ -154,6 +155,7 @@ export function readMessagePage(
       row.provider === null || row.model === null
         ? null
         : { provider: row.provider, model: row.model },
+    ...(row.run_number === null ? {} : { runNumber: row.run_number }),
     body: toTranscriptBody(parseStoredMessageBody(row.body)),
     ...toUsage(row),
     createdAt: row.created_at,

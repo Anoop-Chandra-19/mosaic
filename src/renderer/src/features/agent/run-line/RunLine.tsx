@@ -64,7 +64,7 @@ const MARK_TONES: Record<RowState, string> = {
   cut: 'border-dashed border-line-heavy',
 };
 
-function StepMark({ state }: { state: RowState }) {
+export function StepMark({ state }: { state: RowState }) {
   return (
     <span
       aria-hidden
@@ -80,7 +80,7 @@ function StepMark({ state }: { state: RowState }) {
   );
 }
 
-function ThinkMark({ isGoing }: { isGoing: boolean }) {
+export function ThinkMark({ isGoing }: { isGoing: boolean }) {
   return (
     <span
       aria-hidden

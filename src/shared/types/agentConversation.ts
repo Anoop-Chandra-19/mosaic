@@ -159,6 +159,8 @@ export interface TranscriptMessage {
   runId: number | null;
   /** The provider and model its run used, which a stop's notice names; null outside a run. */
   runModel: RunModel | null;
+  /** Its run's number in the conversation, from 1. */
+  runNumber?: number;
   body: TranscriptMessageBody;
   /** What the request behind an assistant message used, when its provider said. */
   usage?: ModelUsage;

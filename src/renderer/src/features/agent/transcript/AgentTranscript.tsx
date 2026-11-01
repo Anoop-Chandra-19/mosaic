@@ -9,7 +9,7 @@ import { describeStop } from '../notices/stopWords';
 import { useServerAddresses } from '../notices/useServerAddresses';
 import { RunCard } from '../run-card/RunCard';
 import { RunActivity } from '../run-line/RunActivity';
-import { buildRunView } from './buildRunView';
+import { addLiveRun, buildRunView } from './buildRunView';
 import { NewestButton } from './NewestButton';
 import { RunRecord } from './RunRecord';
 import { useMessagePages } from './useMessagePages';
@@ -176,30 +176,14 @@ const TurnRow = memo(function TurnRow({
   );
 });
 
-/** The stored runs, and the one under way when the transcript hasn't read it yet. */
 function listTurns(
   runs: RunView[],
   liveRunId: number | null,
   readStopRecord: ReadStopRecord
 ): Turn[] {
-  const shown =
-    liveRunId === null || runs.some((run) => run.runId === liveRunId)
-      ? runs
-      : [
-          ...runs,
-          {
-            runId: liveRunId,
-            model: null,
-            startedAt: 0,
-            lastAt: 0,
-            ask: null,
-            switchedTo: null,
-            parts: [],
-            stop: null,
-            stoppedAt: null,
-          },
-        ];
-  return shown.flatMap((run) => listRunTurns(run, run.runId === liveRunId, readStopRecord));
+  return addLiveRun(runs, liveRunId).flatMap((run) =>
+    listRunTurns(run, run.runId === liveRunId, readStopRecord)
+  );
 }
 
 function EmptyConversation() {

@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Sparkles, SquarePen, X } from 'lucide-react';
 import { AppButton, AppTooltip, Text } from '@/components/ui-kit';
 import { formatPaneWidth, startPaneResize } from '@/lib/paneResize';
@@ -13,7 +13,7 @@ import { explainFailure, showToast } from '@/stores/toastStore';
 import { AGENT_PANE_WIDTH, useUiStore } from '@/stores/uiStore';
 import { AgentPromptBox } from './prompt-box/AgentPromptBox';
 import { shortModelName } from './shortModelName';
-import { AgentTranscript } from './transcript/AgentTranscript';
+import { PaneTabs, type PaneTab } from './PaneTabs';
 import { useChosenModel } from './useChosenModel';
 import { stopAgentRun, useRunningRun } from './useRunningRun';
 
@@ -27,7 +27,7 @@ function Spark() {
 
 /**
  * The assistant, on the right of the preview, drawn only while AI is on: the open
- * conversation (`transcript/`), the prompt box (`prompt-box/`) with the one notice over it
+ * conversation (`transcript/`) or its full record (`trace/`), the prompt box (`prompt-box/`) with the one notice over it
  * for a message that didn't go or a run that stopped (`notices/`),
  * and which provider and model the next run uses. It opens on the conversation used last.
  * The runs themselves are followed by `followAgentRuns` and their tools answered by
@@ -42,6 +42,7 @@ export function AgentPane() {
   const running = useRunningRun();
   const openSettings = useOverlayStore((s) => s.openSettings);
   const paneRef = useRef<HTMLElement>(null);
+  const [tab, setTab] = useState<PaneTab>('conversation');
   const closeKeys = useShortcutLabel('toggleAssistant');
   const isSideHandover = useIsSideHandover();
   const isWorkspaceReplaced = useIsWorkspaceReplaced();
@@ -57,9 +58,16 @@ export function AgentPane() {
       ref={paneRef}
       aria-label="Assistant"
       onKeyDown={(event) => {
-        if (event.key !== 'Escape' || !running || event.defaultPrevented) return;
-        event.preventDefault();
-        stopAgentRun(running.runId);
+        if (event.key !== 'Escape' || event.defaultPrevented) return;
+        // In the box, Esc still means Stop.
+        const isInBox = event.target instanceof HTMLTextAreaElement;
+        if (tab === 'trace' && !isInBox) {
+          event.preventDefault();
+          setTab('conversation');
+        } else if (running) {
+          event.preventDefault();
+          stopAgentRun(running.runId);
+        }
       }}
       className={cn(
         'relative flex shrink-0 flex-col border-l border-line bg-pane @max-5xl/workspace:absolute @max-5xl/workspace:inset-y-0 @max-5xl/workspace:right-0 @max-5xl/workspace:z-20 @max-5xl/workspace:shadow-overlay',
@@ -87,8 +95,8 @@ export function AgentPane() {
         />
       </AppTooltip>
 
-      {/* The preview bar's height, so the two rules line up. */}
-      <header className="flex h-10 shrink-0 items-center justify-between gap-2 border-b border-line px-4">
+      {/* The preview bar's height. The rule under it belongs to the tabs, which hang from it. */}
+      <header className="flex h-10 shrink-0 items-center justify-between gap-2 px-4">
         <div className="flex items-center gap-2">
           <Spark />
           <Text as="h2" variant="title">
@@ -120,7 +128,7 @@ export function AgentPane() {
         </div>
       </header>
 
-      <AgentTranscript />
+      <PaneTabs tab={tab} onTabChange={setTab} />
       <AgentPromptBox />
 
       <footer className="border-t border-line px-4 py-2.5">

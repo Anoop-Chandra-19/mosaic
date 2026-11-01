@@ -82,13 +82,23 @@ describe('buildRunView', () => {
         parts: [
           { type: 'reasoning', durationMs: 3400 },
           { type: 'text', text: 'Reading it first.' },
-          { type: 'toolCall', callId: 'c1', name: 'read_document', args: {}, status: 'done' },
+          {
+            type: 'toolCall',
+            callId: 'c1',
+            name: 'read_document',
+            args: {},
+            status: 'done',
+            request: { retries: [], callCount: 2 },
+            resultMessageId: 3,
+          },
           {
             type: 'toolCall',
             callId: 'c2',
             name: 'propose_rewrite',
             args: { handle: 'b1' },
             status: 'refused',
+            request: { retries: [], callCount: 2 },
+            resultMessageId: 3,
           },
           { type: 'text', text: 'Done.' },
         ],
@@ -155,7 +165,46 @@ describe('buildRunView', () => {
       ])
     );
     expect(run.parts).toEqual([
-      { type: 'toolCall', callId: 'c1', name: 'read_document', args: {}, status: 'running' },
+      {
+        type: 'toolCall',
+        callId: 'c1',
+        name: 'read_document',
+        args: {},
+        status: 'running',
+        request: { retries: [], callCount: 1 },
+      },
     ]);
+  });
+
+  it('gives each call its request’s facts, and adds up what the run used', () => {
+    const retries = [{ error: { reason: 'unreachable' }, waitMs: 1000 }] as const;
+    const first = {
+      id: 1,
+      seq: 1,
+      runId: 4,
+      runNumber: 7,
+      runModel: null,
+      usage: { inputTokens: 100, cachedInputTokens: 60, outputTokens: 10 },
+      body: {
+        type: 'assistant',
+        content: [{ type: 'toolCall', callId: 'c1', name: 'read_document', args: {} }],
+        retries: [...retries],
+      },
+      createdAt: 0,
+    } satisfies TranscriptMessage;
+    const second = {
+      ...first,
+      id: 2,
+      seq: 2,
+      usage: { inputTokens: 200, outputTokens: 20 },
+      body: { type: 'assistant', content: [{ type: 'text', text: 'Done.' }] },
+    } satisfies TranscriptMessage;
+
+    const [run] = buildRunView([first, second]);
+    expect(run.number).toBe(7);
+    expect(run.usage).toEqual({ inputTokens: 300, cachedInputTokens: 60, outputTokens: 30 });
+    expect(run.parts[0]).toMatchObject({
+      request: { usage: first.usage, retries, callCount: 1 },
+    });
   });
 });
