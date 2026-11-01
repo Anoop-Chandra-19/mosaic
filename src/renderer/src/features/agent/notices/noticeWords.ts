@@ -12,7 +12,7 @@ export type NoticeLevel = 'cantRun' | 'stopped';
 
 /**
  * `again` sends the conversation again (Send again, Carry on, Try again); `ask` puts the
- * cursor back in the box; `openRunning` goes to the conversation running.
+ * cursor back in the box.
  */
 export type NoticeAction =
   | { kind: 'again'; label: string; isPrimary?: boolean }
@@ -21,8 +21,7 @@ export type NoticeAction =
   | { kind: 'command'; command: string }
   | { kind: 'copy'; label: string; text: string }
   | { kind: 'ask'; label: string }
-  | { kind: 'newConversation'; label: string }
-  | { kind: 'openRunning'; label: string };
+  | { kind: 'newConversation'; label: string };
 
 /** Someone else's words, shown as they came: the provider's, your computer's, Mosaic's check's. */
 export interface QuotedWords {

@@ -1,7 +1,11 @@
 import { formatTimeOfDay } from '@shared/time/formatTime';
-import type { NoticeRefusal, NoticeResend, NoticeSource } from '@/stores/agentNoticeStore';
+import type {
+  NoticeRefusal,
+  NoticeRefusalReason,
+  NoticeResend,
+  NoticeSource,
+} from '@/stores/agentNoticeStore';
 import type { RunView } from '@/types/agentRunView';
-import type { AgentStartRefusal } from '@shared/types/agentBridge';
 import type { NoticeWords } from './noticeWords';
 import { formatCheckedAgain } from './startRefusalWords';
 import { formatSentAgain } from './stopWords';
@@ -50,7 +54,7 @@ export interface NoticeFacts {
   resend: NoticeResend | null;
   dismissedRunIds: number[];
   describeRun: (run: RunView) => NoticeWords | null;
-  describeRefusal: (reason: AgentStartRefusal) => NoticeWords;
+  describeRefusal: (reason: NoticeRefusalReason) => NoticeWords;
 }
 
 const NONE: NoticeChoice = { notice: null, announcement: '' };

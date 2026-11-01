@@ -266,6 +266,69 @@ test('a conversation is deleted from its row after asking, the open one and a ru
   expect(errors).toEqual([]);
 });
 
+test('a run going elsewhere shows under the header, turns down a send, and is one click away', async () => {
+  const { app, page, errors } = mosaic();
+  // A server that holds every request, so a run stays going until it is stopped.
+  await app.evaluate(({ net }) => {
+    net.fetch = async (input, init) => {
+      const url = String(input instanceof Request ? input.url : input);
+      if (url.endsWith('/v1/models')) return Response.json({ data: [] });
+      return new Promise<Response>((_, reject) =>
+        init?.signal?.addEventListener('abort', () =>
+          reject(new DOMException('Aborted', 'AbortError'))
+        )
+      );
+    };
+  });
+  await runDevTool(page, 'exampleResume');
+  await page.getByRole('button', { name: 'Open settings' }).click();
+  const settings = page.getByRole('dialog', { name: 'Settings' });
+  await settings
+    .getByRole('navigation')
+    .getByRole('button', { name: /AI assistant/ })
+    .click();
+  await settings.getByRole('switch', { name: 'Enable AI assistant' }).click();
+  await settings.getByRole('button', { name: 'Provider' }).click();
+  await page.getByRole('menuitemradio', { name: /^OpenAI-compatible/ }).click();
+  await settings.getByRole('button', { name: 'Close settings' }).click();
+  const pane = page.getByRole('complementary', { name: 'Assistant' });
+  const box = pane.getByRole('textbox', { name: 'Message' });
+  const stop = pane.getByRole('button', { name: 'Stop' });
+  const send = pane.getByRole('button', { name: 'Send', exact: true });
+  const goToIt = pane.getByRole('button', { name: 'Go to it' });
+
+  // A first message: its run is here from the start, so the strip never shows for it.
+  await box.fill('Tailor this to the Striped posting.');
+  await box.press('Enter');
+  await expect(stop).toBeVisible();
+  await expect(goToIt).toHaveCount(0);
+
+  // Somewhere else, the box can't stop that run, and Esc leaves it alone.
+  await pane.getByRole('button', { name: 'New conversation', exact: true }).click();
+  await expect(pane.getByText('Tailor this to the Striped posting.')).toBeVisible();
+  await expect(goToIt).toBeVisible();
+  await expect(stop).toHaveCount(0);
+  await box.fill('Shorten my summary.');
+  await page.keyboard.press('Escape');
+  await expect(goToIt).toBeVisible();
+
+  // Main turns the send down; the strip says why, and the words stay.
+  await box.press('Enter');
+  await expect(pane.getByRole('alert')).toContainText('One run at a time.');
+  await expect(box).toHaveValue('Shorten my summary.');
+  await expect(send).toBeEnabled();
+
+  // There, it's the box's to stop again, and the strip is gone.
+  await goToIt.click();
+  await expect(stop).toBeVisible();
+  await expect(goToIt).toHaveCount(0);
+  await expect(pane.getByRole('alert')).toHaveCount(0);
+  await expect(box).toHaveValue('Shorten my summary.');
+  await stop.click();
+  await expect(send).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
 test('a long conversation opens on its newest, reads back to its first holding your place, and a send comes back', async () => {
   const { page, errors } = mosaic();
   await runDevTool(page, 'exampleResume');

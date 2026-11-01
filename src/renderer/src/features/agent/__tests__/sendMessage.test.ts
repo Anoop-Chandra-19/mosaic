@@ -3,6 +3,7 @@ import { useAgentNoticeStore, type NoticeSource } from '@/stores/agentNoticeStor
 import { startNewConversation, useConversationStore } from '@/stores/conversationStore';
 import { useResumeStore } from '@/stores/resumeStore';
 import { useRunStore } from '@/stores/runStore';
+import { useToastStore } from '@/stores/toastStore';
 import type { AgentStart } from '@shared/types/agentBridge';
 import type { AgentRunEvent } from '@shared/types/agentRunEvents';
 import { createFakeAgentLog, userBody } from '@/stores/__tests__/fakeAgentLog';
@@ -66,6 +67,58 @@ describe('sending from the prompt box', () => {
       reason: 'noApiKey',
     });
     expect(useConversationStore.getState().conversationId).toBeNull();
+  });
+
+  describe('a send main turns down because a run is going', () => {
+    const goIn = (conversationId: number) =>
+      useRunStore.getState().followRunEvent({
+        conversationId,
+        runId: 5,
+        seq: 0,
+        event: { type: 'stepStarted', step: 1 },
+      });
+
+    beforeEach(() => {
+      useRunStore.setState({ live: null });
+      useAgentNoticeStore.setState({ blockedSend: null, isStartingRun: false });
+      useToastStore.setState({ toast: null });
+      start = { ok: false, reason: 'runInProgress' };
+    });
+
+    it('leaves it to the strip when the run is in another conversation, with no notice', async () => {
+      goIn(9);
+      expect(await sendMessage('Tighten my bullets.', { type: 'run', runId: 4 })).toBe(false);
+      expect(useAgentNoticeStore.getState()).toMatchObject({
+        blockedSend: { conversationId: null, runId: 5 },
+        refusal: null,
+        resend: null,
+        isStartingRun: false,
+      });
+      expect(useToastStore.getState().toast).toBeNull();
+    });
+
+    it('still says so when this page hasn’t heard of the run', async () => {
+      expect(await sendMessage('Tighten my bullets.', null)).toBe(false);
+      expect(useAgentNoticeStore.getState()).toMatchObject({
+        blockedSend: null,
+        isStartingRun: false,
+      });
+      expect(useToastStore.getState().toast?.message).toMatch(/^Not sent\./);
+    });
+  });
+
+  it('counts a run that appears during a send as its own only if none was going', async () => {
+    useRunStore.setState({ live: null });
+    let answer: (started: AgentStart) => void = () => {};
+    vi.mocked(window.mosaic.agent.start).mockReturnValueOnce(
+      new Promise((resolve) => (answer = resolve))
+    );
+    const sending = sendMessage('Tighten my bullets.', null);
+    expect(useAgentNoticeStore.getState().isStartingRun).toBe(true);
+    log.append(7, 1, userBody('Tighten my bullets.'));
+    answer({ ok: true, conversationId: 7, runId: 1 });
+    await sending;
+    expect(useAgentNoticeStore.getState().isStartingRun).toBe(false);
   });
 
   describe('a send made while a notice showed', () => {

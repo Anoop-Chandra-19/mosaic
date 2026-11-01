@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest';
-import type { AgentStartRefusal } from '@shared/types/agentBridge';
 import type { RunStopReason, RunStoppedMessageBody } from '@shared/types/agentConversation';
 import type { ModelProviderError } from '@shared/types/modelReply';
 import { shortModelName } from '@/lib/shortModelName';
@@ -55,9 +54,8 @@ describe('what each notice says', () => {
       ...listStops().flatMap((stop) =>
         [ANTHROPIC, OLLAMA, COMPATIBLE].map((model) => describeStop(stop, model, ADDRESSES)!)
       ),
-      ...(['noApiKey', 'keychainRefused', 'runInProgress', 'assistantOff'] as const).map(
-        (refusal: AgentStartRefusal) =>
-          describeStartRefusal(refusal, { providerLabel: 'Anthropic', model: 'claude-sonnet-5-5' })
+      ...(['noApiKey', 'keychainRefused', 'assistantOff'] as const).map((refusal) =>
+        describeStartRefusal(refusal, { providerLabel: 'Anthropic', model: 'claude-sonnet-5-5' })
       ),
     ];
     for (const words of notices) {
