@@ -55,6 +55,8 @@ const appButtonVariants = cva(
           'border border-line-strong bg-pane-raised text-foreground focus:border-amber focus:bg-line focus-visible:border-amber focus-visible:ring-0',
         // One step of a sequence; the current one (`aria-current="step"`) stretches, amber.
         dot: 'bg-line-heavy transition-[background-color,width] duration-120 hover:bg-ink-faint aria-[current=step]:w-4 aria-[current=step]:rounded-[0.1875rem] aria-[current=step]:bg-amber motion-reduce:transition-none',
+        // Hangs from a row of folder tabs (`AppTabs`) and acts rather than switches a view.
+        tab: 'border-transparent font-regular text-ink-muted hover:border-line-strong hover:bg-line hover:text-ink-soft',
       },
       size: {
         '2xs': "h-[1.375rem] gap-1 px-1.5 text-meta [&_svg:not([class*='size-'])]:size-2.5",
@@ -76,6 +78,8 @@ const appButtonVariants = cva(
         text: 'block h-auto min-w-0 rounded-[0.3125rem] px-1.5 py-1 text-left font-regular text-pretty wrap-break-word whitespace-normal',
         // A box of content that is pressed as a whole: its own padding, wrapping text.
         card: 'h-auto justify-start rounded-[0.5625rem] p-3 text-left font-regular whitespace-normal',
+        // A folder tab's outline: open at its foot, over the rule under the row.
+        tab: 'h-6.75 gap-1.5 rounded-t-md rounded-b-none border border-b-0 px-2.25 text-support',
       },
     },
     compoundVariants: [

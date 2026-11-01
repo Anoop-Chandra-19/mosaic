@@ -60,7 +60,7 @@ export function RunningElsewhere({ running, onGoTo }: RunningElsewhereProps) {
   if (shown === null) return null;
 
   return (
-    <div ref={ref} inert={isLeaving} className="shrink-0 overflow-hidden bg-pane-sunken">
+    <div ref={ref} inert={isLeaving} className="mb-1 shrink-0 overflow-hidden bg-pane-sunken">
       <div
         ref={stripRef}
         className="flex flex-wrap items-center gap-x-2 gap-y-1 border-b border-line py-1.25 pr-2 pl-3"

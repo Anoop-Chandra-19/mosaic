@@ -31,7 +31,6 @@ beforeEach(() => {
     mosaic: {
       agent: {
         readMessages: log.readMessages,
-        readConversationTitle: async () => 'Tighten my summary.',
         onEvent: (given: typeof follow) => {
           follow = given;
           return () => {};

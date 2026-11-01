@@ -139,7 +139,7 @@ test('asking in the prompt box shows the ask and the reply, and the box is ready
   expect(errors).toEqual([]);
 });
 
-test('the list of conversations opens from the header, goes back with Esc, and opens another', async () => {
+test('the list of conversations opens from Sessions, goes back with Esc, and opens another', async () => {
   const { page, errors } = mosaic();
   await runDevTool(page, 'exampleResume');
   await runDevTool(page, 'manyConversations', { count: 60 });
@@ -148,7 +148,7 @@ test('the list of conversations opens from the header, goes back with Esc, and o
   const box = pane.getByRole('textbox', { name: 'Message' });
   await box.fill('Words I haven’t sent.');
 
-  const opener = pane.getByRole('button', { name: 'What stands out in part 1?' });
+  const opener = pane.getByRole('button', { name: 'Sessions' });
   await opener.click();
   const list = pane.getByRole('region', { name: 'Conversations' });
   const rows = list.getByRole('listitem');
@@ -207,13 +207,13 @@ test('a conversation is deleted from its row after asking, the open one and a ru
   await settings.getByRole('button', { name: 'Close settings' }).click();
   const pane = page.getByRole('complementary', { name: 'Assistant' });
   const box = pane.getByRole('textbox', { name: 'Message' });
-  const opener = pane.getByRole('button', { name: 'New conversation', exact: true }).first();
-  await opener.click();
+  await pane.getByRole('button', { name: 'New conversation', exact: true }).click();
   await box.fill('Tailor this to the Striped posting.');
   await box.press('Enter');
   await expect(pane.getByRole('button', { name: 'Stop' })).toBeVisible();
 
-  await pane.getByRole('button', { name: 'Tailor this to the Striped posting.' }).click();
+  const opener = pane.getByRole('button', { name: 'Sessions' });
+  await opener.click();
   const list = pane.getByRole('region', { name: 'Conversations' });
   const rows = list.getByRole('listitem');
   await expect(rows).toHaveCount(3);

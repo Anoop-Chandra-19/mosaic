@@ -18,7 +18,7 @@ function returnTo(conversationId: number | null): void {
 
 /**
  * The list of conversations being open, and moving between them from it. Going back without
- * choosing puts the keyboard on the switch that opened it; a new conversation puts it in the
+ * choosing puts the keyboard on the button that opened it; a new conversation puts it in the
  * prompt box. An open that fails shows the list again, with the line on that row.
  */
 export function useConversationSwitch() {
