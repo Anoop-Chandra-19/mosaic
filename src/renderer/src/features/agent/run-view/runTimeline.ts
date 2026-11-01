@@ -63,6 +63,13 @@ function toStep(part: Extract<RunPart, { type: 'toolCall' }>, isRunning: boolean
   }
 }
 
+/**
+ * Gemini signs the part after a thought even when it showed none: stored, since the next request
+ * must send it back, but no thought anyone saw, so it draws nothing.
+ */
+const isSignatureOnly = (part: Extract<RunPart, { type: 'reasoning' }>) =>
+  part.durationMs === 0 && !part.textLength;
+
 function toThink(
   part: Extract<RunPart, { type: 'reasoning' }>,
   index: number,
@@ -138,7 +145,7 @@ export function listRunTimeline(parts: RunPart[], { isRunning }: RunState): Time
       items.push({ kind: 'text', key: `text-${index}`, text: part.text, isLast: false });
     } else if (part.type === 'toolCall') {
       rows.push(toStep(part, isRunning));
-    } else {
+    } else if (!isSignatureOnly(part)) {
       rows.push(toThink(part, index, isRunning));
     }
   });

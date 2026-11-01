@@ -141,6 +141,15 @@ describe('the note under a step', () => {
 });
 
 describe('the timeline', () => {
+  it('draws no row for a signature with no thought behind it', () => {
+    const shown: RunPart = { type: 'reasoning', durationMs: 0, textLength: 40 };
+    expect(shape([think(0), step('c1', 'done'), think(800)], FINISHED)).toEqual([
+      ['c1', 'think-2'],
+    ]);
+    expect(shape([text('Done.'), think(0)], FINISHED)).toEqual(['Done.']);
+    expect(shape([shown], FINISHED)).toEqual([['think-0']]);
+  });
+
   it('reads in the order it happened, each stretch of steps its own line', () => {
     expect(
       shape(
