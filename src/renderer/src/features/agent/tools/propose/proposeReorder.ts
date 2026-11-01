@@ -1,9 +1,5 @@
 import type { StagedChange } from '@/features/suggestions/proposals/proposalActions';
-import {
-  isPlaceShown,
-  readOrder,
-  readShowPlaceId,
-} from '@/features/suggestions/proposals/proposalAnchor';
+import { isPlaceShown, readOrder, readShowPlaceId } from '@/lib/resume/proposalAnchor';
 import type { HandleKind } from '@shared/agent-tools/handleKinds';
 import type { OrderPlace, ShowPlace } from '@/types/agentProposal';
 import type { ResumeData } from '@shared/types/resume';

@@ -1,7 +1,7 @@
 import { MODEL_PROVIDER_OPTIONS } from '@/lib/modelProviderOptions';
+import { shortModelName } from '@/lib/shortModelName';
 import type { RunModel } from '@shared/types/agentConversation';
 import type { ModelProviderError } from '@shared/types/modelReply';
-import { shortModelName } from '../shortModelName';
 import type { QuotedWords } from './noticeWords';
 
 /*

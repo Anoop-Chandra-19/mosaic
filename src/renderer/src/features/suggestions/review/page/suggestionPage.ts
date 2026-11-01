@@ -1,9 +1,9 @@
 import { findMoves } from '@/lib/resume/changes/findMoves';
+import { readShowPlaceId, readTextPlaceId } from '@/lib/resume/proposalAnchor';
 import type { Proposal, ProposalChange, ShowPlace } from '@/types/agentProposal';
 import type { ResumeData } from '@shared/types/resume';
 import { sortForApply } from '../../proposals/apply/applyProposalsToResume';
 import { layInProposal } from '../../proposals/apply/layInProposal';
-import { readShowPlaceId, readTextPlaceId } from '../../proposals/proposalAnchor';
 import { resolveChange } from '../../proposals/reviewedChange';
 
 /** How a mark reads on the page: changed words, added text, or text leaving the page. */

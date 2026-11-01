@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { AgentStartRefusal } from '@shared/types/agentBridge';
 import type { RunStopReason, RunStoppedMessageBody } from '@shared/types/agentConversation';
 import type { ModelProviderError } from '@shared/types/modelReply';
-import { shortModelName } from '../../shortModelName';
+import { shortModelName } from '@/lib/shortModelName';
 import type { NoticeWords } from '../noticeWords';
 import { describeStartRefusal } from '../startRefusalWords';
 import { describeStop, findKeySavedSince } from '../stopWords';

@@ -5,11 +5,7 @@ import type {
   ProposalFlagKind,
 } from '@/types/agentProposal';
 import { hasSameWords } from '@/lib/resume/hasSameWords';
-import {
-  isPlaceShown,
-  readShowPlaceId,
-  readTextPlaceId,
-} from '@/features/suggestions/proposals/proposalAnchor';
+import { isPlaceShown, readShowPlaceId, readTextPlaceId } from '@/lib/resume/proposalAnchor';
 import type { ResumeData } from '@shared/types/resume';
 import type { AgentToolRun } from '../agentToolRun';
 

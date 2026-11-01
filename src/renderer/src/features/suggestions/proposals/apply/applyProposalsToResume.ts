@@ -1,3 +1,4 @@
+import { findAnchorMismatch, findEntry, findSection } from '@/lib/resume/proposalAnchor';
 import type {
   EntryDraft,
   Proposal,
@@ -7,7 +8,6 @@ import type {
   TextPlace,
 } from '@/types/agentProposal';
 import type { ResumeData, ResumeEntry, ResumeSection } from '@shared/types/resume';
-import { findAnchorMismatch, findEntry, findSection } from '../proposalAnchor';
 
 /**
  * Hiding goes first, since it keys on text a rewrite would change; text before structure;

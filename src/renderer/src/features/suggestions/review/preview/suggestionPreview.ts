@@ -1,9 +1,9 @@
 import { findMoves } from '@/lib/resume/changes/findMoves';
+import { readShowPlaceId, readTextPlaceId } from '@/lib/resume/proposalAnchor';
 import type { Proposal, ProposalChange } from '@/types/agentProposal';
 import type { ResumeData } from '@shared/types/resume';
 import { layInProposal } from '../../proposals/apply/layInProposal';
 import { planApply, type ApplyPlan } from '../../proposals/apply/planApply';
-import { readShowPlaceId, readTextPlaceId } from '../../proposals/proposalAnchor';
 import {
   findUnconfirmedFacts,
   findWrittenFacts,

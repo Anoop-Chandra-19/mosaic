@@ -1,9 +1,9 @@
 import { findMoves } from '@/lib/resume/changes/findMoves';
+import { readShowPlaceId, readTextPlaceId } from '@/lib/resume/proposalAnchor';
 import type { Proposal, ProposalChange } from '@/types/agentProposal';
 import { useAgentSettingsStore } from '@/stores/agentSettingsStore';
 import { selectTemplateProposals, useProposalStore } from '@/stores/proposalStore';
 import { useResumeStore } from '@/stores/resumeStore';
-import { readShowPlaceId, readTextPlaceId } from './proposals/proposalAnchor';
 
 /** The suggestion an editor bullet, line, entry or section points to, and why. */
 export interface SuggestionDot {

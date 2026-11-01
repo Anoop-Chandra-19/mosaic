@@ -1,14 +1,9 @@
 import { Clock } from 'lucide-react';
 import { Text } from '@/components/ui-kit';
 import { DIFF_MARKS } from '@/features/document-diff/diffMarks';
+import { findEntry, findSection, findTextItem, readShownName } from '@/lib/resume/proposalAnchor';
 import type { ProposalChange } from '@/types/agentProposal';
 import type { ResumeData } from '@shared/types/resume';
-import {
-  findEntry,
-  findSection,
-  findTextItem,
-  readShownName,
-} from '../../proposals/proposalAnchor';
 import { Caption, Hint, SuggestedText } from './BodyParts';
 import type { SuggestionBodyProps } from './suggestionBodyProps';
 import { describeStaleChange, nameTextPlace } from '../text/suggestionWords';

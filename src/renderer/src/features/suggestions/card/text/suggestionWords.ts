@@ -1,7 +1,7 @@
 import { formatEntryHeading } from '@/lib/resume/entryHeading';
+import { findEntry, findSection } from '@/lib/resume/proposalAnchor';
 import type { AddPlace, ProposalChange, TextPlace } from '@/types/agentProposal';
 import type { ResumeData, ResumeEntry } from '@shared/types/resume';
-import { findEntry, findSection } from '../../proposals/proposalAnchor';
 
 /*
  * The words a suggestion's card uses for what it is about: "this bullet", "your summary",
