@@ -10,7 +10,7 @@
  * letter ("Led in the planning").
  */
 import { PROPOSE_TOOLS } from '../../src/shared/agent-tools/proposeTools.ts';
-import { replaceEveryWholeWord } from '../../src/renderer/src/features/agent/tools/replaceEveryWholeWord.ts';
+import { replaceEveryWholeWord } from '../../src/renderer/src/features/agent/tools/propose/replaceEveryWholeWord.ts';
 import type { ModelTool } from '../../src/shared/types/modelTool.ts';
 import { loadEvalKeys, readEvalOptions, writeEvalResults } from './evalCommandLine.ts';
 import { pickEvalModel, type EvalMessage, type EvalTool } from './evalModelProviders.ts';

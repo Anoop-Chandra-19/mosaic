@@ -1,6 +1,6 @@
 import type { EntryFact } from '@/types/agentProposal';
 import type { ResumeSection } from '@shared/types/resume';
-import type { ToolCallContext } from '../agentToolRun';
+import type { ToolCallContext } from '../tool-run/agentToolRun';
 import {
   findEntryInSection,
   findSectionInReceipt,

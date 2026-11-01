@@ -1,7 +1,7 @@
 import { hasSameWords } from '@/lib/resume/hasSameWords';
-import type { AgentToolRun } from './agentToolRun';
-import { readEntryHeading } from './formatResumeForModel';
+import { readEntryHeading } from './read/formatResumeForModel';
 import type { ResumeLookup } from './readAgentToolArgs';
+import type { AgentToolRun } from './tool-run/agentToolRun';
 
 /** Something the run read, by its handle, with its words and what holds it. */
 interface ReadThing {

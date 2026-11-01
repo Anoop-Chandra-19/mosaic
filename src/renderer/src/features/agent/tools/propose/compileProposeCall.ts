@@ -1,6 +1,6 @@
 import type { StagedChange } from '@/features/suggestions/proposals/proposalActions';
 import type { ProposeToolArgs, ProposeToolName } from '@shared/agent-tools/proposeTools';
-import type { ToolCallContext } from '../agentToolRun';
+import type { ToolCallContext } from '../tool-run/agentToolRun';
 import { applyChangeRules } from './changeRules';
 import { isProblem, type Problem } from './findInReceipt';
 import { proposeEntry } from './proposeEntry';

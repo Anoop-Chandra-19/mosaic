@@ -8,7 +8,7 @@
  * new bullet into a section with one entry goes into that entry. Split and merge are
  * answered but not simulated: no case asks for them, so the scorer counts them as wrong.
  */
-import { replaceEveryWholeWord } from '../../src/renderer/src/features/agent/tools/replaceEveryWholeWord.ts';
+import { replaceEveryWholeWord } from '../../src/renderer/src/features/agent/tools/propose/replaceEveryWholeWord.ts';
 import type { ResumeLookup } from '../../src/renderer/src/features/agent/tools/readAgentToolArgs.ts';
 import { hasSameWords } from '../../src/renderer/src/lib/resume/hasSameWords.ts';
 import { SECTION_PRESETS } from '../../src/shared/resume/sectionPresets.ts';

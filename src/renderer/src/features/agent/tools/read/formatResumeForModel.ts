@@ -1,6 +1,6 @@
 import { formatEntryHeading } from '@/lib/resume/entryHeading';
 import type { Bullet, ResumeData, ResumeEntry, ResumeSection } from '@shared/types/resume';
-import { handleFor, type ResumeHandles } from './resumeHandles';
+import { handleFor, type ResumeHandles } from '../tool-run/resumeHandles';
 
 /*
  * The resume as the model reads it, with a handle on everything it can change:

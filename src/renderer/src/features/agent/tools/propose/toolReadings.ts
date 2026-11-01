@@ -1,6 +1,6 @@
 import type { StagedChange } from '@/features/suggestions/proposals/proposalActions';
 import type { ProposeToolArgs, ProposeToolName } from '@shared/agent-tools/proposeTools';
-import type { ToolCallContext } from '../agentToolRun';
+import type { ToolCallContext } from '../tool-run/agentToolRun';
 import type { Problem } from './findInReceipt';
 
 /** One thing a call can mean: the changes it makes, and what was taken to read it so. */

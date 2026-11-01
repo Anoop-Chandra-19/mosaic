@@ -1,6 +1,6 @@
 import type { StagedChange } from '@/features/suggestions/proposals/proposalActions';
-import { replaceEveryWholeWord } from '../replaceEveryWholeWord';
 import { isProblem, listTextInReceipt } from './findInReceipt';
+import { replaceEveryWholeWord } from './replaceEveryWholeWord';
 import { TOOL_FACTS } from './toolFacts';
 import { oneReading, type ProposeTool } from './toolReadings';
 

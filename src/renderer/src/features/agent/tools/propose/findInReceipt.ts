@@ -7,8 +7,8 @@ import {
   type AgentToolRun,
   type ReadReceipt,
   type ToolCallContext,
-} from '../agentToolRun';
-import { idForHandle, readHandleKind } from '../resumeHandles';
+} from '../tool-run/agentToolRun';
+import { idForHandle, readHandleKind } from '../tool-run/resumeHandles';
 import { TOOL_FACTS } from './toolFacts';
 
 /*

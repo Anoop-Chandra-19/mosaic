@@ -2,9 +2,9 @@ import type { ProposeToolArgs, ProposeToolName } from '@shared/agent-tools/propo
 import type { ToolTarget } from '@shared/types/agentConversation';
 import type { ShowPlace } from '@/types/agentProposal';
 import type { ResumeData, ResumeEntry } from '@shared/types/resume';
-import type { ToolCallContext } from '../agentToolRun';
-import { replaceEveryWholeWord } from '../replaceEveryWholeWord';
-import { readHandleKind } from '../resumeHandles';
+import type { ToolCallContext } from '../tool-run/agentToolRun';
+import { readHandleKind } from '../tool-run/resumeHandles';
+import { replaceEveryWholeWord } from './replaceEveryWholeWord';
 import {
   findSectionInReceipt,
   findShowableInReceipt,

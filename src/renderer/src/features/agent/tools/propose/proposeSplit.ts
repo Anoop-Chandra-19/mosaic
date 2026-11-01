@@ -1,5 +1,5 @@
-import { locateEveryPhrase } from '../locatePhrase';
 import { findBulletInReceipt, isProblem } from './findInReceipt';
+import { locateEveryPhrase } from './locatePhrase';
 import { TOOL_FACTS } from './toolFacts';
 import type { ProposeTool, Reading } from './toolReadings';
 
