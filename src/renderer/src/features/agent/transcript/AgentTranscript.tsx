@@ -10,6 +10,7 @@ import { useServerAddresses } from '../notices/useServerAddresses';
 import { RunCard } from '../run-card/RunCard';
 import { RunActivity } from '../run-line/RunActivity';
 import { buildRunView } from './buildRunView';
+import { NewestButton } from './NewestButton';
 import { RunRecord } from './RunRecord';
 import { useMessagePages } from './useMessagePages';
 import { useStickToNewest } from './useStickToNewest';
@@ -237,24 +238,27 @@ export function AgentTranscript() {
     run.stop && (describeStop(run.stop, run.model, serverAddresses)?.record ?? null);
   const turns = listTurns(buildRunView(messages), liveRunId, readStopRecord);
   return (
-    <section
-      ref={scrollRef}
-      aria-label="Conversation"
-      className="min-h-31 flex-1 overflow-x-hidden overflow-y-auto px-3.5 pt-4 pb-1.5"
-    >
-      <div ref={contentRef} className="pb-2.5">
-        {turns.length === 0 ? (
-          <EmptyConversation />
-        ) : (
-          turns.map((turn, index) => (
-            <TurnRow
-              key={`${turn.run.runId}-${turn.kind}`}
-              {...turn}
-              gapAbove={index > 0 ? GAP_AFTER[turns[index - 1].kind][turn.kind] : ''}
-            />
-          ))
-        )}
-      </div>
-    </section>
+    <div className="relative flex min-h-31 flex-1 flex-col">
+      <section
+        ref={scrollRef}
+        aria-label="Conversation"
+        className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto px-3.5 pt-4 pb-1.5"
+      >
+        <div ref={contentRef} className="pb-2.5">
+          {turns.length === 0 ? (
+            <EmptyConversation />
+          ) : (
+            turns.map((turn, index) => (
+              <TurnRow
+                key={`${turn.run.runId}-${turn.kind}`}
+                {...turn}
+                gapAbove={index > 0 ? GAP_AFTER[turns[index - 1].kind][turn.kind] : ''}
+              />
+            ))
+          )}
+        </div>
+      </section>
+      <NewestButton scrollRef={scrollRef} contentRef={contentRef} />
+    </div>
   );
 }

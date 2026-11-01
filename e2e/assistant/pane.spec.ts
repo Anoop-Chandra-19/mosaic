@@ -139,6 +139,63 @@ test('a long conversation opens on its newest, reads back to its first holding y
   expect(errors).toEqual([]);
 });
 
+test('far back in a long conversation, a run that stops still says so, and a button goes back', async () => {
+  const { app, page, errors } = mosaic();
+  // A server that holds the request until told, then refuses it.
+  await app.evaluate(({ net }) => {
+    const held = globalThis as unknown as { refuseRequest?: () => void };
+    net.fetch = async (input) => {
+      const url = String(input instanceof Request ? input.url : input);
+      if (url.endsWith('/v1/models')) return Response.json({ data: [] });
+      await new Promise<void>((resolve) => (held.refuseRequest = resolve));
+      return Response.json({ error: { message: 'Not today.' } }, { status: 400 });
+    };
+  });
+  await runDevTool(page, 'exampleResume');
+  await runDevTool(page, 'longConversation', { messages: 800 });
+  await page.getByRole('button', { name: 'Open settings' }).click();
+  const settings = page.getByRole('dialog', { name: 'Settings' });
+  await settings
+    .getByRole('navigation')
+    .getByRole('button', { name: /AI assistant/ })
+    .click();
+  await settings.getByRole('button', { name: 'Provider' }).click();
+  await page.getByRole('menuitemradio', { name: /^OpenAI-compatible/ }).click();
+  await settings.getByRole('button', { name: 'Close settings' }).click();
+
+  const pane = page.getByRole('complementary', { name: 'Assistant' });
+  const conversation = pane.getByRole('region', { name: 'Conversation' });
+  await expect(conversation.getByText('What stands out in part 200?')).toHaveCount(1);
+  await expect(pane.getByRole('button', { name: /^Go to the newest/ })).toHaveCount(0);
+
+  const box = pane.getByRole('textbox', { name: 'Message' });
+  await box.fill('Tighten my summary.');
+  await box.press('Enter');
+  await expect(pane.getByRole('button', { name: 'Stop' })).toBeVisible();
+  await expect(conversation.getByText('Tighten my summary.')).toBeVisible();
+
+  await expect(async () => {
+    await conversation.evaluate((element) => element.scrollTo({ top: 0 }));
+    await expect(conversation.getByText('What stands out in part 200?')).toHaveCount(0, {
+      timeout: 200,
+    });
+  }).toPass();
+  await expect(pane.getByRole('button', { name: 'Go to the newest. Working' })).toBeVisible();
+
+  await app.evaluate(() =>
+    (globalThis as unknown as { refuseRequest: () => void }).refuseRequest()
+  );
+  await expect(pane.getByRole('status')).toContainText('The server refused the request.');
+  await expect(conversation.getByText('Tighten my summary.')).toHaveCount(0);
+
+  const newest = pane.getByRole('button', { name: 'Go to the newest. New' });
+  await newest.click();
+  await expect(conversation.getByText('Tighten my summary.')).toBeInViewport();
+  await expect(newest).toHaveCount(0);
+  await expect(pane.getByRole('status')).toContainText('The server refused the request.');
+  expect(errors).toEqual([]);
+});
+
 test('a very long error leaves the prompt box and its way forward in reach, even in a short window', async () => {
   const { app, page, errors } = mosaic();
   // Stand in for a server that refuses with far more words than fit.

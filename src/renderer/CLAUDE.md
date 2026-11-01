@@ -39,6 +39,11 @@ a template that isn't open, clearing what covers the app) goes through
 `features/navigation/showPlace.ts`. A layer opening or closing on its own talks to
 `overlayStore` directly.
 
+`conversationStore` holds a window of the open conversation, which may not reach its end.
+Anything that needs the user (a stop, a retry, a question, an approval) reads from the run
+or the log (`runStore`, `lastRun`), never from the messages held, so it shows wherever they
+have scrolled.
+
 Stored data goes features → stores → the storage service → main. Stores hold state and
 actions, and export their reads (`useVersion`, `readVersion`, …). Only stores use the
 service, and only `storage` and `useStored` from `lib/services/storageService.ts`: where a

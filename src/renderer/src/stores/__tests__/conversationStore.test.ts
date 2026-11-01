@@ -8,6 +8,7 @@ import {
   openSentConversation,
   readNewerMessages,
   readOlderMessages,
+  returnToNewest,
   startNewConversation,
   useConversationStore,
 } from '../conversationStore';
@@ -170,6 +171,30 @@ describe('reading the conversation in pages', () => {
 
       await openSentConversation(1);
       expect(held().messages.at(-1)?.seq).toBe(1202);
+      expect(held().hasNewer).toBe(false);
+      expect(held().returnsToNewest).toBe(returns + 1);
+    });
+
+    it('keeps the log’s last run beside the window, up to date as runs end', async () => {
+      await openLongConversation();
+      for (let page = 0; page < 4; page++) await readOlderMessages();
+      expect(held().lastRun.map((message) => message.seq)).toEqual(seqsFrom(1197, 1200));
+
+      addRun(1, 301, 2);
+      await catchUpConversation(1);
+      expect(held().lastRun.map((message) => message.seq)).toEqual([1201, 1202]);
+
+      startNewConversation();
+      expect(held().lastRun).toEqual([]);
+    });
+
+    it('goes back to the newest when asked, as a send does', async () => {
+      await openLongConversation();
+      for (let page = 0; page < 4; page++) await readOlderMessages();
+      const returns = held().returnsToNewest;
+
+      await returnToNewest(1);
+      expect(held().messages.at(-1)?.seq).toBe(1200);
       expect(held().hasNewer).toBe(false);
       expect(held().returnsToNewest).toBe(returns + 1);
     });

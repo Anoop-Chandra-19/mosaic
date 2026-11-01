@@ -5,7 +5,8 @@ import { foldAway } from '@/lib/motion/presenceMotions';
 import { usePresenceMotion } from '@/lib/motion/usePresenceMotion';
 import { cn } from '@/lib/utils';
 import { useAgentSettingsStore } from '@/stores/agentSettingsStore';
-import type { RunRetry } from '@/stores/runStore';
+import { useConversationStore } from '@/stores/conversationStore';
+import { useRunStore, type RunRetry } from '@/stores/runStore';
 import type { RunModel } from '@shared/types/agentConversation';
 import { useChosenModel } from '../useChosenModel';
 import { QuotedBlock } from './AgentNotice';
@@ -36,13 +37,15 @@ interface RetryNoticeProps {
   runModel: RunModel | null;
   /** Hangs from a boxed run line, so it shares that box's edge. */
   isAttached: boolean;
+  /** In the slot over the prompt box, rather than in the run. */
+  isOverBox?: boolean;
 }
 
 /**
  * Where the next step would appear while a request waits to go again: nothing to do, so it has
  * no dismiss or actions and leaves by itself when the reply resumes or the run stops.
  */
-export function RetryNotice({ retry, runModel, isAttached }: RetryNoticeProps) {
+export function RetryNotice({ retry, runModel, isAttached, isOverBox }: RetryNoticeProps) {
   const { shown, isLeaving, ref } = usePresenceMotion(retry, retry && 'retry', foldAway);
   const model = useRetryModel(runModel);
   const serverAddresses = useServerAddresses();
@@ -53,7 +56,12 @@ export function RetryNotice({ retry, runModel, isAttached }: RetryNoticeProps) {
       ref={ref}
       inert={isLeaving}
       aria-hidden={isLeaving || undefined}
-      className={cn('overflow-hidden', isAttached && '-mt-2.75')}
+      data-notice-slot={isOverBox || undefined}
+      className={cn(
+        'overflow-hidden',
+        isAttached && '-mt-2.75',
+        isOverBox && 'border-t border-line bg-pane px-2.75 pt-2.25'
+      )}
     >
       <div
         role="status"
@@ -90,4 +98,14 @@ export function RetryNotice({ retry, runModel, isAttached }: RetryNoticeProps) {
       </div>
     </div>
   );
+}
+
+/** The same notice while the run it belongs to isn't held: the window is back from the end. */
+export function RetryOverBox() {
+  const conversationId = useConversationStore((s) => s.conversationId);
+  const hasNewer = useConversationStore((s) => s.hasNewer);
+  const retry = useRunStore((s) =>
+    hasNewer && s.live?.conversationId === conversationId ? s.live.retrying : null
+  );
+  return <RetryNotice retry={retry} runModel={null} isAttached={false} isOverBox />;
 }
