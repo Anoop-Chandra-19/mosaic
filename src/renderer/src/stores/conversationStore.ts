@@ -11,7 +11,8 @@ import { useUiStore } from './uiStore';
  * the log, and read again when the user comes back. Only a send moves the pane to another
  * conversation; a run elsewhere never does. Where the pane was left (`uiStore`'s
  * `agentPaneConversation`) is where it opens next launch. Reads go one at a time, and one
- * that finishes after the pane moved on is dropped.
+ * that finishes after the pane moved on is dropped. While the window is back from the end of
+ * the log, the log's last run is kept beside it, so what needs the user still shows.
  */
 
 /** Longer than any run, which takes about two messages a step. */
@@ -27,7 +28,9 @@ interface ConversationState {
   hasOlder: boolean;
   /** The window has moved back from the end of the log: the newest messages aren't held. */
   hasNewer: boolean;
-  /** Rises each time a send puts the user back on the newest, for the pane to scroll there. */
+  /** The log's last run, as of the last look, while `hasNewer`. */
+  lastRun: TranscriptMessage[];
+  /** Rises each time the user goes back to the newest, for the pane to scroll there. */
   returnsToNewest: number;
 }
 
@@ -36,6 +39,7 @@ export const useConversationStore = create<ConversationState>()(() => ({
   messages: [],
   hasOlder: false,
   hasNewer: false,
+  lastRun: [],
   returnsToNewest: 0,
 }));
 
@@ -105,12 +109,21 @@ function dropOldestPastWindow(messages: TranscriptMessage[]): TranscriptMessage[
   return messages.slice(start);
 }
 
+function findLastRun(messages: TranscriptMessage[]): TranscriptMessage[] {
+  const lastRunId = messages.at(-1)?.runId;
+  return messages.filter((message) => message.runId === lastRunId);
+}
+
 /** What a page or a run leaves too many of goes from the end away from where it landed. */
 function trimNewestEnd(): void {
   useConversationStore.setState((state) => {
     const messages = dropNewestPastWindow(state.messages);
     if (messages.length === state.messages.length) return state;
-    return { messages, hasNewer: true };
+    return {
+      messages,
+      hasNewer: true,
+      lastRun: state.hasNewer ? state.lastRun : findLastRun(state.messages),
+    };
   });
 }
 
@@ -173,7 +186,13 @@ async function readNewest(conversationId: number): Promise<void> {
 
 /** Shows a conversation, or a new one, and remembers it as where the pane was left. */
 function showConversation(conversationId: number | null): void {
-  useConversationStore.setState({ conversationId, messages: [], hasOlder: false, hasNewer: false });
+  useConversationStore.setState({
+    conversationId,
+    messages: [],
+    hasOlder: false,
+    hasNewer: false,
+    lastRun: [],
+  });
   useUiStore.getState().setAgentPaneConversation(conversationId ?? 'new');
 }
 
@@ -183,19 +202,24 @@ export function openConversation(conversationId: number): Promise<void> {
   return readInTurn(() => readNewest(conversationId));
 }
 
-/**
- * Where the pane goes after a send: the first message of a new conversation created it,
- * so it opens. A send in the open conversation goes back to its newest, reading it again if
- * the window has moved away, and its run is caught up on.
- */
-export function openSentConversation(conversationId: number): Promise<void> {
-  if (!isOpen(conversationId)) return openConversation(conversationId);
+/** Back to the open conversation's newest, reading it again if the window has moved away. */
+export function returnToNewest(conversationId: number): Promise<void> {
   return readInTurn(async () => {
     const { hasNewer } = useConversationStore.getState();
     if (hasNewer) await readNewest(conversationId);
     if (!isOpen(conversationId)) return;
     useConversationStore.setState((state) => ({ returnsToNewest: state.returnsToNewest + 1 }));
   });
+}
+
+/**
+ * Where the pane goes after a send: the first message of a new conversation created it,
+ * so it opens. A send in the open conversation goes back to its newest, and its run is
+ * caught up on.
+ */
+export function openSentConversation(conversationId: number): Promise<void> {
+  if (!isOpen(conversationId)) return openConversation(conversationId);
+  return returnToNewest(conversationId);
 }
 
 /** Opens the conversation used last, or a new one before the first run. */
@@ -292,13 +316,18 @@ async function readSince(conversationId: number, lastSeq: number): Promise<Trans
 /**
  * Shows what a run has written so far, when its conversation is the open one. A run in
  * another conversation carries on unseen; the pane never moves to it. While the window is
- * back from the end of the log there is nothing to add to: the way back down reads it.
+ * back from the end of the log there is nothing to add to, as the way back down reads it:
+ * only the last run is looked at again.
  */
 export function catchUpConversation(conversationId: number): Promise<void> {
   if (!isOpen(conversationId)) return Promise.resolve();
   return readInTurn(async () => {
     const { messages, hasNewer } = useConversationStore.getState();
-    if (hasNewer) return;
+    if (hasNewer) {
+      const page = await requestPage(conversationId, undefined);
+      if (isOpen(conversationId)) useConversationStore.setState({ lastRun: findLastRun(page) });
+      return;
+    }
     const lastSeq = messages.at(-1)?.seq;
     if (lastSeq === undefined) return readNewest(conversationId);
     const newer = await readSince(conversationId, lastSeq);

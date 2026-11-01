@@ -43,6 +43,9 @@ const appButtonVariants = cva(
         // The last step of asking: the answer that removes.
         danger: 'bg-del font-strong text-del-ink hover:bg-del-hover',
         link: 'text-foreground underline-offset-4 hover:underline',
+        // Sits over what scrolls beneath it, so it has a fill and lifts off it.
+        floating:
+          'border border-line-strong bg-pane-raised text-ink-soft shadow-floating hover:border-line-heavy hover:text-foreground',
         // One of a few ways forward, laid out as a card: the focused one is edged amber, and
         // the pointer moves focus, so the edge is the only highlight.
         option:

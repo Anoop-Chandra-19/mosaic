@@ -10,6 +10,7 @@ import {
 import { useOverlayStore } from '@/stores/overlayStore';
 import { explainFailure, showToast } from '@/stores/toastStore';
 import { AgentNoticeSlot, type NoticeHandledAction } from '../notices/AgentNotice';
+import { RetryOverBox } from '../notices/RetryNotice';
 import { useAgentNotice } from '../notices/useAgentNotice';
 import { stopAgentRun, useRunningRun } from '../useRunningRun';
 import { canSendMessage, sendAgain, sendMessage } from './sendMessage';
@@ -82,6 +83,7 @@ export function AgentPromptBox() {
         onAction={(action) => shown && runAction(shown.source, action)}
         onDismiss={() => shown && dismissNotice(shown.source)}
       />
+      <RetryOverBox />
       <div className="shrink-0 border-t border-line bg-pane px-2.75 pt-1.75 pb-2 [[data-notice-slot]+&]:border-t-0">
         <div className="rounded-[0.5625rem] border border-line-strong bg-pane-sunken transition-colors duration-150 focus-within:border-line-heavy">
           <AppTextarea
