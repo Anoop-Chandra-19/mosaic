@@ -1,5 +1,6 @@
-import { useEffect, type RefObject } from 'react';
+import { useEffect, useRef, type RefObject } from 'react';
 import { scrollQuietly } from '@/lib/scrollbarReveal';
+import { useConversationStore } from '@/stores/conversationStore';
 
 /** Closer than this to the end counts as reading the newest. */
 const PINNED_WITHIN_PX = 72;
@@ -7,24 +8,28 @@ const PINNED_WITHIN_PX = 72;
 /**
  * Keeps the end of the transcript in view as it grows, unless the user has scrolled up to
  * read: then it stays where they are. Growth is watched by size, so streamed text and new
- * turns are followed alike.
+ * turns are followed alike. The end of what is held isn't the newest while the window is back
+ * from the end of the log, so it isn't followed then. A send comes back to the newest.
  */
 export function useStickToNewest(
   scrollRef: RefObject<HTMLElement | null>,
   contentRef: RefObject<HTMLElement | null>
 ): void {
+  const returnsToNewest = useConversationStore((s) => s.returnsToNewest);
+  const isPinned = useRef(true);
+
   useEffect(() => {
     const scroller = scrollRef.current;
     const content = contentRef.current;
     if (!scroller || !content) return;
-    let isPinned = true;
     const onScroll = () => {
-      isPinned =
+      isPinned.current =
+        !useConversationStore.getState().hasNewer &&
         scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight < PINNED_WITHIN_PX;
     };
     const resizes = new ResizeObserver(() => {
       // Following isn't the user scrolling, so it doesn't show the scrollbar.
-      if (isPinned) scrollQuietly(scroller, scroller.scrollHeight);
+      if (isPinned.current) scrollQuietly(scroller, scroller.scrollHeight);
     });
     scroller.addEventListener('scroll', onScroll);
     resizes.observe(content);
@@ -33,4 +38,11 @@ export function useStickToNewest(
       resizes.disconnect();
     };
   }, [scrollRef, contentRef]);
+
+  useEffect(() => {
+    const scroller = scrollRef.current;
+    if (returnsToNewest === 0 || !scroller) return;
+    isPinned.current = true;
+    scrollQuietly(scroller, scroller.scrollHeight);
+  }, [scrollRef, returnsToNewest]);
 }

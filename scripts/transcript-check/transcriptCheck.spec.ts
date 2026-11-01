@@ -8,6 +8,7 @@ import { expect, type CDPSession, type ElectronApplication, type Page } from '@p
 import { runDevTool } from '../../e2e/harness/devTools';
 import { test, withApp } from '../../e2e/harness/launch';
 import { reportAgainstLastRun, type ResultColumn, type ResultRow } from '../compared-results';
+import { readPssKb } from '../read-pss';
 
 const MESSAGES = 2000;
 const WHEEL_NOTCHES = 60;
@@ -34,6 +35,8 @@ const COLUMNS: ResultColumn[] = [
   { key: 'lateFrames', label: 'late frames' },
   { key: 'heapMb', label: 'heap MB' },
   { key: 'rendererMb', label: 'renderer MB' },
+  { key: 'allProcessesMb', label: 'all MB' },
+  { key: 'sharedOnceMb', label: 'shared once' },
   { key: 'domNodes', label: 'DOM nodes' },
 ];
 
@@ -72,13 +75,20 @@ async function readMemory(app: ElectronApplication, session: CDPSession) {
   await session.send('HeapProfiler.collectGarbage');
   const { usedSize } = await session.send('Runtime.getHeapUsage');
   const { nodes } = await session.send('Memory.getDOMCounters');
-  const rendererKb = await app.evaluate(({ app, BrowserWindow }) => {
-    const pid = BrowserWindow.getAllWindows()[0].webContents.getOSProcessId();
-    return app.getAppMetrics().find((metric) => metric.pid === pid)?.memory.workingSetSize ?? 0;
-  });
+  const { rendererPid, processes } = await app.evaluate(({ app, BrowserWindow }) => ({
+    rendererPid: BrowserWindow.getAllWindows()[0].webContents.getOSProcessId(),
+    processes: app.getAppMetrics().map(({ pid, memory }) => ({ pid, kb: memory.workingSetSize })),
+  }));
+  const rendererKb = processes.find(({ pid }) => pid === rendererPid)?.kb ?? 0;
+  const pssKb = processes.map(({ pid }) => readPssKb(pid));
   return {
     heapMb: Math.round(usedSize / 1024 / 1024),
     rendererMb: Math.round(rendererKb / 1024),
+    allProcessesMb: Math.round(processes.reduce((sum, { kb }) => sum + kb, 0) / 1024),
+    // Each process's own count holds Chromium's libraries, which they share: this counts them once.
+    sharedOnceMb: pssKb.includes(null)
+      ? null
+      : Math.round(pssKb.reduce((sum: number, kb) => sum + kb!, 0) / 1024),
     domNodes: nodes,
   };
 }
@@ -87,9 +97,10 @@ async function readMemory(app: ElectronApplication, session: CDPSession) {
 async function measureStage(
   { app, page, session }: { app: ElectronApplication; page: Page; session: CDPSession },
   name: string,
-  stage: () => Promise<void>
+  stage: () => Promise<void>,
+  { countsWhatCameBefore = false } = {}
 ): Promise<ResultRow> {
-  await readPageLog(page);
+  if (!countsWhatCameBefore) await readPageLog(page);
   const startedAt = Date.now();
   await stage();
   const ms = Date.now() - startedAt;
@@ -129,7 +140,30 @@ function scrollBackToTheStart(page: Page) {
   );
 }
 
-/** Fast wheel turns through what is loaded, as a hand would. */
+/** Goes to the end of what is held until that is the newest of the log. */
+function scrollBackToTheEnd(page: Page) {
+  return conversationOf(page).evaluate(
+    (conversation, { lastAsk, nothingNewMs }) =>
+      new Promise<void>((resolve) => {
+        let lastHeight = -1;
+        let lastGrewAt = performance.now();
+        const step = () => {
+          conversation.scrollTo({ top: conversation.scrollHeight });
+          const turns = conversation.firstElementChild?.children;
+          const newest = turns ? [...turns].slice(-3) : [];
+          if (newest.some((turn) => turn.textContent?.includes(lastAsk))) return resolve();
+          if (conversation.scrollHeight !== lastHeight) lastGrewAt = performance.now();
+          lastHeight = conversation.scrollHeight;
+          if (performance.now() - lastGrewAt > nothingNewMs) return resolve();
+          requestAnimationFrame(step);
+        };
+        step();
+      }),
+    { lastAsk: `What stands out in part ${MESSAGES / 4}?`, nothingNewMs: NOTHING_NEW_MS }
+  );
+}
+
+/** Fast wheel turns through what is held, as a hand would. */
 async function wheelThrough(page: Page, direction: 1 | -1) {
   const box = await conversationOf(page).boundingBox();
   await page.mouse.move(box!.x + box!.width / 2, box!.y + box!.height / 2);
@@ -160,15 +194,36 @@ test('a conversation of 2,000 messages', async () => {
 
   const rows: ResultRow[] = [
     {
-      ...(await measureStage(watch, 'reopened', () => page.waitForTimeout(0))),
+      ...(await measureStage(watch, 'reopened', () => page.waitForTimeout(0), {
+        countsWhatCameBefore: true,
+      })),
       ms: reloadMs,
     },
     await measureStage(watch, 'wheel up', () => wheelThrough(page, -1)),
-    await measureStage(watch, 'back to the first message', () => scrollBackToTheStart(page)),
+    await measureStage(watch, 'back to the first message', async () => {
+      await scrollBackToTheStart(page);
+      await expect(conversationOf(page).getByText('What stands out in part 1?')).toHaveCount(1);
+    }),
     await measureStage(watch, 'wheel down', () => wheelThrough(page, 1)),
+    await measureStage(watch, 'back to the newest', () => scrollBackToTheEnd(page)),
   ];
+  const reachedEnd = await conversationOf(page).getByText(lastAsk).count();
+  console.log(reachedEnd ? 'Came back to the newest message.' : 'Never came back to the newest.');
+
+  await scrollBackToTheStart(page);
+  await runDevTool(page, 'scriptedModel', { isOn: true });
+  const box = page
+    .getByRole('complementary', { name: 'Assistant' })
+    .getByRole('textbox', { name: 'Message' });
+  await box.fill('Tighten my bullets.');
+  rows.push(
+    await measureStage(watch, 'a send from the first message', async () => {
+      await box.press('Enter');
+      await expect(
+        conversationOf(page).getByText('Done. They’re waiting for your review.')
+      ).toBeInViewport({ timeout: 30_000 });
+    })
+  );
 
   reportAgainstLastRun(rows, COLUMNS, RESULTS, 'stage');
-  const reachedStart = await conversationOf(page).getByText('What stands out in part 1?').count();
-  console.log(reachedStart ? 'Reached the first message.' : 'Never reached the first message.');
 });
