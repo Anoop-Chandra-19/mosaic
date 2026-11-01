@@ -27,8 +27,22 @@ describe('isMessageBody', () => {
     expect(isMessageBody(body)).toBe(true);
   });
 
-  it('reads stored results that say what each call was about', () => {
-    expect(isMessageBody(readFixture('toolResultsWithTargets.json'))).toBe(true);
+  it.each([
+    'toolResultsWithTargets',
+    'toolResultsWithChecks',
+    'assistantWithRetries',
+    'runStoppedWithRetries',
+  ])('reads a stored body with its optional fields: %s', (name) => {
+    expect(isMessageBody(readFixture(`${name}.json`))).toBe(true);
+  });
+
+  it.each([
+    ['no wait', [{ error: { reason: 'unreachable' } }]],
+    ['an unknown error', [{ error: { reason: 'toString' }, waitMs: 1 }]],
+    ['something other than a list', { error: { reason: 'unreachable' }, waitMs: 1 }],
+  ])('refuses retries with %s', (_, retries) => {
+    expect(isMessageBody({ type: 'assistant', content: [], retries })).toBe(false);
+    expect(isMessageBody({ type: 'runStopped', reason: 'connection', retries })).toBe(false);
   });
 
   it.each([

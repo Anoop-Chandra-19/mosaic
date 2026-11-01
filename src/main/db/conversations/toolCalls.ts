@@ -67,7 +67,12 @@ export function closePendingCalls(db: Database, run: ConversationRun, content: s
   if (pending.length === 0) return;
   const body: ToolResultsMessageBody = {
     type: 'toolResults',
-    results: pending.map((call) => ({ callId: call.call_id, content, isError: true })),
+    results: pending.map((call) => ({
+      callId: call.call_id,
+      content,
+      isError: true,
+      checkName: 'interrupted',
+    })),
   };
   const result = appendMessage(db, { conversationId: run.conversationId, runId: run.runId, body });
   const close = db.prepare(

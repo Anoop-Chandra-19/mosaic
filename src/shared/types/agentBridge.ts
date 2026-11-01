@@ -1,5 +1,5 @@
 import type { AgentToolResult } from '../agent-tools/agentTools';
-import type { TranscriptMessage } from './agentConversation';
+import type { ToolResult, TranscriptMessage } from './agentConversation';
 import type { AgentRunEvent } from './agentRunEvents';
 
 /** Longer than any ask; it only stops a runaway paste. */
@@ -70,6 +70,8 @@ export interface MosaicAgent {
   /** Stops the run if it is still going; its end is stored as `cancelled`. */
   stop(runId: number): Promise<void>;
   readMessages(conversationId: number, page: MessagePage): Promise<TranscriptMessage[]>;
+  /** One call's answer in full, which pages leave out. `messageId` is the message holding it. */
+  readToolResult(messageId: number, callId: string): Promise<ToolResult>;
   /** The conversation used last, which the pane opens on; null before the first run. */
   readLastConversationId(): Promise<number | null>;
   /** Every run's events; returns the call that stops following them. */

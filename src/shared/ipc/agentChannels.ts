@@ -6,6 +6,7 @@ export const AGENT_CHANNELS = {
   carryOn: 'agent:carry-on',
   stop: 'agent:stop',
   readMessages: 'agent:read-messages',
+  readToolResult: 'agent:read-tool-result',
   readLastConversationId: 'agent:read-last-conversation-id',
 } as const satisfies Record<Exclude<keyof MosaicAgent, 'onEvent' | 'onToolCall'>, string>;
 

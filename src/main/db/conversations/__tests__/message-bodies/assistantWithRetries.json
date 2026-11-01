@@ -1,0 +1,17 @@
+{
+  "type": "assistant",
+  "content": [{ "type": "text", "text": "Reading your experience first." }],
+  "finish": "complete",
+  "retries": [
+    {
+      "error": {
+        "reason": "rateLimited",
+        "httpStatus": 429,
+        "message": "Slow down.",
+        "retryAfterMs": 2000
+      },
+      "waitMs": 2000
+    },
+    { "error": { "reason": "unreachable", "message": "socket hang up" }, "waitMs": 4000 }
+  ]
+}

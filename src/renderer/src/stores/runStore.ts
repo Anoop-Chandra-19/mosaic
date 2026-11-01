@@ -122,16 +122,22 @@ function applyRunEvent(run: LiveRun, event: AgentRunEvent): void {
     case 'reasoningEnd':
       if (last?.type === 'reasoning') last.durationMs = event.durationMs;
       return;
-    case 'toolCall':
-      if (findToolCall(run, event.callId)) return;
+    case 'toolCall': {
+      const call = findToolCall(run, event.callId);
+      if (call?.type === 'toolCall') {
+        if (event.args !== undefined) call.args = event.args;
+        return;
+      }
       run.parts.push({
         type: 'toolCall',
         callId: event.callId,
         name: event.name,
+        ...(event.args === undefined ? {} : { args: event.args }),
         status: 'running',
         startedAt: Date.now(),
       });
       return;
+    }
     case 'toolResult': {
       const call = findToolCall(run, event.callId);
       if (call?.type !== 'toolCall') return;

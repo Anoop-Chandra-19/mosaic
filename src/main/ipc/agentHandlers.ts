@@ -7,10 +7,10 @@ import {
   type AgentToolAnswer,
   type MessagePage,
 } from '@shared/types/agentBridge';
-import type { TranscriptMessage } from '@shared/types/agentConversation';
+import type { ToolResult, TranscriptMessage } from '@shared/types/agentConversation';
 import type { AgentRuns, RunPage } from '../agent/agentRuns';
 import { readLastConversationId } from '../db/conversations/conversations';
-import { readMessagePage } from '../db/conversations/messages';
+import { readMessagePage, readToolResult } from '../db/conversations/messages';
 import { isToolTarget } from '../db/conversations/validateMessageBody';
 
 /*
@@ -29,6 +29,7 @@ export interface AgentHandlers {
   carryOn(page: RunPage, request: unknown): Promise<AgentStart>;
   stop(runId: unknown): void;
   readMessages(conversationId: unknown, page: unknown): TranscriptMessage[];
+  readToolResult(messageId: unknown, callId: unknown): ToolResult;
   readLastConversationId(): number | null;
   answerTool(runId: unknown, callId: unknown, answer: unknown): void;
 }
@@ -128,6 +129,8 @@ export function createAgentHandlers(runs: AgentRuns, currentDb: () => Database):
     stop: (runId) => runs.stop(rowId(runId, 'runId')),
     readMessages: (conversationId, page) =>
       readMessagePage(currentDb(), rowId(conversationId, 'conversationId'), messagePage(page)),
+    readToolResult: (messageId, callId) =>
+      readToolResult(currentDb(), rowId(messageId, 'messageId'), id(callId, 'callId')),
     readLastConversationId: () => readLastConversationId(currentDb()),
     answerTool: (runId, callId, answer) =>
       runs.answerTool(rowId(runId, 'runId'), id(callId, 'callId'), toolAnswer(answer)),

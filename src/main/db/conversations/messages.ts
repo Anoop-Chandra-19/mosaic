@@ -7,7 +7,7 @@ import type {
   TranscriptReplyPart,
 } from '@shared/types/agentConversation';
 import type { MessagePage } from '@shared/types/agentBridge';
-import type { ModelReplyPart } from '@shared/types/modelReply';
+import type { ModelReplyPart, ModelUsage } from '@shared/types/modelReply';
 import { StorageError } from '../storageError';
 import { encodeStoredMessageBody, parseStoredMessageBody } from './storedMessageBody';
 
@@ -76,6 +76,21 @@ interface MessageRow {
 interface TranscriptRow extends MessageRow {
   provider: string | null;
   model: string | null;
+  input_tokens: number | null;
+  cached_input_tokens: number | null;
+  output_tokens: number | null;
+}
+
+/** Tokens only when the provider said; an older or silent request leaves them out. */
+function toUsage(row: TranscriptRow): { usage: ModelUsage } | object {
+  if (row.input_tokens === null || row.output_tokens === null) return {};
+  return {
+    usage: {
+      inputTokens: row.input_tokens,
+      outputTokens: row.output_tokens,
+      ...(row.cached_input_tokens === null ? {} : { cachedInputTokens: row.cached_input_tokens }),
+    },
+  };
 }
 
 /** Only what the pane shows; the rest stays in main rather than in the window's memory. */
@@ -86,14 +101,17 @@ function toTranscriptBody(body: MessageBody): TranscriptMessageBody {
     case 'toolResults':
       return {
         type: 'toolResults',
-        results: body.results.map(({ callId, isError, target, notRun, durationMs, startedAt }) => ({
-          callId,
-          isError,
-          target,
-          notRun,
-          durationMs,
-          startedAt,
-        })),
+        results: body.results.map(
+          ({ callId, isError, target, notRun, checkName, durationMs, startedAt }) => ({
+            callId,
+            isError,
+            target,
+            notRun,
+            checkName,
+            durationMs,
+            startedAt,
+          })
+        ),
       };
     default:
       return body;
@@ -102,7 +120,11 @@ function toTranscriptBody(body: MessageBody): TranscriptMessageBody {
 
 function toTranscriptReplyPart(part: ModelReplyPart): TranscriptReplyPart {
   if (part.type !== 'reasoning') return part;
-  return { type: 'reasoning', durationMs: part.durationMs };
+  return {
+    type: 'reasoning',
+    durationMs: part.durationMs,
+    ...(part.text ? { textLength: part.text.length } : {}),
+  };
 }
 
 /**
@@ -117,7 +139,8 @@ export function readMessagePage(
 ): TranscriptMessage[] {
   const rows = db
     .prepare<[number, number, number], TranscriptRow>(
-      `select m.id, m.seq, m.run_id, m.body, m.created_at, r.provider, r.model
+      `select m.id, m.seq, m.run_id, m.body, m.created_at, r.provider, r.model,
+              m.input_tokens, m.cached_input_tokens, m.output_tokens
          from messages m left join runs r on r.id = m.run_id
         where m.conversation_id = ? and m.seq < ?
         order by m.seq desc limit ?`
@@ -132,6 +155,7 @@ export function readMessagePage(
         ? null
         : { provider: row.provider, model: row.model },
     body: toTranscriptBody(parseStoredMessageBody(row.body)),
+    ...toUsage(row),
     createdAt: row.created_at,
   }));
 }

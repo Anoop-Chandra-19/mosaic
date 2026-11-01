@@ -1,5 +1,5 @@
 import type { RunLimitSettings } from '@shared/agent/runLimitSettings';
-import type { RunStopReason } from '@shared/types/agentConversation';
+import type { RunStopReason, StepRetry } from '@shared/types/agentConversation';
 import type { AgentRunEvent } from '@shared/types/agentRunEvents';
 import type {
   ModelProviderError,
@@ -15,7 +15,7 @@ import { createRestartableDeadline, type Wait } from './abortableWaits';
  * way worth retrying (the connection layer), and cut off by the user's Stop.
  */
 
-export type StepReply =
+export type StepReply = { retries: StepRetry[] } & (
   | {
       ok: true;
       parts: ModelReplyPart[];
@@ -36,7 +36,8 @@ export type StepReply =
       error: ModelProviderError;
       attempts: number;
       waitedMs: number;
-    };
+    }
+);
 
 export interface ReplyRequest {
   provider: ModelProvider;
@@ -110,7 +111,7 @@ function takeEvent(
     case 'toolCall':
       if (!callStartedAt.has(event.callId)) callStartedAt.set(event.callId, lastEventAt);
       parts.push({ type: 'toolCall', callId: event.callId, name: event.name, args: event.args });
-      onEvent({ type: 'toolCall', callId: event.callId, name: event.name });
+      onEvent({ type: 'toolCall', callId: event.callId, name: event.name, args: event.args });
       return;
   }
 }
@@ -149,26 +150,28 @@ async function streamOnce({
 
 export async function requestModelReply(options: ReplyRequest): Promise<StepReply> {
   const { signal, onEvent, limits, wait } = options;
+  const retries: StepRetry[] = [];
   let waitedMs = 0;
-  for (let retries = 0; ; retries++) {
+  for (;;) {
     const result = await streamOnce(options);
-    if (result.ok) return result;
-    if (result.cancelled) return { ok: false, reason: 'cancelled', parts: result.parts };
+    if (result.ok) return { ...result, retries };
+    if (result.cancelled) return { ok: false, reason: 'cancelled', parts: result.parts, retries };
 
     const { error } = result;
-    const attempts = retries + 1;
+    const attempts = retries.length + 1;
     if (!isRetryable(error)) {
-      return { ok: false, reason: 'providerError', error, attempts, waitedMs };
+      return { ok: false, reason: 'providerError', error, attempts, waitedMs, retries };
     }
-    if (retries >= limits.retryWaitsMs.length) {
-      return { ok: false, reason: 'connection', error, attempts, waitedMs };
+    if (retries.length >= limits.retryWaitsMs.length) {
+      return { ok: false, reason: 'connection', error, attempts, waitedMs, retries };
     }
     const waitMs =
       (error.reason === 'rateLimited' ? error.retryAfterMs : undefined) ??
-      limits.retryWaitsMs[retries];
+      limits.retryWaitsMs[retries.length];
     onEvent({ type: 'stepRetrying', attempt: attempts, waitMs, error });
+    retries.push({ error, waitMs });
     await wait(waitMs, signal);
     waitedMs += waitMs;
-    if (signal.aborted) return { ok: false, reason: 'cancelled', parts: [] };
+    if (signal.aborted) return { ok: false, reason: 'cancelled', parts: [], retries };
   }
 }

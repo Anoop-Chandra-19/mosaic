@@ -1,4 +1,4 @@
-import type { ModelProviderError, ModelReplyPart } from './modelReply';
+import type { ModelProviderError, ModelReplyPart, ModelUsage } from './modelReply';
 
 /*
  * A conversation is an append-only log of messages, read in `seq` order. Each message's
@@ -23,11 +23,19 @@ export interface UserMessageBody {
   isLimit: boolean;
 }
 
+/** A request of a step that failed and went again, and how long it waited first. */
+export interface StepRetry {
+  error: ModelProviderError;
+  waitMs: number;
+}
+
 export interface AssistantMessageBody {
   type: 'assistant';
   content: ModelReplyPart[];
   /** Absent when the reply was cut off: stopped, or failed part-way. */
   finish?: 'complete' | 'outputLimit';
+  /** The requests that failed before this one got through; absent when none did. */
+  retries?: StepRetry[];
 }
 
 /**
@@ -64,6 +72,8 @@ export interface ToolResult {
   target?: ToolTarget;
   /** The run ended before this call ran, so its error says nothing about the call. */
   notRun?: boolean;
+  /** Why it has no real answer: `timeout`, `cancelled`, `stopped`, `interrupted`. */
+  checkName?: string;
   /** From the call beginning, its arguments included, to its answer. Absent in older bodies. */
   durationMs?: number;
   /** When the call began, in ms since the epoch. Absent in older bodies. */
@@ -111,6 +121,8 @@ export interface RunStoppedMessageBody {
   /** Requests made for the step that failed, and the time spent waiting between them. */
   attempts?: number;
   waitedMs?: number;
+  /** The step's requests that failed and went again, when its reply never came. */
+  retries?: StepRetry[];
 }
 
 export type MessageBody =
@@ -120,10 +132,10 @@ export type MessageBody =
   | TemplateSwitchedMessageBody
   | RunStoppedMessageBody;
 
-/** Thinking shows how long, never what: its text and provider state stay in main. */
+/** Thinking shows how long and how much, never what: its text and provider state stay in main. */
 export type TranscriptReplyPart =
   | Exclude<ModelReplyPart, { type: 'reasoning' }>
-  | { type: 'reasoning'; durationMs: number };
+  | { type: 'reasoning'; durationMs: number; textLength?: number };
 
 /**
  * A body as the transcript reads it. Tool results come without their content, which can
@@ -148,5 +160,7 @@ export interface TranscriptMessage {
   /** The provider and model its run used, which a stop's notice names; null outside a run. */
   runModel: RunModel | null;
   body: TranscriptMessageBody;
+  /** What the request behind an assistant message used, when its provider said. */
+  usage?: ModelUsage;
   createdAt: number;
 }

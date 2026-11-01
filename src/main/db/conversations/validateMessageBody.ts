@@ -72,6 +72,11 @@ const isProviderError = (error: unknown) =>
   isOptional(error.httpStatus, isCount) &&
   CHECK_BY_PROVIDER_ERROR[error.reason as ModelProviderError['reason']](error);
 
+const isStepRetry: Check = (retry) => isProviderError(retry.error) && isCount(retry.waitMs);
+
+const hasRetriesIfAny = (body: Record<string, unknown>) =>
+  isOptional(body.retries, (retries) => isListOf(retries, isStepRetry));
+
 const isPositive = (value: unknown) => isCount(value) && (value as number) > 0;
 
 const LIST_UNITS: ReadonlySet<unknown> = new Set(['section', 'entry', 'bullet', 'line']);
@@ -105,6 +110,7 @@ const isToolResult: Check = (result) =>
   isOptional(result.isError, (isError) => typeof isError === 'boolean') &&
   isOptional(result.target, isToolTarget) &&
   isOptional(result.notRun, (notRun) => typeof notRun === 'boolean') &&
+  isOptional(result.checkName, isString) &&
   isOptional(result.durationMs, isCount) &&
   isOptional(result.startedAt, isCount);
 
@@ -113,7 +119,8 @@ const CHECK_BY_MESSAGE_TYPE: Record<MessageBody['type'], Check> = {
     isString(body.text) && isListOf(body.resume, isResumeRef) && typeof body.isLimit === 'boolean',
   assistant: (body) =>
     isListOf(body.content, isReplyPart) &&
-    isOptional(body.finish, (finish) => FINISH_REASONS.has(finish)),
+    isOptional(body.finish, (finish) => FINISH_REASONS.has(finish)) &&
+    hasRetriesIfAny(body),
   toolResults: (body) => isListOf(body.results, isToolResult),
   templateSwitched: (body) =>
     isString(body.templateId) && isString(body.label) && isOptional(body.previousId, isString),
@@ -122,7 +129,8 @@ const CHECK_BY_MESSAGE_TYPE: Record<MessageBody['type'], Check> = {
     isOptional(body.detail, isString) &&
     isOptional(body.providerError, isProviderError) &&
     isOptional(body.attempts, isCount) &&
-    isOptional(body.waitedMs, isCount),
+    isOptional(body.waitedMs, isCount) &&
+    hasRetriesIfAny(body),
 };
 
 /** Whether `value` is a message body this build can store and read back. */
