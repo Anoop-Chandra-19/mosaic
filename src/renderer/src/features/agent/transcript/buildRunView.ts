@@ -3,7 +3,8 @@ import type {
   TranscriptMessageBody,
   TranscriptReplyPart,
 } from '@shared/types/agentConversation';
-import type { RunPart, RunView } from '@/types/agentRunView';
+import type { ModelUsage } from '@shared/types/modelReply';
+import type { RunPart, RunStepRequest, RunView } from '@/types/agentRunView';
 
 interface BuiltRun {
   first: TranscriptMessage;
@@ -43,9 +44,29 @@ function readBuiltRun(messages: TranscriptMessage[], runId: number): RunView {
   return view;
 }
 
+/** The run under way goes last while the transcript hasn't read its first message yet. */
+export function addLiveRun(runs: RunView[], liveRunId: number | null): RunView[] {
+  if (liveRunId === null || runs.some((run) => run.runId === liveRunId)) return runs;
+  return [
+    ...runs,
+    {
+      runId: liveRunId,
+      model: null,
+      startedAt: 0,
+      lastAt: 0,
+      ask: null,
+      switchedTo: null,
+      parts: [],
+      stop: null,
+      stoppedAt: null,
+    },
+  ];
+}
+
 function buildRun(messages: TranscriptMessage[], runId: number): RunView {
   const run: RunView = {
     runId,
+    number: messages[0].runNumber,
     model: messages[0].runModel,
     startedAt: messages[0].createdAt,
     lastAt: messages[0].createdAt,
@@ -55,14 +76,37 @@ function buildRun(messages: TranscriptMessage[], runId: number): RunView {
     stop: null,
     stoppedAt: null,
   };
-  for (const { body, createdAt } of messages) {
-    run.lastAt = createdAt;
-    addToRun(run, body, createdAt);
+  for (const message of messages) {
+    run.lastAt = message.createdAt;
+    addToRun(run, message);
   }
   return run;
 }
 
-function addToRun(run: RunView, body: TranscriptMessageBody, createdAt: number): void {
+/** Absent while no request has said: unknown, not zero. */
+function addUsage(total: ModelUsage | undefined, usage: ModelUsage | undefined) {
+  if (!usage) return total;
+  if (!total) return usage;
+  const cached = (total.cachedInputTokens ?? 0) + (usage.cachedInputTokens ?? 0);
+  return {
+    inputTokens: total.inputTokens + usage.inputTokens,
+    outputTokens: total.outputTokens + usage.outputTokens,
+    ...(cached > 0 ? { cachedInputTokens: cached } : {}),
+  };
+}
+
+function addReply(
+  run: RunView,
+  body: Extract<TranscriptMessageBody, { type: 'assistant' }>,
+  usage: ModelUsage | undefined
+): void {
+  run.usage = addUsage(run.usage, usage);
+  const callCount = body.content.filter((part) => part.type === 'toolCall').length;
+  const request = { usage, retries: body.retries ?? [], callCount };
+  run.parts.push(...body.content.map((part) => toRunPart(part, request)));
+}
+
+function addToRun(run: RunView, { id, body, usage, createdAt }: TranscriptMessage): void {
   switch (body.type) {
     case 'templateSwitched':
       run.switchedTo = { templateId: body.templateId, label: body.label };
@@ -71,7 +115,7 @@ function addToRun(run: RunView, body: TranscriptMessageBody, createdAt: number):
       run.ask = body.text;
       return;
     case 'assistant':
-      run.parts.push(...body.content.map(toRunPart));
+      addReply(run, body, usage);
       return;
     case 'toolResults':
       for (const result of body.results) {
@@ -80,6 +124,8 @@ function addToRun(run: RunView, body: TranscriptMessageBody, createdAt: number):
         );
         if (call?.type !== 'toolCall') continue;
         call.status = readToolStatus(result);
+        call.resultMessageId = id;
+        if (result.checkName) call.checkName = result.checkName;
         if (result.target) call.target = result.target;
         if (result.durationMs !== undefined) call.durationMs = result.durationMs;
         if (result.startedAt !== undefined) call.startedAt = result.startedAt;
@@ -96,7 +142,7 @@ function readToolStatus({ isError, notRun }: { isError?: boolean; notRun?: boole
   return isError ? 'refused' : 'done';
 }
 
-function toRunPart(part: TranscriptReplyPart): RunPart {
+function toRunPart(part: TranscriptReplyPart, request: RunStepRequest): RunPart {
   if (part.type !== 'toolCall') return part;
   return {
     type: 'toolCall',
@@ -104,5 +150,6 @@ function toRunPart(part: TranscriptReplyPart): RunPart {
     name: part.name,
     args: part.args,
     status: 'running',
+    request,
   };
 }

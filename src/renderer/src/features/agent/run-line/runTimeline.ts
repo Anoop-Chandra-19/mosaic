@@ -29,6 +29,8 @@ export type StepRow = {
   startedAt: number | undefined;
   /** How long a finished step took, when that was stored. */
   durationMs: number | undefined;
+  /** The call itself, for the Trace's record. */
+  call: Extract<RunPart, { type: 'toolCall' }>;
 };
 
 export type ThinkRow = {
@@ -37,6 +39,7 @@ export type ThinkRow = {
   state: Exclude<RowState, 'fail' | 'wait'>;
   durationMs: number | null;
   startedAt: number | undefined;
+  textLength: number | undefined;
 };
 
 export type RunLineRow = StepRow | ThinkRow;
@@ -45,7 +48,7 @@ function toStep(part: Extract<RunPart, { type: 'toolCall' }>, isRunning: boolean
   const words = readStepWords(part.name);
   const { status, target, callId, startedAt, durationMs } = part;
   const note = describeStepNote(target);
-  const base = { kind: 'step', key: callId, startedAt, durationMs, note } as const;
+  const base = { kind: 'step', key: callId, startedAt, durationMs, note, call: part } as const;
   switch (status) {
     case 'done':
       return { ...base, state: 'done', words: words.done(target) };
@@ -72,6 +75,7 @@ function toThink(
     state: isGoing ? (isRunning ? 'run' : 'cut') : 'done',
     durationMs: part.durationMs,
     startedAt: part.startedAt,
+    textLength: part.textLength,
   };
 }
 

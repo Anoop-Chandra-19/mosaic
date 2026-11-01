@@ -88,6 +88,19 @@ test('asking in the prompt box shows the ask and the reply, and the box is ready
   await expect(conversation.getByText(/^3 steps/)).toBeVisible();
   await expect(conversation.getByText('Harbor Freight Labs · 1st bullet')).toBeVisible();
 
+  // The Trace holds the record of the same run, its result read as the row opens. Esc comes back.
+  await pane.getByRole('tab', { name: /^Trace/ }).click();
+  const trace = pane.getByRole('region', { name: 'Trace' });
+  await expect(conversation).toBeHidden();
+  await trace.getByRole('button', { name: /^Read your resume/ }).click();
+  await expect(trace.getByText('Arguments')).toBeVisible();
+  await expect(trace.getByText('Result', { exact: true })).toBeVisible();
+  await expect(trace.getByText('Loading the result')).toHaveCount(0);
+  await expect(trace.locator('pre').last()).not.toBeEmpty();
+  await trace.getByRole('button', { name: /^Read your resume/ }).press('Escape');
+  await expect(conversation).toBeVisible();
+  await expect(trace).toHaveCount(0);
+
   await pane.getByRole('button', { name: 'New conversation' }).click();
   await expect(conversation.getByText('Tighten my bullets.')).toHaveCount(0);
   expect(errors).toEqual([]);
