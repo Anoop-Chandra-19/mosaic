@@ -1,5 +1,10 @@
 import type { AgentToolResult } from '../agent-tools/agentTools';
-import type { ToolResult, TranscriptMessage } from './agentConversation';
+import type {
+  RunModel,
+  RunStoppedMessageBody,
+  ToolResult,
+  TranscriptMessage,
+} from './agentConversation';
 import type { AgentRunEvent } from './agentRunEvents';
 
 /** Longer than any ask; it only stops a runaway paste. */
@@ -35,6 +40,25 @@ export type AgentStart =
 export interface MessagePage {
   /** The page ends just before this message; absent for the newest page. */
   beforeSeq?: number;
+  limit: number;
+}
+
+/** A conversation in the list, as facts: the page words them. */
+export interface ConversationSummary {
+  id: number;
+  /** The start of the first thing asked; null if it has no words. */
+  title: string | null;
+  lastActiveAt: number;
+  /** The resumes its runs worked on and that still exist, last worked on first. */
+  resumes: string[];
+  /** How its last run stopped, if that is the last thing in its log. */
+  stop: { body: RunStoppedMessageBody; runModel: RunModel } | null;
+}
+
+/** Most recently active first, so a page carries on from the last one's place in that order. */
+export interface ConversationPage {
+  /** The page starts just after this conversation; absent for the first page. */
+  after?: { lastActiveAt: number; id: number };
   limit: number;
 }
 
@@ -88,6 +112,9 @@ export interface MosaicAgent {
   readOutdatedReads(conversationId: number, templateId: string | null): Promise<OutdatedRead[]>;
   /** The conversation used last, which the pane opens on; null before the first run. */
   readLastConversationId(): Promise<number | null>;
+  readConversations(page: ConversationPage): Promise<ConversationSummary[]>;
+  /** Stops its run first if one is going. Removes it from the disk, with no way back. */
+  deleteConversation(conversationId: number): Promise<void>;
   /** Every run's events; returns the call that stops following them. */
   onEvent(follow: (envelope: AgentRunEnvelope) => void): () => void;
   /** The page's one tool runner; returns the call that removes it. */

@@ -4,6 +4,7 @@ import { createDefaultResume } from '@shared/resume/defaultResume';
 import type { AgentRunEnvelope, AgentToolAnswer, AgentToolCall } from '@shared/types/agentBridge';
 import { AGENT_SETTINGS_KEY } from '@shared/types/modelProviders';
 import { openDatabase, type Database } from '../../db/connection';
+import { createConversation } from '../../db/conversations/conversations';
 import { readConversationLog, readMessagePage } from '../../db/conversations/messages';
 import { createTemplate } from '../../db/resumes/templates';
 import { setSetting } from '../../db/settings';
@@ -193,6 +194,32 @@ describe('a run started from the page', () => {
 
     expect(envelopes.at(-1)?.event).toEqual({ type: 'runEnded', stopReason: 'cancelled' });
     expect(await ask()).toMatchObject({ ok: true, runId: 2 });
+  });
+
+  it('stops the run of a conversation being deleted, then deletes it', async () => {
+    const { runs, ask, envelopes } = setUp({ replies: [hang] });
+    const start = await ask();
+    if (!start.ok) throw new Error('did not start');
+
+    await runs.deleteConversation(start.conversationId);
+
+    expect(envelopes.at(-1)?.event).toEqual({ type: 'runEnded', stopReason: 'cancelled' });
+    expect(readMessagePage(db, start.conversationId, { limit: 10 })).toEqual([]);
+  });
+
+  it('leaves a run going when another conversation is deleted', async () => {
+    const { runs, ask } = setUp({ replies: [[say('Hi.'), DONE], hang] });
+    const first = await ask();
+    if (!first.ok) throw new Error('did not start');
+    await runs.deleteConversation(first.conversationId).catch(() => {});
+    const second = await ask();
+    if (!second.ok) throw new Error('did not start');
+    const other = createConversation(db, { provider: 'ollama', model: 'qwen3.5:9b' });
+
+    await runs.deleteConversation(other);
+
+    expect(await ask()).toEqual({ ok: false, reason: 'runInProgress' });
+    await runs.stopAll();
   });
 
   it('stops when its page reloads or closes, and stops watching the page once ended', async () => {

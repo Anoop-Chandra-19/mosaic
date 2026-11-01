@@ -11,6 +11,7 @@ function setUp() {
     stop: vi.fn(),
     answerTool: vi.fn(),
     stopAll: vi.fn(async () => {}),
+    deleteConversation: vi.fn(async () => {}),
   };
   const noDb = () => {
     throw new Error('not read in these tests');
@@ -23,6 +24,19 @@ const page: RunPage = { sendEvent: () => {}, sendToolCall: () => {}, watchGone: 
 const answer = (result: unknown) => ({ ok: true, result });
 
 describe('agent handlers', () => {
+  it('refuse a conversation page or a delete that can’t be read', async () => {
+    const { runs, handlers } = setUp();
+    expect(() => handlers.readConversations({ limit: 0 })).toThrow('limit');
+    expect(() => handlers.readConversations({ limit: 10, after: { id: 1 } })).toThrow(
+      'lastActiveAt'
+    );
+    expect(() => handlers.readConversations({ limit: 10, after: { lastActiveAt: 1 } })).toThrow(
+      'id'
+    );
+    await expect(handlers.deleteConversation('1')).rejects.toThrow('conversationId');
+    expect(runs.deleteConversation).not.toHaveBeenCalled();
+  });
+
   it('pass on what a call was about, and drop one that can’t be read', () => {
     const { runs, handlers } = setUp();
     const target = { kind: 'version', version: 'v3' };
