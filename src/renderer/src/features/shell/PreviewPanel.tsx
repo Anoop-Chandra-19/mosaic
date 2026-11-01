@@ -4,6 +4,7 @@ import { Text, AppToggleGroup, AppToggleGroupItem } from '@/components/ui-kit';
 import { PageZoomControl } from '@/features/preview/PageZoomControl';
 import { ResumePreview } from '@/features/preview/ResumePreview';
 import { useFitPreviewForHandoff } from '@/features/preview/useFitPreviewForHandoff';
+import { useIsSidePanelMoving } from '@/features/preview/useIsSidePanelMoving';
 import { useStoredPreviewZoom } from '@/features/preview/pageZoom';
 import { usePreviewCanvas } from '@/features/preview/usePreviewCanvas';
 import { cn } from '@/lib/utils';
@@ -59,9 +60,10 @@ export function PreviewPanel() {
   const canvas = usePreviewCanvas(scrollRef, useStoredPreviewZoom());
   const shown = useFitPreviewForHandoff(scrollRef);
   const isPageHandedOff = useIsPageHandedOff();
-  // The bar's two ends glide as the sidebar or the pane come and go; while a surface does,
-  // the bar moves with the workspace instead.
-  const isBarGliding = !useIsSurfaceAround(() => true);
+  const isSidePanelMoving = useIsSidePanelMoving();
+  // The bar's two ends glide as the sidebar or the pane come and go, and the page stays one
+  // image; while a surface does, the bar moves with the workspace and the page is handed off.
+  const isOnlySidesMoving = !useIsSurfaceAround(() => true);
 
   useEffect(() => {
     // Expose paper size to global CSS for page-specific print/preview styling.
@@ -93,7 +95,7 @@ export function PreviewPanel() {
             transitionClasses({
               name: 'preview-bar-start',
               motion: 'glide',
-              isActive: isBarGliding,
+              isActive: isOnlySidesMoving,
             })
           )}
         >
@@ -121,7 +123,7 @@ export function PreviewPanel() {
             transitionClasses({
               name: 'preview-bar-end',
               motion: 'glide at-end',
-              isActive: isBarGliding,
+              isActive: isOnlySidesMoving,
             })
           )}
         >
@@ -161,7 +163,11 @@ export function PreviewPanel() {
         className={cn(
           'flex-1 overflow-auto overscroll-contain px-3 py-4 md:px-6 md:py-6',
           canvas.panning ? 'cursor-grabbing select-none' : canvas.readyToPan && 'cursor-grab',
-          transitionClasses({ name: 'page', motion: 'handoff', isActive: !isPageHandedOff })
+          transitionClasses({
+            name: 'page',
+            motion: isOnlySidesMoving ? 'handoff in-place' : 'handoff',
+            isActive: !isPageHandedOff,
+          })
         )}
       >
         <CurrentChange
@@ -174,7 +180,7 @@ export function PreviewPanel() {
           <ResumePreview
             paperSize={paperSize}
             previewZoom={shown.zoom}
-            isZoomEased={shown.isZoomEased}
+            isZoomEased={shown.isZoomEased || isSidePanelMoving}
             onMetaChange={setMeta}
             {...(comparison && readVersionPage(comparison, isMarked))}
           />

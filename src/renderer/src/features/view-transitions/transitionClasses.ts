@@ -19,6 +19,8 @@ const MOTION_CLASS = {
   recede: '[view-transition-class:recede]',
   handoff: '[view-transition-class:handoff]',
   'handoff step': '[view-transition-class:handoff_step]',
+  // The same box, moved by what is around it: its one image, as it is now.
+  'handoff in-place': '[view-transition-class:handoff_in-place]',
   reclaim: '[view-transition-class:reclaim]',
   fade: '[view-transition-class:fade]',
   'slide-away slide-in': '[view-transition-class:slide-away_slide-in]',
