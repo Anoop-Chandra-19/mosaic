@@ -97,6 +97,16 @@ test('asking in the prompt box shows the ask and the reply, and the box is ready
   await expect(trace.getByText('Result', { exact: true })).toBeVisible();
   await expect(trace.getByText('Loading the result')).toHaveCount(0);
   await expect(trace.locator('pre').last()).not.toBeEmpty();
+
+  // An edit saved after the read puts it out of date, as main says; the filter leaves that step.
+  await page.getByRole('complementary').first().getByText('Organized the team book club').click();
+  await page.keyboard.type(' monthly');
+  await page.keyboard.press('Enter');
+  await expect(trace.getByText('Out of date: you edited after this read')).toBeVisible();
+  await pane.getByRole('button', { name: 'Only flagged' }).click();
+  await expect(trace.getByRole('button', { name: /^Read your resume/ })).toBeVisible();
+  await expect(trace.getByText('Wrote', { exact: true })).toHaveCount(0);
+
   await trace.getByRole('button', { name: /^Read your resume/ }).press('Escape');
   await expect(conversation).toBeVisible();
   await expect(trace).toHaveCount(0);

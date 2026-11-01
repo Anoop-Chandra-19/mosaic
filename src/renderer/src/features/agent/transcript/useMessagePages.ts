@@ -20,9 +20,10 @@ const hasNothingToScroll = ({ scrollHeight, clientHeight }: HTMLElement) =>
 /**
  * Reads the next page before the user reaches either end of what is held. The browser's scroll
  * anchoring holds the view still as messages land or go above it, but gives up at exactly the
- * top, so the view never rests there while there is more to read.
+ * top, so the view never rests there while there is more to read. `shownBy` is whatever else
+ * can shorten what is drawn, as a filter does.
  */
-export function useMessagePages(scrollRef: RefObject<HTMLElement | null>): void {
+export function useMessagePages(scrollRef: RefObject<HTMLElement | null>, shownBy?: unknown): void {
   const firstSeq = useConversationStore((s) => s.messages[0]?.seq);
   const hasOlder = useConversationStore((s) => s.hasOlder);
 
@@ -44,5 +45,5 @@ export function useMessagePages(scrollRef: RefObject<HTMLElement | null>): void 
   useEffect(() => {
     const scroller = scrollRef.current;
     if (scroller && hasOlder && hasNothingToScroll(scroller)) void readOlderMessages();
-  }, [scrollRef, hasOlder, firstSeq]);
+  }, [scrollRef, hasOlder, firstSeq, shownBy]);
 }

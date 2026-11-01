@@ -19,6 +19,8 @@ export const agentService = {
     window.mosaic.agent.readMessages(conversationId, page),
   readToolResult: (messageId: number, callId: string) =>
     window.mosaic.agent.readToolResult(messageId, callId),
+  readOutdatedReads: (conversationId: number, templateId: string | null) =>
+    window.mosaic.agent.readOutdatedReads(conversationId, templateId),
   readLastConversationId: () => window.mosaic.agent.readLastConversationId(),
   /** Every run's events; returns the call that stops following them. */
   onEvent: (follow: (envelope: AgentRunEnvelope) => void) => window.mosaic.agent.onEvent(follow),

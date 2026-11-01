@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
-import { Text } from '@/components/ui-kit';
+import { AppButton, Text } from '@/components/ui-kit';
+import { formatCount } from '@/lib/formatCount';
 import { useConversationStore } from '@/stores/conversationStore';
 import { useRunStore } from '@/stores/runStore';
 import { addLiveRun, buildRunView } from '../run-view/buildRunView';
@@ -7,6 +8,7 @@ import { NewestButton } from '../transcript/NewestButton';
 import { useMessagePages } from '../transcript/useMessagePages';
 import { useStickToNewest } from '../transcript/useStickToNewest';
 import { TraceRun } from './TraceRun';
+import { useOutdatedReads } from './useOutdatedReads';
 
 /*
  * The full record of the open conversation, for whoever wants it: a tab in the pane, with the
@@ -19,6 +21,11 @@ import { TraceRun } from './TraceRun';
 interface OpenCall {
   runId: number;
   callId: string;
+}
+
+/** The newest message knows its run's number, which is how many there are. */
+function useRunCount(): number {
+  return useConversationStore((s) => (s.hasNewer ? s.lastRun : s.messages).at(-1)?.runNumber ?? 0);
 }
 
 export function TraceView() {
@@ -34,8 +41,11 @@ export function TraceView() {
   // The newest run is open until it is closed; any other, once it is opened.
   const [openedRuns, setOpenedRuns] = useState<Record<number, boolean>>({});
   const [openCall, setOpenCall] = useState<OpenCall | null>(null);
+  const [isOnlyFlagged, setIsOnlyFlagged] = useState(false);
+  const readOutcomes = useOutdatedReads();
+  const runCount = useRunCount();
   useStickToNewest(scrollRef, contentRef);
-  useMessagePages(scrollRef);
+  useMessagePages(scrollRef, isOnlyFlagged);
 
   const runs = addLiveRun(buildRunView(messages), liveRunId);
   const newestRunId = hasNewer ? null : (runs.at(-1)?.runId ?? null);
@@ -51,6 +61,19 @@ export function TraceView() {
 
   return (
     <div className="@container/trace relative flex min-h-31 flex-1 flex-col">
+      {runCount > 0 && (
+        <div className="flex shrink-0 items-center justify-between gap-2 border-b border-line px-3 py-1.75">
+          <Text variant="meta">{formatCount(runCount, 'run')}</Text>
+          <AppButton
+            variant="filter"
+            size="2xs"
+            aria-pressed={isOnlyFlagged}
+            onClick={() => setIsOnlyFlagged(!isOnlyFlagged)}
+          >
+            Only flagged
+          </AppButton>
+        </div>
+      )}
       <section
         ref={scrollRef}
         aria-label="Trace"
@@ -69,6 +92,8 @@ export function TraceView() {
               isLive={run.runId === liveRunId}
               isOpen={openedRuns[run.runId] ?? run.runId === newestRunId}
               onToggle={toggleRun}
+              readOutcomes={readOutcomes[run.runId]}
+              isOnlyFlagged={isOnlyFlagged}
               openCallId={openCall?.runId === run.runId ? openCall.callId : null}
               onToggleCall={toggleCall}
             />
