@@ -28,6 +28,7 @@ Use a motion that exists before inventing one:
 | `surface-in`, `surface-out`          | A view fading in over the workspace, and out        | The history view                                        |
 | `recede`                             | Stepping back behind a view, unchanged, returning   | The workspace                                           |
 | `handoff`                            | The same thing moving between two boxes showing it  | The page: preview ↔ history                             |
+| `handoff` + `in-place`               | Moved by side panels: only the new, live image      | The page, with no surface around                        |
 | `step` + `step-back`/`step-forward`  | Sliding the way a sequence runs, back from the left | Page ↔ cards                                            |
 | `slide-in`, `slide-away` (+`at-end`) | Leaving to the edge, the space reclaimed, and back  | Sidebar, history index; the assistant pane at the right |
 | `reclaim`                            | A box easing into space given up beside it          | The history list                                        |

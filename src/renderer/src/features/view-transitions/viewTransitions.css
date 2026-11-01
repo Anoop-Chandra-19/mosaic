@@ -235,6 +235,16 @@
   translate: -50% 0;
 }
 
+/* In place, as a side panel moves it: there is nothing to swap, and a page that changes scale
+   would show twice. Only the new image, which is live, so the page eases inside it. */
+::view-transition-old(.in-place) {
+  display: none;
+}
+
+::view-transition-new(.in-place) {
+  animation: none;
+}
+
 /* ---- step: sliding the way a sequence runs; step-back comes in from the left ---- */
 
 /* Offset images wash each other out in the default additive blend. */
@@ -442,6 +452,13 @@
   &::view-transition-old(.handoff),
   &::view-transition-new(.handoff) {
     animation-duration: 220ms;
+  }
+  &::view-transition-old(.in-place) {
+    display: block;
+    animation: crossfade-out 220ms var(--ease-settle) both;
+  }
+  &::view-transition-new(.in-place) {
+    animation: crossfade-in 220ms var(--ease-settle) both;
   }
   &::view-transition-old(.handover) {
     mix-blend-mode: plus-lighter;
