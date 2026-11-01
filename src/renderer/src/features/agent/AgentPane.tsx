@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { Sparkles, SquarePen, X } from 'lucide-react';
 import { AppButton, AppTooltip, Text } from '@/components/ui-kit';
 import { formatPaneWidth, startPaneResize } from '@/lib/paneResize';
@@ -8,13 +8,14 @@ import { useIsSideHandover } from '@/features/view-transitions/sideHandover';
 import { transitionClasses } from '@/features/view-transitions/transitionClasses';
 import { useIsWorkspaceReplaced } from '@/features/view-transitions/useShownSurface';
 import { cn } from '@/lib/utils';
+import { setPaneTab, useAgentPaneStore } from '@/stores/agentPaneStore';
 import { openPaneConversation, startNewConversation } from '@/stores/conversationStore';
 import { useOverlayStore } from '@/stores/overlayStore';
 import { explainFailure, showToast } from '@/stores/toastStore';
 import { AGENT_PANE_WIDTH, useUiStore } from '@/stores/uiStore';
 import { useChosenModel } from '@/stores/useChosenModel';
 import { AgentPromptBox } from './AgentPromptBox';
-import { PaneTabs, type PaneTab } from './PaneTabs';
+import { PaneTabs } from './PaneTabs';
 import { stopAgentRun, useRunningRun } from './useRunningRun';
 
 function Spark() {
@@ -45,7 +46,7 @@ export function AgentPane() {
   const running = useRunningRun();
   const openSettings = useOverlayStore((s) => s.openSettings);
   const paneRef = useRef<HTMLElement>(null);
-  const [tab, setTab] = useState<PaneTab>('conversation');
+  const tab = useAgentPaneStore((s) => s.tab);
   const closeKeys = useShortcutLabel('toggleAssistant');
   const isSideHandover = useIsSideHandover();
   const isWorkspaceReplaced = useIsWorkspaceReplaced();
@@ -66,7 +67,7 @@ export function AgentPane() {
         const isInBox = event.target instanceof HTMLTextAreaElement;
         if (tab === 'trace' && !isInBox) {
           event.preventDefault();
-          setTab('conversation');
+          setPaneTab('conversation');
         } else if (running) {
           event.preventDefault();
           stopAgentRun(running.runId);
@@ -131,7 +132,7 @@ export function AgentPane() {
         </div>
       </header>
 
-      <PaneTabs tab={tab} onTabChange={setTab} />
+      <PaneTabs />
       <AgentPromptBox />
 
       <footer className="border-t border-line px-4 py-2.5">

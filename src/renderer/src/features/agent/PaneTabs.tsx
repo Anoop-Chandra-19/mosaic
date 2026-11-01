@@ -1,23 +1,18 @@
 import { AppTabs, AppTabsContent, AppTabsList, AppTabsTrigger } from '@/components/ui-kit';
+import { setPaneTab, useAgentPaneStore, type PaneTab } from '@/stores/agentPaneStore';
 import { TraceView } from './trace/TraceView';
 import { AgentTranscript } from './transcript/AgentTranscript';
-
-export type PaneTab = 'conversation' | 'trace';
-
-interface PaneTabsProps {
-  tab: PaneTab;
-  onTabChange: (tab: PaneTab) => void;
-}
 
 /**
  * The pane's two views of the open conversation. The conversation stays mounted under the
  * Trace, so coming back finds it where it was; the Trace is drawn only while it is open.
  */
-export function PaneTabs({ tab, onTabChange }: PaneTabsProps) {
+export function PaneTabs() {
+  const tab = useAgentPaneStore((s) => s.tab);
   return (
     <AppTabs
       value={tab}
-      onValueChange={(next) => onTabChange(next as PaneTab)}
+      onValueChange={(next) => setPaneTab(next as PaneTab)}
       className="min-h-0 flex-1"
     >
       <AppTabsList variant="folder" className="shrink-0">
