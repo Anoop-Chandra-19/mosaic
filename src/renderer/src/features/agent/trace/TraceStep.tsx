@@ -135,37 +135,39 @@ export function TraceStep({ runId, row, model, readOutcome, isOpen, onToggle }: 
         {...runAnchorProps(runId, row.key)}
         className={cn(
           textVariantClasses('secondary'),
-          'flex h-auto w-full gap-2 rounded-sm px-1 pt-1.5 pb-px text-left text-ink-soft hover:text-foreground',
+          'flex h-auto w-full flex-col items-stretch gap-px rounded-sm px-1 pt-1.5 pb-1.5 text-left text-ink-soft hover:bg-line hover:text-foreground',
           isOpen && 'bg-line'
         )}
       >
-        <StepMark state={row.state} />
-        <span className="min-w-0 truncate">{row.words}</span>
-        <Text variant="meta" className="min-w-0 flex-1 truncate @max-[27.5rem]/trace:hidden">
-          {row.call.name}
-        </Text>
-        <span className="ml-auto" />
-        <StepTime row={row} />
-        {isOpen ? (
-          <ChevronDown aria-hidden className="size-2.75 shrink-0 text-ink-faint" />
-        ) : (
-          <ChevronRight aria-hidden className="size-2.75 shrink-0 text-ink-faint" />
-        )}
-      </AppButton>
-      <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1 pr-1 pb-1.5 pl-6.25">
-        {row.note && (
-          <Text variant="caption" className="max-w-full min-w-0 truncate">
-            {row.note}
+        <span className="flex min-w-0 gap-2">
+          <StepMark state={row.state} />
+          <span className="min-w-0 truncate">{row.words}</span>
+          <Text variant="meta" className="min-w-0 flex-1 truncate @max-[27.5rem]/trace:hidden">
+            {row.call.name}
           </Text>
-        )}
-        {chip && (
-          <Chip size="sm" tone="warn">
-            {chip}
-          </Chip>
-        )}
-        {readOutcome && <Chip size="sm">{READ_CHIPS[readOutcome]}</Chip>}
-        {retries > 0 && <Chip size="sm">{retries + 1} attempts</Chip>}
-      </div>
+          <span className="ml-auto" />
+          <StepTime row={row} />
+          {isOpen ? (
+            <ChevronDown aria-hidden className="size-2.75 shrink-0 text-ink-faint" />
+          ) : (
+            <ChevronRight aria-hidden className="size-2.75 shrink-0 text-ink-faint" />
+          )}
+        </span>
+        <span className="flex flex-wrap items-center gap-x-1.5 gap-y-1 pr-1 pl-5.25 empty:hidden">
+          {row.note && (
+            <Text variant="caption" className="max-w-full min-w-0 truncate">
+              {row.note}
+            </Text>
+          )}
+          {chip && (
+            <Chip size="sm" tone="warn">
+              {chip}
+            </Chip>
+          )}
+          {readOutcome && <Chip size="sm">{READ_CHIPS[readOutcome]}</Chip>}
+          {retries > 0 && <Chip size="sm">{retries + 1} attempts</Chip>}
+        </span>
+      </AppButton>
       {isOpen && <StepRecord row={row} model={model} />}
     </div>
   );
