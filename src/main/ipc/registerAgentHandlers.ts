@@ -118,6 +118,10 @@ export function registerAgentHandlers(
     handlers.readOutdatedReads(conversationId, templateId)
   );
   handle(AGENT_CHANNELS.readLastConversationId, () => handlers.readLastConversationId());
+  handle(AGENT_CHANNELS.readConversations, (_event, [page]) => handlers.readConversations(page));
+  handle(AGENT_CHANNELS.deleteConversation, (_event, [conversationId]) =>
+    handlers.deleteConversation(conversationId)
+  );
   handle(AGENT_TOOL_ANSWER, (_event, [runId, callId, answer]) =>
     handlers.answerTool(runId, callId, answer)
   );

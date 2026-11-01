@@ -4,6 +4,7 @@ import type {
   AgentRunEnvelope,
   AgentStartRequest,
   AgentToolCall,
+  ConversationPage,
   MessagePage,
 } from '@shared/types/agentBridge';
 
@@ -22,6 +23,9 @@ export const agentService = {
   readOutdatedReads: (conversationId: number, templateId: string | null) =>
     window.mosaic.agent.readOutdatedReads(conversationId, templateId),
   readLastConversationId: () => window.mosaic.agent.readLastConversationId(),
+  readConversations: (page: ConversationPage) => window.mosaic.agent.readConversations(page),
+  deleteConversation: (conversationId: number) =>
+    window.mosaic.agent.deleteConversation(conversationId),
   /** Every run's events; returns the call that stops following them. */
   onEvent: (follow: (envelope: AgentRunEnvelope) => void) => window.mosaic.agent.onEvent(follow),
   /** The page's one tool runner; returns the call that removes it. */

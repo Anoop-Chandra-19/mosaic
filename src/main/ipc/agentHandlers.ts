@@ -5,13 +5,15 @@ import {
   MAX_AGENT_MESSAGE_LENGTH,
   type AgentStart,
   type AgentToolAnswer,
+  type ConversationPage,
+  type ConversationSummary,
   type MessagePage,
   type OutdatedRead,
 } from '@shared/types/agentBridge';
 import type { ToolResult, TranscriptMessage } from '@shared/types/agentConversation';
 import type { AgentRuns, RunPage } from '../agent/agentRuns';
 import { readOutdatedReads } from '../agent/readOutdatedReads';
-import { readLastConversationId } from '../db/conversations/conversations';
+import { readConversationPage, readLastConversationId } from '../db/conversations/conversations';
 import { readMessagePage, readToolResult } from '../db/conversations/messages';
 import { isToolTarget } from '../db/conversations/validateMessageBody';
 
@@ -34,6 +36,8 @@ export interface AgentHandlers {
   readToolResult(messageId: unknown, callId: unknown): ToolResult;
   readOutdatedReads(conversationId: unknown, templateId: unknown): OutdatedRead[];
   readLastConversationId(): number | null;
+  readConversations(page: unknown): ConversationSummary[];
+  deleteConversation(conversationId: unknown): Promise<void>;
   answerTool(runId: unknown, callId: unknown, answer: unknown): void;
 }
 
@@ -79,6 +83,17 @@ function messagePage(value: unknown): MessagePage {
   if (beforeSeq === undefined) return { limit };
   if (!isCount(beforeSeq)) throw new Error('beforeSeq must be a whole number of 0 or more');
   return { beforeSeq, limit };
+}
+
+function conversationPage(value: unknown): ConversationPage {
+  const { after, limit } = request(value);
+  if (!isCount(limit) || limit === 0 || limit > MAX_PAGE_LIMIT) {
+    throw new Error(`limit must be 1–${MAX_PAGE_LIMIT}`);
+  }
+  if (after === undefined) return { limit };
+  const { lastActiveAt, id: conversationId } = request(after);
+  if (!isCount(lastActiveAt)) throw new Error('lastActiveAt must be a whole number of 0 or more');
+  return { after: { lastActiveAt, id: rowId(conversationId, 'id') }, limit };
 }
 
 function draftStamp(value: unknown): AgentToolResult['draft'] {
@@ -141,6 +156,12 @@ export function createAgentHandlers(runs: AgentRuns, currentDb: () => Database):
         nullable(templateId, (given) => id(given, 'templateId'))
       ),
     readLastConversationId: () => readLastConversationId(currentDb()),
+    readConversations: (value) => {
+      const page = conversationPage(value);
+      return readConversationPage(currentDb(), page);
+    },
+    deleteConversation: async (conversationId) =>
+      runs.deleteConversation(rowId(conversationId, 'conversationId')),
     answerTool: (runId, callId, answer) =>
       runs.answerTool(rowId(runId, 'runId'), id(callId, 'callId'), toolAnswer(answer)),
   };

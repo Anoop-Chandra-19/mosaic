@@ -10,6 +10,7 @@ import type {
   AgentToolCall,
 } from '@shared/types/agentBridge';
 import type { AgentRunEvent } from '@shared/types/agentRunEvents';
+import { deleteConversation } from '../db/conversations/conversations';
 import type { ConversationRun } from '../db/conversations/runs';
 import type { ModelChoice, ModelProviderOpening } from '../model-providers/createModelProvider';
 import type { ModelProvider } from '../model-providers/modelProvider';
@@ -58,10 +59,13 @@ export interface AgentRuns {
    * waiting for its provider is refused.
    */
   stopAll(): Promise<void>;
+  /** Stops the conversation's run if it has one going, and deletes it once that end is stored. */
+  deleteConversation(conversationId: number): Promise<void>;
 }
 
 interface ActiveRun {
   runId: number;
+  conversationId: number;
   stop: AbortController;
   bridge: IpcToolBridge;
   ended: Promise<void>;
@@ -156,7 +160,7 @@ export function createAgentRuns(needs: AgentRunsNeeds): AgentRuns {
         bridge.close();
         active = null;
       });
-    active = { runId: run.runId, stop, bridge, ended };
+    active = { runId: run.runId, conversationId: run.conversationId, stop, bridge, ended };
     return { ok: true, conversationId: run.conversationId, runId: run.runId };
   }
 
@@ -176,6 +180,13 @@ export function createAgentRuns(needs: AgentRunsNeeds): AgentRuns {
       }
       active?.stop.abort();
       await active?.ended;
+    },
+    deleteConversation: async (conversationId) => {
+      if (active?.conversationId === conversationId) {
+        active.stop.abort();
+        await active.ended;
+      }
+      deleteConversation(needs.currentDb(), conversationId);
     },
   };
 }

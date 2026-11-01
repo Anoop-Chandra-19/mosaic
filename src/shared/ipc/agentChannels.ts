@@ -9,6 +9,8 @@ export const AGENT_CHANNELS = {
   readToolResult: 'agent:read-tool-result',
   readOutdatedReads: 'agent:read-outdated-reads',
   readLastConversationId: 'agent:read-last-conversation-id',
+  readConversations: 'agent:read-conversations',
+  deleteConversation: 'agent:delete-conversation',
 } as const satisfies Record<Exclude<keyof MosaicAgent, 'onEvent' | 'onToolCall'>, string>;
 
 /** Main → renderer: an `AgentRunEnvelope`. */
