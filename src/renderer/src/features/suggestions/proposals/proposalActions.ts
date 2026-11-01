@@ -116,6 +116,12 @@ export function discardProposals(ids?: readonly string[]): void {
   useProposalStore.getState().removeProposals(openTemplateId(), ids);
 }
 
+/** Gone from review, whichever resume they wait on: a run's can be on one that isn't open. */
+export function discardRunProposals(ids: readonly string[]): void {
+  const { byTemplate, removeProposals } = useProposalStore.getState();
+  for (const templateId of Object.keys(byTemplate)) removeProposals(templateId, ids);
+}
+
 /**
  * One proposal changed by `update`, then checked again against the draft: a change that no
  * longer fits is refused (false), and its flags follow what it now writes.

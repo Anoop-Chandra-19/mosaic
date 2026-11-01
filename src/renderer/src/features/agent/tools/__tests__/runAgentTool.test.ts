@@ -497,6 +497,7 @@ describe("checking the model's work", () => {
       { kind: 'select', place: { bulletId: 'b3' } },
       { kind: 'rewrite', after: 'Wrote the on-call runbook' },
     ]);
+    expect([...run.stagedIds]).toEqual(stagedSuggestions().map((proposal) => proposal.id));
   });
 });
 

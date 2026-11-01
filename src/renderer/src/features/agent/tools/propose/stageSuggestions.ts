@@ -16,12 +16,14 @@ import { diagnose, formatToolAnswer, type Diagnostic } from './toolDiagnostics';
 function replaceEarlierSuggestions({ run, waiting }: ToolCallContext, staged: Proposal[]) {
   const replacedIds: string[] = [];
   for (const proposal of staged) {
+    run.stagedIds.add(proposal.id);
     const key = targetKeyOf(proposal.change);
     if (!key) continue;
     const earlierId = run.suggestionIdByTarget.get(key);
     if (waiting.some((each) => each.id === earlierId)) replacedIds.push(earlierId!);
     run.suggestionIdByTarget.set(key, proposal.id);
   }
+  for (const id of replacedIds) run.stagedIds.delete(id);
   if (replacedIds.length) discardProposals(replacedIds);
 }
 

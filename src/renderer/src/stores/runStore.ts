@@ -51,6 +51,9 @@ interface RunState {
   /** What each run left staged, by run id. */
   stagedIdsByRun: Record<number, string[]>;
   keepStagedIds: (runId: number, suggestionIds: string[]) => void;
+  /** Runs the user stopped and has said what to do with what they staged. */
+  decidedStopRunIds: number[];
+  noteStopDecided: (runId: number) => void;
 }
 
 const startLiveRun = ({ conversationId, runId }: AgentRunEnvelope): LiveRun => ({
@@ -166,6 +169,13 @@ export const useRunStore = create<RunState>()(
     keepStagedIds: (runId, suggestionIds) =>
       set((state) => {
         state.stagedIdsByRun[runId] = suggestionIds;
+      }),
+
+    decidedStopRunIds: [],
+
+    noteStopDecided: (runId) =>
+      set((state) => {
+        if (!state.decidedStopRunIds.includes(runId)) state.decidedStopRunIds.push(runId);
       }),
   }))
 );

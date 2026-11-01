@@ -8,6 +8,7 @@ import { useRunStore } from '@/stores/runStore';
 import type { RunView } from '@/types/agentRunView';
 import { describeStop } from '../notices/stopWords';
 import { useServerAddresses } from '../notices/useServerAddresses';
+import { RunCard } from '../run-card/RunCard';
 import { RunActivity } from '../run-line/RunActivity';
 import { buildRunView } from './buildRunView';
 import { RunRecord } from './RunRecord';
@@ -124,6 +125,10 @@ function RunReply({ run, isLive, stopRecord }: RunReplyProps) {
       {stopRecord !== null && run.stoppedAt !== null && (
         <RunRecord text={`Stopped: ${stopRecord}`} at={run.stoppedAt} />
       )}
+      <RunCard
+        runId={run.runId}
+        isCancelled={live ? live.wasCancelled : run.stop?.reason === 'cancelled'}
+      />
     </>
   );
 }
