@@ -1,7 +1,7 @@
+import { readChangedIds } from '@/lib/resume/proposalAnchor';
 import type { Proposal } from '@/types/agentProposal';
 import type { ResumeData } from '@shared/types/resume';
 import { applyProposalsToResume } from './applyProposalsToResume';
-import { readChangedIds } from '../proposalAnchor';
 import { resolveChange } from '../reviewedChange';
 
 export interface SkippedProposal {

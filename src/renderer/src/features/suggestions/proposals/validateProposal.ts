@@ -1,6 +1,6 @@
+import { findAnchorMismatch, isPlaceShown, type AnchorMismatch } from '@/lib/resume/proposalAnchor';
 import type { ProposalChange, ProposalChangeKind } from '@/types/agentProposal';
 import type { ResumeData } from '@shared/types/resume';
-import { findAnchorMismatch, isPlaceShown, type AnchorMismatch } from './proposalAnchor';
 
 export type ProposalRefusalCode =
   | AnchorMismatch

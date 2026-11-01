@@ -1,4 +1,5 @@
 import { formatEntryHeading } from '@/lib/resume/entryHeading';
+import { findEntry, findSection } from '@/lib/resume/proposalAnchor';
 import type { AddPlace, EntryDraft, ProposalChange, ProposalFlag } from '@/types/agentProposal';
 import type { ResumeData } from '@shared/types/resume';
 import { checkClaimsMore } from './claimsMore';
@@ -7,7 +8,6 @@ import { checkNewNames } from './newNames';
 import { checkNewNumbers } from './newNumbers';
 import { checkRemovedDetail } from './removedDetail';
 import { checkUnfilledGap } from './unfilledGap';
-import { findEntry, findSection } from '../proposalAnchor';
 
 type TextCheck = (before: string, after: string, requestText: string) => ProposalFlag[];
 

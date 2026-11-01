@@ -1,12 +1,12 @@
 import type { ReactNode } from 'react';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import { AppButton, Text, textVariantClasses } from '@/components/ui-kit';
+import { shortModelName } from '@/lib/shortModelName';
 import { cn } from '@/lib/utils';
 import type { RunModel } from '@shared/types/agentConversation';
 import { LiveTime } from '../run-line/LiveTime';
 import { StepMark } from '../run-line/RunLine';
 import type { StepRow } from '../run-line/runTimeline';
-import { shortModelName } from '../shortModelName';
 import { RawBlock, ToolAnswer } from './ToolAnswer';
 import {
   describeCheck,

@@ -1,10 +1,10 @@
 import { Move } from 'lucide-react';
 import { Chip, Text } from '@/components/ui-kit';
 import { findMoves } from '@/lib/resume/changes/findMoves';
+import { findEntry, findSection } from '@/lib/resume/proposalAnchor';
 import { cn } from '@/lib/utils';
 import type { ProposalChange } from '@/types/agentProposal';
 import type { ResumeData } from '@shared/types/resume';
-import { findEntry, findSection } from '../../proposals/proposalAnchor';
 import { nameEntry } from '../text/suggestionWords';
 import { Caption } from './BodyParts';
 import type { SuggestionBodyProps } from './suggestionBodyProps';

@@ -1,10 +1,10 @@
 import { Info } from 'lucide-react';
 import { AppButton, Text } from '@/components/ui-kit';
 import { ADDED_ROW } from '@/features/document-diff/diffMarks';
+import { findEntry, findSection } from '@/lib/resume/proposalAnchor';
 import { cn } from '@/lib/utils';
 import type { AddPlace, Proposal } from '@/types/agentProposal';
 import type { ResumeData } from '@shared/types/resume';
-import { findEntry, findSection } from '../../proposals/proposalAnchor';
 import {
   cancelPlacedLast,
   clearProposalEdit,

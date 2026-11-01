@@ -1,7 +1,7 @@
 import type { ResumeData } from '@shared/types/resume';
+import { isProposalCurrent } from '@/lib/resume/proposalAnchor';
 import { useProposalStore } from '@/stores/proposalStore';
 import { useResumeStore } from '@/stores/resumeStore';
-import { isProposalCurrent } from './proposalAnchor';
 import { resolveChange } from './reviewedChange';
 
 /**

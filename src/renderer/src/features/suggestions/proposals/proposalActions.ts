@@ -8,16 +8,16 @@ import type {
   ProposalSource,
   ProposalStatus,
 } from '@/types/agentProposal';
-import { useProposalStore } from '@/stores/proposalStore';
-import { getResumeSnapshot, useResumeStore } from '@/stores/resumeStore';
-import { checkProposal } from './checks/checkProposal';
 import {
   findEntry,
   findSection,
   findTextItem,
   isProposalCurrent,
   readAddedAmong,
-} from './proposalAnchor';
+} from '@/lib/resume/proposalAnchor';
+import { useProposalStore } from '@/stores/proposalStore';
+import { getResumeSnapshot, useResumeStore } from '@/stores/resumeStore';
+import { checkProposal } from './checks/checkProposal';
 import { watchProposalAnchors } from './recheckProposals';
 import { canKeepProposal, resolveChange, reviewedRequestText } from './reviewedChange';
 import { validateProposal, type ProposalRefusal } from './validateProposal';

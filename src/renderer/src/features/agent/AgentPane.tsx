@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Sparkles, SquarePen, X } from 'lucide-react';
 import { AppButton, AppTooltip, Text } from '@/components/ui-kit';
 import { formatPaneWidth, startPaneResize } from '@/lib/paneResize';
+import { shortModelName } from '@/lib/shortModelName';
 import { useShortcutLabel } from '@/stores/shortcutBindings';
 import { useIsSideHandover } from '@/features/view-transitions/sideHandover';
 import { transitionClasses } from '@/features/view-transitions/transitionClasses';
@@ -11,10 +12,9 @@ import { openPaneConversation, startNewConversation } from '@/stores/conversatio
 import { useOverlayStore } from '@/stores/overlayStore';
 import { explainFailure, showToast } from '@/stores/toastStore';
 import { AGENT_PANE_WIDTH, useUiStore } from '@/stores/uiStore';
+import { useChosenModel } from '@/stores/useChosenModel';
 import { AgentPromptBox } from './prompt-box/AgentPromptBox';
-import { shortModelName } from './shortModelName';
 import { PaneTabs, type PaneTab } from './PaneTabs';
-import { useChosenModel } from './useChosenModel';
 import { stopAgentRun, useRunningRun } from './useRunningRun';
 
 function Spark() {

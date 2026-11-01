@@ -1,6 +1,6 @@
+import { findEntry, findSection } from '@/lib/resume/proposalAnchor';
 import type { Proposal, ProposalChange, TextPlace } from '@/types/agentProposal';
 import type { ResumeData, ResumeEntry, ResumeSection } from '@shared/types/resume';
-import { findEntry, findSection } from './proposalAnchor';
 
 /*
  * How a suggestion is named to the user, in review and in history: its kind ("Rewrite"),

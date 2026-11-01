@@ -3,9 +3,9 @@ import { Text } from '@/components/ui-kit';
 import { ADDED_ROW, DIFF_MARKS } from '@/features/document-diff/diffMarks';
 import { cn } from '@/lib/utils';
 import { formatEntryHeading } from '@/lib/resume/entryHeading';
+import { findEntry, findSection } from '@/lib/resume/proposalAnchor';
 import type { ShowPlace } from '@/types/agentProposal';
 import type { ResumeData, ResumeEntry, ResumeSection } from '@shared/types/resume';
-import { findEntry, findSection } from '../../proposals/proposalAnchor';
 import { Caption, TagLine } from './BodyParts';
 import type { SuggestionBodyProps } from './suggestionBodyProps';
 
