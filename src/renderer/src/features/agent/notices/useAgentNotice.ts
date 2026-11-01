@@ -1,10 +1,9 @@
-import { useAgentNoticeStore } from '@/stores/agentNoticeStore';
+import { useAgentNoticeStore, type NoticeRefusalReason } from '@/stores/agentNoticeStore';
 import { useConversationStore } from '@/stores/conversationStore';
 import { useRunStore } from '@/stores/runStore';
 import { useSecretsStatus } from '@/stores/secretsStore';
 import { useChosenModel } from '@/stores/useChosenModel';
 import type { RunView } from '@/types/agentRunView';
-import type { AgentStartRefusal } from '@shared/types/agentBridge';
 import { buildRunView } from '../run-view/buildRunView';
 import { pickNotice, type LiveRunFacts, type NoticeChoice } from './pickNotice';
 import { describeStartRefusal } from './startRefusalWords';
@@ -47,6 +46,6 @@ export function useAgentNotice(): NoticeChoice {
     describeRun: (run: RunView) =>
       run.stop &&
       describeStop(run.stop, run.model, serverAddresses, findKeySavedSince(run, savedKeys)),
-    describeRefusal: (reason: AgentStartRefusal) => describeStartRefusal(reason, chosen),
+    describeRefusal: (reason: NoticeRefusalReason) => describeStartRefusal(reason, chosen),
   });
 }

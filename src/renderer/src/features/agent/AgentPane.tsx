@@ -19,9 +19,10 @@ import { useChosenModel } from '@/stores/useChosenModel';
 import { AgentPromptBox } from './AgentPromptBox';
 import { ConversationList } from './conversations/ConversationList';
 import { UNTITLED } from './conversations/conversationListWords';
+import { RunningElsewhere } from './conversations/RunningElsewhere';
 import { PaneTabs } from './PaneTabs';
 import { useConversationSwitch } from './useConversationSwitch';
-import { stopAgentRun, useRunningRun } from './useRunningRun';
+import { stopAgentRun, useRunningHere, useRunningRun } from './useRunningRun';
 
 function Spark() {
   return (
@@ -50,6 +51,7 @@ export function AgentPane() {
   const close = useUiStore((s) => s.toggleAgentPane);
   const { providerLabel, model } = useChosenModel();
   const running = useRunningRun();
+  const runningHere = useRunningHere();
   const openSettings = useOverlayStore((s) => s.openSettings);
   const paneRef = useRef<HTMLElement>(null);
   const tab = useAgentPaneStore((s) => s.tab);
@@ -84,9 +86,9 @@ export function AgentPane() {
         if (tab === 'trace' && !isInBox) {
           event.preventDefault();
           setPaneTab('conversation');
-        } else if (running) {
+        } else if (runningHere) {
           event.preventDefault();
-          stopAgentRun(running.runId);
+          stopAgentRun(runningHere.runId);
         }
       }}
       className={cn(
@@ -187,6 +189,7 @@ export function AgentPane() {
       <div className="relative flex min-h-0 flex-1 flex-col">
         {/* Stays as it was under the list, so going back finds the same tab, place and words. */}
         <div inert={isListOpen} className="flex min-h-0 flex-1 flex-col">
+          <RunningElsewhere running={running} onGoTo={open} />
           <PaneTabs />
           <AgentPromptBox />
 

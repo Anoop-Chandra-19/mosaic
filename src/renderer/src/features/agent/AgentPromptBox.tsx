@@ -2,11 +2,7 @@ import { useRef, useState } from 'react';
 import { Square } from 'lucide-react';
 import { AppButton, AppTextarea, Text } from '@/components/ui-kit';
 import { dismissNotice, type NoticeSource } from '@/stores/agentNoticeStore';
-import {
-  openConversation,
-  startNewConversation,
-  useConversationStore,
-} from '@/stores/conversationStore';
+import { startNewConversation, useConversationStore } from '@/stores/conversationStore';
 import { useOverlayStore } from '@/stores/overlayStore';
 import { useTargetRequest } from '@/stores/targetStore';
 import { explainFailure, showToast } from '@/stores/toastStore';
@@ -14,19 +10,19 @@ import { AgentNoticeSlot, type NoticeHandledAction } from './notices/AgentNotice
 import { RetryOverBox } from './notices/RetryNotice';
 import { useAgentNotice } from './notices/useAgentNotice';
 import { canSendMessage, sendAgain, sendMessage } from './sendMessage';
-import { stopAgentRun, useRunningRun } from './useRunningRun';
+import { stopAgentRun, useRunningHere } from './useRunningRun';
 
 /**
  * Where the user writes to the assistant. Enter sends and Shift+Enter starts a new line;
- * while a run is going, Send becomes Stop (Esc stops too, anywhere in the pane). Above it,
- * the one notice for anything that needs the user (`notices/`): a message main won't start,
- * which keeps its place in the box, or a run that stopped.
+ * while this conversation's run is going, Send becomes Stop (Esc stops too, anywhere in the
+ * pane). Above it, the one notice for anything that needs the user (`notices/`): a message
+ * main won't start, which keeps its place in the box, or a run that stopped.
  */
 export function AgentPromptBox() {
   const [draft, setDraft] = useState('');
   const [isSending, setIsSending] = useState(false);
   const boxRef = useRef<HTMLTextAreaElement>(null);
-  const running = useRunningRun();
+  const running = useRunningHere();
   const conversationId = useConversationStore((s) => s.conversationId);
   const choice = useAgentNotice();
   const openSettings = useOverlayStore((s) => s.openSettings);
@@ -70,10 +66,6 @@ export function AgentPromptBox() {
         boxRef.current?.focus();
       },
       newConversation: startNewConversation,
-      openRunning: () => {
-        dismissNotice(source);
-        if (running) void openConversation(running.conversationId);
-      },
     };
     handlers[action.kind]();
   };

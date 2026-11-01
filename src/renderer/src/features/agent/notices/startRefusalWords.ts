@@ -1,4 +1,4 @@
-import type { AgentStartRefusal } from '@shared/types/agentBridge';
+import type { NoticeRefusalReason } from '@/stores/agentNoticeStore';
 import type { NoticeAction, NoticeWords } from './noticeWords';
 
 /*
@@ -14,7 +14,7 @@ interface RefusalWords {
 
 const NOT_SENT = 'Not sent. Your message is still in the box.';
 
-const WORDS: Record<AgentStartRefusal, (provider: string) => RefusalWords> = {
+const WORDS: Record<NoticeRefusalReason, (provider: string) => RefusalWords> = {
   noApiKey: (provider) => ({
     sentence: `Add your ${provider} API key in Settings to use it.`,
     did: NOT_SENT,
@@ -28,11 +28,6 @@ const WORDS: Record<AgentStartRefusal, (provider: string) => RefusalWords> = {
       { kind: 'settings', label: 'Open Settings' },
     ],
   }),
-  runInProgress: () => ({
-    sentence: 'The assistant is still working in another conversation.',
-    did: `It works on one thing at a time. ${NOT_SENT}`,
-    actions: [{ kind: 'openRunning', label: 'Go to it' }],
-  }),
   assistantOff: () => ({
     sentence: 'The assistant is off in Settings.',
     did: NOT_SENT,
@@ -42,7 +37,7 @@ const WORDS: Record<AgentStartRefusal, (provider: string) => RefusalWords> = {
 
 /** For the provider and model chosen now, which the message would have used. */
 export function describeStartRefusal(
-  refusal: AgentStartRefusal,
+  refusal: NoticeRefusalReason,
   chosen: { providerLabel: string; model: string }
 ): NoticeWords {
   return {
