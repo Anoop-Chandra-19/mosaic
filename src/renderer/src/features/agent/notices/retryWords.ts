@@ -1,7 +1,7 @@
 import { RUN_LIMITS } from '@shared/agent/runLimitSettings';
 import type { RunModel } from '@shared/types/agentConversation';
 import type { RunRetry } from '@/stores/runStore';
-import { readStepWords } from '../run-line/stepWords';
+import { readStepWords } from '../run-view/stepWords';
 import type { QuotedWords } from './noticeWords';
 import { formatWho, quoteProviderError, readRunSource, type ServerAddresses } from './runSource';
 

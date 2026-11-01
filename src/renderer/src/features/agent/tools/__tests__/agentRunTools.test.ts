@@ -4,7 +4,7 @@ import { useResumeStore } from '@/stores/resumeStore';
 import { useRunStore } from '@/stores/runStore';
 import type { AgentToolResult } from '@shared/agent-tools/agentTools';
 import type { AgentRunEnvelope, AgentStart, AgentToolCall } from '@shared/types/agentBridge';
-import { makeResume } from '../../suggestions/proposals/__tests__/proposalFixtures';
+import { makeResume } from '../../../suggestions/proposals/__tests__/proposalFixtures';
 import { answerAgentToolCalls, askAgent, carryOnAgent } from '../agentRunTools';
 
 let runTool: (call: AgentToolCall) => Promise<AgentToolResult>;

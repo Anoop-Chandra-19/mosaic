@@ -3,10 +3,10 @@ import type { RunRetry } from '@/stores/runStore';
 import type { RunPart } from '@/types/agentRunView';
 import type { RunModel } from '@shared/types/agentConversation';
 import { RetryNotice } from '../notices/RetryNotice';
-import { PacedReply } from '../transcript/PacedReply';
-import { TracingDots } from '../transcript/TracingDots';
-import { LiveTime } from './LiveTime';
-import { RunLine } from './RunLine';
+import { PacedReply } from '../reply/PacedReply';
+import { TracingDots } from '../reply/TracingDots';
+import { LiveTime } from '../run-view/LiveTime';
+import { RunLine } from '../run-view/RunLine';
 import {
   describeRunAloud,
   describeRunTotal,
@@ -14,7 +14,7 @@ import {
   listRunTimeline,
   type RunState,
   type TimelineItem,
-} from './runTimeline';
+} from '../run-view/runTimeline';
 
 /*
  * What a run did and wrote, in the order it happened (`runTimeline.ts`): words never fold or

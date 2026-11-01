@@ -13,7 +13,7 @@ import { useOverlayStore } from '@/stores/overlayStore';
 import { explainFailure, showToast } from '@/stores/toastStore';
 import { AGENT_PANE_WIDTH, useUiStore } from '@/stores/uiStore';
 import { useChosenModel } from '@/stores/useChosenModel';
-import { AgentPromptBox } from './prompt-box/AgentPromptBox';
+import { AgentPromptBox } from './AgentPromptBox';
 import { PaneTabs, type PaneTab } from './PaneTabs';
 import { stopAgentRun, useRunningRun } from './useRunningRun';
 
@@ -27,12 +27,15 @@ function Spark() {
 
 /**
  * The assistant, on the right of the preview, drawn only while AI is on: the open
- * conversation (`transcript/`) or its full record (`trace/`), the prompt box (`prompt-box/`) with the one notice over it
- * for a message that didn't go or a run that stopped (`notices/`),
- * and which provider and model the next run uses. It opens on the conversation used last.
- * The runs themselves are followed by `followAgentRuns` and their tools answered by
- * `agentRunTools` (`tools/`), from the shell. On a window too narrow for editor, preview,
- * and pane, it lies over the preview.
+ * conversation (`transcript/`) or its full record (`trace/`), the prompt box with the one
+ * notice over it for a message that didn't go or a run that stopped (`notices/`), and which
+ * provider and model the next run uses. It opens on the conversation used last. The runs
+ * themselves are followed and their tools answered from the shell (`followAgentRuns`, `tools/`). On a
+ * window too narrow for editor, preview, and pane, it lies over the preview.
+ *
+ * Imports only go down this list, and nothing imports this folder's own files from below:
+ * the pane here; `trace/`; `transcript/`; `notices/`, `reply/`; `run-view/`. Beside them, the
+ * pane calls `tools/`.
  */
 export function AgentPane() {
   const widthPx = useUiStore((s) => s.agentPaneWidthPx);

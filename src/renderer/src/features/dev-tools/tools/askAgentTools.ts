@@ -1,4 +1,4 @@
-import { askAgent } from '@/features/agent/agentRunTools';
+import { askAgent } from '@/features/agent/tools/agentRunTools';
 import { agentService } from '@/lib/services/agentService';
 import { useAgentSettingsStore } from '@/stores/agentSettingsStore';
 import { openConversation } from '@/stores/conversationStore';

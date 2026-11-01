@@ -9,7 +9,7 @@ import {
 import { openSentConversation, useConversationStore } from '@/stores/conversationStore';
 import { useRunStore } from '@/stores/runStore';
 import type { AgentStart } from '@shared/types/agentBridge';
-import { askAgent, carryOnAgent } from '../agentRunTools';
+import { askAgent, carryOnAgent } from './tools/agentRunTools';
 
 /*
  * What the prompt box sends: a message, or Send again from a notice. One run at a time:

@@ -7,17 +7,17 @@ import { useRunStore } from '@/stores/runStore';
 import type { RunView } from '@/types/agentRunView';
 import { describeStop } from '../notices/stopWords';
 import { useServerAddresses } from '../notices/useServerAddresses';
-import { RunCard } from '../run-card/RunCard';
-import { RunActivity } from '../run-line/RunActivity';
-import { addLiveRun, buildRunView } from './buildRunView';
+import { addLiveRun, buildRunView } from '../run-view/buildRunView';
 import { NewestButton } from './NewestButton';
+import { RunActivity } from './RunActivity';
+import { RunCard } from './RunCard';
 import { RunRecord } from './RunRecord';
 import { useMessagePages } from './useMessagePages';
 import { useStickToNewest } from './useStickToNewest';
 
 /*
  * The open conversation, a run at a time: the resume it moved to, what was asked, what
- * the assistant did and wrote (`run-line/`), and the record line a stop leaves (`RunRecord`,
+ * the assistant did and wrote (`RunActivity`), and the record line a stop leaves (`RunRecord`,
  * worded by `notices/stopWords.ts`; the notice over the box says the rest). The run under
  * way reads from `runStore`, so only its reply re-renders as it streams; once stored, it
  * reads from the transcript like the rest.

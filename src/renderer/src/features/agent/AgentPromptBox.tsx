@@ -9,11 +9,11 @@ import {
 } from '@/stores/conversationStore';
 import { useOverlayStore } from '@/stores/overlayStore';
 import { explainFailure, showToast } from '@/stores/toastStore';
-import { AgentNoticeSlot, type NoticeHandledAction } from '../notices/AgentNotice';
-import { RetryOverBox } from '../notices/RetryNotice';
-import { useAgentNotice } from '../notices/useAgentNotice';
-import { stopAgentRun, useRunningRun } from '../useRunningRun';
+import { AgentNoticeSlot, type NoticeHandledAction } from './notices/AgentNotice';
+import { RetryOverBox } from './notices/RetryNotice';
+import { useAgentNotice } from './notices/useAgentNotice';
 import { canSendMessage, sendAgain, sendMessage } from './sendMessage';
+import { stopAgentRun, useRunningRun } from './useRunningRun';
 
 /**
  * Where the user writes to the assistant. Enter sends and Shift+Enter starts a new line;

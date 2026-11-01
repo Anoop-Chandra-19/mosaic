@@ -3,8 +3,8 @@ import { Text, textVariantClasses } from '@/components/ui-kit';
 import { agentService } from '@/lib/services/agentService';
 import { readOr } from '@/lib/services/readOr';
 import { cn } from '@/lib/utils';
-import type { RowState } from '../run-line/runTimeline';
-import { TracingDots } from '../transcript/TracingDots';
+import { TracingDots } from '../reply/TracingDots';
+import type { RowState } from '../run-view/runTimeline';
 import { formatToolAnswer } from './traceWords';
 
 /** A block of what the model and the tools passed between them, exactly as it was. */

@@ -6,7 +6,7 @@ import type { AgentRunEnvelope } from '@shared/types/agentBridge';
 import type { AgentRunEvent } from '@shared/types/agentRunEvents';
 import type { SecretsStatus } from '@shared/types/secrets';
 import { createFakeAgentLog, replyBody, userBody } from '@/stores/__tests__/fakeAgentLog';
-import { buildRunView } from '../transcript/buildRunView';
+import { buildRunView } from '../run-view/buildRunView';
 import { followAgentRuns } from '../followAgentRuns';
 
 // Where the pane was left is a setting; here it keeps nothing.
