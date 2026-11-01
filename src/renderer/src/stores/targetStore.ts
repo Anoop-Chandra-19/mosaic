@@ -13,9 +13,10 @@ import { create } from 'zustand';
 
 /**
  * Every keyboard target in the app. `addSectionMenu`: Add section, from the content pane's +.
- * `devTools`: the developer tools, in development builds.
+ * `devTools`: the developer tools, in development builds. `assistantPrompt`: the assistant's
+ * prompt box.
  */
-export type KeyboardTarget = 'addSectionMenu' | 'devTools';
+export type KeyboardTarget = 'addSectionMenu' | 'devTools' | 'assistantPrompt';
 
 interface TargetRequest {
   target: KeyboardTarget;

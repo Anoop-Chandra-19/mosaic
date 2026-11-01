@@ -24,6 +24,8 @@ export const agentService = {
     window.mosaic.agent.readOutdatedReads(conversationId, templateId),
   readLastConversationId: () => window.mosaic.agent.readLastConversationId(),
   readConversations: (page: ConversationPage) => window.mosaic.agent.readConversations(page),
+  readConversationTitle: (conversationId: number) =>
+    window.mosaic.agent.readConversationTitle(conversationId),
   deleteConversation: (conversationId: number) =>
     window.mosaic.agent.deleteConversation(conversationId),
   /** Every run's events; returns the call that stops following them. */

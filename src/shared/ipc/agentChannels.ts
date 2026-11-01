@@ -10,6 +10,7 @@ export const AGENT_CHANNELS = {
   readOutdatedReads: 'agent:read-outdated-reads',
   readLastConversationId: 'agent:read-last-conversation-id',
   readConversations: 'agent:read-conversations',
+  readConversationTitle: 'agent:read-conversation-title',
   deleteConversation: 'agent:delete-conversation',
 } as const satisfies Record<Exclude<keyof MosaicAgent, 'onEvent' | 'onToolCall'>, string>;
 

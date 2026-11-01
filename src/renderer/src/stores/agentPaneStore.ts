@@ -75,6 +75,16 @@ export function showInTrace({ runId, callId }: TraceTarget): void {
   }));
 }
 
+/** Another conversation: its Conversation tab, with nothing left open from the last one's. */
+export function resetPaneView(): void {
+  useAgentPaneStore.setState({
+    tab: 'conversation',
+    openedRuns: {},
+    openCall: null,
+    traceTarget: null,
+  });
+}
+
 export function clearTraceTarget(): void {
   useAgentPaneStore.setState({ traceTarget: null });
 }

@@ -119,6 +119,9 @@ export function registerAgentHandlers(
   );
   handle(AGENT_CHANNELS.readLastConversationId, () => handlers.readLastConversationId());
   handle(AGENT_CHANNELS.readConversations, (_event, [page]) => handlers.readConversations(page));
+  handle(AGENT_CHANNELS.readConversationTitle, (_event, [conversationId]) =>
+    handlers.readConversationTitle(conversationId)
+  );
   handle(AGENT_CHANNELS.deleteConversation, (_event, [conversationId]) =>
     handlers.deleteConversation(conversationId)
   );

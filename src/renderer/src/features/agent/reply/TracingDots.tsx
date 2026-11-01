@@ -12,10 +12,17 @@ const PLACES = [
   { x: 1, y: 1 },
 ];
 
-/** Waiting for the assistant's first words: half the dots go round the edge, a place at a time. */
-export function TracingDots() {
+/** The reply's own wait is the assistant's amber; beside other things, they stay quiet. */
+const TONE_CLASS = { amber: 'fill-amber', muted: 'fill-ink-muted' } as const;
+
+/** Waiting on the assistant: half the dots go round the edge, a place at a time. */
+export function TracingDots({ tone = 'amber' }: { tone?: keyof typeof TONE_CLASS }) {
   return (
-    <svg aria-hidden viewBox="0 0 5 11" className="ml-0.5 inline-block h-2.75 w-1.25 fill-amber">
+    <svg
+      aria-hidden
+      viewBox="0 0 5 11"
+      className={`ml-0.5 inline-block h-2.75 w-1.25 ${TONE_CLASS[tone]}`}
+    >
       {PLACES.map(({ x, y }, index) => (
         <circle
           key={`${x}-${y}`}

@@ -24,6 +24,8 @@ const MESSAGES_LANDING_AT_ONCE = 8;
 interface ConversationState {
   /** Null for a new conversation, which the first run creates. */
   conversationId: number | null;
+  /** The start of its first ask, whatever the window holds; null with no words to use. */
+  title: string | null;
   messages: TranscriptMessage[];
   hasOlder: boolean;
   /** The window has moved back from the end of the log: the newest messages aren't held. */
@@ -36,6 +38,7 @@ interface ConversationState {
 
 export const useConversationStore = create<ConversationState>()(() => ({
   conversationId: null,
+  title: null,
   messages: [],
   hasOlder: false,
   hasNewer: false,
@@ -199,7 +202,11 @@ function showConversation(conversationId: number | null): void {
 /** Opens a conversation on its newest page. */
 export function openConversation(conversationId: number): Promise<void> {
   showConversation(conversationId);
-  return readInTurn(() => readNewest(conversationId));
+  return readInTurn(async () => {
+    const title = await agentService.readConversationTitle(conversationId);
+    if (isOpen(conversationId)) useConversationStore.setState({ title });
+    await readNewest(conversationId);
+  });
 }
 
 /** Back to the open conversation's newest, reading it again if the window has moved away. */
@@ -255,6 +262,7 @@ export function openPaneConversation(): Promise<void> {
 /** The next run starts a new conversation. */
 export function startNewConversation(): void {
   showConversation(null);
+  useConversationStore.setState({ title: null });
 }
 
 /** Scrolling asks far more often than it can be answered: one under way is the answer. */

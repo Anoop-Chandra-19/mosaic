@@ -21,6 +21,7 @@ const WEEKDAY_DATE_WITH_YEAR = new Intl.DateTimeFormat(undefined, {
   year: 'numeric',
 });
 const MONTH = new Intl.DateTimeFormat(undefined, { month: 'short', year: 'numeric' });
+const MONTH_NAME = new Intl.DateTimeFormat(undefined, { month: 'long' });
 
 const isSameYear = (ms: number, now: number) =>
   new Date(ms).getFullYear() === new Date(now).getFullYear();
@@ -36,6 +37,9 @@ export const formatSeconds = (ms: number): string => `${toSeconds(ms)}s`;
 
 /** "Mar 4". */
 export const formatShortDate = (ms: number): string => SHORT_DATE.format(ms);
+
+/** "March". */
+export const formatMonthName = (ms: number): string => MONTH_NAME.format(ms);
 
 /** "Mar 2026". */
 export const formatMonth = (ms: number): string => MONTH.format(ms);

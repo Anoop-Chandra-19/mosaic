@@ -8,6 +8,7 @@ import {
   useConversationStore,
 } from '@/stores/conversationStore';
 import { useOverlayStore } from '@/stores/overlayStore';
+import { useTargetRequest } from '@/stores/targetStore';
 import { explainFailure, showToast } from '@/stores/toastStore';
 import { AgentNoticeSlot, type NoticeHandledAction } from './notices/AgentNotice';
 import { RetryOverBox } from './notices/RetryNotice';
@@ -30,6 +31,7 @@ export function AgentPromptBox() {
   const choice = useAgentNotice();
   const openSettings = useOverlayStore((s) => s.openSettings);
   const shown = choice.notice;
+  useTargetRequest('assistantPrompt', () => boxRef.current?.focus());
   const canSend = !isSending && canSendMessage(draft, running !== null);
 
   const attemptSend = async (send: () => Promise<boolean>, clearsBox: boolean) => {
