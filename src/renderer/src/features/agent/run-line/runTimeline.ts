@@ -17,7 +17,8 @@ export interface RunState {
   isCancelled: boolean;
 }
 
-export type RowState = 'run' | 'done' | 'fail' | 'cut';
+/** `wait`: the connection dropped as the model wrote this step, and a retry is coming. */
+export type RowState = 'run' | 'wait' | 'done' | 'fail' | 'cut';
 
 export type StepRow = {
   kind: 'step';
@@ -33,7 +34,7 @@ export type StepRow = {
 export type ThinkRow = {
   kind: 'think';
   key: string;
-  state: Exclude<RowState, 'fail'>;
+  state: Exclude<RowState, 'fail' | 'wait'>;
   durationMs: number | null;
   startedAt: number | undefined;
 };
@@ -52,6 +53,8 @@ function toStep(part: Extract<RunPart, { type: 'toolCall' }>, isRunning: boolean
       return { ...base, state: 'fail', words: words.refused(target) };
     case 'notRun':
       return { ...base, state: 'cut', words: words.running };
+    case 'waiting':
+      return { ...base, state: 'wait', words: words.running };
     case 'running':
       return { ...base, state: isRunning ? 'run' : 'cut', words: words.running };
   }

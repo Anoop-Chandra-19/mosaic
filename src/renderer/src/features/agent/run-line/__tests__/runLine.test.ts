@@ -21,7 +21,10 @@ const FINISHED: RunState = { isRunning: false, isStopped: false, isCancelled: fa
 const STOPPED: RunState = { isRunning: false, isStopped: true, isCancelled: true };
 const FAILED: RunState = { isRunning: false, isStopped: true, isCancelled: false };
 
-const step = (callId: string, status: 'running' | 'done' | 'refused' | 'notRun'): RunPart => ({
+const step = (
+  callId: string,
+  status: 'running' | 'waiting' | 'done' | 'refused' | 'notRun'
+): RunPart => ({
   type: 'toolCall',
   callId,
   name: 'read_document',
@@ -227,6 +230,7 @@ describe('what a line says', () => {
     const states = (parts: RunPart[], state: RunState) =>
       lineOf(parts, state).rows.map((row) => row.kind === 'step' && row.state);
     expect(states([step('c1', 'running')], RUNNING)).toEqual(['run']);
+    expect(states([step('c1', 'waiting')], RUNNING)).toEqual(['wait']);
     expect(states([step('c1', 'running')], STOPPED)).toEqual(['cut']);
     expect(states([step('c1', 'notRun')], STOPPED)).toEqual(['cut']);
     expect(states([step('c1', 'refused')], FINISHED)).toEqual(['fail']);

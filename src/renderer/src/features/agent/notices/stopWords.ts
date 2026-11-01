@@ -1,9 +1,4 @@
-import {
-  BILLING_PAGE_URLS,
-  KEY_PAGE_URLS,
-  MODEL_PROVIDER_OPTIONS,
-  STATUS_PAGE_URLS,
-} from '@/lib/modelProviderOptions';
+import { BILLING_PAGE_URLS, KEY_PAGE_URLS, STATUS_PAGE_URLS } from '@/lib/modelProviderOptions';
 import { formatTimeOfDay } from '@shared/time/formatTime';
 import { RUN_LIMITS } from '@shared/agent/runLimitSettings';
 import type { RunModel, RunStoppedMessageBody } from '@shared/types/agentConversation';
@@ -11,7 +6,13 @@ import type { RunView } from '@/types/agentRunView';
 import type { ModelProviderError } from '@shared/types/modelReply';
 import { KEYED_PROVIDERS, type KeyedProvider, type SecretsStatus } from '@shared/types/secrets';
 import type { NoticeAction, NoticeLevel, NoticeWords, QuotedWords } from './noticeWords';
-import { shortModelName } from '../shortModelName';
+import {
+  formatWho,
+  quoteProviderError,
+  readRunSource,
+  type RunSource,
+  type ServerAddresses,
+} from './runSource';
 
 /*
  * What the pane says about a run that stopped on its own, from the facts its stop stored:
@@ -40,25 +41,12 @@ export interface StopWords extends NoticeWords {
   record: string;
 }
 
-/** Where the servers the user runs listen, as Settings has them now. */
-export interface ServerAddresses {
-  ollama: string;
-  openaiCompatible: string;
-}
-
-interface StopFacts {
+interface StopFacts extends RunSource {
   stop: RunStoppedMessageBody;
-  /** The name a notice opens with: "OpenAI-compatible". */
-  providerLabel: string;
-  /** Who the sentences talk about: "OpenAI", or "The server". */
-  provider: string;
   /** Null for a server the user runs, which has no account pages. */
   keyedProvider: KeyedProvider | null;
   isOllama: boolean;
   isOpenAiCompatible: boolean;
-  model: string;
-  /** Where a server the user runs listens, as the address line reads it; else null. */
-  address: string | null;
   /** "Tried 4 times.", when the step was tried more than once. */
   tries: string | null;
   /** When a key was saved for this provider, if that came after the stop. */
@@ -137,16 +125,8 @@ function providerPage(
   return facts.keyedProvider ? [{ kind: 'link', label, url: urls[facts.keyedProvider] }] : [];
 }
 
-/** What the provider said; for a connection that never got there, what your computer said. */
-function quoteProvider({ stop, provider }: StopFacts): QuotedWords | null {
-  const error = stop.providerError;
-  if (!error?.message) return null;
-  return {
-    label: error.reason === 'unreachable' ? 'Your computer said' : `${provider} said`,
-    code: error.httpStatus === undefined ? null : String(error.httpStatus),
-    text: error.message,
-  };
-}
+const quoteProvider = ({ stop, provider }: StopFacts) =>
+  stop.providerError ? quoteProviderError(stop.providerError, provider) : null;
 
 /** The refusal a stop layer counted, or Mosaic's own error, under its label. */
 function quoteDetail({ stop }: StopFacts, label: string): QuotedWords | null {
@@ -319,15 +299,6 @@ function describeTries({ attempts }: RunStoppedMessageBody): string | null {
   return `Tried ${attempts} times.`;
 }
 
-const PROVIDER_LABELS = new Map<string, string>(
-  MODEL_PROVIDER_OPTIONS.map((option) => [option.id, option.label])
-);
-
-function readServerAddress(providerId: string, addresses: ServerAddresses): string | null {
-  if (providerId !== 'ollama' && providerId !== 'openaiCompatible') return null;
-  return addresses[providerId].replace(/^https?:\/\//, '');
-}
-
 function readStopFacts(
   stop: RunStoppedMessageBody,
   runModel: RunModel | null,
@@ -335,18 +306,13 @@ function readStopFacts(
   newKeySavedAt: number | null
 ): StopFacts {
   const providerId = runModel?.provider ?? '';
-  const providerLabel = PROVIDER_LABELS.get(providerId) ?? (providerId || 'The provider');
-  const isOpenAiCompatible = providerId === 'openaiCompatible';
   return {
+    ...readRunSource(runModel, serverAddresses),
     newKeySavedAt,
     stop,
-    providerLabel,
-    provider: isOpenAiCompatible ? 'The server' : providerLabel,
     keyedProvider: KEYED_PROVIDERS.find((keyed) => keyed === providerId) ?? null,
     isOllama: providerId === 'ollama',
-    isOpenAiCompatible,
-    model: runModel ? shortModelName(runModel.model) : 'the model',
-    address: readServerAddress(providerId, serverAddresses),
+    isOpenAiCompatible: providerId === 'openaiCompatible',
     tries: describeTries(stop),
   };
 }
@@ -380,7 +346,7 @@ export function describeStop(
   return {
     kind,
     level,
-    who: [facts.providerLabel, facts.model, facts.address].filter(Boolean).join(' · '),
+    who: formatWho(facts),
     sentence: words.sentence,
     record: words.record,
     quoted: words.quoted === undefined ? quoteProvider(facts) : words.quoted,

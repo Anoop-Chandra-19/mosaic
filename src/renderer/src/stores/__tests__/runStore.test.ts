@@ -70,6 +70,38 @@ describe('the live run', () => {
     });
   });
 
+  it('keeps a call cut off mid-step waiting in place, until the retry says anything', () => {
+    const error = { reason: 'unreachable' } as const;
+    const call = { type: 'toolCall', callId: 'c1', name: 'propose_rewrite' } as const;
+    follow(4, [
+      { type: 'stepStarted', step: 1 },
+      { type: 'textDelta', text: 'Rewriting.' },
+      call,
+      { type: 'stepRetrying', attempt: 1, waitMs: 1000, error },
+    ]);
+    const waiting = { type: 'toolCall', callId: 'c1', status: 'waiting' };
+    expect(useRunStore.getState().live).toMatchObject({
+      parts: [waiting],
+      retrying: { newestCall: waiting },
+    });
+
+    follow(4, [{ type: 'stepRetrying', attempt: 2, waitMs: 4000, error }]);
+    expect(useRunStore.getState().live?.parts).toMatchObject([waiting]);
+
+    follow(4, [{ type: 'toolCall', callId: 'c2', name: 'propose_rewrite' }]);
+    expect(useRunStore.getState().live?.parts).toMatchObject([{ callId: 'c2', status: 'running' }]);
+  });
+
+  it('drops a call still waiting when the run ends instead', () => {
+    follow(4, [
+      { type: 'stepStarted', step: 1 },
+      { type: 'toolCall', callId: 'c1', name: 'propose_rewrite' },
+      { type: 'stepRetrying', attempt: 1, waitMs: 1000, error: { reason: 'unreachable' } },
+      { type: 'runEnded', stopReason: 'cancelled' },
+    ]);
+    expect(useRunStore.getState().live).toMatchObject({ parts: [], retrying: null });
+  });
+
   it('notes when the run last said anything, which a wait for the model counts from', () => {
     vi.useFakeTimers({ now: 1000 });
     follow(4, [{ type: 'stepStarted', step: 1 }]);

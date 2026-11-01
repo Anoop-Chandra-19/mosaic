@@ -4,7 +4,13 @@ import { AppButton, Text, textVariantClasses } from '@/components/ui-kit';
 import { foldAway } from '@/lib/motion/presenceMotions';
 import { usePresenceMotion } from '@/lib/motion/usePresenceMotion';
 import { cn } from '@/lib/utils';
-import { NOTICE_TAGS, type NoticeAction, type NoticeLevel, type NoticeWords } from './noticeWords';
+import {
+  NOTICE_TAGS,
+  type NoticeAction,
+  type NoticeLevel,
+  type NoticeWords,
+  type QuotedWords,
+} from './noticeWords';
 import type { NoticeChoice } from './pickNotice';
 
 /*
@@ -135,6 +141,31 @@ function NoticeActions({ actions, isSending, onAction }: NoticeActionsProps) {
   );
 }
 
+/** Someone else's words, as they came, with their status. */
+export function QuotedBlock({ quoted }: { quoted: QuotedWords }) {
+  return (
+    <div className="mx-2.5 mt-1.75 rounded-sm bg-line px-2 pt-1.5 pb-1.75">
+      <div className="flex items-baseline gap-1.5">
+        <Text variant="caption">{quoted.label}</Text>
+        {quoted.code && (
+          <Text variant="meta" className="font-control text-ink-soft">
+            {quoted.code}
+          </Text>
+        )}
+      </div>
+      <Text
+        as="p"
+        variant="meta"
+        // A provider's message can be any length; it scrolls, so the actions stay near.
+        className="mt-0.5 max-h-24 overflow-y-auto wrap-anywhere whitespace-pre-wrap text-ink-soft"
+        tabIndex={0}
+      >
+        {quoted.text}
+      </Text>
+    </div>
+  );
+}
+
 interface AgentNoticeProps {
   words: NoticeWords;
   isSending: boolean;
@@ -193,27 +224,7 @@ export function AgentNotice({
       <Text as="p" variant="strong" className="px-2.5 pt-1.5 text-pretty">
         {words.sentence}
       </Text>
-      {words.quoted && (
-        <div className="mx-2.5 mt-1.75 rounded-sm bg-line px-2 pt-1.5 pb-1.75">
-          <div className="flex items-baseline gap-1.5">
-            <Text variant="caption">{words.quoted.label}</Text>
-            {words.quoted.code && (
-              <Text variant="meta" className="font-control text-ink-soft">
-                {words.quoted.code}
-              </Text>
-            )}
-          </div>
-          <Text
-            as="p"
-            variant="meta"
-            // A provider's message can be any length; it scrolls, so the actions stay near.
-            className="mt-0.5 max-h-24 overflow-y-auto wrap-anywhere whitespace-pre-wrap text-ink-soft"
-            tabIndex={0}
-          >
-            {words.quoted.text}
-          </Text>
-        </div>
-      )}
+      {words.quoted && <QuotedBlock quoted={words.quoted} />}
       {(words.did || checked) && (
         <Text as="p" variant="secondary" className="mx-2.5 mt-1.5 text-pretty">
           {words.did}
