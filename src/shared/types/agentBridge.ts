@@ -60,6 +60,18 @@ export type AgentToolAnswer =
   | { ok: false; message: string };
 
 /**
+ * What became of a read that no longer holds: the model was told to read again, or nothing has
+ * asked it since and the draft has moved on, or another resume is open.
+ */
+export type ReadOutcome = 'askedAgain' | 'edited' | 'otherResume';
+
+export interface OutdatedRead {
+  runId: number;
+  callId: string;
+  outcome: ReadOutcome;
+}
+
+/**
  * `window.mosaic.agent`: the assistant's runs, which happen in main. The page starts and
  * stops them, follows their events, reads the log in pages, and runs the tools a run calls,
  * since the draft and the suggestions live in the page.
@@ -72,6 +84,8 @@ export interface MosaicAgent {
   readMessages(conversationId: number, page: MessagePage): Promise<TranscriptMessage[]>;
   /** One call's answer in full, which pages leave out. `messageId` is the message holding it. */
   readToolResult(messageId: number, callId: string): Promise<ToolResult>;
+  /** The conversation's reads that no longer hold, against the draft of `templateId` now. */
+  readOutdatedReads(conversationId: number, templateId: string | null): Promise<OutdatedRead[]>;
   /** The conversation used last, which the pane opens on; null before the first run. */
   readLastConversationId(): Promise<number | null>;
   /** Every run's events; returns the call that stops following them. */

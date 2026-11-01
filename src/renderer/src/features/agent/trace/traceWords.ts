@@ -1,3 +1,4 @@
+import type { ReadOutcome } from '@shared/types/agentBridge';
 import type { StepRetry } from '@shared/types/agentConversation';
 import type { ModelUsage } from '@shared/types/modelReply';
 import type { RowState } from '../run-view/runTimeline';
@@ -33,6 +34,12 @@ export const STATE_CHIPS: Record<RowState, string | null> = {
   done: null,
   fail: 'refused',
   cut: 'not run',
+};
+
+export const READ_CHIPS: Record<ReadOutcome, string> = {
+  askedAgain: 'Asked to read again',
+  edited: 'Out of date: you edited after this read',
+  otherResume: 'Out of date: another resume is open',
 };
 
 export const STATE_WORDS: Record<RowState, string> = {

@@ -1,6 +1,6 @@
 import { memo, useState } from 'react';
 import { ChevronDown, ChevronRight } from 'lucide-react';
-import { AppButton, Text, textVariantClasses } from '@/components/ui-kit';
+import { AppButton, Chip, Text, textVariantClasses } from '@/components/ui-kit';
 import { cn } from '@/lib/utils';
 import { useRunStore } from '@/stores/runStore';
 import type { RunView } from '@/types/agentRunView';
@@ -20,8 +20,10 @@ import {
   type RunState,
   type ThinkRow,
 } from '../run-view/runTimeline';
+import { countFlaggedSteps, isStepFlagged } from './traceFlags';
 import { TraceStep } from './TraceStep';
 import { describeRetry, formatThinkingLength, formatTokens, formatTraceTime } from './traceWords';
+import type { ReadOutcomes } from './useOutdatedReads';
 
 /*
  * One run in the Trace: a header that says what was asked and what it came to, and, open, the
@@ -59,12 +61,25 @@ function ThinkEntry({ row }: { row: ThinkRow }) {
 interface TraceLineProps {
   line: RunLineItems;
   run: RunView;
+  readOutcomes: ReadOutcomes | undefined;
+  isOnlyFlagged: boolean;
   openCallId: string | null;
   onToggleCall: (callId: string) => void;
 }
 
 /** A line of the conversation, drawn as a bracket on the left. */
-function TraceLine({ line, run, openCallId, onToggleCall }: TraceLineProps) {
+function TraceLine({
+  line,
+  run,
+  readOutcomes,
+  isOnlyFlagged,
+  openCallId,
+  onToggleCall,
+}: TraceLineProps) {
+  const rows = isOnlyFlagged
+    ? line.rows.filter((row) => row.kind === 'step' && isStepFlagged(row, readOutcomes?.[row.key]))
+    : line.rows;
+  if (rows.length === 0) return null;
   return (
     <div className="flex flex-col border-l-2 border-line-strong pl-2.5">
       {line.steps.length > 1 && (
@@ -72,7 +87,7 @@ function TraceLine({ line, run, openCallId, onToggleCall }: TraceLineProps) {
           {countSteps(line.steps.length)}
         </Text>
       )}
-      {line.rows.map((row) =>
+      {rows.map((row) =>
         row.kind === 'think' ? (
           <ThinkEntry key={row.key} row={row} />
         ) : (
@@ -80,6 +95,7 @@ function TraceLine({ line, run, openCallId, onToggleCall }: TraceLineProps) {
             key={row.key}
             row={row}
             model={run.model}
+            readOutcome={readOutcomes?.[row.key]}
             isOpen={openCallId === row.key}
             onToggle={() => onToggleCall(row.key)}
           />
@@ -142,6 +158,8 @@ interface TraceRunProps {
   isLive: boolean;
   isOpen: boolean;
   onToggle: (runId: number) => void;
+  readOutcomes: ReadOutcomes | undefined;
+  isOnlyFlagged: boolean;
   openCallId: string | null;
   onToggleCall: (runId: number, callId: string) => void;
 }
@@ -152,6 +170,8 @@ export const TraceRun = memo(function TraceRun({
   isLive,
   isOpen,
   onToggle,
+  readOutcomes,
+  isOnlyFlagged,
   openCallId,
   onToggleCall,
 }: TraceRunProps) {
@@ -166,6 +186,7 @@ export const TraceRun = memo(function TraceRun({
   const timeline = listRunTimeline(live?.parts ?? run.parts, state);
   const steps = countSteps(countRunSteps(timeline, state));
   const endedAt = live ? (live.endedAt ?? startedAt) : run.lastAt;
+  const flagged = countFlaggedSteps(timeline, readOutcomes);
   return (
     <section className="border-t border-line pt-2 pb-2.5 first:border-t-0">
       <AppButton
@@ -207,17 +228,29 @@ export const TraceRun = memo(function TraceRun({
         )}
         {run.model && <Text variant="meta">{run.model.model}</Text>}
         {run.usage && <Text variant="meta">{formatTokens(run.usage)}</Text>}
+        {flagged > 0 && (
+          <Chip size="sm" tone="warn">
+            {flagged} flagged
+          </Chip>
+        )}
       </div>
       {isOpen && (
         <div className="flex flex-col gap-2 pt-2.5 pl-5 @max-[27.5rem]/trace:pl-2">
+          {isOnlyFlagged && flagged === 0 && (
+            <Text as="p" variant="caption">
+              Nothing flagged in this run.
+            </Text>
+          )}
           {timeline.map((item) =>
             item.kind === 'text' ? (
-              <TraceWords key={item.key} text={item.text} />
+              !isOnlyFlagged && <TraceWords key={item.key} text={item.text} />
             ) : (
               <TraceLine
                 key={item.key}
                 line={item.line}
                 run={run}
+                readOutcomes={readOutcomes}
+                isOnlyFlagged={isOnlyFlagged}
                 openCallId={openCallId}
                 onToggleCall={(callId) => onToggleCall(run.runId, callId)}
               />

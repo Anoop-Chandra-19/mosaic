@@ -102,3 +102,28 @@ export function readToolCallStamps(db: Database, conversationId: number): ToolCa
     )
     .all(conversationId);
 }
+
+/** A run with one of its calls, or with none: where the draft stood at each. */
+export interface RunCallRow {
+  runId: number;
+  templateId: string | null;
+  /** The template's rev when the run started. */
+  runRev: number | null;
+  callId: string | null;
+  name: string | null;
+  status: string | null;
+  callRev: number | null;
+}
+
+/** The conversation's runs and their calls, in the order they happened. */
+export function readRunCallRows(db: Database, conversationId: number): RunCallRow[] {
+  return db
+    .prepare<[number], RunCallRow>(
+      `select runs.id as runId, runs.template_id as templateId, runs.rev as runRev,
+              call_id as callId, name, tool_calls.status as status, tool_calls.rev as callRev
+         from runs left join tool_calls on tool_calls.run_id = runs.id
+        where runs.conversation_id = ?
+        order by runs.seq, tool_calls.id`
+    )
+    .all(conversationId);
+}

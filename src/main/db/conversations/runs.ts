@@ -21,11 +21,16 @@ export interface StartedRun {
   seq: number;
 }
 
-function readTemplateRev(db: Database, templateId: string): number {
-  const rev = db
+/** Undefined once the template is gone. */
+export function findTemplateRev(db: Database, templateId: string): number | undefined {
+  return db
     .prepare<[string], number>('select rev from templates where id = ?')
     .pluck()
     .get(templateId);
+}
+
+function readTemplateRev(db: Database, templateId: string): number {
+  const rev = findTemplateRev(db, templateId);
   if (rev === undefined) throw new StorageError('not-found', `No template with id ${templateId}`);
   return rev;
 }

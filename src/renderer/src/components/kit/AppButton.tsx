@@ -46,6 +46,9 @@ const appButtonVariants = cva(
         // Sits over what scrolls beneath it, so it has a fill and lifts off it.
         floating:
           'border border-line-strong bg-pane-raised text-ink-soft shadow-floating hover:border-line-heavy hover:text-foreground',
+        // A filter over a list: `aria-pressed` says it is on.
+        filter:
+          'border border-line-strong font-regular text-ink-muted hover:text-foreground aria-pressed:border-line-heavy aria-pressed:bg-line-strong aria-pressed:font-control aria-pressed:text-foreground',
         // One of a few ways forward, laid out as a card: the focused one is edged amber, and
         // the pointer moves focus, so the edge is the only highlight.
         option:

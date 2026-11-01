@@ -6,9 +6,11 @@ import {
   type AgentStart,
   type AgentToolAnswer,
   type MessagePage,
+  type OutdatedRead,
 } from '@shared/types/agentBridge';
 import type { ToolResult, TranscriptMessage } from '@shared/types/agentConversation';
 import type { AgentRuns, RunPage } from '../agent/agentRuns';
+import { readOutdatedReads } from '../agent/readOutdatedReads';
 import { readLastConversationId } from '../db/conversations/conversations';
 import { readMessagePage, readToolResult } from '../db/conversations/messages';
 import { isToolTarget } from '../db/conversations/validateMessageBody';
@@ -30,6 +32,7 @@ export interface AgentHandlers {
   stop(runId: unknown): void;
   readMessages(conversationId: unknown, page: unknown): TranscriptMessage[];
   readToolResult(messageId: unknown, callId: unknown): ToolResult;
+  readOutdatedReads(conversationId: unknown, templateId: unknown): OutdatedRead[];
   readLastConversationId(): number | null;
   answerTool(runId: unknown, callId: unknown, answer: unknown): void;
 }
@@ -131,6 +134,12 @@ export function createAgentHandlers(runs: AgentRuns, currentDb: () => Database):
       readMessagePage(currentDb(), rowId(conversationId, 'conversationId'), messagePage(page)),
     readToolResult: (messageId, callId) =>
       readToolResult(currentDb(), rowId(messageId, 'messageId'), id(callId, 'callId')),
+    readOutdatedReads: (conversationId, templateId) =>
+      readOutdatedReads(
+        currentDb(),
+        rowId(conversationId, 'conversationId'),
+        nullable(templateId, (given) => id(given, 'templateId'))
+      ),
     readLastConversationId: () => readLastConversationId(currentDb()),
     answerTool: (runId, callId, answer) =>
       runs.answerTool(rowId(runId, 'runId'), id(callId, 'callId'), toolAnswer(answer)),

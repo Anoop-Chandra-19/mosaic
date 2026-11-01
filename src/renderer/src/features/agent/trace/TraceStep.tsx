@@ -1,8 +1,9 @@
 import type { ReactNode } from 'react';
 import { ChevronDown, ChevronRight } from 'lucide-react';
-import { AppButton, Text, textVariantClasses } from '@/components/ui-kit';
+import { AppButton, Chip, Text, textVariantClasses } from '@/components/ui-kit';
 import { shortModelName } from '@/lib/shortModelName';
 import { cn } from '@/lib/utils';
+import type { ReadOutcome } from '@shared/types/agentBridge';
 import type { RunModel } from '@shared/types/agentConversation';
 import { LiveTime } from '../run-view/LiveTime';
 import { StepMark } from '../run-view/RunLine';
@@ -14,23 +15,10 @@ import {
   formatSharedTokens,
   formatToolArguments,
   formatTraceTime,
+  READ_CHIPS,
   STATE_CHIPS,
   STATE_WORDS,
 } from './traceWords';
-
-export function TraceChip({ children, isWarning }: { children: ReactNode; isWarning?: boolean }) {
-  return (
-    <Text
-      variant="caption"
-      className={cn(
-        'rounded-[0.25rem] px-1.5 py-px whitespace-nowrap',
-        isWarning ? 'bg-warn-soft text-warn-text' : 'bg-line text-ink-muted'
-      )}
-    >
-      {children}
-    </Text>
-  );
-}
 
 function RecordRow({ label, children }: { label: string; children: ReactNode }) {
   return (
@@ -127,12 +115,13 @@ function StepTime({ row }: { row: StepRow }) {
 interface TraceStepProps {
   row: StepRow;
   model: RunModel | null;
+  readOutcome: ReadOutcome | undefined;
   isOpen: boolean;
   onToggle: () => void;
 }
 
 /** One tool call: its name, what it was about, and, opened, its whole record. */
-export function TraceStep({ row, model, isOpen, onToggle }: TraceStepProps) {
+export function TraceStep({ row, model, readOutcome, isOpen, onToggle }: TraceStepProps) {
   const chip = STATE_CHIPS[row.state];
   const retries = row.call.request?.retries.length ?? 0;
   return (
@@ -165,8 +154,13 @@ export function TraceStep({ row, model, isOpen, onToggle }: TraceStepProps) {
             {row.note}
           </Text>
         )}
-        {chip && <TraceChip isWarning>{chip}</TraceChip>}
-        {retries > 0 && <TraceChip>{retries + 1} attempts</TraceChip>}
+        {chip && (
+          <Chip size="sm" tone="warn">
+            {chip}
+          </Chip>
+        )}
+        {readOutcome && <Chip size="sm">{READ_CHIPS[readOutcome]}</Chip>}
+        {retries > 0 && <Chip size="sm">{retries + 1} attempts</Chip>}
       </div>
       {isOpen && <StepRecord row={row} model={model} />}
     </div>
