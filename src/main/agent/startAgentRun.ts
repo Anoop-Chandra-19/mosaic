@@ -140,15 +140,19 @@ async function loopSteps(
       limits: limitSettings,
       wait: request.wait ?? waitUnlessAborted,
     });
+    const { retries } = reply;
+    // Their step's reply holds them, or the stop when no reply is stored.
+    const stopRetries = retries.length > 0 ? { retries } : {};
     if (!reply.ok && reply.reason === 'cancelled') {
       // What streamed before the Stop is kept, without calls that will never be answered.
       const kept = reply.parts.filter((part) => part.type !== 'toolCall');
-      if (kept.length > 0) storeModelReply(db, run, { parts: kept, model: modelName, rev: null });
+      if (kept.length === 0) return { reason: 'cancelled', ...stopRetries };
+      storeModelReply(db, run, { parts: kept, retries, model: modelName, rev: null });
       return { reason: 'cancelled' };
     }
     if (!reply.ok) {
       const { reason, error, attempts, waitedMs } = reply;
-      return { reason, providerError: error, attempts, waitedMs };
+      return { reason, providerError: error, attempts, waitedMs, ...stopRetries };
     }
 
     addUsage(usage, reply.usage);
@@ -158,6 +162,7 @@ async function loopSteps(
       parts,
       finish,
       usage: reply.usage,
+      retries,
       model: modelName,
       rev: draft?.rev ?? null,
     });

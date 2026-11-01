@@ -83,6 +83,8 @@ describe('agent handlers', () => {
     ],
     ['a run id as text', (h) => h.stop('2')],
     ['a page of 0 messages', (h) => h.readMessages(1, { limit: 0 })],
+    ['a tool result’s message id as text', (h) => h.readToolResult('1', 'c1')],
+    ['a tool result with no call id', (h) => h.readToolResult(1, '')],
     ['an answer that doesn’t say if the tool ran', (h) => h.answerTool(2, 'c1', { content: '' })],
     [
       'an answer without its error flag',

@@ -184,7 +184,7 @@ describe('a run', () => {
       { type: 'textDelta', text: 'A private ' },
       { type: 'textDelta', text: 'sentence.' },
       { type: 'toolCall', callId: 'c1', name: 'propose_rewrite' },
-      { type: 'toolCall', callId: 'c1', name: 'propose_rewrite' },
+      { type: 'toolCall', callId: 'c1', name: 'propose_rewrite', args: { text: 'A private ask' } },
       {
         type: 'toolResult',
         callId: 'c1',

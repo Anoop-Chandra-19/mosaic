@@ -182,8 +182,18 @@ describe('a run’s stop', () => {
       {
         type: 'toolResults',
         results: [
-          { callId: 'c1', content: 'The tool was not run.', isError: true },
-          { callId: 'c2', content: 'The tool was not run.', isError: true },
+          {
+            callId: 'c1',
+            content: 'The tool was not run.',
+            isError: true,
+            checkName: 'interrupted',
+          },
+          {
+            callId: 'c2',
+            content: 'The tool was not run.',
+            isError: true,
+            checkName: 'interrupted',
+          },
         ],
       },
       { type: 'runStopped', reason: 'appFault', detail: 'Error: broken view' },

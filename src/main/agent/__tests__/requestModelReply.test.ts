@@ -75,11 +75,12 @@ describe('requestModelReply', () => {
       finish: 'complete',
       usage: { inputTokens: 100, outputTokens: 10 },
       callStartedAt: new Map([['c1', expect.any(Number)]]),
+      retries: [],
     });
     expect(events).toEqual([
       { type: 'textDelta', text: 'Tight' },
       { type: 'textDelta', text: 'ened.' },
-      { type: 'toolCall', callId: 'c1', name: 'read_document' },
+      { type: 'toolCall', callId: 'c1', name: 'read_document', args: {} },
     ]);
   });
 
@@ -148,6 +149,11 @@ describe('requestModelReply', () => {
       error: { reason: 'unreachable' },
       attempts: 4,
       waitedMs: 21_000,
+      retries: [
+        { error: { reason: 'unreachable' }, waitMs: 1000 },
+        { error: { reason: 'failed', message: 'Bad gateway', httpStatus: 502 }, waitMs: 4000 },
+        { error: { reason: 'failed', message: 'The reply stopped arriving' }, waitMs: 16_000 },
+      ],
     });
     expect(waits).toEqual([1000, 4000, 16_000]);
     expect(model.requests).toHaveLength(4);
@@ -187,6 +193,7 @@ describe('requestModelReply', () => {
       error,
       attempts: 1,
       waitedMs: 0,
+      retries: [],
     });
     expect(waits).toEqual([]);
   });

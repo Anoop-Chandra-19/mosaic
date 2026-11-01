@@ -111,6 +111,9 @@ export function registerAgentHandlers(
   handle(AGENT_CHANNELS.readMessages, (_event, [conversationId, page]) =>
     handlers.readMessages(conversationId, page)
   );
+  handle(AGENT_CHANNELS.readToolResult, (_event, [messageId, callId]) =>
+    handlers.readToolResult(messageId, callId)
+  );
   handle(AGENT_CHANNELS.readLastConversationId, () => handlers.readLastConversationId());
   handle(AGENT_TOOL_ANSWER, (_event, [runId, callId, answer]) =>
     handlers.answerTool(runId, callId, answer)

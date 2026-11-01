@@ -70,8 +70,8 @@ describe('recoverInterruptedRuns', () => {
     expect(last.body).toEqual({
       type: 'toolResults',
       results: [
-        { callId: 'call-1', isError: true },
-        { callId: 'call-2', isError: true },
+        { callId: 'call-1', isError: true, checkName: 'interrupted' },
+        { callId: 'call-2', isError: true, checkName: 'interrupted' },
       ],
     });
     expect(readToolResult(db, last.id, 'call-1').content).toMatch(/closed/);

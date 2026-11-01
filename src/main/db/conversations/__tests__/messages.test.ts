@@ -124,7 +124,32 @@ describe('readMessagePage', () => {
     });
   });
 
-  it('gives thinking its duration only, keeping the rest for the next request', () => {
+  it('gives what a request used, only when its provider said', () => {
+    const body: MessageBody = { type: 'assistant', content: [] };
+    appendMessage(db, { conversationId, runId: null, body });
+    appendMessage(db, {
+      conversationId,
+      runId: null,
+      body,
+      inputTokens: 1204,
+      outputTokens: 80,
+    });
+    appendMessage(db, {
+      conversationId,
+      runId: null,
+      body,
+      inputTokens: 1204,
+      cachedInputTokens: 1000,
+      outputTokens: 80,
+    });
+    expect(readMessagePage(db, conversationId, { limit: 3 }).map(({ usage }) => usage)).toEqual([
+      undefined,
+      { inputTokens: 1204, outputTokens: 80 },
+      { inputTokens: 1204, cachedInputTokens: 1000, outputTokens: 80 },
+    ]);
+  });
+
+  it('gives thinking its duration and length only, keeping the rest for the next request', () => {
     const reasoning = {
       type: 'reasoning',
       text: 'The summary repeats the first bullet.',
@@ -141,7 +166,7 @@ describe('readMessagePage', () => {
     expect(readMessagePage(db, conversationId, { limit: 1 })[0].body).toEqual({
       type: 'assistant',
       content: [
-        { type: 'reasoning', durationMs: 3400 },
+        { type: 'reasoning', durationMs: 3400, textLength: reasoning.text.length },
         { type: 'text', text: 'Tightened it.' },
       ],
       finish: 'complete',

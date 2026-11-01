@@ -233,6 +233,7 @@ describe('a run started from the page', () => {
             callId: 'c1',
             content: 'The tool did not answer in time.',
             isError: true,
+            checkName: 'timeout',
             durationMs: expect.any(Number),
             startedAt: expect.any(Number),
           },

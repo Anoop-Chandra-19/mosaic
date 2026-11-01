@@ -204,7 +204,13 @@ describe('stopping a run', () => {
             durationMs: expect.any(Number),
             startedAt: expect.any(Number),
           },
-          { callId: 'c4', content: 'Not run: the run stopped.', isError: true, notRun: true },
+          {
+            callId: 'c4',
+            content: 'Not run: the run stopped.',
+            isError: true,
+            notRun: true,
+            checkName: 'stopped',
+          },
         ],
       },
       { type: 'runStopped', reason: 'repeatedCall', detail: 'order mixes lists' },
@@ -237,6 +243,22 @@ describe('stopping a run', () => {
     expect(await run).toEqual({ stopReason: 'stepLimit' });
     expect(model.requests).toHaveLength(2);
     expect(readRun(1)).toMatchObject({ status: 'step_limit' });
+  });
+
+  it('stores the retries with the step’s reply, or the stop when no reply came', async () => {
+    const error = { reason: 'unreachable', message: 'socket hang up' } as const;
+    const lost: ModelStreamEvent[] = [{ type: 'error', error }];
+
+    await ask({ replies: [lost, [say('Done.'), DONE]] }).run;
+    const retried = { error, waitMs: RUN_LIMITS.retryWaitsMs[0] };
+    expect(bodies().at(-1)).toMatchObject({ type: 'assistant', retries: [retried] });
+
+    await ask({ replies: [lost, lost, lost, lost] }).run;
+    expect(bodies().at(-1)).toMatchObject({
+      type: 'runStopped',
+      reason: 'connection',
+      retries: RUN_LIMITS.retryWaitsMs.map((waitMs) => ({ error, waitMs })),
+    });
   });
 
   it('keeps the text a stopped reply had streamed, without its unanswered calls', async () => {
@@ -297,7 +319,14 @@ describe('stopping a run', () => {
     expect(bodies().slice(-2)).toEqual([
       {
         type: 'toolResults',
-        results: [{ callId: 'c1', content: 'The tool was not run.', isError: true }],
+        results: [
+          {
+            callId: 'c1',
+            content: 'The tool was not run.',
+            isError: true,
+            checkName: 'interrupted',
+          },
+        ],
       },
       {
         type: 'runStopped',

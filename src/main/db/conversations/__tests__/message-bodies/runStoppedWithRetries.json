@@ -1,0 +1,8 @@
+{
+  "type": "runStopped",
+  "reason": "connection",
+  "providerError": { "reason": "unreachable", "message": "socket hang up" },
+  "attempts": 2,
+  "waitedMs": 1000,
+  "retries": [{ "error": { "reason": "unreachable", "message": "socket hang up" }, "waitMs": 1000 }]
+}

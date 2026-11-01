@@ -1,0 +1,18 @@
+{
+  "type": "toolResults",
+  "results": [
+    {
+      "callId": "call-1",
+      "content": "The tool did not answer in time.",
+      "isError": true,
+      "checkName": "timeout"
+    },
+    {
+      "callId": "call-2",
+      "content": "Not run: the user stopped the run.",
+      "isError": true,
+      "notRun": true,
+      "checkName": "cancelled"
+    }
+  ]
+}

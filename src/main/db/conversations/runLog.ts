@@ -2,6 +2,7 @@ import type { Database } from 'better-sqlite3';
 import type {
   RunStoppedMessageBody,
   RunStopReason,
+  StepRetry,
   ToolTarget,
 } from '@shared/types/agentConversation';
 import type { ModelReplyPart, ModelUsage } from '@shared/types/modelReply';
@@ -46,6 +47,7 @@ export interface StoredModelReply {
   parts: ModelReplyPart[];
   finish?: 'complete' | 'outputLimit';
   usage?: ModelUsage | null;
+  retries?: StepRetry[];
   model: string;
   /** The draft's rev its tool calls run against; null with no template open. */
   rev: number | null;
@@ -145,6 +147,7 @@ export function storeModelReply(db: Database, run: ConversationRun, reply: Store
         type: 'assistant',
         content: reply.parts,
         ...(reply.finish ? { finish: reply.finish } : {}),
+        ...(reply.retries?.length ? { retries: reply.retries } : {}),
       },
       model: reply.model,
       inputTokens: reply.usage?.inputTokens,
@@ -173,12 +176,13 @@ export function storeToolAnswers(db: Database, run: ConversationRun, answers: To
       body: {
         type: 'toolResults',
         results: answers.map(
-          ({ callId, content, isError, target, status, durationMs, startedAt }) => ({
+          ({ callId, content, isError, target, status, checkName, durationMs, startedAt }) => ({
             callId,
             content,
             ...(isError ? { isError: true } : {}),
             ...(target ? { target } : {}),
             ...(status === 'cancelled' ? { notRun: true } : {}),
+            ...(checkName ? { checkName } : {}),
             ...(durationMs === undefined ? {} : { durationMs }),
             ...(startedAt === undefined ? {} : { startedAt }),
           })
