@@ -13,7 +13,11 @@ import {
 import type { ToolResult, TranscriptMessage } from '@shared/types/agentConversation';
 import type { AgentRuns, RunPage } from '../agent/agentRuns';
 import { readOutdatedReads } from '../agent/readOutdatedReads';
-import { readConversationPage, readLastConversationId } from '../db/conversations/conversations';
+import {
+  readConversationPage,
+  readConversationTitle,
+  readLastConversationId,
+} from '../db/conversations/conversations';
 import { readMessagePage, readToolResult } from '../db/conversations/messages';
 import { isToolTarget } from '../db/conversations/validateMessageBody';
 
@@ -37,6 +41,7 @@ export interface AgentHandlers {
   readOutdatedReads(conversationId: unknown, templateId: unknown): OutdatedRead[];
   readLastConversationId(): number | null;
   readConversations(page: unknown): ConversationSummary[];
+  readConversationTitle(conversationId: unknown): string | null;
   deleteConversation(conversationId: unknown): Promise<void>;
   answerTool(runId: unknown, callId: unknown, answer: unknown): void;
 }
@@ -160,6 +165,8 @@ export function createAgentHandlers(runs: AgentRuns, currentDb: () => Database):
       const page = conversationPage(value);
       return readConversationPage(currentDb(), page);
     },
+    readConversationTitle: (conversationId) =>
+      readConversationTitle(currentDb(), rowId(conversationId, 'conversationId')),
     deleteConversation: async (conversationId) =>
       runs.deleteConversation(rowId(conversationId, 'conversationId')),
     answerTool: (runId, callId, answer) =>

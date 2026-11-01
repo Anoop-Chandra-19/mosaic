@@ -58,6 +58,24 @@ export const foldAway: PresenceMotion = (element, phase) => {
   return animation;
 };
 
+/** A layer over its panel slides a short way in from the start edge, and back the same way. */
+export const coverFromStart: PresenceMotion = (element, phase, from) => {
+  if (prefersReducedMotion()) return null;
+  const isEntering = phase === 'enter';
+  const hidden = { opacity: '0', transform: 'translateX(-0.875rem)' };
+  const resting = { opacity: '1', transform: 'none' };
+  const animation = element.animate(
+    [from?.get(element) ?? (isEntering ? hidden : resting), isEntering ? resting : hidden],
+    {
+      duration: isEntering ? MOTION_MS.presenceEnter : MOTION_MS.coverExit,
+      easing: isEntering ? MOTION_EASE : MOTION_EASE_IN,
+      fill: 'both',
+    }
+  );
+  animation.id = `presence-${phase}`;
+  return animation;
+};
+
 /** A notice fades without moving the controls around it. */
 export const fade: PresenceMotion = (element, phase, from) => {
   if (prefersReducedMotion()) return null;

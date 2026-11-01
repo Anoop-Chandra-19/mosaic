@@ -31,6 +31,7 @@ beforeEach(() => {
       agent: {
         readMessages: log.readMessages,
         readLastConversationId: async () => lastConversationId,
+        readConversationTitle: async () => 'Tighten my bullets.',
       },
     },
   });

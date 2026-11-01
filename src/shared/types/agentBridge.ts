@@ -113,6 +113,7 @@ export interface MosaicAgent {
   /** The conversation used last, which the pane opens on; null before the first run. */
   readLastConversationId(): Promise<number | null>;
   readConversations(page: ConversationPage): Promise<ConversationSummary[]>;
+  readConversationTitle(conversationId: number): Promise<string | null>;
   /** Stops its run first if one is going. Removes it from the disk, with no way back. */
   deleteConversation(conversationId: number): Promise<void>;
   /** Every run's events; returns the call that stops following them. */

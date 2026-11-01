@@ -45,6 +45,7 @@ async function askAgentFromPalette(text: string, conversationId: number | null):
 const askedText = (args: DevToolArgs) => String(args.text ?? '');
 
 const LONG_CONVERSATION_MESSAGES = 2000;
+const MANY_CONVERSATIONS = 120;
 
 /** The assistant, before its pane: a run asked for by hand, its suggestions in the review. */
 export const ASK_AGENT_TOOLS: DevTool[] = [
@@ -76,6 +77,18 @@ export const ASK_AGENT_TOOLS: DevTool[] = [
       const conversationId = await devService.seedLongConversation(messageCount);
       await openConversation(conversationId);
       return `Opened conversation ${conversationId}, about ${messageCount} messages`;
+    },
+  },
+  {
+    id: 'manyConversations',
+    group: 'Data',
+    label: 'Write many conversations',
+    description: 'Writes 120 short fictional conversations, for the list in the pane.',
+    run: async (args) => {
+      const count = Number(args.count ?? MANY_CONVERSATIONS);
+      useAgentSettingsStore.getState().setEnabled(true);
+      for (let written = 0; written < count; written++) await devService.seedLongConversation(4);
+      return `Wrote ${count} conversations`;
     },
   },
 ];

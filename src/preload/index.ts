@@ -96,6 +96,8 @@ const agent: MosaicAgent = {
     ipcRenderer.invoke(AGENT_CHANNELS.readOutdatedReads, conversationId, templateId),
   readLastConversationId: () => ipcRenderer.invoke(AGENT_CHANNELS.readLastConversationId),
   readConversations: (page) => ipcRenderer.invoke(AGENT_CHANNELS.readConversations, page),
+  readConversationTitle: (conversationId) =>
+    ipcRenderer.invoke(AGENT_CHANNELS.readConversationTitle, conversationId),
   deleteConversation: (conversationId) =>
     ipcRenderer.invoke(AGENT_CHANNELS.deleteConversation, conversationId),
   onEvent: (follow) => {

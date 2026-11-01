@@ -139,6 +139,47 @@ test('asking in the prompt box shows the ask and the reply, and the box is ready
   expect(errors).toEqual([]);
 });
 
+test('the list of conversations opens from the header, goes back with Esc, and opens another', async () => {
+  const { page, errors } = mosaic();
+  await runDevTool(page, 'exampleResume');
+  await runDevTool(page, 'manyConversations', { count: 60 });
+  await runDevTool(page, 'longConversation', { messages: 8 });
+  const pane = page.getByRole('complementary', { name: 'Assistant' });
+  const box = pane.getByRole('textbox', { name: 'Message' });
+  await box.fill('Words I haven’t sent.');
+
+  const opener = pane.getByRole('button', { name: 'What stands out in part 1?' });
+  await opener.click();
+  const list = pane.getByRole('region', { name: 'Conversations' });
+  const rows = list.getByRole('listitem');
+  await expect(rows.first()).toBeVisible();
+  // The box and the tabs are out of reach while it covers them.
+  await expect(box.locator('xpath=ancestor::*[@inert]')).toHaveCount(1);
+
+  // Only the first page, until scrolling asks for the next.
+  await expect(rows).toHaveCount(50);
+  await rows.last().scrollIntoViewIfNeeded();
+  await list.getByRole('list').evaluate((scroller) => (scroller.scrollTop = scroller.scrollHeight));
+  await expect(rows).toHaveCount(61);
+  await expect(list.getByText('That’s every conversation.')).toBeVisible();
+
+  await page.keyboard.press('Escape');
+  await expect(list).toHaveCount(0);
+  await expect(opener).toBeFocused();
+  await expect(box).toHaveValue('Words I haven’t sent.');
+
+  // The conversation it was opened from is the current one, where the keyboard lands.
+  await opener.click();
+  const current = list.locator('[aria-current="true"]');
+  await expect(current).toBeFocused();
+  await page.keyboard.press('ArrowDown');
+  await expect(current).not.toBeFocused();
+  await page.keyboard.press('Enter');
+  await expect(list).toHaveCount(0);
+  await expect(box).toHaveValue('Words I haven’t sent.');
+  expect(errors).toEqual([]);
+});
+
 test('a long conversation opens on its newest, reads back to its first holding your place, and a send comes back', async () => {
   const { page, errors } = mosaic();
   await runDevTool(page, 'exampleResume');

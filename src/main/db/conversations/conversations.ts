@@ -40,6 +40,21 @@ export function readLastConversationId(db: Database): number | null {
 /** Three lines of the widest pane, and no more: a pasted posting can be the whole first ask. */
 const TITLE_LENGTH = 300;
 
+/** For a query on `conversations c`: the start of the first thing asked. */
+const TITLE_SQL = `(select substr(json_extract(m.body, '$.text'), 1, ${TITLE_LENGTH}) from messages m
+  where m.conversation_id = c.id and m.type = 'user'
+  order by m.seq limit 1)`;
+
+/** Null for one with no words to use, or that isn't there. */
+export function readConversationTitle(db: Database, conversationId: number): string | null {
+  return (
+    db
+      .prepare<[number], string | null>(`select ${TITLE_SQL} from conversations c where c.id = ?`)
+      .pluck()
+      .get(conversationId) ?? null
+  );
+}
+
 interface ConversationRow {
   id: number;
   title: string | null;
@@ -72,9 +87,7 @@ export function readConversationPage(db: Database, page: ConversationPage): Conv
   return db
     .prepare<[Record<string, unknown>], ConversationRow>(
       `select c.id, c.updated_at as last_active_at,
-         (select substr(json_extract(m.body, '$.text'), 1, @titleLength) from messages m
-            where m.conversation_id = c.id and m.type = 'user'
-            order by m.seq limit 1) as title,
+         ${TITLE_SQL} as title,
          (select json_group_array(name) from
             (select t.name from runs r join templates t on t.id = r.template_id
               where r.conversation_id = c.id
@@ -89,7 +102,6 @@ export function readConversationPage(db: Database, page: ConversationPage): Conv
        limit @limit`
     )
     .all({
-      titleLength: TITLE_LENGTH,
       afterAt: page.after?.lastActiveAt ?? null,
       afterId: page.after?.id ?? null,
       limit: page.limit,

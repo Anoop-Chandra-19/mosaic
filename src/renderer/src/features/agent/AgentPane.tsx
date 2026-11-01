@@ -1,6 +1,8 @@
 import { useEffect, useRef } from 'react';
-import { Sparkles, SquarePen, X } from 'lucide-react';
+import { ChevronDown, ChevronLeft, Sparkles, SquarePen, X } from 'lucide-react';
 import { AppButton, AppTooltip, Text } from '@/components/ui-kit';
+import { coverFromStart } from '@/lib/motion/presenceMotions';
+import { usePresenceMotion } from '@/lib/motion/usePresenceMotion';
 import { formatPaneWidth, startPaneResize } from '@/lib/paneResize';
 import { shortModelName } from '@/lib/shortModelName';
 import { useShortcutLabel } from '@/stores/shortcutBindings';
@@ -9,13 +11,16 @@ import { transitionClasses } from '@/features/view-transitions/transitionClasses
 import { useIsWorkspaceReplaced } from '@/features/view-transitions/useShownSurface';
 import { cn } from '@/lib/utils';
 import { setPaneTab, useAgentPaneStore } from '@/stores/agentPaneStore';
-import { openPaneConversation, startNewConversation } from '@/stores/conversationStore';
+import { openPaneConversation, useConversationStore } from '@/stores/conversationStore';
 import { useOverlayStore } from '@/stores/overlayStore';
 import { explainFailure, showToast } from '@/stores/toastStore';
 import { AGENT_PANE_WIDTH, useUiStore } from '@/stores/uiStore';
 import { useChosenModel } from '@/stores/useChosenModel';
 import { AgentPromptBox } from './AgentPromptBox';
+import { ConversationList } from './conversations/ConversationList';
+import { UNTITLED } from './conversations/conversationListWords';
 import { PaneTabs } from './PaneTabs';
+import { useConversationSwitch } from './useConversationSwitch';
 import { stopAgentRun, useRunningRun } from './useRunningRun';
 
 function Spark() {
@@ -30,13 +35,14 @@ function Spark() {
  * The assistant, on the right of the preview, drawn only while AI is on: the open
  * conversation (`transcript/`) or its full record (`trace/`), the prompt box with the one
  * notice over it for a message that didn't go or a run that stopped (`notices/`), and which
- * provider and model the next run uses. It opens on the conversation used last. The runs
- * themselves are followed and their tools answered from the shell (`followAgentRuns`, `tools/`). On a
- * window too narrow for editor, preview, and pane, it lies over the preview.
+ * provider and model the next run uses. It opens on the conversation used last; the name in
+ * its header opens the list of them all (`conversations/`), over everything below the header.
+ * The runs themselves are followed and their tools answered from the shell (`followAgentRuns`,
+ * `tools/`). On a window too narrow for editor, preview, and pane, it lies over the preview.
  *
  * Imports only go down this list, and nothing imports this folder's own files from below:
- * the pane here; `trace/`; `transcript/`; `notices/`, `reply/`; `run-view/`. Beside them, the
- * pane calls `tools/`.
+ * the pane here; `conversations/`, `trace/`; `transcript/`; `notices/`, `reply/`; `run-view/`.
+ * Beside them, the pane calls `tools/`.
  */
 export function AgentPane() {
   const widthPx = useUiStore((s) => s.agentPaneWidthPx);
@@ -50,6 +56,16 @@ export function AgentPane() {
   const closeKeys = useShortcutLabel('toggleAssistant');
   const isSideHandover = useIsSideHandover();
   const isWorkspaceReplaced = useIsWorkspaceReplaced();
+  const conversationId = useConversationStore((s) => s.conversationId);
+  const storedTitle = useConversationStore((s) => s.title);
+  const title = conversationId === null ? 'New conversation' : (storedTitle ?? UNTITLED);
+  const { isListOpen, failedOpenId, switchRef, openList, goBack, startNew, open } =
+    useConversationSwitch();
+  const {
+    shown: listShown,
+    isLeaving: isListLeaving,
+    ref: listRef,
+  } = usePresenceMotion(isListOpen ? 'list' : null, 'list', coverFromStart);
 
   useEffect(() => {
     openPaneConversation().catch((error: unknown) =>
@@ -101,24 +117,60 @@ export function AgentPane() {
 
       {/* The preview bar's height. The rule under it belongs to the tabs, which hang from it. */}
       <header className="flex h-10 shrink-0 items-center justify-between gap-2 px-4">
-        <div className="flex items-center gap-2">
-          <Spark />
-          <Text as="h2" variant="title">
-            Assistant
-          </Text>
-        </div>
-        <div className="flex items-center gap-0.5">
-          <AppTooltip content="New conversation">
-            <AppButton
-              variant="ghost"
-              size="xs"
-              shape="square"
-              onClick={startNewConversation}
-              aria-label="New conversation"
-            >
-              <SquarePen className="size-3.5" />
+        {isListOpen ? (
+          <div className="-ml-1.5 flex min-w-0 items-center gap-1">
+            <AppTooltip content="Back to the conversation  Esc">
+              <AppButton
+                variant="ghost"
+                size="xs"
+                shape="square"
+                onClick={goBack}
+                aria-label="Back to the conversation"
+              >
+                <ChevronLeft className="size-3.5" />
+              </AppButton>
+            </AppTooltip>
+            <Text as="h2" variant="title">
+              Conversations
+            </Text>
+          </div>
+        ) : (
+          <div className="flex min-w-0 items-center gap-1.5">
+            <Spark />
+            <AppTooltip content="All conversations">
+              <AppButton
+                ref={switchRef}
+                variant="ghost"
+                size="xs"
+                onClick={openList}
+                aria-expanded={false}
+                className="min-w-0 px-1.5 font-strong text-foreground"
+              >
+                <span className="min-w-0 truncate">{title}</span>
+                <ChevronDown className="shrink-0 text-ink-faint" />
+              </AppButton>
+            </AppTooltip>
+          </div>
+        )}
+        <div className="flex shrink-0 items-center gap-0.5">
+          {isListOpen ? (
+            <AppButton variant="outline" size="xs" onClick={startNew} aria-label="New conversation">
+              <SquarePen />
+              New
             </AppButton>
-          </AppTooltip>
+          ) : (
+            <AppTooltip content="New conversation">
+              <AppButton
+                variant="ghost"
+                size="xs"
+                shape="square"
+                onClick={startNew}
+                aria-label="New conversation"
+              >
+                <SquarePen className="size-3.5" />
+              </AppButton>
+            </AppTooltip>
+          )}
           <AppButton
             variant="ghost"
             size="xs"
@@ -132,22 +184,39 @@ export function AgentPane() {
         </div>
       </header>
 
-      <PaneTabs />
-      <AgentPromptBox />
+      <div className="relative flex min-h-0 flex-1 flex-col">
+        {/* Stays as it was under the list, so going back finds the same tab, place and words. */}
+        <div inert={isListOpen} className="flex min-h-0 flex-1 flex-col">
+          <PaneTabs />
+          <AgentPromptBox />
 
-      <footer className="border-t border-line px-4 py-2.5">
-        <Text as="p" variant="secondary" className="text-ink-faint">
-          {providerLabel} · <Text variant="meta">{shortModelName(model)}</Text>
-          {' · '}
-          <AppButton
-            variant="link"
-            onClick={() => openSettings('ai')}
-            className="h-auto p-0 align-baseline text-support text-amber underline-offset-2"
-          >
-            change
-          </AppButton>
-        </Text>
-      </footer>
+          <footer className="border-t border-line px-4 py-2.5">
+            <Text as="p" variant="secondary" className="text-ink-faint">
+              {providerLabel} · <Text variant="meta">{shortModelName(model)}</Text>
+              {' · '}
+              <AppButton
+                variant="link"
+                onClick={() => openSettings('ai')}
+                className="h-auto p-0 align-baseline text-support text-amber underline-offset-2"
+              >
+                change
+              </AppButton>
+            </Text>
+          </footer>
+        </div>
+        {listShown && (
+          <div ref={listRef} inert={isListLeaving} className="absolute inset-0 z-10">
+            <ConversationList
+              currentId={conversationId}
+              running={running}
+              failedOpenId={failedOpenId}
+              onOpen={open}
+              onOpenNew={startNew}
+              onBack={goBack}
+            />
+          </div>
+        )}
+      </div>
     </aside>
   );
 }
