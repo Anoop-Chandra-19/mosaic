@@ -8,6 +8,7 @@ import path from 'node:path';
 import { expect, type CDPSession, type ElectronApplication, type Page } from '@playwright/test';
 import { test, type LaunchedApp } from '../../e2e/harness/launch';
 import { reportAgainstLastRun, type ResultColumn } from '../compared-results';
+import { readPssKb } from '../read-pss';
 import { runDevTool } from '../../e2e/harness/devTools';
 
 /** Versions stepped through in the full history. */
@@ -40,16 +41,6 @@ type Measurement = {
   totalPssMb: number | null;
   mainHeapMb: number;
 };
-
-/** A process's proportional set size, from the kernel; null off Linux or once it's gone. */
-function readPssKb(pid: number): number | null {
-  try {
-    const rollup = fs.readFileSync(`/proc/${pid}/smaps_rollup`, 'utf8');
-    return Number(/^Pss:\s+(\d+) kB$/m.exec(rollup)?.[1] ?? NaN) || null;
-  } catch {
-    return null;
-  }
-}
 
 const mb = (bytes: number) => Math.round((bytes / 1024 / 1024) * 10) / 10;
 

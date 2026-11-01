@@ -6,6 +6,7 @@ import {
   openLastConversation,
   openLeftConversation,
   openSentConversation,
+  readNewerMessages,
   readOlderMessages,
   startNewConversation,
   useConversationStore,
@@ -104,6 +105,85 @@ describe('reading the conversation in pages', () => {
 
     await openSentConversation(2);
     expect(shown()).toEqual({ conversationId: 2, seqs: [1, 2], hasOlder: false });
+  });
+
+  describe('the window it holds', () => {
+    /** 300 runs of 4 messages, 1,200 in all, opened on the newest. */
+    async function openLongConversation() {
+      for (let runId = 1; runId <= 300; runId++) addRun(1, runId, 4);
+      await openConversation(1);
+    }
+
+    const held = () => useConversationStore.getState();
+
+    it('drops the newest whole runs once a fifth page of older ones arrives', async () => {
+      await openLongConversation();
+      for (let page = 0; page < 3; page++) await readOlderMessages();
+      expect(held().messages.at(-1)?.seq).toBe(1200);
+      expect(held().hasNewer).toBe(false);
+
+      await readOlderMessages();
+      expect(held().messages).toHaveLength(400);
+      expect(held().messages[0].seq).toBe(721);
+      expect(held().messages.at(-1)?.seq).toBe(1120);
+      expect(held().hasNewer).toBe(true);
+    });
+
+    it('reads back down to the newest, dropping the oldest, and is at the end again', async () => {
+      await openLongConversation();
+      for (let page = 0; page < 4; page++) await readOlderMessages();
+
+      await readNewerMessages();
+      expect(held().messages.at(-1)?.seq).toBe(1200);
+      expect(held().messages[0].seq).toBe(801);
+      expect(held().hasOlder).toBe(true);
+      expect(held().hasNewer).toBe(false);
+    });
+
+    it('never cuts a run in two at either end', async () => {
+      addRun(1, 1, 450);
+      addRun(1, 2, 2);
+      await openConversation(1);
+      await readOlderMessages();
+      for (let page = 0; page < 3; page++) await readOlderMessages();
+      expect(held().messages.at(0)?.runId).toBe(1);
+      const lastRunId = held().messages.at(-1)?.runId;
+      const lastSeq = held().messages.at(-1)?.seq;
+      expect(lastRunId === 2 || lastSeq === 450).toBe(true);
+    });
+
+    it('leaves a run’s writing for the way back down while the window is back', async () => {
+      await openLongConversation();
+      for (let page = 0; page < 4; page++) await readOlderMessages();
+      const before = held().messages;
+      addRun(1, 301, 2);
+
+      await catchUpConversation(1);
+      expect(held().messages).toBe(before);
+    });
+
+    it('goes back to the newest for a send, and says so', async () => {
+      await openLongConversation();
+      for (let page = 0; page < 4; page++) await readOlderMessages();
+      const returns = held().returnsToNewest;
+      addRun(1, 301, 2);
+
+      await openSentConversation(1);
+      expect(held().messages.at(-1)?.seq).toBe(1202);
+      expect(held().hasNewer).toBe(false);
+      expect(held().returnsToNewest).toBe(returns + 1);
+    });
+
+    it('keeps to the window as a run adds to the end', async () => {
+      await openLongConversation();
+      for (let page = 0; page < 3; page++) await readOlderMessages();
+      addRun(1, 301, 120);
+
+      await catchUpConversation(1);
+      expect(held().messages.at(-1)?.seq).toBe(1320);
+      expect(held().messages.length).toBeLessThanOrEqual(400);
+      expect(held().hasOlder).toBe(true);
+    });
   });
 
   it('drops a read that finishes after the pane moved on', async () => {

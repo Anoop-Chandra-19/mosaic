@@ -2,7 +2,6 @@ import { memo, useRef, type ReactNode } from 'react';
 import { LayoutTemplate, Sparkles } from 'lucide-react';
 import { Text } from '@/components/ui-kit';
 import { useActiveTemplate } from '@/stores/useActiveTemplate';
-import { cn } from '@/lib/utils';
 import { useConversationStore } from '@/stores/conversationStore';
 import { useRunStore } from '@/stores/runStore';
 import type { RunView } from '@/types/agentRunView';
@@ -12,7 +11,7 @@ import { RunCard } from '../run-card/RunCard';
 import { RunActivity } from '../run-line/RunActivity';
 import { buildRunView } from './buildRunView';
 import { RunRecord } from './RunRecord';
-import { useOlderMessages } from './useOlderMessages';
+import { useMessagePages } from './useMessagePages';
 import { useStickToNewest } from './useStickToNewest';
 
 /*
@@ -34,13 +33,6 @@ const GAP_AFTER: Record<TurnKind, Record<TurnKind, string>> = {
   ask: { switch: 'mt-0.5', ask: 'mt-5', reply: 'mt-3.5' },
   reply: { switch: 'mt-0.5', ask: 'mt-9.5', reply: 'mt-5' },
 };
-
-/**
- * Off screen, the browser lays out and paints none of a finished turn, and remembers its height
- * once it has one. This clips what it holds to its box, so the sides have room for focus rings.
- */
-const OFF_SCREEN_SKIPPED =
-  '-mx-1 px-1 [content-visibility:auto] [contain-intrinsic-size:auto_12.5rem]';
 
 interface Turn {
   kind: TurnKind;
@@ -164,14 +156,13 @@ const TurnRow = memo(function TurnRow({
   isLive,
   stopRecord,
   gapAbove,
-  isNewest,
-}: Turn & { gapAbove: string; isNewest: boolean }) {
+}: Turn & { gapAbove: string }) {
   return (
     <>
       {/* Its own element: a margin appearing on the turn at the top of the view, as older ones
           land above it, turns off the scroll anchoring that holds the view still. */}
       {gapAbove && <div aria-hidden className={gapAbove} />}
-      <div className={cn(!isNewest && OFF_SCREEN_SKIPPED)}>
+      <div>
         {kind === 'switch' && run.switchedTo && <SwitchRow label={run.switchedTo.label} />}
         {kind === 'ask' && run.ask !== null && <AskBubble text={run.ask} />}
         {kind === 'reply' && (
@@ -230,14 +221,17 @@ function EmptyConversation() {
 export function AgentTranscript() {
   const conversationId = useConversationStore((s) => s.conversationId);
   const messages = useConversationStore((s) => s.messages);
-  const liveRunId = useRunStore((s) =>
+  const followedRunId = useRunStore((s) =>
     s.live !== null && s.live.conversationId === conversationId ? s.live.runId : null
   );
+  // A run under way belongs at the end of the log, which isn't what is held while this is true.
+  const hasNewer = useConversationStore((s) => s.hasNewer);
+  const liveRunId = hasNewer ? null : followedRunId;
   const scrollRef = useRef<HTMLElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const serverAddresses = useServerAddresses();
   useStickToNewest(scrollRef, contentRef);
-  useOlderMessages(scrollRef);
+  useMessagePages(scrollRef);
 
   const readStopRecord = (run: RunView) =>
     run.stop && (describeStop(run.stop, run.model, serverAddresses)?.record ?? null);
@@ -257,7 +251,6 @@ export function AgentTranscript() {
               key={`${turn.run.runId}-${turn.kind}`}
               {...turn}
               gapAbove={index > 0 ? GAP_AFTER[turns[index - 1].kind][turn.kind] : ''}
-              isNewest={index === turns.length - 1}
             />
           ))
         )}

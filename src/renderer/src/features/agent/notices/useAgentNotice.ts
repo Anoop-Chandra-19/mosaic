@@ -28,6 +28,7 @@ function useLiveRunFacts(conversationId: number | null): LiveRunFacts | null {
 export function useAgentNotice(): NoticeChoice {
   const conversationId = useConversationStore((s) => s.conversationId);
   const messages = useConversationStore((s) => s.messages);
+  const hasNewer = useConversationStore((s) => s.hasNewer);
   const live = useLiveRunFacts(conversationId);
   const { refusal, resend, dismissedRunIds } = useAgentNoticeStore();
   const serverAddresses = useServerAddresses();
@@ -36,7 +37,8 @@ export function useAgentNotice(): NoticeChoice {
 
   return pickNotice({
     conversationId,
-    runs: buildRunView(messages),
+    // A run held while the window is back from the end of the log isn't the conversation's last.
+    runs: hasNewer ? [] : buildRunView(messages),
     live,
     refusal,
     resend,

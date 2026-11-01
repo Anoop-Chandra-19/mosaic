@@ -8,11 +8,19 @@ run; it also loads by hand from the palette (Open a long conversation). Then it 
 - **wheel up**: fast wheel turns through the newest page;
 - **back to the first message**: going to the top, again and again, until the first ask is
   there, which reads and lands every older page;
-- **wheel down**: fast wheel turns through what is loaded.
+- **wheel down**: fast wheel turns through what is held;
+- **back to the newest**: going to the end, again and again, until the last ask is there, which
+  reads every newer page again;
+- **a send from the first message**: back at the top, sending a message on the scripted model,
+  until its reply shows at the bottom.
+
+The pane holds 400 messages at most, so **runs shown** stays near 100 however far it scrolls.
 
 For each it records the **time**, the **runs shown**, the page's **long tasks** (over 50 ms) and
 the **longest**, **late frames** (gaps over 25 ms), then, after a collection, the **heap**, the
-renderer's memory and its **DOM nodes**.
+renderer's memory, its **DOM nodes**, and two counts of the whole app: **all** adds up what each
+process reports, counting the libraries they share in every one, and **shared once** counts
+them once (Linux only), which is nearer what the app really takes.
 
 Run by hand after a change to the transcript or how it reads messages, and compare with a run
 before. Never in CI.

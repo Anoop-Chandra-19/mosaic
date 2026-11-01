@@ -93,12 +93,12 @@ test('asking in the prompt box shows the ask and the reply, and the box is ready
   expect(errors).toEqual([]);
 });
 
-test('a long conversation opens on its newest, and reads back to its first as you scroll, holding your place', async () => {
+test('a long conversation opens on its newest, reads back to its first holding your place, and a send comes back', async () => {
   const { page, errors } = mosaic();
   await runDevTool(page, 'exampleResume');
-  await runDevTool(page, 'longConversation', { messages: 400 });
+  await runDevTool(page, 'longConversation', { messages: 800 });
   const conversation = page.getByRole('region', { name: 'Conversation' });
-  await expect(conversation.getByText('What stands out in part 100?')).toHaveCount(1);
+  await expect(conversation.getByText('What stands out in part 200?')).toHaveCount(1);
   await expect
     .poll(() =>
       conversation.evaluate(
@@ -110,8 +110,7 @@ test('a long conversation opens on its newest, and reads back to its first as yo
 
   // At the very top, the place held is what was first on screen, not what landed above it.
   const firstRead = conversation.getByText('What stands out in part', { exact: false }).first();
-  // Not `innerText`, which is empty for a turn off screen, as the browser skips laying it out.
-  const firstReadText = (await firstRead.textContent())!;
+  const firstReadText = await firstRead.innerText();
   await conversation.evaluate((element) => element.scrollTo({ top: 0 }));
   await expect.poll(() => conversation.evaluate((element) => element.scrollTop)).toBeGreaterThan(0);
   await expect(
@@ -125,6 +124,18 @@ test('a long conversation opens on its newest, and reads back to its first as yo
       timeout: 200,
     });
   }).toPass();
+  // Far from the newest, which has gone until it is wanted again.
+  await expect(conversation.getByText('What stands out in part 200?')).toHaveCount(0);
+
+  await runDevTool(page, 'scriptedModel', { isOn: true });
+  const box = page
+    .getByRole('complementary', { name: 'Assistant' })
+    .getByRole('textbox', { name: 'Message' });
+  await box.fill('Tighten my bullets.');
+  await box.press('Enter');
+  await expect(conversation.getByText('Done. They’re waiting for your review.')).toBeInViewport();
+  await expect(conversation.getByText('What stands out in part 200?')).toHaveCount(1);
+  await expect(conversation.getByText('What stands out in part 1?')).toHaveCount(0);
   expect(errors).toEqual([]);
 });
 
