@@ -1,9 +1,11 @@
 import { askAgent } from '@/features/agent/agentRunTools';
 import { agentService } from '@/lib/services/agentService';
 import { useAgentSettingsStore } from '@/stores/agentSettingsStore';
+import { openConversation } from '@/stores/conversationStore';
 import { showToast } from '@/stores/toastStore';
 import type { AgentStartRefusal } from '@shared/types/agentBridge';
 import type { DevToolArgs } from '@shared/types/devTools';
+import { devService } from '../devService';
 import type { DevTool } from './devTool';
 
 const REFUSAL_WORDS: Record<AgentStartRefusal, string> = {
@@ -42,6 +44,8 @@ async function askAgentFromPalette(text: string, conversationId: number | null):
 
 const askedText = (args: DevToolArgs) => String(args.text ?? '');
 
+const LONG_CONVERSATION_MESSAGES = 2000;
+
 /** The assistant, before its pane: a run asked for by hand, its suggestions in the review. */
 export const ASK_AGENT_TOOLS: DevTool[] = [
   {
@@ -60,5 +64,18 @@ export const ASK_AGENT_TOOLS: DevTool[] = [
     description: 'Starts a conversation on the open resume, with nothing from earlier runs.',
     prompt: 'What should the assistant do?',
     run: (args) => askAgentFromPalette(askedText(args), null),
+  },
+  {
+    id: 'longConversation',
+    group: 'Data',
+    label: 'Open a long conversation',
+    description: 'Writes 2,000 fictional messages as a new conversation and opens it in the pane.',
+    run: async (args) => {
+      const messageCount = Number(args.messages ?? LONG_CONVERSATION_MESSAGES);
+      useAgentSettingsStore.getState().setEnabled(true);
+      const conversationId = await devService.seedLongConversation(messageCount);
+      await openConversation(conversationId);
+      return `Opened conversation ${conversationId}, about ${messageCount} messages`;
+    },
   },
 ];

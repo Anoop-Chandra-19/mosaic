@@ -56,6 +56,7 @@ export const DEV_CHANNELS = {
   readReopenAddress: 'dev:read-reopen-address',
   saveReopenAddress: 'dev:save-reopen-address',
   readMemory: 'dev:read-memory',
+  seedLongConversation: 'dev:seed-long-conversation',
   readDataFolder: 'dev:read-data-folder',
 } as const satisfies Record<Exclude<keyof MosaicDev, 'onOpenTools'>, string>;
 /** Main → renderer: Develop › Developer tools… was chosen. */

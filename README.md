@@ -156,23 +156,24 @@ graphs, dependency checks, the React Compiler, and end-to-end tests.
 
 ## Scripts
 
-| Command                | Description                                         |
-| ---------------------- | --------------------------------------------------- |
-| `bun run dev`          | Launch the app with hot reload                      |
-| `bun run dev:reset`    | Delete development data and dev keys; start fresh   |
-| `bun run build`        | Type-check and build main, preload, and renderer    |
-| `bun run package`      | Build an installer into `release/`                  |
-| `bun run test`         | Unit tests                                          |
-| `bun run test:e2e`     | Build, then run end-to-end tests headlessly (Linux) |
-| `bun run check:typing` | Build, then check the preview keeps up with typing  |
-| `bun run check:speed`  | Build, then time everyday flows on a long resume    |
-| `bun run check:memory` | Build, then measure memory and leaks from views     |
-| `bun run check:deps`   | Check import cycles and architecture boundaries     |
-| `bun run graph:build`  | Build the optional local code graph (requires uv)   |
-| `bun run graph`        | Query/explain/trace the local graph; pass CLI args  |
-| `bun run lint`         | Run ESLint                                          |
-| `bun run format`       | Format supported project files with Oxfmt           |
-| `bun run format:check` | Check formatting without changing files             |
+| Command                    | Description                                         |
+| -------------------------- | --------------------------------------------------- |
+| `bun run dev`              | Launch the app with hot reload                      |
+| `bun run dev:reset`        | Delete development data and dev keys; start fresh   |
+| `bun run build`            | Type-check and build main, preload, and renderer    |
+| `bun run package`          | Build an installer into `release/`                  |
+| `bun run test`             | Unit tests                                          |
+| `bun run test:e2e`         | Build, then run end-to-end tests headlessly (Linux) |
+| `bun run check:typing`     | Build, then check the preview keeps up with typing  |
+| `bun run check:speed`      | Build, then time everyday flows on a long resume    |
+| `bun run check:memory`     | Build, then measure memory and leaks from views     |
+| `bun run check:transcript` | Build, then scroll a 2,000-message conversation     |
+| `bun run check:deps`       | Check import cycles and architecture boundaries     |
+| `bun run graph:build`      | Build the optional local code graph (requires uv)   |
+| `bun run graph`            | Query/explain/trace the local graph; pass CLI args  |
+| `bun run lint`             | Run ESLint                                          |
+| `bun run format`           | Format supported project files with Oxfmt           |
+| `bun run format:check`     | Check formatting without changing files             |
 
 ## Commit Conventions
 

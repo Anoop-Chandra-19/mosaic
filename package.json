@@ -25,6 +25,7 @@
     "check:typing": "electron-vite build && node scripts/run-under-load.ts scripts/typing-check/playwright.config.ts",
     "check:speed": "electron-vite build && node scripts/run-under-load.ts scripts/speed-check/playwright.config.ts",
     "check:memory": "electron-vite build && playwright test -c scripts/memory-check/playwright.config.ts",
+    "check:transcript": "electron-vite build && node scripts/run-under-load.ts scripts/transcript-check/playwright.config.ts",
     "prepare": "husky"
   },
   "dependencies": {

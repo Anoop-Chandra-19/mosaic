@@ -32,6 +32,11 @@ export const devService = {
   saveReopenAddress: async (address: string) => window.mosaic.dev?.saveReopenAddress(address),
   /** Rejects when main can't say: an empty check would read as a real one. */
   readMemory: async () => (await window.mosaic.dev?.readMemory()) ?? [],
+  seedLongConversation: async (messageCount: number) => {
+    const conversationId = await window.mosaic.dev?.seedLongConversation(messageCount);
+    if (conversationId === undefined) throw new Error('Only a development build can do this');
+    return conversationId;
+  },
   /** Never rejects. */
   readDataFolder: () =>
     readOr(

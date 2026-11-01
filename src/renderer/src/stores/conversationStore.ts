@@ -14,6 +14,7 @@ import { useUiStore } from './uiStore';
 
 /** Longer than any run, which takes about two messages a step. */
 export const MESSAGE_PAGE_SIZE = 100;
+const OLDER_MESSAGES_AT_ONCE = 8;
 
 interface ConversationState {
   /** Null for a new conversation, which the first run creates. */
@@ -122,18 +123,40 @@ export function startNewConversation(): void {
   showConversation(null);
 }
 
-/** The page before the oldest message read so far. */
-export function readOlderMessages(): Promise<void> {
-  return readInTurn(async () => {
-    const { conversationId, messages, hasOlder } = useConversationStore.getState();
-    if (conversationId === null || !hasOlder || messages.length === 0) return;
-    const page = await readPage(conversationId, messages[0].seq);
+/**
+ * Adds a page above what is shown a few messages at a time, newest first, with a task between
+ * for the browser to paint and take input: a whole page of replies at once blocks it for
+ * longer than a slow computer should feel.
+ */
+async function landOlderMessages(conversationId: number, page: TranscriptMessage[]) {
+  for (let end = page.length; end > 0; end -= OLDER_MESSAGES_AT_ONCE) {
     if (!isOpen(conversationId)) return;
-    useConversationStore.setState((state) => ({
-      messages: [...page.messages, ...state.messages],
-      hasOlder: page.hasOlder,
-    }));
-  });
+    const landing = page.slice(Math.max(0, end - OLDER_MESSAGES_AT_ONCE), end);
+    useConversationStore.setState((state) => ({ messages: [...landing, ...state.messages] }));
+    await new Promise((resolve) => setTimeout(resolve));
+  }
+}
+
+let isReadingOlder = false;
+
+/**
+ * The page before the oldest message read so far. Scrolling asks far more often than it can be
+ * answered, so one already under way is the answer.
+ */
+export async function readOlderMessages(): Promise<void> {
+  if (isReadingOlder) return;
+  isReadingOlder = true;
+  try {
+    await readInTurn(async () => {
+      const { conversationId, messages, hasOlder } = useConversationStore.getState();
+      if (conversationId === null || !hasOlder || messages.length === 0) return;
+      const page = await readPage(conversationId, messages[0].seq);
+      await landOlderMessages(conversationId, page.messages);
+      if (isOpen(conversationId)) useConversationStore.setState({ hasOlder: page.hasOlder });
+    });
+  } finally {
+    isReadingOlder = false;
+  }
 }
 
 /** Pages back from the newest message until it reaches one already read. */

@@ -56,6 +56,8 @@ export interface MosaicDev {
   saveReopenAddress(address: string): Promise<void>;
   /** What each of Mosaic's processes holds right now. */
   readMemory(): Promise<ProcessMemory[]>;
+  /** Writes a conversation of about this many fictional messages. Returns its id. */
+  seedLongConversation(messageCount: number): Promise<number>;
   /** The folder the development data is in, with the home folder as `~`. */
   readDataFolder(): Promise<string>;
   /** Develop › Developer tools… was chosen in the menu bar. */

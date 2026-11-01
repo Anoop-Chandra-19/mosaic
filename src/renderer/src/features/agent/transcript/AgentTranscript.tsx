@@ -1,4 +1,4 @@
-import { useRef, type ReactNode } from 'react';
+import { memo, useRef, type ReactNode } from 'react';
 import { LayoutTemplate, Sparkles } from 'lucide-react';
 import { Text } from '@/components/ui-kit';
 import { useActiveTemplate } from '@/stores/useActiveTemplate';
@@ -12,6 +12,7 @@ import { RunCard } from '../run-card/RunCard';
 import { RunActivity } from '../run-line/RunActivity';
 import { buildRunView } from './buildRunView';
 import { RunRecord } from './RunRecord';
+import { useOlderMessages } from './useOlderMessages';
 import { useStickToNewest } from './useStickToNewest';
 
 /*
@@ -34,10 +35,18 @@ const GAP_AFTER: Record<TurnKind, Record<TurnKind, string>> = {
   reply: { switch: 'mt-0.5', ask: 'mt-9.5', reply: 'mt-5' },
 };
 
+/**
+ * Off screen, the browser lays out and paints none of a finished turn, and remembers its height
+ * once it has one. This clips what it holds to its box, so the sides have room for focus rings.
+ */
+const OFF_SCREEN_SKIPPED =
+  '-mx-1 px-1 [content-visibility:auto] [contain-intrinsic-size:auto_12.5rem]';
+
 interface Turn {
-  key: string;
   kind: TurnKind;
-  node: ReactNode;
+  run: RunView;
+  isLive: boolean;
+  stopRecord: string | null;
 }
 
 function TurnSpark() {
@@ -135,31 +144,45 @@ function RunReply({ run, isLive, stopRecord }: RunReplyProps) {
 
 /** A run's turns, in order; the run under way always has its reply, even before any text. */
 function listRunTurns(run: RunView, isLive: boolean, readStopRecord: ReadStopRecord): Turn[] {
-  const turns: Turn[] = [];
-  if (run.switchedTo) {
-    turns.push({
-      key: `${run.runId}-switch`,
-      kind: 'switch',
-      node: <SwitchRow label={run.switchedTo.label} />,
-    });
-  }
-  if (run.ask !== null) {
-    turns.push({ key: `${run.runId}-ask`, kind: 'ask', node: <AskBubble text={run.ask} /> });
-  }
   const stopRecord = isLive ? null : readStopRecord(run);
+  const kinds: TurnKind[] = [];
+  if (run.switchedTo) kinds.push('switch');
+  if (run.ask !== null) kinds.push('ask');
   if (isLive || run.parts.length > 0 || stopRecord !== null || run.ask === null) {
-    turns.push({
-      key: `${run.runId}-reply`,
-      kind: 'reply',
-      node: (
-        <AssistantTurn>
-          <RunReply run={run} isLive={isLive} stopRecord={stopRecord} />
-        </AssistantTurn>
-      ),
-    });
+    kinds.push('reply');
   }
-  return turns;
+  return kinds.map((kind) => ({ kind, run, isLive, stopRecord }));
 }
+
+/**
+ * One turn, by its kind. Memoized by hand: pages land in pieces above what is shown, and each
+ * piece would otherwise walk every turn again, which grows with the conversation.
+ */
+const TurnRow = memo(function TurnRow({
+  kind,
+  run,
+  isLive,
+  stopRecord,
+  gapAbove,
+  isNewest,
+}: Turn & { gapAbove: string; isNewest: boolean }) {
+  return (
+    <>
+      {/* Its own element: a margin appearing on the turn at the top of the view, as older ones
+          land above it, turns off the scroll anchoring that holds the view still. */}
+      {gapAbove && <div aria-hidden className={gapAbove} />}
+      <div className={cn(!isNewest && OFF_SCREEN_SKIPPED)}>
+        {kind === 'switch' && run.switchedTo && <SwitchRow label={run.switchedTo.label} />}
+        {kind === 'ask' && run.ask !== null && <AskBubble text={run.ask} />}
+        {kind === 'reply' && (
+          <AssistantTurn>
+            <RunReply run={run} isLive={isLive} stopRecord={stopRecord} />
+          </AssistantTurn>
+        )}
+      </div>
+    </>
+  );
+});
 
 /** The stored runs, and the one under way when the transcript hasn't read it yet. */
 function listTurns(
@@ -214,6 +237,7 @@ export function AgentTranscript() {
   const contentRef = useRef<HTMLDivElement>(null);
   const serverAddresses = useServerAddresses();
   useStickToNewest(scrollRef, contentRef);
+  useOlderMessages(scrollRef);
 
   const readStopRecord = (run: RunView) =>
     run.stop && (describeStop(run.stop, run.model, serverAddresses)?.record ?? null);
@@ -229,12 +253,12 @@ export function AgentTranscript() {
           <EmptyConversation />
         ) : (
           turns.map((turn, index) => (
-            <div
-              key={turn.key}
-              className={cn(index > 0 && GAP_AFTER[turns[index - 1].kind][turn.kind])}
-            >
-              {turn.node}
-            </div>
+            <TurnRow
+              key={`${turn.run.runId}-${turn.kind}`}
+              {...turn}
+              gapAbove={index > 0 ? GAP_AFTER[turns[index - 1].kind][turn.kind] : ''}
+              isNewest={index === turns.length - 1}
+            />
           ))
         )}
       </div>

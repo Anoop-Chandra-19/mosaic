@@ -93,6 +93,41 @@ test('asking in the prompt box shows the ask and the reply, and the box is ready
   expect(errors).toEqual([]);
 });
 
+test('a long conversation opens on its newest, and reads back to its first as you scroll, holding your place', async () => {
+  const { page, errors } = mosaic();
+  await runDevTool(page, 'exampleResume');
+  await runDevTool(page, 'longConversation', { messages: 400 });
+  const conversation = page.getByRole('region', { name: 'Conversation' });
+  await expect(conversation.getByText('What stands out in part 100?')).toHaveCount(1);
+  await expect
+    .poll(() =>
+      conversation.evaluate(
+        ({ scrollHeight, scrollTop, clientHeight }) => scrollHeight - scrollTop - clientHeight
+      )
+    )
+    .toBeLessThan(2);
+  await expect(conversation.getByText('What stands out in part 1?')).toHaveCount(0);
+
+  // At the very top, the place held is what was first on screen, not what landed above it.
+  const firstRead = conversation.getByText('What stands out in part', { exact: false }).first();
+  // Not `innerText`, which is empty for a turn off screen, as the browser skips laying it out.
+  const firstReadText = (await firstRead.textContent())!;
+  await conversation.evaluate((element) => element.scrollTo({ top: 0 }));
+  await expect.poll(() => conversation.evaluate((element) => element.scrollTop)).toBeGreaterThan(0);
+  await expect(
+    conversation.getByText('What stands out in part', { exact: false }).first()
+  ).not.toHaveText(firstReadText);
+  await expect(conversation.getByText(firstReadText)).toBeInViewport();
+
+  await expect(async () => {
+    await conversation.evaluate((element) => element.scrollTo({ top: 0 }));
+    await expect(conversation.getByText('What stands out in part 1?')).toBeInViewport({
+      timeout: 200,
+    });
+  }).toPass();
+  expect(errors).toEqual([]);
+});
+
 test('a very long error leaves the prompt box and its way forward in reach, even in a short window', async () => {
   const { app, page, errors } = mosaic();
   // Stand in for a server that refuses with far more words than fit.
