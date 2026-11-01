@@ -180,6 +180,92 @@ test('the list of conversations opens from the header, goes back with Esc, and o
   expect(errors).toEqual([]);
 });
 
+test('a conversation is deleted from its row after asking, the open one and a running one too', async () => {
+  const { app, page, errors } = mosaic();
+  // A server that holds every request, so a run stays going until it is stopped.
+  await app.evaluate(({ net }) => {
+    net.fetch = async (input, init) => {
+      const url = String(input instanceof Request ? input.url : input);
+      if (url.endsWith('/v1/models')) return Response.json({ data: [] });
+      return new Promise<Response>((_, reject) =>
+        init?.signal?.addEventListener('abort', () =>
+          reject(new DOMException('Aborted', 'AbortError'))
+        )
+      );
+    };
+  });
+  await runDevTool(page, 'exampleResume');
+  await runDevTool(page, 'manyConversations', { count: 2 });
+  await page.getByRole('button', { name: 'Open settings' }).click();
+  const settings = page.getByRole('dialog', { name: 'Settings' });
+  await settings
+    .getByRole('navigation')
+    .getByRole('button', { name: /AI assistant/ })
+    .click();
+  await settings.getByRole('button', { name: 'Provider' }).click();
+  await page.getByRole('menuitemradio', { name: /^OpenAI-compatible/ }).click();
+  await settings.getByRole('button', { name: 'Close settings' }).click();
+  const pane = page.getByRole('complementary', { name: 'Assistant' });
+  const box = pane.getByRole('textbox', { name: 'Message' });
+  const opener = pane.getByRole('button', { name: 'New conversation', exact: true }).first();
+  await opener.click();
+  await box.fill('Tailor this to the Striped posting.');
+  await box.press('Enter');
+  await expect(pane.getByRole('button', { name: 'Stop' })).toBeVisible();
+
+  await pane.getByRole('button', { name: 'Tailor this to the Striped posting.' }).click();
+  const list = pane.getByRole('region', { name: 'Conversations' });
+  const rows = list.getByRole('listitem');
+  await expect(rows).toHaveCount(3);
+
+  // Keep it has the keyboard, and Esc means Keep it without leaving the list.
+  await rows
+    .nth(1)
+    .getByRole('button', { name: /What stands out/ })
+    .focus();
+  await page.keyboard.press('Delete');
+  const question = list.getByRole('alertdialog');
+  await expect(question.getByRole('button', { name: 'Keep it' })).toBeFocused();
+  await page.keyboard.press('Escape');
+  await expect(question).toHaveCount(0);
+  await expect(list).toBeVisible();
+  await expect(rows.nth(1).getByRole('button', { name: /What stands out/ })).toBeFocused();
+
+  // From the menu, an ordinary one.
+  await rows
+    .nth(1)
+    .getByRole('button', { name: /What stands out/ })
+    .press('Shift+F10');
+  await expect(page.getByRole('menuitem', { name: 'Stop the run' })).toHaveCount(0);
+  await page.getByRole('menuitem', { name: 'Delete…' }).click();
+  await question.getByRole('button', { name: 'Delete', exact: true }).click();
+  await expect(rows).toHaveCount(2);
+  await expect(page.getByText(/^Deleted “What stands out/)).toBeVisible();
+  // The keyboard stays where it was working: on the row above.
+  await expect(rows.first().getByRole('button', { name: /Tailor this/ })).toBeFocused();
+
+  // The running one is open: its run stops, it goes, and the pane moves to a new conversation.
+  await rows
+    .first()
+    .getByRole('button', { name: /Tailor this/ })
+    .press('Delete');
+  await expect(question).toContainText('It’s running now.');
+  await expect(question).toContainText('the pane moves to a new conversation');
+  await question.getByRole('button', { name: 'Stop and delete' }).click();
+  await expect(rows).toHaveCount(2);
+  await expect(rows.first()).toContainText('New conversation');
+  await expect(page.getByText(/^Stopped and deleted “Tailor this/)).toBeVisible();
+  await expect(rows.first().locator('[aria-current="true"]')).toHaveCount(1);
+
+  // Nothing is going any more, and neither is back when the list is read again.
+  await page.keyboard.press('Escape');
+  await expect(pane.getByRole('button', { name: 'Stop' })).toHaveCount(0);
+  await opener.click();
+  await expect(rows).toHaveCount(2);
+  await expect(list.getByText(/Tailor this/)).toHaveCount(0);
+  expect(errors).toEqual([]);
+});
+
 test('a long conversation opens on its newest, reads back to its first holding your place, and a send comes back', async () => {
   const { page, errors } = mosaic();
   await runDevTool(page, 'exampleResume');

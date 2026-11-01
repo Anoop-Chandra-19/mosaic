@@ -66,5 +66,12 @@ export function useConversationSwitch() {
     });
   };
 
-  return { isListOpen, failedOpenId, switchRef, openList, goBack, startNew, open };
+  /** The conversation is gone: if it was the open one, the pane is on a new one under the list. */
+  const leaveDeleted = (conversationId: number) => {
+    if (useConversationStore.getState().conversationId !== conversationId) return;
+    resetPaneView();
+    startNewConversation();
+  };
+
+  return { isListOpen, failedOpenId, switchRef, openList, goBack, startNew, open, leaveDeleted };
 }
