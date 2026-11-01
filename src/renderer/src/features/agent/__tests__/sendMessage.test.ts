@@ -25,7 +25,6 @@ beforeEach(() => {
       agent: {
         start: vi.fn(async () => start),
         readMessages: log.readMessages,
-        readConversationTitle: async () => 'Tighten my summary.',
         onEvent: () => () => {},
       },
     },

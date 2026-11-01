@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { ChevronDown, ChevronLeft, Sparkles, SquarePen, X } from 'lucide-react';
+import { ChevronLeft, Sparkles, SquarePen, X } from 'lucide-react';
 import { AppButton, AppTooltip, Text } from '@/components/ui-kit';
 import { coverFromStart } from '@/lib/motion/presenceMotions';
 import { usePresenceMotion } from '@/lib/motion/usePresenceMotion';
@@ -18,7 +18,6 @@ import { AGENT_PANE_WIDTH, useUiStore } from '@/stores/uiStore';
 import { useChosenModel } from '@/stores/useChosenModel';
 import { AgentPromptBox } from './AgentPromptBox';
 import { ConversationList } from './conversations/ConversationList';
-import { UNTITLED } from './conversations/conversationListWords';
 import { RunningElsewhere } from './conversations/RunningElsewhere';
 import { PaneTabs } from './PaneTabs';
 import { useConversationSwitch } from './useConversationSwitch';
@@ -36,9 +35,9 @@ function Spark() {
  * The assistant, on the right of the preview, drawn only while AI is on: the open
  * conversation (`transcript/`) or its full record (`trace/`), the prompt box with the one
  * notice over it for a message that didn't go or a run that stopped (`notices/`), and which
- * provider and model the next run uses. It opens on the conversation used last; the name in
- * its header opens the list of them all (`conversations/`), over everything below the header.
- * The runs themselves are followed and their tools answered from the shell (`followAgentRuns`,
+ * provider and model the next run uses. It opens on the conversation used last; Sessions, at
+ * the end of the tabs, opens the list of them all (`conversations/`), over everything below the
+ * header. The runs themselves are followed and their tools answered from the shell (`followAgentRuns`,
  * `tools/`). On a window too narrow for editor, preview, and pane, it lies over the preview.
  *
  * Imports only go down this list, and nothing imports this folder's own files from below:
@@ -59,8 +58,6 @@ export function AgentPane() {
   const isSideHandover = useIsSideHandover();
   const isWorkspaceReplaced = useIsWorkspaceReplaced();
   const conversationId = useConversationStore((s) => s.conversationId);
-  const storedTitle = useConversationStore((s) => s.title);
-  const title = conversationId === null ? 'New conversation' : (storedTitle ?? UNTITLED);
   const { isListOpen, failedOpenId, switchRef, openList, goBack, startNew, open, leaveDeleted } =
     useConversationSwitch();
   const {
@@ -132,26 +129,16 @@ export function AgentPane() {
                 <ChevronLeft className="size-3.5" />
               </AppButton>
             </AppTooltip>
-            <Text as="h2" variant="title">
+            <Text as="h2" variant="secondary" className="font-strong text-foreground">
               Conversations
             </Text>
           </div>
         ) : (
           <div className="flex min-w-0 items-center gap-1.5">
             <Spark />
-            <AppTooltip content="All conversations">
-              <AppButton
-                ref={switchRef}
-                variant="ghost"
-                size="xs"
-                onClick={openList}
-                aria-expanded={false}
-                className="min-w-0 px-1.5 font-strong text-foreground"
-              >
-                <span className="min-w-0 truncate">{title}</span>
-                <ChevronDown className="shrink-0 text-ink-faint" />
-              </AppButton>
-            </AppTooltip>
+            <Text as="h2" variant="secondary" className="font-strong text-foreground">
+              Assistant
+            </Text>
           </div>
         )}
         <div className="flex shrink-0 items-center gap-0.5">
@@ -190,7 +177,7 @@ export function AgentPane() {
         {/* Stays as it was under the list, so going back finds the same tab, place and words. */}
         <div inert={isListOpen} className="flex min-h-0 flex-1 flex-col">
           <RunningElsewhere running={running} onGoTo={open} />
-          <PaneTabs />
+          <PaneTabs sessionsRef={switchRef} onOpenSessions={openList} />
           <AgentPromptBox />
 
           <footer className="border-t border-line px-4 py-2.5">
