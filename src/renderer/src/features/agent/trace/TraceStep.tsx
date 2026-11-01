@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils';
 import type { ReadOutcome } from '@shared/types/agentBridge';
 import type { RunModel } from '@shared/types/agentConversation';
 import { LiveTime } from '../run-view/LiveTime';
+import { runAnchorProps } from '../run-view/runAnchors';
 import { StepMark } from '../run-view/RunLine';
 import type { StepRow } from '../run-view/runTimeline';
 import { RawBlock, ToolAnswer } from './ToolAnswer';
@@ -113,6 +114,7 @@ function StepTime({ row }: { row: StepRow }) {
 }
 
 interface TraceStepProps {
+  runId: number;
   row: StepRow;
   model: RunModel | null;
   readOutcome: ReadOutcome | undefined;
@@ -121,7 +123,7 @@ interface TraceStepProps {
 }
 
 /** One tool call: its name, what it was about, and, opened, its whole record. */
-export function TraceStep({ row, model, readOutcome, isOpen, onToggle }: TraceStepProps) {
+export function TraceStep({ runId, row, model, readOutcome, isOpen, onToggle }: TraceStepProps) {
   const chip = STATE_CHIPS[row.state];
   const retries = row.call.request?.retries.length ?? 0;
   return (
@@ -130,9 +132,11 @@ export function TraceStep({ row, model, readOutcome, isOpen, onToggle }: TraceSt
         variant="plain"
         aria-expanded={isOpen}
         onClick={onToggle}
+        {...runAnchorProps(runId, row.key)}
         className={cn(
           textVariantClasses('secondary'),
-          'flex h-auto w-full gap-2 px-1 pt-1.5 pb-px text-left text-ink-soft hover:text-foreground'
+          'flex h-auto w-full gap-2 rounded-sm px-1 pt-1.5 pb-px text-left text-ink-soft hover:text-foreground',
+          isOpen && 'bg-line'
         )}
       >
         <StepMark state={row.state} />

@@ -1,7 +1,10 @@
-import { Text } from '@/components/ui-kit';
+import { ChevronRight } from 'lucide-react';
+import { AppButton, Text, textVariantClasses } from '@/components/ui-kit';
+import { showInTrace } from '@/stores/agentPaneStore';
 import type { RunRetry } from '@/stores/runStore';
 import type { RunPart } from '@/types/agentRunView';
 import type { RunModel } from '@shared/types/agentConversation';
+import { cn } from '@/lib/utils';
 import { RetryNotice } from '../notices/RetryNotice';
 import { PacedReply } from '../reply/PacedReply';
 import { TracingDots } from '../reply/TracingDots';
@@ -23,6 +26,7 @@ import {
  */
 
 interface RunActivityProps {
+  runId: number;
   parts: RunPart[];
   state: RunState;
   /** When the run last heard anything, which a wait for the model counts from. */
@@ -53,7 +57,30 @@ function endsInBox(timeline: TimelineItem[]): boolean {
   return newest?.kind === 'line' && newest.line.steps.length > 1;
 }
 
+/** The run's one total, and the way to its full record. */
+function RunTotal({ runId, total }: { runId: number; total: string }) {
+  return (
+    <div className="flex items-center gap-2">
+      <Text as="p" variant="meta" className="min-w-0 flex-1 text-ink-faint tabular-nums">
+        {total}
+      </Text>
+      <AppButton
+        variant="plain"
+        onClick={() => showInTrace({ runId, callId: null })}
+        className={cn(
+          textVariantClasses('caption'),
+          'h-auto gap-0.75 px-0 py-0.5 font-regular text-ink-muted hover:text-foreground'
+        )}
+      >
+        Trace
+        <ChevronRight aria-hidden className="size-2.5" />
+      </AppButton>
+    </div>
+  );
+}
+
 export function RunActivity({
+  runId,
   parts,
   state,
   waitingSince,
@@ -74,16 +101,18 @@ export function RunActivity({
         item.kind === 'text' ? (
           <PacedReply key={item.key} text={item.text} isWriting={state.isRunning && item.isLast} />
         ) : (
-          <RunLine key={item.key} line={item.line} runState={state} isLast={item.isLast} />
+          <RunLine
+            key={item.key}
+            runId={runId}
+            line={item.line}
+            runState={state}
+            isLast={item.isLast}
+          />
         )
       )}
       <RetryNotice retry={retry} runModel={runModel} isAttached={endsInBox(timeline)} />
       {isWaiting && !retry && <WaitingRow since={waitingSince} />}
-      {total !== null && (
-        <Text as="p" variant="meta" className="text-ink-faint tabular-nums">
-          {total}
-        </Text>
-      )}
+      {total !== null && <RunTotal runId={runId} total={total} />}
     </div>
   );
 }

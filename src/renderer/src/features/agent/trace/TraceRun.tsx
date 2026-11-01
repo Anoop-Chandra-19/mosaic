@@ -11,6 +11,7 @@ import { quoteProviderError, readRunSource } from '../notices/runSource';
 import { describeStop } from '../notices/stopWords';
 import { useServerAddresses } from '../notices/useServerAddresses';
 import { LiveTime } from '../run-view/LiveTime';
+import { runAnchorProps } from '../run-view/runAnchors';
 import { ThinkMark } from '../run-view/RunLine';
 import {
   countRunSteps,
@@ -76,8 +77,13 @@ function TraceLine({
   openCallId,
   onToggleCall,
 }: TraceLineProps) {
+  // A record open stays, whatever the filter: a link from the conversation may have opened it.
   const rows = isOnlyFlagged
-    ? line.rows.filter((row) => row.kind === 'step' && isStepFlagged(row, readOutcomes?.[row.key]))
+    ? line.rows.filter(
+        (row) =>
+          row.kind === 'step' &&
+          (row.key === openCallId || isStepFlagged(row, readOutcomes?.[row.key]))
+      )
     : line.rows;
   if (rows.length === 0) return null;
   return (
@@ -93,6 +99,7 @@ function TraceLine({
         ) : (
           <TraceStep
             key={row.key}
+            runId={run.runId}
             row={row}
             model={run.model}
             readOutcome={readOutcomes?.[row.key]}
@@ -193,6 +200,7 @@ export const TraceRun = memo(function TraceRun({
         variant="plain"
         aria-expanded={isOpen}
         onClick={() => onToggle(run.runId)}
+        {...runAnchorProps(run.runId)}
         className={cn(
           textVariantClasses('secondary'),
           'flex h-auto w-full items-center gap-2 py-0.75 text-left text-ink-muted'

@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useEffect, type ReactNode } from 'react';
 import { Check, ChevronDown, ChevronRight, SquareTerminal, X } from 'lucide-react';
 import {
   AppButton,
@@ -10,7 +10,9 @@ import {
 } from '@/components/ui-kit';
 import { formatSeconds } from '@shared/time/formatTime';
 import { cn } from '@/lib/utils';
+import { isSameCall, showInTrace, useAgentPaneStore } from '@/stores/agentPaneStore';
 import { LiveTime } from './LiveTime';
+import { runAnchorProps } from './runAnchors';
 import {
   describeRunLine,
   describeThinking,
@@ -27,7 +29,8 @@ import { useRunLineOpen } from './useRunLineOpen';
 /*
  * One line of a run's timeline, by what it holds. Only thinking is plain words. One step is that
  * step by name, with no box, so a model that writes before every step reads as words with marks
- * in their margin. Two or more fold into a box, which opens on its own while it works.
+ * in their margin. Two or more fold into a box, which opens on its own while it works. Every step
+ * links to its record in the Trace, and is marked while that record is open.
  */
 
 const THINKING_SHIMMER =
@@ -38,7 +41,16 @@ const BOX_ROW_CLASSES = 'border-t border-line px-2.75 py-1.5 first:border-t-0';
 /** A line with no box, the height of a step in one. */
 const BARE_LINE_CLASSES = cn(textVariantClasses('secondary'), 'min-h-6.5 py-1');
 
-const STEP_FRAME_CLASSES = 'grid grid-cols-[auto_minmax(0,1fr)_auto] items-start gap-x-2.25';
+/** Its fill reaches past the text, which stays in line with the words around it. */
+const BARE_STEP_ROW_CLASSES = '-mx-1.5 w-[calc(100%+0.75rem)] rounded-sm px-1.5 hover:bg-line';
+
+const STEP_FRAME_CLASSES = cn(
+  textVariantClasses('secondary'),
+  'group grid h-auto w-full grid-cols-[auto_minmax(0,1fr)_auto_auto] items-start gap-x-2.25 text-left font-regular whitespace-normal'
+);
+
+/** Neutral: amber stays for what is under way. */
+const MARKED_STEP_CLASSES = 'bg-line ring-1 ring-line-heavy ring-inset';
 
 const BOX_STEP_TONES: Record<RowState, string> = {
   run: 'relative overflow-hidden bg-linear-to-r from-amber-soft to-transparent to-60% text-foreground before:absolute before:inset-y-0 before:left-0 before:w-0.5 before:bg-amber after:absolute after:inset-x-0 after:bottom-0 after:h-px after:animate-step-sweep after:bg-linear-to-r after:from-transparent after:via-amber after:to-transparent motion-reduce:after:animate-none',
@@ -118,25 +130,42 @@ function StepTime({ row }: { row: StepRow }) {
   return <RowTime>{formatSeconds(row.durationMs)}</RowTime>;
 }
 
+interface StepFrameProps {
+  runId: number;
+  row: StepRow;
+  className: string;
+  time: ReactNode;
+}
+
 /** The note runs under the time as well: a pane is narrow, and it wraps rather than lose its end. */
-function StepFrame({ row, className, time }: { row: StepRow; className: string; time: ReactNode }) {
+function StepFrame({ runId, row, className, time }: StepFrameProps) {
+  const isMarked = useAgentPaneStore((s) => isSameCall(s.openCall, runId, row.key));
   return (
-    <div className={cn(STEP_FRAME_CLASSES, className)}>
+    <AppButton
+      variant="plain"
+      onClick={() => showInTrace({ runId, callId: row.key })}
+      {...runAnchorProps(runId, row.key)}
+      className={cn(STEP_FRAME_CLASSES, className, isMarked && MARKED_STEP_CLASSES)}
+    >
       <StepMark state={row.state} />
       <span>{row.words}</span>
       {time}
+      <ChevronRight
+        aria-hidden
+        className="invisible col-start-4 row-start-1 mt-0.5 size-3 text-ink-muted group-hover:visible group-focus-visible:visible"
+      />
       {row.note && (
         <Text
           variant="meta"
           className={cn(
-            'col-span-2 col-start-2 mt-0.5 wrap-break-word',
+            'col-span-3 col-start-2 mt-0.5 wrap-break-word',
             row.state === 'fail' ? 'text-warn' : 'text-ink-faint'
           )}
         >
           {row.note}
         </Text>
       )}
-    </div>
+    </AppButton>
   );
 }
 
@@ -179,11 +208,12 @@ function ThinkingLine({ line }: { line: RunLineItems }) {
   );
 }
 
-function OneStepLine({ line, step }: { line: RunLineItems; step: StepRow }) {
+function OneStepLine({ runId, line, step }: { runId: number; line: RunLineItems; step: StepRow }) {
   return (
     <StepFrame
+      runId={runId}
       row={step}
-      className={cn(BARE_LINE_CLASSES, BARE_STEP_TONES[step.state])}
+      className={cn(BARE_LINE_CLASSES, BARE_STEP_ROW_CLASSES, BARE_STEP_TONES[step.state])}
       time={
         isThinkingNow(line) ? (
           <span className={THINKING_SHIMMER}>Thinking</span>
@@ -196,6 +226,7 @@ function OneStepLine({ line, step }: { line: RunLineItems; step: StepRow }) {
 }
 
 interface LineProps {
+  runId: number;
   line: RunLineItems;
   /** The run this line belongs to, which folds it when it ends. */
   runState: RunState;
@@ -217,18 +248,28 @@ function LineTime({ line, isGoing }: { line: RunLineItems; isGoing: boolean }) {
   );
 }
 
-function BoxedLine({ line, runState, isLast }: LineProps) {
+function BoxedLine({ runId, line, runState, isLast }: LineProps) {
   const stepStarts = line.steps.flatMap(({ startedAt }) =>
     startedAt === undefined ? [] : [startedAt]
   );
   const { isOpen, setIsOpen } = useRunLineOpen(stepStarts, runState, !isLast);
+  const holdsMarked = useAgentPaneStore((s) =>
+    line.steps.some((step) => isSameCall(s.openCall, runId, step.key))
+  );
+  // A record opened in the Trace may be a step folded away here: coming back needs it to land on.
+  useEffect(() => {
+    if (holdsMarked) setIsOpen(true);
+  }, [holdsMarked, setIsOpen]);
   const isGoing = runState.isRunning && isLast;
   const label = describeRunLine(line, isGoing, isOpen);
   return (
     <AppCollapsible
       open={isOpen}
       onOpenChange={setIsOpen}
-      className="overflow-hidden rounded-sm border border-line"
+      className={cn(
+        'overflow-hidden rounded-sm border',
+        holdsMarked ? 'border-line-heavy' : 'border-line'
+      )}
     >
       <AppCollapsibleTrigger asChild>
         <AppButton
@@ -263,8 +304,13 @@ function BoxedLine({ line, runState, isLast }: LineProps) {
             row.kind === 'step' ? (
               <StepFrame
                 key={row.key}
+                runId={runId}
                 row={row}
-                className={cn(BOX_ROW_CLASSES, BOX_STEP_TONES[row.state])}
+                className={cn(
+                  BOX_ROW_CLASSES,
+                  'rounded-none hover:bg-line',
+                  BOX_STEP_TONES[row.state]
+                )}
                 time={<StepTime row={row} />}
               />
             ) : (
@@ -277,9 +323,9 @@ function BoxedLine({ line, runState, isLast }: LineProps) {
   );
 }
 
-export function RunLine({ line, runState, isLast }: LineProps) {
+export function RunLine({ runId, line, runState, isLast }: LineProps) {
   const [firstStep, secondStep] = line.steps;
   if (!firstStep) return <ThinkingLine line={line} />;
-  if (!secondStep) return <OneStepLine line={line} step={firstStep} />;
-  return <BoxedLine line={line} runState={runState} isLast={isLast} />;
+  if (!secondStep) return <OneStepLine runId={runId} line={line} step={firstStep} />;
+  return <BoxedLine runId={runId} line={line} runState={runState} isLast={isLast} />;
 }

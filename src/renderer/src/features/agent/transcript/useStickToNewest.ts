@@ -10,13 +10,20 @@ const PINNED_WITHIN_PX = 72;
  * read: then it stays where they are. Growth is watched by size, so streamed text and new
  * turns are followed alike. The end of what is held isn't the newest while the window is back
  * from the end of the log, so it isn't followed then. A send comes back to the newest.
+ * `isHeld` stops the following while something in view is being read, however near the end.
  */
 export function useStickToNewest(
   scrollRef: RefObject<HTMLElement | null>,
-  contentRef: RefObject<HTMLElement | null>
+  contentRef: RefObject<HTMLElement | null>,
+  isHeld = false
 ): void {
   const returnsToNewest = useConversationStore((s) => s.returnsToNewest);
   const isPinned = useRef(true);
+  const isHeldNow = useRef(isHeld);
+
+  useEffect(() => {
+    isHeldNow.current = isHeld;
+  }, [isHeld]);
 
   useEffect(() => {
     const scroller = scrollRef.current;
@@ -29,7 +36,7 @@ export function useStickToNewest(
     };
     const resizes = new ResizeObserver(() => {
       // Following isn't the user scrolling, so it doesn't show the scrollbar.
-      if (isPinned.current) scrollQuietly(scroller, scroller.scrollHeight);
+      if (isPinned.current && !isHeldNow.current) scrollQuietly(scroller, scroller.scrollHeight);
     });
     scroller.addEventListener('scroll', onScroll);
     resizes.observe(content);

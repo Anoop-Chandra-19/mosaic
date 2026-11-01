@@ -13,6 +13,7 @@ import { RunActivity } from './RunActivity';
 import { RunCard } from './RunCard';
 import { RunRecord } from './RunRecord';
 import { useMessagePages } from './useMessagePages';
+import { useReturnFromTrace } from './useReturnFromTrace';
 import { useStickToNewest } from './useStickToNewest';
 
 /*
@@ -113,6 +114,7 @@ function RunReply({ run, isLive, stopRecord }: RunReplyProps) {
     <>
       {!isLive && run.ask === null && <RunRecord text="Sent again" at={run.startedAt} isAgain />}
       <RunActivity
+        runId={run.runId}
         parts={live?.parts ?? run.parts}
         state={{
           isRunning: live !== null && !live.hasEnded,
@@ -217,6 +219,7 @@ export function AgentTranscript() {
   const serverAddresses = useServerAddresses();
   useStickToNewest(scrollRef, contentRef);
   useMessagePages(scrollRef);
+  useReturnFromTrace(scrollRef);
 
   const readStopRecord = (run: RunView) =>
     run.stop && (describeStop(run.stop, run.model, serverAddresses)?.record ?? null);
@@ -226,7 +229,8 @@ export function AgentTranscript() {
       <section
         ref={scrollRef}
         aria-label="Conversation"
-        className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto px-3.5 pt-4 pb-1.5"
+        tabIndex={-1}
+        className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto px-3.5 pt-4 pb-1.5 outline-none"
       >
         <div ref={contentRef} className="pb-2.5">
           {turns.length === 0 ? (

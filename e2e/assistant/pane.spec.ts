@@ -111,6 +111,29 @@ test('asking in the prompt box shows the ask and the reply, and the box is ready
   await expect(conversation).toBeVisible();
   await expect(trace).toHaveCount(0);
 
+  // The filter outlives the tab. A step links to its record, even one the filter would hide, and
+  // coming back lands on that step, marked and with the keyboard on it.
+  const step = conversation.getByRole('button', { name: /^Rewrote a bullet/ });
+  await step.click();
+  await expect(pane.getByRole('button', { name: 'Only flagged' })).toHaveAttribute(
+    'aria-pressed',
+    'true'
+  );
+  await expect(trace.getByText('Arguments')).toBeVisible();
+  await expect(trace.getByRole('button', { name: /^Rewrote a bullet/ })).toBeInViewport();
+  await page.keyboard.press('Escape');
+  await expect(conversation).toBeVisible();
+  await expect(step).toBeFocused();
+  await expect(step).toBeInViewport();
+
+  // The total links to its run, with no record open.
+  await conversation.getByRole('button', { name: 'Trace', exact: true }).click();
+  await expect(trace.getByRole('button', { name: /^Run 1/ })).toBeFocused();
+  await expect(trace.getByText('Arguments')).toHaveCount(0);
+  await pane.getByRole('button', { name: 'Only flagged' }).click();
+  await page.keyboard.press('Escape');
+  await expect(conversation).toBeVisible();
+
   await pane.getByRole('button', { name: 'New conversation' }).click();
   await expect(conversation.getByText('Tighten my bullets.')).toHaveCount(0);
   expect(errors).toEqual([]);
