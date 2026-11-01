@@ -5,34 +5,61 @@ import type {
 } from '@shared/types/agentConversation';
 import type { RunPart, RunView } from '@/types/agentRunView';
 
+interface BuiltRun {
+  first: TranscriptMessage;
+  count: number;
+  view: RunView;
+}
+
+/** By a run's last message: stored messages never change, so neither does the view of them. */
+const builtRuns = new WeakMap<TranscriptMessage, BuiltRun>();
+
 /**
  * The transcript as runs: the stored messages, oldest first, folded into one view per
  * run, in order. Every message a run writes carries its id, so a run's messages are the
- * ones in a row with the same id; a message written outside a run shows in none.
+ * ones in a row with the same id; a message written outside a run shows in none. A run
+ * already built keeps its view, so older pages landing leave the runs shown alone.
  */
 export function buildRunView(messages: TranscriptMessage[]): RunView[] {
   const runs: RunView[] = [];
-  for (const { runId, runModel, body, createdAt } of messages) {
-    if (runId === null) continue;
-    let run = runs.at(-1);
-    if (run?.runId !== runId) {
-      run = {
-        runId,
-        model: runModel,
-        startedAt: createdAt,
-        lastAt: createdAt,
-        ask: null,
-        switchedTo: null,
-        parts: [],
-        stop: null,
-        stoppedAt: null,
-      };
-      runs.push(run);
-    }
+  let start = 0;
+  while (start < messages.length) {
+    const { runId } = messages[start];
+    let end = start + 1;
+    while (end < messages.length && messages[end].runId === runId) end++;
+    if (runId !== null) runs.push(readBuiltRun(messages.slice(start, end), runId));
+    start = end;
+  }
+  return runs;
+}
+
+function readBuiltRun(messages: TranscriptMessage[], runId: number): RunView {
+  const first = messages[0];
+  const last = messages[messages.length - 1];
+  const built = builtRuns.get(last);
+  if (built?.first === first && built.count === messages.length) return built.view;
+  const view = buildRun(messages, runId);
+  builtRuns.set(last, { first, count: messages.length, view });
+  return view;
+}
+
+function buildRun(messages: TranscriptMessage[], runId: number): RunView {
+  const run: RunView = {
+    runId,
+    model: messages[0].runModel,
+    startedAt: messages[0].createdAt,
+    lastAt: messages[0].createdAt,
+    ask: null,
+    switchedTo: null,
+    parts: [],
+    stop: null,
+    stoppedAt: null,
+  };
+  for (const { body, createdAt } of messages) {
     run.lastAt = createdAt;
     addToRun(run, body, createdAt);
   }
-  return runs;
+  return run;
 }
 
 function addToRun(run: RunView, body: TranscriptMessageBody, createdAt: number): void {

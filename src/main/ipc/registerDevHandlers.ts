@@ -2,14 +2,16 @@ import path from 'node:path';
 import { app, BrowserWindow, ipcMain, type IpcMainInvokeEvent, type WebContents } from 'electron';
 import { DEV_CHANNELS } from '@shared/ipc/appChannels';
 import { ALL_DEV_SWITCHES_OFF, type DevSwitches } from '@shared/types/devTools';
-import { databaseFile } from '../db/appDatabase';
+import { databaseFile, getAppDatabase } from '../db/appDatabase';
 import { applyDevMotion } from '../dev/applyDevMotion';
 import { describeProcessMemory, type PageProcess } from '../dev/describeProcessMemory';
 import { formatHomePath } from '../dev/formatHomePath';
+import { seedLongConversation } from '../dev/seedLongConversation';
 import {
   parseDevSwitches,
   parseDevToolRuns,
   parseReopenAddress,
+  parseSeedMessageCount,
   readDevToolsFile,
   updateDevToolsFile,
 } from './devHandlers';
@@ -84,6 +86,12 @@ export function registerDevHandlers(
   ipcMain.handle(DEV_CHANNELS.readMemory, (event) => {
     refuseOthers(event);
     return describeProcessMemory(app.getAppMetrics(), findPageProcess);
+  });
+  ipcMain.handle(DEV_CHANNELS.seedLongConversation, (event, messageCount: unknown) => {
+    refuseOthers(event);
+    const db = getAppDatabase();
+    if (!db) throw new Error('The database is not open');
+    return seedLongConversation(db, parseSeedMessageCount(messageCount));
   });
   ipcMain.handle(DEV_CHANNELS.readDataFolder, (event) => {
     refuseOthers(event);

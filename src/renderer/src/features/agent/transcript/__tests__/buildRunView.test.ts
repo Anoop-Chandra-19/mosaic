@@ -13,6 +13,27 @@ const messages = (rows: [number | null, TranscriptMessageBody][]): TranscriptMes
   }));
 
 describe('buildRunView', () => {
+  it('keeps the view of a run as older messages arrive, and builds one that grew afresh', () => {
+    const ask = (text: string): TranscriptMessageBody => ({
+      type: 'user',
+      text,
+      resume: [],
+      isLimit: false,
+    });
+    const stored = messages([
+      [1, ask('First.')],
+      [2, ask('Second.')],
+      [3, ask('Third.')],
+    ]);
+    const shown = buildRunView(stored.slice(1));
+    const withOlder = buildRunView(stored);
+    expect(withOlder[1]).toBe(shown[0]);
+    expect(withOlder[2]).toBe(shown[1]);
+
+    const [grown] = messages([[3, { type: 'assistant', content: [] }]]);
+    expect(buildRunView([...stored, grown])[2]).not.toBe(shown[1]);
+  });
+
   it('folds each run’s stored messages into one view, in order', () => {
     const stop = {
       type: 'runStopped',

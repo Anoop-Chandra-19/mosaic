@@ -134,6 +134,8 @@ const dev: MosaicDev | undefined = process.argv.includes(DEV_BUILD_ARGUMENT)
       readReopenAddress: () => ipcRenderer.invoke(DEV_CHANNELS.readReopenAddress),
       saveReopenAddress: (address) => ipcRenderer.invoke(DEV_CHANNELS.saveReopenAddress, address),
       readMemory: () => ipcRenderer.invoke(DEV_CHANNELS.readMemory),
+      seedLongConversation: (messageCount) =>
+        ipcRenderer.invoke(DEV_CHANNELS.seedLongConversation, messageCount),
       readDataFolder: () => ipcRenderer.invoke(DEV_CHANNELS.readDataFolder),
       onOpenTools: (open) => {
         ipcRenderer.on(DEV_OPEN_TOOLS, () => open());

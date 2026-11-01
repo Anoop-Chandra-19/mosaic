@@ -81,6 +81,15 @@ export function parseReopenAddress(value: unknown): string {
   return value;
 }
 
+const MAX_SEEDED_MESSAGES = 100_000;
+
+export function parseSeedMessageCount(value: unknown): number {
+  if (!Number.isSafeInteger(value) || (value as number) < 1) {
+    throw new Error('a message count must be a whole number above 0');
+  }
+  return Math.min(value as number, MAX_SEEDED_MESSAGES);
+}
+
 function readPart<T>(parse: () => T, fallback: T): T {
   try {
     return parse();
