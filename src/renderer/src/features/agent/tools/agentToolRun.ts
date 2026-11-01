@@ -19,6 +19,8 @@ export interface AgentToolRun {
   receipt: ReadReceipt | null;
   /** This run's suggestion for each bullet, entry or section, which a new one replaces. */
   suggestionIdByTarget: Map<string, string>;
+  /** Every suggestion this run has staged and not replaced, which its card counts. */
+  stagedIds: Set<string>;
   /** Targets sent back once for a definite mistake. The next try is staged, flagged. */
   repairedTargets: Set<string>;
 }
@@ -37,6 +39,7 @@ export const createAgentToolRun = (
   handles: reading.handles,
   receipt: reading.receipt,
   suggestionIdByTarget: new Map(),
+  stagedIds: new Set(),
   repairedTargets: new Set(),
 });
 
