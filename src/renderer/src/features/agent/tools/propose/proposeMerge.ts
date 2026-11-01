@@ -1,5 +1,5 @@
 import type { ProposeToolArgs } from '@shared/agent-tools/proposeTools';
-import type { AgentToolRun } from '../agentToolRun';
+import type { AgentToolRun } from '../tool-run/agentToolRun';
 import { findBulletInReceipt, handlesOf, isProblem, type BulletInReceipt } from './findInReceipt';
 import { TOOL_FACTS } from './toolFacts';
 import type { ProposeTool } from './toolReadings';

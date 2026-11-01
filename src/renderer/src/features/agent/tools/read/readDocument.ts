@@ -6,8 +6,8 @@ import {
   refuse,
   type AgentToolRun,
   type ToolAnswer,
-} from '../agentToolRun';
-import { formatResumeForModel } from '../formatResumeForModel';
+} from '../tool-run/agentToolRun';
+import { formatResumeForModel } from './formatResumeForModel';
 
 /** The open draft, which becomes the run's receipt: suggestions are made against it. */
 export function readDocument(run: AgentToolRun): ToolAnswer {

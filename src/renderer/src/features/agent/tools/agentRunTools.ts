@@ -4,8 +4,8 @@ import { useResumeStore } from '@/stores/resumeStore';
 import { useRunStore } from '@/stores/runStore';
 import type { AgentToolResult } from '@shared/agent-tools/agentTools';
 import type { AgentStart, AgentToolCall } from '@shared/types/agentBridge';
-import { createAgentToolRun, type AgentToolRun } from './agentToolRun';
 import { runAgentTool } from './runAgentTool';
+import { createAgentToolRun, type AgentToolRun } from './tool-run/agentToolRun';
 
 /*
  * The page's side of the assistant's runs, which happen in main. A run asked for here

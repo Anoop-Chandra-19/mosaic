@@ -7,7 +7,7 @@ import type {
 import { hasSameWords } from '@/lib/resume/hasSameWords';
 import { isPlaceShown, readShowPlaceId, readTextPlaceId } from '@/lib/resume/proposalAnchor';
 import type { ResumeData } from '@shared/types/resume';
-import type { AgentToolRun } from '../agentToolRun';
+import type { AgentToolRun } from '../tool-run/agentToolRun';
 
 /*
  * What the model hears about a suggestion: what it is for, what the checks noticed, what

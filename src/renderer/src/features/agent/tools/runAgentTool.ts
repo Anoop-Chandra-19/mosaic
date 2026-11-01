@@ -12,7 +12,6 @@ import {
   type ProposeToolName,
 } from '@shared/agent-tools/proposeTools';
 import type { ReadToolArgs } from '@shared/agent-tools/readTools';
-import { refuse, type AgentToolRun, type ToolAnswer, type ToolCallContext } from './agentToolRun';
 import { checkAgentToolArgs } from './checkAgentToolArgs';
 import { lookUpReceipt } from './lookUpReceipt';
 import { compileProposeCall } from './propose/compileProposeCall';
@@ -21,6 +20,12 @@ import { stageCompiledCall } from './propose/stageSuggestions';
 import { readAgentToolArgs } from './readAgentToolArgs';
 import { readDocument } from './read/readDocument';
 import { readNewestVersion } from './read/readNewestVersion';
+import {
+  refuse,
+  type AgentToolRun,
+  type ToolAnswer,
+  type ToolCallContext,
+} from './tool-run/agentToolRun';
 
 /*
  * The assistant's tools, run in the page where the draft and the suggestions live. A call
@@ -29,14 +34,15 @@ import { readNewestVersion } from './read/readNewestVersion';
  * checks them against the definitions the model was given (`@shared/agent-tools/`), and:
  *
  * - `read/` answers: the draft and the newest version, written out by
- *   `formatResumeForModel.ts` with the short handles of `resumeHandles.ts`. Reading the
- *   draft is the run's receipt.
+ *   `formatResumeForModel.ts` with the short handles of `tool-run/resumeHandles.ts`. Reading
+ *   the draft is the run's receipt.
  * - `propose/` compiles the call (`compileProposeCall.ts`): the tool's own step turns it
  *   into what it can mean, and the rules every change goes through decide what is staged
  *   for review (`stageSuggestions.ts`). What the call was about goes with its answer, for
  *   the pane (`describeProposeTarget.ts`).
  *
- * Other modules use this file and `agentToolRun.ts`, which holds what a run's tools keep.
+ * Imports go one way: this folder's own files, then `read/` and `propose/`, then `tool-run/`,
+ * which holds what a run's tools keep. Other modules start from `agentRunTools.ts`.
  */
 
 type ReadToolName = keyof ReadToolArgs;

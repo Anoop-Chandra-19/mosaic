@@ -11,8 +11,8 @@ import {
   refuse,
   type AgentToolRun,
   type ToolAnswer,
-} from '../agentToolRun';
-import { formatResumeForModel } from '../formatResumeForModel';
+} from '../tool-run/agentToolRun';
+import { formatResumeForModel } from './formatResumeForModel';
 
 function describeChangesSince(version: ResumeData, draft: ResumeData): string {
   if (encodeResumeCanonically(version) === encodeResumeCanonically(draft)) {

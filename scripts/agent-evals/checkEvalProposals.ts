@@ -2,7 +2,7 @@
  * The checks the evals apply to a model's proposal. Failures carry the `fix` hint the model
  * gets back in its one repair round.
  */
-import { locatePhrase } from '../../src/renderer/src/features/agent/tools/locatePhrase.ts';
+import { locatePhrase } from '../../src/renderer/src/features/agent/tools/propose/locatePhrase.ts';
 
 export type ProposalCheck =
   | { ok: true; result: string; editCount: number }

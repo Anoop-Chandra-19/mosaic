@@ -18,7 +18,7 @@ vi.mock('@/stores/templateStore', async (importOriginal) => ({
 
 const { useResumeStore } = await import('@/stores/resumeStore');
 const { useProposalStore } = await import('@/stores/proposalStore');
-const { createAgentToolRun } = await import('../agentToolRun');
+const { createAgentToolRun } = await import('../tool-run/agentToolRun');
 const { runAgentTool } = await import('../runAgentTool');
 
 const openDraft = (doc: ResumeData, templateId = 't1', rev = 3) =>
