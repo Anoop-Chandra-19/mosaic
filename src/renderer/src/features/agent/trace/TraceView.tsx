@@ -20,15 +20,15 @@ import { TraceRun } from './TraceRun';
 import { useOutdatedReads } from './useOutdatedReads';
 
 /*
- * The full record of the open conversation, for whoever wants it: a tab in the pane, with the
- * page in view and the prompt box under it. It reads the same window of the log as the
- * conversation and pages it the same way. Only here: raw arguments and results, tokens,
- * attempts. Never a rev, never a key. Closed runs are a header each; one step's record is open
- * at a time, and its result is read as it opens (`ToolAnswer.tsx`). What stays open when this
- * closes is in `agentPaneStore`, which is also how a step in the conversation links here.
+ * Shows the open conversation's detailed record in the Trace tab, with the resume visible
+ * and the prompt box below. Shares the conversation's message window and paging hooks.
+ * Adds tool arguments and results, token counts, and request attempts, but no revisions or keys.
+ * Collapsed runs show only headers. One tool record opens at a time and loads its result through
+ * `ToolAnswer.tsx`. `agentPaneStore` preserves open records across tab switches and handles
+ * links from conversation steps.
  */
 
-/** A little of what comes before the place landed on stays in view. */
+/** Leaves a small gap above the target so preceding content remains visible. */
 const LANDS_BELOW_TOP_PX = 12;
 
 /** The newest message knows its run's number, which is how many there are. */
@@ -63,13 +63,13 @@ export function TraceView() {
   const liveRunId = hasNewer ? null : followedRunId;
   const scrollRef = useRef<HTMLElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
-  // The newest run is open until it is closed; any other, once it is opened.
+  // Default the newest run to open and older runs to closed, unless explicitly toggled.
   const openedRuns = useAgentPaneStore((s) => s.openedRuns);
   const openCall = useAgentPaneStore((s) => s.openCall);
   const isOnlyFlagged = useAgentPaneStore((s) => s.isOnlyFlagged);
   const readOutcomes = useOutdatedReads();
   const runCount = useRunCount();
-  // A record loads its result as it opens, and that shouldn't carry it out of view.
+  // Pause bottom-following while a record is open so loading its result does not move it out of view.
   useStickToNewest(scrollRef, contentRef, openCall !== null);
   useMessagePages(scrollRef, isOnlyFlagged);
   useLandOnTarget(scrollRef);

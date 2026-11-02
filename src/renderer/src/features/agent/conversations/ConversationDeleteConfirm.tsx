@@ -20,9 +20,9 @@ interface ConversationDeleteConfirmProps {
 }
 
 /**
- * Deleting a conversation asks in its row. Keep it has focus first, and Escape, tabbing away
- * or clicking anywhere else all mean Keep it, until the delete has begun: that can't be taken
- * back, so from then on only its end moves anything.
+ * Confirm deletion inside the conversation's row. Focus starts on Keep it. Escape, tabbing
+ * away, or clicking elsewhere cancels until deletion starts. Deletion cannot be cancelled;
+ * after it starts, the confirmation stays until deletion finishes.
  */
 export function ConversationDeleteConfirm({
   title,
@@ -34,7 +34,7 @@ export function ConversationDeleteConfirm({
   const boxRef = useRef<HTMLDivElement>(null);
   const keepRef = useRef<HTMLButtonElement>(null);
   useEffect(() => keepRef.current?.focus({ preventScroll: true }), []);
-  // The buttons are about to be disabled, and a disabled button can't keep the keyboard.
+  // Move focus to the dialog when deletion disables the buttons.
   useEffect(() => {
     if (isDeleting) boxRef.current?.focus({ preventScroll: true });
   }, [isDeleting]);

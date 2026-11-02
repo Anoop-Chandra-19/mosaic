@@ -28,21 +28,20 @@ import {
 } from './tool-run/agentToolRun';
 
 /*
- * The assistant's tools, run in the page where the draft and the suggestions live. A call
- * comes in as a name and the model's arguments; `readAgentToolArgs` takes the one reading
- * of any that don't fit (over what the run read, `lookUpReceipt.ts`), `checkAgentToolArgs`
- * checks them against the definitions the model was given (`@shared/agent-tools/`), and:
+ * Execute assistant tools in the renderer, where the draft and suggestions live.
+ * `readAgentToolArgs` normalizes model arguments using receipt lookups from
+ * `lookUpReceipt.ts`; `checkAgentToolArgs` validates them against the definitions
+ * given to the model (`@shared/agent-tools/`). Then dispatch to:
  *
- * - `read/` answers: the draft and the newest version, written out by
- *   `formatResumeForModel.ts` with the short handles of `tool-run/resumeHandles.ts`. Reading
- *   the draft is the run's receipt.
- * - `propose/` compiles the call (`compileProposeCall.ts`): the tool's own step turns it
- *   into what it can mean, and the rules every change goes through decide what is staged
- *   for review (`stageSuggestions.ts`). What the call was about goes with its answer, for
- *   the pane (`describeProposeTarget.ts`).
+ * - `read/`: return the draft or newest saved version through `formatResumeForModel.ts`,
+ *   using short handles from `tool-run/resumeHandles.ts`. Reading the draft also records
+ *   the run's receipt.
+ * - `propose/`: interpret the call and apply change rules (`compileProposeCall.ts`),
+ *   then stage accepted changes for review (`stageSuggestions.ts`). Include a display
+ *   target for the pane (`describeProposeTarget.ts`).
  *
- * Imports go one way: this folder's own files, then `read/` and `propose/`, then `tool-run/`,
- * which holds what a run's tools keep. Other modules start from `agentRunTools.ts`.
+ * Dependencies flow from this folder's entry points to `read/` and `propose/`, then to
+ * `tool-run/`, which holds run state. Other modules start from `agentRunTools.ts`.
  */
 
 type ReadToolName = keyof ReadToolArgs;
@@ -57,7 +56,7 @@ const READ_TOOLS: {
 const isProposeToolName = (name: AgentToolName): name is ProposeToolName =>
   Object.hasOwn(PROPOSE_TOOLS, name);
 
-/** What a propose call is compiled against, read from the stores once. */
+/** Capture the current draft and pending suggestions once for proposal compilation. */
 function readToolCallContext(run: AgentToolRun): ToolCallContext {
   const { templateId } = useResumeStore.getState();
   const proposals = templateId ? (useProposalStore.getState().byTemplate[templateId] ?? []) : [];
@@ -65,7 +64,7 @@ function readToolCallContext(run: AgentToolRun): ToolCallContext {
   return { run, templateId, doc: getResumeSnapshot(), waiting };
 }
 
-/** What was taken another way goes first, so the model reads it before the outcome. */
+/** Put argument-normalization notes before the tool outcome. */
 const sayTookFirst = (took: string[], toolAnswer: ToolAnswer): ToolAnswer =>
   took.length
     ? { ...toolAnswer, content: `${took.join('\n')}\n${toolAnswer.content}` }
@@ -77,7 +76,7 @@ function compileAndStage<N extends ProposeToolName>(
   checkedArgs: Record<string, unknown>
 ): ToolAnswer {
   const context = readToolCallContext(run);
-  // The check held the arguments to the schema these types describe.
+  // Schema validation has checked the arguments against these tool types.
   const args = checkedArgs as ProposeToolArgs[N];
   const target = describeProposeTarget(context, name, args);
   return {
@@ -107,7 +106,7 @@ function describeOpenDraft(): AgentToolResult['draft'] {
   return templateId === null ? null : { templateId, rev };
 }
 
-/** One call, answered whatever happens: a failure is an error the model reads. */
+/** Answer one tool call, converting unknown tools and execution failures into model-visible errors. */
 export async function runAgentTool(
   run: AgentToolRun,
   name: string,

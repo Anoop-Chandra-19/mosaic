@@ -12,10 +12,10 @@ import { idForHandle, readHandleKind } from '../tool-run/resumeHandles';
 import { TOOL_FACTS } from './toolFacts';
 
 /*
- * What a propose call's handles name, found in the resume as the run read it, never the
- * draft as it is now: a suggestion's `before` comes from here, so staging can tell an edit
- * made since. The one place a handle is looked up; each finder gives back what it found,
- * or the facts to tell the model.
+ * Resolve proposal handles against the run's read receipt, not the current draft.
+ * A suggestion's `before` value comes from this snapshot so staging can detect later
+ * edits. Proposal handle lookups are centralized here; each finder returns the item
+ * or a problem the tool can report to the model.
  */
 
 export interface Problem {
@@ -24,20 +24,20 @@ export interface Problem {
 
 export const isProblem = (found: object): found is Problem => 'problem' in found;
 
-/** A bullet as the run read it, with where it sat. */
+/** A bullet from the receipt, with its section ID and containing entry. */
 export interface BulletInReceipt {
   sectionId: string;
   entry: ResumeEntry;
   bullet: Bullet;
 }
 
-/** What a handle of one of `kinds` names, and what the user sees of it: its `before`. */
+/** A resolved place of an allowed kind, with its displayed text as `before`. */
 export interface PlaceInReceipt<K extends HandleKind> {
   place: Extract<ShowPlace, { unit: K }>;
   before: string;
 }
 
-/** What the run read, if it is of the resume open now. */
+/** Return the run's receipt only if it belongs to the currently open resume. */
 export function openReceipt({ run, templateId }: ToolCallContext): ReadReceipt | Problem {
   if (templateId === null) return { problem: NO_RESUME_OPEN };
   if (!run.receipt) return { problem: TOOL_FACTS.notRead };
@@ -99,7 +99,7 @@ export function findBulletInReceipt(
   return notInReceipt(handle);
 }
 
-/** Everything a handle can name, as places, in the order the resume holds them. */
+/** List all handle-addressable places in the resume's stored order. */
 function listPlaces(doc: ResumeData): ShowPlace[] {
   return doc.sections.flatMap((section): ShowPlace[] => {
     const sectionId = section.id;
@@ -154,7 +154,7 @@ const SHOWABLE_KINDS = ['bullet', 'line', 'entry', 'section'] as const;
 export const findTextInReceipt = (context: ToolCallContext, handle: string) =>
   findPlaceInReceipt(context, handle, TEXT_KINDS);
 
-/** Anything that can leave the page, with its text, an entry's heading, or a section's label. */
+/** Resolve a hideable place with its text, entry heading, or section label. */
 export const findShowableInReceipt = (context: ToolCallContext, handle: string) =>
   findPlaceInReceipt(context, handle, SHOWABLE_KINDS);
 

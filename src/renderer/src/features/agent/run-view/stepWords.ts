@@ -108,7 +108,7 @@ export function formatOrdinal(position: number): string {
   return `${position}${(!teens && ORDINAL_ENDINGS[position % 10]) || 'th'}`;
 }
 
-/** Headings shown before the rest become a count, so the note stays one line. */
+/** Names at most three sections; summarizes the rest as a count to keep the note short. */
 const MAX_SECTIONS_NAMED = 3;
 
 function describeSections(sections: string[]): string {
@@ -136,7 +136,7 @@ const NOTE_BY_KIND: {
   term: ({ count }) => (count > 0 ? `${count} ${count === 1 ? 'place' : 'places'}` : null),
 };
 
-/** The line under a step's name, from what the call was about; null when it found nothing. */
+/** Describes the tool target below the step name; returns null when there is no useful detail. */
 export function describeStepNote(target: ToolTarget | undefined): string | null {
   if (!target) return null;
   const describe = NOTE_BY_KIND[target.kind] as (target: ToolTarget) => string | null;

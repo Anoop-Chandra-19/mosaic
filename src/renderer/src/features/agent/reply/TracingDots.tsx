@@ -1,6 +1,6 @@
 const STEP_MS = 100;
 
-/** A grid two dots wide and four tall, in the order the light goes round it. */
+/** A two-column, four-row dot grid, ordered around its perimeter for the animation. */
 const PLACES = [
   { x: 4, y: 1 },
   { x: 4, y: 4 },
@@ -12,10 +12,10 @@ const PLACES = [
   { x: 1, y: 1 },
 ];
 
-/** The reply's own wait is the assistant's amber; beside other things, they stay quiet. */
+/** Use amber for the reply's waiting indicator and muted dots for secondary indicators. */
 const TONE_CLASS = { amber: 'fill-amber', muted: 'fill-ink-muted' } as const;
 
-/** Waiting on the assistant: half the dots go round the edge, a place at a time. */
+/** Indicates that the assistant is busy by lighting half the dots in sequence around the grid. */
 export function TracingDots({ tone = 'amber' }: { tone?: keyof typeof TONE_CLASS }) {
   return (
     <svg

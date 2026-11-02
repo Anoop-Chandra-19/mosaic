@@ -1,10 +1,9 @@
 import { describeHandleKinds, type HandleKind } from '@shared/agent-tools/handleKinds';
 
 /*
- * What a propose call hears when it can't be turned into one change, by kind of problem.
- * Every one says what is so, and which tool does the other thing, never a guess at what
- * the model meant: the model works out the fix from the facts, as it would from a
- * compiler's error. A tool or a finder picks the row; the wording lives only here.
+ * Centralized problem messages for propose calls. Tools and receipt finders select
+ * a message that states the relevant facts and, where useful, points to another tool.
+ * Do not guess the model's intent; give it enough information to correct the call.
  */
 
 /** "b1, b2, b3", or "nothing". */

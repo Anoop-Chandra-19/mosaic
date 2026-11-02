@@ -7,7 +7,7 @@ interface TreeNode {
   value?: string;
 }
 
-/** An element, or text that shows: blocks are kept apart by text nodes of line breaks. */
+/** Ignores whitespace-only text nodes, including line breaks between blocks. */
 const isWritten = (node: TreeNode) =>
   node.type === 'element' || (node.type === 'text' && node.value?.trim() !== '');
 
@@ -15,10 +15,9 @@ const isWritten = (node: TreeNode) =>
 export const CARET_CLASS = 'reply-caret';
 
 /**
- * A rehype plugin: puts a caret element at the end of the last thing written, inside the
- * deepest last element (the last list item, the bold run being typed), so it follows the
- * text rather than sitting on a line of its own. Never inside a code block, whose text
- * keeps its own lines.
+ * A rehype plugin that appends a caret inside the deepest trailing element, such as the
+ * last list item or bold span. This keeps it beside the text instead of on a separate line.
+ * Stops before code blocks so the caret does not alter their line layout.
  */
 export function appendCaret() {
   return (tree: TreeNode) => {

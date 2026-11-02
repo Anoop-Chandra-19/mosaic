@@ -3,10 +3,9 @@ import type { PropertySchema } from '@shared/agent-tools/defineAgentTool';
 import type { ModelTool } from '@shared/types/modelTool';
 
 /*
- * A tool call's arguments read the one way they can be read, before they are checked
- * against the schema (`checkAgentToolArgs.ts`): a call is refused only when it can't be
- * turned into one change. Where an argument doesn't fit but has a single reading, that
- * reading is taken and said, so the model learns the form for next time:
+ * Normalize tool arguments before schema validation (`checkAgentToolArgs.ts`).
+ * Accept supported alternative forms and report each adjustment so the model learns
+ * the expected form:
  *
  * - "true" or "false" for a yes or no;
  * - an enum value in another case ("Skills" for `skills`);
@@ -14,16 +13,16 @@ import type { ModelTool } from '@shared/types/modelTool';
  *   handles that hold each other (`e1b2` is b2 when e1 holds b2);
  * - an item's own words where its handle goes, when exactly one item has them.
  *
- * Anything with no reading, or two, is left as given, for the check to refuse.
+ * Leave unresolved arguments unchanged for schema validation to reject.
  */
 
 export interface ReadToolArgs {
   args: Record<string, unknown>;
-  /** "Took "Spanish, fluent" as "l4"." for each argument read another way. */
+  /** Notes on normalized arguments, such as 'Took "Spanish, fluent" as "l4".'. */
   took: string[];
 }
 
-/** What the reading needs to know of the resume the run read. */
+/** Receipt lookups needed to normalize model-supplied references. */
 export interface ResumeLookup {
   /** The handle of the one bullet, line, entry or section with these words, if one has them. */
   findByText: (text: string) => string | null;
@@ -34,8 +33,8 @@ export interface ResumeLookup {
 const HANDLE = /[sebl][0-9]+/g;
 
 /**
- * A run of handles written as one ("e1b2") read as a path: the last handle, when each one
- * before it holds the next. Null when the value isn't such a run, or the path is wrong.
+ * Resolve concatenated handles ("e1b2") to the last handle if each handle contains
+ * the next. Return null if the value is not a handle sequence or the path is invalid.
  */
 function readHandlePath(lower: string, lookup: ResumeLookup): string | null {
   const handles = lower.match(HANDLE) ?? [];
@@ -50,7 +49,7 @@ function readOneHandleInside(lower: string): string | null {
   return handles.length === 1 ? handles[0] : null;
 }
 
-/** The one reading of a value that should fit `pattern`, or null if it has none or two. */
+/** Try normalized text, a handle reference, then receipt text; return the first pattern match. */
 function readPatterned(value: string, pattern: string, lookup: ResumeLookup): string | null {
   const whole = new RegExp(pattern);
   const lower = value.trim().toLowerCase();
@@ -63,7 +62,7 @@ function readPatterned(value: string, pattern: string, lookup: ResumeLookup): st
   return readings.find((reading) => reading !== null && whole.test(reading)) ?? null;
 }
 
-/** One argument's single reading, or undefined when it fits already or can't be read. */
+/** Normalize a supported argument form, or return undefined when no adjustment applies. */
 function readProperty(value: unknown, schema: PropertySchema, lookup: ResumeLookup): unknown {
   if (schema.type === 'boolean') {
     if (typeof value !== 'string') return undefined;
@@ -80,7 +79,7 @@ function readProperty(value: unknown, schema: PropertySchema, lookup: ResumeLook
   return undefined;
 }
 
-/** A list, also when a model sends it as JSON text, as some do. */
+/** Accept an array or a JSON-encoded array; return null for other values. */
 export function readList(value: unknown): unknown[] | null {
   if (Array.isArray(value)) return value;
   if (typeof value !== 'string') return null;
@@ -92,7 +91,7 @@ export function readList(value: unknown): unknown[] | null {
   }
 }
 
-/** A list's items, each read the one way it can be, when its items have a pattern. */
+/** Normalize patterned list items, leaving matching or unresolved items unchanged. */
 function readListItems(list: unknown[], pattern: string, lookup: ResumeLookup): unknown[] {
   return list.map((item) =>
     typeof item === 'string' && !new RegExp(pattern).test(item)

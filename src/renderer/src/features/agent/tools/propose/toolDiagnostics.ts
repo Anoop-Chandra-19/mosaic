@@ -1,9 +1,9 @@
 import { answer, refuse, type ToolAnswer } from '../tool-run/agentToolRun';
 
 /*
- * What a propose call says back, as a compiler's diagnostics: one line each, what was
- * taken first, then a line for each target, the target first ("b3: suggested."). A call
- * is an error only when nothing in it was suggested or found already so.
+ * Format propose-call diagnostics as one line each. Put interpretation notes first,
+ * then target-prefixed results ("b3: suggested."). Return an error only when no result
+ * is successful or informational, such as an already-satisfied change.
  */
 
 export type DiagnosticKind = 'took' | 'ok' | 'info' | 'error';

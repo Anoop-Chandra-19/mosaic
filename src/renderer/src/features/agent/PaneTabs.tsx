@@ -18,10 +18,10 @@ interface PaneTabsProps {
 }
 
 /**
- * The pane's two views of the open conversation. The conversation stays mounted under the
- * Trace, so coming back finds it where it was; the Trace is drawn only while it is open.
- * Sessions sits at the end of their row but isn't one of them: it opens the list of every
- * conversation, so it stays outside the tab list.
+ * Switches between the conversation and its detailed run log (Trace).
+ * Keep the conversation mounted while hidden to preserve its scroll position and state.
+ * Mount the Trace only while its tab is open. Sessions opens the conversation list;
+ * it is a separate button, not a third tab.
  */
 export function PaneTabs({ sessionsRef, onOpenSessions }: PaneTabsProps) {
   const tab = useAgentPaneStore((s) => s.tab);

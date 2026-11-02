@@ -7,24 +7,24 @@ import { describeFlag, describeNoChange, describeTarget } from './describeForMod
 import { diagnose, type Diagnostic } from './toolDiagnostics';
 
 /*
- * What every change goes through before it is staged, whichever tool made it, in order:
- * the first rule that has something to say decides, and a change none of them stops is
- * staged. Nothing here writes a store; only a definite mistake marks the run, so it is
- * sent back once per target.
+ * Apply the same ordered rules to every proposed change before staging. The first
+ * matching rule returns a diagnostic; changes that pass all rules can be staged.
+ * This module never writes to stores. Only definite mistakes update run state,
+ * so each target is sent back for repair at most once.
  */
 
-/** Never what the user meant: sent back to fix before anything is staged. */
+/** Mistake kinds that require a repair attempt before staging a target's change. */
 const DEFINITE_MISTAKES: ReadonlySet<ProposalFlagKind> = new Set(['doubledWords']);
 
-/** The list a reorder is of, as a key: "sections", or the section's or entry's id. */
+/** Identify the reordered list by "sections", its section ID, or its entry ID. */
 function readOrderKey(place: OrderPlace): string {
   if (place.unit === 'sections') return 'sections';
   return place.unit === 'bullets' ? place.entryId : place.sectionId;
 }
 
 /**
- * What a change is a suggestion for, so a second one of its kind replaces the first. Added
- * text and new entries and sections have none: two of them are two suggestions.
+ * Identify a change's kind and target so a later suggestion can replace an earlier one.
+ * Added text, entries, and sections have no key: each addition is a separate suggestion.
  */
 export function targetKeyOf(change: ProposalChange): string | null {
   switch (change.kind) {
@@ -54,7 +54,7 @@ const findsNoChange: ChangeRule = (context, change) => {
   return fact && `nothing changed. ${fact}`;
 };
 
-/** The run's own suggestion for this target, waiting with the very same change. */
+/** Detect an identical pending suggestion from this run for the same target. */
 const repeatsWaiting: ChangeRule = ({ run, waiting }, change) => {
   const key = targetKeyOf(change);
   const earlierId = key ? run.suggestionIdByTarget.get(key) : undefined;
@@ -68,7 +68,7 @@ const failsValidation: ChangeRule = ({ doc }, change) => {
   return refusal && `not suggested. ${refusal.fix}`;
 };
 
-/** A definite mistake, the first time this target makes one. */
+/** Request repair once per target when a change contains a definite mistake. */
 const makesDefiniteMistake: ChangeRule = ({ run, doc }, change) => {
   const key = targetKeyOf(change);
   if (!key || run.repairedTargets.has(key)) return null;
@@ -80,7 +80,7 @@ const makesDefiniteMistake: ChangeRule = ({ run, doc }, change) => {
   return `not suggested. ${mistakes.map(describeFlag).join(' ')} Propose it again.`;
 };
 
-/** Each rule, and the kind of line it says: a change that is already so isn't an error. */
+/** Rules and diagnostic kinds; no-op changes and pending duplicates are informational. */
 const RULES: { rule: ChangeRule; kind: 'info' | 'error' }[] = [
   { rule: findsNoChange, kind: 'info' },
   { rule: repeatsWaiting, kind: 'info' },
@@ -88,7 +88,7 @@ const RULES: { rule: ChangeRule; kind: 'info' | 'error' }[] = [
   { rule: makesDefiniteMistake, kind: 'error' },
 ];
 
-/** What stops a change from being staged, or null to stage it. */
+/** Return the first diagnostic that stops staging, or null if all rules pass. */
 export function applyChangeRules(
   context: ToolCallContext,
   change: ProposalChange

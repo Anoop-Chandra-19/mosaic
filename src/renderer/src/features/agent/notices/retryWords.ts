@@ -34,13 +34,13 @@ const KIND_WORDS: Record<RetryKind, { tag: string; sentence: (provider: string) 
   slow: { tag: 'Waiting', sentence: (provider) => `${provider} asked us to slow down.` },
 };
 
-/** Only a lost connection counts its tries: a rate limit waits the time it was given. */
+/** Show attempt counts only for lost connections; rate limits use the supplied wait time. */
 const AFTER_COUNTDOWN: Record<RetryKind, (attempt: number) => string> = {
   lost: (attempt) => ` (${attempt} of ${RUN_LIMITS.retryWaitsMs.length}).`,
   slow: () => '.',
 };
 
-/** What the wait means for the step, beside the row it is about. */
+/** Explain how the retry affects the step shown beside the notice. */
 function describeStepInRetry(retry: RunRetry): string | null {
   const call = retry.newestCall;
   if (call?.status === 'waiting') {

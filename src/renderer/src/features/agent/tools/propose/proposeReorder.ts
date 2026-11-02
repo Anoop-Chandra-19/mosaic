@@ -15,16 +15,15 @@ import { describeList, TOOL_FACTS } from './toolFacts';
 import type { ProposeTool } from './toolReadings';
 
 /*
- * The order compiler. `order` is read as an outline of the resume: each handle is found in
- * the list it sits in, and each list gets the order its named items are given in. A list
- * whose named items keep their order doesn't change, so a path written first ("e1", then
- * e1's bullets) changes only the bullets. Named items that are the whole list, or sit side
- * by side, take their new order among their own places and leave the rest where they are.
- * Named items with another between them could go more than one way, so that is refused
- * with the list as it is. Every list that changes is its own suggestion.
+ * Compile `order` as a resume outline. Group handles by their containing list and
+ * apply each group's supplied order. Groups already in document order do not change,
+ * so listing "e1" before its bullets can reorder only the bullets.
+ * Reorder a whole list or a contiguous subset within its existing slots, leaving other
+ * items in place. Refuse noncontiguous subsets as ambiguous and report the current list.
+ * Each changed list becomes a separate suggestion.
  */
 
-/** The handles of `order` that sit in one list, in the order given. */
+/** Handles and IDs from one list, in the order supplied by the call. */
 interface NamedList {
   place: OrderPlace;
   kind: HandleKind;
@@ -34,7 +33,7 @@ interface NamedList {
   ids: string[];
 }
 
-/** The list a thing sits in, and what holds that list. */
+/** Identify a place's containing list and the list's parent ID. */
 function findListOf(place: ShowPlace): Pick<NamedList, 'place' | 'holderId'> {
   switch (place.unit) {
     case 'section':
@@ -50,7 +49,7 @@ function findListOf(place: ShowPlace): Pick<NamedList, 'place' | 'holderId'> {
   }
 }
 
-/** Something in a list, by its id, as a place: to ask whether it is on the page. */
+/** Convert a list item's ID to a place so its page visibility can be checked. */
 function placeInList(list: OrderPlace, kind: HandleKind, id: string): ShowPlace {
   if (list.unit === 'sections') return { unit: 'section', sectionId: id };
   if (list.unit === 'bullets') return { ...list, unit: 'bullet', bulletId: id };
@@ -91,7 +90,7 @@ function describeItem(run: AgentToolRun, doc: ResumeData, list: NamedList, id: s
   return isShown ? handle : `${handle} (hidden)`;
 }
 
-/** One list's order before and after, or why its new order can be read more than one way. */
+/** Compile a list's before/after order, or explain why the requested order is ambiguous. */
 function compileListOrder(
   run: AgentToolRun,
   doc: ResumeData,
@@ -136,7 +135,7 @@ export const proposeReorder: ProposeTool<'propose_reorder'> = (context, args) =>
     compiled.push({ list, ...order });
   }
   const changed = compiled.filter(({ before, after }) => after.some((id, i) => id !== before[i]));
-  // Nothing changed is still one reading: the rules answer it as such.
+  // Keep one unchanged list so changeRules can report the call as a no-op.
   const staged = changed.length ? changed : compiled.slice(0, 1);
   const isPlain = compiled.length === 1 && isWholeList(compiled[0].list, compiled[0].before);
 

@@ -1,8 +1,8 @@
 import { scrollQuietly } from '@/lib/scrollbarReveal';
 
 /*
- * How a view finds a step or a run among what it has drawn, to land on it: the conversation and
- * the Trace mark the same places the same way.
+ * Shared anchor attributes and navigation helpers for runs and tool calls. The conversation
+ * and Trace use the same markers to find, focus, and scroll to corresponding entries.
  */
 
 export const runAnchorProps = (runId: number, callId: string | null = null) => ({
@@ -20,7 +20,7 @@ export function findRunAnchor(
   return within.querySelector<HTMLElement>(`[data-anchor-run="${runId}"]${call}`);
 }
 
-/** A view swap took the keyboard's place with it. Someone on the tabs stays there. */
+/** Moves focus after a view switch, unless focus is on a tab. */
 export function moveKeyboardTo(element: HTMLElement) {
   if (document.activeElement?.getAttribute('role') !== 'tab') {
     element.focus({ preventScroll: true });

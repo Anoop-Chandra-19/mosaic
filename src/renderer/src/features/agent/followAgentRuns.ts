@@ -6,12 +6,12 @@ import { loadSecretsStatus } from '@/stores/secretsStore';
 import type { AgentRunEnvelope } from '@shared/types/agentBridge';
 
 /*
- * Keeps the pane up with every run, whoever started it. Its events build the live run
- * (`runStore`). When its conversation is the open one, its first event shows what it
- * opened with (the user's message, a switch of resume), and at its end the transcript
- * reads what it stored; only then is the live copy dropped, so the run never blinks out
- * between the two. A run in another conversation carries on in the background. A run's
- * end can also say something about its API key, so the saved keys are read again then.
+ * Tracks events from every run and updates the live run in `runStore`.
+ * The first event refreshes the conversation to include the user's message or a resume
+ * switch. When the run ends, load its saved messages before removing the live copy,
+ * so it does not briefly disappear from the transcript. Runs in other conversations
+ * continue in the background. Also refresh API key status when a run ends, because
+ * the result may change whether a key is known to work.
  */
 
 const catchUp = (conversationId: number) =>
@@ -33,7 +33,7 @@ function followRunEnvelope(envelope: AgentRunEnvelope): void {
   }
 }
 
-/** Follows every run's events; returns the call that stops. */
+/** Subscribe to all run events. Return a function that unsubscribes. */
 export function followAgentRuns(): () => void {
   return agentService.onEvent(followRunEnvelope);
 }

@@ -1,9 +1,9 @@
-// Names its import's `.ts` file: the eval scripts load this with plain Node.
+// Keep the explicit .ts import extension: eval scripts load this module with plain Node.
 import { locateEveryWholeWord } from './locatePhrase.ts';
 
 /**
- * `text` with every whole-word use of `find` changed to `replace`, as a rename does: "AWS"
- * twice in a bullet changes twice, and "Go" never touches "Google". Null when there is none.
+ * Replace every whole-word match of `find`: two uses of "AWS" both change, while
+ * "Go" does not match "Google". Return null when there are no matches.
  */
 export function replaceEveryWholeWord(
   text: string,

@@ -17,11 +17,11 @@ import { useReturnFromTrace } from './useReturnFromTrace';
 import { useStickToNewest } from './useStickToNewest';
 
 /*
- * The open conversation, a run at a time: the resume it moved to, what was asked, what
- * the assistant did and wrote (`RunActivity`), and the record line a stop leaves (`RunRecord`,
- * worded by `notices/stopWords.ts`; the notice over the box says the rest). The run under
- * way reads from `runStore`, so only its reply re-renders as it streams; once stored, it
- * reads from the transcript like the rest.
+ * Renders the open conversation by run: resume switches, user requests, assistant activity
+ * (`RunActivity`), and stop records (`RunRecord`, with wording from `notices/stopWords.ts`).
+ * The notice above the prompt provides additional stop details. The live reply subscribes
+ * to `runStore` so streaming updates rerender only that reply. Completed runs read from
+ * the stored transcript.
  */
 
 type TurnKind = 'switch' | 'ask' | 'reply';
@@ -102,9 +102,9 @@ interface RunReplyProps {
 }
 
 /**
- * The reply, between the lines a Send again and a stop leave in the run. One element whether
- * the run is under way or stored, so the run line keeps its place when the run ends. The
- * live run comes from `runStore`, so only this re-renders as it streams.
+ * Renders the reply between any resend and stop records. Uses the same component for live
+ * and stored runs so the timeline stays mounted when the run ends. Subscribes directly to
+ * `runStore` so streaming updates are confined to this reply.
  */
 function RunReply({ run, isLive, stopRecord }: RunReplyProps) {
   const live = useRunStore((s) => (isLive ? s.live : null));
@@ -150,8 +150,8 @@ function listRunTurns(run: RunView, isLive: boolean, readStopRecord: ReadStopRec
 }
 
 /**
- * One turn, by its kind. Memoized by hand: pages land in pieces above what is shown, and each
- * piece would otherwise walk every turn again, which grows with the conversation.
+ * Renders one turn by kind. Memoized to avoid rerendering unchanged turns each time another
+ * page of older messages loads above the visible conversation.
  */
 const TurnRow = memo(function TurnRow({
   kind,
@@ -162,8 +162,8 @@ const TurnRow = memo(function TurnRow({
 }: Turn & { gapAbove: string }) {
   return (
     <>
-      {/* Its own element: a margin appearing on the turn at the top of the view, as older ones
-          land above it, turns off the scroll anchoring that holds the view still. */}
+      {/* Keep spacing in a separate element. Adding a margin to the top visible turn when older
+          turns load would disable the browser's scroll anchoring and shift the view. */}
       {gapAbove && <div aria-hidden className={gapAbove} />}
       <div>
         {kind === 'switch' && run.switchedTo && <SwitchRow label={run.switchedTo.label} />}
@@ -211,7 +211,7 @@ export function AgentTranscript() {
   const followedRunId = useRunStore((s) =>
     s.live !== null && s.live.conversationId === conversationId ? s.live.runId : null
   );
-  // A run under way belongs at the end of the log, which isn't what is held while this is true.
+  // Hide the live run while the loaded message window does not include the end of the log.
   const hasNewer = useConversationStore((s) => s.hasNewer);
   const liveRunId = hasNewer ? null : followedRunId;
   const scrollRef = useRef<HTMLElement>(null);

@@ -291,7 +291,7 @@ function copyError({ stop }: StopFacts): NoticeAction[] {
   return stop.detail ? [{ kind: 'copy', label: 'Copy the error', text: stop.detail }] : [];
 }
 
-/** A Send again that came back the same. */
+/** Describe a resend that returned the same result. */
 export const formatSentAgain = (time: string): string => `Sent again at ${time}. Same answer.`;
 
 function describeTries({ attempts }: RunStoppedMessageBody): string | null {
@@ -317,7 +317,7 @@ function readStopFacts(
   };
 }
 
-/** When the run's provider got a key saved after the run stopped, if it did. */
+/** Return the provider's key-save time if the key was saved after the run stopped. */
 export function findKeySavedSince(
   { model, stoppedAt }: Pick<RunView, 'model' | 'stoppedAt'>,
   saved: SecretsStatus['saved']

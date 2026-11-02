@@ -8,11 +8,10 @@ import { runAgentTool } from './runAgentTool';
 import { createAgentToolRun, type AgentToolRun } from './tool-run/agentToolRun';
 
 /*
- * The page's side of the assistant's runs, which happen in main. A run asked for here
- * (`askAgent`, or `carryOnAgent` for Send again) gets its own `AgentToolRun`, so the
- * repairs last the whole run, and starts from the reading its conversation's last run
- * left: the handles and the receipt. Each tool call main sends is answered with
- * `runAgentTool`. The shell answers calls through `useAnswerAgentToolCalls`.
+ * Renderer entry points for assistant runs executed in main. `askAgent` and
+ * `carryOnAgent` (Send again) create an `AgentToolRun` with run-wide repair tracking
+ * and the previous run's handles and receipt for that conversation. `runAgentTool`
+ * answers tool calls from main. The shell subscribes through `useAnswerAgentToolCalls`.
  */
 
 interface ToolRunEntry {
@@ -22,13 +21,13 @@ interface ToolRunEntry {
 
 const toolRunById = new Map<number, ToolRunEntry>();
 
-/** Kept for this session: after a restart, the model reads again. */
+/** Retain each conversation's last run for this session; restarting requires a new read. */
 const lastToolRunByConversation = new Map<number, AgentToolRun>();
 
-/** The start under way: a run's first call can come in before its id does. */
+/** Wait for run registration: the first tool call can arrive before the start response. */
 let starting: Promise<unknown> = Promise.resolve();
 
-/** Gives the run main started its tools, built from the conversation's last run. */
+/** Register tool state for the run started in main, reusing the conversation's last reading. */
 function startToolRun(
   start: Promise<AgentStart>,
   readRequestText: (lastRun: AgentToolRun | undefined) => string
@@ -51,7 +50,7 @@ export function askAgent(text: string, conversationId: number | null = null): Pr
   return startToolRun(agentService.start({ conversationId, text, templateId }), () => text);
 }
 
-/** Sends the conversation again with no new message: the run goes on from its log. */
+/** Continue the conversation from its log without adding a message. */
 export function carryOnAgent(conversationId: number): Promise<AgentStart> {
   const { templateId } = useResumeStore.getState();
   return startToolRun(
@@ -67,7 +66,7 @@ async function answerToolCall(call: AgentToolCall): Promise<AgentToolResult> {
   return runAgentTool(entry.run, call.name, call.args);
 }
 
-/** What the run left staged is kept, and the next run in its conversation starts from it. */
+/** Keep staged suggestion IDs and retain the run's reading for the next conversation turn. */
 function endToolRun(runId: number): void {
   const entry = toolRunById.get(runId);
   if (!entry) return;
@@ -77,7 +76,7 @@ function endToolRun(runId: number): void {
   toolRunById.delete(runId);
 }
 
-/** Answers the tool calls of runs asked for from this page, and ends each run's tools as it ends. */
+/** Subscribe to tool calls and run endings for runs started by this renderer. */
 export function answerAgentToolCalls(): () => void {
   const stopFollowing = agentService.onEvent(({ runId, event }) => {
     if (event.type === 'runEnded') void starting.then(() => endToolRun(runId));

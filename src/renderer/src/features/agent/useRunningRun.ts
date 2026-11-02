@@ -3,14 +3,14 @@ import { useConversationStore } from '@/stores/conversationStore';
 import { useRunStore } from '@/stores/runStore';
 import { attempt } from '@/stores/toastStore';
 
-/** The run still going, in whichever conversation; null when none is. */
+/** Return the active run in any conversation, or null if none is active. */
 export function useRunningRun(): { runId: number; conversationId: number } | null {
   const runId = useRunStore((s) => (s.live && !s.live.hasEnded ? s.live.runId : null));
   const conversationId = useRunStore((s) => s.live?.conversationId ?? null);
   return runId === null || conversationId === null ? null : { runId, conversationId };
 }
 
-/** The run going in the open conversation: the only one the box and Esc can stop. */
+/** The active run in the open conversation; only this run can be stopped by the box or Esc. */
 export function useRunningHere(): { runId: number; conversationId: number } | null {
   const running = useRunningRun();
   const openId = useConversationStore((s) => s.conversationId);

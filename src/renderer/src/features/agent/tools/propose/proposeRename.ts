@@ -1,7 +1,7 @@
 import { findSectionInReceipt, isProblem } from './findInReceipt';
 import { oneReading, type ProposeTool } from './toolReadings';
 
-/** A section's new heading: the user's words, not a claim, so no checks run on it. */
+/** Propose a section heading; headings are wording, not factual claims for content checks. */
 export const proposeRename: ProposeTool<'propose_rename'> = (context, args) => {
   const section = findSectionInReceipt(context, args.sectionId);
   if (isProblem(section)) return section;

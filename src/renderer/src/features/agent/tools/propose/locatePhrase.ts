@@ -10,9 +10,9 @@ const loosenPhrase = (text: string) =>
 const WORD_CHARACTER = /[\p{L}\p{N}]/u;
 
 /**
- * Whether `find` sits at `start` as words of its own: "Go" in "in Go," but not in "Google".
- * Only an edge that is itself a letter or digit needs a boundary, so "C++" still matches in
- * "C++ code".
+ * Check whole-word boundaries for `find` at `start`: "Go" matches "in Go," but not
+ * "Google". Require a boundary only when that edge of `find` is a letter or digit,
+ * so "C++" still matches "C++ code".
  */
 function isWholeWordAt(text: string, find: string, start: number): boolean {
   const end = start + find.length;
@@ -38,10 +38,10 @@ export interface PhraseSpan {
 }
 
 /**
- * Every place `find` sits in `text`, in order: exact matches, or when there are none, ones
- * forgiving of curly quotes, dashes, and runs of spaces. Loosening replaces characters one
- * for one or collapses spaces, so indexes line up with the original for text written with
- * single spaces, which is all a bullet holds.
+ * Return matches in text order. Prefer exact matches; if none exist, normalize curly
+ * quotes, dashes, and whitespace. Quote and dash substitutions preserve length, but
+ * collapsing whitespace does not. Returned offsets match the original text only when
+ * its whitespace is already normalized, as expected for bullet text.
  */
 function locateEvery(text: string, find: string, isWholeWord: boolean): PhraseSpan[] {
   const exactStarts = findStarts(text, find, isWholeWord);
@@ -56,13 +56,13 @@ function locateEvery(text: string, find: string, isWholeWord: boolean): PhraseSp
   }));
 }
 
-/** Every place `find` sits in `text` as words of its own. Used to rename a term throughout. */
+/** Find all whole-word matches for renaming a term throughout the text. */
 export const locateEveryWholeWord = (text: string, find: string) => locateEvery(text, find, true);
 
-/** Every place `find` sits in `text`, inside words too. */
+/** Find all phrase matches, including matches inside words. */
 export const locateEveryPhrase = (text: string, find: string) => locateEvery(text, find, false);
 
-/** Where `find` sits in `text`, if it sits there once. */
+/** Return the unique phrase match, or distinguish no matches from multiple matches. */
 export function locatePhrase(text: string, find: string): PhraseSpan | 'none' | 'many' {
   const spans = locateEveryPhrase(text, find);
   if (spans.length > 1) return 'many';

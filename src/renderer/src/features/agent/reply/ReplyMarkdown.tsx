@@ -9,11 +9,10 @@ import { splitFinishedBlocks } from './splitFinishedBlocks';
 import { TracingDots } from './TracingDots';
 
 /*
- * The assistant's text as the markdown it writes, drawn in the pane's own type: no HTML
- * ever reaches the page (react-markdown builds elements, and raw HTML in the text stays
- * text). While a run is still writing, markers it hasn't closed yet are closed for the
- * moment (`remend`), so a bold run shows bold as it is typed, and a link shows as its words
- * until its address arrives. The stored text is never changed.
+ * Renders assistant markdown with the pane's typography. react-markdown builds React elements
+ * without inserting raw HTML from the reply. While streaming, `remend` temporarily closes
+ * incomplete markdown markers so bold text renders immediately and links display as text
+ * until their addresses arrive. This does not change the stored text.
  */
 
 /** The end of a reply still being written. */
@@ -55,7 +54,7 @@ const ELEMENTS: Components = {
     <ol className="list-decimal space-y-1 pl-5 tabular-nums marker:text-ink-faint">{children}</ol>
   ),
   li: ({ children }) => <li className="pl-0.5 text-pretty">{children}</li>,
-  // Task list items, which GFM writes as checkboxes: shown, never something to tick.
+  // Render GFM task-list checkboxes as non-interactive icons.
   input: ({ checked }) => {
     const Icon = checked ? SquareCheck : Square;
     return <Icon aria-hidden className="mr-1.5 inline size-3 align-[-0.125rem] text-ink-faint" />;
@@ -91,8 +90,8 @@ const ELEMENTS: Components = {
     </th>
   ),
   td: ({ children }) => <td className="border-b border-line px-2 py-1 align-top">{children}</td>,
-  // Opened in the browser by main, which allows only web and mail addresses. One whose
-  // address isn't safe to follow comes through without one, and stays words.
+  // Main opens links in the browser and allows only web and mail addresses.
+  // Unsafe links arrive without an href and render as text.
   a: ({ href, children }) =>
     href ? (
       <a
@@ -112,8 +111,8 @@ const ELEMENTS: Components = {
 };
 
 /**
- * A last line of markers alone (`**` before the words it will make bold, a lone `-`) waits
- * for its words: closed as it stands, `**` would become `****`, which draws a rule.
+ * Hide a trailing line containing only markdown markers until text follows them.
+ * Otherwise, temporarily closing `**` would produce `****`, which renders as a horizontal rule.
  */
 const BARE_MARKERS_LINE = /\n[ \t]*[*_~`#>+-]+[ \t]*$/;
 
@@ -129,7 +128,7 @@ interface ReplyMarkdownProps {
   isWriting?: boolean;
 }
 
-/** One run of markdown. It draws no element of its own, so its blocks share the reply's spacing. */
+/** Renders one markdown block without a wrapper, preserving the reply's block spacing. */
 function MarkdownBlock({ text, isWriting }: { text: string; isWriting: boolean }) {
   return (
     <Markdown
@@ -143,9 +142,9 @@ function MarkdownBlock({ text, isWriting }: { text: string; isWriting: boolean }
 }
 
 /**
- * While writing, a block at a time, so a finished block is never parsed again however long the
- * reply grows. Once written, the text is parsed whole, since a link's address can be defined
- * in another block.
+ * Splits streaming text into blocks so completed blocks keep stable text inputs as the reply
+ * grows. After streaming, parses the full reply so reference links can resolve definitions
+ * in other blocks.
  */
 export function ReplyMarkdown({ text, isWriting = false }: ReplyMarkdownProps) {
   if (isWriting && text.trim() === '') {

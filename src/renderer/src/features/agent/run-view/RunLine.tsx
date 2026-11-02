@@ -27,10 +27,10 @@ import {
 import { useRunLineOpen } from './useRunLineOpen';
 
 /*
- * One line of a run's timeline, by what it holds. Only thinking is plain words. One step is that
- * step by name, with no box, so a model that writes before every step reads as words with marks
- * in their margin. Two or more fold into a box, which opens on its own while it works. Every step
- * links to its record in the Trace, and is marked while that record is open.
+ * Renders one timeline line based on its contents: thinking alone as text, one tool step
+ * without a box, or multiple steps in a collapsible box that opens automatically while running.
+ * The unboxed layout keeps replies readable when the model writes between every step.
+ * Each step links to its Trace record and is highlighted while that record is open.
  */
 
 const THINKING_SHIMMER =
@@ -41,7 +41,7 @@ const BOX_ROW_CLASSES = 'border-t border-line px-2.75 py-1.5 first:border-t-0';
 /** A line with no box, the height of a step in one. */
 const BARE_LINE_CLASSES = cn(textVariantClasses('secondary'), 'min-h-6.5 py-1');
 
-/** Its fill reaches past the text, which stays in line with the words around it. */
+/** Extends the hover background beyond the text without changing text alignment. */
 const BARE_STEP_ROW_CLASSES = '-mx-1.5 w-[calc(100%+0.75rem)] rounded-sm px-1.5 hover:bg-line';
 
 const STEP_FRAME_CLASSES = cn(
@@ -49,7 +49,7 @@ const STEP_FRAME_CLASSES = cn(
   'group grid h-auto w-full grid-cols-[auto_minmax(0,1fr)_auto_auto] items-start gap-x-2.25 text-left font-regular whitespace-normal'
 );
 
-/** Neutral: amber stays for what is under way. */
+/** Uses a neutral highlight for the open Trace record; amber is reserved for running steps. */
 const MARKED_STEP_CLASSES = 'bg-line ring-1 ring-line-heavy ring-inset';
 
 const BOX_STEP_TONES: Record<RowState, string> = {
@@ -137,7 +137,7 @@ interface StepFrameProps {
   time: ReactNode;
 }
 
-/** The note runs under the time as well: a pane is narrow, and it wraps rather than lose its end. */
+/** Lets the note wrap below the time column instead of truncating it in the narrow pane. */
 function StepFrame({ runId, row, className, time }: StepFrameProps) {
   const isMarked = useAgentPaneStore((s) => isSameCall(s.openCall, runId, row.key));
   return (
@@ -228,7 +228,7 @@ function OneStepLine({ runId, line, step }: { runId: number; line: RunLineItems;
 interface LineProps {
   runId: number;
   line: RunLineItems;
-  /** The run this line belongs to, which folds it when it ends. */
+  /** Parent run state, used to control automatic folding when the run ends. */
   runState: RunState;
   /** Nothing has come after it yet. */
   isLast: boolean;
@@ -256,7 +256,7 @@ function BoxedLine({ runId, line, runState, isLast }: LineProps) {
   const holdsMarked = useAgentPaneStore((s) =>
     line.steps.some((step) => isSameCall(s.openCall, runId, step.key))
   );
-  // A record opened in the Trace may be a step folded away here: coming back needs it to land on.
+  // Expand the step whose Trace record is open so returning to the conversation can find it.
   useEffect(() => {
     if (holdsMarked) setIsOpen(true);
   }, [holdsMarked, setIsOpen]);

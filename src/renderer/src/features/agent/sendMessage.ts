@@ -14,12 +14,14 @@ import type { AgentStart, AgentStartRefusal } from '@shared/types/agentBridge';
 import { askAgent, carryOnAgent } from './tools/agentRunTools';
 
 /*
- * What the prompt box sends: a message, or Send again from a notice. One run at a time:
- * while one is going here, the box can stop it but not send. Main decides for a run going
- * elsewhere. A message main turns down stays in the box, so nothing typed is lost, and the
- * notice or the running strip says why. A send made while a notice showed (`answering`) is
- * told apart by its answer (`agentNoticeStore`), for as long as a quick answer takes: a model
- * can be silent for a minute, and the notice doesn't wait.
+ * Sends a new message or retries a conversation from a notice. Only one run can be
+ * active at a time. If this conversation is running, the prompt box allows Stop but
+ * not Send. The main process checks for runs in other conversations.
+ *
+ * If the main process refuses to start, keep the draft and explain why in a notice
+ * or the banner for a run in another conversation. When retrying a notice (`answering`),
+ * `agentNoticeStore` tracks the result. Stop waiting after five seconds if the model
+ * has not responded, rather than leaving the old notice in a sending state.
  */
 
 const NOTICE_HOLD_MS = 5000;
@@ -37,7 +39,7 @@ function isRunGoing(): boolean {
   return live !== null && !live.hasEnded;
 }
 
-/** The strip says it when it can; main can know of a run this page hasn't heard of yet. */
+/** Use the other-run banner when possible; fall back to a toast if its run is not loaded. */
 function noteRefused(conversationId: number | null, reason: AgentStartRefusal): void {
   if (reason !== 'runInProgress') return noteSendRefused(conversationId, reason);
   const { live } = useRunStore.getState();
@@ -71,13 +73,13 @@ async function startSend(
   return true;
 }
 
-/** Sends in the open conversation, or starts one; true once it is on its way. */
+/** Send in the open conversation, or create one. Return true if the run starts. */
 export function sendMessage(text: string, answering: NoticeSource | null): Promise<boolean> {
   const { conversationId } = useConversationStore.getState();
   return startSend(conversationId, answering, () => askAgent(text.trim(), conversationId));
 }
 
-/** Sends the open conversation again with no new message, after a stop. */
+/** Resume a stopped conversation without adding a new user message. */
 export function sendAgain(conversationId: number, answering: NoticeSource): Promise<boolean> {
   return startSend(conversationId, answering, () => carryOnAgent(conversationId));
 }

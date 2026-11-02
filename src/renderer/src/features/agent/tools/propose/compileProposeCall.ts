@@ -15,19 +15,19 @@ import { diagnose, type Diagnostic } from './toolDiagnostics';
 import type { ProposeTool, Reading } from './toolReadings';
 
 /*
- * A propose call, compiled: the passes every propose tool goes through once its arguments
- * are read and checked (`../readAgentToolArgs.ts`, `../checkAgentToolArgs.ts`).
+ * Compile propose calls after argument normalization and validation
+ * (`../readAgentToolArgs.ts`, `../checkAgentToolArgs.ts`).
  *
- * 1. the tool's own step (`propose<Tool>.ts`) turns its arguments into the readings the
- *    call can have, finding its handles through `findInReceipt.ts`, or gives the facts of
- *    why it has none (`toolFacts.ts`);
- * 2. pick: exactly one reading goes on; two or more are listed back;
- * 3. rules (`changeRules.ts`): each change is checked as nothing changed, a repeat, out of
- *    date, or a definite mistake, and what none of them stops is left to stage.
+ * 1. The tool-specific step (`propose<Tool>.ts`) returns possible interpretations,
+ *    resolving handles through `findInReceipt.ts`, or explains why the call cannot be
+ *    interpreted (`toolFacts.ts`).
+ * 2. Accept exactly one interpretation; list alternatives when the call is ambiguous.
+ * 3. Apply `changeRules.ts` to each change: detect no-ops, duplicates, invalid or stale
+ *    changes, and definite mistakes. Return changes that pass for staging.
  *
- * Nothing here reads a store: the call's context brings what it needs. `stageSuggestions.ts`
- * stages what is left and answers with the diagnostics (`toolDiagnostics.ts`). Other
- * modules use this file and `stageSuggestions.ts`.
+ * All inputs come from the call context; this module does not read stores.
+ * `stageSuggestions.ts` stages the remaining changes and formats diagnostics through
+ * `toolDiagnostics.ts`. Other modules use this file and `stageSuggestions.ts`.
  */
 
 export interface CompiledCall {
@@ -48,7 +48,7 @@ const TOOLS: { [N in ProposeToolName]: ProposeTool<N> } = {
 
 const COUNT_WORDS = ['two', 'three', 'four'];
 
-/** The one reading, or the readings listed back when there are several. */
+/** Return the sole interpretation, or a problem listing the alternatives. */
 function pickReading(readings: Reading[]): Reading | Problem {
   if (readings.length === 1) return readings[0];
   const count = COUNT_WORDS[readings.length - 2] ?? String(readings.length);

@@ -14,9 +14,9 @@ import {
 } from './findInReceipt';
 
 /*
- * What a propose call is about, named as the run read it, whether or not it goes on to stage
- * anything: the pane says what a refused step tried too. A handle the run can't find leaves
- * the call with no target, and the model hears why from the call itself.
+ * Describe a propose call's target from the run's receipt for display in the pane,
+ * even if the call stages nothing. An unresolved handle produces no display target;
+ * the tool call's answer explains the problem to the model.
  */
 
 type PlaceTarget = Extract<ToolTarget, { kind: 'place' }>;
@@ -61,7 +61,7 @@ function targetOfHandle(context: ToolCallContext, handle: string): PlaceTarget |
   return describePlace(receipt.doc, found.place);
 }
 
-/** The list the first handle sits in; the rest are the call's own to get right. */
+/** Describe the first handle's list; the proposal compiler validates the remaining handles. */
 function targetOfOrder(
   context: ToolCallContext,
   [first]: readonly string[]

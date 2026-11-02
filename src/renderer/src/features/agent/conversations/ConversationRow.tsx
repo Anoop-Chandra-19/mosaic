@@ -22,9 +22,9 @@ import {
   UNTITLED,
 } from './conversationListWords';
 
-/** Marks a row's button, for the list's arrow keys. */
+/** Identifies row buttons for keyboard navigation. */
 export const ROW_ATTRIBUTE = 'data-conversation-row';
-/** Marks what moves as the list changes: a row whole, with its question or its failure. */
+/** Identifies the whole row for list motion, including its confirmation or error. */
 export const LIST_MOTION_ATTRIBUTE = 'data-conversation-place';
 
 export const ROW_GRID =
@@ -178,7 +178,7 @@ export function ConversationRow({
           align="end"
           className="min-w-49"
           onCloseAutoFocus={(event) => {
-            // Back on the row, whose arrow keys carry on. Delete's question takes it instead.
+            // Return focus to the row for arrow-key navigation. The delete confirmation takes focus instead.
             event.preventDefault();
             rowRef.current?.focus({ preventScroll: true });
           }}

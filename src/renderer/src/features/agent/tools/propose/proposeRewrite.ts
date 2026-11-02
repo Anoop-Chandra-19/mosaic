@@ -4,8 +4,8 @@ import { TOOL_FACTS } from './toolFacts';
 import { oneReading, type ProposeTool } from './toolReadings';
 
 /**
- * A bullet's or line's new text, with a `{{?}}` gap only when the version without a number
- * comes too.
+ * Propose new text for a bullet or line. Text containing `{{?}}` must also include
+ * a `withoutNumber` alternative.
  */
 export const proposeRewrite: ProposeTool<'propose_rewrite'> = (context, args) => {
   const found = findTextInReceipt(context, args.id);

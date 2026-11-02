@@ -10,10 +10,10 @@ function startsNewBlock(line: string, isInList: boolean): boolean {
 }
 
 /**
- * A reply still being written, as the markdown blocks that can no longer change and, last, the
- * one being written, so that only that one is parsed again as words arrive. Blank lines inside
- * a code fence or a list keep their block whole. A line of only markers stays with the block
- * before it until its words come. Joined, the blocks are the text.
+ * Splits a streaming reply into completed markdown blocks followed by the active block.
+ * ReplyMarkdown uses these blocks to keep completed text inputs stable as more text arrives.
+ * Blank lines inside fenced code or lists do not split the block. Marker-only lines stay
+ * with the preceding block until text arrives. Joining the blocks reproduces the input.
  */
 export function splitFinishedBlocks(text: string): string[] {
   const blocks: string[] = [];

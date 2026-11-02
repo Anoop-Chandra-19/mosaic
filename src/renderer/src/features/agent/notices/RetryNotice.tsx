@@ -35,7 +35,7 @@ function useRetryModel(runModel: RunModel | null): RunModel {
 interface RetryNoticeProps {
   retry: RunRetry | null;
   runModel: RunModel | null;
-  /** Hangs from a boxed run line, so it shares that box's edge. */
+  /** Attach to a boxed run line and share its edge. */
   isAttached: boolean;
   /** In the slot over the prompt box, rather than in the run. */
   isOverBox?: boolean;

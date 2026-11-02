@@ -25,9 +25,9 @@ export interface ShownNotice {
   /** The same through a same answer, so the notice pulses in place rather than rising again. */
   key: string;
   isSending: boolean;
-  /** When a send came back with the same answer. */
+  /** Text shown when a resend returns the same result. */
   checked: string | null;
-  /** Changes with each same answer, for the pulse. */
+  /** Changes each time the same result returns, to trigger the pulse. */
   pulseKey: number;
 }
 

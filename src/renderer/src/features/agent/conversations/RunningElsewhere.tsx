@@ -32,7 +32,7 @@ function useTitleOf(conversationId: number | null): string | null {
 }
 
 interface RunningElsewhereProps {
-  /** The run going, in whichever conversation. */
+  /** The active run, regardless of conversation. */
   running: { runId: number; conversationId: number } | null;
   onGoTo: (conversationId: number) => void;
 }

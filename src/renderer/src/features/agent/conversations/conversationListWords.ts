@@ -5,7 +5,7 @@ import type { ConversationSummary } from '@shared/types/agentBridge';
 /** A conversation whose first message has no words to name it by. */
 export const UNTITLED = 'No words to name it by';
 
-/** What a delete takes with it, which its question has to say. */
+/** Deletion effects that the confirmation must describe. */
 export type DeleteCase = 'plain' | 'open' | 'running' | 'openRunning';
 
 export function pickDeleteCase(isOpen: boolean, isRunning: boolean): DeleteCase {
@@ -35,7 +35,7 @@ export interface ConversationGroup {
   rows: ConversationSummary[];
 }
 
-/** Rows come most recently active first, so each group is one run of them. */
+/** Rows are ordered by most recent activity, so each group contains consecutive rows. */
 export function groupConversations(
   rows: ConversationSummary[],
   now: number = Date.now()
