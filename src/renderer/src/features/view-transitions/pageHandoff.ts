@@ -1,23 +1,26 @@
 import { useOverlayStore, type WorkspaceSurface } from '@/stores/overlayStore';
 import { useShownSurface } from './useShownSurface';
 
-// A surface showing the resume's page takes it from the preview as it opens and gives it
-// back as it closes. Both sides meet here, so neither imports the other.
+// Moves the resume page between the preview and history/review during a transition.
+// These views share the `page` transition name; only one may use it at a time.
 
 const TAKES_THE_PAGE: ReadonlySet<WorkspaceSurface['kind']> = new Set(['history', 'review']);
 
-/** Of those, the ones that read the page at their own zoom, starting at fit. */
+// History opens at fit-to-view zoom; review uses the workspace preview's zoom.
 const READS_AT_FIT: ReadonlySet<WorkspaceSurface['kind']> = new Set(['history']);
 
 /**
- * From the moment such a surface is asked for: the preview eases to fit before it's drawn,
- * so the page that moves is the one the surface shows. The review shares the preview's zoom.
+ * True as soon as history is requested, so the preview can fit the page before it opens.
+ * Review does not need this: it keeps the preview's zoom.
  */
 export function useIsHandingOffPage(): boolean {
   return useOverlayStore((s) => s.surface !== null && READS_AT_FIT.has(s.surface.kind));
 }
 
-/** While the surface is drawn, so the page's name moves sides in one commit. */
+/**
+ * True while history or review is rendered. The preview removes its `page` transition
+ * name in the same render that gives the name to the other view.
+ */
 export function useIsPageHandedOff(): boolean {
   const shown = useShownSurface();
   return shown !== null && TAKES_THE_PAGE.has(shown.kind);
@@ -25,11 +28,12 @@ export function useIsPageHandedOff(): boolean {
 
 let previewSettled: Promise<void> = Promise.resolve();
 
+/** Called by the preview to report when its zoom and scroll adjustment will finish. */
 export function reportPreviewSettling(settled: Promise<void>) {
   previewSettled = settled;
 }
 
-/** A surface waits on this before taking the page. */
+/** History waits for the preview's zoom and scroll to finish before opening. */
 export function whenPreviewSettled(): Promise<void> {
   return previewSettled;
 }

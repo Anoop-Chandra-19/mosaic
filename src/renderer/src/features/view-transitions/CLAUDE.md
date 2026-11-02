@@ -1,93 +1,98 @@
 # View transitions
 
-Read with the root and renderer `CLAUDE.md` files. This covers the view-transition layer
-and its consumers; `@/` means `src/renderer/src/`.
+Read with the root and renderer `CLAUDE.md` files. `@/` means `src/renderer/src/`.
 
-Use this layer for whole-view changes and moves between boxes. A view transition blocks
-input while it runs: keep frequent or interruptible changes local (CSS or `lib/motion/`).
-Read `lib/motion/CLAUDE.md` for local motion.
+Use this folder for changing whole views or moving the resume page between views.
+View transitions block input. Keep frequent or interruptible animations in CSS or
+`lib/motion/`; read that folder's `CLAUDE.md` before using it.
 
-## Joining a transition
+## How it works
 
-Features import from this layer, and it imports no feature. An element joins with
-`className={cn(…, transitionClasses({ name, motion, isActive }))}`:
+The browser displays before and after images of the UI and animates between them.
+A **surface** is a view over the workspace: Start, history, or suggestion review.
 
-- **name**: which element it is, on one element at a time;
-- **motion**: how it moves (a `view-transition-class`), styled in `viewTransitions.css`,
-  which names motions and directions only, never an element or a feature;
-- **isActive**: which of two elements sharing a name holds it now, decided by the component;
-- a **direction** (`TRANSITION_TYPE`, via `addTransitionType`) varies a motion.
+Components use `transitionClasses({ name, motion, isActive })` in their `className`:
 
-A new name or motion is one entry in `transitionClasses.ts`, written out whole (Tailwind
-only generates classes it finds spelled out). `useShownSurface` and `pageHandoff` list the
-surfaces that replace the workspace and take the page; a new surface joins by being added.
-Use a motion that exists before inventing one:
+- **name** matches an element before and after the change, even across two views.
+- **motion** chooses its animation from `viewTransitions.css`.
+- **isActive** enables these classes. Only one rendered element may use each name.
+- **type** changes an animation, such as sliding back instead of forward. Use
+  `TRANSITION_TYPE` with React's `addTransitionType` or `changeInViewTransition`.
 
-| Motion                               | For                                                 | Used by                                                 |
-| ------------------------------------ | --------------------------------------------------- | ------------------------------------------------------- |
-| `surface-in`, `surface-out`          | A view fading in over the workspace, and out        | The history view                                        |
-| `recede`                             | Stepping back behind a view, unchanged, returning   | The workspace                                           |
-| `handoff`                            | The same thing moving between two boxes showing it  | The page: preview ↔ history                             |
-| `handoff` + `in-place`               | Moved by side panels: only the new, live image      | The page, with no surface around                        |
-| `step` + `step-back`/`step-forward`  | Sliding the way a sequence runs, back from the left | Page ↔ cards                                            |
-| `slide-in`, `slide-away` (+`at-end`) | Leaving to the edge, the space reclaimed, and back  | Sidebar, history index; the assistant pane at the right |
-| `reclaim`                            | A box easing into space given up beside it          | The history list                                        |
-| `glide` (+`at-end`)                  | Moving to its new place, held by one edge, unscaled | The preview bar's two ends, as the side panels move     |
-| `crossfade` (a type, on the root)    | A store change's before and after, as one image     | Tour ending; Apply and undo                             |
-| `fade`                               | A layer over the app arriving or leaving whole      | The history tour's veil                                 |
-| `lockstep`                           | One box whose content changes, both images in step  | Top bar ↔ review bar                                    |
-| `handover-upper`, `handover-lower`   | Two stacked in one box: one leaves up, one rises    | Assistant pane ↔ inspector                              |
-| `cut` (React enter/exit)             | What's left of a surface whose parts all move       | The suggestion review                                   |
-| `rise`                               | A bar coming in once the view under it has landed   | The review's apply bar                                  |
+Features import from this folder; this folder must not import features.
+CSS uses motion names, not element or feature names. Add complete class strings to
+`transitionClasses.ts` so Tailwind can find them. Reuse a motion before adding one.
 
-## Correctness
+## Which file to use
 
-- A name sits on one element at a time, or the browser skips the transition.
-- A named element draws unclipped while it moves: name the clipped box that shows a thing,
-  not a thing taller than its box.
-- The old and new images add their light: fade them in lockstep, or give offset images
-  `mix-blend-mode: normal`, or the frame dims or washes out mid-way.
-- Zustand renders at once and only a transition's render animates: state from a store
-  reaches a transition through a deferred value (`useShownSurface`), or local state is set
-  inside `startTransition`.
-- Load what the new state shows before it commits (`use()` or read first), or the
-  transition lands on an empty frame.
-- An element named in every state animates on unrelated transitions too. Give its motion
-  only to leaving and arriving with `:only-child` (the image has no pair); `:not()` isn't
-  allowed after these pseudo-elements, so set the in-place default first and override it.
-  For something that mounts and unmounts, React's `<ViewTransition enter exit>` names it
-  only when it comes or goes.
-- A layer painted over the app (a tour's veil) is caught in a running transition's images
-  and painted again when it ends, which flashes. One that arrives with a surface shows on
-  `useSettledSurface()`, the surface once its transition has finished, not on the store.
-  A store change that swaps what a layer covers goes through `changeInViewTransition`, so
-  the two cross-fade as one image instead of painting in turn. It takes another type for a
-  change inside a surface whose own updates don't animate (the review's Compare all steps).
-  The change runs a frame later: await its promise before anything that reads the result
-  (Apply writes its version after it lands). In a cross-fade, a handed-over column swaps in
-  lockstep rather than pushing.
-- A step moves only what steps: a handed-over column (`handover`) in the same transition
-  holds still.
-- Stepping through a sequence a key at a time (versions in the history) is local motion
-  (`lib/motion/stepIn.ts`), never a transition: a held key would wait on every one.
-- A pair's old and new images both carry the arriving element's classes, so a class can't
-  say which image moves which way. Say it by which element arrives (`handover-lower`
-  arriving is the review opening), or with a type.
-- A named box holding a `ResumePreview` needs `contain-paint`: the preview's measuring
-  copy is fixed far off-screen, and stretches the box's image until it draws blank.
-- `useIsSideHandover` names the sidebar and the assistant pane only while a surface that
-  takes the sides is coming or going, so the history (which takes the workspace whole)
-  never moves them. Both are `useIsSurfaceAround`, which the preview bar uses the other way
-  round: its ends glide only while no surface is around, so they never leave the workspace.
-- A bar with parts on both sides never moves as one image: its parts move in different
-  directions at once and it looks like jelly. Name each end, and let each `glide`.
-- Reduced motion turns off every animation; the transition still happens.
+- `useShownSurface.ts`: the view React is rendering. Use this instead of the raw store
+  to let React animate view changes. It also lists views that replace the workspace.
+- `surfaceAround.ts`: whether a matching view is requested, visible, or still closing.
+- `pageHandoff.ts`: prepares the preview and transfers the page's transition name to
+  history/review. Its sets list which views share the page and which open at fit zoom.
+- `sideHandover.ts`: enables separate side-panel animations for review, not history.
+- `useSettledSurface.ts`: the current view after its animation finishes; used by the tour.
+- `whenViewTransitionsSettle.ts`: waits for the current transition to finish.
+- `changeInViewTransition.ts`: animates updates React does not already animate.
+  Its promise waits for the update, **not** for the animation to finish.
+
+## Available motions
+
+| Motion                              | What it does                                                  | Used for                    |
+| ----------------------------------- | ------------------------------------------------------------- | --------------------------- |
+| `surface-in`, `surface-out`         | Fade a view in or out                                         | History                     |
+| `recede`                            | Shrink/fade the workspace, then restore it                    | Workspace                   |
+| `handoff`                           | Move the page between containers                              | Preview ↔ history/review    |
+| `handoff in-place`                  | Move the existing page without two images                     | Side-panel layout changes   |
+| `step` + `step-back`/`step-forward` | Slide from the left/right                                     | Review page ↔ cards         |
+| `slide-in`, `slide-away`            | Slide a panel left; `at-end` slides right                     | Side panels                 |
+| `reclaim`                           | Resize into space beside a panel                              | History list                |
+| `glide`                             | Move content without stretching; `at-end` aligns right        | Preview bar ends            |
+| `crossfade` (type)                  | Fade between the UI before and after an update                | Tour ending; Apply and undo |
+| `fade`                              | Fade an overlay                                               | History tour                |
+| `lockstep`                          | Move a bar while cross-fading its content                     | Top bar ↔ review bar        |
+| `handover-upper`, `handover-lower`  | Swap column content with a vertical push                      | Assistant ↔ inspector       |
+| `cut`                               | No animation on the view itself; its parts animate separately | Review                      |
+| `rise`                              | Move a bar up after a short delay, down when closing          | Review apply bar            |
+
+## Rules that prevent visual bugs
+
+- Duplicate transition names make the browser skip the transition.
+- Name the visible clipping container, not overflowing content. Transition images are
+  not clipped by the element's original ancestors.
+- A named container with `ResumePreview` needs `contain-paint`. Otherwise the preview's
+  off-screen measuring copy can make the captured image too large to display.
+- Keep both fades in sync to avoid dimming. For sliding, overlapping images, use
+  `mix-blend-mode: normal` so they do not become too bright.
+- Store updates happen immediately. Use `useShownSurface` to defer view changes for React
+  to animate, or `startTransition` for local state updates.
+- Load the next view's content before committing it (`use()` or read ahead), or the
+  animation can end on an empty view.
+- Use `:only-child` for opening/closing animations. Here it means there is no matching
+  before or after image. Set the normal rules first, then override with `:only-child`;
+  `:not()` is not supported after these pseudo-elements. React's `<ViewTransition enter exit>`
+  names mounting/unmounting elements only when they open or close.
+- Delay overlays such as the tour until `useSettledSurface()` returns the view. Showing
+  them during a transition can capture them in its images and cause a flash.
+- Use `changeInViewTransition` when an overlay and the view behind it change together.
+  Await its promise before reading the updated state, such as saving after Apply.
+  Pass a step type for review's page/card switch. Cross-fades must not replay a column push.
+- Both images use the incoming element's motion classes. For a column swap, `lower`
+  means the inspector is opening; `upper` means the assistant is returning.
+- A page/card step must not replay the inspector's vertical push.
+- Use local motion (`lib/motion/stepIn.ts`) for repeated history-version key presses.
+  View transitions would block each press.
+- Use `useIsSideHandover` for side-panel transition names. Use `useIsSurfaceAround` to
+  disable the preview bar's separate animations while any surface is opening, open, or closing.
+- Animate the preview bar's ends separately with `glide`; one image would stretch the bar.
+- Reduced motion disables animations, not the view change.
 
 ## Validation
 
-Check one in two ways. `e2e/motion/view-transitions.spec.ts` counts transitions, their types, and
-that none was skipped; add to it for a new one. For how it looks, run it in the built app
-(never `electron-vite dev`) with each animation's `playbackRate` at 0.1, screenshot at
-fixed points, and chart each frame's mean brightness: a dip or spike is a flash the eye
-catches at full speed. Slowing doesn't reach nested groups, and the preview's own timers
-aren't slowed, so film those at full speed.
+`e2e/motion/view-transitions.spec.ts` checks transition counts, types, and skipped
+transitions. Extend it when adding a transition.
+
+For visual checks, use the built app, not `electron-vite dev`. Set animation `playbackRate`
+to 0.1 and take screenshots at fixed times. Compare each frame's mean brightness to catch
+flashes. Nested groups and the preview's own timers are not slowed this way; record those
+at normal speed too.

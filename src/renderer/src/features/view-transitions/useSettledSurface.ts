@@ -4,9 +4,8 @@ import { useShownSurface } from './useShownSurface';
 import { whenViewTransitionsSettle } from './whenViewTransitionsSettle';
 
 /**
- * The surface on screen once it has finished arriving, or null while it is still on its
- * way. A layer that comes with a surface (a tour over it) shows on this, not on the store:
- * painted any sooner, it lands in the view transition's images and is painted again after.
+ * The current view after its animation finishes, or null while waiting or closed.
+ * Use this to delay overlays such as the history tour; showing them mid-animation can flash.
  */
 export function useSettledSurface(): WorkspaceSurface | null {
   const shown = useShownSurface();

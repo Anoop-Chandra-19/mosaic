@@ -1,13 +1,16 @@
-/* Motions (view-transition-class) and directions (types) only; elements join through
-   transitionClasses.ts. Guide: src/renderer/CLAUDE.md. */
+/* Animations used by transitionClasses.ts.
+   The browser shows before (old) and after (new) images of each named element.
+   A group holds those images and animates their position and size.
+   Here, :only-child means there is only an old image (closing) or a new one (opening).
+   Names match elements across views; motion classes choose the animation. */
 
 ::view-transition-old(root),
 ::view-transition-new(root) {
   animation: none;
 }
 
-/* ---- crossfade: a store change outside React's transitions, before and after as one ----
-   In lockstep (one duration and curve), so the two images' light always adds to one. */
+/* ---- crossfade: fade between the app before and after an update ----
+   Use matching timing so unchanged areas do not dim during the fade. */
 :root:active-view-transition-type(crossfade)::view-transition-old(root) {
   animation: crossfade-out 200ms var(--ease-settle) forwards;
 }
@@ -16,11 +19,10 @@
   animation: crossfade-in 200ms var(--ease-settle);
 }
 
-/* ---- fade: a layer over the app arriving or leaving whole ----
-   Named, so it is drawn above every other named element rather than inside the root's
-   image under them: a veil leaving with the root alone would bare them from the start. */
+/* ---- fade: show or hide an overlay ----
+   Give it its own transition name so it can stay above the content it covers. */
 ::view-transition-group(.fade) {
-  /* Over the app, so over every other motion's group too (handoff 1, slides 2). */
+  /* Above handoff (1) and panel/bar groups (2), but below rise (4). */
   z-index: 3;
 }
 
@@ -44,9 +46,9 @@
   }
 }
 
-/* ---- surface-in, surface-out: a view fading in over the workspace, and out ---- */
+/* ---- surface-in, surface-out: a view fading over the workspace on entry and exit ---- */
 
-/* Only arriving and leaving move; paired with itself, the view just changes. */
+/* Animate opening and closing only, not changes within an already-open view. */
 ::view-transition-old(.surface-in),
 ::view-transition-old(.surface-out) {
   display: none;
@@ -80,10 +82,9 @@
   }
 }
 
-/* ---- recede: stepping back behind a view, unchanged, and returning ---- */
+/* ---- recede: shrink/fade on exit, reverse on entry ---- */
 
-/* Changing in place it just changes; it recedes only when it leaves or returns, which is
-   when its image has no pair (:only-child). `:not()` isn't allowed after these. */
+/* Show updates immediately; use :only-child below to animate opening and closing. */
 ::view-transition-old(.recede) {
   display: none;
 }
@@ -115,16 +116,15 @@
   }
 }
 
-/* ---- slide-in, slide-away: leaving to the edge, the space reclaimed, and coming back ---- */
+/* ---- slide-in, slide-away: slide a side panel in or out ---- */
 
-/* The panel stays above what glides into its space. */
+/* Keep the panel above the content moving into its space. */
 ::view-transition-group(.slide-away),
 ::view-transition-group(.slide-in) {
   z-index: 2;
 }
 
-/* Leaving on the same clock as `glide` and `reclaim`, which fill the space it gives up:
-   the edges stay together, so the space closes as the panel goes, not ahead of it. */
+/* Match glide's timing so the panel and nearby content move together. */
 ::view-transition-old(.slide-away) {
   animation: slide-away 200ms var(--ease-settle) both;
 }
@@ -133,13 +133,13 @@
   animation: slide-in 200ms var(--ease-settle) both;
 }
 
-/* The left edge by default; `at-end` slides to and from the right one. */
+/* Slide to the left by default, or to the right with at-end. */
 ::view-transition-old(.at-end),
 ::view-transition-new(.at-end) {
   --slide-edge: 1;
 }
 
-/* Solid, so what's already laid out beneath doesn't show through. */
+/* Do not fade the panel: it must cover the content beneath it while moving. */
 @keyframes slide-away {
   to {
     transform: translateX(calc(var(--slide-edge, -1) * 100%));
@@ -152,8 +152,8 @@
   }
 }
 
-/* ---- glide: moving to where the new layout puts it, unchanged on the way ----
-   Only the new image is drawn, so the two never add their light; in the panels' timing. */
+/* ---- glide: move content without stretching it ----
+   Show only the new image, using the side panels' timing. */
 ::view-transition-group(.glide) {
   animation-duration: 200ms;
   animation-timing-function: var(--ease-settle);
@@ -163,8 +163,7 @@
   display: none;
 }
 
-/* At its natural size, never stretched to the group's: from its start edge, or with
-   `at-end` from its end edge, so what sits against that edge stays against it. */
+/* Keep the content at its natural size, aligned left or right with at-end. */
 ::view-transition-new(.glide) {
   inline-size: auto;
   block-size: auto;
@@ -176,17 +175,16 @@
   inset-inline-end: 0;
 }
 
-/* ---- reclaim: a box easing into the space beside it given up, and giving it back ---- */
+/* ---- reclaim: fill the space beside an opening or closing panel ---- */
 
-/* Growing back past its narrower content, the box shows its own ground, not a gap. On the
-   slides' clock, so it fills the space as the panel leaves it. */
+/* Fill gaps as the box grows. The shared handoff rule below sets its duration to 340ms. */
 ::view-transition-group(.reclaim) {
   background: var(--background);
   animation-duration: 200ms;
   animation-timing-function: var(--ease-settle);
 }
 
-/* The content keeps its natural size from the left edge, so only the box moves. */
+/* Resize the box, not its content. Show only the new image for updates. */
 ::view-transition-old(.reclaim),
 ::view-transition-new(.reclaim) {
   inline-size: auto;
@@ -198,7 +196,7 @@
   display: none;
 }
 
-/* Coming and going with the view around it. */
+/* Fade with the surrounding view when the whole box opens or closes. */
 ::view-transition-new(.reclaim):only-child {
   animation: surface-in 180ms var(--ease-settle);
 }
@@ -208,10 +206,10 @@
   animation: surface-out 140ms ease-in forwards;
 }
 
-/* ---- handoff: the same thing moving between two boxes that show it ---- */
+/* ---- handoff: move the resume page between views ---- */
 
-/* Name the clipping boxes, not the page: a named element draws unclipped while it moves. */
-/* Anything gliding to its new place and size moves at one pace. */
+/* Give the transition name to the page's visible container, not the overflowing page.
+   Clip its images to that container while it moves and resizes. */
 ::view-transition-group(.handoff),
 ::view-transition-group(.reclaim) {
   overflow: clip;
@@ -219,24 +217,24 @@
   animation-timing-function: var(--ease-settle);
 }
 
-/* Groups stack in the old DOM order, which puts this under the view coming in. */
+/* Keep the page below panels and bars (2). */
 ::view-transition-group(.handoff) {
   z-index: 1;
 }
 
-/* A short swap, in lockstep: the images add their light, so any other timing dims mid-way. */
+/* Fade the images faster than the box moves. Keep both fades in sync to avoid dimming. */
 ::view-transition-old(.handoff),
 ::view-transition-new(.handoff) {
   animation-duration: 160ms;
-  /* Natural size, centered; by default an image stretches to the box's width. */
+  /* Center each image at its natural size instead of stretching it. */
   inline-size: auto;
   block-size: auto;
   inset-inline-start: 50%;
   translate: -50% 0;
 }
 
-/* In place, as a side panel moves it: there is nothing to swap, and a page that changes scale
-   would show twice. Only the new image, which is live, so the page eases inside it. */
+/* A side panel moves the existing page, rather than replacing it.
+   Show only the live new image so zooming does not show two copies. */
 ::view-transition-old(.in-place) {
   display: none;
 }
@@ -245,9 +243,9 @@
   animation: none;
 }
 
-/* ---- step: sliding the way a sequence runs; step-back comes in from the left ---- */
+/* ---- step: slide back from the left, or forward from the right ---- */
 
-/* Offset images wash each other out in the default additive blend. */
+/* Let the new image cover the old one; the default blend can make overlaps too bright. */
 :root:active-view-transition-type(step-back, step-forward) {
   &::view-transition-old(.step),
   &::view-transition-new(.step) {
@@ -273,7 +271,7 @@
   }
 }
 
-/* A step moves only what steps: a column handed over stays where it is. */
+/* Switching review pages/cards should not replay the inspector's vertical push. */
 :root:active-view-transition-type(step-back, step-forward) {
   &::view-transition-old(.handover) {
     display: none;
@@ -283,7 +281,7 @@
   }
 }
 
-/* The incoming image is solid and covers the outgoing one, so their content never doubles. */
+/* Fade the old image, but keep the new one opaque so it covers the old content. */
 @keyframes leave-right {
   to {
     opacity: 0;
@@ -310,9 +308,8 @@
   }
 }
 
-/* ---- lockstep: one box whose content changes, as one bar becomes another ----
-   The box glides at the page's pace; its two images, pinned to its corner at their own
-   size, swap in lockstep, so their light adds to one. */
+/* ---- lockstep: move a bar while cross-fading its content ----
+   Match the page's movement. Keep both fades in sync and the content at its natural size. */
 ::view-transition-group(.lockstep) {
   overflow: clip;
   z-index: 2;
@@ -329,11 +326,10 @@
   animation-timing-function: var(--ease-settle);
 }
 
-/* ---- handover: a stack of two in one clipped box ----
-   The upper leaves upward as the lower rises in; back again, the mirror. Pushed solid,
-   never faded, so nothing dims mid-way. With nothing to hand over, the lower one comes
-   and goes alone, from the window's right edge. A pair's images both carry the arriving
-   element's classes, so `.lower` is the lower one arriving, and `.upper` the upper one. */
+/* ---- handover: swap the assistant pane and review inspector ----
+   The inspector (lower) pushes up; the assistant (upper) pushes back down.
+   Both images get the incoming view's classes, so lower/upper says which view is opening.
+   If there is no assistant to swap with, the inspector slides in or out to the right. */
 ::view-transition-group(.handover) {
   overflow: clip;
   z-index: 2;
@@ -409,8 +405,8 @@
   }
 }
 
-/* ---- rise: a bar coming in at the bottom once the view it sits on has nearly landed ----
-   Only arriving and leaving move; changing in place, it just changes. */
+/* ---- rise: bring the apply bar up after a short delay; move it down when closing ----
+   Animate opening and closing only, not changes to the bar's content. */
 ::view-transition-group(.rise) {
   z-index: 4;
 }
@@ -446,8 +442,8 @@
   }
 }
 
-/* A cross-fade in place (after Apply): the page swaps a little slower, and a handed-over
-   column swaps in lockstep instead of pushing, both images adding to one. */
+/* After updates such as Apply, cross-fade the page and inspector instead of pushing.
+   The page fades a little slower than the inspector. */
 :root:active-view-transition-type(crossfade) {
   &::view-transition-old(.handoff),
   &::view-transition-new(.handoff) {
@@ -470,8 +466,7 @@
   }
 }
 
-/* ---- cut: what's left of a surface whose parts all move on their own ----
-   It is there at once, under them, and gone at once when they leave. */
+/* ---- cut: no animation on the view itself; its parts animate separately ---- */
 ::view-transition-old(.cut) {
   display: none;
 }
@@ -480,7 +475,7 @@
   animation: none;
 }
 
-/* ---- Reduced motion: every transition still happens, none of it moves ---- */
+/* ---- Reduced motion: change views without animation ---- */
 
 @media (prefers-reduced-motion: reduce) {
   ::view-transition-group(*),
