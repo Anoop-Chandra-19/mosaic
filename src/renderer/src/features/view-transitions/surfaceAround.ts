@@ -4,9 +4,8 @@ import { useShownSurface } from './useShownSurface';
 import { whenViewTransitionsSettle } from './whenViewTransitionsSettle';
 
 /**
- * Whether a surface that `matches` is around: from the moment it is asked for until its
- * leaving has finished. An element that should move only with such a surface, or only
- * without one, carries its name on this.
+ * True from when a matching view is requested until its closing animation finishes.
+ * Use this when an element should animate only with that view, or only without it.
  */
 export function useIsSurfaceAround(matches: (surface: WorkspaceSurface) => boolean): boolean {
   const asked = useOverlayStore((s) => s.surface);

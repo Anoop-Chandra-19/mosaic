@@ -1,5 +1,5 @@
-// Whole class strings, not built from parts: Tailwind only generates classes it finds
-// spelled out in the source.
+// Components use these classes to join the animations in viewTransitions.css.
+// Keep class strings complete so Tailwind can find and generate them.
 
 const NAME_CLASS = {
   page: '[view-transition-name:page]',
@@ -14,49 +14,49 @@ const NAME_CLASS = {
   applybar: '[view-transition-name:applybar]',
 } as const;
 
-// An element has one view-transition-class list, so motions that go together are one entry.
+// Combined motions need one class that sets the full list; separate classes would overwrite it.
 const MOTION_CLASS = {
   recede: '[view-transition-class:recede]',
   handoff: '[view-transition-class:handoff]',
   'handoff step': '[view-transition-class:handoff_step]',
-  // The same box, moved by what is around it: its one image, as it is now.
+  // Move the existing content without cross-fading two copies.
   'handoff in-place': '[view-transition-class:handoff_in-place]',
   reclaim: '[view-transition-class:reclaim]',
   fade: '[view-transition-class:fade]',
   'slide-away slide-in': '[view-transition-class:slide-away_slide-in]',
   lockstep: '[view-transition-class:lockstep]',
-  // Moves to where the new layout puts it, unchanged on the way, held by its start edge or
-  // its end edge.
+  // Move without stretching the content; at-end keeps it aligned to the right edge.
   glide: '[view-transition-class:glide]',
   'glide at-end': '[view-transition-class:glide_at-end]',
-  // A stack of two in one box: the upper leaves up as the lower rises in, and back down.
+  // Swap the assistant pane and review inspector with a vertical push.
   'handover-upper': '[view-transition-class:handover_upper]',
   'handover-lower': '[view-transition-class:handover_lower]',
-  // Comes in at the bottom once what it sits on has nearly landed, and sinks away.
+  // Bring the apply bar up after a short delay; move it down when closing.
   rise: '[view-transition-class:rise]',
 } as const;
 
-// Classes for React's <ViewTransition enter exit>, for things that come and go.
+// Passed to React's <ViewTransition enter exit> for mounting and unmounting views.
 export const SURFACE_MOTION = { in: 'surface-in', out: 'surface-out' } as const;
-/** A surface whose parts all move on their own: what's left of it just appears and goes. */
+/** No animation on the view itself; its parts animate separately. */
 export const CUT_MOTION = 'cut';
-/** By the edge a panel sits on, which it leaves to and comes back from. */
+/** Slide a panel in or out at the left (start) or right (end) edge. */
 export const SLIDE_AWAY_MOTION = {
   start: { in: 'slide-in', out: 'slide-away' },
   end: { in: 'slide-in at-end', out: 'slide-away at-end' },
 } as const;
 
-/** Directions for `addTransitionType`. */
+/** Animation options passed to React's addTransitionType or changeInViewTransition. */
 export const TRANSITION_TYPE = {
   stepBack: 'step-back',
   stepForward: 'step-forward',
-  /** The whole page fades from before to after: `changeInViewTransition`. */
+  /** Cross-fade the UI before and after an update. */
   crossfade: 'crossfade',
 } as const;
 
 /**
- * Puts an element in a view transition. Of two elements sharing a name, only the active
- * one may hold it, or the browser skips the transition.
+ * Returns classes that identify an element (`name`) and its animation (`motion`).
+ * Set `isActive` to false to opt out. Only one rendered element may use each name,
+ * or the browser skips the transition.
  */
 export function transitionClasses({
   name,

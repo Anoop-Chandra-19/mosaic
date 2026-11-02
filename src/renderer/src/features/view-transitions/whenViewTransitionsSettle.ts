@@ -1,4 +1,4 @@
-/** Chromium exposes the transition running now; older engines don't, hence the fallback. */
+// Older browsers need the animation-list fallback below.
 type DocumentWithTransition = Document & { activeViewTransition?: ViewTransition | null };
 
 const isTransitionPart = (animation: Animation) =>
@@ -6,9 +6,8 @@ const isTransitionPart = (animation: Animation) =>
   false;
 
 /**
- * Resolves once no view transition is running. Something painted over the app while one
- * runs lands in its before or after image and is painted again when it ends: a layer meant
- * to arrive after a view (a tour's veil) waits for this first.
+ * Waits for the current view transition to finish, even if it is cancelled.
+ * Does not wait for future transitions. Used to delay overlays and clean up after closing.
  */
 export async function whenViewTransitionsSettle(): Promise<void> {
   const active = (document as DocumentWithTransition).activeViewTransition;

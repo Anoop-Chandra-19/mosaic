@@ -4,12 +4,9 @@ import { TRANSITION_TYPE } from './transitionClasses';
 type TransitionType = (typeof TRANSITION_TYPE)[keyof typeof TRANSITION_TYPE];
 
 /**
- * Makes a change as one view transition: by default the page before and after it
- * cross-fade, rather than each layer the change touches painting on its own. For a change
- * outside React's own transitions, such as a tour's veil leaving as the view under it
- * changes, or one inside a surface whose updates don't animate (the review's Compare all,
- * which steps). React renders the change inside the transition, so the after image is its
- * result. The change runs a frame later; the promise says when it has.
+ * Animates a UI update, using a cross-fade unless another motion is chosen.
+ * Use for changes React does not already animate, such as closing the history tour.
+ * Await this before reading the changed state; it waits for the update, not the animation.
  */
 export function changeInViewTransition(
   update: () => void,
