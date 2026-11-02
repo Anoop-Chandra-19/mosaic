@@ -203,45 +203,47 @@ export const TraceRun = memo(function TraceRun({
         {...runAnchorProps(run.runId)}
         className={cn(
           textVariantClasses('secondary'),
-          'flex h-auto w-full items-center gap-2 py-0.75 text-left text-ink-muted'
+          '-mx-1 flex h-auto w-[calc(100%+0.5rem)] flex-col items-stretch gap-0.5 rounded-sm px-1 py-0.75 text-left text-ink-muted hover:bg-line'
         )}
       >
-        {isOpen ? (
-          <ChevronDown aria-hidden className="size-3 shrink-0" />
-        ) : (
-          <ChevronRight aria-hidden className="size-3 shrink-0" />
-        )}
-        <span className="shrink-0 font-strong text-foreground">
-          {run.number === undefined ? 'This run' : `Run ${run.number}`}
+        <span className="flex min-w-0 items-center gap-2">
+          {isOpen ? (
+            <ChevronDown aria-hidden className="size-3 shrink-0" />
+          ) : (
+            <ChevronRight aria-hidden className="size-3 shrink-0" />
+          )}
+          <span className="shrink-0 font-strong text-foreground">
+            {run.number === undefined ? 'This run' : `Run ${run.number}`}
+          </span>
+          <span className="min-w-0 flex-1 truncate font-regular text-ink-soft">
+            {run.ask ?? 'Sent again'}
+          </span>
+          {startedAt > 0 && (
+            <Text variant="meta" className="shrink-0">
+              {formatTimeOfDay(startedAt)}
+            </Text>
+          )}
         </span>
-        <span className="min-w-0 flex-1 truncate font-regular text-ink-soft">
-          {run.ask ?? 'Sent again'}
+        <span className="flex flex-wrap items-center gap-x-3 gap-y-1 pl-5">
+          {isRunning ? (
+            <Text variant="meta" className="text-amber">
+              Running · {steps}
+              <LiveTime since={startedAt} prefix=" · " />
+            </Text>
+          ) : (
+            <Text variant="meta">
+              {steps} · {formatTraceTime(endedAt - startedAt)}
+            </Text>
+          )}
+          {run.model && <Text variant="meta">{run.model.model}</Text>}
+          {run.usage && <Text variant="meta">{formatTokens(run.usage)}</Text>}
+          {flagged > 0 && (
+            <Chip size="sm" tone="warn">
+              {flagged} flagged
+            </Chip>
+          )}
         </span>
-        {startedAt > 0 && (
-          <Text variant="meta" className="shrink-0">
-            {formatTimeOfDay(startedAt)}
-          </Text>
-        )}
       </AppButton>
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 pt-0.5 pl-5">
-        {isRunning ? (
-          <Text variant="meta" className="text-amber">
-            Running · {steps}
-            <LiveTime since={startedAt} prefix=" · " />
-          </Text>
-        ) : (
-          <Text variant="meta">
-            {steps} · {formatTraceTime(endedAt - startedAt)}
-          </Text>
-        )}
-        {run.model && <Text variant="meta">{run.model.model}</Text>}
-        {run.usage && <Text variant="meta">{formatTokens(run.usage)}</Text>}
-        {flagged > 0 && (
-          <Chip size="sm" tone="warn">
-            {flagged} flagged
-          </Chip>
-        )}
-      </div>
       {isOpen && (
         <div className="flex flex-col gap-2 pt-2.5 pl-5 @max-[27.5rem]/trace:pl-2">
           {isOnlyFlagged && flagged === 0 && (

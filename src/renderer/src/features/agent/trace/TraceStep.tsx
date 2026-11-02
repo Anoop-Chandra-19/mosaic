@@ -135,8 +135,7 @@ export function TraceStep({ runId, row, model, readOutcome, isOpen, onToggle }: 
         {...runAnchorProps(runId, row.key)}
         className={cn(
           textVariantClasses('secondary'),
-          'flex h-auto w-full flex-col items-stretch gap-px rounded-sm px-1 pt-1.5 pb-1.5 text-left text-ink-soft hover:bg-line hover:text-foreground',
-          isOpen && 'bg-line'
+          'flex h-auto w-full flex-col items-stretch gap-px rounded-sm px-1 pt-1.5 pb-1.5 text-left text-ink-soft hover:bg-line hover:text-foreground'
         )}
       >
         <span className="flex min-w-0 gap-2">
