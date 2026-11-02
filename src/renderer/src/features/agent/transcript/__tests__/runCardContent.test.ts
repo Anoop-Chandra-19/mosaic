@@ -6,7 +6,7 @@ import {
   findRunSuggestions,
   listSections,
   readRunCard,
-} from '../runCard';
+} from '../runCardContent';
 
 const suggestion = (id: string, status: ProposalStatus = 'pending', isStale = false) =>
   ({ id, status, isStale, templateId: 't1' }) as Proposal;
