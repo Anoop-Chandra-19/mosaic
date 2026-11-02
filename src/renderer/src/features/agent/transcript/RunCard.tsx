@@ -21,7 +21,7 @@ import {
   readRunCard,
   type StopQuestion,
   type SuggestionHandle,
-} from './runCard';
+} from './runCardContent';
 
 /*
  * The end of a run that staged suggestions: where they are and the way to them. The changes
