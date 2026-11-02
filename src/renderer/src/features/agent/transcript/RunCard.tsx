@@ -24,9 +24,9 @@ import {
 } from './runCardContent';
 
 /*
- * The end of a run that staged suggestions: where they are and the way to them. The changes
- * themselves are only ever on the page. A run the user stopped asks first whether to keep
- * them. Suggestions live in memory, so a run from before a restart has no card.
+ * Shows a run's staged suggestion summary and links to review the changes on the resume page.
+ * If the user stopped the run, first asks whether to keep its suggestions. Suggestion state
+ * lives in memory, so runs from before an app restart have no card.
  */
 
 function discardOpen(staged: readonly Proposal[]): void {
@@ -148,7 +148,7 @@ function AppliedWords({ words }: { words: string }) {
   );
 }
 
-/** Applying can keep no version, when the user has them off: then only the fact shows. */
+/** Shows an applied summary without a version link when version saving is disabled. */
 function AppliedLine({ words }: { words: string }) {
   return (
     <Text as="p" variant="secondary" className="flex items-center gap-2">

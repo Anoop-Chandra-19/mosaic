@@ -1,20 +1,19 @@
 /*
- * How much of a reply to show while it streams. Models send text in bursts; shown as it comes,
- * it lurches and redraws the whole reply for each piece. So the shown length moves at a steady
- * speed, fast enough to clear what has arrived in `MOST_BEHIND_MS`, and only ever rises while
- * there is text waiting, which keeps every character inside that limit.
+ * Controls how much streamed reply text is visible. Models send text in bursts, so revealing
+ * each burst immediately causes abrupt updates. The reveal speed clears the pending text within
+ * `MOST_BEHIND_MS` and never decreases while text is pending.
  */
 
 export const MOST_BEHIND_MS = 500;
 
 export interface TextPace {
-  /** How far along the text it has got, which can fall inside a word. */
+  /** Reveal position in characters; may be fractional or fall inside a word. */
   shownTo: number;
   /** Zero once it has caught up. */
   charsPerMs: number;
 }
 
-/** The text is now this long. With no time allowed behind, the next tick shows all of it. */
+/** Updates the pace for the current text length. A zero delay reveals all text on the next tick. */
 export function noteArrival(pace: TextPace, length: number, mostBehindMs: number): TextPace {
   const shownTo = Math.min(pace.shownTo, length);
   const waiting = length - shownTo;
@@ -27,7 +26,7 @@ export function advancePace(pace: TextPace, length: number, elapsedMs: number): 
   return { shownTo, charsPerMs: shownTo === length ? 0 : pace.charsPerMs };
 }
 
-/** The text up to the last whole word `shownTo` has passed; all of it once it has caught up. */
+/** Returns text through the last word boundary before `shownTo`, or all text once caught up. */
 export function cutAtWordEnd(text: string, shownTo: number): string {
   if (shownTo >= text.length) return text;
   let end = Math.floor(shownTo);

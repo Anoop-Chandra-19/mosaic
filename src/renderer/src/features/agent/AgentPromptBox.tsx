@@ -13,10 +13,10 @@ import { canSendMessage, sendAgain, sendMessage } from './sendMessage';
 import { stopAgentRun, useRunningHere } from './useRunningRun';
 
 /**
- * Where the user writes to the assistant. Enter sends and Shift+Enter starts a new line;
- * while this conversation's run is going, Send becomes Stop (Esc stops too, anywhere in the
- * pane). Above it, the one notice for anything that needs the user (`notices/`): a message
- * main won't start, which keeps its place in the box, or a run that stopped.
+ * The message input for the assistant. Enter sends; Shift+Enter adds a new line.
+ * While this conversation has an active run, Send becomes Stop. Escape also stops
+ * the run from anywhere in the pane. A notice above the input (`notices/`) explains
+ * why a message could not start a run or why a run stopped. Unsent text stays in the input.
  */
 export function AgentPromptBox() {
   const [draft, setDraft] = useState('');
@@ -41,14 +41,14 @@ export function AgentPromptBox() {
     }
   };
 
-  /** A send while a "Can’t run" notice shows answers it; a "Run stopped" one just goes. */
+  /** Track the result of retrying a "Can’t run" notice; dismiss a "Run stopped" notice. */
   const send = () => {
     if (!canSend) return;
     const answering = shown?.words.level === 'cantRun' ? shown.source : null;
     void attemptSend(() => sendMessage(draft, answering), true);
   };
 
-  /** A refusal's message is still in the box, so it goes again; a stop's run carries on. */
+  /** Resend the draft if the run could not start, or resume a stopped conversation. */
   const sendNoticeAgain = (source: NoticeSource) => {
     if (source.type === 'refusal') {
       if (canSend) void attemptSend(() => sendMessage(draft, source), true);

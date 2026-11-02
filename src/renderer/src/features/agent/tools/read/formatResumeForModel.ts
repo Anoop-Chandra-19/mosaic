@@ -23,7 +23,7 @@ function formatBullet(handles: ResumeHandles, bullet: Bullet): string {
   return formatText(handleFor(handles, 'bullet', bullet.id), bullet.selected, bullet.text);
 }
 
-/** A lines section's item, which holds its text where an entry holds bullets. */
+/** Format a lines-section item from its `text` field rather than its `bullets` array. */
 function formatLine(handles: ResumeHandles, line: ResumeEntry): string {
   return formatText(handleFor(handles, 'line', line.id), line.selected, line.text ?? '');
 }

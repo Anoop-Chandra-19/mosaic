@@ -7,9 +7,9 @@ import { describeFlag, describeResultWeWrote, describeTarget } from './describeF
 import { diagnose, formatToolAnswer, type Diagnostic } from './toolDiagnostics';
 
 /*
- * A compiled propose call's last step: what the rules left is staged through
- * `proposals/`, replacing this run's earlier suggestion for the same target if the user
- * hasn't acted on it, and the model hears a line for each, with what the checks noticed.
+ * Finish a compiled propose call by staging accepted changes through
+ * `suggestions/proposals/`. Replace this run's earlier pending suggestion for the same
+ * target, then report each result and its check findings to the model.
  */
 
 /** The new suggestions take the place of this run's earlier ones for the same targets. */
@@ -27,7 +27,7 @@ function replaceEarlierSuggestions({ run, waiting }: ToolCallContext, staged: Pr
   if (replacedIds.length) discardProposals(replacedIds);
 }
 
-/** "b3: suggested. Checks: none.", with the result where our code wrote it. */
+/** Describe a staged suggestion and its checks, including any code-generated result text. */
 function describeStaged(run: AgentToolRun, proposal: Proposal): Diagnostic {
   const checks = proposal.flags.map(describeFlag);
   const text = [

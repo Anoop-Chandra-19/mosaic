@@ -3,25 +3,25 @@ import type { ProposeToolArgs, ProposeToolName } from '@shared/agent-tools/propo
 import type { ToolCallContext } from '../tool-run/agentToolRun';
 import type { Problem } from './findInReceipt';
 
-/** One thing a call can mean: the changes it makes, and what was taken to read it so. */
+/** One interpretation of a call, with its proposed changes and interpretation notes. */
 export interface Reading {
   changes: StagedChange[];
-  /** "Took them in the order they sit: b2, then b3." for each thing read another way. */
+  /** Notes on accepted adjustments, such as "Took them in the order they sit: b2, then b3." */
   took: string[];
-  /** The reading in a few words, for when the call has more than one. */
+  /** Short description used to distinguish ambiguous interpretations. */
   summary: string;
 }
 
 /**
- * A propose tool's own step: what its checked arguments can mean, against what the run
- * read, as readings; or the facts of why they mean nothing.
+ * Interpret a propose tool's checked arguments against the run's receipt. Return
+ * possible readings, or a problem explaining why the call cannot be interpreted.
  */
 export type ProposeTool<N extends ProposeToolName> = (
   context: ToolCallContext,
   args: ProposeToolArgs[N]
 ) => Reading[] | Problem;
 
-/** The one reading of a call that can only mean these changes. */
+/** Wrap unambiguous changes in a single reading. */
 export const oneReading = (...changes: StagedChange[]): Reading[] => [
   { changes, took: [], summary: '' },
 ];

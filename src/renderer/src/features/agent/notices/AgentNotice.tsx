@@ -20,7 +20,7 @@ import type { NoticeChoice } from './pickNotice';
  * actions. It rises in, pulses once for a same answer, and folds away when it goes.
  */
 
-/** What the notice can't do itself: everything but copying. */
+/** Actions delegated to the caller; links, commands, and copying are handled here. */
 export type NoticeHandledAction = Exclude<NoticeAction, { kind: 'link' | 'command' | 'copy' }>;
 
 const LEVEL_CLASSES: Record<NoticeLevel, { box: string; tag: string }> = {
@@ -31,7 +31,7 @@ const LEVEL_CLASSES: Record<NoticeLevel, { box: string; tag: string }> = {
   },
 };
 
-/** The likeliest fix: the one marked, or the first that is a button. */
+/** Use the marked Send again action, or the first button action, as primary. */
 function findPrimaryIndex(actions: NoticeAction[]): number {
   const marked = actions.findIndex((action) => action.kind === 'again' && action.isPrimary);
   if (marked >= 0) return marked;
@@ -141,7 +141,7 @@ function NoticeActions({ actions, isSending, onAction }: NoticeActionsProps) {
   );
 }
 
-/** Someone else's words, as they came, with their status. */
+/** Shows the original quoted message and its status. */
 export function QuotedBlock({ quoted }: { quoted: QuotedWords }) {
   return (
     <div className="mx-2.5 mt-1.75 rounded-sm bg-line px-2 pt-1.5 pb-1.75">
@@ -156,7 +156,7 @@ export function QuotedBlock({ quoted }: { quoted: QuotedWords }) {
       <Text
         as="p"
         variant="meta"
-        // A provider's message can be any length; it scrolls, so the actions stay near.
+        // Scroll long provider messages to keep the actions nearby.
         className="mt-0.5 max-h-24 overflow-y-auto wrap-anywhere whitespace-pre-wrap text-ink-soft"
         tabIndex={0}
       >

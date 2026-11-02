@@ -8,7 +8,7 @@ import { useRunStore } from '@/stores/runStore';
 
 type ConversationState = ReturnType<typeof useConversationStore.getState>;
 
-/** What has happened at the newest since the user left it. */
+/** Activity at the end of the conversation since the user scrolled away. */
 type NewestSign = 'quiet' | 'running' | 'written';
 
 const SIGN_WORDS: Record<NewestSign, string | null> = {
@@ -20,7 +20,7 @@ const SIGN_WORDS: Record<NewestSign, string | null> = {
 const readNewestSeq = ({ hasNewer, lastRun, messages }: ConversationState) =>
   (hasNewer ? lastRun : messages).at(-1)?.seq ?? 0;
 
-/** A view's height from the end, or the end isn't what is held at all. */
+/** True when more than one viewport from the bottom, or newer messages are not loaded. */
 function isFarFromNewest(scroller: HTMLElement): boolean {
   const { scrollHeight, scrollTop, clientHeight } = scroller;
   return (
@@ -29,7 +29,7 @@ function isFarFromNewest(scroller: HTMLElement): boolean {
   );
 }
 
-/** Null at the newest; away from it, what the newest has been doing since the user left. */
+/** Returns null near the newest messages, or an activity indicator while scrolled away. */
 function useNewestSign(
   scrollRef: RefObject<HTMLElement | null>,
   contentRef: RefObject<HTMLElement | null>
@@ -72,8 +72,9 @@ interface NewestButtonProps {
 }
 
 /**
- * The way back once the user has scrolled a good way up. It jumps rather than scrolls, as
- * scrolling there would draw everything on the way. Its words say when there is a reason to go.
+ * Returns to the newest messages after the user scrolls away. Jumps rather than animating
+ * through intervening content to avoid rendering it all. Labels indicate a running run or
+ * new messages.
  */
 export function NewestButton({ scrollRef, contentRef }: NewestButtonProps) {
   const sign = useNewestSign(scrollRef, contentRef);

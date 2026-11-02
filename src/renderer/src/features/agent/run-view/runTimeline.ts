@@ -3,10 +3,10 @@ import type { RunPart } from '@/types/agentRunView';
 import { describeStepNote, readStepWords } from './stepWords';
 
 /*
- * A run's parts as the pane shows them, in the order they happened: words, a line of steps,
- * words. Each unbroken stretch of steps and thinking is one line, and words end it. No timers
- * or elements here, so the rules can be read and tested. Steps are the only rows counted;
- * thinking is listed but never a step.
+ * Converts run parts into the pane's timeline. Each consecutive group of tool calls and
+ * reasoning becomes one line; reply text ends that line. RunActivity and TraceRun use the
+ * same ordering. This module contains no timers or UI elements. Step counts include tool
+ * calls only, not reasoning rows.
  */
 
 export interface RunState {
@@ -64,8 +64,8 @@ function toStep(part: Extract<RunPart, { type: 'toolCall' }>, isRunning: boolean
 }
 
 /**
- * Gemini signs the part after a thought even when it showed none: stored, since the next request
- * must send it back, but no thought anyone saw, so it draws nothing.
+ * Gemini can return a reasoning signature without visible reasoning. The signature is stored
+ * because the next request must send it back, but it does not need a timeline row.
  */
 const isSignatureOnly = (part: Extract<RunPart, { type: 'reasoning' }>) =>
   part.durationMs === 0 && !part.textLength;
@@ -105,8 +105,8 @@ const sumThinking = (rows: RunLineRow[]) =>
   rows.reduce((sum, row) => sum + (row.kind === 'think' ? (row.durationMs ?? 0) : 0), 0);
 
 /**
- * The span of its finished steps, with any thinking before the first or after the last. Each
- * step's own time would double-count: calls in one reply overlap, and the gaps between are time.
+ * Measures the span of finished steps, plus reasoning before the first and after the last.
+ * Summing step durations would double-count overlapping calls and omit gaps between calls.
  */
 function readLineDurationMs(rows: RunLineRow[]): number | null {
   const finished = rows.filter((row): row is StepRow => row.kind === 'step' && isFinishedStep(row));
@@ -157,7 +157,7 @@ export function listRunTimeline(parts: RunPart[], { isRunning }: RunState): Time
 
 const NO_TIME_UNDER_MS = 1000;
 
-/** A time worth showing: under a second, a run feels instant, and nothing says otherwise. */
+/** Shows elapsed time only once it reaches one second. */
 export const isTimeShown = (ms: number) => ms >= NO_TIME_UNDER_MS;
 
 export const countSteps = (count: number) => `${count} ${count === 1 ? 'step' : 'steps'}`;
@@ -231,8 +231,8 @@ export function describeRunAloud(
 }
 
 /**
- * The run is waiting on the model: nothing yet, or a step or a think is over and what comes next
- * hasn't started. Words being written have their caret instead.
+ * Detects a running run waiting for the model: no parts yet, a tool call no longer running,
+ * or completed reasoning. Streaming reply text uses its caret instead of a waiting indicator.
  */
 export function isWaitingForModel(parts: RunPart[], { isRunning }: RunState): boolean {
   if (!isRunning) return false;
@@ -242,9 +242,9 @@ export function isWaitingForModel(parts: RunPart[], { isRunning }: RunState): bo
   return newest.type === 'reasoning' && newest.durationMs !== null;
 }
 
-/** Words that keep coming mean its steps may be over; a short aside doesn't fold the line. */
+/** Waits one second after reply text starts before folding, so a brief aside does not fold the line. */
 const FOLD_AFTER_WORDS_MS = 1000;
-/** Once it has opened on its own, so a run ending just past the moment doesn't flash. */
+/** Keeps an automatically opened line visible for at least one second to prevent a brief flash. */
 const HOLD_OPEN_MS = 1000;
 
 /** How long an open line waits to fold, once the steps have given way to words or the end. */

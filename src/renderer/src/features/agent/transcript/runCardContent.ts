@@ -2,8 +2,8 @@ import type { Proposal } from '@/types/agentProposal';
 import { countSuggestions } from '@/features/suggestions/suggestionState';
 
 /*
- * What a run's card says, from what became of the suggestions it staged: counts and where
- * they are, never the changes themselves, which live on the page. No elements here.
+ * Builds RunCard's text from suggestion status: counts, review links, and stop decisions.
+ * The changes themselves are reviewed on the resume page. This module contains no UI elements.
  */
 
 export interface StopQuestion {
@@ -21,12 +21,12 @@ export interface SuggestionHandle {
 }
 
 export interface RunCardWords {
-  /** The user's Stop, with suggestions it hasn't decided about. */
+  /** Asks whether to keep suggestions from a stopped run before the user has decided. */
   stopQuestion: StopQuestion | null;
   handle: SuggestionHandle | null;
   /** "Applied 3 of 6 suggestions", once any of them are in the draft. */
   applied: string | null;
-  /** The run's suggestions were thrown away, which the user's Stop leaves a line for. */
+  /** Marks a stopped run whose suggestions were discarded, so the card can show a record line. */
   isDiscarded: boolean;
 }
 
@@ -81,7 +81,7 @@ export function readRunCard({ staged, isCancelled, isStopDecided }: RunCardFacts
   };
 }
 
-/** The suggestions with these ids, wherever they wait: a run can outlast its resume being open. */
+/** Finds suggestions by id across templates, including resumes that are no longer open. */
 export function findRunSuggestions(
   byTemplate: Readonly<Record<string, readonly Proposal[]>>,
   ids: readonly string[]
@@ -94,13 +94,13 @@ export function findRunSuggestions(
 export const isSuggestionOpen = ({ status }: Proposal) =>
   status !== 'applied' && status !== 'rejected';
 
-/** The one to open the review on: the first that can still be applied, if there is one. */
+/** Prefers the first non-stale open suggestion, falling back to the first stale open suggestion. */
 export const findFirstToReview = (staged: readonly Proposal[]): Proposal | undefined => {
   const open = staged.filter(isSuggestionOpen);
   return open.find((proposal) => !proposal.isStale) ?? open[0];
 };
 
-/** The sections its suggestions are in, each once, for the open resume's own. */
+/** Lists unique section names for open suggestions belonging to the current resume. */
 export function listSections(
   staged: readonly Proposal[],
   templateId: string | null,
@@ -112,7 +112,7 @@ export function listSections(
   return [...new Set(sections)];
 }
 
-/** The newest version an apply kept that holds any of these. */
+/** Finds the newest saved version associated with any of these suggestions. */
 export function findAppliedVersionId(
   idsByAppliedVersion: Readonly<Record<string, readonly string[]>>,
   staged: readonly Proposal[]

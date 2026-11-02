@@ -4,7 +4,7 @@ import type { Proposal } from '@/types/agentProposal';
 import type { ResumeData } from '@shared/types/resume';
 import { createResumeHandles, type ResumeHandles } from './resumeHandles';
 
-/** The draft as read_document last gave it: what a suggestion's `before` is taken from. */
+/** Draft snapshot from the last read_document call, used for suggestion `before` values. */
 export interface ReadReceipt {
   templateId: string;
   doc: ResumeData;
@@ -12,22 +12,23 @@ export interface ReadReceipt {
 
 /** What the tools keep for one run. */
 export interface AgentToolRun {
-  /** The user's words: a number they gave is not new. */
+  /** User request used by checks to distinguish supplied numbers from new claims. */
   requestText: string;
   handles: ResumeHandles;
   /** Nothing can be suggested against text the run never read. */
   receipt: ReadReceipt | null;
-  /** This run's suggestion for each bullet, entry or section, which a new one replaces. */
+  /** Latest suggestion ID per change-kind/target key, used to replace this run's pending suggestions. */
   suggestionIdByTarget: Map<string, string>;
-  /** Every suggestion this run has staged and not replaced, which its card counts. */
+  /** IDs of suggestions staged by this run and not replaced, used for the run card's count. */
   stagedIds: Set<string>;
   /** Targets sent back once for a definite mistake. The next try is staged, flagged. */
   repairedTargets: Set<string>;
 }
 
 /**
- * What a conversation's runs pass on: the model still has its last read in the log, so a
- * follow-up ask works from it, with the same handles, until another resume is open.
+ * Reading state passed between runs in one conversation. The model's last read remains
+ * in its log, so follow-up requests reuse the receipt and handles. Opening another
+ * resume requires a new draft read before proposing changes.
  */
 export type ConversationReading = Pick<AgentToolRun, 'handles' | 'receipt'>;
 
@@ -44,20 +45,20 @@ export const createAgentToolRun = (
 });
 
 /**
- * What a propose call is compiled against, read from the stores once when it comes in, so
- * every step after that is given what it uses rather than reading it.
+ * Inputs captured from stores once per propose call. Compilation steps receive this
+ * context instead of reading stores themselves.
  */
 export interface ToolCallContext {
   run: AgentToolRun;
   /** The resume open now, or null when none is. */
   templateId: string | null;
-  /** The open draft as it is now, which staging checks a change against. */
+  /** Current draft snapshot used to validate proposed changes. */
   doc: ResumeData;
   /** The open resume's suggestions waiting for the user. */
   waiting: Proposal[];
 }
 
-/** What one tool says back to the model; `runAgentTool` adds where the draft stood. */
+/** Tool response before `runAgentTool` adds the current draft's template ID and revision. */
 export type ToolAnswer = Omit<AgentToolResult, 'draft'>;
 
 export const answer = (content: string, target?: ToolTarget): ToolAnswer => ({

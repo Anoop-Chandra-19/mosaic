@@ -7,7 +7,7 @@ import {
 } from '@/stores/conversationStore';
 import { useTargetStore } from '@/stores/targetStore';
 
-/** Back where the pane was, after an open that failed. */
+/** Restore the previous conversation after opening another conversation fails. */
 function returnTo(conversationId: number | null): void {
   if (conversationId === null) return startNewConversation();
   openConversation(conversationId).catch((error: unknown) => {
@@ -17,9 +17,9 @@ function returnTo(conversationId: number | null): void {
 }
 
 /**
- * The list of conversations being open, and moving between them from it. Going back without
- * choosing puts the keyboard on the button that opened it; a new conversation puts it in the
- * prompt box. An open that fails shows the list again, with the line on that row.
+ * Manage the conversation list and switching conversations from it. Going back without
+ * choosing restores focus to the button that opened the list. A new conversation focuses
+ * the prompt box. If opening fails, show the list again with an error on that row.
  */
 export function useConversationSwitch() {
   const [isListOpen, setIsListOpen] = useState(false);
@@ -66,7 +66,7 @@ export function useConversationSwitch() {
     });
   };
 
-  /** The conversation is gone: if it was the open one, the pane is on a new one under the list. */
+  /** After deletion, replace the open conversation with a new one beneath the list. */
   const leaveDeleted = (conversationId: number) => {
     if (useConversationStore.getState().conversationId !== conversationId) return;
     resetPaneView();

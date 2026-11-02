@@ -9,7 +9,7 @@ import { createFakeAgentLog, replyBody, userBody } from '@/stores/__tests__/fake
 import { buildRunView } from '../run-view/buildRunView';
 import { followAgentRuns } from '../followAgentRuns';
 
-// Where the pane was left is a setting; here it keeps nothing.
+// Mock settings storage so the pane location is not persisted in tests.
 vi.mock('@/lib/services/settingsStorage', () => ({
   settingsStorage: { getItem: () => null, setItem: () => {}, removeItem: () => {} },
 }));

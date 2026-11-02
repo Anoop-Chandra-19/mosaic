@@ -4,8 +4,8 @@ import type { ModelUsage } from '@shared/types/modelReply';
 import type { RowState } from '../run-view/runTimeline';
 
 /*
- * How the Trace words the facts a run stored. The record is for someone reading closely, so
- * times keep their precision and counts are whole, and nothing is left out for being plain.
+ * Formats stored run details for the Trace. Shows durations in milliseconds or hundredths
+ * of a second and formats full token counts rather than abbreviating them.
  */
 
 const NUMBER = new Intl.NumberFormat('en-US');
@@ -14,7 +14,7 @@ const NUMBER = new Intl.NumberFormat('en-US');
 export const formatTraceTime = (ms: number): string =>
   ms < 1000 ? `${Math.round(ms)} ms` : `${(ms / 1000).toFixed(2)} s`;
 
-/** "1,204 in · 80 out", with what the provider's cache served when it said. */
+/** Formats input and output token counts, including cached input when the provider reports it. */
 export function formatTokens({ inputTokens, outputTokens, cachedInputTokens }: ModelUsage): string {
   const cached = cachedInputTokens ? ` (${NUMBER.format(cachedInputTokens)} cached)` : '';
   return `${NUMBER.format(inputTokens)} in${cached} · ${NUMBER.format(outputTokens)} out`;
@@ -70,7 +70,7 @@ export function describeRetry({ error, waitMs }: StepRetry): string {
   return `${happened}${status}${said} · waited ${formatTraceTime(waitMs)}`;
 }
 
-/** As the model wrote them, set out to read; what isn't JSON stays as it came. */
+/** Pretty-prints structured arguments and leaves string arguments unchanged. */
 export function formatToolArguments(args: unknown): string {
   return typeof args === 'string' ? args : (JSON.stringify(args, null, 2) ?? '');
 }

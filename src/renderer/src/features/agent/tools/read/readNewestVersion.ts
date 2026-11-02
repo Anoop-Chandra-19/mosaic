@@ -22,7 +22,7 @@ function describeChangesSince(version: ResumeData, draft: ResumeData): string {
   return `Since then: ${summary}${section ? ` (in ${section})` : ''}.`;
 }
 
-/** The newest version, read but never a receipt: suggestions are made against the draft. */
+/** Read the newest saved version without replacing the draft receipt used for suggestions. */
 export async function readNewestVersion(run: AgentToolRun): Promise<ToolAnswer> {
   const { templateId } = useResumeStore.getState();
   if (templateId === null) return refuse(NO_RESUME_OPEN);

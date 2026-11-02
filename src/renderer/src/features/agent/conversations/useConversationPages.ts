@@ -7,13 +7,13 @@ export const CONVERSATION_PAGE_SIZE = 50;
 export interface ConversationPages {
   rows: ConversationSummary[];
   hasMore: boolean;
-  /** `failed` only when there is nothing held to show. */
+  /** `failed` only when no loaded rows can be shown. */
   readState: 'loading' | 'ready' | 'failed';
-  /** The database's own words, for a list that couldn't be read. */
+  /** The database error message when the list cannot be read. */
   failure: string | null;
   /**
-   * Rises when rows go or change places, for them to move. Not when a page lands below: those
-   * rows just arrive out of view.
+   * Increments when rows are removed or reordered, to trigger motion. Loading a page below
+   * does not increment it because those rows appear outside the viewport.
    */
   moves: number;
 }
@@ -30,8 +30,8 @@ const isSameOrder = (a: ConversationSummary[], b: ConversationSummary[]) =>
   a.length === b.length && a.every((row, index) => row.id === b[index].id);
 
 /**
- * The newest page over what is held. A run moves its conversation to the top, so the page
- * takes over from the held rows wherever they overlap, and pages already read past it stay.
+ * Merge the newest page into loaded rows. A run moves its conversation to the top, so new
+ * page rows replace overlapping loaded rows. Keep older rows from pages already loaded.
  */
 export function mergeFirstPage(
   held: ConversationPages,
@@ -53,12 +53,12 @@ export function mergeFirstPage(
     hasMore: older.length > 0 ? held.hasMore : page.length === CONVERSATION_PAGE_SIZE,
     readState: 'ready',
     failure: null,
-    // The first read has nothing to move from.
+    // The first read has no previous rows to animate.
     moves: held.readState !== 'ready' || isSameOrder(held.rows, rows) ? held.moves : held.moves + 1,
   };
 }
 
-/** What main's bridge adds in front of an error's own message. */
+/** Remove the prefix main's bridge adds to the error message. */
 const readFailure = (error: unknown): string =>
   (error instanceof Error ? error.message : String(error)).replace(
     /^Error invoking remote method '[^']+': (Error: )?/,
@@ -72,7 +72,7 @@ const readFailure = (error: unknown): string =>
 export function useConversationPages(readAgainOn: number | null) {
   const [pages, setPages] = useState(NOTHING_READ);
   const isReadingMore = useRef(false);
-  // A read that was under way when a row was deleted may still have it.
+  // An in-flight read may still return a deleted row.
   const deletedIds = useRef(new Set<number>());
 
   const readFirstPage = useCallback(async () => {
@@ -112,7 +112,7 @@ export function useConversationPages(readAgainOn: number | null) {
         };
       });
     } catch (error) {
-      // Scrolling again asks again.
+      // Retry on the next scroll.
       console.error('Couldn’t read more conversations', error);
     } finally {
       isReadingMore.current = false;

@@ -27,10 +27,9 @@ import { describeRetry, formatThinkingLength, formatTokens, formatTraceTime } fr
 import type { ReadOutcomes } from './useOutdatedReads';
 
 /*
- * One run in the Trace: a header that says what was asked and what it came to, and, open, the
- * same order and the same split as the conversation. Its words are short excerpts, as the
- * conversation has them in full. A closed run draws only its header, so a long conversation
- * costs a list of headers.
+ * Renders one Trace run with a request and outcome header. Expanded runs use the same timeline
+ * order and grouping as the conversation, with expandable reply excerpts instead of full text.
+ * Collapsed runs render only their headers to limit rendering work in long conversations.
  */
 
 function ThinkEntry({ row }: { row: ThinkRow }) {
@@ -77,7 +76,7 @@ function TraceLine({
   openCallId,
   onToggleCall,
 }: TraceLineProps) {
-  // A record open stays, whatever the filter: a link from the conversation may have opened it.
+  // Keep the open record visible under the filter, including records linked from the conversation.
   const rows = isOnlyFlagged
     ? line.rows.filter(
         (row) =>
@@ -171,7 +170,7 @@ interface TraceRunProps {
   onToggleCall: (runId: number, callId: string) => void;
 }
 
-/** Memoized by hand, as a transcript turn is: older pages land above in pieces. */
+/** Memoized like transcript turns to avoid rerendering unchanged runs as older pages load. */
 export const TraceRun = memo(function TraceRun({
   run,
   isLive,

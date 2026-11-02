@@ -4,18 +4,18 @@ import type { ModelTool } from '@shared/types/modelTool';
 import { readList } from './readAgentToolArgs.ts';
 
 /*
- * A call's arguments checked against the schema the model was given, after they are read
- * (`readAgentToolArgs.ts`): what is required, the type, an enum, and a pattern. A refusal
- * comes from the schema, so it is the same for every tool: the argument, what was given,
- * and the argument's own description. Unknown names are dropped, and an empty optional
- * text counts as left out ("after": "" means none).
+ * Validate arguments normalized by `readAgentToolArgs.ts` against the schema given
+ * to the model: required fields, types, enums, and patterns. Schema-based refusals
+ * consistently identify the argument and, where relevant, its value and description.
+ * Drop unknown argument names and treat empty optional text as omitted
+ * ("after": "" means none).
  */
 
 export type CheckedToolArgs = { args: Record<string, unknown> } | { problem: string };
 
 const isLeftOut = (value: unknown) => value === undefined || value === null || value === '';
 
-/** " name: its description", to end a refusal with what the argument is. */
+/** Format the argument's name and description as a suffix for a refusal. */
 const describeArg = (name: string, schema: PropertySchema) =>
   schema.description ? ` ${name}: ${schema.description}` : '';
 

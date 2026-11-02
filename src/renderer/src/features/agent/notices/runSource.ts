@@ -9,7 +9,7 @@ import type { QuotedWords } from './noticeWords';
  * line, the provider in sentences, and the provider's own words quoted.
  */
 
-/** Where the servers the user runs listen, as Settings has them now. */
+/** Current server addresses from Settings. */
 export interface ServerAddresses {
   ollama: string;
   openaiCompatible: string;

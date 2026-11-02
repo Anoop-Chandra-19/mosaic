@@ -32,17 +32,19 @@ function Spark() {
 }
 
 /**
- * The assistant, on the right of the preview, drawn only while AI is on: the open
- * conversation (`transcript/`) or its full record (`trace/`), the prompt box with the one
- * notice over it for a message that didn't go or a run that stopped (`notices/`), and which
- * provider and model the next run uses. It opens on the conversation used last; Sessions, at
- * the end of the tabs, opens the list of them all (`conversations/`), over everything below the
- * header. The runs themselves are followed and their tools answered from the shell (`followAgentRuns`,
- * `tools/`). On a window too narrow for editor, preview, and pane, it lies over the preview.
+ * Shows the assistant beside the preview when AI is enabled. It opens the last-used
+ * conversation and shows its messages (`transcript/`) or detailed run log (`trace/`).
+ * The prompt box shows send failures and stopped runs through `notices/`. The footer
+ * shows the provider and model for the next run. Sessions opens the conversation list
+ * (`conversations/`) over the content below the header. In narrow windows, the pane
+ * covers the preview instead of sitting beside it.
  *
- * Imports only go down this list, and nothing imports this folder's own files from below:
- * the pane here; `conversations/`, `trace/`; `transcript/`; `notices/`, `reply/`; `run-view/`.
- * Beside them, the pane calls `tools/`.
+ * The app shell tracks runs through `followAgentRuns` and answers tool calls through
+ * `tools/`, even when this pane is closed.
+ *
+ * Imports follow this order, with no imports back to an earlier layer:
+ * this pane → `conversations/` and `trace/` → `transcript/` → `notices/` and `reply/`
+ * → `run-view/`. The pane also uses `tools/`.
  */
 export function AgentPane() {
   const widthPx = useUiStore((s) => s.agentPaneWidthPx);
@@ -78,7 +80,7 @@ export function AgentPane() {
       aria-label="Assistant"
       onKeyDown={(event) => {
         if (event.key !== 'Escape' || event.defaultPrevented) return;
-        // In the box, Esc still means Stop.
+        // Escape in the prompt box stops the run instead of leaving the Trace tab.
         const isInBox = event.target instanceof HTMLTextAreaElement;
         if (tab === 'trace' && !isInBox) {
           event.preventDefault();
@@ -90,7 +92,7 @@ export function AgentPane() {
       }}
       className={cn(
         'relative flex shrink-0 flex-col border-l border-line bg-pane @max-5xl/workspace:absolute @max-5xl/workspace:inset-y-0 @max-5xl/workspace:right-0 @max-5xl/workspace:z-20 @max-5xl/workspace:shadow-overlay',
-        // Hands its column to the suggestion review's inspector, and takes it back.
+        // Animate the switch between this pane and the suggestion review inspector.
         transitionClasses({
           name: 'assist',
           motion: 'handover-upper',
@@ -114,7 +116,7 @@ export function AgentPane() {
         />
       </AppTooltip>
 
-      {/* The preview bar's height. The rule under it belongs to the tabs, which hang from it. */}
+      {/* Match the preview bar's height. The tabs below draw the bottom border. */}
       <header className="flex h-10 shrink-0 items-center justify-between gap-2 px-4">
         {isListOpen ? (
           <div className="-ml-1.5 flex min-w-0 items-center gap-1">
@@ -174,7 +176,7 @@ export function AgentPane() {
       </header>
 
       <div className="relative flex min-h-0 flex-1 flex-col">
-        {/* Stays as it was under the list, so going back finds the same tab, place and words. */}
+        {/* Keep this mounted under the list to preserve the tab, scroll position, and draft. */}
         <div inert={isListOpen} className="flex min-h-0 flex-1 flex-col">
           <RunningElsewhere running={running} onGoTo={open} />
           <PaneTabs sessionsRef={switchRef} onOpenSessions={openList} />

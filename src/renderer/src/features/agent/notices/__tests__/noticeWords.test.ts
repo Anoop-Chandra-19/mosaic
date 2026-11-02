@@ -24,7 +24,7 @@ const PROVIDER_ERRORS: Record<ModelProviderError['reason'], ModelProviderError> 
   failed: { reason: 'failed', httpStatus: 400, message: 'INVALID_ARGUMENT' },
 };
 
-/** Every stop a run can store: each stop layer, and each provider error both ways it comes. */
+/** Cover each stop layer and each provider error as both connection and providerError stops. */
 function listStops(): RunStoppedMessageBody[] {
   const own: RunStopReason[] = ['repeatedCall', 'refusalsInARow', 'stepLimit', 'appFault'];
   return [

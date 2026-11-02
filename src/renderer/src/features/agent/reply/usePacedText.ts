@@ -3,9 +3,9 @@ import { prefersReducedMotion } from '@/lib/motion/motionTiming';
 import { advancePace, cutAtWordEnd, MOST_BEHIND_MS, noteArrival, type TextPace } from './paceText';
 
 /**
- * Text that keeps growing, shown at a steady pace (`paceText.ts`), moving on every frame. What it
- * starts with shows at once, so a stored reply never types itself out. With reduced motion, text
- * shows as it comes.
+ * Reveals growing text on animation frames using the pace calculated by `paceText.ts`.
+ * Shows the initial text immediately so stored replies do not replay the typing effect.
+ * With reduced motion, reveals arriving text without the pacing delay.
  */
 export function usePacedText(text: string): string {
   const [shown, setShown] = useState(text);
@@ -32,6 +32,6 @@ export function usePacedText(text: string): string {
     return () => cancelAnimationFrame(frame);
   }, [text]);
 
-  // A retry's text can replace what was shown.
+  // Show replacement text immediately when a retry changes the already-visible prefix.
   return text.startsWith(shown) ? shown : text;
 }

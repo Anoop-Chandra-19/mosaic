@@ -4,7 +4,7 @@ import { findBulletInReceipt, handlesOf, isProblem, type BulletInReceipt } from 
 import { TOOL_FACTS } from './toolFacts';
 import type { ProposeTool } from './toolReadings';
 
-/** Why these two can't be merged as they sit, in facts; null when they sit side by side. */
+/** Explain why the bullets cannot merge, or return null for adjacent bullets in one entry. */
 function findApartProblem(
   run: AgentToolRun,
   args: ProposeToolArgs['propose_merge'],
@@ -28,8 +28,8 @@ function findApartProblem(
 }
 
 /**
- * Two bullets of one entry that sit side by side, as one. Given in the other order, they
- * are still one pair, so that is taken and said.
+ * Propose merging two adjacent bullets in one entry. Accept handles in either order,
+ * but use document order and report when the supplied order was reversed.
  */
 export const proposeMerge: ProposeTool<'propose_merge'> = (context, args) => {
   const givenFirst = findBulletInReceipt(context, args.firstBulletId);

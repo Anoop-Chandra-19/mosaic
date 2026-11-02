@@ -5,8 +5,8 @@ import { TOOL_FACTS } from './toolFacts';
 import { oneReading, type ProposeTool } from './toolReadings';
 
 /**
- * One term renamed in every bullet and line that uses it, each its own suggestion. Headings
- * stay out: a heading is renamed on purpose, one at a time.
+ * Rename a term in every matching bullet and line, with one suggestion per text item.
+ * Exclude headings; rename section headings individually with propose_rename.
  */
 export const proposeReplaceEverywhere: ProposeTool<'propose_replace_everywhere'> = (
   context,

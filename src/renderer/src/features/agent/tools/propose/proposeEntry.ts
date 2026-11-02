@@ -15,8 +15,8 @@ import { oneReading, type ProposeTool } from './toolReadings';
 const ENTRY_FACTS: EntryFact[] = ['title', 'organization', 'location', 'dates'];
 
 /**
- * The entry the new one goes after, as the change names it: none to go first ("start",
- * or an empty section), the last one when `after` is left out.
+ * Resolve the preceding entry's ID. "start" or an empty section means no predecessor;
+ * omitting `after` places the new entry after the section's last entry.
  */
 function findPreviousEntry(
   context: ToolCallContext,
@@ -29,7 +29,7 @@ function findPreviousEntry(
   return isProblem(entry) ? entry : { id: entry.id };
 }
 
-/** The facts for an entry aimed at a section of lines: which sections hold entries. */
+/** Refuse an entry in a lines section and list sections that accept entries. */
 function describeLinesSection(context: ToolCallContext, sectionHandle: string): Problem {
   const receipt = openReceipt(context);
   const sections = isProblem(receipt) ? [] : receipt.doc.sections;
@@ -41,7 +41,7 @@ function describeLinesSection(context: ToolCallContext, sectionHandle: string): 
   return { problem: TOOL_FACTS.sectionHoldsLines(sectionHandle, handles) };
 }
 
-/** A new entry, with only the facts the model gave: the user confirms each one. */
+/** Propose a new entry using only model-supplied facts, each requiring user confirmation. */
 export const proposeEntry: ProposeTool<'propose_entry'> = (context, args) => {
   const section = findSectionInReceipt(context, args.sectionId);
   if (isProblem(section)) return section;

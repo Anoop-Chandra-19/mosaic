@@ -6,11 +6,11 @@ import { useConversationStore } from '@/stores/conversationStore';
 const PINNED_WITHIN_PX = 72;
 
 /**
- * Keeps the end of the transcript in view as it grows, unless the user has scrolled up to
- * read: then it stays where they are. Growth is watched by size, so streamed text and new
- * turns are followed alike. The end of what is held isn't the newest while the window is back
- * from the end of the log, so it isn't followed then. A send comes back to the newest.
- * `isHeld` stops the following while something in view is being read, however near the end.
+ * Follows transcript growth while the user is near the newest messages; preserves their
+ * position after they scroll up. A ResizeObserver handles both streamed text and new turns.
+ * Does not follow the bottom of an older message window when newer messages are not loaded.
+ * Sending returns to the newest messages. `isHeld` pauses resize-driven following while an
+ * open record is being read, even near the bottom.
  */
 export function useStickToNewest(
   scrollRef: RefObject<HTMLElement | null>,
@@ -35,7 +35,7 @@ export function useStickToNewest(
         scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight < PINNED_WITHIN_PX;
     };
     const resizes = new ResizeObserver(() => {
-      // Following isn't the user scrolling, so it doesn't show the scrollbar.
+      // Automatic following should not reveal the scrollbar as user scrolling does.
       if (isPinned.current && !isHeldNow.current) scrollQuietly(scroller, scroller.scrollHeight);
     });
     scroller.addEventListener('scroll', onScroll);

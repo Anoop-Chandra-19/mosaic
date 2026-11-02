@@ -7,7 +7,7 @@ import { TracingDots } from '../reply/TracingDots';
 import type { RowState } from '../run-view/runTimeline';
 import { formatToolAnswer } from './traceWords';
 
-/** A block of what the model and the tools passed between them, exactly as it was. */
+/** Displays argument or result text in a scrollable preformatted block. */
 export function RawBlock({ text }: { text: string }) {
   return (
     <pre
@@ -35,7 +35,7 @@ function AnswerNote({ children }: { children: ReactNode }) {
 }
 
 function StoredAnswer({ messageId, callId }: { messageId: number; callId: string }) {
-  // Undefined while it is on its way, null when it couldn't be read.
+  // Undefined means loading; null means the result could not be read.
   const [content, setContent] = useState<string | null | undefined>(undefined);
   useEffect(() => {
     let isCurrent = true;
@@ -66,11 +66,11 @@ function StoredAnswer({ messageId, callId }: { messageId: number; callId: string
 interface ToolAnswerProps {
   state: RowState;
   callId: string;
-  /** Absent until the run's end is read: a run stores each answer as it goes, but says so then. */
+  /** Available after the completed run is loaded, although results are stored during the run. */
   messageId: number | undefined;
 }
 
-/** A tool's result, read only as its record opens: it can be a whole resume. */
+/** Loads a tool result only when its record opens, since the result can contain a whole resume. */
 export function ToolAnswer({ state, callId, messageId }: ToolAnswerProps) {
   if (state === 'cut') return <AnswerNote>No result: the step was never made.</AnswerNote>;
   if (messageId !== undefined) return <StoredAnswer messageId={messageId} callId={callId} />;

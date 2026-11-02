@@ -4,8 +4,8 @@ import { TOOL_FACTS } from './toolFacts';
 import type { ProposeTool, Reading } from './toolReadings';
 
 /**
- * Two bullets from one, split where the model's words start: models count characters
- * badly. Words that sit in the bullet more than once give a reading for each place.
+ * Split a bullet at the start of a model-supplied phrase rather than relying on the
+ * model to count characters. Return one interpretation per matching phrase position.
  */
 export const proposeSplit: ProposeTool<'propose_split'> = (context, args) => {
   const found = findBulletInReceipt(context, args.bulletId);

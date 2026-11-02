@@ -4,10 +4,10 @@ import { findAutoOpenAt, readFoldDelay, type RunState } from './runTimeline';
 type AutoOpen = 'notYet' | 'open' | 'folded';
 
 /**
- * Whether a line is open: the user's choice once they have made one. Until then, it opens in
- * place while it works on its steps, and folds once words take over or the run ends. It opens
- * once at most, and never while the model is writing: a line that opens as words start would
- * only close again. A stop folds it at once.
+ * Controls a line's open state. An explicit user choice overrides automatic behavior.
+ * Otherwise, opens at most once while steps are running and folds after reply text starts
+ * or the run ends. Never opens automatically during reply text, which would immediately
+ * trigger folding. A stopped run skips the folding delay.
  */
 export function useRunLineOpen(
   stepStarts: readonly number[],

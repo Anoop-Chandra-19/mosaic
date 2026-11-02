@@ -1,9 +1,9 @@
 import { HANDLE_KINDS, HANDLE_PREFIXES, type HandleKind } from '@shared/agent-tools/handleKinds';
 
 /**
- * Short names for a run's sections, entries, bullets and lines ("s1", "e2", "b7", "l3"),
- * which a model copies back far more reliably than ids. Given in reading order the first
- * time each is seen, and kept for the whole run, so b7 is the same bullet in every read.
+ * Assign short handles to sections, entries, bullets, and lines ("s1", "e2", "b7", "l3")
+ * because models copy them more reliably than IDs. Assign handles in first-seen reading
+ * order and keep them stable across reads and conversation runs that share this state.
  */
 
 export interface ResumeHandles {
@@ -29,7 +29,7 @@ export function handleFor(handles: ResumeHandles, kind: HandleKind, id: string):
   return handle;
 }
 
-/** The kind a handle's prefix names, whether or not the run gave it out. */
+/** Infer the kind from a handle's prefix without checking whether it was assigned. */
 export function readHandleKind(handle: string): HandleKind | undefined {
   const prefix = handle.trim().toLowerCase().charAt(0);
   return HANDLE_KINDS.find((kind) => HANDLE_PREFIXES[kind] === prefix);

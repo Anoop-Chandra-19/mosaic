@@ -5,7 +5,7 @@ import {
   useConversationStore,
 } from '@/stores/conversationStore';
 
-/** How many window heights from the view the next page starts being read. */
+/** Starts loading a page within this many viewport heights of either loaded boundary. */
 const READ_AHEAD_VIEWS = 2;
 
 const isNearTheTop = ({ scrollTop, clientHeight }: HTMLElement) =>
@@ -18,10 +18,10 @@ const hasNothingToScroll = ({ scrollHeight, clientHeight }: HTMLElement) =>
   scrollHeight <= clientHeight;
 
 /**
- * Reads the next page before the user reaches either end of what is held. The browser's scroll
- * anchoring holds the view still as messages land or go above it, but gives up at exactly the
- * top, so the view never rests there while there is more to read. `shownBy` is whatever else
- * can shorten what is drawn, as a filter does.
+ * Loads messages before the user reaches either end of the loaded window. Browser scroll
+ * anchoring preserves the visible position as messages are added or removed above it, except
+ * at scrollTop zero. Moves one pixel down there before loading older messages. `shownBy`
+ * triggers a short-page recheck when a filter or other input changes the visible content.
  */
 export function useMessagePages(scrollRef: RefObject<HTMLElement | null>, shownBy?: unknown): void {
   const firstSeq = useConversationStore((s) => s.messages[0]?.seq);
@@ -41,7 +41,7 @@ export function useMessagePages(scrollRef: RefObject<HTMLElement | null>, shownB
     return () => scroller.removeEventListener('scroll', onScroll);
   }, [scrollRef]);
 
-  // A page too short to scroll fires no scroll to ask for the next.
+  // Load older messages when the content is too short to trigger a scroll event.
   useEffect(() => {
     const scroller = scrollRef.current;
     if (scroller && hasOlder && hasNothingToScroll(scroller)) void readOlderMessages();

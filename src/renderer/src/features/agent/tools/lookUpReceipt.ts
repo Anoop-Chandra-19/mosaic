@@ -3,14 +3,14 @@ import { readEntryHeading } from './read/formatResumeForModel';
 import type { ResumeLookup } from './readAgentToolArgs';
 import type { AgentToolRun } from './tool-run/agentToolRun';
 
-/** Something the run read, by its handle, with its words and what holds it. */
+/** An item from the run's receipt, with its handle, text, and parent handle. */
 interface ReadThing {
   handle: string;
   words: string;
   holder: string | null;
 }
 
-/** Everything the run read and gave a handle, sections first. */
+/** List receipt items that have handles, visiting each section before its contents. */
 function listReadThings(run: AgentToolRun): ReadThing[] {
   const doc = run.receipt?.doc;
   if (!doc) return [];
@@ -36,7 +36,7 @@ function listReadThings(run: AgentToolRun): ReadThing[] {
   return things;
 }
 
-/** What reading a call's arguments needs of the resume as the run read it. */
+/** Provide text matching and containment lookups for argument normalization against the receipt. */
 export function lookUpReceipt(run: AgentToolRun): ResumeLookup {
   const things = listReadThings(run);
   const holderOf = new Map(things.map((thing) => [thing.handle, thing.holder]));

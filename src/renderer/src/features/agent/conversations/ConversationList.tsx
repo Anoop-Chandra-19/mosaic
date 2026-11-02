@@ -16,13 +16,13 @@ import {
 import { groupConversations, titleConversation } from './conversationListWords';
 import { CONVERSATION_PAGE_SIZE, useConversationPages } from './useConversationPages';
 
-/** How near the end the next page is asked for: about two rows. */
+/** Load the next page within about two rows of the end. */
 const NEAR_END_PX = 80;
 
 const OPEN_FAILED = 'Couldn’t open it. Nothing was changed.';
 const DELETE_FAILED = 'Couldn’t delete it. It’s still on your computer.';
 
-/** Comes in only if the read is slow enough to see, so a quick one never flashes it. */
+/** Delay the placeholder so it does not flash during a quick read. */
 const PLACEHOLDER =
   'grid animate-in grid-cols-[0.875rem_minmax(0,1fr)] gap-x-2 gap-y-1.5 py-2.25 pr-2 pl-1 delay-150 duration-150 fill-mode-both fade-in-0';
 const PLACEHOLDER_LINE =
@@ -159,7 +159,7 @@ export function ConversationList({
   const [failedDeleteId, setFailedDeleteId] = useState<number | null>(null);
   const [motionRef, motion] = useListMotion(String(pages.moves), LIST_MOTION_ATTRIBUTE);
   const beginConfirmSwap = useSwapMotion(confirmingId, motion);
-  // Where the keyboard goes once the row it was on has changed: a row, or the first.
+  // Restore focus after a row changes: to a specific row or the first row.
   const keyboardTo = useRef<number | 'first' | null>(null);
 
   useEffect(() => {

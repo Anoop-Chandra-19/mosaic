@@ -50,6 +50,6 @@ export function describeStartRefusal(
   };
 }
 
-/** A send that came back the same: nothing was sent, so it was checked. */
+/** Describe a repeated refusal as checked, not sent, because no message was sent. */
 export const formatCheckedAgain = (time: string): string =>
   `Checked again at ${time}. Same answer.`;

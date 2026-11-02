@@ -5,7 +5,7 @@ import { useConversationStore } from '@/stores/conversationStore';
 import { useResumeStore } from '@/stores/resumeStore';
 import type { OutdatedRead, ReadOutcome } from '@shared/types/agentBridge';
 
-/** One run's reads that no longer hold, by call. */
+/** Outdated read outcomes for one run, keyed by tool call id. */
 export type ReadOutcomes = Record<string, ReadOutcome>;
 
 function groupByRun(reads: OutdatedRead[]): Record<number, ReadOutcomes> {
@@ -15,9 +15,9 @@ function groupByRun(reads: OutdatedRead[]): Record<number, ReadOutcomes> {
 }
 
 /**
- * Which reads no longer hold depends on the draft as it is now, so main is asked again when a
- * save moves it, another resume opens, or the log grows. A save, not an edit: main answers from
- * what it has stored, and a run stored the last time it heard.
+ * Refreshes outdated read outcomes from main after a draft save, a resume switch, or new
+ * transcript messages. Uses saves rather than edits because main compares stored draft state
+ * with the state recorded when the run last read it.
  */
 export function useOutdatedReads(): Record<number, ReadOutcomes> {
   const conversationId = useConversationStore((s) => s.conversationId);

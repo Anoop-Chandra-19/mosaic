@@ -12,14 +12,14 @@ interface BuiltRun {
   view: RunView;
 }
 
-/** By a run's last message: stored messages never change, so neither does the view of them. */
+/** Caches run views by their last message; stored message objects are immutable. */
 const builtRuns = new WeakMap<TranscriptMessage, BuiltRun>();
 
 /**
- * The transcript as runs: the stored messages, oldest first, folded into one view per
- * run, in order. Every message a run writes carries its id, so a run's messages are the
- * ones in a row with the same id; a message written outside a run shows in none. A run
- * already built keeps its view, so older pages landing leave the runs shown alone.
+ * Groups oldest-first transcript messages into ordered run views. Consecutive messages with
+ * the same run id belong to one run; messages with no run id are omitted. Reuses cached views
+ * when the first message, last message, and message count match, so loading older pages
+ * preserves the identities of existing run views.
  */
 export function buildRunView(messages: TranscriptMessage[]): RunView[] {
   const runs: RunView[] = [];
@@ -44,7 +44,7 @@ function readBuiltRun(messages: TranscriptMessage[], runId: number): RunView {
   return view;
 }
 
-/** The run under way goes last while the transcript hasn't read its first message yet. */
+/** Appends a placeholder for the live run until its messages enter the transcript window. */
 export function addLiveRun(runs: RunView[], liveRunId: number | null): RunView[] {
   if (liveRunId === null || runs.some((run) => run.runId === liveRunId)) return runs;
   return [
@@ -83,7 +83,7 @@ function buildRun(messages: TranscriptMessage[], runId: number): RunView {
   return run;
 }
 
-/** Absent while no request has said: unknown, not zero. */
+/** Usage stays undefined until a request reports it; missing usage means unknown, not zero. */
 function addUsage(total: ModelUsage | undefined, usage: ModelUsage | undefined) {
   if (!usage) return total;
   if (!total) return usage;
