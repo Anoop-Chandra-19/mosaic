@@ -15,6 +15,7 @@ import {
 } from '@/components/ui-kit';
 import { CHOICE_CARD_CLASSES } from '@/components/kit/controlStyles';
 import { formatRelativeTime } from '@shared/time/formatTime';
+import { formatCount } from '@/lib/formatCount';
 import { easeHeightChanges } from '@/lib/motion/easeHeightChanges';
 
 import { cn } from '@/lib/utils';
@@ -23,8 +24,6 @@ import { attempt, showToast } from '@/stores/toastStore';
 import { useTemplateStore } from '@/stores/templateStore';
 import type { ImportMode, OpenedBackup } from '@shared/types/bundle';
 import { countBundle } from './backupFiles';
-
-const count = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 
 /** "Backend, Frontend, and 2 more" */
 function listNames(names: string[], shown = 3): string {
@@ -82,8 +81,8 @@ function RestoreForm({ backup, onDone }: { backup: OpenedBackup; onDone: () => v
     closeSurface('start');
     showToast(
       effectiveMode === 'restore-all'
-        ? `Restored ${count(templates, 'template')} from the backup`
-        : `Added ${count(templates, 'template')} from the backup`
+        ? `Restored ${formatCount(templates, 'template')} from the backup`
+        : `Added ${formatCount(templates, 'template')} from the backup`
     );
     onDone();
   };
@@ -111,7 +110,7 @@ function RestoreForm({ backup, onDone }: { backup: OpenedBackup; onDone: () => v
             </Text>
             <Text as="p" variant="secondary" className="tabular-nums">
               {Number.isNaN(exportedAt) ? '' : `Backed up ${formatRelativeTime(exportedAt)} · `}
-              {count(templates, 'template')}, {count(versions, 'version')}
+              {formatCount(templates, 'template')}, {formatCount(versions, 'version')}
             </Text>
             <Text as="p" variant="secondary" className="mt-1">
               {listNames(backup.bundle.templates.map((entry) => entry.template.name))}
@@ -130,13 +129,13 @@ function RestoreForm({ backup, onDone }: { backup: OpenedBackup; onDone: () => v
               value="as-new-template"
               selected={mode}
               label="Add as new templates"
-              description={`Keeps everything here and adds the backup’s ${count(templates, 'template')} beside it.`}
+              description={`Keeps everything here and adds the backup’s ${formatCount(templates, 'template')} beside it.`}
             />
             <ModeOption
               value="restore-all"
               selected={mode}
               label="Replace everything"
-              description={`Deletes the ${count(localCount, 'template')} here, history included, and rebuilds Mosaic from the backup.`}
+              description={`Deletes the ${formatCount(localCount, 'template')} here, history included, and rebuilds Mosaic from the backup.`}
             />
           </AppRadioGroup>
         )}
@@ -160,7 +159,7 @@ function RestoreForm({ backup, onDone }: { backup: OpenedBackup; onDone: () => v
             ? 'Replace everything'
             : effectiveMode === 'restore-all'
               ? 'Restore'
-              : `Add ${count(templates, 'template')}`}
+              : `Add ${formatCount(templates, 'template')}`}
         </AppButton>
       </DialogFrameFooter>
     </>
