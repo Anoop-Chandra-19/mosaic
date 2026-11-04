@@ -207,7 +207,10 @@ test('Markdown can be copied or saved, and reads back in through Import', async 
     .getByRole('button', { name: 'Copy to clipboard' })
     .click();
   await expect(page.getByText('Markdown copied')).toBeVisible();
-  const copied = await app.evaluate(({ clipboard }) => clipboard.readText());
+  const copied = (await app.evaluate(({ clipboard }) => clipboard.readText())).replace(
+    /\r\n/g,
+    '\n'
+  );
   expect(copied).toMatch(/^# Your Name\n/);
 
   await (await openExport(page, /^Markdown/)).getByRole('button', { name: 'Save MD' }).click();
@@ -244,7 +247,9 @@ test('an export takes what is on the page, or everything the resume holds', asyn
     await exporting.getByRole('radio', { name: content }).click();
     await exporting.getByRole('button', { name: 'Copy to clipboard' }).click();
     return expect
-      .poll(() => app.evaluate(({ clipboard }) => clipboard.readText()))
+      .poll(async () =>
+        (await app.evaluate(({ clipboard }) => clipboard.readText())).replace(/\r\n/g, '\n')
+      )
       .toMatch(/^# Your Name\n/);
   };
 

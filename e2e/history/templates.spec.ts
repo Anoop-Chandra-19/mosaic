@@ -1,6 +1,5 @@
-import fs from 'node:fs';
 import { expect, type Page } from '@playwright/test';
-import { test, withApp } from '../harness/launch';
+import { removeAppProfile, test, withApp } from '../harness/launch';
 
 const mosaic = withApp();
 
@@ -152,7 +151,7 @@ test('editing alone is kept in history when the window closes', async ({ launchA
       await second.app.close();
     }
   } finally {
-    fs.rmSync(userDataDir, { recursive: true, force: true });
+    removeAppProfile(userDataDir);
   }
 });
 

@@ -11,6 +11,16 @@ import { startXvfb } from './startXvfb';
 
 const APP_DIR = path.resolve(import.meta.dirname, '../..');
 
+/** Windows may release Electron's profile handles after the app has closed. */
+export function removeAppProfile(userDataDir: string): void {
+  fs.rmSync(userDataDir, {
+    recursive: true,
+    force: true,
+    maxRetries: 10,
+    retryDelay: 100,
+  });
+}
+
 export interface LaunchedApp {
   app: ElectronApplication;
   page: Page;
@@ -103,7 +113,7 @@ async function launchApp(
 
   // Playwright otherwise adds --no-sandbox on Linux, masking sandbox regressions.
   const app = await electron.launch({ args, env, chromiumSandbox: true }).catch((error) => {
-    if (!existingUserDataDir) fs.rmSync(userDataDir, { recursive: true, force: true });
+    if (!existingUserDataDir) removeAppProfile(userDataDir);
     throw error;
   });
   const page = await app.firstWindow();
@@ -148,7 +158,7 @@ export function withApp(options?: LaunchOptions): () => LaunchedApp {
   test.afterEach(async () => {
     if (!current) return;
     await current.app.close();
-    fs.rmSync(current.userDataDir, { recursive: true, force: true });
+    removeAppProfile(current.userDataDir);
     current = undefined;
   });
   return () => {

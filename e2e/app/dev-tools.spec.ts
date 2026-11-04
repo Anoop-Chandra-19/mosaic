@@ -1,7 +1,6 @@
-import fs from 'node:fs';
 import { expect, type Page } from '@playwright/test';
 import { expectViewAt, goToView, makeHistory, runDevTool } from '../harness/devTools';
-import { test, withApp } from '../harness/launch';
+import { removeAppProfile, test, withApp } from '../harness/launch';
 
 const mosaic = withApp();
 
@@ -191,6 +190,6 @@ test('switches stay on across launches, named in the title, and the memory check
       await second.app.close();
     }
   } finally {
-    fs.rmSync(userDataDir, { recursive: true, force: true });
+    removeAppProfile(userDataDir);
   }
 });
