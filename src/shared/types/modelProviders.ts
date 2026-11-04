@@ -6,26 +6,25 @@ export type ModelProviderId =
   | 'openrouter'
   | 'openaiCompatible';
 
-/** The setting the renderer keeps the assistant's settings in; main reads it to start a run. */
+/** Storage key for the renderer's assistant settings; main reads them when starting a run. */
 export const AGENT_SETTINGS_KEY = 'agentSettings';
 
-/** A model pulled into the local Ollama that can hold a conversation. */
+/** A chat model downloaded to the local Ollama server. */
 export interface OllamaModel {
-  /** What Ollama calls it, tag included: `qwen3.5:9b`. */
+  /** Ollama model name, including its tag, such as `qwen3.5:9b`. */
   name: string;
   sizeBytes: number;
-  /** "9.7B", when Ollama says. */
+  /** Parameter count such as "9.7B", when reported by Ollama. */
   parameterSize: string | null;
-  /** The most the model supports, when Ollama says. */
+  /** Maximum context length in tokens, when reported by Ollama. */
   maxContextTokens: number | null;
-  /** The window Ollama has it loaded with now; null while it isn't loaded. */
+  /** Currently loaded context length in tokens; null if the model is not loaded. */
   loadedContextTokens: number | null;
 }
 
 /**
- * `unreachable`: nothing answered at the address. `failed`: something answered, but not
- * like the server it should be. `invalid-address`: the address isn't one
- * (see `serverAddress.ts`).
+ * `unreachable`: no response from the address. `failed`: the response did not match the
+ * expected server API. `invalid-address`: the address is invalid (see `serverAddress.ts`).
  */
 export type ServerModelsFailure = {
   ok: false;
@@ -34,7 +33,7 @@ export type ServerModelsFailure = {
 
 export type OllamaModels = { ok: true; models: OllamaModel[] } | ServerModelsFailure;
 
-/** The model names an OpenAI-compatible server lists, which is all it says about them. */
+/** Model names listed by an OpenAI-compatible server; no other model metadata is provided. */
 export type OpenAiCompatibleModels = { ok: true; models: string[] } | ServerModelsFailure;
 
 /** A provider and model the assistant has run with. */
@@ -43,13 +42,13 @@ export interface UsedModel {
   model: string;
 }
 
-/** `window.mosaic.modelProviders`: what main can find out about model providers for the renderer. */
+/** `window.mosaic.modelProviders`: provider information queried by main for the renderer. */
 export interface MosaicModelProviders {
   /** Every provider and model a run has used, the most recently used first. */
   usedModels(): Promise<UsedModel[]>;
   /**
-   * The chat models pulled into the Ollama at `address` — this machine's by default, or one
-   * on the network. Embedding-only models are left out.
+   * Chat models downloaded to the Ollama server at `address`, on this machine by default
+   * or on the network. Excludes embedding-only models.
    */
   ollamaModels(address: string): Promise<OllamaModels>;
   /** The models the OpenAI-compatible server at `address` lists. */

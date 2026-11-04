@@ -3,43 +3,43 @@ export type ModelReplyPart =
   | { type: 'text'; text: string }
   /** `providerState` goes back to the provider unchanged, for those that need it. */
   | { type: 'reasoning'; text?: string; durationMs: number; providerState?: unknown }
-  /** `args` as the model wrote them; a malformed call goes to the repair round. */
+  /** Raw model arguments; malformed calls are handled by the repair round. */
   | { type: 'toolCall'; callId: string; name: string; args: unknown };
 
 export interface ModelUsage {
   inputTokens: number;
   outputTokens: number;
-  /** Of `inputTokens`, those read from the provider's prompt cache, when it says. */
+  /** The subset of `inputTokens` read from the provider's prompt cache, when reported. */
   cachedInputTokens?: number;
 }
 
 /**
- * What the provider said, word for word, and its HTTP status, whenever it gave them; for
- * `unreachable`, what the network said. The user is shown both as they came: with their
- * own key, they are the one who fixes it.
+ * The provider's verbatim error message and HTTP status, when available; for
+ * `unreachable`, the network error message. Both are shown unchanged so users can
+ * troubleshoot requests made with their own API key.
  */
 interface ProviderWords {
   message?: string;
   httpStatus?: number;
 }
 
-/** Each adapter sorts its provider's errors into these; the pane never guesses from a status. */
+/** Adapters classify provider errors; the pane never infers the reason from an HTTP status. */
 export type ModelProviderError = ProviderWords &
   (
     | { reason: 'unreachable' }
-    /** `retryAfterMs` when the provider said how long to wait. */
+    /** `retryAfterMs` is included when the provider specifies a wait time. */
     | { reason: 'rateLimited'; retryAfterMs?: number }
     /** The provider turned the API key down. */
     | { reason: 'keyRefused' }
     /** No credits or quota left: waiting won't help. */
     | { reason: 'quotaExceeded' }
     | { reason: 'model-not-found' }
-    /** The model, or its route, can't take tools, which the assistant needs. */
+    /** The model or its route does not support the tool calls the assistant requires. */
     | { reason: 'toolsUnsupported' }
     /** The provider's safety filter refused the request. */
     | { reason: 'contentBlocked' }
     | { reason: 'context-too-long' }
-    /** Anything else; the message is all there is to show. */
+    /** An unclassified error; only its message is available to display. */
     | { reason: 'failed'; message: string }
   );
 
@@ -51,7 +51,7 @@ export type ModelStreamEvent =
   | { type: 'textDelta'; text: string }
   | { type: 'reasoningStart' }
   | { type: 'reasoningEnd'; text?: string; durationMs: number; providerState?: unknown }
-  /** A call has begun and its arguments are on their way, from a provider that streams them. */
+  /** A tool call has started; the provider is still streaming its arguments. */
   | { type: 'toolCallStart'; callId: string; name: string }
   | { type: 'toolCall'; callId: string; name: string; args: unknown }
   | { type: 'finish'; reason: 'complete' | 'outputLimit'; usage: ModelUsage | null }

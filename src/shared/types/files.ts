@@ -1,6 +1,6 @@
 /**
- * Kinds of file the app reads and writes through the system file dialogs. Each one sets
- * the dialog's file filter; main keeps the table.
+ * File types supported by the system Open and Save dialogs. Main maps each type to
+ * the dialog's file filter.
  */
 export type FileType =
   | 'json'
@@ -8,40 +8,40 @@ export type FileType =
   | 'text'
   | 'pdf'
   | 'docx'
-  /** Anything the Import dialog can read: a resume in any format it knows, or a backup. */
+  /** Any supported resume format or backup file. */
   | 'import';
 
 /**
- * The most a PDF or Word file may hold. It only stops the wrong file from being pulled into
- * memory; no resume comes close.
+ * Maximum PDF or Word file size in bytes. Prevents loading unexpectedly large files
+ * into memory.
  */
 export const MAX_FILE_BYTES = 128 * 1024 * 1024;
 
 /**
- * The most a text file may hold and still be read: JavaScript's longest string, in UTF-16
- * units, which UTF-8 bytes never undercount. The only limit on backups and JSON.
+ * Maximum text file size in bytes, including backups and JSON. Based on JavaScript's
+ * maximum string length in UTF-16 code units; UTF-8 byte counts are at least as large.
  */
 export const MAX_TEXT_BYTES = 2 ** 29 - 24;
 
 export interface OpenedFile {
   /** The file's name, without its folder. */
   name: string;
-  /** Its contents as they are on disk; text files are decoded by whoever reads them. */
+  /** Raw file contents. The caller decodes text files. */
   bytes: Uint8Array;
 }
 
 /**
- * `window.mosaic.files`: the system Save and Open dialogs. Main does the reading and
- * writing, and only ever at a path the user picked in the dialog.
+ * `window.mosaic.files` opens the system Save and Open dialogs. Main reads and writes
+ * files only at paths the user selects in those dialogs.
  */
 export interface MosaicFiles {
   /** Writes `content` where the user chooses. Resolves with the file's name, or null if cancelled. */
   save(type: FileType, suggestedName: string, content: string | Uint8Array): Promise<string | null>;
-  /** One file the user chooses, or null if cancelled. */
+  /** Opens a file selected by the user. Returns null if cancelled. */
   open(type: FileType): Promise<OpenedFile | null>;
 }
 
-/** A text file's contents: UTF-8, without a byte-order mark if it has one. */
+/** Decodes UTF-8 text and removes a leading byte-order mark, if present. */
 export function decodeText(bytes: Uint8Array): string {
   return new TextDecoder().decode(bytes);
 }

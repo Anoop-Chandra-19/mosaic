@@ -7,26 +7,26 @@ import type {
 } from './agentConversation';
 import type { AgentRunEvent } from './agentRunEvents';
 
-/** Longer than any ask; it only stops a runaway paste. */
+/** High limit intended only to guard against oversized pastes. */
 export const MAX_AGENT_MESSAGE_LENGTH = 100_000;
 
-/** What the user sent, on the conversation they sent it in: null starts a new one. */
+/** A user message and its conversation; a null conversation ID starts a new conversation. */
 export interface AgentStartRequest {
   conversationId: number | null;
   text: string;
-  /** The template open when it was sent; null with none open. */
+  /** The template open when the message was sent; null if none was open. */
   templateId: string | null;
 }
 
-/** Carry on from the conversation's log with no new message: the design's Send again. */
+/** Continues from the conversation's log without a new message, for "Send again". */
 export interface AgentCarryOnRequest {
   conversationId: number;
   templateId: string | null;
 }
 
 /**
- * `noApiKey`: no key is saved for the provider Settings names. `keychainRefused`: the
- * keychain holds the key but wouldn't give it back (locked, or its prompt was turned down).
+ * `noApiKey`: no key is saved for the provider selected in Settings. `keychainRefused`:
+ * the keychain holds the key but denied access (locked, or its prompt was declined).
  */
 export type ModelProviderRefusal = 'noApiKey' | 'keychainRefused';
 
@@ -43,26 +43,26 @@ export interface MessagePage {
   limit: number;
 }
 
-/** A conversation in the list, as facts: the page words them. */
+/** Conversation list data; the renderer supplies the display text. */
 export interface ConversationSummary {
   id: number;
-  /** The start of the first thing asked; null if it has no words. */
+  /** The start of the first user message; null if there is no text to use. */
   title: string | null;
   lastActiveAt: number;
-  /** The resumes its runs worked on and that still exist, last worked on first. */
+  /** Names of existing resumes its runs worked on, most recently used first. */
   resumes: string[];
-  /** How its last run stopped, if that is the last thing in its log. */
+  /** How the last run stopped, if the log ends with that stop message. */
   stop: { body: RunStoppedMessageBody; runModel: RunModel } | null;
 }
 
-/** Most recently active first, so a page carries on from the last one's place in that order. */
+/** Conversations are ordered by most recent activity; each page continues from the previous one. */
 export interface ConversationPage {
   /** The page starts just after this conversation; absent for the first page. */
   after?: { lastActiveAt: number; id: number };
   limit: number;
 }
 
-/** A run's event, numbered from 1 within the run, so a follower can tell runs apart. */
+/** Identifies the run and numbers its events from 1 so subscribers can distinguish runs. */
 export interface AgentRunEnvelope {
   conversationId: number;
   runId: number;
@@ -70,7 +70,7 @@ export interface AgentRunEnvelope {
   event: AgentRunEvent;
 }
 
-/** A tool call main sends the page to run. */
+/** A tool call sent by main for the renderer to execute. */
 export interface AgentToolCall {
   runId: number;
   callId: string;
@@ -78,14 +78,14 @@ export interface AgentToolCall {
   args: unknown;
 }
 
-/** The page's answer to a call; `failed` when running it threw. */
+/** The renderer's answer to a tool call; `ok: false` if execution threw. */
 export type AgentToolAnswer =
   | { ok: true; result: AgentToolResult }
   | { ok: false; message: string };
 
 /**
- * What became of a read that no longer holds: the model was told to read again, or nothing has
- * asked it since and the draft has moved on, or another resume is open.
+ * Why a read is outdated: the model was told to read again, the draft changed without
+ * that instruction, or another resume is open.
  */
 export type ReadOutcome = 'askedAgain' | 'edited' | 'otherResume';
 
@@ -96,9 +96,9 @@ export interface OutdatedRead {
 }
 
 /**
- * `window.mosaic.agent`: the assistant's runs, which happen in main. The page starts and
- * stops them, follows their events, reads the log in pages, and runs the tools a run calls,
- * since the draft and the suggestions live in the page.
+ * `window.mosaic.agent`: assistant runs execute in main. The renderer starts and stops
+ * runs, subscribes to their events, reads the log in pages, and executes tool calls
+ * because it owns the draft and suggestions.
  */
 export interface MosaicAgent {
   start(request: AgentStartRequest): Promise<AgentStart>;
@@ -106,18 +106,18 @@ export interface MosaicAgent {
   /** Stops the run if it is still going; its end is stored as `cancelled`. */
   stop(runId: number): Promise<void>;
   readMessages(conversationId: number, page: MessagePage): Promise<TranscriptMessage[]>;
-  /** One call's answer in full, which pages leave out. `messageId` is the message holding it. */
+  /** A full tool result, omitted from message pages. `messageId` identifies the message containing it. */
   readToolResult(messageId: number, callId: string): Promise<ToolResult>;
-  /** The conversation's reads that no longer hold, against the draft of `templateId` now. */
+  /** The conversation's outdated reads, compared with the current draft of `templateId`. */
   readOutdatedReads(conversationId: number, templateId: string | null): Promise<OutdatedRead[]>;
-  /** The conversation used last, which the pane opens on; null before the first run. */
+  /** The last used conversation, opened by the pane; null before the first run. */
   readLastConversationId(): Promise<number | null>;
   readConversations(page: ConversationPage): Promise<ConversationSummary[]>;
   readConversationTitle(conversationId: number): Promise<string | null>;
-  /** Stops its run first if one is going. Removes it from the disk, with no way back. */
+  /** Stops the conversation's active run, if any, then permanently deletes the conversation from disk. */
   deleteConversation(conversationId: number): Promise<void>;
-  /** Every run's events; returns the call that stops following them. */
+  /** Subscribes to all runs' events; returns an unsubscribe function. */
   onEvent(follow: (envelope: AgentRunEnvelope) => void): () => void;
-  /** The page's one tool runner; returns the call that removes it. */
+  /** Registers the renderer's only tool runner; returns a function to unregister it. */
   onToolCall(run: (call: AgentToolCall) => Promise<AgentToolResult>): () => void;
 }

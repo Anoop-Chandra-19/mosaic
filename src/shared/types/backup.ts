@@ -1,9 +1,9 @@
-/** How often main writes a backup into the chosen folder on its own. */
+/** How often main automatically writes a backup to the chosen folder. */
 export type BackupFrequency = 'off' | 'daily' | 'weekly';
 
 export const BACKUP_FREQUENCIES: readonly BackupFrequency[] = ['off', 'daily', 'weekly'];
 
-/** The most recent backup, by hand or on schedule, counted for Settings to report. */
+/** Time, counts, and size of the most recent manual or scheduled backup, shown in Settings. */
 export interface BackupRecord {
   at: number;
   templates: number;
@@ -16,19 +16,20 @@ export interface BackupStatus {
   /** Where scheduled backups go, shortened for display ("~/Backups"); null until chosen. */
   folder: string | null;
   last: BackupRecord | null;
-  /** The last scheduled backup that could not be written, if none has been since. */
+  /** The most recent scheduled backup failure, cleared after a scheduled backup succeeds or the folder changes. */
   failure: { at: number; message: string } | null;
 }
 
 /**
- * `window.mosaic.backup`: full backups, written by main. The renderer never names a
- * folder or a path; the user picks both in the system dialogs.
+ * `window.mosaic.backup`: full backups, written by main. The renderer never supplies a
+ * folder or file path; the user chooses them in system dialogs.
  */
 export interface MosaicBackup {
   status(): Promise<BackupStatus>;
   /**
-   * Every template and its history, to a file the user picks. Null if they cancelled;
-   * 'empty', with no dialog, if there are no templates, since restore refuses that file.
+   * Writes every template and its history to a file the user chooses. Returns null on
+   * cancellation, or 'empty' without a dialog if there are no templates, since restore
+   * refuses an empty backup.
    */
   backUpNow(): Promise<{ status: BackupStatus; fileName: string } | 'empty' | null>;
   /**

@@ -14,28 +14,28 @@ export function isKeyedProvider(provider: ModelProviderId): provider is KeyedPro
   return (KEYED_PROVIDERS as readonly ModelProviderId[]).includes(provider);
 }
 
-/** Longer than any provider's keys; this only stops a runaway paste. */
+/** Exceeds provider key lengths; guards against oversized pastes. */
 export const MAX_KEY_LENGTH = 4096;
 
 /**
- * Where a saved key lives: the OS keychain (Keychain, Credential Manager, the Secret
- * Service), or main's memory until Mosaic quits. Never the database, never a file.
+ * Keys are stored in the OS keychain (Keychain, Credential Manager, or Secret Service),
+ * or in main's memory until Mosaic quits. Never in the database or a file.
  */
 export type KeyLocation = 'keychain' | 'session';
 
-/** A saved key, as facts: where it is, when it was saved, and when it last passed a check. */
+/** Saved key metadata: storage location, save time, and last successful check. */
 export interface SavedKey {
   where: KeyLocation;
   /** Milliseconds since the epoch. */
   savedAt: number;
-  /** Null: saved without checking, and not checked since. */
+  /** Null if saved without checking and not checked since. */
   checkedAt: number | null;
-  /** The provider turned it down in a run; gone once a check passes or a run finishes. */
+  /** Records a provider refusal during a run; cleared when a check passes or a run finishes. */
   refusedAt?: number;
 }
 
 export interface SecretsStatus {
-  /** Whether this machine has a keychain Mosaic can use — learned the first time it writes one. */
+  /** Keychain availability, determined on the first attempt to write a key. */
   keychain: 'unknown' | 'available' | 'unavailable';
   saved: Partial<Record<KeyedProvider, SavedKey>>;
 }
@@ -47,38 +47,38 @@ export interface SaveKeyOptions {
   forgetOnClose: boolean;
 }
 
-/** What a check found, and the keys as they stand after it. Nothing in it echoes the key. */
+/** Check result and updated key status. Never includes the key itself. */
 export type KeyCheck =
   | { ok: true; status: SecretsStatus }
   | {
       ok: false;
       /**
-       * `refused`: the provider turned the key down. `unreachable`: no answer (offline, or
-       * timed out). `failed`: any other error, with its HTTP status. Only checking a saved
-       * key: `no-key`, nothing saved; `keychain`, the keychain would not give the key back.
+       * `refused`: the provider rejected the key. `unreachable`: no response (offline or
+       * timed out). `failed`: any other error, with its HTTP status. When checking a saved
+       * key only: `no-key` means none is saved; `keychain` means the keychain denied access.
        */
       reason: 'refused' | 'unreachable' | 'failed' | 'no-key' | 'keychain';
       httpStatus?: number;
     };
 
-/** What forgetting every key did. */
+/** Result of deleting all keys. */
 export interface ForgetResult {
   status: SecretsStatus;
   /**
-   * Keychain entries Mosaic had no record of that the keychain wouldn't delete, so they may
-   * still be there: left by an earlier install, or by a database since erased.
+   * Unrecorded keychain entries that could not be deleted and may still exist, left by
+   * an earlier install or a database that has since been erased.
    */
   unconfirmed: KeyedProvider[];
 }
 
-/** What Erase everything couldn't confirm gone: only keys, since the rest goes as files. */
+/** Keys whose deletion "Erase everything" could not confirm; other data is deleted as files. */
 export interface EraseResult {
   unconfirmedKeys: KeyedProvider[];
 }
 
 /** The chat models a key can use, as the provider listed them. */
 export interface ModelList {
-  /** Newest first, where the provider dates them. */
+  /** Newest first when the provider supplies model dates. */
   models: string[];
   /** Models listed but left out: embeddings, speech, images, or (OpenRouter) no tool calls. */
   hiddenCount: number;
@@ -91,26 +91,26 @@ export type ModelListing =
   | { ok: false; reason: Extract<KeyCheck, { ok: false }>['reason']; httpStatus?: number };
 
 /**
- * `window.mosaic.secrets`: API keys, kept by main. A key goes in and never comes back out —
- * main makes every call that needs one.
+ * `window.mosaic.secrets`: API keys managed by main. The renderer can submit keys but
+ * never read them back; main makes every call that needs a key.
  */
 export interface MosaicSecrets {
-  /** Answers without touching the keychain, so opening Settings never raises a prompt. */
+  /** Returns status without accessing the keychain, so opening Settings never triggers a prompt. */
   status(): Promise<SecretsStatus>;
   /**
-   * Checks the key with the provider, and keeps it only if the check passes; a key already
-   * saved stays until then. Kept in the keychain, or for the session if asked to forget it
-   * or if the keychain refuses it.
+   * Checks the key with the provider and saves it only if the check passes; an existing
+   * key is preserved until then. Stores it in the keychain, or in memory for the session
+   * if forget-on-close is requested or the keychain refuses it.
    */
   save(provider: KeyedProvider, key: string, options: SaveKeyOptions): Promise<KeyCheck>;
-  /** Checks the saved key again, for a key saved without checking. */
+  /** Checks a saved key, including one saved without checking. */
   check(provider: KeyedProvider): Promise<KeyCheck>;
   /**
-   * The chat models the saved key can use. A check lists them too, and main keeps the last
-   * list for each key until Mosaic closes; `refresh` asks the provider again.
+   * Lists chat models available to the saved key. Checks also fetch this list. Main caches
+   * the last list for each key until Mosaic closes; `refresh` queries the provider again.
    */
   listModels(provider: KeyedProvider, refresh: boolean): Promise<ModelListing>;
   remove(provider: KeyedProvider): Promise<SecretsStatus>;
-  /** Every key, from both places. */
+  /** Deletes all keys from both the keychain and session memory. */
   forgetAll(): Promise<ForgetResult>;
 }

@@ -13,7 +13,7 @@ import type { ResumeData } from './resume';
 
 /*
  * The contract between the renderer and main's database: what `window.mosaic.db` can do,
- * and how each outcome crosses IPC. The records it hands out are in `db.ts`.
+ * and how each outcome crosses IPC. The returned records are defined in `db.ts`.
  */
 
 /**
@@ -35,13 +35,13 @@ export interface MosaicDb {
     open(id: string): Promise<Draft>;
   };
   drafts: {
-    /** A template's draft, read without opening the template or remembering it. */
+    /** Reads a template's draft without opening it or changing the last active template. */
     get(templateId: string): Promise<Draft>;
     /** Refused with `stale-rev` when `rev` is older than the stored one. */
     save(templateId: string, doc: ResumeData, rev: number): Promise<void>;
     /**
      * Replaces the draft. When `isRecorded`, unsaved edits are kept as a "Before importing …"
-     * version and the import gets a row of its own.
+     * version and the import is saved as a separate version.
      */
     importInto(
       templateId: string,
@@ -66,7 +66,7 @@ export interface MosaicDb {
      */
     snapshot(templateId: string, occasion: SnapshotOccasion): Promise<VersionMeta>;
     /**
-     * Keeps the draft as it stands after applying suggestions. `summary` says what landed
+     * Saves the draft after applying suggestions. `summary` describes the applied changes
      * ("4 suggestions in Harbor Freight Labs"), unless the user named it. `add` is refused
      * with `stale-rev` unless the newest version is the assistant's.
      */
@@ -76,21 +76,21 @@ export interface MosaicDb {
       history: AppliedHistory
     ): Promise<VersionMeta>;
     /**
-     * Puts a version back as its template's draft. Template-scoped: the version must be
-     * one of that template's own, so each template's history stays self-contained.
+     * Restores a version as its template's draft. The version must belong to the given
+     * template, keeping each template's history separate.
      * `shouldKeepDraft` keeps unsaved edits as a "Before restoring …" version first.
      */
     restore(templateId: string, versionId: string, shouldKeepDraft: boolean): Promise<Draft>;
     /** A new template from this version; the version says which template it came from. */
     duplicate(versionId: string): Promise<TemplateSummary>;
-    /** Names any version, which keeps it for good; a named one is renamed. */
+    /** Names any version to keep it indefinitely; renames an already named version. */
     rename(versionId: string, name: string): Promise<VersionMeta>;
     /**
-     * Deletes a version, never the newest: the draft is measured from it. Its children
-     * link to its parent instead. Refused with `invalid-argument` for the newest.
+     * Deletes a version, except the newest, which is used to track changes to the draft.
+     * Its children link to its parent instead. Refused with `invalid-argument` for the newest.
      */
     remove(versionId: string): Promise<void>;
-    /** Undoes a `remove` made since the app started. `not-found` once it can't be. */
+    /** Undoes a `remove` made since the app started. Fails with `not-found` if undo is no longer possible. */
     putBack(versionId: string): Promise<VersionMeta>;
   };
   settings: {
@@ -112,7 +112,7 @@ export interface MosaicDb {
 export type DbErrorCode = 'not-found' | 'stale-rev' | 'invalid-argument' | 'internal';
 
 /**
- * How a call's outcome crosses IPC. Failures travel as data: Electron keeps only the
+ * How a call's outcome crosses IPC. Failures are returned as data: Electron keeps only the
  * message of an error thrown across `invoke`, and the renderer needs the code.
  */
 export type DbResult<T> =
