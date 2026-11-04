@@ -1,4 +1,5 @@
 import { formatSeconds, toSeconds } from '@shared/time/formatTime';
+import { formatCount } from '@/lib/formatCount';
 import type { RunPart } from '@/types/agentRunView';
 import { describeStepNote, readStepWords } from './stepWords';
 
@@ -160,7 +161,7 @@ const NO_TIME_UNDER_MS = 1000;
 /** Shows elapsed time only once it reaches one second. */
 export const isTimeShown = (ms: number) => ms >= NO_TIME_UNDER_MS;
 
-export const countSteps = (count: number) => `${count} ${count === 1 ? 'step' : 'steps'}`;
+export const countSteps = (count: number) => formatCount(count, 'step');
 
 /** "Thought for 3.4s": what a line of only thinking says once it is over. */
 export const describeThinking = ({ rows }: RunLineItems) =>

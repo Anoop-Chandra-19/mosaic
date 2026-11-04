@@ -1,6 +1,7 @@
 import { ChevronLeft, TriangleAlert } from 'lucide-react';
 import { AppButton, AppToggleGroup, AppToggleGroupItem, Text } from '@/components/ui-kit';
 import { transitionClasses } from '@/features/view-transitions/transitionClasses';
+import { formatCount } from '@/lib/formatCount';
 import { cn } from '@/lib/utils';
 import type { ResumePreviewMeta } from '@/types/preview';
 import type { Proposal } from '@/types/agentProposal';
@@ -47,8 +48,7 @@ interface ReviewBarProps {
   preview: PreviewBarControls | null;
 }
 
-const countSuggestions = (count: number) =>
-  `${count} ${count === 1 ? 'suggestion' : 'suggestions'}`;
+const countSuggestions = (count: number) => formatCount(count, 'suggestion');
 
 /** The bar's two lines: after Apply, with nothing waiting, or while reviewing. */
 function describeReview(proposals: Proposal[], applied: ReviewBarProps['applied']) {

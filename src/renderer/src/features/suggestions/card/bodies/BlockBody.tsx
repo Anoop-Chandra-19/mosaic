@@ -1,6 +1,7 @@
 import { Eye, EyeOff } from 'lucide-react';
 import { Text } from '@/components/ui-kit';
 import { ADDED_ROW, DIFF_MARKS } from '@/features/document-diff/diffMarks';
+import { formatCount } from '@/lib/formatCount';
 import { cn } from '@/lib/utils';
 import { formatEntryHeading } from '@/lib/resume/entryHeading';
 import { findEntry, findSection } from '@/lib/resume/proposalAnchor';
@@ -24,8 +25,6 @@ interface Block {
   isMany: boolean;
 }
 
-const countOf = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
-
 function readEntryBlock(entry: ResumeEntry): Block {
   return {
     heading: formatEntryHeading(entry) || 'Untitled entry',
@@ -33,7 +32,7 @@ function readEntryBlock(entry: ResumeEntry): Block {
     isSection: false,
     rows: entry.bullets.map((bullet) => bullet.text),
     areRowsBullets: true,
-    count: countOf(entry.bullets.length, 'bullet', 'bullets'),
+    count: formatCount(entry.bullets.length, 'bullet', 'bullets'),
     isMany: entry.bullets.length !== 1,
   };
 }
@@ -46,8 +45,8 @@ function readSectionBlock(section: ResumeSection): Block {
     rows: section.items.map((item) => (isLines ? (item.text ?? '') : formatEntryHeading(item))),
     areRowsBullets: false,
     count: isLines
-      ? countOf(section.items.length, 'line', 'lines')
-      : countOf(section.items.length, 'entry', 'entries'),
+      ? formatCount(section.items.length, 'line', 'lines')
+      : formatCount(section.items.length, 'entry', 'entries'),
     isMany: section.items.length !== 1,
   };
 }

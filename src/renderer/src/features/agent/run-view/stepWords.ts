@@ -1,6 +1,7 @@
 import type { AgentToolName } from '@shared/agent-tools/agentTools';
 import { isAgentToolName } from '@shared/agent-tools/agentTools';
 import type { ToolTarget } from '@shared/types/agentConversation';
+import { formatCount } from '@/lib/formatCount';
 
 /*
  * What a step is called on the run line, per tool: while it runs, once done, and when it was
@@ -133,7 +134,7 @@ const NOTE_BY_KIND: {
   version: ({ version }) => version,
   place: describePlace,
   list: ({ of, entry }) => (of === 'bullet' ? (entry ?? null) : null),
-  term: ({ count }) => (count > 0 ? `${count} ${count === 1 ? 'place' : 'places'}` : null),
+  term: ({ count }) => (count > 0 ? formatCount(count, 'place') : null),
 };
 
 /** Describes the tool target below the step name; returns null when there is no useful detail. */

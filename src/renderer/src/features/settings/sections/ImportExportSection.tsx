@@ -13,6 +13,7 @@ import {
 } from '@/components/ui-kit';
 import { backUpNow, chooseBackup, fileFailure } from '@/features/backup/backupFiles';
 import { formatRelativeTime } from '@shared/time/formatTime';
+import { formatCount } from '@/lib/formatCount';
 import { filesService } from '@/lib/services/filesService';
 import { useOverlayStore } from '@/stores/overlayStore';
 import { explainFailure, showToast } from '@/stores/toastStore';
@@ -25,8 +26,6 @@ const FREQUENCY_OPTIONS: { value: BackupFrequency; label: string }[] = [
   { value: 'daily', label: 'Daily' },
   { value: 'weekly', label: 'Weekly' },
 ];
-
-const count = (n: number, one: string) => `${n} ${one}${n === 1 ? '' : 's'}`;
 
 function formatSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
@@ -202,7 +201,7 @@ export function ImportExportSection({ onCloseSettings }: { onCloseSettings: () =
           <Note icon={Info} className="mt-4 tabular-nums">
             Last backup:{' '}
             <b className="font-strong text-foreground">{formatRelativeTime(last.at)}</b> ·{' '}
-            {count(last.templates, 'template')}, {count(last.versions, 'version')} ·{' '}
+            {formatCount(last.templates, 'template')}, {formatCount(last.versions, 'version')} ·{' '}
             {formatSize(last.bytes)}
           </Note>
         )
