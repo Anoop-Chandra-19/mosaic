@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import Database from 'better-sqlite3';
 import { expect } from '@playwright/test';
-import { test } from '../harness/launch';
+import { removeAppProfile, test } from '../harness/launch';
 
 test('opens its database in the profile and closes it cleanly on quit', async ({ launchApp }) => {
   const { app, userDataDir } = await launchApp();
@@ -27,6 +27,6 @@ test('opens its database in the profile and closes it cleanly on quit', async ({
       db.close();
     }
   } finally {
-    fs.rmSync(userDataDir, { recursive: true, force: true });
+    removeAppProfile(userDataDir);
   }
 });

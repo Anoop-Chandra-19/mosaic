@@ -1,6 +1,5 @@
-import fs from 'node:fs';
 import { expect } from '@playwright/test';
-import { test } from '../harness/launch';
+import { removeAppProfile, test } from '../harness/launch';
 
 const KEY = 'sk-fictional-key-for-the-log-test';
 
@@ -22,7 +21,7 @@ async function saveKeyAndFail({ page }: Launched): Promise<void> {
 
 async function closeLaunch({ app, userDataDir }: Launched): Promise<void> {
   await app.close();
-  fs.rmSync(userDataDir, { recursive: true, force: true });
+  removeAppProfile(userDataDir);
 }
 
 test('--dev-log prints each bridge call and the page’s errors, never what a call carried', async ({

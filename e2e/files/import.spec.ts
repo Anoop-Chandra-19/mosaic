@@ -98,7 +98,9 @@ test('the review lists what Mosaic found no place for, ready to copy', async () 
   await importing.getByRole('button', { name: 'Copy' }).click();
   await expect(importing.getByRole('button', { name: 'Copied' })).toBeVisible();
   const copied = await app.evaluate(({ clipboard }) => clipboard.readText());
-  expect(copied).toBe('Writes programs for engines that do not exist yet\nCertifications');
+  expect(copied.replace(/\r\n/g, '\n')).toBe(
+    'Writes programs for engines that do not exist yet\nCertifications'
+  );
 });
 
 test('the review drops what was misread, places what was left out, and shows the file', async () => {

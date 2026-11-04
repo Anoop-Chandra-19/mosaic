@@ -1,6 +1,5 @@
-import fs from 'node:fs';
 import { expect, type Page } from '@playwright/test';
-import { test, withApp } from '../harness/launch';
+import { removeAppProfile, test, withApp } from '../harness/launch';
 
 async function startBlank(page: Page) {
   await page.getByRole('button', { name: /Blank resume/ }).click();
@@ -32,7 +31,7 @@ test('a draft survives quitting and relaunching', async ({ launchApp }) => {
       await second.app.close();
     }
   } finally {
-    fs.rmSync(userDataDir, { recursive: true, force: true });
+    removeAppProfile(userDataDir);
   }
 });
 

@@ -1,6 +1,5 @@
-import fs from 'node:fs';
 import { expect } from '@playwright/test';
-import { test, withApp } from '../harness/launch';
+import { removeAppProfile, test, withApp } from '../harness/launch';
 
 const mosaic = withApp();
 
@@ -28,6 +27,8 @@ test('the Start panel is worked by keyboard or pointer, with one highlight for b
   // Pointing at an option moves the highlight there too; the keys go on from it.
   const importing = page.getByRole('button', { name: /Import what you have/ });
   await importing.hover();
+  // A resting desktop pointer can already be here; move within the card as well.
+  await importing.hover({ position: { x: 8, y: 8 } });
   await expect(importing).toBeFocused();
   await expect(blank).not.toBeFocused();
   await page.keyboard.press('ArrowDown');
@@ -69,6 +70,6 @@ test('the bridge reaches the database, and main checks what it is sent', async (
     expect(calls.refused).toMatchObject({ ok: false, code: 'invalid-argument' });
   } finally {
     await app.close();
-    fs.rmSync(userDataDir, { recursive: true, force: true });
+    removeAppProfile(userDataDir);
   }
 });

@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import { expect } from '@playwright/test';
-import { test } from './launch';
+import { removeAppProfile, test } from './launch';
 import { startXvfb } from './startXvfb';
 
 test.skip(process.platform !== 'linux', 'Xvfb desktop isolation is Linux-only');
@@ -67,7 +67,7 @@ test('Electron uses its worker desktop instead of inherited display settings', a
       });
     } finally {
       await app.close();
-      fs.rmSync(userDataDir, { recursive: true, force: true });
+      removeAppProfile(userDataDir);
     }
   } finally {
     for (const [key, value] of Object.entries(inherited)) {

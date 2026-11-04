@@ -1,10 +1,9 @@
-import fs from 'node:fs';
 import { expect, type ElectronApplication, type Page } from '@playwright/test';
-import { test } from '../harness/launch';
+import { removeAppProfile, test } from '../harness/launch';
 
-// Every launch runs without a session bus (see launch.ts), so there is no Secret Service:
-// these tests walk the no-keychain fallback. The keychain itself is covered by unit tests
-// over a fake keyring, and by hand on a desktop.
+// Linux launches have no session bus (see launch.ts), so no Secret Service. Only Linux
+// exercises the no-keychain fallback here; Windows and macOS still have native keychains.
+// The keychain itself is covered by unit tests over a fake keyring, and by hand on a desktop.
 
 const KEY = 'sk-ant-e2e-made-up-key';
 
@@ -43,6 +42,7 @@ function kernelKeyringEntries(): string[] {
 test('with no keychain, a key is checked, kept for the session, and forgotten', async ({
   launchApp,
 }) => {
+  test.skip(process.platform !== 'linux', 'Requires Linux without a Secret Service session');
   const first = await launchApp();
   const { app, page, userDataDir, errors } = first;
   try {
@@ -115,7 +115,8 @@ test('with no keychain, a key is checked, kept for the session, and forgotten', 
       await second.app.close();
     }
   } finally {
-    fs.rmSync(userDataDir, { recursive: true, force: true });
+    await app.close();
+    removeAppProfile(userDataDir);
   }
 });
 
@@ -135,6 +136,6 @@ test('a pasted key with spaces is caught before anything is sent', async ({ laun
     expect(await page.evaluate(() => window.mosaic.secrets.status())).toMatchObject({ saved: {} });
   } finally {
     await app.close();
-    fs.rmSync(userDataDir, { recursive: true, force: true });
+    removeAppProfile(userDataDir);
   }
 });

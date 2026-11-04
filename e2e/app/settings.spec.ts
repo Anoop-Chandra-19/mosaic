@@ -1,6 +1,5 @@
-import fs from 'node:fs';
 import { expect, type Page } from '@playwright/test';
-import { test, withApp } from '../harness/launch';
+import { removeAppProfile, test, withApp } from '../harness/launch';
 
 async function openSettings(page: Page, section: string) {
   await page.getByRole('button', { name: 'Open settings' }).click();
@@ -303,7 +302,7 @@ test('settings survive quitting and relaunching', async ({ launchApp }) => {
       await second.app.close();
     }
   } finally {
-    fs.rmSync(userDataDir, { recursive: true, force: true });
+    removeAppProfile(userDataDir);
   }
 });
 
@@ -353,7 +352,17 @@ test('Settings lists every keyboard shortcut, in its own section', async () => {
 
   const documentGroup = settings.getByRole('region', { name: 'Document' });
   await expect(documentGroup.getByText('Name version')).toBeVisible();
-  await expect(settings.getByText('Keys are shown for Linux')).toBeVisible();
+  const platform = await page.evaluate(() => window.mosaic.platform);
+  const platformNames: Record<string, string> = {
+    darwin: 'macOS',
+    win32: 'Windows',
+    linux: 'Linux',
+  };
+  await expect(
+    settings.getByText(
+      `Keys are shown for ${platformNames[platform] ?? platform}, the system Mosaic is running on.`
+    )
+  ).toBeVisible();
   expect(errors).toEqual([]);
 });
 
@@ -407,6 +416,6 @@ test('a launch opens what Settings says: the Start panel, or the template picker
       await third.app.close();
     }
   } finally {
-    fs.rmSync(userDataDir, { recursive: true, force: true });
+    removeAppProfile(userDataDir);
   }
 });
