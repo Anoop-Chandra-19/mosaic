@@ -1,3 +1,4 @@
+import fs from 'node:fs';
 import { expect, type ElectronApplication, type Page } from '@playwright/test';
 import { removeAppProfile, test } from '../harness/launch';
 
