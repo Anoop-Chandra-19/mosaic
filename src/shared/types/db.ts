@@ -1,16 +1,16 @@
 import type { ResumeData } from './resume';
 
 /*
- * Records the main-process database hands out. Both sides import these: main's
- * repositories return them, and the renderer receives them over the preload bridge.
+ * Records returned by the main-process database repositories and received by the
+ * renderer over the preload bridge. Both processes import these types.
  * Timestamps are epoch milliseconds.
  */
 
 export const MAX_DB_TEXT_LENGTH = 200;
 
 /**
- * What main accepts as an ID or a name. A restore holds to it as well, or it could store
- * a template nothing can save to or remove.
+ * Validates IDs and names accepted by main. Restores use the same rules so restored
+ * templates can still be saved and removed.
  */
 export function isDbText(value: unknown): value is string {
   return typeof value === 'string' && value.trim() !== '' && value.length <= MAX_DB_TEXT_LENGTH;
@@ -28,9 +28,9 @@ export type VersionSource =
   | 'before-import' // the draft an import replaced
   | 'restore' // produced by restoring an older version
   | 'before-restore' // the draft a restore replaced
-  | 'edit' // editing alone, kept for the user as they go
-  | 'switched' // where the draft stood when another template took the editor
-  | 'closed' // where the draft stood when the window closed
+  | 'edit' // automatic snapshot during editing
+  | 'switched' // the draft when the user switched to another template
+  | 'closed' // the draft when the window closed
   | 'assistant' // the draft right after accepted suggestions were applied
   | 'before-apply'; // the draft just before accepted suggestions were applied
 
@@ -39,18 +39,18 @@ export type SnapshotOccasion = Extract<
   'edit' | 'switched' | 'closed' | 'before-apply'
 >;
 
-/** Naming the draft as a version of its own, or as a revision of the newest version. */
+/** Names the draft as a new version or a revision of the newest version. */
 export type NamingMode = 'new' | 'add';
 
-/** How applied suggestions go into history: their own version, added to the newest, or named. */
+/** Records applied suggestions as a new version, a revision of the newest, or a named version. */
 export type AppliedHistory = { mode: 'new' } | { mode: 'add' } | { mode: 'named'; name: string };
 
 export interface VersionMeta {
   id: string;
   templateId: string;
-  /** Its place in the template's history when it was taken: "v7". Deleting others never changes it. */
+  /** The version number in the template's history, as in "v7". Deleting other versions never changes it. */
   number: number;
-  /** Additions to that number while it was the newest: 0 is v7 itself, 1 is v7.1. */
+  /** Revisions are added only to the newest version number: 0 is v7, 1 is v7.1. */
   revision: number;
   parentId: string | null;
   kind: VersionKind;
@@ -59,7 +59,10 @@ export interface VersionMeta {
   summary: string;
   /** The one section an edit snapshot touched, by the label it had then. */
   section: string | null;
-  /** The template rev the snapshot was taken at. The draft is clean iff its rev matches the head's. */
+  /**
+   * The template's rev at the snapshot. The draft is clean if and only if its rev matches
+   * the newest version's rev.
+   */
   rev: number;
   createdAt: number;
 }
@@ -84,7 +87,7 @@ export interface TemplateSummary {
 export interface Draft {
   templateId: string;
   doc: ResumeData;
-  /** Anchor-invalidation counter: changes whenever the document does. */
+  /** Increments whenever the document changes, invalidating the agent's anchors. */
   rev: number;
 }
 

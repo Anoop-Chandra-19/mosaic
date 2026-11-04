@@ -1,13 +1,13 @@
 import type { ModelProviderError, ModelReplyPart, ModelUsage } from './modelReply';
 
 /*
- * A conversation is an append-only log of messages, read in `seq` order. Each message's
- * body is stored as JSON and never changed, so a body written once must stay readable:
- * changes are additive (new optional fields, new types), and anything else needs an
- * upgrade step on read.
+ * Conversation messages are stored in `seq` order. New messages are added; existing
+ * message bodies are never edited. Bodies are stored as JSON and must stay readable.
+ * Add optional fields or new message types for compatible changes. Other changes need
+ * an upgrade step when reading older messages.
  */
 
-/** A part of the resume attached to a message, labelled as it was when sent. */
+/** A resume attachment with the label it had when the message was sent. */
 export interface ResumeRef {
   sectionId: string;
   entryId?: string;
@@ -19,11 +19,11 @@ export interface UserMessageBody {
   type: 'user';
   text: string;
   resume: ResumeRef[];
-  /** The attached parts are the only ones a suggestion may change. */
+  /** When true, suggestions may change only the attached parts of the resume. */
   isLimit: boolean;
 }
 
-/** A request of a step that failed and went again, and how long it waited first. */
+/** A failed model request and the delay before retrying it. */
 export interface StepRetry {
   error: ModelProviderError;
   waitMs: number;
@@ -32,51 +32,52 @@ export interface StepRetry {
 export interface AssistantMessageBody {
   type: 'assistant';
   content: ModelReplyPart[];
-  /** Absent when the reply was cut off: stopped, or failed part-way. */
+  /** Omitted if the reply was stopped or failed before it finished. */
   finish?: 'complete' | 'outputLimit';
-  /** The requests that failed before this one got through; absent when none did. */
+  /** Earlier failed requests that were retried. Omitted if there were none. */
   retries?: StepRetry[];
 }
 
 /**
- * What a tool call was about, as it stood when the call ran: names and numbers for the pane
- * to word, never wording, and never sent to the model. Bullets and lines count from 1.
+ * Identifies the resume content a tool call targeted, using its names at the time of the call.
+ * The UI builds labels from these fields; they do not contain display text and are not sent
+ * to the model. Bullet and line numbers start at 1.
  */
 export type ToolTarget =
-  /** `sections` are the headings of what was read. */
+  /** Headings of the sections that were read. */
   | { kind: 'resume'; sections: string[] }
-  /** `version` as the history shows it: "v3.1". */
+  /** Version label shown in history, such as "v3.1". */
   | { kind: 'version'; version: string }
   | {
       kind: 'place';
       section: string;
-      /** The organization, or the title when there is none. */
+      /** Organization name, or the entry title if there is no organization. */
       entry?: string;
       bullet?: number;
-      /** For a merge: the bullet it joins `bullet` to. */
+      /** Number of the other bullet in a merge. */
       lastBullet?: number;
       line?: number;
-      /** For a call that leaves it off the page (false) or puts it back (true). */
+      /** Whether the call shows or hides the content on the resume. */
       show?: boolean;
     }
-  /** The list a reorder changes: the sections, a section's, or an entry's. */
+  /** The list being reordered: sections, entries, bullets, or lines. */
   | { kind: 'list'; of: 'section' | 'entry' | 'bullet' | 'line'; section?: string; entry?: string }
-  /** `count` is how many bullets and lines use `find`. */
+  /** `count` is the number of bullets and lines containing `find`. */
   | { kind: 'term'; find: string; replace: string; count: number };
 
 export interface ToolResult {
   callId: string;
   content: string;
   isError?: boolean;
-  /** Absent in older bodies, and for a call that named nothing the run could find. */
+  /** Omitted in older messages or when the call's target could not be found. */
   target?: ToolTarget;
-  /** The run ended before this call ran, so its error says nothing about the call. */
+  /** The run ended before this call ran. Its error is not a failure of the tool itself. */
   notRun?: boolean;
-  /** Why it has no real answer: `timeout`, `cancelled`, `stopped`, `interrupted`. */
+  /** Why no tool result was received: `timeout`, `cancelled`, `stopped`, or `interrupted`. */
   checkName?: string;
-  /** From the call beginning, its arguments included, to its answer. Absent in older bodies. */
+  /** Call duration in milliseconds, including time the model spent writing its arguments. Omitted in older messages. */
   durationMs?: number;
-  /** When the call began, in ms since the epoch. Absent in older bodies. */
+  /** Call start time as a Unix timestamp in milliseconds. Omitted in older messages. */
   startedAt?: number;
 }
 
@@ -85,7 +86,7 @@ export interface ToolResultsMessageBody {
   results: ToolResult[];
 }
 
-/** Written before a run on a different template from the last one. */
+/** Records a template change before the next run starts. */
 export interface TemplateSwitchedMessageBody {
   type: 'templateSwitched';
   templateId: string;
@@ -94,9 +95,8 @@ export interface TemplateSwitchedMessageBody {
 }
 
 /**
- * Why a run ended before the model finished: a stop layer, the provider (`connection`
- * once retries ran out, `providerError` when retrying couldn't help), Mosaic itself, or
- * the user's Stop.
+ * Why a run stopped early: a safety limit, a provider error, an app error, or the user.
+ * `connection` means retries ran out; `providerError` means retrying would not help.
  */
 export type RunStopReason =
   | 'repeatedCall'
@@ -108,20 +108,21 @@ export type RunStopReason =
   | 'cancelled';
 
 /**
- * Written when a run stops; for the user, never sent to the model. It holds what happened,
- * never wording: the pane decides how each stop reads.
+ * Records why a run stopped. The UI uses these fields to explain the stop to the user.
+ * This message is not sent to the model.
  */
 export interface RunStoppedMessageBody {
   type: 'runStopped';
   reason: RunStopReason;
-  /** The refusal a stop layer counted, or Mosaic's own error. */
+  /** Refusal reported by a safety check, or an error from Mosaic. */
   detail?: string;
-  /** The provider's error as it came, for `connection` and `providerError`. */
+  /** Original provider error for `connection` or `providerError` stops. */
   providerError?: ModelProviderError;
-  /** Requests made for the step that failed, and the time spent waiting between them. */
+  /** Number of requests made for the failed step. */
   attempts?: number;
+  /** Total time spent waiting between requests, in milliseconds. */
   waitedMs?: number;
-  /** The step's requests that failed and went again, when its reply never came. */
+  /** Failed requests that were retried before the step stopped without a reply. */
   retries?: StepRetry[];
 }
 
@@ -132,21 +133,21 @@ export type MessageBody =
   | TemplateSwitchedMessageBody
   | RunStoppedMessageBody;
 
-/** Thinking shows how long and how much, never what: its text and provider state stay in main. */
+/** The transcript gets reasoning duration and length, not its text or provider state. Those stay in main. */
 export type TranscriptReplyPart =
   | Exclude<ModelReplyPart, { type: 'reasoning' }>
   | { type: 'reasoning'; durationMs: number; textLength?: number };
 
 /**
- * A body as the transcript reads it. Tool results come without their content, which can
- * be large and shows only when the Trace view opens one.
+ * Message body sent to the transcript. Tool result content is omitted because it can be
+ * large; the Trace view loads it when the user opens a result.
  */
 export type TranscriptMessageBody =
   | Exclude<MessageBody, AssistantMessageBody | ToolResultsMessageBody>
   | (Omit<AssistantMessageBody, 'content'> & { content: TranscriptReplyPart[] })
   | { type: 'toolResults'; results: Omit<ToolResult, 'content'>[] };
 
-/** As the run recorded them when it started. */
+/** Provider and model recorded when the run started. */
 export interface RunModel {
   provider: string;
   model: string;
@@ -155,14 +156,14 @@ export interface RunModel {
 export interface TranscriptMessage {
   id: number;
   seq: number;
-  /** Null for one written outside a run. */
+  /** Null if the message was written outside a run. */
   runId: number | null;
-  /** The provider and model its run used, which a stop's notice names; null outside a run. */
+  /** Model used by the run, for display in stop notices. Null outside a run. */
   runModel: RunModel | null;
-  /** Its run's number in the conversation, from 1. */
+  /** Run number within the conversation, starting at 1. */
   runNumber?: number;
   body: TranscriptMessageBody;
-  /** What the request behind an assistant message used, when its provider said. */
+  /** Token usage for an assistant message's request, if reported by the provider. */
   usage?: ModelUsage;
   createdAt: number;
 }

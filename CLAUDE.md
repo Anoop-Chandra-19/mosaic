@@ -158,6 +158,9 @@ Someone new should understand a module, and how its files connect, in about 30 m
 
 ## Readability
 
+- Write comments in plain, direct language. Name the thing or action instead of using vague
+  phrases or clever shorthand. Explain intent, constraints, units, and compatibility rules;
+  don't restate what the code already makes clear.
 - One job per function. When a function needs comments to mark its steps, make the steps
   named functions, so the top-level one reads as the list of steps.
 - Closures in a long function that don't need its state become top-level functions with

@@ -1,8 +1,8 @@
 /**
- * What a section is about: its icon, the headings the importer matches to it, where JSON
- * Resume files it, and later what the assistant takes it to be. Never how it prints — that
- * is `SectionLayout`. The built-in kinds are presets (`lib/resume/sectionPresets.ts`);
- * `custom` is a section the user named.
+ * Section category used for icons, import heading matching, JSON Resume mapping, and
+ * assistant context. It does not control the printed layout; `SectionLayout` does.
+ * Built-in kinds are defined in `src/shared/resume/sectionPresets.ts`.
+ * `custom` is a user-defined category.
  */
 export type SectionKind =
   | 'summary'
@@ -22,9 +22,9 @@ export type SectionKind =
 export type BuiltInSectionKind = Exclude<SectionKind, 'custom'>;
 
 /**
- * How a section's items print. `lines`: each item is a line of plain text (`text`), as in a
- * summary or a skills list. `entries`: each item is an italic line — its title,
- * organization, and location on the left, its dates on the right — followed by bullets.
+ * Printed layout for section items. `lines` uses each item's plain `text`, as in a summary
+ * or skills list. `entries` uses an italic heading with title, organization, and location
+ * on the left and dates on the right, followed by bullets.
  */
 export type SectionLayout = 'lines' | 'entries';
 
@@ -38,14 +38,14 @@ export interface ResumeEntry {
   id: string;
   selected: boolean;
   bullets: Bullet[];
-  /** What you were: "Analyst", "M.S. in Physics", a project's name. */
+  /** Role, qualification, or project name, such as "Analyst" or "M.S. in Physics". */
   title?: string;
-  /** Where or for whom: a company, a school, an issuer. */
+  /** Company, school, or issuing organization. */
   organization?: string;
   location?: string;
-  /** When, as written: "Jan 2021 to Current", "2025" — or whatever goes on the right. */
+  /** Free-form date text, such as "Jan 2021 to Current" or "2025", printed on the right. */
   dates?: string;
-  /** A lines section's item. */
+  /** Item text for a section with `layout: 'lines'`. */
   text?: string;
   meta?: Record<string, string>;
 }
@@ -58,18 +58,18 @@ export interface ResumeSection {
   items: ResumeEntry[];
   order: number;
   /**
-   * Kept, but left off the resume as a whole: nothing of it prints, exports, or counts.
-   * Absent means on the resume. Its entries keep their own `selected`, so putting the
-   * section back brings back exactly what was chosen.
+   * Excludes the section from the preview, content exports, and word count without deleting
+   * its data. Backups keep the full section. Omitted means visible. Entry `selected` values
+   * are preserved, so showing the section again restores the previous selection.
    */
   hidden?: boolean;
 }
 
 /**
- * What a header item is about: its icon and placeholder in the editor, where JSON Resume
- * files it, and what the importer took it for. Never how it prints or links — that is its
- * own text and link. The built-in kinds are presets (`lib/resume/resumeHeader.ts`);
- * `custom` is an item the user writes.
+ * Header category used for the editor icon and placeholder, JSON Resume mapping, and
+ * import matching. Printed content and links use the item's own text and URL, not its kind.
+ * Built-in kinds are defined in `src/shared/resume/resumeHeader.ts`.
+ * `custom` is a user-defined category.
  */
 export type HeaderItemKind =
   | 'phone'
@@ -90,17 +90,17 @@ export type HeaderAlign = 'center' | 'left';
 /** How linked header text looks on the page: like the rest of the text, or underlined. */
 export type LinkStyle = 'plain' | 'underline';
 
-/** The ink a header link prints in: the page's black, or a link blue. Only links change. */
+/** Header link color: black like the page text, or blue. Does not affect other text. */
 export type LinkColor = 'ink' | 'blue';
 
 export interface HeaderItem {
   id: string;
   kind: HeaderItemKind;
-  /** What prints. Empty prints nothing, and its link goes with it — but the link is kept. */
+  /** Printed text. Empty text hides the item and its link without deleting the URL. */
   text: string;
-  /** Where it links, as typed. The link written into a file is derived from it. */
+  /** URL as typed by the user. Exports derive the link destination from this value. */
   url: string;
-  /** false: kept, but left off the page. */
+  /** When false, hides the item without deleting its data. */
   shown: boolean;
 }
 
@@ -113,12 +113,12 @@ export interface HeaderLine {
 
 export interface ResumeHeader {
   linkStyle: LinkStyle;
-  /** Absent means `ink`. */
+  /** Defaults to `ink` when omitted. */
   linkColor?: LinkColor;
   lines: HeaderLine[];
 }
 
-/** The top of the page: the name, then the header's lines. */
+/** Page header: the name followed by the contact lines. */
 export interface ContactInfo {
   name: string;
   header: ResumeHeader;

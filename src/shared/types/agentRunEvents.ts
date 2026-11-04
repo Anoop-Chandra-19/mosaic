@@ -2,22 +2,22 @@ import type { RunStopReason, ToolTarget } from './agentConversation';
 import type { ModelProviderError } from './modelReply';
 
 /**
- * What a run says as it goes, for whatever follows it live (the pane, the eval). The log
- * is the truth; these only let a view keep up between the messages it stores.
+ * Live run events for subscribers such as the pane and evals. The stored log is
+ * authoritative; events update subscribers between stored messages.
  */
 export type AgentRunEvent =
   | { type: 'stepStarted'; step: number }
   /**
-   * The request failed with `error` and is sent again after `waitMs`; drop what this step
-   * streamed. `attempt` counts the retries, from 1.
+   * The request failed with `error` and will be retried after `waitMs`; discard this step's
+   * streamed output. `attempt` counts retries from 1.
    */
   | { type: 'stepRetrying'; attempt: number; waitMs: number; error: ModelProviderError }
   | { type: 'textDelta'; text: string }
   | { type: 'reasoningStart' }
   | { type: 'reasoningEnd'; durationMs: number }
   /**
-   * Said once when the call begins, if its provider can tell, and again when it is whole,
-   * which is when it has its `args`.
+   * Emitted once when the tool call starts, if the provider reports it, and again when the
+   * call is complete with `args`.
    */
   | { type: 'toolCall'; callId: string; name: string; args?: unknown }
   | {

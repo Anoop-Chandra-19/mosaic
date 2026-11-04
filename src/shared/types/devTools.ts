@@ -1,18 +1,18 @@
-/** A developer tool's choices: plain values, so tests can pass the same ones. */
+/** Developer tool arguments. Tests use the same value types. */
 export type DevToolArgs = Record<string, string | number | boolean>;
 
-/** One run of a developer tool, as Recent keeps it: the tool and the choices it ran with. */
+/** Tool ID and arguments saved in Recent for a developer tool run. */
 export interface DevToolRun {
   toolId: string;
   args: DevToolArgs;
 }
 
-/** How many runs Recent keeps. */
+/** Maximum number of developer tool runs saved in Recent. */
 export const MAX_RECENT_DEV_RUNS = 4;
 
 /**
- * What stays on until turned off, across launches. Main applies the motion ones, and runs
- * the assistant on the scripted model.
+ * Developer switches saved across launches until turned off. Main applies the motion
+ * settings and uses the scripted model when that switch is on.
  */
 export const DEV_SWITCHES = [
   'slowMotion',
@@ -32,34 +32,34 @@ export const ALL_DEV_SWITCHES_OFF: DevSwitches = {
   scriptedModel: false,
 };
 
-/** One process's memory, as Electron reports it. */
+/** Memory usage for one process, as reported by Electron. */
 export interface ProcessMemory {
   /** "Main", "Window", "GPU", or a utility process's own name: "Network Service". */
   name: string;
   isUtility: boolean;
-  /** Its working set. */
+  /** Working-set memory in kilobytes. */
   kilobytes: number;
 }
 
 /**
- * Development builds only: `window.mosaic.dev`, which a release build doesn't have. Kept by
- * main in the development data folder, never in the database, settings or a backup.
+ * `window.mosaic.dev` is available only in development builds. Main saves developer tool
+ * state in the development data folder, not in the database, settings, or backups.
  */
 export interface MosaicDev {
   readRecent(): Promise<DevToolRun[]>;
   saveRecent(runs: DevToolRun[]): Promise<void>;
   readSwitches(): Promise<DevSwitches>;
-  /** Keeps them, and applies slow and reduced motion to the window at once. */
+  /** Saves the switches and immediately applies slow and reduced motion to the window. */
   saveSwitches(switches: DevSwitches): Promise<void>;
-  /** The view's address the window was last on, for Reopen this view at launch. */
+  /** Last view address saved for the Reopen this view at launch switch. */
   readReopenAddress(): Promise<string | null>;
   saveReopenAddress(address: string): Promise<void>;
-  /** What each of Mosaic's processes holds right now. */
+  /** Current memory usage for each Mosaic process. */
   readMemory(): Promise<ProcessMemory[]>;
   /** Writes a conversation of about this many fictional messages. Returns its id. */
   seedLongConversation(messageCount: number): Promise<number>;
-  /** The folder the development data is in, with the home folder as `~`. */
+  /** Development data folder path, with the home folder replaced by `~`. */
   readDataFolder(): Promise<string>;
-  /** Develop › Developer tools… was chosen in the menu bar. */
+  /** Registers a callback for the Develop › Developer tools… menu item. */
   onOpenTools(open: () => void): void;
 }
