@@ -25,19 +25,17 @@ import { createRunLimits } from './runLimits';
 import { runToolRound, type ToolBridge, type ToolCallPart } from './runToolRound';
 
 /*
- * One run of the assistant, in main. `startAgentRun` starts a run on a conversation, for
- * the user's message or to carry on, then loops a step at a time: the context built from
- * the log (`assembleModelContext.ts`), one request to the model (`requestModelReply.ts`,
- * which retries a failed connection), its reply stored, its tool calls answered by the
- * page through a `ToolBridge` (`runToolRound.ts`). A reply with no tool calls ends the
- * run; so does a stop layer (`runLimits.ts`), a provider failure or the user's Stop, each
- * written as a `runStopped` message, with what was staged kept. `agentRuns.ts` starts runs
- * through this file; tests use it directly.
+ * Executes one assistant run for a user message or a continuation. Each step builds
+ * context from the conversation log (`assembleModelContext.ts`), requests and stores a
+ * model reply (`requestModelReply.ts`), then executes its tools (`runToolRound.ts`).
+ * A reply without tool calls completes the run. Limits (`runLimits.ts`), provider errors,
+ * and cancellation stop it; the stop is stored without discarding staged changes.
+ * Called by `agentRuns.ts` and run tests.
  */
 
 /**
- * What the user sent, in a new conversation (`conversationId` null) or an old one; or carry
- * on from a conversation's log with no new message.
+ * A user message or a continuation without a new message. A null `conversationId`
+ * creates a conversation; otherwise the run appends to the existing conversation.
  */
 export type AgentAsk =
   | { type: 'user'; conversationId: number | null; text: string }
@@ -46,26 +44,26 @@ export type AgentAsk =
 export interface AgentRunRequest {
   db: Database;
   ask: AgentAsk;
-  /** The template open when the user sent it; null with none open. */
+  /** The template open when the run was requested, or null if none was open. */
   templateId: string | null;
   model: { provider: string; name: string };
   modelProvider: ModelProvider;
   bridge: ToolBridge;
   signal: AbortSignal;
-  /** Each event comes with its run, since the first arrives before `startAgentRun` returns. */
+  /** Includes run IDs because events can arrive before `startAgentRun` returns them. */
   onEvent?: (event: AgentRunEvent, run: ConversationRun) => void;
   limits?: RunLimitSettings;
   wait?: Wait;
 }
 
 export interface AgentRunEnd {
-  /** Absent when the model finished. */
+  /** Undefined when the model completes the run without a stop. */
   stopReason?: RunStopReason;
-  /** Why the provider turned the run down, when it did. */
+  /** Provider error classification, if a provider failure stopped the run. */
   providerErrorReason?: ModelProviderError['reason'];
 }
 
-/** A run stored as started; `ended` settles once its end is stored too. */
+/** The run's start is already stored; `ended` settles after its end is stored. */
 export interface StartedAgentRun extends ConversationRun {
   ended: Promise<AgentRunEnd>;
 }
@@ -90,10 +88,10 @@ function beginRun({ db, ask, templateId, model }: AgentRunRequest): StartedRun {
   };
 }
 
-/** Tokens over the run's steps; null until a provider reports any. */
+/** Accumulated token usage; null until the provider reports usage for a step. */
 type RunUsage = { total: ModelUsage | null };
 
-/** Absent while no step has said: unknown, not zero. */
+/** Leave the count undefined until a step reports it; missing usage is not zero. */
 function addCount(total: number | undefined, step: number | undefined): number | undefined {
   return total === undefined && step === undefined ? undefined : (total ?? 0) + (step ?? 0);
 }
@@ -107,7 +105,6 @@ function addUsage(usage: RunUsage, step: ModelUsage | null): void {
   };
 }
 
-/** Steps until the model finishes or something stops the run. */
 async function loopSteps(
   request: AgentRunRequest,
   run: StartedRun,
@@ -141,10 +138,10 @@ async function loopSteps(
       wait: request.wait ?? waitUnlessAborted,
     });
     const { retries } = reply;
-    // Their step's reply holds them, or the stop when no reply is stored.
+    // Store retry records with the model reply, or with the stop if no reply is stored.
     const stopRetries = retries.length > 0 ? { retries } : {};
     if (!reply.ok && reply.reason === 'cancelled') {
-      // What streamed before the Stop is kept, without calls that will never be answered.
+      // Preserve partial output, but omit tool calls that will never receive results.
       const kept = reply.parts.filter((part) => part.type !== 'toolCall');
       if (kept.length === 0) return { reason: 'cancelled', ...stopRetries };
       storeModelReply(db, run, { parts: kept, retries, model: modelName, rev: null });
@@ -188,7 +185,7 @@ async function loopSteps(
   }
 }
 
-/** The error as thrown, with the frame it was thrown in: a bug report in one paste. */
+/** Include the first stack frame so the stored fault identifies its source location. */
 function describeFault(error: unknown): string {
   if (!(error instanceof Error)) return String(error);
   const frame = error.stack?.split('\n').find((line) => line.trimStart().startsWith('at '));
@@ -210,9 +207,9 @@ async function runToEnd(request: AgentRunRequest, run: StartedRun): Promise<Agen
 }
 
 /**
- * One ask, stored as started before this returns, then run to its end. Every way it ends
- * is stored before `ended` resolves; only a fault in Mosaic itself rejects, after storing
- * it as an `appFault` stop with its calls answered.
+ * Stores the run's start synchronously, then executes it asynchronously. Normal completion,
+ * cancellation, and provider failures resolve `ended` after storing the outcome. App faults
+ * reject it after attempting to store an `appFault` stop and results for pending tool calls.
  */
 export function startAgentRun(request: AgentRunRequest): StartedAgentRun {
   const run = beginRun(request);

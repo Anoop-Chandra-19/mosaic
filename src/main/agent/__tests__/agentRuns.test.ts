@@ -53,10 +53,10 @@ const answered = (content: string): AgentToolAnswer => ({
 interface Setup {
   replies: ScriptedReply[];
   noteKeyAnswer?: AgentRunsNeeds['noteKeyAnswer'];
-  /** How the page answers each call; left out, it never does. */
+  /** Omit to simulate a renderer that never answers tool calls. */
   answer?: (call: AgentToolCall, runs: AgentRuns) => void;
   toolAnswerMs?: number;
-  /** Held until the test lets it go, as a keychain prompt would hold it. */
+  /** Blocks provider creation until resolved, simulating a pending keychain prompt. */
   providerOpened?: Promise<void>;
 }
 

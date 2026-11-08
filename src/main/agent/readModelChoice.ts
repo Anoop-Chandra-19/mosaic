@@ -10,9 +10,9 @@ import { getSetting } from '../db/settings';
 import { isModelProviderId, type ModelChoice } from '../model-providers/createModelProvider';
 
 /*
- * Main reads the provider and model from the settings the renderer keeps (a Zustand
- * `persist` record, `{ state, version }`) as each run starts, so a run uses what Settings
- * says, whoever started it. The record came from the page: every field is checked here.
+ * Reads and validates the renderer's saved model settings at each run start so every
+ * caller uses the current selection. The stored Zustand record has shape `{ state, version }`;
+ * its fields are untrusted because they originate in the renderer.
  */
 
 const MAX_MODEL_NAME_LENGTH = 200;
@@ -32,13 +32,13 @@ function parseStoredState(stored: string | null): unknown {
   }
 }
 
-/** Settings saved before this address existed don't hold it, and only need it once chosen. */
+/** Use the default for older settings that lack this address; reject invalid saved values. */
 function readOpenAiCompatibleAddress(stored: unknown): string | null {
   if (stored === undefined) return DEFAULT_OPENAI_COMPATIBLE_ADDRESS;
   return typeof stored === 'string' ? normalizeOpenAiCompatibleAddress(stored) : null;
 }
 
-/** What Settings chose; null while the assistant is off, or if the settings can't be read. */
+/** Returns null when the assistant is disabled or the required settings are missing or invalid. */
 export function readModelChoice(db: Database): ModelChoice | null {
   const state = parseStoredState(getSetting(db, AGENT_SETTINGS_KEY));
   if (!isRecord(state) || state.enabled !== true) return null;

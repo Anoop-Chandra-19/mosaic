@@ -1,13 +1,13 @@
 import { RUN_LIMITS, type RunLimitSettings } from '@shared/agent/runLimitSettings';
 import type { RunStopReason } from '@shared/types/agentConversation';
 
-/* The stop layers: counts a run's answers against `RUN_LIMITS`. */
+/* Tracks repeated tool errors and consecutive failed tool rounds to stop unproductive runs. */
 
 export const REPEAT_WARNING =
   'You made this call before and it was refused for the same reason. Do something else, or finish.';
 
 export interface ToolAnswerVerdict {
-  /** The answer as the model reads it. */
+  /** Tool result content, including a repeated-call warning when applicable. */
   content: string;
   stop?: { reason: RunStopReason; detail: string };
 }
@@ -18,13 +18,13 @@ interface ToolAnswerFacts {
 }
 
 export interface RunLimits {
-  /** Counts one answered call; the warning goes on the answer, a stop ends the run. */
+  /** Tracks repeated errors for the same call; returns warning text or a stop decision. */
   noteAnswer(name: string, args: unknown, answer: ToolAnswerFacts): ToolAnswerVerdict;
-  /** Counts a step by its answered calls, once they are all in. */
+  /** Checks consecutive failed tool rounds after all non-cancelled calls have results. */
   noteStep(answers: ToolAnswerFacts[]): ToolAnswerVerdict['stop'];
 }
 
-/** Object keys sorted, so the same arguments in another order count as the same call. */
+/** Sort object keys recursively so argument key order does not change call identity. */
 function writeStableJson(value: unknown): string {
   if (Array.isArray(value)) return `[${value.map(writeStableJson).join(',')}]`;
   if (typeof value === 'object' && value !== null) {

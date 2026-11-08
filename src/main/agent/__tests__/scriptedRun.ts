@@ -4,12 +4,12 @@ import type { ModelStreamEvent } from '@shared/types/modelReply';
 import type { ModelProvider, ModelRequest } from '../../model-providers/modelProvider';
 import type { ToolBridge } from '../runToolRound';
 
-/** A step's reply: events played back, or a stream of its own (to hang, or to fail). */
+/** Fixed reply events or a custom stream for timing, cancellation, and failure tests. */
 export type ScriptedReply =
   | ModelStreamEvent[]
   | ((request: ModelRequest) => AsyncIterable<ModelStreamEvent>);
 
-/** A model that plays back one reply per request, and remembers every request. */
+/** Plays one scripted reply per request and records requests for assertions. */
 export function scriptedModel(replies: ScriptedReply[]) {
   const requests: ModelRequest[] = [];
   const provider: ModelProvider = {
@@ -53,7 +53,7 @@ export const hang = (request: ModelRequest): AsyncIterable<ModelStreamEvent> => 
 
 export type PageAnswer = Omit<AgentToolResult, 'draft'> & { draft?: AgentToolResult['draft'] };
 
-/** A page that answers each call with `answer`, remembering the calls. */
+/** Simulates renderer tool execution and records calls for assertions. */
 export function fakePage(
   answer: (call: AgentToolCall) => PageAnswer | Promise<PageAnswer>,
   draft: AgentToolResult['draft'] = null

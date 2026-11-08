@@ -104,7 +104,7 @@ describe('a run', () => {
       input_tokens: 400,
       output_tokens: 40,
     });
-    // Counted from the steps that said; the first two didn't.
+    // Sum only reported cached-token counts; the first two steps omit this field.
     expect(db.prepare('select cached_input_tokens from runs where id = 1').get()).toEqual({
       cached_input_tokens: 150,
     });
@@ -117,7 +117,7 @@ describe('a run', () => {
 
     const other = createTemplate(db, 'Data, senior', createDefaultResume()).id;
     await ask({ replies: [[say('Hi.'), DONE]], overrides: { templateId: other } }).run;
-    // No step said: unknown, not zero.
+    // No step reported cached-token usage, so the total remains unknown rather than zero.
     expect(db.prepare('select cached_input_tokens from runs where id = 2').get()).toEqual({
       cached_input_tokens: null,
     });

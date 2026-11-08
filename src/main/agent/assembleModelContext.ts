@@ -3,7 +3,7 @@ import type { LoggedMessage } from '../db/conversations/messages';
 import type { ToolCallStamp } from '../db/conversations/toolCalls';
 import type { ModelMessage } from '../model-providers/modelProvider';
 
-/** The draft a run is working against: which template, and its rev. */
+/** Identifies the template and draft edit counter used to detect stale reads. */
 export interface DraftStamp {
   templateId: string;
   rev: number;
@@ -14,7 +14,6 @@ export const STALE_READ =
 
 const callKey = (runId: number | null, callId: string) => `${runId} ${callId}`;
 
-/** A read of another template, or of this one at another rev, no longer says what's there. */
 function isStaleRead(stamp: ToolCallStamp | undefined, draft: DraftStamp | null): boolean {
   if (!stamp || !Object.hasOwn(READ_TOOLS, stamp.name)) return false;
   return draft === null || stamp.templateId !== draft.templateId || stamp.rev !== draft.rev;
@@ -45,12 +44,12 @@ function toModelMessages(
     case 'templateSwitched':
       return [{ role: 'user', text: `The open resume is now “${body.label}”.` }];
     case 'runStopped':
-      // For the user: the model hears of a stop from the user's next message, if at all.
+      // Stop records are for the user, not model context.
       return [];
   }
 }
 
-/** Notes the app writes as the user's go into the user message beside them. */
+/** Merge adjacent user-role messages so app notes share a message with nearby user text. */
 function joinUserMessages(messages: ModelMessage[]): ModelMessage[] {
   return messages.reduce<ModelMessage[]>((joined, message) => {
     const last = joined.at(-1);
@@ -64,8 +63,9 @@ function joinUserMessages(messages: ModelMessage[]): ModelMessage[] {
 }
 
 /**
- * The conversation as the model reads it, built from the log every step: each body in
- * `seq` order in the provider-neutral shape, reads gone stale replaced.
+ * Rebuilds provider-neutral context each step from the log, which must be in `seq` order.
+ * Replaces successful reads from another template or draft edit counter with a reread notice.
+ * The stored log is unchanged.
  */
 export function assembleModelContext(
   log: LoggedMessage[],

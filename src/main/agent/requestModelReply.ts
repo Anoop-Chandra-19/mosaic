@@ -11,8 +11,9 @@ import type { ModelProvider, ModelRequest } from '../model-providers/modelProvid
 import { createRestartableDeadline, type Wait } from './abortableWaits';
 
 /*
- * One step's request: streamed into the reply's parts, sent again when it failed in a
- * way worth retrying (the connection layer), and cut off by the user's Stop.
+ * Collects one step's streamed model reply and forwards live events to the renderer.
+ * Retries transient failures, enforces the inactivity deadline, and preserves partial
+ * output on user cancellation.
  */
 
 export type StepReply = { retries: StepRetry[] } & (
@@ -22,14 +23,14 @@ export type StepReply = { retries: StepRetry[] } & (
       finish: 'complete' | 'outputLimit';
       usage: ModelUsage | null;
       /**
-       * When each call began. A provider that sends calls whole can't say, so theirs count from
-       * the last thing the model did before it: the time it spent writing the call.
+       * Call start timestamps in epoch milliseconds. Without a `toolCallStart` event,
+       * use the previous stream event's timestamp as an estimate of when generation began.
        */
       callStartedAt: ReadonlyMap<string, number>;
     }
-  /** Stopped by the user; `parts` is what had arrived, to keep. */
+  /** Partial output retained when the user cancels the request. */
   | { ok: false; reason: 'cancelled'; parts: ModelReplyPart[] }
-  /** `connection` once retries ran out; `providerError` when retrying couldn't help. */
+  /** `connection` when retries are exhausted; `providerError` for non-retryable failures. */
   | {
       ok: false;
       reason: Extract<RunStopReason, 'connection' | 'providerError'>;
@@ -63,8 +64,8 @@ const STALLED: ModelProviderError = { reason: 'failed', message: 'The reply stop
 const ENDED_EARLY: ModelProviderError = { reason: 'failed', message: 'The reply ended early' };
 
 /**
- * Worth sending again: the network, a rate limit, the provider's own trouble. Never an
- * empty quota, a missing model or a refusal, which waiting doesn't change.
+ * Retry network failures, rate limits, and transient provider failures. Quota exhaustion,
+ * missing models, and refusals need user action rather than another attempt.
  */
 function isRetryable(error: ModelProviderError): boolean {
   if (error.reason === 'unreachable' || error.reason === 'rateLimited') return true;
@@ -72,14 +73,12 @@ function isRetryable(error: ModelProviderError): boolean {
   return error.httpStatus === undefined || error.httpStatus === 408 || error.httpStatus >= 500;
 }
 
-/** Text arrives in pieces; consecutive pieces are one part. */
 function addText(parts: ModelReplyPart[], text: string): void {
   const last = parts.at(-1);
   if (last?.type === 'text') last.text += text;
   else parts.push({ type: 'text', text });
 }
 
-/** Collects one event into the parts, and passes on what a live view shows. */
 function takeEvent(
   parts: ModelReplyPart[],
   callStartedAt: Map<string, number>,
@@ -123,9 +122,9 @@ async function streamOnce({
   onEvent,
   limits,
 }: ReplyRequest): Promise<Attempt> {
-  // The one timeout on a reply, from before the request goes until its last event, restarted
-  // by anything that arrives, so no provider needs its own. A stall ends this attempt only;
-  // the user's Stop ends the run.
+  // This is the reply's only timeout; adapters must not add their own. Reset it on
+  // incoming activity, including chunks that produce no model event. A stall fails this
+  // attempt and may be retried; user cancellation ends the run.
   const stall = createRestartableDeadline(limits.stallMs);
   const parts: ModelReplyPart[] = [];
   const callStartedAt = new Map<string, number>();

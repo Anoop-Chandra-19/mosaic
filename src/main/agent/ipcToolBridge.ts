@@ -2,11 +2,11 @@ import type { AgentToolResult } from '@shared/agent-tools/agentTools';
 import type { AgentToolAnswer, AgentToolCall } from '@shared/types/agentBridge';
 import type { ToolBridge } from './runToolRound';
 
-/** One run's tool calls to the page, and the page's answers back. */
+/** Routes tool calls and answers between main and the renderer for one run. */
 export interface IpcToolBridge extends ToolBridge {
-  /** The page's answer to a call; one nothing is waiting for is dropped. */
+  /** Resolves or rejects the matching call; ignores answers with no pending call. */
   answer(callId: string, answer: AgentToolAnswer): void;
-  /** The run has ended: answers still to come are dropped. */
+  /** Discards pending calls without settling them and ignores subsequent answers. */
   close(): void;
 }
 
@@ -16,8 +16,9 @@ interface WaitingCall {
 }
 
 /**
- * Sends each call with `sendCall` and waits for `answer`. The round gives up on a call at
- * its deadline or a Stop; an answer arriving after that settles a wait no one is on.
+ * Sends calls through `sendCall` and settles them through `answer`. Cancellation and
+ * timeouts belong to `runToolRound.ts`: a late answer may settle the bridge's promise,
+ * but the round has already stopped waiting and ignores the result.
  */
 export function createIpcToolBridge(sendCall: (call: AgentToolCall) => void): IpcToolBridge {
   const waiting = new Map<string, WaitingCall>();

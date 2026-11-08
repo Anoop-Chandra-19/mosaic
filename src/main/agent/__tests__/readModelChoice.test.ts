@@ -30,7 +30,7 @@ describe('readModelChoice', () => {
       provider: 'ollama',
       model: 'qwen3.5:9b',
       ollama: { address: 'http://gpu-box:11434', contextTokens: 32_768 },
-      // Saved before this provider existed.
+      // Older settings lack this address and must use the default.
       openAiCompatible: { address: 'http://127.0.0.1:8080' },
     });
   });
