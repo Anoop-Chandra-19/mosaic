@@ -13,16 +13,16 @@ import type { DraftStamp } from './assembleModelContext';
 import type { RunLimits } from './runLimits';
 
 /*
- * One step's tool round: each call the model made, in order, sent to the page that runs
- * the tools, its answer counted by the stop layers, and every answer stored as one
- * message, so no call is ever left without its result.
+ * Executes a step's tool calls sequentially through the renderer, checks results against
+ * run limits, and stores all results in one message. Calls skipped after cancellation or
+ * a limit receive error results so every stored tool call has a matching result.
  */
 
 export type ToolCallPart = Extract<ModelReplyPart, { type: 'toolCall' }>;
 
 /**
- * How main reaches the page that runs the tools. A call can't be cancelled across IPC;
- * on a Stop or a timeout the round stops waiting, and a late answer is dropped.
+ * Connects main to the renderer's tool executor. Cancellation and timeouts stop main
+ * waiting; they cannot cancel tool execution across IPC. Late results are ignored.
  */
 export interface ToolBridge {
   runTool(call: AgentToolCall): Promise<AgentToolResult>;
@@ -32,7 +32,7 @@ export interface ToolRound {
   db: Database;
   run: ConversationRun;
   calls: ToolCallPart[];
-  /** When each call began, which its time on the run line counts from. */
+  /** Epoch-millisecond timestamps used to measure duration from tool-call generation. */
   callStartedAt: ReadonlyMap<string, number>;
   bridge: ToolBridge;
   signal: AbortSignal;
@@ -43,7 +43,7 @@ export interface ToolRound {
 }
 
 export interface ToolRoundEnd {
-  /** The draft as the last answer found it. */
+  /** The draft stamp reported by the last tool result, or the input stamp if none answered. */
   draft: DraftStamp | null;
   stop?: { reason: RunStopReason; detail: string };
 }
@@ -72,7 +72,7 @@ const notRun = (why: keyof typeof NOT_RUN, draft: DraftStamp | null): CallOutcom
   draft,
 });
 
-/** The page's answer, or a failure in its place: a call always gets one. */
+/** Converts renderer failures, cancellation, and timeouts into tool results for the log. */
 async function askPage(round: ToolRound, call: ToolCallPart): Promise<CallOutcome> {
   const { bridge, signal, settings, draft } = round;
   const request = { runId: round.run.runId, callId: call.callId, name: call.name, args: call.args };

@@ -26,7 +26,7 @@ function request(replies: ScriptedReply[], overrides: Partial<ReplyRequest> = {}
   return { reply: requestModelReply(options), model, events, waits };
 }
 
-/** An OpenAI-compatible server that thinks for a while, a piece at a time, and then answers. */
+/** Simulates an OpenAI-compatible server streaming reasoning chunks before its answer. */
 function thinkingServer(pieces: number, msApart: number) {
   const encoder = new TextEncoder();
   const send = (delta: object, finish: string | null = null) =>
@@ -100,7 +100,7 @@ describe('requestModelReply', () => {
     const finished = await reply;
     if (!finished.ok) throw new Error('not finished');
     expect(finished.callStartedAt.get('c1')).toBeLessThan(before + 15);
-    // Only one call stored, whichever way it was told of.
+    // Start and completion events must not create duplicate tool-call parts.
     expect(finished.parts).toHaveLength(1);
   });
 

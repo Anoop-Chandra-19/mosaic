@@ -1,16 +1,17 @@
 import { setTimeout as sleep } from 'node:timers/promises';
 
 /*
- * The run's waits, each cut short when its signal aborts: the user's Stop, or a deadline
- * combined with it (`AbortSignal.any`). Nothing else in the loop handles listeners or
- * timers. A one-off wait uses `AbortSignal.timeout`; one that news can push back, this file.
+ * Cancellation-aware waits and restartable deadlines for model requests and tool rounds.
+ * Use `AbortSignal.timeout` for fixed deadlines and `createRestartableDeadline` when
+ * incoming activity should reset the deadline. Combine cancellation and deadline signals
+ * with `AbortSignal.any`.
  */
 
 export interface RestartableDeadline {
-  /** Aborts once the time passes with no restart. */
+  /** Aborts after the configured milliseconds elapse without a restart. */
   signal: AbortSignal;
   restart(): void;
-  /** Done waiting: the timer goes, and the signal never aborts. */
+  /** Cancels the current timer without changing the signal's aborted state. */
   clear(): void;
 }
 
@@ -27,7 +28,7 @@ export function createRestartableDeadline(ms: number): RestartableDeadline {
 
 export const ABORTED = Symbol('aborted');
 
-/** The promise's result, or `ABORTED` as soon as the signal aborts. */
+/** Stops waiting on abort and returns `ABORTED`; the underlying promise is not cancelled. */
 export function untilAborted<T>(
   promise: Promise<T>,
   signal: AbortSignal
@@ -51,6 +52,6 @@ export function untilAborted<T>(
 
 export type Wait = (ms: number, signal: AbortSignal) => Promise<void>;
 
-/** A pause that ends early, without an error, when the signal aborts. */
+/** Resolves early, without rejecting, when the signal aborts. */
 export const waitUnlessAborted: Wait = (ms, signal) =>
   sleep(ms, undefined, { signal }).catch(() => {});

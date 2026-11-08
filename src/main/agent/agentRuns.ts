@@ -20,28 +20,29 @@ import { readModelChoice } from './readModelChoice';
 import { startAgentRun, type AgentAsk, type AgentRunEnd } from './startAgentRun';
 
 /*
- * The assistant's runs as the page sees them, and this module's entry: one at a time,
- * started with what Settings chose (`readModelChoice.ts`), run by `startAgentRun.ts`,
- * followed through numbered events, stopped on request or when its page goes, with the page
- * running each tool call (`ipcToolBridge.ts`). The IPC handlers and Erase use this file.
+ * Manages one assistant run at a time. Reads the selected model (`readModelChoice.ts`),
+ * starts the run (`startAgentRun.ts`), and routes numbered events and tool calls to the
+ * renderer (`ipcToolBridge.ts`). Stops the run when the renderer reloads or closes.
+ * IPC handlers and data erasure use this file; IPC also uses `readOutdatedReads.ts` for
+ * Trace read status. The remaining files implement the run's internal steps.
  */
 
-/** The page that started a run: where its events and tool calls go. */
+/** The renderer that receives run events and executes tool calls. */
 export interface RunPage {
   sendEvent(envelope: AgentRunEnvelope): void;
   sendToolCall(call: AgentToolCall): void;
   /**
-   * Calls `onGone` if the page reloads or closes, since a run's tools live in it; returns
-   * the call that stops watching.
+   * Calls `onGone` when the renderer reloads or closes because tool execution requires
+   * that renderer. Returns an unsubscribe function.
    */
   watchGone(onGone: () => void): () => void;
 }
 
 export interface AgentRunsNeeds {
-  /** Asked at each start: Erase swaps the connection for a fresh file. */
+  /** Read at each start because data erasure replaces the database connection. */
   currentDb: () => Database;
   createProvider: (choice: ModelChoice) => Promise<ModelProviderOpening>;
-  /** What a run's end said about the key it started with. */
+  /** Reports whether the run's API key was refused or the run completed successfully. */
   noteKeyAnswer?: (choice: ModelChoice, answer: KeyAnswer, runStartedAt: number) => void;
   limits?: RunLimitSettings;
   wait?: Wait;
@@ -55,11 +56,11 @@ export interface AgentRuns {
   stop(runId: number): void;
   answerTool(runId: number, callId: string, answer: AgentToolAnswer): void;
   /**
-   * Stops the run if one is going, and settles once its end is stored. A start still
-   * waiting for its provider is refused.
+   * Cancels any pending start and stops the active run. Resolves after the provider
+   * finishes opening and the active run's end is stored.
    */
   stopAll(): Promise<void>;
-  /** Stops the conversation's run if it has one going, and deletes it once that end is stored. */
+  /** Stops this conversation's active run, waits for its end to be stored, then deletes it. */
   deleteConversation(conversationId: number): Promise<void>;
 }
 
@@ -71,7 +72,7 @@ interface ActiveRun {
   ended: Promise<void>;
 }
 
-/** A start waiting for its provider, which may wait on a keychain prompt. */
+/** Tracks cancellation while provider creation waits, possibly on a keychain prompt. */
 interface PendingStart {
   isCancelled: boolean;
   opened: Promise<ModelProviderOpening>;
@@ -87,13 +88,12 @@ interface RunSetup {
 
 const refused = (reason: AgentStartRefusal): AgentStart => ({ ok: false, reason });
 
-/** Only a refusal or a finished run says anything about the key; any other stop may not. */
+/** Only a key refusal or successful completion establishes the key's status. */
 function readKeyAnswer({ stopReason, providerErrorReason }: AgentRunEnd): KeyAnswer | null {
   if (providerErrorReason === 'keyRefused') return 'refused';
   return stopReason === undefined ? 'worked' : null;
 }
 
-/** Numbers each event within its run, from 1. */
 function numberEvents(page: RunPage) {
   let seq = 0;
   return (event: AgentRunEvent, run: ConversationRun) =>
@@ -116,7 +116,7 @@ export function createAgentRuns(needs: AgentRunsNeeds): AgentRuns {
     const start: PendingStart = { isCancelled: false, opened: needs.createProvider(choice) };
     pending = start;
     const opened = await start.opened.finally(() => (pending = null));
-    // Erase came while it waited, and leaves the assistant off.
+    // Data erasure cancelled this start while provider creation was pending.
     if (start.isCancelled) return refused('assistantOff');
     if (!opened.ok) return refused(opened.reason);
     return run(page, { db, choice, modelProvider: opened.modelProvider, ask, templateId });
@@ -150,7 +150,7 @@ export function createAgentRuns(needs: AgentRunsNeeds): AgentRuns {
           if (answer) needs.noteKeyAnswer?.(choice, answer, startedAt);
         },
         (error: unknown) => {
-          // Already stored as the run's stop; the page still has to hear the run ended.
+          // The fault is already stored; notify the renderer that the run ended.
           console.error('The assistant’s run failed:', error);
           onEvent({ type: 'runEnded', stopReason: 'appFault' }, run);
         }

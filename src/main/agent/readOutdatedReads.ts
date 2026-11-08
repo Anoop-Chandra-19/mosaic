@@ -6,16 +6,15 @@ import { readRunCallRows, type RunCallRow } from '../db/conversations/toolCalls'
 import type { DraftStamp } from './assembleModelContext';
 
 /*
- * What the Trace says of a read that no longer holds, by the rule the model is held to
- * (`assembleModelContext.ts`). Its context is built from the log every step, so a read goes
- * stale for the model the moment a step sees the draft elsewhere. That is on record as a later
- * run or call stamped differently. A read nothing later saw differently can still be out of date
- * against the draft as it is now. A rev never leaves main: only what became of each read does.
+ * Classifies outdated reads for Trace using template IDs and draft edit counters, as
+ * `assembleModelContext.ts` does for model context. A later run or call with a different
+ * stamp takes precedence over a mismatch with the current draft. IPC receives only the
+ * read's status, not the stored edit counters.
  */
 
 const stampKey = (templateId: string | null, rev: number | null) => `${templateId} ${rev}`;
 
-/** Where the draft stood each time the conversation looked, a read among them. */
+/** A recorded draft stamp, optionally identifying a successful read tool call. */
 interface Sighting {
   key: string;
   read: { runId: number; callId: string } | null;
