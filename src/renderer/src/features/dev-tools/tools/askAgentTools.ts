@@ -1,6 +1,10 @@
 import { askAgent } from '@/features/agent/tools/agentRunTools';
 import { applyAcceptedProposals } from '@/features/suggestions/proposals/apply/applyAcceptedProposals';
-import { acceptProposals } from '@/features/suggestions/proposals/proposalActions';
+import {
+  acceptProposals,
+  confirmProposalFact,
+} from '@/features/suggestions/proposals/proposalActions';
+import { findUnconfirmedFacts } from '@/features/suggestions/proposals/reviewedChange';
 import { agentService } from '@/lib/services/agentService';
 import { useAgentSettingsStore } from '@/stores/agentSettingsStore';
 import { openConversation } from '@/stores/conversationStore';
@@ -50,9 +54,10 @@ const askedText = (args: DevToolArgs) => String(args.text ?? '');
 
 /**
  * Does what the review's Keep all and Apply buttons do, using the same functions. Saves the
- * draft before returning, so a database read right afterwards sees the change. Suggestions
- * that cannot be kept, such as a new entry with unconfirmed facts, or that cannot be
- * applied stay in the review, as they would for the user.
+ * draft before returning, so a database read right afterwards sees the change. A new entry's
+ * facts are confirmed first, as the user does one by one on its card, or it couldn't be
+ * kept. Suggestions that cannot be applied, such as one with a number still to fill in,
+ * stay in the review, as they would for the user.
  */
 async function keepAndApplyAll(): Promise<string> {
   const { templateId } = useResumeStore.getState();
@@ -60,6 +65,9 @@ async function keepAndApplyAll(): Promise<string> {
   const waiting = (useProposalStore.getState().byTemplate[templateId] ?? []).filter(
     (proposal) => proposal.status === 'pending' && !proposal.isStale
   );
+  for (const proposal of waiting) {
+    for (const fact of findUnconfirmedFacts(proposal)) confirmProposalFact(proposal.id, fact, true);
+  }
   acceptProposals(waiting.map((proposal) => proposal.id));
   const outcome = await applyAcceptedProposals();
   await flushDraft();
