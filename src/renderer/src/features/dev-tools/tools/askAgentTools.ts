@@ -1,7 +1,11 @@
 import { askAgent } from '@/features/agent/tools/agentRunTools';
+import { applyAcceptedProposals } from '@/features/suggestions/proposals/apply/applyAcceptedProposals';
+import { acceptProposals } from '@/features/suggestions/proposals/proposalActions';
 import { agentService } from '@/lib/services/agentService';
 import { useAgentSettingsStore } from '@/stores/agentSettingsStore';
 import { openConversation } from '@/stores/conversationStore';
+import { useProposalStore } from '@/stores/proposalStore';
+import { flushDraft, useResumeStore } from '@/stores/resumeStore';
 import { showToast } from '@/stores/toastStore';
 import type { AgentStartRefusal } from '@shared/types/agentBridge';
 import type { DevToolArgs } from '@shared/types/devTools';
@@ -44,6 +48,27 @@ async function askAgentFromPalette(text: string, conversationId: number | null):
 
 const askedText = (args: DevToolArgs) => String(args.text ?? '');
 
+/**
+ * Does what the review's Keep all and Apply buttons do, using the same functions. Saves the
+ * draft before returning, so a database read right afterwards sees the change. Suggestions
+ * that cannot be kept, such as a new entry with unconfirmed facts, or that cannot be
+ * applied stay in the review, as they would for the user.
+ */
+async function keepAndApplyAll(): Promise<string> {
+  const { templateId } = useResumeStore.getState();
+  if (templateId === null) throw new Error('No template is open');
+  const waiting = (useProposalStore.getState().byTemplate[templateId] ?? []).filter(
+    (proposal) => proposal.status === 'pending' && !proposal.isStale
+  );
+  acceptProposals(waiting.map((proposal) => proposal.id));
+  const outcome = await applyAcceptedProposals();
+  await flushDraft();
+  if (waiting.length === 0) return 'Nothing is waiting for review';
+  if (outcome.kind !== 'applied') return `None of ${waiting.length} suggestions could land`;
+  const skipped = outcome.plan.skipped.length ? `, ${outcome.plan.skipped.length} skipped` : '';
+  return `Applied ${outcome.plan.landed.length} of ${waiting.length} suggestions${skipped}`;
+}
+
 const LONG_CONVERSATION_MESSAGES = 2000;
 const MANY_CONVERSATIONS = 120;
 
@@ -65,6 +90,13 @@ export const ASK_AGENT_TOOLS: DevTool[] = [
     description: 'Starts a conversation on the open resume, with nothing from earlier runs.',
     prompt: 'What should the assistant do?',
     run: (args) => askAgentFromPalette(askedText(args), null),
+  },
+  {
+    id: 'keepAndApplyAll',
+    group: 'Data',
+    label: 'Keep and apply every suggestion',
+    description: 'Keeps every suggestion on the open resume, then applies them.',
+    run: keepAndApplyAll,
   },
   {
     id: 'longConversation',
