@@ -2,6 +2,7 @@ import path from 'node:path';
 import { app, BrowserWindow, ipcMain, type IpcMainInvokeEvent, type WebContents } from 'electron';
 import { DEV_CHANNELS } from '@shared/ipc/appChannels';
 import { ALL_DEV_SWITCHES_OFF, type DevSwitches } from '@shared/types/devTools';
+import { buildModelSetup } from '../agent/buildModelSetup';
 import { databaseFile, getAppDatabase } from '../db/appDatabase';
 import { applyDevMotion } from '../dev/applyDevMotion';
 import { describeProcessMemory, type PageProcess } from '../dev/describeProcessMemory';
@@ -10,6 +11,7 @@ import { seedLongConversation } from '../dev/seedLongConversation';
 import {
   parseDevSwitches,
   parseDevToolRuns,
+  parseOpenResumeName,
   parseReopenAddress,
   parseSeedMessageCount,
   readDevToolsFile,
@@ -96,6 +98,10 @@ export function registerDevHandlers(
   ipcMain.handle(DEV_CHANNELS.readDataFolder, (event) => {
     refuseOthers(event);
     return formatHomePath(path.dirname(databaseFile()));
+  });
+  ipcMain.handle(DEV_CHANNELS.readModelSetup, (event, openResumeName: unknown) => {
+    refuseOthers(event);
+    return buildModelSetup(parseOpenResumeName(openResumeName));
   });
   return () => switchesNow;
 }

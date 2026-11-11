@@ -1,6 +1,5 @@
 import type { Database } from 'better-sqlite3';
 import { RUN_LIMITS, type RunLimitSettings } from '@shared/agent/runLimitSettings';
-import { AGENT_TOOLS } from '@shared/agent-tools/agentTools';
 import type { RunStopReason } from '@shared/types/agentConversation';
 import type { AgentRunEvent } from '@shared/types/agentRunEvents';
 import type { ModelProviderError, ModelUsage } from '@shared/types/modelReply';
@@ -18,7 +17,7 @@ import { readToolCallStamps } from '../db/conversations/toolCalls';
 import { logRunStarted, logStepAsked, logStepFinished } from '../dev/logRunEvents';
 import type { ModelProvider } from '../model-providers/modelProvider';
 import { assembleModelContext, type DraftStamp } from './assembleModelContext';
-import { buildSystemPrompt } from './buildSystemPrompt';
+import { buildModelSetup } from './buildModelSetup';
 import { waitUnlessAborted, type Wait } from './abortableWaits';
 import { requestModelReply } from './requestModelReply';
 import { createRunLimits } from './runLimits';
@@ -116,8 +115,7 @@ async function loopSteps(
   const onEvent = (event: AgentRunEvent) => request.onEvent?.(event, run);
   const limitSettings = request.limits ?? RUN_LIMITS;
   const limits = createRunLimits(limitSettings);
-  const system = buildSystemPrompt(run.resumeName);
-  const tools = Object.values(AGENT_TOOLS);
+  const { system, tools } = buildModelSetup(run.resumeName);
   const cacheKey = `mosaic-conversation-${conversationId}`;
   let draft = run.draft;
 
