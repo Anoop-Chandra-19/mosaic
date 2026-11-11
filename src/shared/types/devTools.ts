@@ -1,3 +1,5 @@
+import type { ModelSetup } from './modelTool';
+
 /** Developer tool arguments. Tests use the same value types. */
 export type DevToolArgs = Record<string, string | number | boolean>;
 
@@ -60,6 +62,11 @@ export interface MosaicDev {
   seedLongConversation(messageCount: number): Promise<number>;
   /** Development data folder path, with the home folder replaced by `~`. */
   readDataFolder(): Promise<string>;
+  /**
+   * The system prompt and tools a run would send while a resume of this name is open, or
+   * null for none open. For checking what this build tells the model.
+   */
+  readModelSetup(openResumeName: string | null): Promise<ModelSetup>;
   /** Registers a callback for the Develop › Developer tools… menu item. */
   onOpenTools(open: () => void): void;
 }

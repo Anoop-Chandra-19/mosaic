@@ -81,6 +81,15 @@ export function parseReopenAddress(value: unknown): string {
   return value;
 }
 
+/** A resume's name, or null for no resume open. */
+export function parseOpenResumeName(value: unknown): string | null {
+  if (value === null) return null;
+  if (typeof value !== 'string' || value.length > MAX_ARG_TEXT_LENGTH) {
+    throw new Error(`a resume name must be null or at most ${MAX_ARG_TEXT_LENGTH} characters`);
+  }
+  return value;
+}
+
 const MAX_SEEDED_MESSAGES = 100_000;
 
 export function parseSeedMessageCount(value: unknown): number {

@@ -6,6 +6,7 @@ import { ALL_DEV_SWITCHES_OFF, type DevToolRun } from '@shared/types/devTools';
 import {
   parseDevSwitches,
   parseDevToolRuns,
+  parseOpenResumeName,
   readDevToolsFile,
   updateDevToolsFile,
 } from '../devHandlers';
@@ -58,6 +59,14 @@ describe('developer tools handlers', () => {
   it('refuse switches that are unknown or not on or off', () => {
     for (const refused of [null, [], { warpSpeed: true }, { slowMotion: 'yes' }]) {
       expect(() => parseDevSwitches(refused)).toThrow();
+    }
+  });
+
+  it('take a resume name or null, and refuse anything else', () => {
+    expect(parseOpenResumeName('Tailored for Kestrel')).toBe('Tailored for Kestrel');
+    expect(parseOpenResumeName(null)).toBeNull();
+    for (const refused of [undefined, 7, {}, 'x'.repeat(513)]) {
+      expect(() => parseOpenResumeName(refused)).toThrow();
     }
   });
 

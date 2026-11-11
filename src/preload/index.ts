@@ -146,6 +146,8 @@ const dev: MosaicDev | undefined = process.argv.includes(DEV_BUILD_ARGUMENT)
       seedLongConversation: (messageCount) =>
         ipcRenderer.invoke(DEV_CHANNELS.seedLongConversation, messageCount),
       readDataFolder: () => ipcRenderer.invoke(DEV_CHANNELS.readDataFolder),
+      readModelSetup: (openResumeName) =>
+        ipcRenderer.invoke(DEV_CHANNELS.readModelSetup, openResumeName),
       onOpenTools: (open) => {
         ipcRenderer.on(DEV_OPEN_TOOLS, () => open());
       },

@@ -58,6 +58,7 @@ export const DEV_CHANNELS = {
   readMemory: 'dev:read-memory',
   seedLongConversation: 'dev:seed-long-conversation',
   readDataFolder: 'dev:read-data-folder',
+  readModelSetup: 'dev:read-model-setup',
 } as const satisfies Record<Exclude<keyof MosaicDev, 'onOpenTools'>, string>;
 /** Main → renderer: Develop › Developer tools… was chosen. */
 export const DEV_OPEN_TOOLS = 'dev:open-tools';
