@@ -41,6 +41,23 @@ describe('checkProposal, new content', () => {
     expect(kindsAndWords(mentor)).toEqual([{ kind: 'newNumbers', words: ['12'] }]);
   });
 
+  it('ignores the first word of each bullet: a merge may reword it, an entry may start with it', () => {
+    const merge: ProposalChange = {
+      kind: 'merge',
+      sectionId: 's1',
+      entryId: 'e1',
+      firstId: 'b1',
+      secondId: 'b2',
+      before: ['Built tile caching for the Oslo office', 'Cut tile load time'],
+      after: 'Built tile caching for the Oslo office, cutting tile load time',
+    };
+    expect(kindsAndWords(merge)).toEqual([]);
+    const bullets = ['Mentored engineers', 'Ran the reading group'];
+    expect(
+      kindsAndWords({ kind: 'entry', sectionId: 's1', frame: { title: 'Mentor' }, bullets })
+    ).toEqual([]);
+  });
+
   it("reads a new entry's bullets against its own facts: they are not new there", () => {
     const frame = { title: 'Volunteer Mentor', organization: 'Code for Portland', dates: '2021' };
     const bullets = ['Mentored contributors at Code for Portland since 2021'];

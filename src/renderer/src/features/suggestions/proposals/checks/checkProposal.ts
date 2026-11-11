@@ -46,7 +46,8 @@ function readCheckedText(
     case 'rewrite':
       return { before: change.before, after: change.after, context: '' };
     case 'merge':
-      return { before: change.before.join(' '), after: change.after, context: '' };
+      // A line each, so the second bullet's first word isn't read as a name mid-sentence.
+      return { before: change.before.join('\n'), after: change.after, context: '' };
     case 'add':
       return { before: '', after: change.text, context: readAddedContext(doc, change.place) };
     case 'entry':
