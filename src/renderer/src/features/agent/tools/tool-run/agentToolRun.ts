@@ -17,7 +17,7 @@ export interface AgentToolRun {
   handles: ResumeHandles;
   /** Nothing can be suggested against text the run never read. */
   receipt: ReadReceipt | null;
-  /** Latest suggestion ID per change-kind/target key, used to replace this run's pending suggestions. */
+  /** Latest suggestion ID per change-kind/target key, used to replace the conversation's pending suggestions. */
   suggestionIdByTarget: Map<string, string>;
   /** IDs of suggestions staged by this run and not replaced, used for the run card's count. */
   stagedIds: Set<string>;
@@ -26,20 +26,28 @@ export interface AgentToolRun {
 }
 
 /**
- * Reading state passed between runs in one conversation. The model's last read remains
- * in its log, so follow-up requests reuse the receipt and handles. Opening another
- * resume requires a new draft read before proposing changes.
+ * State passed between runs in one conversation. The model's last read remains in its
+ * log, so follow-up requests reuse the receipt and handles. Opening another resume
+ * requires a new draft read before proposing changes. The suggestions made so far come
+ * along too, so a follow-up that revises one replaces it instead of adding a second.
  */
-export type ConversationReading = Pick<AgentToolRun, 'handles' | 'receipt'>;
+export type ConversationToolState = Pick<
+  AgentToolRun,
+  'handles' | 'receipt' | 'suggestionIdByTarget'
+>;
 
 export const createAgentToolRun = (
   requestText: string,
-  reading: ConversationReading = { handles: createResumeHandles(), receipt: null }
+  earlier: ConversationToolState = {
+    handles: createResumeHandles(),
+    receipt: null,
+    suggestionIdByTarget: new Map(),
+  }
 ): AgentToolRun => ({
   requestText,
-  handles: reading.handles,
-  receipt: reading.receipt,
-  suggestionIdByTarget: new Map(),
+  handles: earlier.handles,
+  receipt: earlier.receipt,
+  suggestionIdByTarget: earlier.suggestionIdByTarget,
   stagedIds: new Set(),
   repairedTargets: new Set(),
 });
