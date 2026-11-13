@@ -8,11 +8,11 @@ import { diagnose, formatToolAnswer, type Diagnostic } from './toolDiagnostics';
 
 /*
  * Finish a compiled propose call by staging accepted changes through
- * `suggestions/proposals/`. Replace this run's earlier pending suggestion for the same
- * target, then report each result and its check findings to the model.
+ * `suggestions/proposals/`. Replace the conversation's earlier pending suggestion for the
+ * same target, then report each result and its check findings to the model.
  */
 
-/** The new suggestions take the place of this run's earlier ones for the same targets. */
+/** The new suggestions take the place of the conversation's earlier ones for the same targets. */
 function replaceEarlierSuggestions({ run, waiting }: ToolCallContext, staged: Proposal[]) {
   const replacedIds: string[] = [];
   for (const proposal of staged) {

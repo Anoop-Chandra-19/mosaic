@@ -29,6 +29,7 @@ beforeEach(() => {
       },
     },
   });
+  useProposalStore.setState({ byTemplate: {} });
   useResumeStore.getState().loadDraft({ templateId: 't1', doc: makeResume(), rev: 3 });
   stopAnswering = answerAgentToolCalls();
 });
@@ -127,5 +128,29 @@ describe('the page’s side of a run', () => {
     finishStart({ ok: true, conversationId: 2, runId: 9 });
     await carried;
     expect(await rewrite(9)).toMatchObject({ isError: false });
+  });
+
+  it('replaces a waiting suggestion when a follow-up ask revises it', async () => {
+    const rewrite = (runId: number, text: string) =>
+      runTool({ runId, callId: 'c2', name: 'propose_rewrite', args: { id: 'b1', text } });
+    const ask = async (runId: number) => {
+      const asked = askAgent('Tighten my bullets.', 5);
+      finishStart({ ok: true, conversationId: 5, runId });
+      await asked;
+    };
+
+    await ask(10);
+    await runTool(readCall(10));
+    await rewrite(10, 'Led billing');
+    follow({ conversationId: 5, runId: 10, seq: 5, event: { type: 'runEnded' } });
+    await Promise.resolve();
+
+    await ask(11);
+    await rewrite(11, 'Led the billing rework');
+
+    const waiting = useProposalStore.getState().byTemplate.t1;
+    expect(waiting.map((proposal) => proposal.change)).toMatchObject([
+      { kind: 'rewrite', after: 'Led the billing rework' },
+    ]);
   });
 });
