@@ -13,7 +13,7 @@ import { cn } from '@/lib/utils';
 import type { ConversationSummary } from '@shared/types/agentBridge';
 import { describeStop } from '../notices/stopWords';
 import { useServerAddresses } from '../notices/useServerAddresses';
-import { TracingDots } from '../reply/TracingDots';
+import { TracingDots } from '@/components/TracingDots';
 import { ConversationDeleteConfirm } from './ConversationDeleteConfirm';
 import {
   formatLastActive,

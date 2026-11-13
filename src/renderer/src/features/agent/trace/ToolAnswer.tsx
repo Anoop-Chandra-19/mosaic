@@ -3,7 +3,7 @@ import { Text, textVariantClasses } from '@/components/ui-kit';
 import { agentService } from '@/lib/services/agentService';
 import { readOr } from '@/lib/services/readOr';
 import { cn } from '@/lib/utils';
-import { TracingDots } from '../reply/TracingDots';
+import { TracingDots } from '@/components/TracingDots';
 import type { RowState } from '../run-view/runTimeline';
 import { formatToolAnswer } from './traceWords';
 

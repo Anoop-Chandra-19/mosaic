@@ -7,7 +7,7 @@ import type { RunModel } from '@shared/types/agentConversation';
 import { cn } from '@/lib/utils';
 import { RetryNotice } from '../notices/RetryNotice';
 import { PacedReply } from '../reply/PacedReply';
-import { TracingDots } from '../reply/TracingDots';
+import { TracingDots } from '@/components/TracingDots';
 import { LiveTime } from '../run-view/LiveTime';
 import { RunLine } from '../run-view/RunLine';
 import {

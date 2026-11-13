@@ -6,7 +6,7 @@ import { usePresenceMotion } from '@/lib/motion/usePresenceMotion';
 import { agentService } from '@/lib/services/agentService';
 import { useAgentNoticeStore } from '@/stores/agentNoticeStore';
 import { useConversationStore } from '@/stores/conversationStore';
-import { TracingDots } from '../reply/TracingDots';
+import { TracingDots } from '@/components/TracingDots';
 import { titleConversation } from './conversationListWords';
 
 const MOST_TITLE_CHARS = 60;
