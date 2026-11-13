@@ -6,7 +6,7 @@ import { Text, textVariantClasses } from '@/components/ui-kit';
 import { cn } from '@/lib/utils';
 import { appendCaret, CARET_CLASS } from './appendCaret';
 import { splitFinishedBlocks } from './splitFinishedBlocks';
-import { TracingDots } from './TracingDots';
+import { TracingDots } from '@/components/TracingDots';
 
 /*
  * Renders assistant markdown with the pane's typography. react-markdown builds React elements
