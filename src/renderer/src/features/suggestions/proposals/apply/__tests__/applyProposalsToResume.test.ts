@@ -12,11 +12,6 @@ import {
 const B1 = 'Assisted in migrating billing to Postgres';
 const B2 = 'Reduced p99 latency from 18% to 3% of requests';
 
-function sequentialIds() {
-  let next = 0;
-  return () => `new${++next}`;
-}
-
 const bulletsOf = (doc: ReturnType<typeof makeResume>, entryIndex = 0) =>
   doc.sections[0].items[entryIndex].bullets.map(({ id, text, selected }) => ({
     id,
@@ -25,6 +20,18 @@ const bulletsOf = (doc: ReturnType<typeof makeResume>, entryIndex = 0) =>
   }));
 
 describe('applyProposalsToResume', () => {
+  it.each([
+    { newContentIds: null, received: 'none' },
+    { newContentIds: { kind: 'split' as const, secondBulletId: 'b5' }, received: 'split' },
+  ])('reports the expected ID kind when it receives $received', ({ newContentIds, received }) => {
+    const proposal = makeProposal(addText('bullet', 'b1', 'Ran the on-call rotation'), 'p1');
+    proposal.newContentIds = newContentIds;
+
+    expect(() => applyProposalsToResume(makeResume(), [proposal])).toThrow(
+      `Expected new content IDs for "add", received "${received}"`
+    );
+  });
+
   it('applies each kind of change, and leaves the input alone', () => {
     const doc = makeResume();
     const changes: ProposalChange[] = [
@@ -59,23 +66,22 @@ describe('applyProposalsToResume', () => {
     ];
     const result = applyProposalsToResume(
       doc,
-      changes.map((change, index) => makeProposal(change, `p${index}`)),
-      sequentialIds()
+      changes.map((change, index) => makeProposal(change, `p${index}`))
     );
 
     expect(result.skippedIds).toEqual([]);
-    expect(result.doc.sections[0].items.map((entry) => entry.id)).toEqual(['e2', 'new2', 'e1']);
+    expect(result.doc.sections[0].items.map((entry) => entry.id)).toEqual(['e2', 'p4-new1', 'e1']);
     expect(bulletsOf(result.doc, 2)).toEqual([
       { id: 'b1', text: 'Led the billing migration to Postgres', selected: true },
       { id: 'b2', text: 'Reduced p99 latency', selected: true },
-      { id: 'new1', text: 'from 18% to 3% of requests', selected: true },
+      { id: 'p2-new1', text: 'from 18% to 3% of requests', selected: true },
       { id: 'b3', text: 'Wrote the on-call runbook for the payments team', selected: false },
     ]);
     expect(result.doc.sections[0].items[1]).toMatchObject({
       title: 'Volunteer',
       organization: 'Riverside Library',
       selected: true,
-      bullets: [{ id: 'new3', text: 'Taught weekly coding classes', selected: true }],
+      bullets: [{ id: 'p4-new2', text: 'Taught weekly coding classes', selected: true }],
     });
     expect(doc).toEqual(makeResume());
   });
@@ -132,18 +138,14 @@ describe('added text and lines', () => {
     doc.sections.find((section) => section.id === sectionId)!.items.map((item) => item.text);
 
   it('adds a bullet after the one named, or first, with a new id', () => {
-    const result = applyProposalsToResume(
-      makeResume(),
-      [
-        makeProposal(addText('bullet', 'b1', 'Ran the on-call rotation'), 'after'),
-        makeProposal(addText('bullet', null, 'Led weekly design reviews'), 'first'),
-      ],
-      sequentialIds()
-    );
+    const result = applyProposalsToResume(makeResume(), [
+      makeProposal(addText('bullet', 'b1', 'Ran the on-call rotation'), 'after'),
+      makeProposal(addText('bullet', null, 'Led weekly design reviews'), 'first'),
+    ]);
     expect(bulletsOf(result.doc).map(({ id, text }) => [id, text])).toEqual([
-      ['new2', 'Led weekly design reviews'],
+      ['first-new1', 'Led weekly design reviews'],
       ['b1', B1],
-      ['new1', 'Ran the on-call rotation'],
+      ['after-new1', 'Ran the on-call rotation'],
       ['b2', B2],
       ['b3', 'Wrote the on-call runbook for the payments team'],
     ]);
@@ -170,8 +172,7 @@ describe('added text and lines', () => {
     ];
     const result = applyProposalsToResume(
       doc,
-      changes.map((change, index) => makeProposal(change, `p${index}`)),
-      sequentialIds()
+      changes.map((change, index) => makeProposal(change, `p${index}`))
     );
     expect(result.skippedIds).toEqual([]);
     expect(linesOf(result.doc, 's3')).toEqual([
@@ -239,6 +240,36 @@ describe('new sections and headings', () => {
   const printed = (doc: ReturnType<typeof makeResume>) =>
     [...doc.sections].sort((a, b) => a.order - b.order).map((section) => section.label);
 
+  it.each(['lines', 'entries'] as const)(
+    'reports mismatched ID layouts for a new %s section',
+    (layout) => {
+      const proposal = makeProposal(
+        {
+          kind: 'section',
+          afterSectionId: 's1',
+          section: { kind: 'custom', layout, label: 'Community' },
+          contents:
+            layout === 'lines'
+              ? { layout: 'lines', lines: ['Organized community events'] }
+              : {
+                  layout: 'entries',
+                  entry: { frame: { title: 'Volunteer' }, bullets: ['Organized community events'] },
+                },
+        },
+        'p1'
+      );
+      const contents =
+        layout === 'lines'
+          ? { layout: 'entries' as const, entry: { entryId: 'e3', bulletIds: ['b5'] } }
+          : { layout: 'lines' as const, lineIds: ['l1'] };
+      proposal.newContentIds = { kind: 'section', sectionId: 's4', contents };
+
+      expect(() => applyProposalsToResume(makeResume(), [proposal])).toThrow(
+        `Expected new content IDs for section layout "${layout}", received "${contents.layout}"`
+      );
+    }
+  );
+
   it('adds a section after the one named, with its first entry or its lines', () => {
     const entries: ProposalChange = {
       kind: 'section',
@@ -258,18 +289,25 @@ describe('new sections and headings', () => {
       section: { kind: 'custom', layout: 'lines', label: 'Talks' },
       contents: { layout: 'lines', lines: ['Postgres at scale, 2024', ''] },
     };
-    const { doc } = applyProposalsToResume(
-      makeResumeWithLines(),
-      [makeProposal(entries, 'p1'), makeProposal(lines, 'p2')],
-      sequentialIds()
-    );
+    const { doc } = applyProposalsToResume(makeResumeWithLines(), [
+      makeProposal(entries, 'p1'),
+      makeProposal(lines, 'p2'),
+    ]);
     expect(printed(doc)).toEqual(['Talks', 'Experience', 'Certifications', 'Summary', 'Skills']);
     const talks = doc.sections.find((section) => section.label === 'Talks')!;
-    expect(talks).toMatchObject({ kind: 'custom', layout: 'lines' });
-    expect(talks.items.map((item) => item.text)).toEqual(['Postgres at scale, 2024']);
+    expect(talks).toMatchObject({ id: 'p2-new1', kind: 'custom', layout: 'lines' });
+    expect(talks.items.map(({ id, text }) => [id, text])).toEqual([
+      ['p2-new2', 'Postgres at scale, 2024'],
+    ]);
     const certifications = doc.sections.find((section) => section.label === 'Certifications')!;
+    expect(certifications.id).toBe('p1-new1');
     expect(certifications.items).toMatchObject([
-      { title: 'Solutions Architect', organization: 'Amazon Web Services', bullets: [] },
+      {
+        id: 'p1-new2',
+        title: 'Solutions Architect',
+        organization: 'Amazon Web Services',
+        bullets: [],
+      },
     ]);
   });
 

@@ -28,6 +28,7 @@ const {
   stageProposals,
 } = await import('../proposalActions');
 const { applyAcceptedProposals } = await import('../apply/applyAcceptedProposals');
+const { listNewContentIds } = await import('../newContentIds');
 
 let sqlite: Database;
 
@@ -57,6 +58,27 @@ const B1 = 'Assisted in migrating billing to Postgres';
 const B2 = 'Reduced p99 latency from 18% to 3% of requests';
 const B3 = 'Wrote the on-call runbook for the payments team';
 const B4 = 'Built tile caching for the Oslo office';
+
+describe('ids of what a suggestion adds', () => {
+  it('are set at staging and are the ids in the applied draft', async () => {
+    const split: ProposalChange = {
+      kind: 'split',
+      sectionId: 's1',
+      entryId: 'e1',
+      bulletId: 'b2',
+      before: B2,
+      at: 'Reduced p99 latency'.length,
+    };
+    const [staged] = stageProposals('', [{ source: 'split', change: split }]).proposals;
+    const secondHalfId = listNewContentIds(staged.newContentIds)[0];
+    expect(secondHalfId).toEqual(expect.any(String));
+
+    acceptProposals([staged.id]);
+    await applyAcceptedProposals();
+
+    expect(bulletText(secondHalfId)).toBe('from 18% to 3% of requests');
+  });
+});
 
 /** What a mid-tier model's run gave back in the spike, written out by hand. */
 const SPIKE_LIKE_CHANGES = [

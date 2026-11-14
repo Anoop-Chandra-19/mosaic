@@ -109,6 +109,29 @@ export type ProposalChange =
       after: string;
     };
 
+/** Ids for a new entry and each of its bullets. */
+export interface NewEntryIds {
+  entryId: string;
+  bulletIds: string[];
+}
+
+/**
+ * Ids for the new things a change adds. They are set at staging, so the review, the
+ * preview and the applied draft all use the same ids. An empty bullet or line is not
+ * added, so its id is never used.
+ */
+export type NewContentIds =
+  | { kind: 'split'; secondBulletId: string }
+  /** The id of the new bullet or line. */
+  | { kind: 'add'; id: string }
+  | { kind: 'entry'; entry: NewEntryIds }
+  | {
+      kind: 'section';
+      sectionId: string;
+      /** One id per line, or the ids of the first entry. */
+      contents: { layout: 'entries'; entry: NewEntryIds } | { layout: 'lines'; lineIds: string[] };
+    };
+
 /** A new entry's facts, which only the user can vouch for. */
 export type EntryFact = 'title' | 'organization' | 'location' | 'dates';
 
@@ -173,6 +196,8 @@ export interface Proposal {
   templateId: string;
   source: ProposalSource;
   change: ProposalChange;
+  /** Null when the change adds nothing new. */
+  newContentIds: NewContentIds | null;
   status: ProposalStatus;
   review: ProposalReview;
   /** Its anchor no longer matches the draft. Rechecked both ways: an undo can bring it back. */

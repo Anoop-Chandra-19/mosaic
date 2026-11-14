@@ -1,6 +1,7 @@
 import type { Proposal, ProposalChange } from '@/types/agentProposal';
 import { createEmptyResume } from '@shared/resume/defaultResume';
 import type { ResumeData } from '@shared/types/resume';
+import { createNewContentIds } from '../newContentIds';
 
 /** A fictional resume with fixed ids: one experience entry of three bullets, and a second entry. */
 export function makeResume(): ResumeData {
@@ -90,13 +91,18 @@ export function rewrite(
   };
 }
 
-/** A proposal as staging would make it, for tests that start past staging. */
+/**
+ * Build a proposal the way staging does, for tests that start after staging. Ids for what
+ * it adds come from its own id: `p1-new1`, `p1-new2`, in `listNewContentIds` order.
+ */
 export function makeProposal(change: ProposalChange, id: string): Proposal {
+  let generatedIdCount = 0;
   return {
     id,
     templateId: 't1',
     source: change.kind,
     change,
+    newContentIds: createNewContentIds(change, () => `${id}-new${++generatedIdCount}`),
     status: 'accepted',
     review: {},
     isStale: false,
