@@ -1,4 +1,5 @@
 import { findAnchorMismatch, findEntry, findSection } from '@/lib/resume/proposalAnchor';
+import { readSplitHalves } from '@/lib/resume/splitHalves';
 import type {
   EntryDraft,
   NewEntryIds,
@@ -176,10 +177,10 @@ function applyChange(doc: ResumeData, change: ProposalChange, ids: NewContentIds
         change.entryId,
         change.bulletId
       );
-      bullet.text = change.before.slice(0, change.at).trim();
-      const rest = change.before.slice(change.at).trim();
+      const [first, second] = readSplitHalves(change);
+      bullet.text = first;
       const { secondBulletId } = expectNewContentIds(ids, 'split');
-      bullets.splice(index + 1, 0, { id: secondBulletId, text: rest, selected: bullet.selected });
+      bullets.splice(index + 1, 0, { id: secondBulletId, text: second, selected: bullet.selected });
       return;
     }
     case 'merge': {

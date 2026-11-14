@@ -48,6 +48,11 @@ function readCheckedText(
     case 'merge':
       // A line each, so the second bullet's first word isn't read as a name mid-sentence.
       return { before: change.before.join('\n'), after: change.after, context: '' };
+    case 'split':
+      // A split writes new words only when one of its two bullets was reworded.
+      return change.halves
+        ? { before: change.before, after: change.halves.join('\n'), context: '' }
+        : null;
     case 'add':
       return { before: '', after: change.text, context: readAddedContext(doc, change.place) };
     case 'entry':

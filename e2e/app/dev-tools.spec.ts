@@ -30,7 +30,7 @@ test('the developer tools open over the full history, run from the keyboard, and
     'Stage one of each suggestion'
   );
   await page.keyboard.press('Enter');
-  await expect(page.getByText(/^Staged 23 example suggestions/)).toBeVisible();
+  await expect(page.getByText(/^Staged 21 example suggestions/)).toBeVisible();
   await expect(tools).toBeHidden();
   await expect(history).toBeVisible();
 

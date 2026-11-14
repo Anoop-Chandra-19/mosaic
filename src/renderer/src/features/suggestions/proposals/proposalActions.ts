@@ -18,13 +18,13 @@ import {
 import { useProposalStore } from '@/stores/proposalStore';
 import { getResumeSnapshot, useResumeStore } from '@/stores/resumeStore';
 import type { ResumeData } from '@shared/types/resume';
-import { applyProposalsToResume } from './apply/applyProposalsToResume';
 import { checkProposal } from './checks/checkProposal';
+import { canRewordSuggestion, readTextEdit, rewordChange, type TextEdit } from './rewordSuggestion';
 import { createNewContentIds } from './newContentIds';
 import { recheckOpenProposals, watchProposalAnchors } from './recheckProposals';
 import { canKeepProposal, resolveChange, reviewedRequestText } from './reviewedChange';
 import { validateProposal, type ProposalRefusal } from './validateProposal';
-import { buildCopyBefore, buildWorkingCopy, findRequiredIds } from './workingCopy';
+import { buildCopyBefore, buildWorkingCopy, findRequiredIds, findTextWriter } from './workingCopy';
 
 /*
  * Proposals are the assistant's suggested changes to the open draft. They wait for the
@@ -36,7 +36,8 @@ import { buildCopyBefore, buildWorkingCopy, findRequiredIds } from './workingCop
  *
  * A run stages changes here. `validateProposal` refuses a change that doesn't fit the
  * working copy, `newContentIds` assigns ids for additions, and `checks/checkProposal`
- * flags what the user should look at.
+ * flags what the user should look at. When a change rewrites text that a waiting
+ * suggestion wrote, `rewordSuggestion.ts` changes that suggestion and no new one is made.
  *
  * The user keeps, drops or edits proposals. Their edits are stored in `review`, apart from
  * the assistant's `change`, and `reviewedChange.ts` combines the two. `recheckProposals`
@@ -57,8 +58,22 @@ export interface StagedChange {
   reason?: string;
 }
 
+/** A waiting suggestion whose text a staged change rewrote. No new suggestion was made. */
+export interface RewordedSuggestion {
+  /** The position of that change in the staged list. */
+  index: number;
+  /** The suggestion as it was before the change. */
+  before: Proposal;
+  /** The suggestion with its new text. When it was removed, the suggestion as it was. */
+  proposal: Proposal;
+  /** True when the change put back the text the suggestion replaced, which removes it. */
+  isRemoved: boolean;
+}
+
 export interface StagingResult {
+  /** The new suggestions. */
   proposals: Proposal[];
+  reworded: RewordedSuggestion[];
   /** `index` is the refused change's position in the staged list, so a run can say which one to fix. */
   refusals: { index: number; refusal: ProposalRefusal }[];
 }
@@ -72,18 +87,76 @@ function openTemplateId(): string {
 const listOpenProposals = () => useProposalStore.getState().byTemplate[openTemplateId()] ?? [];
 
 /**
+ * Find the waiting suggestion whose text a change rewrites. Returns null when the change
+ * rewrites no text, or when the text is the user's. The user's text is the draft's text,
+ * a kept suggestion's text, or their own wording on a card.
+ */
+function findSuggestionToReword(
+  draft: ResumeData,
+  proposals: readonly Proposal[],
+  change: ProposalChange
+): { writer: Proposal; edit: TextEdit } | null {
+  const edit = readTextEdit(change);
+  const writer = edit && findTextWriter(draft, proposals, edit.textId);
+  return writer && canRewordSuggestion(writer, edit.textId) ? { writer, edit } : null;
+}
+
+/**
+ * Add a later request to a suggestion's request text. A number the user gave in either
+ * request is then not flagged as new.
+ */
+const joinRequestText = (earlier: string, later: string) =>
+  earlier.includes(later) ? earlier : [earlier, later].filter(Boolean).join('\n');
+
+/**
+ * Put new wording into the suggestion that wrote the text, and run its checks again. The
+ * checks compare against the copy built from the suggestions before it, which holds the
+ * user's text.
+ */
+function rewordSuggestion(
+  draft: ResumeData,
+  proposals: readonly Proposal[],
+  { writer, edit }: { writer: Proposal; edit: TextEdit },
+  requestText: string
+): Omit<RewordedSuggestion, 'index'> {
+  const change = rewordChange(writer, edit);
+  if (!change) return { before: writer, proposal: writer, isRemoved: true };
+  const reworded = {
+    ...writer,
+    change,
+    requestText: joinRequestText(writer.requestText, requestText),
+  };
+  const copyBefore = buildCopyBefore(draft, proposals, writer.id);
+  const flags = checkProposal(copyBefore, resolveChange(reworded), reviewedRequestText(reworded));
+  return { before: writer, proposal: { ...reworded, flags }, isRemoved: false };
+}
+
+/**
  * Stage changes as proposals for the open draft. Each change is checked against the
  * working copy, which includes the changes staged before it in this call. A change that
- * doesn't fit is refused.
+ * doesn't fit is refused. A change that rewrites text a waiting suggestion wrote changes
+ * that suggestion, and no new one is made.
  */
 export function stageProposals(requestText: string, changes: StagedChange[]): StagingResult {
   const templateId = openTemplateId();
-  let copy = buildWorkingCopy(getResumeSnapshot(), listOpenProposals());
-  const result: StagingResult = { proposals: [], refusals: [] };
+  const draft = getResumeSnapshot();
+  let proposals = listOpenProposals();
+  const result: StagingResult = { proposals: [], reworded: [], refusals: [] };
   changes.forEach(({ change, source, reason }, index) => {
+    const copy = buildWorkingCopy(draft, proposals);
     const refusal = validateProposal(copy, change);
     if (refusal) {
       result.refusals.push({ index, refusal });
+      return;
+    }
+    const toReword = findSuggestionToReword(draft, proposals, change);
+    if (toReword) {
+      const reworded = rewordSuggestion(draft, proposals, toReword, requestText);
+      result.reworded.push({ index, ...reworded });
+      const { id } = reworded.proposal;
+      proposals = reworded.isRemoved
+        ? proposals.filter((each) => each.id !== id)
+        : proposals.map((each) => (each.id === id ? reworded.proposal : each));
       return;
     }
     const proposal: Proposal = {
@@ -101,11 +174,13 @@ export function stageProposals(requestText: string, changes: StagedChange[]): St
       createdAt: Date.now(),
     };
     result.proposals.push(proposal);
-    copy = applyProposalsToResume(copy, [proposal]).doc;
+    proposals = [...proposals, proposal];
   });
-  if (result.proposals.length) {
+  if (result.proposals.length || result.reworded.length) {
     watchProposalAnchors();
-    useProposalStore.getState().addProposals(templateId, result.proposals);
+    useProposalStore.getState().setProposals(templateId, proposals);
+    // A dropped suggestion can start from the old wording. It is out of date now.
+    if (result.reworded.length) recheckOpenProposals();
   }
   return result;
 }
@@ -137,10 +212,28 @@ export function rejectProposals(ids: readonly string[]): void {
   recheckOpenProposals();
 }
 
-/** Set the proposals back to waiting. This undoes a keep or a drop. */
+/**
+ * Set kept proposals back to waiting when they change the text of a proposal that is
+ * only waiting. Apply could not apply them, because it applies only kept proposals.
+ */
+function returnKeptThatNeedWaiting(): void {
+  const draft = getResumeSnapshot();
+  const proposals = listOpenProposals();
+  const ids = proposals
+    .filter((proposal) => proposal.status === 'accepted' && !proposal.isStale)
+    .filter((proposal) => findRequiredIds(draft, proposals, [proposal.id]).length > 0)
+    .map((proposal) => proposal.id);
+  if (ids.length) useProposalStore.getState().setStatus(openTemplateId(), ids, 'pending');
+}
+
+/**
+ * Set the proposals back to waiting. This undoes a keep or a drop. Kept proposals that
+ * change their text go back to waiting with them.
+ */
 export function returnProposals(ids: readonly string[]): void {
   useProposalStore.getState().setStatus(openTemplateId(), ids, 'pending');
   recheckOpenProposals();
+  returnKeptThatNeedWaiting();
 }
 
 /**
@@ -153,12 +246,22 @@ export function discardProposals(ids?: readonly string[]): void {
 }
 
 /**
- * Remove a run's proposals from review. Every template is searched, because a run's
+ * Undo what a run did to these proposals. A proposal the run made is removed from review.
+ * A proposal from before the run, whose text the run changed, is put back as it was:
+ * `suggestionsBeforeRun` holds those. Every template is searched, because a run's
  * proposals can belong to a resume that isn't open.
  */
-export function discardRunProposals(ids: readonly string[]): void {
-  const { byTemplate, removeProposals } = useProposalStore.getState();
-  for (const templateId of Object.keys(byTemplate)) removeProposals(templateId, ids);
+export function discardRunProposals(
+  ids: readonly string[],
+  suggestionsBeforeRun: readonly Proposal[] = []
+): void {
+  const toPutBack = suggestionsBeforeRun.filter((proposal) => ids.includes(proposal.id));
+  const idsToRemove = ids.filter((id) => !toPutBack.some((proposal) => proposal.id === id));
+  const { byTemplate, replaceProposals, removeProposals } = useProposalStore.getState();
+  for (const templateId of Object.keys(byTemplate)) {
+    replaceProposals(templateId, toPutBack);
+    removeProposals(templateId, idsToRemove);
+  }
   recheckOpenProposals();
 }
 
@@ -182,6 +285,7 @@ function reviewProposal(
   const flags = checkProposal(copyBefore, change, reviewedRequestText(next));
   useProposalStore.getState().replaceProposals(openTemplateId(), [{ ...next, isStale, flags }]);
   recheckOpenProposals();
+  if (proposal.status === 'accepted' && next.status === 'pending') returnKeptThatNeedWaiting();
   return true;
 }
 

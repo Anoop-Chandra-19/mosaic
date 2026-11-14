@@ -54,6 +54,11 @@ export type ProposalChange =
       bulletId: string;
       before: string;
       at: number;
+      /**
+       * The text of the two bullets. It is set only when the assistant reworded one of
+       * them after the split. Without it, the two bullets are `before` cut at `at`.
+       */
+      halves?: [string, string];
     }
   | {
       kind: 'merge';

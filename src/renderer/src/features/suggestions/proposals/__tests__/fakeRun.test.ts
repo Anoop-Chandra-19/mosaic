@@ -242,11 +242,12 @@ describe('review', () => {
   });
 });
 
-describe('a second rewrite of a bullet that a waiting rewrite already changed', () => {
+describe('a second rewrite of a bullet that a kept rewrite already changed', () => {
   const SHORTER = 'Led billing to Postgres';
-  /** Stage a rewrite of b1, then a rewrite of the text the first one wrote. */
+  /** Stage a rewrite of b1 and keep it, then stage a rewrite of the text the first one wrote. */
   const stageTwoRewrites = () => {
     const [first] = stageProposals('', [SPIKE_LIKE_CHANGES[0]]).proposals;
+    acceptProposals([first.id]);
     const secondChange = rewrite('b1', 'Led the billing migration to Postgres', SHORTER);
     const staged = stageProposals('', [{ source: 'rewrite', change: secondChange }]);
     return { first, second: staged.proposals[0], refusals: staged.refusals };
@@ -273,9 +274,19 @@ describe('a second rewrite of a bullet that a waiting rewrite already changed', 
     expect(isSecondStale()).toBe(false);
   });
 
-  it('keeps the first when the second is kept, and no unrelated suggestion', () => {
+  it('keeps a waiting rewrite when a split of its text is kept, and no unrelated suggestion', () => {
     const [unrelated] = stageProposals('', [SPIKE_LIKE_CHANGES[3]]).proposals;
-    const { first, second } = stageTwoRewrites();
+    const [first] = stageProposals('', [SPIKE_LIKE_CHANGES[0]]).proposals;
+    const rewritten = 'Led the billing migration to Postgres';
+    const split: ProposalChange = {
+      kind: 'split',
+      sectionId: 's1',
+      entryId: 'e1',
+      bulletId: 'b1',
+      before: rewritten,
+      at: rewritten.indexOf('to Postgres'),
+    };
+    const [second] = stageProposals('', [{ source: 'split', change: split }]).proposals;
 
     acceptProposals([second.id]);
 
@@ -284,11 +295,12 @@ describe('a second rewrite of a bullet that a waiting rewrite already changed', 
     expect(statusOf(unrelated.id)).toBe('pending');
   });
 
-  it('is skipped by Apply when it is kept but the first is only waiting', async () => {
+  it('goes back to waiting when it is kept and the first is set back to waiting', async () => {
     const { first, second } = stageTwoRewrites();
     acceptProposals([second.id]);
     returnProposals([first.id]);
 
+    expect(proposals().find((each) => each.id === second.id)?.status).toBe('pending');
     const outcome = await applyAcceptedProposals();
 
     expect(outcome.kind).toBe('nothing');

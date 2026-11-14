@@ -2,6 +2,7 @@ import { findAnchorMismatch } from '@/lib/resume/proposalAnchor';
 import type { Proposal } from '@/types/agentProposal';
 import type { ResumeData } from '@shared/types/resume';
 import { applyProposalsToResume, type AppliedProposals } from './apply/applyProposalsToResume';
+import { listWrittenTextIds } from './rewordSuggestion';
 import { resolveChange } from './reviewedChange';
 
 /*
@@ -50,6 +51,25 @@ export function buildCopyBefore(
 ): ResumeData {
   const index = proposals.findIndex((proposal) => proposal.id === proposalId);
   return buildWorkingCopy(draft, index < 0 ? proposals : proposals.slice(0, index));
+}
+
+/**
+ * Find the suggestion that wrote a bullet, a line or a section's heading in the working
+ * copy. `textId` is the id of the bullet or line, or of the section for a heading. When
+ * several suggestions wrote the text, the last one is returned. Returns null when no
+ * suggestion wrote it, so the text is the draft's.
+ */
+export function findTextWriter(
+  draft: ResumeData,
+  proposals: readonly Proposal[],
+  textId: string
+): Proposal | null {
+  const active = proposals.filter(isActive);
+  const { appliedIds } = replayProposals(draft, active);
+  const writers = active.filter(
+    (proposal) => appliedIds.includes(proposal.id) && listWrittenTextIds(proposal).includes(textId)
+  );
+  return writers.at(-1) ?? null;
 }
 
 /**
