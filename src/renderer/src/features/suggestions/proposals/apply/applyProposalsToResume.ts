@@ -5,39 +5,15 @@ import type {
   NewContentIds,
   Proposal,
   ProposalChange,
-  ProposalChangeKind,
   ShowPlace,
   TextPlace,
 } from '@/types/agentProposal';
 import type { ResumeData, ResumeEntry, ResumeSection } from '@shared/types/resume';
 
-/**
- * Hiding goes first, since it keys on text a rewrite would change; text before structure;
- * added text after the orders it would otherwise upset; new entries and sections last. A
- * change that no longer fits once the ones before it have landed (two rewrites of one
- * bullet, a merge of bullets a reorder moved apart) is skipped, not forced.
- */
-const APPLY_ORDER: Record<ProposalChangeKind, number> = {
-  select: 0,
-  rewrite: 1,
-  rename: 1,
-  split: 2,
-  merge: 3,
-  reorder: 4,
-  add: 5,
-  entry: 6,
-  section: 7,
-};
-
-/** In the order they apply, which is not the order they were suggested in. */
-export function sortForApply<T extends Pick<Proposal, 'change'>>(proposals: readonly T[]): T[] {
-  return [...proposals].sort((a, b) => APPLY_ORDER[a.change.kind] - APPLY_ORDER[b.change.kind]);
-}
-
 export interface AppliedProposals {
   doc: ResumeData;
   appliedIds: string[];
-  /** Accepted, but no longer fitting the document by the time their turn came. */
+  /** Proposals that were not applied because they no longer fit the document. */
   skippedIds: string[];
 }
 
@@ -46,7 +22,7 @@ function reorderById<T extends { id: string }>(items: T[], ids: string[]): T[] {
   return ids.map((id) => byId.get(id)!);
 }
 
-/** The place's own record: a bullet, or a line's item. */
+/** Find the record that holds a place's text: the bullet, or the item of a line. */
 function findTextRecord(doc: ResumeData, place: TextPlace) {
   if (place.unit === 'line') return findEntry(doc, place.sectionId, place.lineId)!;
   return findEntry(doc, place.sectionId, place.entryId)!.bullets.find(
@@ -60,7 +36,7 @@ function placeBullet(doc: ResumeData, sectionId: string, entryId: string, bullet
   return { bullets: entry.bullets, index, bullet: entry.bullets[index] };
 }
 
-/** A section shows by `hidden`, everything else by `selected`. */
+/** Show or hide a place. A section stores this in `hidden`; everything else stores it in `selected`. */
 function setShown(doc: ResumeData, place: ShowPlace, isShown: boolean) {
   if (place.unit === 'section') {
     const section = findSection(doc, place.sectionId)!;
@@ -75,7 +51,7 @@ function setShown(doc: ResumeData, place: ShowPlace, isShown: boolean) {
   record.selected = isShown;
 }
 
-/** Where new items go in a list: right after `afterId`, or first when it is null. */
+/** Return the index for a new item: right after `afterId`, or 0 when `afterId` is null. */
 const insertAt = (ids: string[], afterId: string | null) =>
   afterId === null ? 0 : ids.indexOf(afterId) + 1;
 
@@ -110,7 +86,7 @@ function addText(doc: ResumeData, change: Extract<ProposalChange, { kind: 'add' 
   bullets.splice(at, 0, { id, text, selected: true });
 }
 
-/** A new entry from a suggestion: its facts as written, its non-empty bullets. */
+/** Build a new entry from a suggestion, with its facts as written and its non-empty bullets. */
 function createEntry({ frame, bullets }: EntryDraft, ids: NewEntryIds): ResumeEntry {
   return {
     id: ids.entryId,
@@ -181,7 +157,7 @@ function reorder(doc: ResumeData, change: Extract<ProposalChange, { kind: 'reord
   entry.bullets = reorderById(entry.bullets, after);
 }
 
-/** Changes `doc` in place; the change has been checked to fit it. */
+/** Apply one change to `doc` in place. The caller has already checked that the change fits. */
 function applyChange(doc: ResumeData, change: ProposalChange, ids: NewContentIds | null): void {
   switch (change.kind) {
     case 'select':
@@ -237,13 +213,18 @@ function applyChange(doc: ResumeData, change: ProposalChange, ids: NewContentIds
   }
 }
 
-/** The document with these proposals applied, on a copy; the input is left as it was. */
+/**
+ * Apply the proposals to a copy of the document, in the order given. The input document
+ * is not changed. Each proposal is checked against the copy after the earlier proposals
+ * were applied. A proposal that no longer fits is skipped, for example a rewrite of text
+ * that an earlier proposal already changed.
+ */
 export function applyProposalsToResume(
   doc: ResumeData,
   proposals: readonly Proposal[]
 ): AppliedProposals {
   const result: AppliedProposals = { doc: structuredClone(doc), appliedIds: [], skippedIds: [] };
-  for (const proposal of sortForApply(proposals)) {
+  for (const proposal of proposals) {
     if (findAnchorMismatch(result.doc, proposal.change)) {
       result.skippedIds.push(proposal.id);
       continue;

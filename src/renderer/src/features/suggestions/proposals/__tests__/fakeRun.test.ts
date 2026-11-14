@@ -24,6 +24,7 @@ const {
   editProposalFact,
   fillProposalNumber,
   rejectProposals,
+  returnProposals,
   reviewStaleProposalAnyway,
   stageProposals,
 } = await import('../proposalActions');
@@ -237,6 +238,69 @@ describe('review', () => {
     expect((await db.current!.versions.list(resume().templateId!))[0]).toMatchObject({
       number: first.number,
       revision: 1,
+    });
+  });
+});
+
+describe('a second rewrite of a bullet that a waiting rewrite already changed', () => {
+  const SHORTER = 'Led billing to Postgres';
+  /** Stage a rewrite of b1, then a rewrite of the text the first one wrote. */
+  const stageTwoRewrites = () => {
+    const [first] = stageProposals('', [SPIKE_LIKE_CHANGES[0]]).proposals;
+    const secondChange = rewrite('b1', 'Led the billing migration to Postgres', SHORTER);
+    const staged = stageProposals('', [{ source: 'rewrite', change: secondChange }]);
+    return { first, second: staged.proposals[0], refusals: staged.refusals };
+  };
+
+  it('is staged against the working copy, and both apply in the order they were made', async () => {
+    const { first, second, refusals } = stageTwoRewrites();
+    expect(refusals).toEqual([]);
+
+    acceptProposals([first.id, second.id]);
+    await applyAcceptedProposals();
+
+    expect(bulletText('b1')).toBe(SHORTER);
+  });
+
+  it('goes out of date when the first is dropped, and is current again when the drop is undone', () => {
+    const { first, second } = stageTwoRewrites();
+    const isSecondStale = () => proposals().find((each) => each.id === second.id)?.isStale;
+
+    rejectProposals([first.id]);
+    expect(isSecondStale()).toBe(true);
+
+    returnProposals([first.id]);
+    expect(isSecondStale()).toBe(false);
+  });
+
+  it('keeps the first when the second is kept, and no unrelated suggestion', () => {
+    const [unrelated] = stageProposals('', [SPIKE_LIKE_CHANGES[3]]).proposals;
+    const { first, second } = stageTwoRewrites();
+
+    acceptProposals([second.id]);
+
+    const statusOf = (id: string) => proposals().find((each) => each.id === id)?.status;
+    expect(statusOf(first.id)).toBe('accepted');
+    expect(statusOf(unrelated.id)).toBe('pending');
+  });
+
+  it('is skipped by Apply when it is kept but the first is only waiting', async () => {
+    const { first, second } = stageTwoRewrites();
+    acceptProposals([second.id]);
+    returnProposals([first.id]);
+
+    const outcome = await applyAcceptedProposals();
+
+    expect(outcome.kind).toBe('nothing');
+    expect(bulletText('b1')).toBe(B1);
+  });
+
+  it('is checked against the first rewrite’s text when the user edits it', () => {
+    const { second } = stageTwoRewrites();
+    expect(editProposal(second.id, 'Led billing')).toBe(true);
+    expect(proposals().find((each) => each.id === second.id)).toMatchObject({
+      isStale: false,
+      status: 'accepted',
     });
   });
 });

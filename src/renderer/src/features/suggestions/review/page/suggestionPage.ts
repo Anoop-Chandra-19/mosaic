@@ -2,32 +2,32 @@ import { findMoves } from '@/lib/resume/changes/findMoves';
 import { readShowPlaceId, readTextPlaceId } from '@/lib/resume/proposalAnchor';
 import type { Proposal, ProposalChange, ShowPlace } from '@/types/agentProposal';
 import type { ResumeData } from '@shared/types/resume';
-import { sortForApply } from '../../proposals/apply/applyProposalsToResume';
 import { layInProposal } from '../../proposals/apply/layInProposal';
 import { resolveChange } from '../../proposals/reviewedChange';
 
-/** How a mark reads on the page: changed words, added text, or text leaving the page. */
+/** How a mark is drawn on the page: changed words, added text, or text being hidden. */
 export type SuggestionLook = 'edit' | 'add' | 'hide';
 
 export interface SuggestionMark {
   proposal: Proposal;
   look: SuggestionLook;
-  /** What a line's words are marked against, when the suggestion changes them. */
+  /** The text before and after, set when the suggestion changes a line's words. */
   words?: { before: string; after: string };
   /**
-   * Part of a whole entry or section: leaving the page (every line struck, one bar down its
-   * side), put back, or new. Absent for a bullet's or line's own mark.
+   * Set when the mark is one line of a whole entry or section that a suggestion hides
+   * ('leaving'), shows again ('back') or adds ('new'). A hidden block has every line
+   * struck through and one bar down its side. Not set for a single bullet's or line's mark.
    */
   block?: 'leaving' | 'back' | 'new';
 }
 
-/** A whole entry or section one suggestion is about, outlined as one when it is selected. */
+/** A whole entry or section that one suggestion hides, shows or adds. It gets one outline when selected. */
 export interface SuggestionBlock {
   proposal: Proposal;
   isLeaving: boolean;
 }
 
-/** An item a reorder moves, by its place before and after, counted from 1. */
+/** An item that a reorder moves, with its position before and after. Positions start at 1. */
 export interface SuggestionMove {
   proposal: Proposal;
   from: number;
@@ -35,8 +35,8 @@ export interface SuggestionMove {
 }
 
 /**
- * The page the review shows: the draft with every live suggestion laid in, and its marks,
- * by the id of what they mark: a bullet's or line's text, an entry's heading, a section's.
+ * The page the review shows: the draft with every shown suggestion applied. `marks`,
+ * `moves` and `blocks` are keyed by the id of the bullet, line, entry or section they mark.
  */
 export interface SuggestionPage {
   doc: ResumeData;
@@ -47,7 +47,10 @@ export interface SuggestionPage {
 
 const isShown = (proposal: Proposal) => !proposal.isStale && proposal.status !== 'rejected';
 
-/** The text a section, entry, line or bullet with this id holds; undefined when it isn't there. */
+/**
+ * Return the text of the section, entry, line or bullet with this id. Returns undefined
+ * when the document has none.
+ */
 function readTextById(doc: ResumeData, id: string): string | undefined {
   for (const section of doc.sections) {
     if (section.id === id) return section.label;
@@ -60,7 +63,7 @@ function readTextById(doc: ResumeData, id: string): string | undefined {
   return undefined;
 }
 
-/** What of the draft a suggestion is about, by id, before anything is laid in. */
+/** Return the ids of the existing bullets, lines or sections that a change marks. */
 function readMarkedIds(change: ProposalChange): string[] {
   switch (change.kind) {
     case 'rewrite':
@@ -78,7 +81,7 @@ function readMarkedIds(change: ProposalChange): string[] {
   }
 }
 
-/** The words a change had before it, where it changes a line's words. */
+/** Return the text a change replaces. Returns undefined when the change replaces no words. */
 function readWordsBefore(change: ProposalChange): string | undefined {
   switch (change.kind) {
     case 'rewrite':
@@ -92,7 +95,10 @@ function readWordsBefore(change: ProposalChange): string | undefined {
   }
 }
 
-/** The items a reorder moves, by id: not the ones it only shifts. */
+/**
+ * Return the items a reorder moves, each with its id. Items that only shift because
+ * another item moved are left out.
+ */
 function readMoves(proposal: Proposal, change: ProposalChange): [string, SuggestionMove][] {
   if (change.kind !== 'reorder') return [];
   return findMoves(change.before, change.after).map(({ id, position, positionBefore }) => [
@@ -101,10 +107,13 @@ function readMoves(proposal: Proposal, change: ProposalChange): [string, Suggest
   ]);
 }
 
-/** A hide stays on the page, struck, since the review is about what it takes away. */
+/**
+ * Check whether a change hides something. The review keeps hidden text on the page,
+ * struck through, so the user can see what the suggestion removes.
+ */
 const isLeaving = (change: ProposalChange) => change.kind === 'select' && !change.selected;
 
-/** The look of what a suggestion lays in: new text and things put back read as added. */
+/** Return how a change is drawn. New text and things shown again are drawn as added. */
 function readLook(change: ProposalChange): SuggestionLook {
   if (change.kind === 'select') return change.selected ? 'add' : 'hide';
   return change.kind === 'add' || change.kind === 'entry' || change.kind === 'section'
@@ -112,7 +121,10 @@ function readLook(change: ProposalChange): SuggestionLook {
     : 'edit';
 }
 
-/** Lays one suggestion into the page; false when it no longer fits by its turn. */
+/**
+ * Apply one suggestion to the page and add its marks. Returns false when the suggestion
+ * no longer fits the page.
+ */
 function layIn(page: SuggestionPage, proposal: Proposal): boolean {
   const change = resolveChange(proposal);
   const laidIn = isLeaving(change)
@@ -127,7 +139,8 @@ function layIn(page: SuggestionPage, proposal: Proposal): boolean {
     const words = before !== undefined && after !== undefined ? { before, after } : undefined;
     page.marks.set(id, { proposal, look: readLook(change), words });
   }
-  // What it makes is new, a split's second half included. An entry or section is made first.
+  // Everything the suggestion created is marked as added, including a split's second
+  // half. For a new entry or section, the first created id is the entry or section itself.
   const isNewBlock = change.kind === 'entry' || change.kind === 'section';
   const block = isNewBlock ? 'new' : undefined;
   for (const id of laidIn.createdIds) page.marks.set(id, { proposal, look: 'add', block });
@@ -136,7 +149,7 @@ function layIn(page: SuggestionPage, proposal: Proposal): boolean {
   return true;
 }
 
-/** The id of a whole entry or section a suggestion takes off or puts back. */
+/** Return the entry or section a change hides or shows. Returns null for any other change. */
 function readBlockPlace(
   change: ProposalChange
 ): (ShowPlace & { unit: 'entry' | 'section' }) | null {
@@ -145,7 +158,7 @@ function readBlockPlace(
   return place.unit === 'entry' || place.unit === 'section' ? place : null;
 }
 
-/** Everything a whole entry or section prints: its heading, and all that is under it. */
+/** Return the ids of everything an entry or section shows: its heading and all that it holds. */
 function listBlockIds(doc: ResumeData, id: string): string[] {
   for (const section of doc.sections) {
     const entryIds = (entry: ResumeData['sections'][number]['items'][number]) => [
@@ -160,9 +173,10 @@ function listBlockIds(doc: ResumeData, id: string): string[] {
 }
 
 /**
- * The order whole entries and sections are marked in, as a later one marks over an earlier:
- * nothing under one leaving will print, and an entry leaving keeps its own lines in a section
- * that is leaving too.
+ * Return the order in which a block is marked. A block marked later replaces the marks of
+ * one marked earlier. Hidden blocks are marked after shown ones, because nothing inside a
+ * hidden block is shown. A hidden entry is marked after a hidden section, so the entry
+ * keeps its own marks inside that section.
  */
 function rankBlock(change: ProposalChange, unit: 'entry' | 'section'): number {
   if (!isLeaving(change)) return 0;
@@ -170,8 +184,9 @@ function rankBlock(change: ProposalChange, unit: 'entry' | 'section'): number {
 }
 
 /**
- * A whole entry or section is marked line by line, over any suggestion inside it: it goes or
- * comes back whole.
+ * Mark every line of each entry or section that a suggestion hides or shows. These marks
+ * replace the marks of any suggestion inside the block, because the whole block is
+ * hidden or shown together.
  */
 function markBlocks(page: SuggestionPage, proposals: readonly Proposal[]): void {
   const blocks = proposals.flatMap((proposal) => {
@@ -191,9 +206,10 @@ function markBlocks(page: SuggestionPage, proposals: readonly Proposal[]): void 
 }
 
 /**
- * Lays each shown suggestion into the draft in the order Apply would, one at a time, so
- * what a split, an addition, a new entry or a new section makes is known to be theirs. One that no
- * longer fits by its turn (a second rewrite of the same bullet) is left off the page.
+ * Build the review page. Each shown suggestion is applied to the draft one at a time, in
+ * the order they were made. Applying them one at a time records which suggestion made
+ * each new bullet, line, entry or section. A suggestion that no longer fits is left off
+ * the page.
  */
 export function buildSuggestionPage(
   draft: ResumeData,
@@ -206,10 +222,11 @@ export function buildSuggestionPage(
     blocks: new Map(),
   };
   const open = proposals.filter((proposal) => proposal.status !== 'applied');
-  const laidIn = sortForApply(open.filter(isShown)).filter((proposal) => layIn(page, proposal));
+  const laidIn = open.filter(isShown).filter((proposal) => layIn(page, proposal));
   markBlocks(page, laidIn);
 
-  // Dropped and out-of-date ones mark the draft's own text, unless a shown one already does.
+  // A dropped or out-of-date suggestion marks the draft's own text, so the user can find
+  // its card. A shown suggestion's mark on the same text is kept.
   for (const proposal of open.filter((each) => !isShown(each))) {
     for (const id of readMarkedIds(proposal.change)) {
       if (readTextById(page.doc, id) !== undefined && !page.marks.has(id)) {

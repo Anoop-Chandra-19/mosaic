@@ -20,6 +20,10 @@ const { useResumeStore } = await import('@/stores/resumeStore');
 const { useProposalStore } = await import('@/stores/proposalStore');
 const { createAgentToolRun } = await import('../tool-run/agentToolRun');
 const { runAgentTool } = await import('../runAgentTool');
+const { acceptProposals, rejectProposals } =
+  await import('../../../suggestions/proposals/proposalActions');
+
+const [B1, B2, B3] = makeResume().sections[0].items[0].bullets.map((bullet) => bullet.text);
 
 const openDraft = (doc: ResumeData, templateId = 't1', rev = 3) =>
   useResumeStore.getState().loadDraft({ templateId, doc, rev });
@@ -329,12 +333,12 @@ describe('the rules every change goes through', () => {
     expect(stagedSuggestions()).toEqual([]);
   });
 
-  it("says a repeat of the run's own waiting suggestion is already suggested", async () => {
+  it('says a repeat of a waiting suggestion changes nothing', async () => {
     await readTheResume();
     const rewrite = { id: 'b3', text: 'Wrote the payments runbook' };
     await callTool('propose_rewrite', rewrite);
     expect(await callTool('propose_rewrite', rewrite)).toMatchObject({
-      content: 'b3: already suggested, waiting for the user.',
+      content: 'b3: nothing changed. It already reads that.',
       isError: false,
     });
     expect(stagedSuggestions()).toHaveLength(1);
@@ -461,7 +465,7 @@ describe("checking the model's work", () => {
       replace: 'caches',
     });
     expect(replaced.content).toBe(
-      'b4: suggested. It would read: "Built tile caches for the Oslo office". Checks: none.'
+      'b4: suggested. It reads: "Built tile caches for the Oslo office". Checks: none.'
     );
     const bigger = await callTool('propose_rewrite', {
       id: 'b1',
@@ -488,16 +492,108 @@ describe("checking the model's work", () => {
     expect(stagedSuggestions()[0].flags.map((flag) => flag.kind)).toContain('doubledWords');
   });
 
-  it("replaces the run's earlier suggestion for the same bullet", async () => {
+  it('checks each change against the run’s earlier suggestions, without reading again', async () => {
     await readTheResume();
     await callTool('propose_rewrite', { id: 'b3', text: 'Wrote the payments runbook' });
     await callTool('propose_select', { id: 'b3', show: false });
     await callTool('propose_rewrite', { id: 'b3', text: 'Wrote the on-call runbook' });
     expect(stagedSuggestions().map((proposal) => proposal.change)).toMatchObject([
+      { kind: 'rewrite', before: B3, after: 'Wrote the payments runbook' },
       { kind: 'select', place: { bulletId: 'b3' } },
-      { kind: 'rewrite', after: 'Wrote the on-call runbook' },
+      {
+        kind: 'rewrite',
+        before: 'Wrote the payments runbook',
+        after: 'Wrote the on-call runbook',
+      },
     ]);
     expect([...run.stagedIds]).toEqual(stagedSuggestions().map((proposal) => proposal.id));
+  });
+});
+
+describe('the working copy', () => {
+  const waitingRewrite = { id: 'b1', text: 'Migrated billing to Postgres' };
+
+  it('shows a waiting suggestion in the read, marked, with the user’s text on a was: line', async () => {
+    await readTheResume();
+    await callTool('propose_rewrite', waitingRewrite);
+    await callTool('propose_select', { id: 'b3', show: false });
+    const { content } = await readTheResume();
+    expect(content).toContain('(the draft, with suggestions)');
+    expect(content).toContain(`- b1 (suggested): Migrated billing to Postgres\n  was: ${B1}`);
+    expect(content).toContain(`- b3 (hidden, suggested): ${B3}`);
+    expect(content).toContain(`- b2: ${B2}`);
+  });
+
+  it('gives a split’s second half and a new entry’s bullets handles, in the answer and the read', async () => {
+    await readTheResume();
+    const split = await callTool('propose_split', {
+      bulletId: 'b2',
+      secondStartsWith: 'from 18%',
+    });
+    expect(split.content).toContain(
+      '"Reduced p99 latency" (b2) and "from 18% to 3% of requests" (b5)'
+    );
+    const entry = await callTool('propose_entry', {
+      sectionId: 's1',
+      title: 'Mentor',
+      bullets: ['Mentored new engineers'],
+    });
+    expect(entry.content).toContain('It is e3, with bullets b6.');
+
+    const rewritten = await callTool('propose_rewrite', { id: 'b6', text: 'Mentored engineers' });
+    expect(rewritten.isError).toBe(false);
+    const { content } = await readTheResume();
+    expect(content).toContain('- b5 (suggested, new): from 18% to 3% of requests');
+    expect(content).toContain('### Mentor (suggested, new) (e3)');
+    expect(content).toContain('- b6 (suggested, new): Mentored engineers');
+  });
+
+  it('shows a merged bullet with both of the user’s bullets on was: lines, and accepts a rewrite of it', async () => {
+    await readTheResume();
+    const merged = await callTool('propose_merge', {
+      firstBulletId: 'b1',
+      secondBulletId: 'b2',
+      text: 'Migrated billing to Postgres and reduced p99 latency from 18% to 3% of requests',
+    });
+    expect(merged.content).toContain('b1 holds the merged text now, and b2 is gone.');
+    const shorter = 'Migrated billing to Postgres, reducing p99 latency from 18% to 3%';
+    expect((await callTool('propose_rewrite', { id: 'b1', text: shorter })).isError).toBe(false);
+    const { content } = await readTheResume();
+    expect(content).toContain(`- b1 (suggested): ${shorter}\n  was: ${B1}\n  was: ${B2}`);
+    expect(content).not.toContain('- b2');
+  });
+
+  it('reads a kept suggestion as the user’s text and leaves a dropped one out', async () => {
+    await readTheResume();
+    await callTool('propose_rewrite', waitingRewrite);
+    await callTool('propose_rewrite', { id: 'b3', text: 'Wrote the payments runbook' });
+    const [kept, dropped] = stagedSuggestions();
+    acceptProposals([kept.id]);
+    rejectProposals([dropped.id]);
+    const { content } = await readTheResume();
+    expect(content).toContain('(the draft)');
+    expect(content).toContain('- b1: Migrated billing to Postgres');
+    expect(content).toContain(`- b3: ${B3}`);
+  });
+
+  it('refuses an edit to text another run changed since the read', async () => {
+    await readTheResume();
+    const otherRun = createAgentToolRun('Tighten my bullets.');
+    await runAgentTool(otherRun, 'read_document', {});
+    await runAgentTool(otherRun, 'propose_rewrite', waitingRewrite);
+    const late = await callTool('propose_rewrite', { id: 'b1', text: 'Led billing' });
+    expect(late).toMatchObject({
+      isError: true,
+      content: expect.stringContaining('changed since you read it'),
+    });
+  });
+
+  it('refuses an edit to a suggestion the user dropped since the read', async () => {
+    await readTheResume();
+    await callTool('propose_rewrite', waitingRewrite);
+    rejectProposals(stagedSuggestions().map((proposal) => proposal.id));
+    const late = await callTool('propose_rewrite', { id: 'b1', text: 'Led billing' });
+    expect(late.content).toContain('changed since you read it');
   });
 });
 

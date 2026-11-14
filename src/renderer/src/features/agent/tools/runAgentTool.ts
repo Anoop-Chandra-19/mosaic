@@ -1,3 +1,4 @@
+import { buildWorkingCopy } from '@/features/suggestions/proposals/workingCopy';
 import { useProposalStore } from '@/stores/proposalStore';
 import { getResumeSnapshot, useResumeStore } from '@/stores/resumeStore';
 import {
@@ -33,12 +34,14 @@ import {
  * `lookUpReceipt.ts`; `checkAgentToolArgs` validates them against the definitions
  * given to the model (`@shared/agent-tools/`). Then dispatch to:
  *
- * - `read/`: return the draft or newest saved version through `formatResumeForModel.ts`,
- *   using short handles from `tool-run/resumeHandles.ts`. Reading the draft also records
- *   the run's receipt.
+ * - `read/`: return the working copy or the newest saved version through
+ *   `formatResumeForModel.ts`, using short handles from `tool-run/resumeHandles.ts`. The
+ *   working copy is the draft with the waiting and kept suggestions applied. Reading it
+ *   also records the run's receipt.
  * - `propose/`: interpret the call and apply change rules (`compileProposeCall.ts`),
- *   then stage accepted changes for review (`stageSuggestions.ts`). Include a display
- *   target for the pane (`describeProposeTarget.ts`).
+ *   then stage accepted changes for review (`stageSuggestions.ts`). Staging also applies
+ *   the changes to the receipt. Include a display target for the pane
+ *   (`describeProposeTarget.ts`).
  *
  * Dependencies flow from this folder's entry points to `read/` and `propose/`, then to
  * `tool-run/`, which holds run state. Other modules start from `agentRunTools.ts`.
@@ -56,12 +59,11 @@ const READ_TOOLS: {
 const isProposeToolName = (name: AgentToolName): name is ProposeToolName =>
   Object.hasOwn(PROPOSE_TOOLS, name);
 
-/** Capture the current draft and pending suggestions once for proposal compilation. */
+/** Build the working copy once per propose call. The call's changes are checked against it. */
 function readToolCallContext(run: AgentToolRun): ToolCallContext {
   const { templateId } = useResumeStore.getState();
   const proposals = templateId ? (useProposalStore.getState().byTemplate[templateId] ?? []) : [];
-  const waiting = proposals.filter((proposal) => proposal.status === 'pending');
-  return { run, templateId, doc: getResumeSnapshot(), waiting };
+  return { run, templateId, doc: buildWorkingCopy(getResumeSnapshot(), proposals) };
 }
 
 /** Put argument-normalization notes before the tool outcome. */

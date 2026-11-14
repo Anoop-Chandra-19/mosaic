@@ -103,7 +103,7 @@ describe('applyProposalsToResume', () => {
     expect(bulletsOf(result.doc)[0].text).toBe(merge.after);
   });
 
-  it('hides a bullet even when a rewrite of it lands too', () => {
+  it('applies in the order given, and hides a bullet whose text a rewrite changed', () => {
     const hide: ProposalChange = {
       kind: 'select',
       place: { unit: 'bullet', sectionId: 's1', entryId: 'e1', bulletId: 'b1' },
@@ -114,7 +114,7 @@ describe('applyProposalsToResume', () => {
       makeProposal(rewrite('b1', B1, 'Led the migration'), 'p1'),
       makeProposal(hide, 'p2'),
     ]);
-    expect(result.appliedIds).toEqual(['p2', 'p1']);
+    expect(result.appliedIds).toEqual(['p1', 'p2']);
     expect(bulletsOf(result.doc)[0]).toMatchObject({ text: 'Led the migration', selected: false });
   });
 

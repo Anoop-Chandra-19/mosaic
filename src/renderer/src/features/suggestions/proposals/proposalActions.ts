@@ -9,34 +9,46 @@ import type {
   ProposalStatus,
 } from '@/types/agentProposal';
 import {
+  findAnchorMismatch,
   findEntry,
   findSection,
   findTextItem,
-  isProposalCurrent,
   readAddedAmong,
 } from '@/lib/resume/proposalAnchor';
 import { useProposalStore } from '@/stores/proposalStore';
 import { getResumeSnapshot, useResumeStore } from '@/stores/resumeStore';
+import type { ResumeData } from '@shared/types/resume';
+import { applyProposalsToResume } from './apply/applyProposalsToResume';
 import { checkProposal } from './checks/checkProposal';
 import { createNewContentIds } from './newContentIds';
-import { watchProposalAnchors } from './recheckProposals';
+import { recheckOpenProposals, watchProposalAnchors } from './recheckProposals';
 import { canKeepProposal, resolveChange, reviewedRequestText } from './reviewedChange';
 import { validateProposal, type ProposalRefusal } from './validateProposal';
+import { buildCopyBefore, buildWorkingCopy, findRequiredIds } from './workingCopy';
 
 /*
- * Proposals: the assistant's suggested changes to the open draft, waiting for the user.
+ * Proposals are the assistant's suggested changes to the open draft. They wait for the
+ * user to keep or drop them.
  *
- * A run stages changes here: `validateProposal` refuses what doesn't fit the draft,
- * `newContentIds` assigns ids for additions, and `checks/checkProposal` flags what deserves
- * a look. The user keeps, drops or edits them,
- * and what they do is kept apart from the assistant's change (`reviewedChange.ts` puts the
- * two together); `recheckProposals` marks any the draft has moved past as stale, and back.
- * In `apply/`, `planApply` says what applying would do, and `applyAcceptedProposals` does
- * it as one undo step, with a version either side.
+ * A template's suggestions are one list, in the order they were made. `workingCopy.ts`
+ * applies the waiting and kept ones to the draft in that order. The assistant reads and
+ * edits that copy, so it can change text that an earlier suggestion wrote.
  *
- * Other modules use this file, `apply/planApply.ts`, `apply/applyAcceptedProposals.ts`,
- * `reviewedChange.ts` and `describeSuggestion.ts`. State is `stores/proposalStore.ts`, which
- * only these files write.
+ * A run stages changes here. `validateProposal` refuses a change that doesn't fit the
+ * working copy, `newContentIds` assigns ids for additions, and `checks/checkProposal`
+ * flags what the user should look at.
+ *
+ * The user keeps, drops or edits proposals. Their edits are stored in `review`, apart from
+ * the assistant's `change`, and `reviewedChange.ts` combines the two. `recheckProposals`
+ * marks a suggestion stale when it no longer fits the copy built from the suggestions
+ * before it, and current when it fits again.
+ *
+ * In `apply/`, `planApply` works out what Apply would do. `applyAcceptedProposals` does
+ * it as one undo step and saves a version before and after.
+ *
+ * Other modules use this file, `workingCopy.ts`, `apply/planApply.ts`,
+ * `apply/applyAcceptedProposals.ts`, `reviewedChange.ts` and `describeSuggestion.ts`. The
+ * state is in `stores/proposalStore.ts`, and only these files write to it.
  */
 
 export interface StagedChange {
@@ -47,28 +59,34 @@ export interface StagedChange {
 
 export interface StagingResult {
   proposals: Proposal[];
-  /** By the change's place in what was staged, so a run can say which to fix. */
+  /** `index` is the refused change's position in the staged list, so a run can say which one to fix. */
   refusals: { index: number; refusal: ProposalRefusal }[];
 }
 
 function openTemplateId(): string {
   const id = useResumeStore.getState().templateId;
-  if (id === null) throw new Error('No template is open');
+  if (id === null) throw new Error('Cannot change suggestions: no template is open');
   return id;
 }
 
-/** Proposals for the open draft. Each is checked against it; the ones that don't fit are refused. */
+const listOpenProposals = () => useProposalStore.getState().byTemplate[openTemplateId()] ?? [];
+
+/**
+ * Stage changes as proposals for the open draft. Each change is checked against the
+ * working copy, which includes the changes staged before it in this call. A change that
+ * doesn't fit is refused.
+ */
 export function stageProposals(requestText: string, changes: StagedChange[]): StagingResult {
   const templateId = openTemplateId();
-  const doc = getResumeSnapshot();
+  let copy = buildWorkingCopy(getResumeSnapshot(), listOpenProposals());
   const result: StagingResult = { proposals: [], refusals: [] };
   changes.forEach(({ change, source, reason }, index) => {
-    const refusal = validateProposal(doc, change);
+    const refusal = validateProposal(copy, change);
     if (refusal) {
       result.refusals.push({ index, refusal });
       return;
     }
-    result.proposals.push({
+    const proposal: Proposal = {
       id: crypto.randomUUID(),
       templateId,
       source,
@@ -77,11 +95,13 @@ export function stageProposals(requestText: string, changes: StagedChange[]): St
       status: 'pending',
       review: {},
       isStale: false,
-      flags: checkProposal(doc, change, requestText),
+      flags: checkProposal(copy, change, requestText),
       reason,
       requestText,
       createdAt: Date.now(),
-    });
+    };
+    result.proposals.push(proposal);
+    copy = applyProposalsToResume(copy, [proposal]).doc;
   });
   if (result.proposals.length) {
     watchProposalAnchors();
@@ -91,54 +111,77 @@ export function stageProposals(requestText: string, changes: StagedChange[]): St
 }
 
 const findOpenProposals = (ids: readonly string[]) =>
-  (useProposalStore.getState().byTemplate[openTemplateId()] ?? []).filter((proposal) =>
-    ids.includes(proposal.id)
-  );
+  listOpenProposals().filter((proposal) => ids.includes(proposal.id));
 
-/** Kept, the ones that can be: current, with every fact of a new entry confirmed. */
+/**
+ * Keep the proposals that can be kept: current ones, with every fact of a new entry
+ * confirmed. Also keep the earlier waiting suggestions they need, because a suggestion
+ * that changes another suggestion's text can't apply without it.
+ */
 export function acceptProposals(ids: readonly string[]): void {
-  const keepable = findOpenProposals(ids).filter(canKeepProposal);
-  useProposalStore.getState().setStatus(
-    openTemplateId(),
-    keepable.map((proposal) => proposal.id),
-    'accepted'
-  );
+  const keepableIds = findOpenProposals(ids)
+    .filter(canKeepProposal)
+    .map((proposal) => proposal.id);
+  const requiredIds = findRequiredIds(getResumeSnapshot(), listOpenProposals(), keepableIds);
+  const keepableRequiredIds = findOpenProposals(requiredIds)
+    .filter(canKeepProposal)
+    .map((proposal) => proposal.id);
+  useProposalStore
+    .getState()
+    .setStatus(openTemplateId(), [...keepableIds, ...keepableRequiredIds], 'accepted');
 }
 
+/** Drop the proposals. Later suggestions that changed their text become out of date. */
 export function rejectProposals(ids: readonly string[]): void {
   useProposalStore.getState().setStatus(openTemplateId(), ids, 'rejected');
+  recheckOpenProposals();
 }
 
-/** Back to waiting: a keep or a drop taken back. */
+/** Set the proposals back to waiting. This undoes a keep or a drop. */
 export function returnProposals(ids: readonly string[]): void {
   useProposalStore.getState().setStatus(openTemplateId(), ids, 'pending');
-}
-
-/** Gone from review, as if never suggested. All of the open draft's, or only these. */
-export function discardProposals(ids?: readonly string[]): void {
-  useProposalStore.getState().removeProposals(openTemplateId(), ids);
-}
-
-/** Gone from review, whichever resume they wait on: a run's can be on one that isn't open. */
-export function discardRunProposals(ids: readonly string[]): void {
-  const { byTemplate, removeProposals } = useProposalStore.getState();
-  for (const templateId of Object.keys(byTemplate)) removeProposals(templateId, ids);
+  recheckOpenProposals();
 }
 
 /**
- * One proposal changed by `update`, then checked again against the draft: a change that no
- * longer fits is refused (false), and its flags follow what it now writes.
+ * Remove proposals from review, as if they were never suggested. Without `ids`, remove
+ * all of the open draft's proposals.
  */
-function reviewProposal(id: string, update: (proposal: Proposal) => Proposal | null): boolean {
+export function discardProposals(ids?: readonly string[]): void {
+  useProposalStore.getState().removeProposals(openTemplateId(), ids);
+  recheckOpenProposals();
+}
+
+/**
+ * Remove a run's proposals from review. Every template is searched, because a run's
+ * proposals can belong to a resume that isn't open.
+ */
+export function discardRunProposals(ids: readonly string[]): void {
+  const { byTemplate, removeProposals } = useProposalStore.getState();
+  for (const templateId of Object.keys(byTemplate)) removeProposals(templateId, ids);
+  recheckOpenProposals();
+}
+
+/**
+ * Change one proposal with `update`, then check it against the copy built from the
+ * suggestions before it. Returns false when the changed proposal is refused. Its flags
+ * are recomputed for what it now writes.
+ */
+function reviewProposal(
+  id: string,
+  update: (proposal: Proposal, copyBefore: ResumeData) => Proposal | null
+): boolean {
   const [proposal] = findOpenProposals([id]);
-  const next = proposal && update(proposal);
+  if (!proposal) return false;
+  const copyBefore = buildCopyBefore(getResumeSnapshot(), listOpenProposals(), id);
+  const next = update(proposal, copyBefore);
   if (!next) return false;
-  const doc = getResumeSnapshot();
   const change = resolveChange(next);
-  const isStale = !isProposalCurrent(doc, change);
-  if (!isStale && validateProposal(doc, change)) return false;
-  const flags = checkProposal(doc, change, reviewedRequestText(next));
+  const isStale = findAnchorMismatch(copyBefore, change) !== null;
+  if (!isStale && validateProposal(copyBefore, change)) return false;
+  const flags = checkProposal(copyBefore, change, reviewedRequestText(next));
   useProposalStore.getState().replaceProposals(openTemplateId(), [{ ...next, isStale, flags }]);
+  recheckOpenProposals();
   return true;
 }
 
@@ -150,23 +193,27 @@ const withReview =
     status: status ?? proposal.status,
   });
 
-/** The user's own wording for what a suggestion writes. Editing is saying yes to it. */
+/** Save the user's own wording for the text a suggestion writes. Editing also keeps it. */
 export function editProposal(id: string, text: string): boolean {
   return reviewProposal(id, withReview({ userText: text.trim() }, 'accepted'));
 }
 
-/** What the checks would say about the user's wording, as they type it. */
+/** Return the flags the checks would give the user's wording. Called as they type. */
 export function checkProposalEdit(proposal: Proposal, text: string): ProposalFlag[] {
   const edited = withReview({ userText: text.trim() })(proposal);
-  return checkProposal(getResumeSnapshot(), resolveChange(edited), reviewedRequestText(edited));
+  const copyBefore = buildCopyBefore(getResumeSnapshot(), listOpenProposals(), proposal.id);
+  return checkProposal(copyBefore, resolveChange(edited), reviewedRequestText(edited));
 }
 
-/** Back to the assistant's wording. */
+/** Remove the user's wording, so the suggestion writes the assistant's text again. */
 export function clearProposalEdit(id: string): boolean {
   return reviewProposal(id, withReview({ userText: undefined }));
 }
 
-/** The number only the user knows, typed into the gap. Filling it in keeps the suggestion. */
+/**
+ * Save the number the user typed into the gap. Only the user knows this number. Filling
+ * it in also keeps the suggestion.
+ */
 export function fillProposalNumber(id: string, number: string): boolean {
   const filled = number.trim() || undefined;
   return reviewProposal(
@@ -175,7 +222,7 @@ export function fillProposalNumber(id: string, number: string): boolean {
   );
 }
 
-/** The version that needs no number, or back to the one with the gap. */
+/** Choose the version that needs no number, or go back to the version with the gap. */
 export function chooseVersionWithoutNumber(id: string, isWithout: boolean): boolean {
   return reviewProposal(
     id,
@@ -186,7 +233,10 @@ export function chooseVersionWithoutNumber(id: string, isWithout: boolean): bool
   );
 }
 
-/** One of a new entry's facts vouched for, or taken back, which unkeeps the entry. */
+/**
+ * Confirm one fact of a new entry, or undo the confirmation. Undoing it sets a kept
+ * entry back to waiting.
+ */
 export function confirmProposalFact(id: string, fact: EntryFact, isConfirmed: boolean): boolean {
   return reviewProposal(id, (proposal) => {
     const others = (proposal.review.confirmedFacts ?? []).filter((each) => each !== fact);
@@ -196,7 +246,7 @@ export function confirmProposalFact(id: string, fact: EntryFact, isConfirmed: bo
   });
 }
 
-/** One of a new entry's facts in the user's words, which confirms it. */
+/** Save one fact of a new entry in the user's words. This also confirms the fact. */
 export function editProposalFact(id: string, fact: EntryFact, text: string): boolean {
   return reviewProposal(id, (proposal) => {
     const confirmedFacts = [
@@ -208,9 +258,11 @@ export function editProposalFact(id: string, fact: EntryFact, text: string): boo
   });
 }
 
-/** What a rewrite, merge or rename would replace now: its text in the draft. */
-function readRebasedBefore(change: ProposalChange): ProposalReview['rebasedBefore'] | null {
-  const doc = getResumeSnapshot();
+/** Return the text a rewrite, merge or rename would replace now, read from `doc`. */
+function readRebasedBefore(
+  change: ProposalChange,
+  doc: ResumeData
+): ProposalReview['rebasedBefore'] | null {
   switch (change.kind) {
     case 'rewrite':
       return findTextItem(doc, change.place)?.text ?? null;
@@ -228,25 +280,25 @@ function readRebasedBefore(change: ProposalChange): ProposalReview['rebasedBefor
 }
 
 /**
- * Added text whose place is gone, put at the end of its entry or section instead. It waits
- * again, as an ordinary suggestion.
+ * Move added text to the end of its entry or section. Used when the bullet or line it
+ * was placed after no longer exists. The suggestion goes back to waiting.
  */
 export function placeProposalLast(id: string): boolean {
-  return reviewProposal(id, (proposal) => {
+  return reviewProposal(id, (proposal, copyBefore) => {
     const { change } = proposal;
     if (change.kind !== 'add') return null;
-    const among = readAddedAmong(getResumeSnapshot(), change.place);
+    const among = readAddedAmong(copyBefore, change.place);
     if (!among) return null;
     return withReview({ placedAfterId: among.at(-1) ?? null }, 'pending')(proposal);
   });
 }
 
-/** Back to its own place, which is gone: out of date again. */
+/** Undo `placeProposalLast`. Its original place is gone, so it is out of date again. */
 export function cancelPlacedLast(id: string): boolean {
   return reviewProposal(id, withReview({ placedAfterId: undefined }, 'pending'));
 }
 
-/** A new section's heading in the user's words: not a fact, so nothing to confirm. */
+/** Save the user's wording for a new section's heading. A heading is not a fact, so it needs no confirming. */
 export function renameProposedSection(id: string, label: string): boolean {
   const sectionLabel = label.trim();
   if (!sectionLabel) return false;
@@ -254,18 +306,18 @@ export function renameProposedSection(id: string, label: string): boolean {
 }
 
 /**
- * An out-of-date rewrite, merge or rename, reviewed against the text as the user left it:
- * it waits again, and keeping it replaces their edit.
+ * Let the user review an out-of-date rewrite, merge or rename against the text as it is
+ * now. The suggestion goes back to waiting. Keeping it replaces the user's edit.
  */
 export function reviewStaleProposalAnyway(id: string): boolean {
-  return reviewProposal(id, (proposal) => {
-    const rebasedBefore = readRebasedBefore(proposal.change);
+  return reviewProposal(id, (proposal, copyBefore) => {
+    const rebasedBefore = readRebasedBefore(proposal.change, copyBefore);
     if (!rebasedBefore) return null;
     return withReview({ rebasedBefore, userText: undefined }, 'pending')(proposal);
   });
 }
 
-/** Back to out of date, against the text it was suggested for. */
+/** Undo `reviewStaleProposalAnyway`. The suggestion is out of date again. */
 export function cancelStaleReview(id: string): boolean {
   return reviewProposal(
     id,
@@ -273,7 +325,7 @@ export function cancelStaleReview(id: string): boolean {
   );
 }
 
-/** Why these were dropped, for the assistant's next turn. */
+/** Save why the user dropped these proposals. The reasons are for the assistant's next run. */
 export function setDropReasons(ids: readonly string[], reasons: DropReason[], note?: string): void {
   const dropReasons = { reasons, note: note?.trim() || undefined };
   useProposalStore.getState().replaceProposals(
