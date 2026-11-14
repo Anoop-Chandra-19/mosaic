@@ -80,7 +80,9 @@ describe('validateProposal', () => {
     expect(codeOf(reorder(['b1', 'b2', 'b3'], ['b3', 'b1', 'b2']))).toBeNull();
     expect(codeOf(reorder(['b1', 'b2', 'b3'], ['b3', 'b3', 'b2']))).toBe('not-a-permutation');
     expect(codeOf(reorder(['b1', 'b2', 'b3'], ['b1', 'b2', 'b3']))).toBe('unchanged');
-    expect(codeOf(reorder(['b2', 'b1', 'b3'], ['b3', 'b1', 'b2']))).toBe('changed-since-read');
+    // A new order fits when the list holds the same bullets, in any order.
+    expect(codeOf(reorder(['b2', 'b1', 'b3'], ['b3', 'b1', 'b2']))).toBeNull();
+    expect(codeOf(reorder(['b1', 'b2'], ['b2', 'b1']))).toBe('changed-since-read');
   });
 
   it('refuses hiding a bullet that is already hidden', () => {
@@ -129,7 +131,7 @@ describe('validateProposal, added text and lines', () => {
 });
 
 describe('validateProposal, whole entries and sections', () => {
-  it('anchors on a heading or label, and refuses leaving what is already off the page', () => {
+  it('anchors a hide on its target, whatever it reads, and refuses leaving what is already off the page', () => {
     const doc = makeResumeWithLines();
     const leave = (before: string): ProposalChange => ({
       kind: 'select',
@@ -138,7 +140,14 @@ describe('validateProposal, whole entries and sections', () => {
       selected: false,
     });
     expect(validateProposal(doc, leave('Skills'))).toBeNull();
-    expect(validateProposal(doc, leave('Tools'))?.code).toBe('changed-since-read');
+    expect(validateProposal(doc, leave('Tools'))).toBeNull();
+    const gone: ProposalChange = {
+      kind: 'select',
+      place: { unit: 'section', sectionId: 's9' },
+      before: 'Skills',
+      selected: false,
+    };
+    expect(validateProposal(doc, gone)?.code).toBe('unknown-target');
     doc.sections[2].hidden = true;
     expect(validateProposal(doc, leave('Skills'))?.code).toBe('unchanged');
   });

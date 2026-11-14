@@ -5,39 +5,15 @@ import type {
   NewContentIds,
   Proposal,
   ProposalChange,
-  ProposalChangeKind,
   ShowPlace,
   TextPlace,
 } from '@/types/agentProposal';
 import type { ResumeData, ResumeEntry, ResumeSection } from '@shared/types/resume';
 
-/**
- * Hiding goes first, since it keys on text a rewrite would change; text before structure;
- * added text after the orders it would otherwise upset; new entries and sections last. A
- * change that no longer fits once the ones before it have landed (two rewrites of one
- * bullet, a merge of bullets a reorder moved apart) is skipped, not forced.
- */
-const APPLY_ORDER: Record<ProposalChangeKind, number> = {
-  select: 0,
-  rewrite: 1,
-  rename: 1,
-  split: 2,
-  merge: 3,
-  reorder: 4,
-  add: 5,
-  entry: 6,
-  section: 7,
-};
-
-/** In the order they apply, which is not the order they were suggested in. */
-export function sortForApply<T extends Pick<Proposal, 'change'>>(proposals: readonly T[]): T[] {
-  return [...proposals].sort((a, b) => APPLY_ORDER[a.change.kind] - APPLY_ORDER[b.change.kind]);
-}
-
 export interface AppliedProposals {
   doc: ResumeData;
   appliedIds: string[];
-  /** Accepted, but no longer fitting the document by the time their turn came. */
+  /** Proposals that were not applied because they no longer fit the document. */
   skippedIds: string[];
 }
 
@@ -237,13 +213,18 @@ function applyChange(doc: ResumeData, change: ProposalChange, ids: NewContentIds
   }
 }
 
-/** The document with these proposals applied, on a copy; the input is left as it was. */
+/**
+ * Apply the proposals to a copy of the document, in the order given. The input document
+ * is not changed. Each proposal is checked against the copy after the earlier proposals
+ * were applied. A proposal that no longer fits is skipped, for example a rewrite of text
+ * that an earlier proposal already changed.
+ */
 export function applyProposalsToResume(
   doc: ResumeData,
   proposals: readonly Proposal[]
 ): AppliedProposals {
   const result: AppliedProposals = { doc: structuredClone(doc), appliedIds: [], skippedIds: [] };
-  for (const proposal of sortForApply(proposals)) {
+  for (const proposal of proposals) {
     if (findAnchorMismatch(result.doc, proposal.change)) {
       result.skippedIds.push(proposal.id);
       continue;

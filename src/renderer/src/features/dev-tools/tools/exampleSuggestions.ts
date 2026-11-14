@@ -31,6 +31,22 @@ function rewrite(
   };
 }
 
+/** A rewrite of text that an earlier suggestion wrote, so `before` is passed in. */
+const rewriteFrom = (
+  entryId: string,
+  bulletId: string,
+  before: string,
+  after: string
+): ProposalChange => ({
+  kind: 'rewrite',
+  place: { unit: 'bullet', sectionId, entryId, bulletId },
+  before,
+  after,
+});
+
+const LATENCY_REWRITE = 'Reduced reduce p99 latency from 18% to 3%';
+const SPLIT_BEFORE = 'Wrote the capacity plan';
+
 const splitAt = (bulletId: string, before: string): ProposalChange => {
   const text = textOf(bulletId);
   return {
@@ -44,8 +60,10 @@ const splitAt = (bulletId: string, before: string): ProposalChange => {
 };
 
 /**
- * Every kind of suggestion and every check, staged on the example resume. Two rewrites of
- * one bullet, and a split of a bullet another suggestion rewrites, show what Apply skips.
+ * Every kind of suggestion and every check, for the example resume. They are staged in
+ * this order, and each one is checked against the working copy with the earlier ones
+ * applied. Two of them change text that an earlier suggestion wrote: the second rewrite
+ * of one bullet, and the rewrite of a split's first half.
  * A function, so a release build can leave it out.
  */
 export const createExampleSuggestions = (): StagedChange[] => [
@@ -57,7 +75,7 @@ export const createExampleSuggestions = (): StagedChange[] => [
   {
     source: 'rewrite',
     reason: 'Shorter; the percentages already say what was measured.',
-    change: rewrite(harbor, 'ex-b2', 'Reduced reduce p99 latency from 18% to 3%'),
+    change: rewrite(harbor, 'ex-b2', LATENCY_REWRITE),
   },
   {
     source: 'rewrite',
@@ -85,17 +103,28 @@ export const createExampleSuggestions = (): StagedChange[] => [
     change: rewrite(lantern, 'ex-b5', 'Built tile caching for the Oslo and Bergen offices'),
   },
   {
+    source: 'reorder',
+    reason: 'You asked for the AWS work first.',
+    change: {
+      kind: 'reorder',
+      place: { unit: 'bullets', sectionId, entryId: lantern },
+      before: ['ex-b5', 'ex-b6', 'ex-b7', 'ex-b8', 'ex-b9'],
+      after: ['ex-b6', 'ex-b5', 'ex-b7', 'ex-b8', 'ex-b9'],
+    },
+  },
+  {
     source: 'split',
     reason: 'Two pieces of work; each reads better on its own line.',
-    change: splitAt('ex-b6', 'Wrote the capacity plan'),
+    change: splitAt('ex-b6', SPLIT_BEFORE),
   },
   {
     source: 'rewrite',
     reason: 'Plainer for a reader who isn’t a specialist.',
-    change: rewrite(
+    change: rewriteFrom(
       lantern,
       'ex-b6',
-      'Moved tile rendering to the cloud. Wrote the capacity plan for the move.'
+      textOf('ex-b6').split(SPLIT_BEFORE)[0].trim(),
+      'Moved tile rendering to the cloud.'
     ),
   },
   {
@@ -112,16 +141,6 @@ export const createExampleSuggestions = (): StagedChange[] => [
     },
   },
   {
-    source: 'reorder',
-    reason: 'You asked for the AWS work first.',
-    change: {
-      kind: 'reorder',
-      place: { unit: 'bullets', sectionId, entryId: lantern },
-      before: ['ex-b5', 'ex-b6', 'ex-b7', 'ex-b8', 'ex-b9'],
-      after: ['ex-b6', 'ex-b5', 'ex-b7', 'ex-b8', 'ex-b9'],
-    },
-  },
-  {
     source: 'rewrite',
     reason: 'A number makes the result concrete.',
     change: rewrite(lantern, 'ex-b9', 'Cut deploy time for the routing service by 40%'),
@@ -129,7 +148,12 @@ export const createExampleSuggestions = (): StagedChange[] => [
   {
     source: 'rewrite',
     reason: 'Leads with the size of the change.',
-    change: rewrite(harbor, 'ex-b2', 'Cut slow requests by 83%, from 18% to 3% of traffic'),
+    change: rewriteFrom(
+      harbor,
+      'ex-b2',
+      LATENCY_REWRITE,
+      'Cut slow requests by 83%, from 18% to 3% of traffic'
+    ),
   },
   {
     source: 'entry',

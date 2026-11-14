@@ -34,7 +34,10 @@ test('suggestions are reviewed from the status bar, kept and dropped with the ke
   await expect(inspector.getByText('23 suggestions', { exact: true })).toBeVisible();
   await page.keyboard.press('Escape');
   await expect(review).toBeHidden();
-  await expect(page.getByRole('button', { name: '22 suggestions waiting' })).toBeVisible();
+  // A later example rewrites the dropped one's text, so dropping it makes that one out of date.
+  await expect(
+    page.getByRole('button', { name: /21 suggestions waiting\s*· 1 out of date/ })
+  ).toBeVisible();
   await expect(page.getByText('Assisted in migrating billing to Postgres').first()).toBeVisible();
   expect(errors).toEqual([]);
 });

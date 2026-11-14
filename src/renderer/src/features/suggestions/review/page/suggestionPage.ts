@@ -2,7 +2,6 @@ import { findMoves } from '@/lib/resume/changes/findMoves';
 import { readShowPlaceId, readTextPlaceId } from '@/lib/resume/proposalAnchor';
 import type { Proposal, ProposalChange, ShowPlace } from '@/types/agentProposal';
 import type { ResumeData } from '@shared/types/resume';
-import { sortForApply } from '../../proposals/apply/applyProposalsToResume';
 import { layInProposal } from '../../proposals/apply/layInProposal';
 import { resolveChange } from '../../proposals/reviewedChange';
 
@@ -191,9 +190,10 @@ function markBlocks(page: SuggestionPage, proposals: readonly Proposal[]): void 
 }
 
 /**
- * Lays each shown suggestion into the draft in the order Apply would, one at a time, so
- * what a split, an addition, a new entry or a new section makes is known to be theirs. One that no
- * longer fits by its turn (a second rewrite of the same bullet) is left off the page.
+ * Build the review page. Each shown suggestion is applied to the draft one at a time, in
+ * the order they were made. Applying them one at a time records which suggestion made
+ * each new bullet, line, entry or section. A suggestion that no longer fits is left off
+ * the page.
  */
 export function buildSuggestionPage(
   draft: ResumeData,
@@ -206,7 +206,7 @@ export function buildSuggestionPage(
     blocks: new Map(),
   };
   const open = proposals.filter((proposal) => proposal.status !== 'applied');
-  const laidIn = sortForApply(open.filter(isShown)).filter((proposal) => layIn(page, proposal));
+  const laidIn = open.filter(isShown).filter((proposal) => layIn(page, proposal));
   markBlocks(page, laidIn);
 
   // Dropped and out-of-date ones mark the draft's own text, unless a shown one already does.

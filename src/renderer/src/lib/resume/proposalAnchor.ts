@@ -90,6 +90,9 @@ export function readAddedAmong(doc: ResumeData, place: AddPlace): string[] | und
 const sameList = (a: readonly string[], b: readonly string[]) =>
   a.length === b.length && a.every((value, index) => value === b[index]);
 
+const sameSet = (a: readonly string[], b: readonly string[]) =>
+  a.length === b.length && a.every((value) => b.includes(value));
+
 function compareText(text: string | undefined, before: string): AnchorMismatch | null {
   if (text === undefined) return 'unknown-target';
   return text === before ? null : 'changed-since-read';
@@ -111,8 +114,10 @@ function findMergeMismatch(
 }
 
 /**
- * Whether a change still fits the draft: its targets exist and read what they read when it
- * was made. Edits elsewhere in the document don't matter.
+ * Check whether a change still fits the document. A change fits when its targets exist
+ * and still hold the text they held when the change was made. Edits elsewhere in the
+ * document don't matter. Two kinds are checked more loosely: hiding or showing something
+ * only needs it to exist, and a new order only needs the list to hold the same items.
  */
 export function findAnchorMismatch(doc: ResumeData, change: ProposalChange): AnchorMismatch | null {
   switch (change.kind) {
@@ -126,13 +131,13 @@ export function findAnchorMismatch(doc: ResumeData, change: ProposalChange): Anc
       );
     }
     case 'select':
-      return compareText(readShownName(doc, change.place), change.before);
+      return readShownName(doc, change.place) === undefined ? 'unknown-target' : null;
     case 'merge':
       return findMergeMismatch(doc, change);
     case 'reorder': {
       const ids = readOrder(doc, change.place);
       if (!ids) return 'unknown-target';
-      return sameList(ids, change.before) ? null : 'changed-since-read';
+      return sameSet(ids, change.before) ? null : 'changed-since-read';
     }
     case 'add': {
       const among = readAddedAmong(doc, change.place);
@@ -196,8 +201,4 @@ export function readChangedIds(change: ProposalChange): string[] {
     case 'section':
       return [];
   }
-}
-
-export function isProposalCurrent(doc: ResumeData, change: ProposalChange): boolean {
-  return findAnchorMismatch(doc, change) === null;
 }

@@ -7,8 +7,9 @@ import { describeFlag, describeNoChange, describeTarget } from './describeForMod
 import { diagnose, type Diagnostic } from './toolDiagnostics';
 
 /*
- * Apply the same ordered rules to every proposed change before staging. The first
- * matching rule returns a diagnostic; changes that pass all rules can be staged.
+ * Apply the same ordered rules to every proposed change before staging, against the
+ * working copy. The first matching rule returns a diagnostic; changes that pass all rules
+ * can be staged.
  * This module never writes to stores. Only definite mistakes update run state,
  * so each target is sent back for repair at most once.
  */
@@ -23,10 +24,10 @@ function readOrderKey(place: OrderPlace): string {
 }
 
 /**
- * Identify a change's kind and target so a later suggestion can replace an earlier one.
- * Added text, entries, and sections have no key: each addition is a separate suggestion.
+ * Return a key for the change's kind and target. The key is used to send a target back
+ * for repair only once. Added text, entries and sections have no key.
  */
-export function targetKeyOf(change: ProposalChange): string | null {
+function targetKeyOf(change: ProposalChange): string | null {
   switch (change.kind) {
     case 'rewrite':
       return `rewrite:${readTextPlaceId(change.place)}`;
@@ -54,15 +55,6 @@ const findsNoChange: ChangeRule = (context, change) => {
   return fact && `nothing changed. ${fact}`;
 };
 
-/** Detect an identical pending suggestion from this run for the same target. */
-const repeatsWaiting: ChangeRule = ({ run, waiting }, change) => {
-  const key = targetKeyOf(change);
-  const earlierId = key ? run.suggestionIdByTarget.get(key) : undefined;
-  const earlier = waiting.find((proposal) => proposal.id === earlierId);
-  const isRepeat = earlier && JSON.stringify(earlier.change) === JSON.stringify(change);
-  return isRepeat ? 'already suggested, waiting for the user.' : null;
-};
-
 const failsValidation: ChangeRule = ({ doc }, change) => {
   const refusal = validateProposal(doc, change);
   return refusal && `not suggested. ${refusal.fix}`;
@@ -80,10 +72,13 @@ const makesDefiniteMistake: ChangeRule = ({ run, doc }, change) => {
   return `not suggested. ${mistakes.map(describeFlag).join(' ')} Propose it again.`;
 };
 
-/** Rules and diagnostic kinds; no-op changes and pending duplicates are informational. */
+/**
+ * The rules in order, each with the kind of diagnostic it gives. A change that changes
+ * nothing is reported as information, not an error. Repeating a waiting suggestion
+ * changes nothing, because the working copy already holds it.
+ */
 const RULES: { rule: ChangeRule; kind: 'info' | 'error' }[] = [
   { rule: findsNoChange, kind: 'info' },
-  { rule: repeatsWaiting, kind: 'info' },
   { rule: failsValidation, kind: 'error' },
   { rule: makesDefiniteMistake, kind: 'error' },
 ];

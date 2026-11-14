@@ -130,7 +130,7 @@ describe('the page’s side of a run', () => {
     expect(await rewrite(9)).toMatchObject({ isError: false });
   });
 
-  it('replaces a waiting suggestion when a follow-up ask revises it', async () => {
+  it('lets a follow-up ask rewrite a waiting suggestion’s text without reading again', async () => {
     const rewrite = (runId: number, text: string) =>
       runTool({ runId, callId: 'c2', name: 'propose_rewrite', args: { id: 'b1', text } });
     const ask = async (runId: number) => {
@@ -150,7 +150,8 @@ describe('the page’s side of a run', () => {
 
     const waiting = useProposalStore.getState().byTemplate.t1;
     expect(waiting.map((proposal) => proposal.change)).toMatchObject([
-      { kind: 'rewrite', after: 'Led the billing rework' },
+      { kind: 'rewrite', after: 'Led billing' },
+      { kind: 'rewrite', before: 'Led billing', after: 'Led the billing rework' },
     ]);
   });
 });

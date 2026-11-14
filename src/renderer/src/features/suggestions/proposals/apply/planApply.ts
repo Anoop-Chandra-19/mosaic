@@ -26,8 +26,10 @@ const needsNumber = (proposal: Proposal) =>
   proposal.flags.some((flag) => flag.kind === 'unfilledGap');
 
 /**
- * Kept ones land in the apply order; one whose bullets an earlier one already changed is
- * skipped, and one with a gap to fill is held back. The rest wait, as they are.
+ * Plan what Apply would do. Kept proposals are applied in the order they were made. A
+ * kept proposal is skipped when it no longer fits: an earlier one already changed its
+ * bullets, or it changes the text of a suggestion that is not being applied. A kept
+ * proposal with a number still to fill is held back. The rest stay as they are.
  */
 export function planApply(doc: ResumeData, proposals: readonly Proposal[]): ApplyPlan {
   const open = proposals.filter((proposal) => proposal.status !== 'applied');

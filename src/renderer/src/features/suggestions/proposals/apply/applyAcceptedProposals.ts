@@ -6,6 +6,7 @@ import { getResumeSnapshot, useResumeStore } from '@/stores/resumeStore';
 import { useTemplateStore } from '@/stores/templateStore';
 import { useUiStore } from '@/stores/uiStore';
 import { describeLandedSuggestions } from '../describeSuggestion';
+import { recheckProposals } from '../recheckProposals';
 import { planApply, type ApplyPlan } from './planApply';
 
 export type ApplyOutcome =
@@ -53,19 +54,22 @@ export function keepsAppliedVersions(history: AppliedHistory): boolean {
 
 /** Lands a plan in the draft and marks its suggestions: the part of Apply the user sees. */
 function landPlan(templateId: string, plan: ApplyPlan): void {
-  useResumeStore.getState().applyDocument(undoLabel(plan.landed.length), plan.doc);
   const proposals = useProposalStore.getState();
+  // Mark them applied before the draft changes. Otherwise the recheck that follows a draft
+  // change would mark them out of date, because the draft already holds their changes.
   proposals.setStatus(
     templateId,
     plan.landed.map((proposal) => proposal.id),
     'applied'
   );
-  // An earlier one changed their bullets first: they wait for the user to look again.
+  // Skipped ones were not applied. Set them back to waiting so the user reviews them again.
   proposals.setStatus(
     templateId,
     plan.skipped.map(({ proposal }) => proposal.id),
     'pending'
   );
+  useResumeStore.getState().applyDocument(undoLabel(plan.landed.length), plan.doc);
+  recheckProposals(templateId, getResumeSnapshot());
 }
 
 /**

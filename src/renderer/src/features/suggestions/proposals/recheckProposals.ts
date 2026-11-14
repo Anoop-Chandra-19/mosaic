@@ -1,21 +1,28 @@
 import type { ResumeData } from '@shared/types/resume';
-import { isProposalCurrent } from '@/lib/resume/proposalAnchor';
 import { useProposalStore } from '@/stores/proposalStore';
-import { useResumeStore } from '@/stores/resumeStore';
-import { resolveChange } from './reviewedChange';
+import { getResumeSnapshot, useResumeStore } from '@/stores/resumeStore';
+import { findOutOfDateIds } from './workingCopy';
 
 /**
- * Marks a template's waiting proposals stale where the draft has moved past their anchor,
- * and current again where it came back (an undo). Never deletes one: a stale card says why.
+ * Update which of a template's suggestions are out of date. A suggestion can become
+ * current again, for example after an undo or after a drop is undone. This never deletes
+ * a suggestion, because an out-of-date card explains why it is out of date.
  */
-export function recheckProposals(templateId: string, doc: ResumeData): void {
+export function recheckProposals(templateId: string, draft: ResumeData): void {
   const store = useProposalStore.getState();
-  const changed = (store.byTemplate[templateId] ?? [])
-    .filter((proposal) => proposal.status === 'pending' || proposal.status === 'accepted')
-    .map((proposal) => ({ proposal, isStale: !isProposalCurrent(doc, resolveChange(proposal)) }))
-    .filter(({ proposal, isStale }) => proposal.isStale !== isStale)
-    .map(({ proposal, isStale }) => ({ ...proposal, isStale }));
+  const proposals = store.byTemplate[templateId] ?? [];
+  const outOfDateIds = findOutOfDateIds(draft, proposals);
+  const changed = proposals
+    .filter((proposal) => proposal.status !== 'applied')
+    .filter((proposal) => proposal.isStale !== outOfDateIds.has(proposal.id))
+    .map((proposal) => ({ ...proposal, isStale: outOfDateIds.has(proposal.id) }));
   if (changed.length) store.replaceProposals(templateId, changed);
+}
+
+/** Recheck the open draft's suggestions. Call this after one is dropped, restored or edited. */
+export function recheckOpenProposals(): void {
+  const { templateId } = useResumeStore.getState();
+  if (templateId !== null) recheckProposals(templateId, getResumeSnapshot());
 }
 
 let stopWatching: (() => void) | null = null;
@@ -29,6 +36,9 @@ export function watchProposalAnchors(): void {
   stopWatching ??= useResumeStore.subscribe((state, previous) => {
     const isSameDocument =
       state.templateId === previous.templateId && state.sections === previous.sections;
-    if (!isSameDocument && state.templateId) recheckProposals(state.templateId, state);
+    // Pass the snapshot. The store's state holds functions, which can't be copied.
+    if (!isSameDocument && state.templateId) {
+      recheckProposals(state.templateId, getResumeSnapshot());
+    }
   });
 }
