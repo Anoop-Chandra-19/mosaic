@@ -18,6 +18,7 @@ import {
 import { useProposalStore } from '@/stores/proposalStore';
 import { getResumeSnapshot, useResumeStore } from '@/stores/resumeStore';
 import { checkProposal } from './checks/checkProposal';
+import { createNewContentIds } from './newContentIds';
 import { watchProposalAnchors } from './recheckProposals';
 import { canKeepProposal, resolveChange, reviewedRequestText } from './reviewedChange';
 import { validateProposal, type ProposalRefusal } from './validateProposal';
@@ -25,8 +26,9 @@ import { validateProposal, type ProposalRefusal } from './validateProposal';
 /*
  * Proposals: the assistant's suggested changes to the open draft, waiting for the user.
  *
- * A run stages changes here: `validateProposal` refuses what doesn't fit the draft, and
- * `checks/checkProposal` flags what deserves a look. The user keeps, drops or edits them,
+ * A run stages changes here: `validateProposal` refuses what doesn't fit the draft,
+ * `newContentIds` assigns ids for additions, and `checks/checkProposal` flags what deserves
+ * a look. The user keeps, drops or edits them,
  * and what they do is kept apart from the assistant's change (`reviewedChange.ts` puts the
  * two together); `recheckProposals` marks any the draft has moved past as stale, and back.
  * In `apply/`, `planApply` says what applying would do, and `applyAcceptedProposals` does
@@ -71,6 +73,7 @@ export function stageProposals(requestText: string, changes: StagedChange[]): St
       templateId,
       source,
       change,
+      newContentIds: createNewContentIds(change),
       status: 'pending',
       review: {},
       isStale: false,

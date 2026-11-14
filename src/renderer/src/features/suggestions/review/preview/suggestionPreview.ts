@@ -115,18 +115,18 @@ function noteWhatIsLeftOut(
 
 /** The landed ones laid in one at a time, in the order Apply lands them, so each knows its parts. */
 function layInLanded(draft: ResumeData, landed: readonly Proposal[]) {
-  const madeIds = new Map<string, string[]>();
+  const createdIdsByProposal = new Map<string, string[]>();
   let doc = draft;
   for (const proposal of landed) {
     const laidIn = layInProposal(doc, proposal);
     if (!laidIn) continue;
     doc = laidIn.doc;
-    madeIds.set(proposal.id, laidIn.createdIds);
+    createdIdsByProposal.set(proposal.id, laidIn.createdIds);
   }
   const targets = new Map<string, PreviewTarget[]>();
   for (const proposal of landed) {
     const change = resolveChange(proposal);
-    const ids = [...readAboutIds(change), ...(madeIds.get(proposal.id) ?? [])];
+    const ids = [...readAboutIds(change), ...(createdIdsByProposal.get(proposal.id) ?? [])];
     targets.set(proposal.id, [
       ...readHeadingIds(change).map((id) => ({ part: 'heading' as const, id })),
       ...ids.flatMap((id) => locateTarget(doc, id)),
