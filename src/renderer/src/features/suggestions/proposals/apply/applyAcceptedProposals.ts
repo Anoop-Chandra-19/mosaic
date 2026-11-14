@@ -11,9 +11,9 @@ import { planApply, type ApplyPlan } from './planApply';
 
 export type ApplyOutcome =
   | { kind: 'applied'; plan: ApplyPlan }
-  /** Nothing kept could land. */
+  /** No kept suggestion could be applied. */
   | { kind: 'nothing'; plan: ApplyPlan }
-  /** "Add to" was chosen, but the newest version can't be added to any more. Nothing changed. */
+  /** The user chose "Add to", but the newest version can no longer be added to. Nothing changed. */
   | { kind: 'cannotAdd' };
 
 function undoLabel(count: number): string {
@@ -21,8 +21,9 @@ function undoLabel(count: number): string {
 }
 
 /**
- * Whether this apply can add to the newest version: it is the assistant's, and the draft
- * still matches it, so the user's own edits never end up inside an assistant version.
+ * Check whether this apply can add to the newest version. It can when that version is the
+ * assistant's and the draft still matches it. This keeps the user's own edits out of an
+ * assistant version.
  */
 export function canAddToAppliedVersion(): boolean {
   const { templateId, rev } = useResumeStore.getState();
@@ -31,8 +32,9 @@ export function canAddToAppliedVersion(): boolean {
 }
 
 /**
- * What the version an apply keeps will hold: what it lands, and when it adds to the
- * assistant's newest version, what that version already held, so its title covers both.
+ * Return the suggestions the saved version will hold: the ones this apply applied. When
+ * the apply adds to the assistant's newest version, the ones that version already held
+ * are included, so the version's title covers both.
  */
 export function collectVersionSuggestions(
   isAdding: boolean,
@@ -47,12 +49,15 @@ export function collectVersionSuggestions(
   return [...held, ...landed];
 }
 
-/** Whether an apply with `history` keeps versions: always for a name, else as the user set. */
+/**
+ * Check whether an apply saves versions. It always does when the user gave a name.
+ * Otherwise it follows the user's setting.
+ */
 export function keepsAppliedVersions(history: AppliedHistory): boolean {
   return useUiStore.getState().snapshotTriggers.afterAiEdits || history.mode === 'named';
 }
 
-/** Lands a plan in the draft and marks its suggestions: the part of Apply the user sees. */
+/** Write a plan's document to the draft and update its suggestions' statuses. This is the part of Apply the user sees. */
 function landPlan(templateId: string, plan: ApplyPlan): void {
   const proposals = useProposalStore.getState();
   // Mark them applied before the draft changes. Otherwise the recheck that follows a draft
@@ -73,24 +78,25 @@ function landPlan(templateId: string, plan: ApplyPlan): void {
 }
 
 /**
- * Runs the landing as it comes; a caller can wrap it, as one view transition, and say when
- * it has run: the version after is written only then.
+ * A function that runs `land`, the step that writes the draft. A caller can pass its own
+ * to wrap that step, for example in a view transition. The version after the apply is
+ * saved only once this function has finished.
  */
 export type LandApply = (land: () => void, plan: ApplyPlan) => void | Promise<void>;
 
 const landAtOnce: LandApply = (land) => land();
 
 /**
- * Lands the open draft's kept suggestions as one edit: one undo takes them all back.
- * History keeps the draft as it was before them and as it is after, as `history` says,
- * unless the user turned those versions off; a name they gave is always kept.
+ * Apply the open draft's kept suggestions as one edit, so one undo reverts all of them.
+ * A version is saved before and after, as `history` says. The user can turn those
+ * versions off, but a version they named is always saved.
  */
 export async function applyAcceptedProposals(
   history: AppliedHistory = { mode: 'new' },
   landApply: LandApply = landAtOnce
 ): Promise<ApplyOutcome> {
   const templateId = useResumeStore.getState().templateId;
-  if (templateId === null) throw new Error('No template is open');
+  if (templateId === null) throw new Error('Cannot apply suggestions: no template is open');
   if (history.mode === 'add' && !canAddToAppliedVersion()) return { kind: 'cannotAdd' };
 
   const draft = getResumeSnapshot();
@@ -118,14 +124,16 @@ export async function applyAcceptedProposals(
 }
 
 /**
- * Takes an apply back while it is the last edit: the draft steps back one undo, and what
- * it landed or skipped is kept again, as it was before. The versions it wrote stay.
+ * Undo an apply. This only works while the apply is the draft's last edit. The draft
+ * goes back one undo step, and the suggestions the apply applied or skipped are kept
+ * again, as they were before. The versions the apply saved are not removed.
  */
 export function undoAppliedProposals(plan: ApplyPlan): void {
   const templateId = useResumeStore.getState().templateId;
   if (templateId === null) return;
   const ids = [...plan.landed, ...plan.skipped.map(({ proposal }) => proposal)].map((p) => p.id);
-  // Kept before the draft steps back, so the recheck finds them against their own text.
+  // Set them to kept before the undo. The undo triggers a recheck, which then finds them
+  // as kept suggestions that fit the restored draft.
   useProposalStore.getState().setStatus(templateId, ids, 'accepted');
   useResumeStore.getState().undo();
 }

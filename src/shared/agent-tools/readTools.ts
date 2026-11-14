@@ -1,7 +1,7 @@
 import type { ModelTool } from '../types/modelTool';
 import { defineAgentTool } from './defineAgentTool.ts';
 
-/** The tools that read, and their arguments once checked. */
+/** The read tools, each with the type of its checked arguments. Neither takes any. */
 export interface ReadToolArgs {
   read_document: Record<string, never>;
   read_newest_version: Record<string, never>;

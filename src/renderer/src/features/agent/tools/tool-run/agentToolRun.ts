@@ -13,16 +13,19 @@ export interface ReadReceipt {
   doc: ResumeData;
 }
 
-/** What the tools keep for one run. */
+/** The state the tools keep for one run. */
 export interface AgentToolRun {
-  /** User request used by checks to distinguish supplied numbers from new claims. */
+  /** The user's request. The checks use it to tell a number the user gave from a new claim. */
   requestText: string;
   handles: ResumeHandles;
-  /** Nothing can be suggested against text the run never read. */
+  /** Null until the run reads the resume. A propose call is refused while it is null. */
   receipt: ReadReceipt | null;
   /** IDs of suggestions staged by this run, used for the run card's count. */
   stagedIds: Set<string>;
-  /** Targets sent back once for a definite mistake. The next try is staged, flagged. */
+  /**
+   * Targets already sent back once for a definite mistake. The next try for the same
+   * target is staged with its flag, not sent back again.
+   */
   repairedTargets: Set<string>;
 }
 

@@ -22,7 +22,7 @@ function reorderById<T extends { id: string }>(items: T[], ids: string[]): T[] {
   return ids.map((id) => byId.get(id)!);
 }
 
-/** The place's own record: a bullet, or a line's item. */
+/** Find the record that holds a place's text: the bullet, or the item of a line. */
 function findTextRecord(doc: ResumeData, place: TextPlace) {
   if (place.unit === 'line') return findEntry(doc, place.sectionId, place.lineId)!;
   return findEntry(doc, place.sectionId, place.entryId)!.bullets.find(
@@ -36,7 +36,7 @@ function placeBullet(doc: ResumeData, sectionId: string, entryId: string, bullet
   return { bullets: entry.bullets, index, bullet: entry.bullets[index] };
 }
 
-/** A section shows by `hidden`, everything else by `selected`. */
+/** Show or hide a place. A section stores this in `hidden`; everything else stores it in `selected`. */
 function setShown(doc: ResumeData, place: ShowPlace, isShown: boolean) {
   if (place.unit === 'section') {
     const section = findSection(doc, place.sectionId)!;
@@ -51,7 +51,7 @@ function setShown(doc: ResumeData, place: ShowPlace, isShown: boolean) {
   record.selected = isShown;
 }
 
-/** Where new items go in a list: right after `afterId`, or first when it is null. */
+/** Return the index for a new item: right after `afterId`, or 0 when `afterId` is null. */
 const insertAt = (ids: string[], afterId: string | null) =>
   afterId === null ? 0 : ids.indexOf(afterId) + 1;
 
@@ -86,7 +86,7 @@ function addText(doc: ResumeData, change: Extract<ProposalChange, { kind: 'add' 
   bullets.splice(at, 0, { id, text, selected: true });
 }
 
-/** A new entry from a suggestion: its facts as written, its non-empty bullets. */
+/** Build a new entry from a suggestion, with its facts as written and its non-empty bullets. */
 function createEntry({ frame, bullets }: EntryDraft, ids: NewEntryIds): ResumeEntry {
   return {
     id: ids.entryId,
@@ -157,7 +157,7 @@ function reorder(doc: ResumeData, change: Extract<ProposalChange, { kind: 'reord
   entry.bullets = reorderById(entry.bullets, after);
 }
 
-/** Changes `doc` in place; the change has been checked to fit it. */
+/** Apply one change to `doc` in place. The caller has already checked that the change fits. */
 function applyChange(doc: ResumeData, change: ProposalChange, ids: NewContentIds | null): void {
   switch (change.kind) {
     case 'select':

@@ -22,7 +22,7 @@ export function findEntry(
   return findSection(doc, sectionId)?.items.find((entry) => entry.id === entryId);
 }
 
-/** The bullet or line a place names, as the draft holds it. */
+/** Find the bullet or line at a place. Returns undefined when it isn't in the document. */
 export function findTextItem(
   doc: ResumeData,
   place: TextPlace
@@ -36,7 +36,10 @@ export function findTextItem(
   );
 }
 
-/** What the user sees of something that can leave the page: its text, heading, or label. */
+/**
+ * Return the words the user sees for something that can be hidden: a bullet's or line's
+ * text, an entry's heading, or a section's label.
+ */
 export function readShownName(doc: ResumeData, place: ShowPlace): string | undefined {
   switch (place.unit) {
     case 'bullet':
@@ -51,7 +54,7 @@ export function readShownName(doc: ResumeData, place: ShowPlace): string | undef
   }
 }
 
-/** Whether it prints now: a section by `hidden`, everything else by `selected`. */
+/** Check whether a place is shown on the page. A section stores this in `hidden`; everything else in `selected`. */
 export function isPlaceShown(doc: ResumeData, place: ShowPlace): boolean | undefined {
   switch (place.unit) {
     case 'bullet':
@@ -66,7 +69,7 @@ export function isPlaceShown(doc: ResumeData, place: ShowPlace): boolean | undef
   }
 }
 
-/** The ids in a list, in the order they print. */
+/** Return the ids in a list, in the order they are shown on the page. */
 export function readOrder(doc: ResumeData, place: OrderPlace): string[] | undefined {
   switch (place.unit) {
     case 'sections':
@@ -78,7 +81,10 @@ export function readOrder(doc: ResumeData, place: OrderPlace): string[] | undefi
   }
 }
 
-/** The bullets or lines new text goes among, by id; undefined when the place is gone. */
+/**
+ * Return the ids of the bullets or lines that new text would be added to. Returns
+ * undefined when that entry or lines section isn't in the document.
+ */
 export function readAddedAmong(doc: ResumeData, place: AddPlace): string[] | undefined {
   if (place.unit === 'line') {
     const section = findSection(doc, place.sectionId);
@@ -106,7 +112,7 @@ function findMergeMismatch(
   const first = bullets.findIndex((bullet) => bullet.id === change.firstId);
   const second = bullets.findIndex((bullet) => bullet.id === change.secondId);
   if (first < 0 || second < 0) return 'unknown-target';
-  // Moved apart since: no longer a pair to merge.
+  // The two bullets are no longer next to each other, so they can't be merged.
   if (second !== first + 1) return 'changed-since-read';
   return sameList([bullets[first].text, bullets[second].text], change.before)
     ? null
@@ -161,11 +167,11 @@ export function findAnchorMismatch(doc: ResumeData, change: ProposalChange): Anc
   }
 }
 
-/** The id a text place names: a bullet's, or a line's (its item's). */
+/** Return the id of the bullet or line at a text place. A line's id is its item's id. */
 export const readTextPlaceId = (place: TextPlace) =>
   place.unit === 'bullet' ? place.bulletId : place.lineId;
 
-/** The id a place that can leave the page names. */
+/** Return the id of the bullet, line, entry or section at a place that can be hidden. */
 export function readShowPlaceId(place: ShowPlace): string {
   switch (place.unit) {
     case 'bullet':
@@ -179,8 +185,8 @@ export function readShowPlaceId(place: ShowPlace): string {
 }
 
 /**
- * What a change changes, by id: the bullets, lines, entries and sections that two kept
- * suggestions can't both change.
+ * Return the ids of the bullets, lines, entries and sections a change modifies. Two kept
+ * suggestions that modify the same id can't both apply.
  */
 export function readChangedIds(change: ProposalChange): string[] {
   switch (change.kind) {

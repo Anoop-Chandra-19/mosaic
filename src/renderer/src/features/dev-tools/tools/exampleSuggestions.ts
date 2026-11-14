@@ -7,13 +7,13 @@ export const EXAMPLE_REQUEST =
 
 const { experience: sectionId, harbor, lantern } = EXAMPLE_IDS;
 
-/** The example's bullet text, so each change is anchored to exactly what the draft holds. */
+/** Return a bullet's text from the example resume, so a change's `before` matches the draft exactly. */
 function textOf(bulletId: string): string {
   for (const entry of createExampleResume().sections.flatMap((section) => section.items)) {
     const found = entry.bullets.find((bullet) => bullet.id === bulletId);
     if (found) return found.text;
   }
-  throw new Error(`The example resume has no bullet ${bulletId}`);
+  throw new Error(`Expected the example resume to have bullet "${bulletId}", found none`);
 }
 
 function rewrite(
@@ -64,7 +64,7 @@ const splitAt = (bulletId: string, before: string): ProposalChange => {
  * this order, and each one is checked against the working copy with the earlier ones
  * applied. Two of them change text that an earlier suggestion wrote: the second rewrite
  * of one bullet, and the rewrite of a split's first half.
- * A function, so a release build can leave it out.
+ * This is a function, not a constant, so a release build can leave it out.
  */
 export const createExampleSuggestions = (): StagedChange[] => [
   {

@@ -6,14 +6,14 @@ import { resolveChange } from '../reviewedChange';
 
 export interface SkippedProposal {
   proposal: Proposal;
-  /** The kept one that changed the same bullets first, when there is one. */
+  /** The applied suggestion that changed the same bullets first, or null when there is none. */
   changedBy: Proposal | null;
 }
 
-/** What Apply would do with a template's open proposals, and the draft it would leave. */
+/** What Apply would do with each of a template's open proposals, and the resulting draft. */
 export interface ApplyPlan {
   landed: Proposal[];
-  /** Kept, but with a number only the user knows still to fill. */
+  /** Kept suggestions that still have a number for the user to fill in. */
   held: Proposal[];
   skipped: SkippedProposal[];
   waiting: Proposal[];
