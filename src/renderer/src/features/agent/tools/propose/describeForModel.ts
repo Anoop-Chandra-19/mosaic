@@ -6,6 +6,7 @@ import type {
 } from '@/types/agentProposal';
 import { hasSameWords } from '@/lib/resume/hasSameWords';
 import { isPlaceShown, readShowPlaceId, readTextPlaceId } from '@/lib/resume/proposalAnchor';
+import { readSplitHalves } from '@/lib/resume/splitHalves';
 import type { ResumeData } from '@shared/types/resume';
 import type { AgentToolRun } from '../tool-run/agentToolRun';
 import { handleFor } from '../tool-run/resumeHandles';
@@ -82,8 +83,7 @@ export function describeResultWeWrote(
 ): string | null {
   const newBullet = (id: string) => handleFor(run.handles, 'bullet', id);
   if (change.kind === 'split' && newContentIds?.kind === 'split') {
-    const first = change.before.slice(0, change.at).trim();
-    const second = change.before.slice(change.at).trim();
+    const [first, second] = readSplitHalves(change);
     const handles = [knownHandle(run, change.bulletId), newBullet(newContentIds.secondBulletId)];
     return `It is two bullets now: "${first}" (${handles[0]}) and "${second}" (${handles[1]}).`;
   }

@@ -44,7 +44,6 @@ const rewriteFrom = (
   after,
 });
 
-const LATENCY_REWRITE = 'Reduced reduce p99 latency from 18% to 3%';
 const SPLIT_BEFORE = 'Wrote the capacity plan';
 
 const splitAt = (bulletId: string, before: string): ProposalChange => {
@@ -62,8 +61,8 @@ const splitAt = (bulletId: string, before: string): ProposalChange => {
 /**
  * Every kind of suggestion and every check, for the example resume. They are staged in
  * this order, and each one is checked against the working copy with the earlier ones
- * applied. Two of them change text that an earlier suggestion wrote: the second rewrite
- * of one bullet, and the rewrite of a split's first half.
+ * applied. The rewrite after the split rewords the split's first bullet. Staging puts
+ * that wording into the split's suggestion, so the rewrite has no card of its own.
  * This is a function, not a constant, so a release build can leave it out.
  */
 export const createExampleSuggestions = (): StagedChange[] => [
@@ -74,8 +73,8 @@ export const createExampleSuggestions = (): StagedChange[] => [
   },
   {
     source: 'rewrite',
-    reason: 'Shorter; the percentages already say what was measured.',
-    change: rewrite(harbor, 'ex-b2', LATENCY_REWRITE),
+    reason: 'Leads with the size of the change.',
+    change: rewrite(harbor, 'ex-b2', 'Reduced reduce p99 latency by 83%, from 18% to 3%'),
   },
   {
     source: 'rewrite',
@@ -144,16 +143,6 @@ export const createExampleSuggestions = (): StagedChange[] => [
     source: 'rewrite',
     reason: 'A number makes the result concrete.',
     change: rewrite(lantern, 'ex-b9', 'Cut deploy time for the routing service by 40%'),
-  },
-  {
-    source: 'rewrite',
-    reason: 'Leads with the size of the change.',
-    change: rewriteFrom(
-      harbor,
-      'ex-b2',
-      LATENCY_REWRITE,
-      'Cut slow requests by 83%, from 18% to 3% of traffic'
-    ),
   },
   {
     source: 'entry',

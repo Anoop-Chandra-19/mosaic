@@ -3,6 +3,7 @@ import { immer } from 'zustand/middleware/immer';
 import type { AgentRunEnvelope } from '@shared/types/agentBridge';
 import type { AgentRunEvent } from '@shared/types/agentRunEvents';
 import type { ModelProviderError } from '@shared/types/modelReply';
+import type { Proposal } from '@/types/agentProposal';
 import type { RunPart } from '@/types/agentRunView';
 
 /*
@@ -48,9 +49,18 @@ interface RunState {
   followRunEvent: (envelope: AgentRunEnvelope) => void;
   /** Once the transcript holds the run as stored. */
   dropLiveRun: (runId: number) => void;
-  /** What each run left staged, by run id. */
+  /** The ids of the suggestions each run made or changed, by run id. */
   stagedIdsByRun: Record<number, string[]>;
-  keepStagedIds: (runId: number, suggestionIds: string[]) => void;
+  /**
+   * By run id, the suggestions made before the run whose text it changed, as they were
+   * before it. Discarding the run puts them back.
+   */
+  suggestionsBeforeRun: Record<number, Proposal[]>;
+  keepStagedIds: (
+    runId: number,
+    suggestionIds: string[],
+    suggestionsBeforeRun?: Proposal[]
+  ) => void;
   /** Runs the user stopped and has said what to do with what they staged. */
   decidedStopRunIds: number[];
   noteStopDecided: (runId: number) => void;
@@ -172,9 +182,12 @@ export const useRunStore = create<RunState>()(
 
     stagedIdsByRun: {},
 
-    keepStagedIds: (runId, suggestionIds) =>
+    suggestionsBeforeRun: {},
+
+    keepStagedIds: (runId, suggestionIds, suggestionsBeforeRun = []) =>
       set((state) => {
         state.stagedIdsByRun[runId] = suggestionIds;
+        state.suggestionsBeforeRun[runId] = suggestionsBeforeRun;
       }),
 
     decidedStopRunIds: [],

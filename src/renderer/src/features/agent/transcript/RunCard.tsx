@@ -29,8 +29,11 @@ import {
  * lives in memory, so runs from before an app restart have no card.
  */
 
-function discardOpen(staged: readonly Proposal[]): void {
-  discardRunProposals(staged.filter(isSuggestionOpen).map((proposal) => proposal.id));
+function discardOpen(staged: readonly Proposal[], suggestionsBeforeRun: readonly Proposal[]): void {
+  discardRunProposals(
+    staged.filter(isSuggestionOpen).map((proposal) => proposal.id),
+    suggestionsBeforeRun
+  );
 }
 
 function StopCard({
@@ -214,6 +217,7 @@ interface RunCardProps {
 
 export function RunCard({ runId, isCancelled }: RunCardProps) {
   const ids = useRunStore((s) => s.stagedIdsByRun[runId]);
+  const suggestionsBeforeRun = useRunStore((s) => s.suggestionsBeforeRun[runId]);
   const isStopDecided = useRunStore((s) => s.decidedStopRunIds.includes(runId));
   const noteStopDecided = useRunStore((s) => s.noteStopDecided);
   const byTemplate = useProposalStore((s) => s.byTemplate);
@@ -223,7 +227,7 @@ export function RunCard({ runId, isCancelled }: RunCardProps) {
   const card = readRunCard({ staged, isCancelled, isStopDecided });
   const discard = () => {
     noteStopDecided(runId);
-    discardOpen(staged);
+    discardOpen(staged, suggestionsBeforeRun ?? []);
   };
   return (
     <>

@@ -150,8 +150,7 @@ describe('the page’s side of a run', () => {
 
     const waiting = useProposalStore.getState().byTemplate.t1;
     expect(waiting.map((proposal) => proposal.change)).toMatchObject([
-      { kind: 'rewrite', after: 'Led billing' },
-      { kind: 'rewrite', before: 'Led billing', after: 'Led the billing rework' },
+      { kind: 'rewrite', after: 'Led the billing rework' },
     ]);
   });
 });

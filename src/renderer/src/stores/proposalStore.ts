@@ -13,6 +13,8 @@ interface ProposalState {
   /** By template, so switching away and back finds them waiting. */
   byTemplate: Record<string, Proposal[]>;
   addProposals: (templateId: string, proposals: Proposal[]) => void;
+  /** Replace a template's whole list, in the order the suggestions were made. */
+  setProposals: (templateId: string, proposals: Proposal[]) => void;
   /** Puts back proposals by id, as their writer rebuilt them. */
   replaceProposals: (templateId: string, proposals: Proposal[]) => void;
   setStatus: (templateId: string, ids: readonly string[], status: ProposalStatus) => void;
@@ -30,6 +32,11 @@ export const useProposalStore = create<ProposalState>()(
     addProposals: (templateId, proposals) =>
       set((state) => {
         (state.byTemplate[templateId] ??= []).push(...proposals);
+      }),
+
+    setProposals: (templateId, proposals) =>
+      set((state) => {
+        state.byTemplate[templateId] = proposals;
       }),
 
     replaceProposals: (templateId, proposals) =>

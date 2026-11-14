@@ -71,7 +71,9 @@ function endToolRun(runId: number): void {
   const entry = toolRunById.get(runId);
   if (!entry) return;
   const { conversationId, run } = entry;
-  useRunStore.getState().keepStagedIds(runId, [...run.stagedIds]);
+  useRunStore
+    .getState()
+    .keepStagedIds(runId, [...run.stagedIds], [...run.suggestionsBeforeRun.values()]);
   lastToolRunByConversation.set(conversationId, run);
   toolRunById.delete(runId);
 }

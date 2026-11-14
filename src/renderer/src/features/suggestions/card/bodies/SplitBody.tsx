@@ -1,4 +1,5 @@
 import { Text } from '@/components/ui-kit';
+import { readSplitHalves } from '@/lib/resume/splitHalves';
 import { Caption, CaptionTag, Lines } from './BodyParts';
 import type { SuggestionBodyProps } from './suggestionBodyProps';
 
@@ -18,10 +19,10 @@ export function SplitBody({ proposal }: SuggestionBodyProps) {
         {parts[1]}
       </Text>
       <Caption>
-        Suggested, two bullets <CaptionTag>same words</CaptionTag>
+        Suggested, two bullets {!change.halves && <CaptionTag>same words</CaptionTag>}
       </Caption>
       <div>
-        <Lines isNumbered look="suggested" lines={parts.map((part) => part.trim())} />
+        <Lines isNumbered look="suggested" lines={readSplitHalves(change)} />
       </div>
     </>
   );

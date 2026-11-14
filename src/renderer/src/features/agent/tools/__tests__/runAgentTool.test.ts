@@ -20,7 +20,7 @@ const { useResumeStore } = await import('@/stores/resumeStore');
 const { useProposalStore } = await import('@/stores/proposalStore');
 const { createAgentToolRun } = await import('../tool-run/agentToolRun');
 const { runAgentTool } = await import('../runAgentTool');
-const { acceptProposals, rejectProposals } =
+const { acceptProposals, discardRunProposals, rejectProposals } =
   await import('../../../suggestions/proposals/proposalActions');
 
 const [B1, B2, B3] = makeResume().sections[0].items[0].bullets.map((bullet) => bullet.text);
@@ -498,13 +498,8 @@ describe("checking the model's work", () => {
     await callTool('propose_select', { id: 'b3', show: false });
     await callTool('propose_rewrite', { id: 'b3', text: 'Wrote the on-call runbook' });
     expect(stagedSuggestions().map((proposal) => proposal.change)).toMatchObject([
-      { kind: 'rewrite', before: B3, after: 'Wrote the payments runbook' },
+      { kind: 'rewrite', before: B3, after: 'Wrote the on-call runbook' },
       { kind: 'select', place: { bulletId: 'b3' } },
-      {
-        kind: 'rewrite',
-        before: 'Wrote the payments runbook',
-        after: 'Wrote the on-call runbook',
-      },
     ]);
     expect([...run.stagedIds]).toEqual(stagedSuggestions().map((proposal) => proposal.id));
   });
@@ -522,6 +517,70 @@ describe('the working copy', () => {
     expect(content).toContain(`- b1 (suggested): Migrated billing to Postgres\n  was: ${B1}`);
     expect(content).toContain(`- b3 (hidden, suggested): ${B3}`);
     expect(content).toContain(`- b2: ${B2}`);
+  });
+
+  it('changes the waiting suggestion when its text is rewritten again, and removes it when the user’s text is put back', async () => {
+    await readTheResume();
+    await callTool('propose_rewrite', waitingRewrite);
+    const again = await callTool('propose_rewrite', {
+      id: 'b1',
+      text: 'Moved billing to Postgres',
+    });
+    expect(again).toMatchObject({
+      isError: false,
+      content: expect.stringContaining('b1: suggested.'),
+    });
+    expect(stagedSuggestions().map((proposal) => proposal.change)).toMatchObject([
+      { kind: 'rewrite', before: B1, after: 'Moved billing to Postgres' },
+    ]);
+
+    const undone = await callTool('propose_rewrite', { id: 'b1', text: B1 });
+    expect(undone).toMatchObject({
+      isError: false,
+      content: 'b1: it reads as the user wrote it again, so nothing is suggested for it now.',
+    });
+    expect(stagedSuggestions()).toEqual([]);
+    expect([...run.stagedIds]).toEqual([]);
+    expect((await readTheResume()).content).toContain(`- b1: ${B1}`);
+  });
+
+  it('puts an earlier run’s suggestion back as it was when the run that changed it is discarded', async () => {
+    await readTheResume();
+    await callTool('propose_rewrite', waitingRewrite);
+    const laterRun = createAgentToolRun('Shorter.', run);
+    await runAgentTool(laterRun, 'propose_rewrite', { id: 'b1', text: 'Moved billing' });
+    await runAgentTool(laterRun, 'propose_rewrite', { id: 'b3', text: 'Wrote the runbook' });
+    expect(stagedSuggestions().map((proposal) => proposal.change)).toMatchObject([
+      { after: 'Moved billing' },
+      { after: 'Wrote the runbook' },
+    ]);
+
+    discardRunProposals([...laterRun.stagedIds], [...laterRun.suggestionsBeforeRun.values()]);
+
+    expect(stagedSuggestions().map((proposal) => proposal.change)).toMatchObject([
+      { before: B1, after: waitingRewrite.text },
+    ]);
+  });
+
+  it('removes a suggestion the run made and then changed when the run is discarded', async () => {
+    await readTheResume();
+    await callTool('propose_rewrite', waitingRewrite);
+    await callTool('propose_rewrite', { id: 'b1', text: 'Moved billing' });
+
+    discardRunProposals([...run.stagedIds], [...run.suggestionsBeforeRun.values()]);
+
+    expect(stagedSuggestions()).toEqual([]);
+  });
+
+  it('rewords one bullet of a waiting split inside the split’s suggestion', async () => {
+    await readTheResume();
+    await callTool('propose_split', { bulletId: 'b2', secondStartsWith: 'from 18%' });
+    await callTool('propose_rewrite', { id: 'b5', text: 'Took it from 18% to 3% of requests' });
+    expect(stagedSuggestions().map((proposal) => proposal.change)).toMatchObject([
+      { kind: 'split', halves: ['Reduced p99 latency', 'Took it from 18% to 3% of requests'] },
+    ]);
+    const { content } = await readTheResume();
+    expect(content).toContain('- b5 (suggested, new): Took it from 18% to 3% of requests');
   });
 
   it('gives a split’s second half and a new entry’s bullets handles, in the answer and the read', async () => {
@@ -561,6 +620,7 @@ describe('the working copy', () => {
     const { content } = await readTheResume();
     expect(content).toContain(`- b1 (suggested): ${shorter}\n  was: ${B1}\n  was: ${B2}`);
     expect(content).not.toContain('- b2');
+    expect(stagedSuggestions()).toHaveLength(1);
   });
 
   it('reads a kept suggestion as the user’s text and leaves a dropped one out', async () => {

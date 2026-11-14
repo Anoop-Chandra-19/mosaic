@@ -1,6 +1,7 @@
 import type { AgentToolResult } from '@shared/agent-tools/agentTools';
 import type { ToolTarget } from '@shared/types/agentConversation';
 import type { ResumeData } from '@shared/types/resume';
+import type { Proposal } from '@/types/agentProposal';
 import { createResumeHandles, type ResumeHandles } from './resumeHandles';
 
 /**
@@ -20,8 +21,13 @@ export interface AgentToolRun {
   handles: ResumeHandles;
   /** Null until the run reads the resume. A propose call is refused while it is null. */
   receipt: ReadReceipt | null;
-  /** IDs of suggestions staged by this run, used for the run card's count. */
+  /** IDs of the suggestions this run made or changed, used for the run card's count. */
   stagedIds: Set<string>;
+  /**
+   * Suggestions made before this run whose text the run changed, by id. Each is stored as
+   * it was before the run first changed it, so discarding the run can put it back.
+   */
+  suggestionsBeforeRun: Map<string, Proposal>;
   /**
    * Targets already sent back once for a definite mistake. The next try for the same
    * target is staged with its flag, not sent back again.
@@ -44,6 +50,7 @@ export const createAgentToolRun = (
   handles: earlier.handles,
   receipt: earlier.receipt,
   stagedIds: new Set(),
+  suggestionsBeforeRun: new Map(),
   repairedTargets: new Set(),
 });
 
