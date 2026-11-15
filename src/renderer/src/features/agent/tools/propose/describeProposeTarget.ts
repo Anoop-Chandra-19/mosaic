@@ -1,4 +1,5 @@
 import type { ProposeToolArgs, ProposeToolName } from '@shared/agent-tools/proposeTools';
+import { SECTION_PRESETS } from '@shared/resume/sectionPresets';
 import type { ToolTarget } from '@shared/types/agentConversation';
 import type { ShowPlace } from '@/types/agentProposal';
 import type { ResumeData, ResumeEntry } from '@shared/types/resume';
@@ -114,6 +115,10 @@ const DESCRIBE_BY_TOOL: {
     if (isProblem(section)) return place;
     const isOneEntry = section.layout === 'entries' && section.items.length === 1;
     return isOneEntry ? withEntry(place, section.items[0]) : place;
+  },
+  propose_section: (_context, { kind, label }) => {
+    const heading = label?.trim() || (kind === 'custom' ? '' : SECTION_PRESETS[kind].label);
+    return heading ? { kind: 'place', section: heading } : undefined;
   },
   propose_replace_everywhere: (context, { find, replace }) => {
     const texts = listTextInReceipt(context);

@@ -57,6 +57,7 @@ export function listWrittenTextIds({ change, newContentIds }: Proposal): string[
     case 'section': {
       if (newContentIds?.kind !== 'section') return [];
       const { sectionId, contents } = newContentIds;
+      if (contents === null) return [sectionId];
       return [
         sectionId,
         ...(contents.layout === 'lines' ? contents.lineIds : contents.entry.bulletIds),
@@ -113,13 +114,13 @@ function rewordSection(change: SectionChange, proposal: Proposal, edit: TextEdit
     return { ...change, section: { ...change.section, label: edit.text } };
   }
   const { contents } = change;
-  if (contents.layout === 'lines' && ids.contents.layout === 'lines') {
+  if (contents?.layout === 'lines' && ids.contents?.layout === 'lines') {
     const index = ids.contents.lineIds.indexOf(edit.textId);
     if (index < 0) return null;
     const lines = replaceAt(contents.lines, index, edit.text);
     return { ...change, contents: { ...contents, lines } };
   }
-  if (contents.layout === 'entries' && ids.contents.layout === 'entries') {
+  if (contents?.layout === 'entries' && ids.contents?.layout === 'entries') {
     const entry = rewordEntryBullet(contents.entry, ids.contents.entry, edit);
     return entry && { ...change, contents: { ...contents, entry } };
   }

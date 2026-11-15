@@ -1,5 +1,6 @@
 import {
   stageProposals,
+  type FilledSuggestion,
   type RewordedSuggestion,
   type StagedChange,
   type StagingResult,
@@ -17,10 +18,12 @@ import { diagnose, formatToolAnswer, type Diagnostic } from './toolDiagnostics';
  * report each result and its check findings to the model.
  *
  * A rewrite of text that a waiting suggestion wrote changes that suggestion. The model
- * gets the same answer as for a new suggestion, with the changed suggestion's checks.
+ * gets the same answer as for a new suggestion, with the changed suggestion's checks. A
+ * line or first entry for a section that a waiting suggestion made goes into that
+ * suggestion, and is answered the same way.
  */
 
-const NOTHING_STAGED: StagingResult = { proposals: [], reworded: [], refusals: [] };
+const NOTHING_STAGED: StagingResult = { proposals: [], reworded: [], filled: [], refusals: [] };
 
 /**
  * Return the rewrite the model asked for, with the checks of the suggestion it changed.
@@ -37,14 +40,29 @@ const readRewriteAsAsked = ({ proposal }: RewordedSuggestion, asked: StagedChang
 });
 
 /**
+ * Return the line or entry the model asked for, which went into a new section's
+ * suggestion. The receipt and the answer need it as the model made it, with its own ids
+ * and its own checks.
+ */
+const readFillingAsAsked = (filled: FilledSuggestion, asked: StagedChange): Proposal => ({
+  ...filled.proposal,
+  change: asked.change,
+  source: asked.source,
+  newContentIds: filled.filledIds,
+  flags: filled.filledFlags,
+  review: {},
+});
+
+/**
  * Record which suggestions the run made or changed. The run card counts them. A changed
  * suggestion from before the run is also stored as it was, for discarding the run.
  */
-function recordStagedIds(run: AgentToolRun, { proposals, reworded }: StagingResult) {
+function recordStagedIds(run: AgentToolRun, { proposals, reworded, filled }: StagingResult) {
   for (const proposal of proposals) run.stagedIds.add(proposal.id);
-  for (const { before, proposal, isRemoved } of reworded) {
+  for (const { before, proposal, ...changed } of [...reworded, ...filled]) {
     const isFromBeforeRun = !run.stagedIds.has(before.id);
     if (isFromBeforeRun) run.suggestionsBeforeRun.set(before.id, before);
+    const isRemoved = 'isRemoved' in changed && changed.isRemoved;
     if (isRemoved) run.stagedIds.delete(proposal.id);
     else run.stagedIds.add(proposal.id);
   }
@@ -54,9 +72,17 @@ function recordStagedIds(run: AgentToolRun, { proposals, reworded }: StagingResu
  * Apply the changes the model just made to the run's receipt. The model knows what it
  * changed, so it can edit that text again without calling read_document.
  */
-function applyToReceipt(run: AgentToolRun, made: Proposal[]) {
+function applyToReceipt(run: AgentToolRun, made: Proposal[], filled: FilledSuggestion[]) {
   if (!run.receipt || !made.length) return;
-  run.receipt = { ...run.receipt, doc: replayProposals(run.receipt.doc, made).doc };
+  const { doc } = replayProposals(run.receipt.doc, made);
+  // A custom section's first entry makes it an entries section. Only its suggestion says so.
+  for (const { proposal } of filled) {
+    const { change, newContentIds } = proposal;
+    if (change.kind !== 'section' || newContentIds?.kind !== 'section') continue;
+    const section = doc.sections.find((each) => each.id === newContentIds.sectionId);
+    if (section) section.layout = change.section.layout;
+  }
+  run.receipt = { ...run.receipt, doc };
 }
 
 /** Describe a staged change and its checks, including any code-generated result text. */
@@ -86,8 +112,15 @@ export function stageCompiledCall(context: ToolCallContext, compiled: CompiledCa
     isRemoved: reworded.isRemoved,
     rewrite: readRewriteAsAsked(reworded, compiled.toStage[reworded.index]),
   }));
+  const fillings = staging.filled.map((filled) =>
+    readFillingAsAsked(filled, compiled.toStage[filled.index])
+  );
   recordStagedIds(run, staging);
-  applyToReceipt(run, [...staging.proposals, ...rewrites.map(({ rewrite }) => rewrite)]);
+  applyToReceipt(
+    run,
+    [...staging.proposals, ...rewrites.map(({ rewrite }) => rewrite), ...fillings],
+    staging.filled
+  );
   const refused = staging.refusals.map(({ index, refusal }) =>
     diagnose(
       'error',
@@ -101,6 +134,7 @@ export function stageCompiledCall(context: ToolCallContext, compiled: CompiledCa
     ...rewrites.map(({ rewrite, isRemoved }) =>
       isRemoved ? describeRemoved(run, rewrite) : describeStaged(run, rewrite)
     ),
+    ...fillings.map((filling) => describeStaged(run, filling)),
     ...refused,
   ]);
 }

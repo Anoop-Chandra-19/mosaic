@@ -59,6 +59,7 @@ function readCheckedText(
       return { before: '', after: change.bullets.join('\n'), context: readEntryFacts(change) };
     case 'section': {
       const { contents } = change;
+      if (contents === null) return null;
       if (contents.layout === 'lines') {
         return { before: '', after: contents.lines.join('\n'), context: '' };
       }

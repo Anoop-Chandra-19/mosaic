@@ -105,6 +105,7 @@ const STEP_WORDS: Record<AgentToolName, StepWords> = {
     done: (target) => `Added ${nameAdded(target)}`,
     refused: (target) => `Couldn’t add ${nameAdded(target)}`,
   },
+  propose_section: SAME_WORDS('Adding a section', 'Added a section', 'Couldn’t add a section'),
 };
 
 /** A tool the model made up still gets a row, so the run shows what it tried. */

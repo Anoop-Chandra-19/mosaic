@@ -1,4 +1,5 @@
 import type { EntryDraft, EntryFact, Proposal, ProposalChange } from '@/types/agentProposal';
+import { isEmptyNewSection } from '@/lib/resume/proposalAnchor';
 import { GAP_MARK } from './checks/unfilledGap';
 
 const ENTRY_FACTS: EntryFact[] = ['title', 'organization', 'location', 'dates'];
@@ -49,7 +50,7 @@ export function resolveChange(proposal: Proposal): ProposalChange {
     case 'section': {
       const section = { ...change.section, label: review.sectionLabel ?? change.section.label };
       const contents =
-        change.contents.layout === 'entries'
+        change.contents?.layout === 'entries'
           ? { ...change.contents, entry: withFactEdits(change.contents.entry, proposal) }
           : change.contents;
       return { ...change, section, contents };
@@ -62,7 +63,7 @@ export function resolveChange(proposal: Proposal): ProposalChange {
 /** The new entry a suggestion brings, alone or as a new section's first: its facts to confirm. */
 export function readEntryDraft(change: ProposalChange): EntryDraft | null {
   if (change.kind === 'entry') return change;
-  if (change.kind === 'section' && change.contents.layout === 'entries') {
+  if (change.kind === 'section' && change.contents?.layout === 'entries') {
     return change.contents.entry;
   }
   return null;
@@ -85,7 +86,11 @@ export function findUnconfirmedFacts(proposal: Proposal): EntryFact[] {
   return findWrittenFacts(proposal).filter((fact) => !confirmed.includes(fact));
 }
 
-/** Can be kept: current, and with every fact confirmed. A gap still to fill is held back on apply. */
+/**
+ * Can be kept: current, with every fact confirmed, and not a new section that is still
+ * empty. A gap still to fill is held back on apply.
+ */
 export function canKeepProposal(proposal: Proposal): boolean {
-  return !proposal.isStale && findUnconfirmedFacts(proposal).length === 0;
+  if (proposal.isStale || isEmptyNewSection(proposal.change)) return false;
+  return findUnconfirmedFacts(proposal).length === 0;
 }

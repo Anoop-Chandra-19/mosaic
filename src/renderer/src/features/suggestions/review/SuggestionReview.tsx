@@ -8,6 +8,7 @@ import { transitionClasses, TRANSITION_TYPE } from '@/features/view-transitions/
 import { isTypingField, isUndoKey } from '@/lib/keyboardShortcuts';
 import type { ShortcutId } from '@/lib/shortcutCatalog';
 import { cn } from '@/lib/utils';
+import { isEmptyNewSection } from '@/lib/resume/proposalAnchor';
 import { useAgentSettingsStore } from '@/stores/agentSettingsStore';
 import { useOverlayStore } from '@/stores/overlayStore';
 import { selectTemplateProposals, useProposalStore } from '@/stores/proposalStore';
@@ -71,7 +72,11 @@ export function SuggestionReview({ openOn }: { openOn?: string }) {
     () => ({ schemaVersion, contact, sections }),
     [schemaVersion, contact, sections]
   );
-  const proposals = useMemo(() => stored.filter((p) => p.status !== 'applied'), [stored]);
+  // A new section stays out of review until the assistant has put something in it.
+  const proposals = useMemo(
+    () => stored.filter((p) => p.status !== 'applied' && !isEmptyNewSection(p.change)),
+    [stored]
+  );
   const applying = useApplySuggestions(proposals, draft);
   const { result } = applying;
   // Once applied, the page is the draft: no marks until reviewing goes on.

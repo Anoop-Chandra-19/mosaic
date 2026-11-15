@@ -167,6 +167,10 @@ export function findAnchorMismatch(doc: ResumeData, change: ProposalChange): Anc
   }
 }
 
+/** Check whether a change is a new section that nothing has been put into yet. */
+export const isEmptyNewSection = (change: ProposalChange) =>
+  change.kind === 'section' && change.contents === null;
+
 /** Return the id of the bullet or line at a text place. A line's id is its item's id. */
 export const readTextPlaceId = (place: TextPlace) =>
   place.unit === 'bullet' ? place.bulletId : place.lineId;

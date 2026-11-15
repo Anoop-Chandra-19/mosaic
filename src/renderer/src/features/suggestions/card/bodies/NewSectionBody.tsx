@@ -91,6 +91,8 @@ export function NewSectionBody({ proposal, draft }: SuggestionBodyProps) {
   const change = resolveChange(proposal);
   if (change.kind !== 'section') return null;
   const { section, contents } = change;
+  // A section with nothing in it yet is not shown in review.
+  if (contents === null) return null;
   const isLines = contents.layout === 'lines';
   const { previous, next } = readAround(draft, change.afterSectionId);
 

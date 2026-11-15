@@ -1,3 +1,4 @@
+import { isEmptyNewSection } from '@/lib/resume/proposalAnchor';
 import type { Proposal, ProposalChangeKind, ProposalFlagKind } from '@/types/agentProposal';
 
 /** Each check's name, as the card and the list show it. */
@@ -60,9 +61,14 @@ export const STATE_TONES: Record<SuggestionState, { text: string; dot: string }>
   stale: { text: 'text-ink-muted italic', dot: 'shadow-[inset_0_0_0_1.5px_var(--ink-faint)]' },
 };
 
-/** Waiting on the user: neither applied nor dropped, current or out of date. */
+/**
+ * Waiting on the user: neither applied nor dropped, current or out of date. A new section
+ * the assistant hasn't filled yet is not counted, because it isn't shown.
+ */
 export function countSuggestions(proposals: readonly Proposal[]) {
-  const open = proposals.filter((p) => p.status !== 'applied' && p.status !== 'rejected');
+  const open = proposals.filter(
+    (p) => p.status !== 'applied' && p.status !== 'rejected' && !isEmptyNewSection(p.change)
+  );
   const stale = open.filter((p) => p.isStale).length;
   return { waiting: open.length - stale, stale };
 }

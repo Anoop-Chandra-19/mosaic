@@ -1,6 +1,6 @@
 /**
- * The tools the add eval offers: the app's propose tools as they ship, `propose_add`
- * among them, and the two that are not shipped yet, in two shapes:
+ * The tools the add eval offers: the app's propose tools as they ship, `propose_add` and
+ * `propose_section` among them, and `propose_move`, which is not shipped yet, in two shapes:
  *
  * - `one-call`: `propose_add` and a `propose_section` that brings its contents (lines, or
  *   the first entry) in the one call. The baseline.
@@ -102,22 +102,6 @@ const ONE_CALL_SECTION_TOOL: EvalTool = {
   },
 };
 
-const BUILDER_SECTION_TOOL: EvalTool = {
-  name: 'propose_section',
-  description:
-    'Suggest a new, empty section. The answer gives its handle: fill it before you finish, its first entry with propose_entry or its lines with propose_add, since a section never reaches the user empty. Summary, skills, languages and interests hold lines; the other presets hold entries; a custom section holds whichever you put in it first. To add to a section that exists, use propose_add or propose_entry.',
-  parameters: {
-    type: 'object',
-    properties: {
-      kind: enumArg(SECTION_KINDS, 'A preset, or custom for any other section.'),
-      label: stringArg("The heading. Needed for custom; a preset's is its own name."),
-      after: afterArg(['section']),
-      reason: REASON_ARG,
-    },
-    required: ['kind'],
-  },
-};
-
 const BUILDER_MOVE_TOOL: EvalTool = {
   name: 'propose_move',
   description:
@@ -145,9 +129,10 @@ const pointReorderToMove = (tool: EvalTool): EvalTool =>
 /** The tools a shape offers. */
 export function describeAddEvalTools(shape: AddEvalShape): EvalTool[] {
   if (ADD_EVAL_TOOL_SETS[shape].isBuilder) {
-    return [...SHIPPED_TOOLS.map(pointReorderToMove), BUILDER_SECTION_TOOL, BUILDER_MOVE_TOOL];
+    return [...SHIPPED_TOOLS.map(pointReorderToMove), BUILDER_MOVE_TOOL];
   }
-  // The one-call shape offers its own `propose_add` in place of the shipped one.
-  const shippedWithoutAdd = SHIPPED_TOOLS.filter((tool) => tool.name !== 'propose_add');
-  return [...shippedWithoutAdd, ONE_CALL_ADD_TOOL, ONE_CALL_SECTION_TOOL];
+  // The one-call shape offers its own `propose_add` and `propose_section` in place of the shipped ones.
+  const ownTools = [ONE_CALL_ADD_TOOL.name, ONE_CALL_SECTION_TOOL.name];
+  const otherShipped = SHIPPED_TOOLS.filter((tool) => !ownTools.includes(tool.name));
+  return [...otherShipped, ONE_CALL_ADD_TOOL, ONE_CALL_SECTION_TOOL];
 }

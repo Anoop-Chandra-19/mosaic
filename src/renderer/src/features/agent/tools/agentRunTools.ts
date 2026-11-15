@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { discardEmptySections } from '@/features/suggestions/proposals/proposalActions';
 import { agentService } from '@/lib/services/agentService';
 import { useResumeStore } from '@/stores/resumeStore';
 import { useRunStore } from '@/stores/runStore';
@@ -71,6 +72,8 @@ function endToolRun(runId: number): void {
   const entry = toolRunById.get(runId);
   if (!entry) return;
   const { conversationId, run } = entry;
+  // A section the run made and never filled is not shown to the user.
+  for (const id of discardEmptySections([...run.stagedIds])) run.stagedIds.delete(id);
   useRunStore
     .getState()
     .keepStagedIds(runId, [...run.stagedIds], [...run.suggestionsBeforeRun.values()]);

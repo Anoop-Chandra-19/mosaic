@@ -99,12 +99,13 @@ function createEntry({ frame, bullets }: EntryDraft, ids: NewEntryIds): ResumeEn
   };
 }
 
-/** Build a new section's items: its non-empty lines, or its first entry. */
+/** Build a new section's items: its non-empty lines, or its first entry. An empty section has none. */
 function createSectionItems(
   contents: Extract<ProposalChange, { kind: 'section' }>['contents'],
   ids: Extract<NewContentIds, { kind: 'section' }>['contents']
 ): ResumeEntry[] {
-  if (contents.layout === 'lines' && ids.layout === 'lines') {
+  if (contents === null && ids === null) return [];
+  if (contents?.layout === 'lines' && ids?.layout === 'lines') {
     return contents.lines
       .map((text, index) => ({
         id: ids.lineIds[index],
@@ -114,11 +115,11 @@ function createSectionItems(
       }))
       .filter((line) => line.text);
   }
-  if (contents.layout === 'entries' && ids.layout === 'entries') {
+  if (contents?.layout === 'entries' && ids?.layout === 'entries') {
     return [createEntry(contents.entry, ids.entry)];
   }
   throw new Error(
-    `Expected new content IDs for section layout "${contents.layout}", received "${ids.layout}"`
+    `Expected new content IDs for section layout "${contents?.layout ?? 'none'}", received "${ids?.layout ?? 'none'}"`
   );
 }
 

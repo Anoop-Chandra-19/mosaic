@@ -1,6 +1,7 @@
 import type {
   DropReason,
   EntryFact,
+  NewContentIds,
   Proposal,
   ProposalChange,
   ProposalFlag,
@@ -13,12 +14,14 @@ import {
   findEntry,
   findSection,
   findTextItem,
+  isEmptyNewSection,
   readAddedAmong,
 } from '@/lib/resume/proposalAnchor';
 import { useProposalStore } from '@/stores/proposalStore';
 import { getResumeSnapshot, useResumeStore } from '@/stores/resumeStore';
 import type { ResumeData } from '@shared/types/resume';
 import { checkProposal } from './checks/checkProposal';
+import { fillSection, findSectionToFill } from './fillSuggestedSection';
 import { canRewordSuggestion, readTextEdit, rewordChange, type TextEdit } from './rewordSuggestion';
 import { createNewContentIds } from './newContentIds';
 import { recheckOpenProposals, watchProposalAnchors } from './recheckProposals';
@@ -38,6 +41,8 @@ import { buildCopyBefore, buildWorkingCopy, findRequiredIds, findTextWriter } fr
  * working copy, `newContentIds` assigns ids for additions, and `checks/checkProposal`
  * flags what the user should look at. When a change rewrites text that a waiting
  * suggestion wrote, `rewordSuggestion.ts` changes that suggestion and no new one is made.
+ * When a change adds a line or a first entry to a section that a waiting suggestion made,
+ * `fillSuggestedSection.ts` puts it into that suggestion.
  *
  * The user keeps, drops or edits proposals. Their edits are stored in `review`, apart from
  * the assistant's `change`, and `reviewedChange.ts` combines the two. `recheckProposals`
@@ -70,10 +75,25 @@ export interface RewordedSuggestion {
   isRemoved: boolean;
 }
 
+/** A waiting suggestion for a new section that a staged line or entry went into. */
+export interface FilledSuggestion {
+  /** The position of that change in the staged list. */
+  index: number;
+  /** The section's suggestion as it was before the change. */
+  before: Proposal;
+  /** The section's suggestion with the new contents. */
+  proposal: Proposal;
+  /** The ids of the line or entry that went in. */
+  filledIds: NewContentIds;
+  /** What the checks found in the line or entry that went in. */
+  filledFlags: ProposalFlag[];
+}
+
 export interface StagingResult {
   /** The new suggestions. */
   proposals: Proposal[];
   reworded: RewordedSuggestion[];
+  filled: FilledSuggestion[];
   /** `index` is the refused change's position in the staged list, so a run can say which one to fix. */
   refusals: { index: number; refusal: ProposalRefusal }[];
 }
@@ -132,21 +152,52 @@ function rewordSuggestion(
 }
 
 /**
+ * Put a line or an entry into the suggestion that made its section, and run that
+ * suggestion's checks again.
+ */
+function fillSuggestedSection(
+  draft: ResumeData,
+  proposals: readonly Proposal[],
+  section: Proposal,
+  change: ProposalChange,
+  requestText: string
+): Omit<FilledSuggestion, 'index' | 'filledFlags'> {
+  const { filledIds, ...filled } = fillSection(section, change);
+  const next = {
+    ...section,
+    ...filled,
+    requestText: joinRequestText(section.requestText, requestText),
+  };
+  const copyBefore = buildCopyBefore(draft, proposals, section.id);
+  const flags = checkProposal(copyBefore, resolveChange(next), reviewedRequestText(next));
+  return { before: section, proposal: { ...next, flags }, filledIds };
+}
+
+/**
  * Stage changes as proposals for the open draft. Each change is checked against the
  * working copy, which includes the changes staged before it in this call. A change that
- * doesn't fit is refused. A change that rewrites text a waiting suggestion wrote changes
- * that suggestion, and no new one is made.
+ * doesn't fit is refused. Two kinds of change go into a waiting suggestion, and no new one
+ * is made: a rewrite of text the suggestion wrote, and a line or first entry for a
+ * section the suggestion made.
  */
 export function stageProposals(requestText: string, changes: StagedChange[]): StagingResult {
   const templateId = openTemplateId();
   const draft = getResumeSnapshot();
   let proposals = listOpenProposals();
-  const result: StagingResult = { proposals: [], reworded: [], refusals: [] };
+  const result: StagingResult = { proposals: [], reworded: [], filled: [], refusals: [] };
   changes.forEach(({ change, source, reason }, index) => {
     const copy = buildWorkingCopy(draft, proposals);
     const refusal = validateProposal(copy, change);
     if (refusal) {
       result.refusals.push({ index, refusal });
+      return;
+    }
+    const sectionToFill = findSectionToFill(proposals, change);
+    if (sectionToFill) {
+      const filled = fillSuggestedSection(draft, proposals, sectionToFill, change, requestText);
+      const filledFlags = checkProposal(copy, change, requestText);
+      result.filled.push({ index, ...filled, filledFlags });
+      proposals = proposals.map((each) => (each.id === sectionToFill.id ? filled.proposal : each));
       return;
     }
     const toReword = findSuggestionToReword(draft, proposals, change);
@@ -176,7 +227,7 @@ export function stageProposals(requestText: string, changes: StagedChange[]): St
     result.proposals.push(proposal);
     proposals = [...proposals, proposal];
   });
-  if (result.proposals.length || result.reworded.length) {
+  if (result.proposals.length || result.reworded.length || result.filled.length) {
     watchProposalAnchors();
     useProposalStore.getState().setProposals(templateId, proposals);
     // A dropped suggestion can start from the old wording. It is out of date now.
@@ -243,6 +294,26 @@ export function returnProposals(ids: readonly string[]): void {
 export function discardProposals(ids?: readonly string[]): void {
   useProposalStore.getState().removeProposals(openTemplateId(), ids);
   recheckOpenProposals();
+}
+
+/**
+ * Remove these proposals when they are new sections that are still empty. A run calls
+ * this when it ends, because an empty section is never shown to the user. Returns the ids
+ * of the proposals it removed. Every template is searched, as in `discardRunProposals`.
+ */
+export function discardEmptySections(ids: readonly string[]): string[] {
+  const { byTemplate, removeProposals } = useProposalStore.getState();
+  const removedIds: string[] = [];
+  for (const [templateId, proposals] of Object.entries(byTemplate)) {
+    const emptyIds = proposals
+      .filter((proposal) => ids.includes(proposal.id) && isEmptyNewSection(proposal.change))
+      .map((proposal) => proposal.id);
+    if (!emptyIds.length) continue;
+    removeProposals(templateId, emptyIds);
+    removedIds.push(...emptyIds);
+  }
+  if (removedIds.length) recheckOpenProposals();
+  return removedIds;
 }
 
 /**

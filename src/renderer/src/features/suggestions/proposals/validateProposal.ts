@@ -57,6 +57,8 @@ function findSectionProblem(
 ): ProposalRefusalCode | null {
   if (!hasText(change.section.label)) return 'empty-text';
   const { contents } = change;
+  // A section may be staged empty. The assistant fills it later in the same run.
+  if (contents === null) return null;
   const isFilled =
     contents.layout === 'lines'
       ? contents.lines.some(hasText)

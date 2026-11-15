@@ -1,3 +1,4 @@
+import { listEmptySectionIds } from '@/features/suggestions/proposals/fillSuggestedSection';
 import { buildWorkingCopy } from '@/features/suggestions/proposals/workingCopy';
 import { useProposalStore } from '@/stores/proposalStore';
 import { getResumeSnapshot, useResumeStore } from '@/stores/resumeStore';
@@ -63,7 +64,12 @@ const isProposeToolName = (name: AgentToolName): name is ProposeToolName =>
 function readToolCallContext(run: AgentToolRun): ToolCallContext {
   const { templateId } = useResumeStore.getState();
   const proposals = templateId ? (useProposalStore.getState().byTemplate[templateId] ?? []) : [];
-  return { run, templateId, doc: buildWorkingCopy(getResumeSnapshot(), proposals) };
+  return {
+    run,
+    templateId,
+    doc: buildWorkingCopy(getResumeSnapshot(), proposals),
+    emptySectionIds: listEmptySectionIds(proposals),
+  };
 }
 
 /** Put the notes on adjusted arguments before the tool outcome. */
