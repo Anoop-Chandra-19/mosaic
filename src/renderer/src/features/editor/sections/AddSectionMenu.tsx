@@ -5,7 +5,7 @@ import type { BuiltInSectionKind } from '@shared/types/resume';
 import { useOutlineStore } from '@/stores/outlineStore';
 import { useResumeStore } from '@/stores/resumeStore';
 import { AnotherLikeMenuItem, CustomMenuItems, PresetMenuItems } from './SectionMenuItems';
-import { findLastSectionOfKind, sectionKindsToAdd } from './sectionKindsToAdd';
+import { findLastSectionOfKind, sectionKindsToAdd } from '@/lib/resume/sectionKindsToAdd';
 import { useAddCustomSection } from './useAddCustomSection';
 
 /**

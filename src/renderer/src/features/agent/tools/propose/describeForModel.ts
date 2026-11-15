@@ -16,6 +16,7 @@ import { readSplitHalves } from '@/lib/resume/splitHalves';
 import type { ResumeData } from '@shared/types/resume';
 import type { AgentToolRun } from '../tool-run/agentToolRun';
 import { handleFor } from '../tool-run/resumeHandles';
+import { TOOL_FACTS } from './toolFacts';
 
 /*
  * Describe suggestion targets, check findings, generated results, and no-op changes
@@ -93,7 +94,8 @@ export function describeNoChange(
  * Describe the parts of a result that the model can't know from its own call:
  * - text that our code wrote: a replacement's result, a list line with its new item,
  *   and the two halves of a split;
- * - the handles of new bullets, lines and entries, so the model can edit them;
+ * - the handles of new bullets, lines, entries and sections, so the model can edit them,
+ *   and what a new section still needs;
  * - which bullet a merge removed.
  * Text the model supplied is left out, so it isn't repeated in the model's context.
  */
@@ -116,6 +118,11 @@ export function describeResultWeWrote(
     const bullets = change.bullets.map((_, index) => newBullet(bulletIds[index]));
     const entry = `It is ${handleFor(run.handles, 'entry', entryId)}`;
     return bullets.length ? `${entry}, with bullets ${bullets.join(', ')}.` : `${entry}.`;
+  }
+  if (change.kind === 'section' && newContentIds?.kind === 'section') {
+    const handle = handleFor(run.handles, 'section', newContentIds.sectionId);
+    const { kind, layout } = change.section;
+    return TOOL_FACTS.emptySection(handle, kind === 'custom' ? 'either' : layout);
   }
   if (change.kind === 'add' && newContentIds?.kind === 'add') {
     return `It is ${handleFor(run.handles, change.place.unit, newContentIds.id)}.`;

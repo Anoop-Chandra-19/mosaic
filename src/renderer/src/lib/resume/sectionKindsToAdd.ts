@@ -4,6 +4,9 @@ import type { BuiltInSectionKind, ResumeSection } from '@shared/types/resume';
 /** One summary is what JSON Resume holds, so it is never offered twice. */
 const SINGLE_KINDS: ReadonlySet<BuiltInSectionKind> = new Set(['summary']);
 
+/** Check whether a resume holds at most one section of this kind. */
+export const isSingleKind = (kind: BuiltInSectionKind) => SINGLE_KINDS.has(kind);
+
 /**
  * What Add section offers: the kinds the resume doesn't have yet, in menu order, and the
  * ones it has, to add another like them, in the resume's order. `sections` in their order.

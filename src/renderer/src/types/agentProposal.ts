@@ -34,6 +34,11 @@ export interface EntryDraft {
   bullets: string[];
 }
 
+/** What a new section holds: one entry for an entries section, lines for a lines section. */
+export type SectionContents =
+  | { layout: 'entries'; entry: EntryDraft }
+  | { layout: 'lines'; lines: string[] };
+
 /**
  * One change, anchored to the text it was made against (`before`): the text the model
  * read, never the draft's text at staging time, so an edit made since shows as stale.
@@ -106,8 +111,12 @@ export type ProposalChange =
       afterSectionId: string | null;
       /** A preset of the Add section menu, or `custom` with the layout its contents need. */
       section: { kind: SectionKind; layout: SectionLayout; label: string };
-      /** Never empty: an entry for an entries section, lines for a lines section. */
-      contents: { layout: 'entries'; entry: EntryDraft } | { layout: 'lines'; lines: string[] };
+      /**
+       * Its first entry or its lines. Null while the assistant has made the section but
+       * put nothing in it yet. An empty section is not shown in review and can't be kept.
+       * An empty custom section has the lines layout until its first contents decide.
+       */
+      contents: SectionContents | null;
     }
   | {
       kind: 'rename';
@@ -135,8 +144,11 @@ export type NewContentIds =
   | {
       kind: 'section';
       sectionId: string;
-      /** One id per line, or the ids of the first entry. */
-      contents: { layout: 'entries'; entry: NewEntryIds } | { layout: 'lines'; lineIds: string[] };
+      /** One id per line, or the ids of the first entry. Null while the section is empty. */
+      contents:
+        | { layout: 'entries'; entry: NewEntryIds }
+        | { layout: 'lines'; lineIds: string[] }
+        | null;
     };
 
 /** A new entry's facts, which only the user can vouch for. */

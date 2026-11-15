@@ -14,7 +14,7 @@ import { useResumeStore } from '@/stores/resumeStore';
 import type { BuiltInSectionKind } from '@shared/types/resume';
 import { PRESET_ICONS } from './sections/sectionIcons';
 import { CustomMenuItems, PresetMenuItems } from './sections/SectionMenuItems';
-import { sectionKindsToAdd } from './sections/sectionKindsToAdd';
+import { sectionKindsToAdd } from '@/lib/resume/sectionKindsToAdd';
 import { useAddCustomSection } from './sections/useAddCustomSection';
 
 /**

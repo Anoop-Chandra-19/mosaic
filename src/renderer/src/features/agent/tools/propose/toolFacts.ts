@@ -37,6 +37,20 @@ export function describeHandlesInList(
 export const describeList = (kind: HandleKind, holder: string | null) =>
   holder ? `${holder}'s ${KIND_PLURAL[kind]}` : 'the sections';
 
+/** The call that adds to a section, by what the section holds. */
+const HOW_TO_FILL = {
+  lines: (section: string) => `propose_add (into ${section})`,
+  entries: (section: string) => `propose_entry (sectionId ${section})`,
+};
+
+/** What an empty new section still needs, by what it can hold. */
+const EMPTY_SECTION_NEEDS = {
+  lines: (section: string) => `its lines with ${HOW_TO_FILL.lines(section)}`,
+  entries: (section: string) => `its first entry with ${HOW_TO_FILL.entries(section)}`,
+  either: (section: string) =>
+    `its first entry with ${HOW_TO_FILL.entries(section)}, or its lines with ${HOW_TO_FILL.lines(section)}`,
+};
+
 const MERGE_RULE = 'propose_merge joins two bullets next to each other in one entry.';
 
 export const TOOL_FACTS = {
@@ -56,6 +70,13 @@ export const TOOL_FACTS = {
       : `${section} holds lines, not entries; propose_add adds a line. No section holds entries.`,
   sectionHoldsEntries: (section: string, entries: string[]) =>
     `${section} holds entries, ${listHandles(entries)}. A new bullet goes into one of them, and propose_entry makes a new entry.`,
+  customSectionNeedsLabel: 'A custom section needs label, its heading.',
+  oneSummary: (summary: string) =>
+    `A resume has one Summary, and ${summary} is it. propose_rewrite changes what it says.`,
+  sectionExists: (label: string, section: string, layout: 'entries' | 'lines') =>
+    `There is already a section named ${label}, ${section}. ${HOW_TO_FILL[layout](section)} adds to it.`,
+  emptySection: (section: string, holds: 'entries' | 'lines' | 'either') =>
+    `It is ${section}, and it is empty: add ${EMPTY_SECTION_NEEDS[holds](section)}.`,
   notInList: (handle: string, list: string, holds: string[]) =>
     `${handle} isn't in ${list}, which holds ${listHandles(holds)}.`,
   lineIsNotAList: (line: string, separators: readonly string[]) =>

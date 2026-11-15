@@ -64,6 +64,11 @@ export interface ToolCallContext {
   templateId: string | null;
   /** The working copy as it is now. Proposed changes are validated against it. */
   doc: ResumeData;
+  /**
+   * The ids of new sections that waiting suggestions made and nothing has gone into yet.
+   * An empty custom section takes lines or an entry, whichever goes in first.
+   */
+  emptySectionIds: ReadonlySet<string>;
 }
 
 /** Tool response before `runAgentTool` adds the current draft's template ID and revision. */

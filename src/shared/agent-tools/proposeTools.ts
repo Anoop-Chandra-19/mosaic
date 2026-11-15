@@ -1,8 +1,11 @@
+import { BUILT_IN_KINDS } from '../resume/sectionPresets.ts';
 import type { ModelTool } from '../types/modelTool';
+import type { SectionKind } from '../types/resume';
 import {
   afterArg,
   booleanArg,
   defineAgentTool,
+  enumArg,
   handleArg,
   handleListArg,
   stringArg,
@@ -58,6 +61,7 @@ export interface ProposeToolArgs {
     withoutNumber?: string;
     reason?: string;
   };
+  propose_section: { kind: SectionKind; label?: string; after?: string; reason?: string };
 }
 
 export type ProposeToolName = keyof ProposeToolArgs;
@@ -84,6 +88,9 @@ const WITHOUT_NUMBER_ARG = stringArg(
 const ADD_AFTER_ARG = stringArg(
   'The one it goes right after: a bullet or line handle in the same list, such as b1 or l1, or in a line that lists things the item as the line writes it, such as "Go"; or "start" to put it first. Leave out to put it last.'
 );
+
+/** The kinds `propose_section` takes: every preset of the Add section menu, and custom. */
+const SECTION_KINDS: SectionKind[] = [...BUILT_IN_KINDS, 'custom'];
 
 export const PROPOSE_TOOLS: Record<ProposeToolName, ModelTool> = {
   propose_rewrite: defineAgentTool(
@@ -188,5 +195,16 @@ export const PROPOSE_TOOLS: Record<ProposeToolName, ModelTool> = {
       reason: REASON_ARG,
     },
     ['into', 'text']
+  ),
+  propose_section: defineAgentTool(
+    'propose_section',
+    'Suggest a new, empty section: one of the presets in kind, or custom with your own heading for anything else, such as Talks. The answer gives its handle: fill it before you finish, its first entry with propose_entry or its lines with propose_add, since a section never reaches the user empty. Summary, skills, languages and interests hold lines; the other presets hold entries; a custom section holds whichever you put in it first. A section whose heading already exists is refused: add to that one with propose_add or propose_entry.',
+    {
+      kind: enumArg(SECTION_KINDS, 'A preset, or custom for any other section.'),
+      label: stringArg("The heading. Needed for custom; a preset's is its own name."),
+      after: afterArg(['section']),
+      reason: REASON_ARG,
+    },
+    ['kind']
   ),
 };

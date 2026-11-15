@@ -45,7 +45,11 @@ function describeLinesSection(context: ToolCallContext, sectionHandle: string): 
 export const proposeEntry: ProposeTool<'propose_entry'> = (context, args) => {
   const section = findSectionInReceipt(context, args.sectionId);
   if (isProblem(section)) return section;
-  if (section.layout === 'lines') return describeLinesSection(context, args.sectionId);
+  // An empty custom section the assistant made holds whatever goes in first.
+  const takesEither = section.kind === 'custom' && context.emptySectionIds.has(section.id);
+  if (section.layout === 'lines' && !takesEither) {
+    return describeLinesSection(context, args.sectionId);
+  }
   const previousEntry = findPreviousEntry(context, section, args.after);
   if (isProblem(previousEntry)) return previousEntry;
 

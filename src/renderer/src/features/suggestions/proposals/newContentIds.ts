@@ -1,4 +1,10 @@
-import type { EntryDraft, NewEntryIds, NewContentIds, ProposalChange } from '@/types/agentProposal';
+import type {
+  EntryDraft,
+  NewEntryIds,
+  NewContentIds,
+  ProposalChange,
+  SectionContents,
+} from '@/types/agentProposal';
 
 /*
  * Stable ids for proposed additions. Staging calls createNewContentIds; apply uses those
@@ -9,6 +15,18 @@ const createEntryIds = ({ bullets }: EntryDraft, createId: () => string): NewEnt
   entryId: createId(),
   bulletIds: bullets.map(createId),
 });
+
+type SectionContentIds = Extract<NewContentIds, { kind: 'section' }>['contents'];
+
+function createSectionContentIds(
+  contents: SectionContents | null,
+  createId: () => string
+): SectionContentIds {
+  if (contents === null) return null;
+  return contents.layout === 'entries'
+    ? { layout: 'entries', entry: createEntryIds(contents.entry, createId) }
+    : { layout: 'lines', lineIds: contents.lines.map(createId) };
+}
 
 /** Create ids for the new things a change adds. Returns null when it adds none. */
 export function createNewContentIds(
@@ -24,11 +42,11 @@ export function createNewContentIds(
       return { kind: 'entry', entry: createEntryIds(change, createId) };
     case 'section': {
       const sectionId = createId();
-      const contents =
-        change.contents.layout === 'entries'
-          ? { layout: 'entries' as const, entry: createEntryIds(change.contents.entry, createId) }
-          : { layout: 'lines' as const, lineIds: change.contents.lines.map(createId) };
-      return { kind: 'section', sectionId, contents };
+      return {
+        kind: 'section',
+        sectionId,
+        contents: createSectionContentIds(change.contents, createId),
+      };
     }
     default:
       return null;
@@ -51,12 +69,13 @@ export function listNewContentIds(ids: NewContentIds | null): string[] {
       return [ids.id];
     case 'entry':
       return listEntryIds(ids.entry);
-    case 'section':
+    case 'section': {
+      const { sectionId, contents } = ids;
+      if (contents === null) return [sectionId];
       return [
-        ids.sectionId,
-        ...(ids.contents.layout === 'entries'
-          ? listEntryIds(ids.contents.entry)
-          : ids.contents.lineIds),
+        sectionId,
+        ...(contents.layout === 'entries' ? listEntryIds(contents.entry) : contents.lineIds),
       ];
+    }
   }
 }

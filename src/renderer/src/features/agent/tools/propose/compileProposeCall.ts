@@ -10,6 +10,7 @@ import { proposeRename } from './proposeRename';
 import { proposeReorder } from './proposeReorder';
 import { proposeReplaceEverywhere } from './proposeReplaceEverywhere';
 import { proposeRewrite } from './proposeRewrite';
+import { proposeSection } from './proposeSection';
 import { proposeSelect } from './proposeSelect';
 import { proposeSplit } from './proposeSplit';
 import { diagnose, type Diagnostic } from './toolDiagnostics';
@@ -46,6 +47,7 @@ const TOOLS: { [N in ProposeToolName]: ProposeTool<N> } = {
   propose_select: proposeSelect,
   propose_entry: proposeEntry,
   propose_add: proposeAdd,
+  propose_section: proposeSection,
 };
 
 const COUNT_WORDS = ['two', 'three', 'four'];
