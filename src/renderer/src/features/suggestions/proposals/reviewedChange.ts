@@ -7,9 +7,8 @@ const ENTRY_FACTS: EntryFact[] = ['title', 'organization', 'location', 'dates'];
 function reviewedText(proposal: Proposal, after: string): string {
   const { review, change } = proposal;
   if (review.userText !== undefined) return review.userText;
-  if (change.kind === 'rewrite' && change.gap && review.isWithoutNumber) {
-    return change.gap.withoutNumber;
-  }
+  const hasGap = change.kind === 'rewrite' || change.kind === 'add';
+  if (hasGap && change.gap && review.isWithoutNumber) return change.gap.withoutNumber;
   return review.filledNumber ? after.replace(GAP_MARK, review.filledNumber) : after;
 }
 
@@ -37,7 +36,8 @@ export function resolveChange(proposal: Proposal): ProposalChange {
     }
     case 'add': {
       const afterId = review.placedAfterId !== undefined ? review.placedAfterId : change.afterId;
-      return { ...change, afterId, text: reviewedText(proposal, change.text) };
+      const text = reviewedText(proposal, change.text);
+      return { ...change, afterId, text, gap: text.includes(GAP_MARK) ? change.gap : undefined };
     }
     case 'rename': {
       const before =

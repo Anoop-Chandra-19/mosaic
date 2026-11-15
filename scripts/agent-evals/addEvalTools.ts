@@ -1,6 +1,6 @@
 /**
- * The tools the add eval offers: the app's propose tools as they ship, and the three that
- * come with C3, in two shapes:
+ * The tools the add eval offers: the app's propose tools as they ship, `propose_add`
+ * among them, and the two that are not shipped yet, in two shapes:
  *
  * - `one-call`: `propose_add` and a `propose_section` that brings its contents (lines, or
  *   the first entry) in the one call. The baseline.
@@ -102,33 +102,6 @@ const ONE_CALL_SECTION_TOOL: EvalTool = {
   },
 };
 
-/**
- * `propose_add`'s `after`, which names an item two ways: a bullet's or line's handle, or
- * in a list line an item as the line writes it. So it has no pattern.
- */
-const LIST_AFTER_ARG = stringArg(
-  'The one it goes right after: a bullet or line handle in the same list, such as b1 or l1, or in a line that lists things the item as the line writes it, such as "Go"; or "start" to put it first. Leave out to put it last.'
-);
-
-const BUILDER_ADD_TOOL: EvalTool = {
-  name: 'propose_add',
-  description: `Suggest a new bullet in an entry, a new line in a section that holds lines, such as Summary or Skills, or a new item in a line that lists things, such as "Go, Python, Postgres". It never rewrites existing text: for that, use propose_rewrite. For a new entry use propose_entry, and for a new section propose_section. ${NO_NEW_FACTS_RULE} When it needs a number only the user knows, write {{?}} where it goes and give withoutNumber, a version that needs no number.`,
-  parameters: {
-    type: 'object',
-    properties: {
-      into: handleArg(
-        ['entry', 'section', 'line'],
-        'The entry a new bullet goes into, the section a new line goes into, or the line that lists things a new item goes into.'
-      ),
-      after: LIST_AFTER_ARG,
-      text: stringArg('The whole new bullet or line, or for a list, just the new item.'),
-      withoutNumber: stringArg('Only with {{?}} in text: the same text written to need no number.'),
-      reason: REASON_ARG,
-    },
-    required: ['into', 'text'],
-  },
-};
-
 const BUILDER_SECTION_TOOL: EvalTool = {
   name: 'propose_section',
   description:
@@ -172,12 +145,9 @@ const pointReorderToMove = (tool: EvalTool): EvalTool =>
 /** The tools a shape offers. */
 export function describeAddEvalTools(shape: AddEvalShape): EvalTool[] {
   if (ADD_EVAL_TOOL_SETS[shape].isBuilder) {
-    return [
-      ...SHIPPED_TOOLS.map(pointReorderToMove),
-      BUILDER_ADD_TOOL,
-      BUILDER_SECTION_TOOL,
-      BUILDER_MOVE_TOOL,
-    ];
+    return [...SHIPPED_TOOLS.map(pointReorderToMove), BUILDER_SECTION_TOOL, BUILDER_MOVE_TOOL];
   }
-  return [...SHIPPED_TOOLS, ONE_CALL_ADD_TOOL, ONE_CALL_SECTION_TOOL];
+  // The one-call shape offers its own `propose_add` in place of the shipped one.
+  const shippedWithoutAdd = SHIPPED_TOOLS.filter((tool) => tool.name !== 'propose_add');
+  return [...shippedWithoutAdd, ONE_CALL_ADD_TOOL, ONE_CALL_SECTION_TOOL];
 }

@@ -3,7 +3,6 @@ import { AppButton, Text } from '@/components/ui-kit';
 import type { Proposal } from '@/types/agentProposal';
 import {
   cancelStaleReview,
-  chooseVersionWithoutNumber,
   clearProposalEdit,
   fillProposalNumber,
 } from '../../proposals/proposalActions';
@@ -14,6 +13,7 @@ import { SuggestionEditor } from '../text/SuggestionEditor';
 import { SuggestionFlags } from '../text/SuggestionFlags';
 import { FlaggedText, MarkedText } from '../text/SuggestionText';
 import { nameTextPlace, type TextNoun } from '../text/suggestionWords';
+import { WithoutNumberChoice } from '../text/WithoutNumberChoice';
 import { BackLink, Caption, CaptionTag, Lines, SuggestedText } from './BodyParts';
 import type { SuggestionBodyProps } from './suggestionBodyProps';
 
@@ -49,11 +49,6 @@ export function RewriteBody({ proposal, draft, isEditing, onEditingChange }: Sug
       onFill={(number) => fillProposalNumber(proposal.id, number)}
     />
   );
-  const original = proposal.change;
-  const withoutNumber =
-    original.kind === 'rewrite' && review.userText === undefined
-      ? original.gap?.withoutNumber
-      : undefined;
 
   return (
     <>
@@ -85,27 +80,7 @@ export function RewriteBody({ proposal, draft, isEditing, onEditingChange }: Sug
             />
           </SuggestedText>
           <SuggestionFlags flags={flags} />
-          {withoutNumber !== undefined &&
-            (review.isWithoutNumber ? (
-              <BackLink onClick={() => chooseVersionWithoutNumber(proposal.id, false)}>
-                Back to the version with a number
-              </BackLink>
-            ) : (
-              <div className="mt-2.5 rounded-sm border border-line-strong bg-pane-raised px-2.5 pt-2 pb-2.5">
-                <Caption>Or, with no number</Caption>
-                <Text as="p" variant="secondary" className="text-ink-soft">
-                  {withoutNumber}
-                </Text>
-                <AppButton
-                  variant="outline"
-                  size="xs"
-                  className="mt-2"
-                  onClick={() => chooseVersionWithoutNumber(proposal.id, true)}
-                >
-                  Use this one
-                </AppButton>
-              </div>
-            ))}
+          <WithoutNumberChoice proposal={proposal} />
           {review.userText !== undefined && (
             <BackLink onClick={() => clearProposalEdit(proposal.id)}>
               Back to the assistant’s wording

@@ -106,6 +106,15 @@ const DESCRIBE_BY_TOOL: {
     const entry = nameEntry({ organization, title });
     return { kind: 'place', section: section.label, ...(entry && { entry }) };
   },
+  propose_add: (context, { into }) => {
+    const place = targetOfHandle(context, into);
+    if (!place || readHandleKind(into) !== 'section') return place;
+    // `proposeAdd` adds the bullet to the only entry of a one-entry section, so name that entry.
+    const section = findSectionInReceipt(context, into);
+    if (isProblem(section)) return place;
+    const isOneEntry = section.layout === 'entries' && section.items.length === 1;
+    return isOneEntry ? withEntry(place, section.items[0]) : place;
+  },
   propose_replace_everywhere: (context, { find, replace }) => {
     const texts = listTextInReceipt(context);
     if (isProblem(texts)) return undefined;

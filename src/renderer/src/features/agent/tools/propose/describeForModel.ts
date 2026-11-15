@@ -5,7 +5,13 @@ import type {
   ProposalFlagKind,
 } from '@/types/agentProposal';
 import { hasSameWords } from '@/lib/resume/hasSameWords';
-import { isPlaceShown, readShowPlaceId, readTextPlaceId } from '@/lib/resume/proposalAnchor';
+import {
+  findEntry,
+  findSection,
+  isPlaceShown,
+  readShowPlaceId,
+  readTextPlaceId,
+} from '@/lib/resume/proposalAnchor';
 import { readSplitHalves } from '@/lib/resume/splitHalves';
 import type { ResumeData } from '@shared/types/resume';
 import type { AgentToolRun } from '../tool-run/agentToolRun';
@@ -52,8 +58,21 @@ export function describeTarget(run: AgentToolRun, change: ProposalChange): strin
  * Explain a no-op change ("It already reads that."), or return null otherwise.
  * Text comparisons use `hasSameWords`, which ignores whitespace differences.
  */
-export function describeNoChange(doc: ResumeData, change: ProposalChange): string | null {
+export function describeNoChange(
+  run: AgentToolRun,
+  doc: ResumeData,
+  change: ProposalChange
+): string | null {
   switch (change.kind) {
+    case 'add': {
+      const { place } = change;
+      const among =
+        place.unit === 'line'
+          ? (findSection(doc, place.sectionId)?.items ?? [])
+          : (findEntry(doc, place.sectionId, place.entryId)?.bullets ?? []);
+      const same = among.find((each) => hasSameWords(each.text ?? '', change.text));
+      return same ? `It is already there, as ${knownHandle(run, same.id)}.` : null;
+    }
     case 'rewrite':
     case 'rename':
       return hasSameWords(change.before, change.after) ? 'It already reads that.' : null;
@@ -72,8 +91,9 @@ export function describeNoChange(doc: ResumeData, change: ProposalChange): strin
 
 /**
  * Describe the parts of a result that the model can't know from its own call:
- * - text that our code wrote: a replacement's result and the two halves of a split;
- * - the handles of new bullets and entries, so the model can edit them;
+ * - text that our code wrote: a replacement's result, a list line with its new item,
+ *   and the two halves of a split;
+ * - the handles of new bullets, lines and entries, so the model can edit them;
  * - which bullet a merge removed.
  * Text the model supplied is left out, so it isn't repeated in the model's context.
  */
@@ -97,7 +117,11 @@ export function describeResultWeWrote(
     const entry = `It is ${handleFor(run.handles, 'entry', entryId)}`;
     return bullets.length ? `${entry}, with bullets ${bullets.join(', ')}.` : `${entry}.`;
   }
-  if (change.kind === 'rewrite' && source === 'replace') return `It reads: "${change.after}".`;
+  if (change.kind === 'add' && newContentIds?.kind === 'add') {
+    return `It is ${handleFor(run.handles, change.place.unit, newContentIds.id)}.`;
+  }
+  const isWrittenByUs = source === 'replace' || source === 'add';
+  if (change.kind === 'rewrite' && isWrittenByUs) return `It reads: "${change.after}".`;
   return null;
 }
 

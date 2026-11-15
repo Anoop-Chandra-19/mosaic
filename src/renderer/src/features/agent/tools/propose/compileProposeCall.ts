@@ -3,6 +3,7 @@ import type { ProposeToolArgs, ProposeToolName } from '@shared/agent-tools/propo
 import type { ToolCallContext } from '../tool-run/agentToolRun';
 import { applyChangeRules } from './changeRules';
 import { isProblem, type Problem } from './findInReceipt';
+import { proposeAdd } from './proposeAdd';
 import { proposeEntry } from './proposeEntry';
 import { proposeMerge } from './proposeMerge';
 import { proposeRename } from './proposeRename';
@@ -44,6 +45,7 @@ const TOOLS: { [N in ProposeToolName]: ProposeTool<N> } = {
   propose_reorder: proposeReorder,
   propose_select: proposeSelect,
   propose_entry: proposeEntry,
+  propose_add: proposeAdd,
 };
 
 const COUNT_WORDS = ['two', 'three', 'four'];

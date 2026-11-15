@@ -82,6 +82,28 @@ export function findEntryInSection(
   return { problem: TOOL_FACTS.entryNotInSection(handle, sectionHandle, entries) };
 }
 
+/** An entry from the receipt, with the ID of its section. */
+export interface EntryInReceipt {
+  sectionId: string;
+  entry: ResumeEntry;
+}
+
+export function findEntryInReceipt(
+  context: ToolCallContext,
+  handle: string
+): EntryInReceipt | Problem {
+  const receipt = openReceipt(context);
+  if (isProblem(receipt)) return receipt;
+  const entryId = idForHandle(context.run.handles, 'entry', handle);
+  if (!entryId) return unknownHandle('entry', handle);
+  for (const section of receipt.doc.sections) {
+    if (section.layout !== 'entries') continue;
+    const entry = section.items.find((each) => each.id === entryId);
+    if (entry) return { sectionId: section.id, entry };
+  }
+  return notInReceipt(handle);
+}
+
 export function findBulletInReceipt(
   context: ToolCallContext,
   handle: string

@@ -19,6 +19,7 @@ import { SuggestionEditor } from '../text/SuggestionEditor';
 import { SuggestionFlags } from '../text/SuggestionFlags';
 import { FlaggedText } from '../text/SuggestionText';
 import { nameAddedContainer } from '../text/suggestionWords';
+import { WithoutNumberChoice } from '../text/WithoutNumberChoice';
 
 /** The bullets or lines new text goes among, as the draft holds them. */
 function readAmong(draft: ResumeData, place: AddPlace): { id: string; text: string }[] {
@@ -124,6 +125,7 @@ export function AddedTextBody({
         </TagLine>
       )}
       {!isEditing && <SuggestionFlags flags={flags} />}
+      {!isEditing && <WithoutNumberChoice proposal={proposal} />}
       {!isEditing && review.userText !== undefined && (
         <BackLink onClick={() => clearProposalEdit(proposal.id)}>
           Back to the assistant’s wording

@@ -51,7 +51,7 @@ function targetKeyOf(change: ProposalChange): string | null {
 type ChangeRule = (context: ToolCallContext, change: ProposalChange) => string | null;
 
 const findsNoChange: ChangeRule = (context, change) => {
-  const fact = describeNoChange(context.doc, change);
+  const fact = describeNoChange(context.run, context.doc, change);
   return fact && `nothing changed. ${fact}`;
 };
 
