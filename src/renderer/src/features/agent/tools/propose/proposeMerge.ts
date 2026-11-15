@@ -52,8 +52,10 @@ export const proposeMerge: ProposeTool<'propose_merge'> = (context, args) => {
     after: args.text.trim(),
   };
   const [firstHandle, secondHandle] = handlesOf(context.run, [first.bullet.id, second.bullet.id]);
-  const took = isSwapped
+  const adjustments = isSwapped
     ? [`Took them in the order they sit: ${firstHandle}, then ${secondHandle}.`]
     : [];
-  return [{ changes: [{ change, source: 'merge', reason: args.reason }], took, summary: '' }];
+  return [
+    { changes: [{ change, source: 'merge', reason: args.reason }], adjustments, summary: '' },
+  ];
 };

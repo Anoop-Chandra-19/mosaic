@@ -66,10 +66,10 @@ function readToolCallContext(run: AgentToolRun): ToolCallContext {
   return { run, templateId, doc: buildWorkingCopy(getResumeSnapshot(), proposals) };
 }
 
-/** Put argument-normalization notes before the tool outcome. */
-const sayTookFirst = (took: string[], toolAnswer: ToolAnswer): ToolAnswer =>
-  took.length
-    ? { ...toolAnswer, content: `${took.join('\n')}\n${toolAnswer.content}` }
+/** Put the notes on adjusted arguments before the tool outcome. */
+const prependAdjustments = (adjustments: string[], toolAnswer: ToolAnswer): ToolAnswer =>
+  adjustments.length
+    ? { ...toolAnswer, content: `${adjustments.join('\n')}\n${toolAnswer.content}` }
     : toolAnswer;
 
 function compileAndStage<N extends ProposeToolName>(
@@ -111,11 +111,13 @@ async function runWithCheckedArgs(
   if (!argsObject) return refuse(ARGUMENTS_NOT_AN_OBJECT);
   const normalized = readAgentToolArgs(AGENT_TOOLS[name], argsObject, lookUpReceipt(run));
   const checked = checkAgentToolArgs(AGENT_TOOLS[name], normalized.args);
-  if ('problem' in checked) return sayTookFirst(normalized.took, refuse(checked.problem));
+  if ('problem' in checked) {
+    return prependAdjustments(normalized.adjustments, refuse(checked.problem));
+  }
   const toolAnswer = isProposeToolName(name)
     ? compileAndStage(run, name, checked.args)
     : await READ_TOOLS[name](run);
-  return sayTookFirst(normalized.took, toolAnswer);
+  return prependAdjustments(normalized.adjustments, toolAnswer);
 }
 
 function describeOpenDraft(): AgentToolResult['draft'] {

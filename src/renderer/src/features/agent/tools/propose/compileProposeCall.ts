@@ -66,7 +66,9 @@ export function compileProposeCall<N extends ProposeToolName>(
   if (isProblem(reading)) {
     return { diagnostics: [diagnose('error', null, reading.problem)], toStage: [] };
   }
-  const diagnostics = reading.took.map((took) => diagnose('took', null, took));
+  const diagnostics = reading.adjustments.map((adjustment) =>
+    diagnose('adjustment', null, adjustment)
+  );
   const toStage: StagedChange[] = [];
   for (const staged of reading.changes) {
     const stopped = applyChangeRules(context, staged.change);

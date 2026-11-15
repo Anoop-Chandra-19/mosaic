@@ -7,7 +7,7 @@ import type { Problem } from './findInReceipt';
 export interface Reading {
   changes: StagedChange[];
   /** Notes on accepted adjustments, such as "Took them in the order they sit: b2, then b3." */
-  took: string[];
+  adjustments: string[];
   /** Short description used to distinguish ambiguous interpretations. */
   summary: string;
 }
@@ -23,5 +23,5 @@ export type ProposeTool<N extends ProposeToolName> = (
 
 /** Wrap unambiguous changes in a single reading. */
 export const oneReading = (...changes: StagedChange[]): Reading[] => [
-  { changes, took: [], summary: '' },
+  { changes, adjustments: [], summary: '' },
 ];
