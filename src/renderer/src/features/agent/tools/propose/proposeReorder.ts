@@ -144,12 +144,12 @@ export const proposeReorder: ProposeTool<'propose_reorder'> = (context, args) =>
     source: 'reorder',
     reason: args.reason,
   }));
-  const took = isPlain
+  const adjustments = isPlain
     ? []
     : changed.map(({ list, after }) => {
         const holder = list.holderId && handlesOf(context.run, [list.holderId])[0];
         const order = handlesOf(context.run, after).join(', ');
         return `Took order as ${describeList(list.kind, holder)}: ${order}.`;
       });
-  return [{ changes, took, summary: '' }];
+  return [{ changes, adjustments, summary: '' }];
 };

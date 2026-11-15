@@ -27,7 +27,7 @@ export const proposeSplit: ProposeTool<'propose_split'> = (context, args) => {
     const halves = `"${text.slice(0, start).trim()}" and "${text.slice(start).trim()}"`;
     return {
       changes: [{ change, source: 'split', reason: args.reason }],
-      took: [],
+      adjustments: [],
       summary: halves,
     };
   });

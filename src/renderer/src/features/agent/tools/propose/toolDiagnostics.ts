@@ -6,7 +6,7 @@ import { answer, refuse, type ToolAnswer } from '../tool-run/agentToolRun';
  * is successful or informational, such as an already-satisfied change.
  */
 
-export type DiagnosticKind = 'took' | 'ok' | 'info' | 'error';
+export type DiagnosticKind = 'adjustment' | 'ok' | 'info' | 'error';
 
 export interface Diagnostic {
   kind: DiagnosticKind;
@@ -28,9 +28,9 @@ export const diagnose = (
 const formatLine = ({ target, text }: Diagnostic) => (target ? `${target}: ${text}` : text);
 
 export function formatToolAnswer(diagnostics: Diagnostic[]): ToolAnswer {
-  const took = diagnostics.filter((each) => each.kind === 'took');
-  const rest = diagnostics.filter((each) => each.kind !== 'took');
-  const content = [...took, ...rest].map(formatLine).join('\n');
+  const adjustments = diagnostics.filter((each) => each.kind === 'adjustment');
+  const rest = diagnostics.filter((each) => each.kind !== 'adjustment');
+  const content = [...adjustments, ...rest].map(formatLine).join('\n');
   const isDone = rest.some((each) => each.kind === 'ok' || each.kind === 'info');
   return isDone ? answer(content) : refuse(content);
 }

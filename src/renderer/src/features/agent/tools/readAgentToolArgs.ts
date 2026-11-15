@@ -19,7 +19,7 @@ import type { ModelTool } from '@shared/types/modelTool';
 export interface ReadToolArgs {
   args: Record<string, unknown>;
   /** Notes on normalized arguments, such as 'Took "Spanish, fluent" as "l4".'. */
-  took: string[];
+  adjustments: string[];
 }
 
 /** Receipt lookups needed to normalize model-supplied references. */
@@ -109,7 +109,7 @@ export function readAgentToolArgs(
 ): ReadToolArgs {
   const properties = (tool.inputSchema.properties ?? {}) as Record<string, PropertySchema>;
   const args = { ...given };
-  const took: string[] = [];
+  const adjustments: string[] = [];
   for (const [name, schema] of Object.entries(properties)) {
     const value = args[name];
     if (isLeftOut(value)) continue;
@@ -118,13 +118,13 @@ export function readAgentToolArgs(
       const items = readListItems(list, schema.items.pattern, lookup);
       if (items.every((item, i) => item === list[i])) continue;
       args[name] = items;
-      took.push(`Took ${name} as ${JSON.stringify(items)}.`);
+      adjustments.push(`Took ${name} as ${JSON.stringify(items)}.`);
       continue;
     }
     const reading = readProperty(value, schema, lookup);
     if (reading === undefined || reading === value) continue;
     args[name] = reading;
-    took.push(`Took ${JSON.stringify(value)} as ${JSON.stringify(reading)}.`);
+    adjustments.push(`Took ${JSON.stringify(value)} as ${JSON.stringify(reading)}.`);
   }
-  return { args, took };
+  return { args, adjustments };
 }

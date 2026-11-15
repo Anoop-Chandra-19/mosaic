@@ -126,8 +126,8 @@ function runCall(
     'problem' in checked
       ? { answer: checked.problem, isRefused: true }
       : runAddEvalTool(resume, settings, name, checked.args);
-  const took = read.took.length ? `${read.took.join(' ')}\n` : '';
-  return { ...answer, answer: `${took}${answer.answer}`, tookCount: read.took.length };
+  const took = read.adjustments.length ? `${read.adjustments.join(' ')}\n` : '';
+  return { ...answer, answer: `${took}${answer.answer}`, tookCount: read.adjustments.length };
 }
 
 function describeCall(name: string, args: Record<string, unknown>, isRefused: boolean): string {
