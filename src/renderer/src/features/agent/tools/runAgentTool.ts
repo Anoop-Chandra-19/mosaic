@@ -87,20 +87,35 @@ function compileAndStage<N extends ProposeToolName>(
   };
 }
 
+const isArgsObject = (rawArgs: unknown): rawArgs is Record<string, unknown> =>
+  typeof rawArgs === 'object' && rawArgs !== null && !Array.isArray(rawArgs);
+
+const ARGUMENTS_NOT_AN_OBJECT =
+  'The arguments were not a JSON object, so the tool did not run. Call it again with the arguments as a JSON object.';
+
+/**
+ * The arguments as an object, or null when they are something else (text that would not
+ * parse, a list). A call with no arguments at all has none.
+ */
+function readArgsObject(rawArgs: unknown): Record<string, unknown> | null {
+  if (rawArgs === undefined || rawArgs === null) return {};
+  return isArgsObject(rawArgs) ? rawArgs : null;
+}
+
 async function runWithCheckedArgs(
   name: AgentToolName,
   run: AgentToolRun,
   rawArgs: unknown
 ): Promise<ToolAnswer> {
-  const givenArgs =
-    typeof rawArgs === 'object' && rawArgs !== null ? (rawArgs as Record<string, unknown>) : {};
-  const read = readAgentToolArgs(AGENT_TOOLS[name], givenArgs, lookUpReceipt(run));
-  const checked = checkAgentToolArgs(AGENT_TOOLS[name], read.args);
-  if ('problem' in checked) return sayTookFirst(read.took, refuse(checked.problem));
+  const argsObject = readArgsObject(rawArgs);
+  if (!argsObject) return refuse(ARGUMENTS_NOT_AN_OBJECT);
+  const normalized = readAgentToolArgs(AGENT_TOOLS[name], argsObject, lookUpReceipt(run));
+  const checked = checkAgentToolArgs(AGENT_TOOLS[name], normalized.args);
+  if ('problem' in checked) return sayTookFirst(normalized.took, refuse(checked.problem));
   const toolAnswer = isProposeToolName(name)
     ? compileAndStage(run, name, checked.args)
     : await READ_TOOLS[name](run);
-  return sayTookFirst(read.took, toolAnswer);
+  return sayTookFirst(normalized.took, toolAnswer);
 }
 
 function describeOpenDraft(): AgentToolResult['draft'] {

@@ -59,6 +59,31 @@ beforeEach(() => {
 const callTool = (name: string, args: unknown = {}) => runAgentTool(run, name, args);
 const readTheResume = () => callTool('read_document');
 
+describe('arguments that are not an object', () => {
+  const NOT_AN_OBJECT = 'The arguments were not a JSON object, so the tool did not run.';
+
+  it('refuses text that would not parse, even for a tool that needs no arguments', async () => {
+    const result = await callTool('read_document', '{"}Rewrite the bullet. Rewrite the');
+    expect(result.isError).toBe(true);
+    expect(result.content).toContain(NOT_AN_OBJECT);
+    expect(result.content).not.toContain('## Experience');
+  });
+
+  it('refuses a list, and suggests nothing', async () => {
+    await readTheResume();
+    const result = await callTool('propose_rewrite', [{ id: 'b1', text: 'Led billing' }]);
+    expect(result.isError).toBe(true);
+    expect(result.content).toContain(NOT_AN_OBJECT);
+    expect(stagedSuggestions()).toEqual([]);
+  });
+
+  it('runs a call that has no arguments at all', async () => {
+    const result = await callTool('read_document', null);
+    expect(result.isError).toBe(false);
+    expect(result.content).toContain('## Experience (s1)');
+  });
+});
+
 describe('read_document', () => {
   it('gives the draft with handles, and where the draft stood', async () => {
     const result = await readTheResume();
