@@ -77,7 +77,8 @@ function takeAsKept(proposal: Proposal, notes: Map<string, PreviewNote>): Propos
     });
   }
   const { change } = proposal;
-  if (!needsNumber(proposal) || change.kind !== 'rewrite' || !change.gap) return kept;
+  const hasGap = (change.kind === 'rewrite' || change.kind === 'add') && !!change.gap;
+  if (!needsNumber(proposal) || !hasGap) return kept;
   notes.set(proposal.id, { isOnPage: true, text: 'shown without its number' });
   return {
     ...kept,

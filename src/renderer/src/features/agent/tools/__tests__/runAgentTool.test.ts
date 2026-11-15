@@ -373,7 +373,7 @@ describe('the rules every change goes through', () => {
     openDraft(makeResumeWithLines());
     await readTheResume();
     expect((await callTool('propose_entry', { sectionId: 's3', title: 'Go' })).content).toBe(
-      's3 holds lines, not entries. The sections that hold entries are s1.'
+      's3 holds lines, not entries; propose_add adds a line. The sections that hold entries are s1.'
     );
   });
 });
@@ -474,6 +474,151 @@ describe('the propose tools, on lines, entries and sections', () => {
     expect(
       (await callTool('propose_replace_everywhere', { find: 'Skills', replace: 'Tools' })).content
     ).toContain('in no bullet or line');
+  });
+});
+
+describe('propose_add', () => {
+  beforeEach(async () => {
+    openDraft(makeResumeWithLines());
+    await readTheResume();
+  });
+
+  const E1_BULLETS = { unit: 'bullet', sectionId: 's1', entryId: 'e1' };
+  const NEW_BULLET = 'Mentored two interns on the payments team';
+
+  it('adds a bullet last in an entry and answers with its handle', async () => {
+    const result = await callTool('propose_add', { into: 'e1', text: NEW_BULLET });
+    expect(result.content).toContain('a new bullet in e1: suggested. It is b5.');
+    expect(stagedSuggestions()[0]).toMatchObject({
+      source: 'add',
+      change: { kind: 'add', place: E1_BULLETS, afterId: 'b3', text: NEW_BULLET },
+    });
+  });
+
+  it('places a bullet first with "start", and after a handle of the same list', async () => {
+    await callTool('propose_add', { into: 'e1', after: 'start', text: NEW_BULLET });
+    await callTool('propose_add', { into: 'e1', after: 'b1', text: 'Reviewed billing code' });
+    expect(stagedSuggestions().map((proposal) => proposal.change)).toMatchObject([
+      { afterId: null },
+      { afterId: 'b1' },
+    ]);
+  });
+
+  it('takes the words of one bullet as the bullet to go after, and says so', async () => {
+    const result = await callTool('propose_add', { into: 'e1', after: B2, text: NEW_BULLET });
+    expect(result.content).toContain(`Took ${JSON.stringify(B2)} as "b2".`);
+    expect(stagedSuggestions()[0].change).toMatchObject({ afterId: 'b2' });
+  });
+
+  it('refuses a handle of another list, naming the handles the list holds', async () => {
+    const result = await callTool('propose_add', { into: 'e1', after: 'b4', text: NEW_BULLET });
+    expect(result).toEqual(
+      expect.objectContaining({
+        isError: true,
+        content: "b4 isn't in e1's bullets, which holds b1, b2, b3.",
+      })
+    );
+    expect(stagedSuggestions()).toEqual([]);
+  });
+
+  it('adds a line to a section that holds lines', async () => {
+    const result = await callTool('propose_add', { into: 's3', after: 'l2', text: 'Kafka, Redis' });
+    expect(result.content).toContain('a new line in s3: suggested. It is l4.');
+    expect(stagedSuggestions()[0].change).toEqual({
+      kind: 'add',
+      place: { unit: 'line', sectionId: 's3' },
+      afterId: 'l2',
+      text: 'Kafka, Redis',
+    });
+  });
+
+  it('refuses a section that holds several entries, naming them and propose_entry', async () => {
+    const result = await callTool('propose_add', { into: 's1', text: NEW_BULLET });
+    expect(result).toMatchObject({
+      isError: true,
+      content:
+        's1 holds entries, e1, e2. A new bullet goes into one of them, and propose_entry makes a new entry.',
+    });
+  });
+
+  it('takes a section with one entry as that entry, and says so', async () => {
+    const doc = makeResumeWithLines();
+    doc.sections[0].items.pop();
+    openDraft(doc, 't1', 4);
+    await readTheResume();
+    const result = await callTool('propose_add', { into: 's1', text: NEW_BULLET });
+    expect(result.content).toContain('Took s1 as its one entry, e1.');
+    expect(result.target).toEqual({
+      kind: 'place',
+      section: 'Experience',
+      entry: 'Harbor Freight Labs',
+    });
+    expect(stagedSuggestions()[0].change).toMatchObject({ place: E1_BULLETS, afterId: 'b3' });
+  });
+
+  it('adds an item to a line that lists things, as a rewrite of the line, and answers with the line', async () => {
+    const result = await callTool('propose_add', { into: 'l2', after: 'Go', text: 'Rust' });
+    expect(result.content).toContain('l2: suggested. It reads: "Go, Rust, Python, Postgres".');
+    expect(stagedSuggestions()[0]).toMatchObject({
+      source: 'add',
+      change: {
+        kind: 'rewrite',
+        place: { unit: 'line', sectionId: 's3', lineId: 'l2' },
+        before: 'Go, Python, Postgres',
+        after: 'Go, Rust, Python, Postgres',
+      },
+    });
+  });
+
+  it('changes nothing when the line already lists the item', async () => {
+    const result = await callTool('propose_add', { into: 'l2', text: 'Python' });
+    expect(result).toMatchObject({
+      isError: false,
+      content: 'l2: nothing changed. It already reads that.',
+    });
+    expect(stagedSuggestions()).toEqual([]);
+  });
+
+  it('refuses a line with no separator, and an item to go after that the line does not list', async () => {
+    expect((await callTool('propose_add', { into: 'l1', text: 'Rust' })).content).toBe(
+      'l1 has no separator ("," "·" "|" "/" ";"), so it isn\'t a list. propose_rewrite changes it.'
+    );
+    expect(
+      (await callTool('propose_add', { into: 'l2', after: 'Java', text: 'Rust' })).content
+    ).toBe('"Java" isn\'t an item of l2, which reads: "Go, Python, Postgres".');
+  });
+
+  it('changes nothing when the list already has the text, naming the handle that has it', async () => {
+    const result = await callTool('propose_add', { into: 'e1', text: B2 });
+    expect(result).toMatchObject({
+      isError: false,
+      content: 'a new bullet in e1: nothing changed. It is already there, as b2.',
+    });
+    await callTool('propose_add', { into: 'e1', text: NEW_BULLET });
+    const repeated = await callTool('propose_add', { into: 'e1', text: NEW_BULLET });
+    expect(repeated.content).toContain('It is already there, as b5.');
+    expect(stagedSuggestions()).toHaveLength(1);
+  });
+
+  it('lets the new bullet be rewritten by its handle, which changes the same suggestion', async () => {
+    await callTool('propose_add', { into: 'e1', text: NEW_BULLET });
+    await callTool('propose_rewrite', { id: 'b5', text: 'Mentored two interns' });
+    expect(stagedSuggestions().map((proposal) => proposal.change)).toMatchObject([
+      { kind: 'add', text: 'Mentored two interns' },
+    ]);
+  });
+
+  it('keeps the version without a number for text with a gap, and refuses a gap without one', async () => {
+    const text = 'Cut build time by {{?}}%';
+    expect((await callTool('propose_add', { into: 'e1', text })).content).toContain(
+      'give withoutNumber too'
+    );
+    await callTool('propose_add', { into: 'e1', text, withoutNumber: 'Cut build time' });
+    expect(stagedSuggestions()[0].change).toMatchObject({
+      kind: 'add',
+      text,
+      gap: { withoutNumber: 'Cut build time' },
+    });
   });
 });
 
@@ -741,6 +886,9 @@ describe('what each call was about', () => {
       { sectionId: 's1', title: 'Consultant' },
       { ...EXPERIENCE, entry: 'Consultant' },
     ],
+    ['propose_add', { into: 'e1', text: 'Mentored two interns' }, HARBOR],
+    ['propose_add', { into: 's3', text: 'Kafka, Redis' }, { kind: 'place', section: 'Skills' }],
+    ['propose_add', { into: 'l2', text: 'Rust' }, { kind: 'place', section: 'Skills', line: 1 }],
   ])('%s %o', async (name, args, target) => {
     expect((await callTool(name, args)).target).toEqual(target);
   });

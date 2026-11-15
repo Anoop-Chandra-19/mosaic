@@ -29,6 +29,14 @@ function nameUnit(target: ToolTarget | undefined, unknown: string): string {
   return place.entry ? 'an entry' : 'a section';
 }
 
+/** Name what propose_add added, based on whether the target is a line, an entry or a section. */
+function nameAdded(target: ToolTarget | undefined): string {
+  const place = asPlace(target);
+  if (!place) return 'some text';
+  if (place.line !== undefined) return 'an item to a line';
+  return place.entry ? 'a bullet' : 'a line';
+}
+
 const quoted = (term: string) => `“${term}”`;
 
 function nameList(target: ToolTarget | undefined): string {
@@ -92,6 +100,11 @@ const STEP_WORDS: Record<AgentToolName, StepWords> = {
     refused: (target) => `Couldn’t change ${nameUnit(target, 'that')}`,
   },
   propose_entry: SAME_WORDS('Adding an entry', 'Added an entry', 'Couldn’t add an entry'),
+  propose_add: {
+    running: 'Adding',
+    done: (target) => `Added ${nameAdded(target)}`,
+    refused: (target) => `Couldn’t add ${nameAdded(target)}`,
+  },
 };
 
 /** A tool the model made up still gets a row, so the run shows what it tried. */

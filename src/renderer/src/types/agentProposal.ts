@@ -88,6 +88,8 @@ export type ProposalChange =
       /** The bullet or line it goes after; null: it goes first. */
       afterId: string | null;
       text: string;
+      /** Set when `text` contains a `{{?}}` for the user to fill. It is the text that needs no number. */
+      gap?: { withoutNumber: string };
     }
   | {
       kind: 'entry';

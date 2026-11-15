@@ -51,6 +51,13 @@ export interface ProposeToolArgs {
     bullets?: string[];
     reason?: string;
   };
+  propose_add: {
+    into: string;
+    after?: string;
+    text: string;
+    withoutNumber?: string;
+    reason?: string;
+  };
 }
 
 export type ProposeToolName = keyof ProposeToolArgs;
@@ -63,17 +70,32 @@ const WHOLE_SENTENCE_RULE =
 const NO_NEW_FACTS_RULE =
   'Never add a number, name, tool or claim the user has not given you, and never make their role sound bigger than they wrote it.';
 
+const GAP_RULE =
+  'When it needs a number only the user knows, write {{?}} where it goes and give withoutNumber, a version that needs no number.';
+
+const WITHOUT_NUMBER_ARG = stringArg(
+  'Only with {{?}} in text: the same text written to need no number.'
+);
+
+/**
+ * The `after` argument of `propose_add`. It has no pattern because it accepts two forms:
+ * the handle of a bullet or line, or the text of an existing item in a list line.
+ */
+const ADD_AFTER_ARG = stringArg(
+  'The one it goes right after: a bullet or line handle in the same list, such as b1 or l1, or in a line that lists things the item as the line writes it, such as "Go"; or "start" to put it first. Leave out to put it last.'
+);
+
 export const PROPOSE_TOOLS: Record<ProposeToolName, ModelTool> = {
   propose_rewrite: defineAgentTool(
     'propose_rewrite',
-    `Suggest a new text for one bullet or line, for any change to it: rewording, or swapping the words the user names. The user reviews it before anything changes. ${WHOLE_SENTENCE_RULE} ${NO_NEW_FACTS_RULE} When it needs a number only the user knows, write {{?}} where it goes and give withoutNumber, a version that needs no number. For a section's heading, use propose_rename.`,
+    `Suggest a new text for one bullet or line, for any change to it: rewording, or swapping the words the user names. The user reviews it before anything changes. ${WHOLE_SENTENCE_RULE} ${NO_NEW_FACTS_RULE} ${GAP_RULE} For a section's heading, use propose_rename.`,
     {
       id: handleArg(
         ['bullet', 'line'],
         "The bullet or line to rewrite; for a section's heading, use propose_rename."
       ),
       text: stringArg('The whole new bullet or line.'),
-      withoutNumber: stringArg('Only with {{?}} in text: the same text written to need no number.'),
+      withoutNumber: WITHOUT_NUMBER_ARG,
       reason: REASON_ARG,
     },
     ['id', 'text']
@@ -151,5 +173,20 @@ export const PROPOSE_TOOLS: Record<ProposeToolName, ModelTool> = {
       reason: REASON_ARG,
     },
     ['sectionId']
+  ),
+  propose_add: defineAgentTool(
+    'propose_add',
+    `Suggest a new bullet in an entry, a new line in a section that holds lines, such as Summary or Skills, or a new item in a line that lists things, such as "Go, Python, Postgres". It never rewrites existing text: for that, use propose_rewrite. For a new entry, use propose_entry. ${NO_NEW_FACTS_RULE} ${GAP_RULE}`,
+    {
+      into: handleArg(
+        ['entry', 'section', 'line'],
+        'The entry a new bullet goes into, the section a new line goes into, or the line that lists things a new item goes into.'
+      ),
+      after: ADD_AFTER_ARG,
+      text: stringArg('The whole new bullet or line, or for a list, just the new item.'),
+      withoutNumber: WITHOUT_NUMBER_ARG,
+      reason: REASON_ARG,
+    },
+    ['into', 'text']
   ),
 };

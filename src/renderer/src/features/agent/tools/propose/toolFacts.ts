@@ -52,8 +52,16 @@ export const TOOL_FACTS = {
     `${handle} isn't in ${section}, whose entries are ${listHandles(entries)}.`,
   sectionHoldsLines: (section: string, sectionsWithEntries: string[]) =>
     sectionsWithEntries.length
-      ? `${section} holds lines, not entries. The sections that hold entries are ${listHandles(sectionsWithEntries)}.`
-      : `${section} holds lines, not entries, and no section holds entries.`,
+      ? `${section} holds lines, not entries; propose_add adds a line. The sections that hold entries are ${listHandles(sectionsWithEntries)}.`
+      : `${section} holds lines, not entries; propose_add adds a line. No section holds entries.`,
+  sectionHoldsEntries: (section: string, entries: string[]) =>
+    `${section} holds entries, ${listHandles(entries)}. A new bullet goes into one of them, and propose_entry makes a new entry.`,
+  notInList: (handle: string, list: string, holds: string[]) =>
+    `${handle} isn't in ${list}, which holds ${listHandles(holds)}.`,
+  lineIsNotAList: (line: string, separators: readonly string[]) =>
+    `${line} has no separator (${separators.map((each) => `"${each.trim()}"`).join(' ')}), so it isn't a list. propose_rewrite changes it.`,
+  notAnItem: (after: string, line: string, lineText: string) =>
+    `"${after}" isn't an item of ${line}, which reads: "${lineText}".`,
   bulletsInTwoEntries: (first: string, firstEntry: string, second: string, secondEntry: string) =>
     `${first} is in ${firstEntry} and ${second} is in ${secondEntry}. ${MERGE_RULE}`,
   bulletsApart: (first: string, second: string, entry: string, bullets: string[]) =>

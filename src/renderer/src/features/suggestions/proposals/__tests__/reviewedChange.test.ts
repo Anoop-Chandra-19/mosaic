@@ -85,6 +85,20 @@ describe('resolveChange, added text', () => {
       text: 'Ran the on-call rotation',
     });
   });
+
+  it('fills the gap, or takes the version without a number, as a rewrite does', () => {
+    const gapped: ProposalChange = {
+      ...addText('bullet', 'b3', 'Cut build time by {{?}}%'),
+      gap: { withoutNumber: 'Cut build time' },
+    };
+    expect(resolveChange(reviewed(gapped, { filledNumber: '40' }))).toMatchObject({
+      text: 'Cut build time by 40%',
+      gap: undefined,
+    });
+    expect(resolveChange(reviewed(gapped, { isWithoutNumber: true }))).toMatchObject({
+      text: 'Cut build time',
+    });
+  });
 });
 
 describe('resolveChange, a new section', () => {

@@ -160,7 +160,7 @@ export function rewordChange(proposal: Proposal, edit: TextEdit): ProposalChange
     case 'merge':
       return { ...change, after: edit.text };
     case 'add':
-      return { ...change, text: edit.text };
+      return { ...change, text: edit.text, gap: edit.gap };
     case 'split':
       return rewordSplitHalf(change, edit);
     case 'entry': {
