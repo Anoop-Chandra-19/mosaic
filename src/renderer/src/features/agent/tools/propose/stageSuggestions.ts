@@ -5,12 +5,18 @@ import {
   type StagedChange,
   type StagingResult,
 } from '@/features/suggestions/proposals/proposalActions';
-import { replayProposals } from '@/features/suggestions/proposals/workingCopy';
+import { applyProposalsToResume } from '@/features/suggestions/proposals/apply/applyProposalsToResume';
+import { readActiveVersion } from '@/features/suggestions/proposals/proposalVersions';
 import type { Proposal } from '@/types/agentProposal';
 import type { AgentToolRun, ToolAnswer, ToolCallContext } from '../tool-run/agentToolRun';
 import { handleFor } from '../tool-run/resumeHandles';
 import type { CompiledCall } from './compileProposeCall';
-import { describeFlag, describeResultWeWrote, describeTarget } from './describeForModel';
+import {
+  describeFlag,
+  describeResultWeWrote,
+  describeTarget,
+  type ChangeAsAsked,
+} from './describeForModel';
 import { diagnose, formatToolAnswer, type Diagnostic } from './toolDiagnostics';
 
 /*
@@ -26,18 +32,27 @@ import { diagnose, formatToolAnswer, type Diagnostic } from './toolDiagnostics';
 
 const NOTHING_STAGED: StagingResult = { proposals: [], reworded: [], filled: [], refusals: [] };
 
+/** Return a new suggestion's change. The user hasn't seen it yet, so it is as the model sent it. */
+function readNewAsAsked(proposal: Proposal): ChangeAsAsked {
+  const { change, newContentIds, flags } = readActiveVersion(proposal);
+  return { proposalId: proposal.id, source: proposal.source, change, newContentIds, flags };
+}
+
 /**
  * Return the rewrite the model asked for, with the checks of the suggestion it changed.
  * The receipt and the answer need the rewrite as the model made it. The changed
  * suggestion can't be used for that, because it starts from the user's text and the
  * receipt holds the text the model last wrote.
  */
-const readRewriteAsAsked = ({ proposal }: RewordedSuggestion, asked: StagedChange): Proposal => ({
-  ...proposal,
-  change: asked.change,
+const readRewriteAsAsked = (
+  { proposal }: RewordedSuggestion,
+  asked: StagedChange
+): ChangeAsAsked => ({
+  proposalId: proposal.id,
   source: asked.source,
+  change: asked.change,
   newContentIds: null,
-  review: {},
+  flags: readActiveVersion(proposal).flags,
 });
 
 /**
@@ -45,13 +60,12 @@ const readRewriteAsAsked = ({ proposal }: RewordedSuggestion, asked: StagedChang
  * suggestion. The receipt and the answer need it as the model made it, with its own ids
  * and its own checks.
  */
-const readFillingAsAsked = (filled: FilledSuggestion, asked: StagedChange): Proposal => ({
-  ...filled.proposal,
-  change: asked.change,
+const readFillingAsAsked = (filled: FilledSuggestion, asked: StagedChange): ChangeAsAsked => ({
+  proposalId: filled.proposal.id,
   source: asked.source,
+  change: asked.change,
   newContentIds: filled.filledIds,
   flags: filled.filledFlags,
-  review: {},
 });
 
 /**
@@ -73,12 +87,12 @@ function recordStagedIds(run: AgentToolRun, { proposals, reworded, filled }: Sta
  * Apply the changes the model just made to the run's receipt. The model knows what it
  * changed, so it can edit that text again without calling read_document.
  */
-function applyToReceipt(run: AgentToolRun, made: Proposal[], filled: FilledSuggestion[]) {
+function applyToReceipt(run: AgentToolRun, made: ChangeAsAsked[], filled: FilledSuggestion[]) {
   if (!run.receipt || !made.length) return;
-  const { doc } = replayProposals(run.receipt.doc, made);
+  const { doc } = applyProposalsToResume(run.receipt.doc, made);
   // A custom section's first entry makes it an entries section. Only its suggestion says so.
   for (const { proposal } of filled) {
-    const { change, newContentIds } = proposal;
+    const { change, newContentIds } = readActiveVersion(proposal);
     if (change.kind !== 'section' || newContentIds?.kind !== 'section') continue;
     const section = doc.sections.find((each) => each.id === newContentIds.sectionId);
     if (section) section.layout = change.section.layout;
@@ -87,22 +101,22 @@ function applyToReceipt(run: AgentToolRun, made: Proposal[], filled: FilledSugge
 }
 
 /** Describe a staged change and its checks, including any code-generated result text. */
-function describeStaged(run: AgentToolRun, proposal: Proposal): Diagnostic {
+function describeStaged(run: AgentToolRun, staged: ChangeAsAsked): Diagnostic {
   // A flag on one bullet of a new entry names that bullet, so the model can fix only that bullet.
-  const checks = proposal.flags.map((flag) =>
+  const checks = staged.flags.map((flag) =>
     flag.textId
       ? `In ${handleFor(run.handles, 'bullet', flag.textId)}: ${describeFlag(flag)}`
       : describeFlag(flag)
   );
   const text = [
     'suggested.',
-    describeResultWeWrote(run, proposal),
+    describeResultWeWrote(run, staged),
     `Checks: ${checks.length ? checks.join(' ') : 'none.'}`,
   ];
-  return diagnose('ok', describeTarget(run, proposal.change), text.filter(Boolean).join(' '));
+  return diagnose('ok', describeTarget(run, staged.change), text.filter(Boolean).join(' '));
 }
 
-const describeRemoved = (run: AgentToolRun, rewrite: Proposal): Diagnostic =>
+const describeRemoved = (run: AgentToolRun, rewrite: ChangeAsAsked): Diagnostic =>
   diagnose(
     'ok',
     describeTarget(run, rewrite.change),
@@ -123,10 +137,11 @@ export function stageCompiledCall(context: ToolCallContext, compiled: CompiledCa
   const fillings = staging.filled.map((filled) =>
     readFillingAsAsked(filled, compiled.toStage[filled.index])
   );
+  const made = staging.proposals.map(readNewAsAsked);
   recordStagedIds(run, staging);
   applyToReceipt(
     run,
-    [...staging.proposals, ...rewrites.map(({ rewrite }) => rewrite), ...fillings],
+    [...made, ...rewrites.map(({ rewrite }) => rewrite), ...fillings],
     staging.filled
   );
   const refused = staging.refusals.map(({ index, refusal }) =>
@@ -138,7 +153,7 @@ export function stageCompiledCall(context: ToolCallContext, compiled: CompiledCa
   );
   return formatToolAnswer([
     ...compiled.diagnostics,
-    ...staging.proposals.map((proposal) => describeStaged(run, proposal)),
+    ...made.map((staged) => describeStaged(run, staged)),
     ...rewrites.map(({ rewrite, isRemoved }) =>
       isRemoved ? describeRemoved(run, rewrite) : describeStaged(run, rewrite)
     ),

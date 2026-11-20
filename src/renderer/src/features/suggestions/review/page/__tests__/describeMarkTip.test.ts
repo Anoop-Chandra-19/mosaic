@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import type { Proposal, ProposalStatus } from '@/types/agentProposal';
+import type { Proposal, ProposalFlag, ProposalStatus } from '@/types/agentProposal';
+import { updateActiveVersion } from '../../../proposals/proposalVersions';
 import { makeProposal, rewrite } from '../../../proposals/__tests__/proposalFixtures';
 import { describeMarkTip } from '../describeMarkTip';
 
@@ -30,7 +31,11 @@ describe('describeMarkTip', () => {
 
   it('names what to check, a move’s places, and an entry put back', () => {
     const { proposal } = rewriteMark();
-    const flagged = { ...proposal, flags: [proposal.flags[0], proposal.flags[0]] };
+    const flag: ProposalFlag = { kind: 'newNames', words: ['MySQL'] };
+    const flagged = updateActiveVersion(proposal, (version) => ({
+      ...version,
+      flags: [flag, flag],
+    }));
     expect(describeMarkTip({ proposal: flagged, look: 'add' })).toMatch(/2 things to check\.$/);
     expect(describeMarkTip(undefined, { proposal, from: 2, to: 1 })).toMatch(
       /Moved from 2 to 1\.$/

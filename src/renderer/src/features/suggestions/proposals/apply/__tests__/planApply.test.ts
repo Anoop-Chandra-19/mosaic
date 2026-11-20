@@ -37,12 +37,13 @@ describe('planApply', () => {
   });
 
   it('holds back a kept one with a number to fill, and lands it once filled', () => {
-    const gapped = proposal('gap', rewrite('b2', B2, 'Cut slow requests by {{?}}%'), 'accepted', {
+    const change = rewrite('b2', B2, 'Cut slow requests by {{?}}%');
+    const gapped = makeProposal(change, 'gap', {
       flags: [{ kind: 'unfilledGap', words: ['{{?}}'] }],
     });
 
     expect(ids(planApply(makeResume(), [gapped]).held)).toEqual(['gap']);
-    const filled = { ...gapped, flags: [], review: { filledNumber: '83' } };
+    const filled = makeProposal(change, 'gap', { review: { filledNumber: '83' } });
     const plan = planApply(makeResume(), [filled]);
     expect(ids(plan.landed)).toEqual(['gap']);
     expect(plan.doc.sections[0].items[0].bullets[1].text).toBe('Cut slow requests by 83%');

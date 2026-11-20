@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Check, Lock } from 'lucide-react';
 import { AppButton, AppInput, Text } from '@/components/ui-kit';
 import { cn } from '@/lib/utils';
-import type { EntryFact, Proposal } from '@/types/agentProposal';
+import type { EntryFact, Proposal, ProposalVersion } from '@/types/agentProposal';
 import {
   chooseBulletWithoutNumber,
   confirmProposalFact,
@@ -31,8 +31,13 @@ const FACT_LABELS: Record<EntryFact, string> = {
   dates: 'Dates',
 };
 
-interface FactRowsProps {
+/** A suggestion and the version of it that the card shows. */
+interface ShownVersionProps {
   proposal: Proposal;
+  version: ProposalVersion;
+}
+
+interface FactRowsProps extends ShownVersionProps {
   entry: NewEntry;
   /** Called when the user confirms the last unconfirmed fact of the entry. */
   onEntryConfirmed?: () => void;
@@ -40,27 +45,27 @@ interface FactRowsProps {
 }
 
 /** A new entry's facts, one row each. The user confirms each fact, or corrects it in place. */
-export function FactRows({ proposal, entry, onEntryConfirmed, className }: FactRowsProps) {
+export function FactRows({ proposal, version, entry, onEntryConfirmed, className }: FactRowsProps) {
   const [openFact, setOpenFact] = useState<EntryFact | null>(null);
   const { entryId } = entry.ids;
   const facts = listWrittenFacts(entry.draft);
-  const editedFacts = proposal.review.factEdits?.[entryId] ?? {};
+  const editedFacts = version.review.factEdits?.[entryId] ?? {};
   /** Check whether every other fact of the entry is already confirmed. */
   const isLastFactLeft = (fact: EntryFact) =>
-    facts.every((other) => other === fact || isFactConfirmed(proposal, { entryId, fact: other }));
+    facts.every((other) => other === fact || isFactConfirmed(version, { entryId, fact: other }));
   const confirm = (fact: EntryFact, isConfirmed: boolean) => {
     const isSaved = confirmProposalFact(proposal.id, { entryId, fact }, isConfirmed);
     if (isSaved && isConfirmed && isLastFactLeft(fact)) onEntryConfirmed?.();
   };
   const saveEdit = (fact: EntryFact, text: string) => {
-    const wasConfirmed = isFactConfirmed(proposal, { entryId, fact });
+    const wasConfirmed = isFactConfirmed(version, { entryId, fact });
     const isSaved = editProposalFact(proposal.id, { entryId, fact }, text);
     if (isSaved && !wasConfirmed && isLastFactLeft(fact)) onEntryConfirmed?.();
   };
 
   return facts.map((fact) => {
     const value = entry.draft.frame[fact] ?? '';
-    const isConfirmed = isFactConfirmed(proposal, { entryId, fact });
+    const isConfirmed = isFactConfirmed(version, { entryId, fact });
     const label = FACT_LABELS[fact];
     return (
       <div
@@ -126,16 +131,13 @@ export function FactRows({ proposal, entry, onEntryConfirmed, className }: FactR
 }
 
 /**
- * A new entry's bullets. Words the checks flagged are marked. A bullet that a later run
- * added is labelled "just added".
- */
-/**
  * One bullet of a new entry: its own checks under it, and a number to fill as a field in
- * the sentence, with the version without a number one click away.
+ * the sentence, with the wording without a number one click away. A bullet that a later
+ * run added is labelled "just added".
  */
-function EntryBullet({ proposal, bullet }: { proposal: Proposal; bullet: NewBullet }) {
-  const flags = proposal.flags.filter((flag) => flag.textId === bullet.id);
-  const isJustAdded = proposal.lateIds?.includes(bullet.id) ?? false;
+function EntryBullet({ proposal, version, bullet }: ShownVersionProps & { bullet: NewBullet }) {
+  const flags = version.flags.filter((flag) => flag.textId === bullet.id);
+  const isJustAdded = version.lateIds?.includes(bullet.id) ?? false;
   return (
     <div className="[&+&]:mt-1.5">
       <div className="flex items-start gap-1.75">
@@ -161,7 +163,7 @@ function EntryBullet({ proposal, bullet }: { proposal: Proposal; bullet: NewBull
         <SuggestionFlags flags={flags} isCompact />
         {bullet.isWithoutNumber ? (
           <BackLink onClick={() => chooseBulletWithoutNumber(proposal.id, bullet.id, false)}>
-            Back to the version with a number
+            Back to the wording with a number
           </BackLink>
         ) : (
           bullet.gap && (
@@ -171,7 +173,7 @@ function EntryBullet({ proposal, bullet }: { proposal: Proposal; bullet: NewBull
               onClick={() => chooseBulletWithoutNumber(proposal.id, bullet.id, true)}
               className="mt-1 -ml-2"
             >
-              Use the version without a number
+              Use the wording without a number
             </AppButton>
           )
         )}
@@ -180,31 +182,36 @@ function EntryBullet({ proposal, bullet }: { proposal: Proposal; bullet: NewBull
   );
 }
 
-export function EntryBullets({ proposal, entry }: { proposal: Proposal; entry: NewEntry }) {
-  return listNewBullets(proposal, entry).map((bullet) => (
-    <EntryBullet key={bullet.id} proposal={proposal} bullet={bullet} />
+/** A new entry's bullets. Words the checks flagged are marked. */
+export function EntryBullets({
+  proposal,
+  version,
+  entry,
+}: ShownVersionProps & { entry: NewEntry }) {
+  return listNewBullets(version, entry).map((bullet) => (
+    <EntryBullet key={bullet.id} proposal={proposal} version={version} bullet={bullet} />
   ));
 }
 
 /** What happens at Apply while a bullet waits on its number, and what the user can do about it. */
 const HELD_BACK_ADVICE: Record<'section' | 'entry', string> = {
   section:
-    'If you keep the section now, Apply holds it back. Fill in the number, use the version without one, or leave that entry out.',
+    'If you keep the section now, Apply holds it back. Fill in the number, use the wording without one, or leave that entry out.',
   entry:
-    'If you keep the entry now, Apply holds it back. Fill in the number, or use the version without one.',
+    'If you keep the entry now, Apply holds it back. Fill in the number, or use the wording without one.',
 };
 
 /**
  * Tell the user how many bullets still need a number, and that Apply holds the section or
- * entry back until each one has a number or uses the version without one. Shows nothing
+ * entry back until each one has a number or uses the wording without one. Shows nothing
  * when no bullet needs a number.
  */
-export function NumbersToFillLine({ proposal }: { proposal: Proposal }) {
-  const count = proposal.flags.filter((flag) => flag.kind === 'unfilledGap' && flag.textId).length;
+export function NumbersToFillLine({ version }: { version: ProposalVersion }) {
+  const count = version.flags.filter((flag) => flag.kind === 'unfilledGap' && flag.textId).length;
   if (!count) return null;
   const waiting =
     count === 1 ? 'A bullet still needs a number.' : `${count} bullets still need numbers.`;
-  const holder = proposal.change.kind === 'section' ? 'section' : 'entry';
+  const holder = version.change.kind === 'section' ? 'section' : 'entry';
   return (
     <TagLine icon={Lock}>
       {waiting} {HELD_BACK_ADVICE[holder]}
@@ -216,12 +223,12 @@ export function NumbersToFillLine({ proposal }: { proposal: Proposal }) {
  * A suggested new entry in an existing section: its facts to confirm, its bullets, and
  * what the checks found in them.
  */
-export function EntryFacts({ proposal }: { proposal: Proposal }) {
-  const [entry] = listNewEntries(proposal);
+export function EntryFacts({ proposal, version }: ShownVersionProps) {
+  const [entry] = listNewEntries(version);
   if (!entry) return null;
   const facts = listWrittenFacts(entry.draft);
   const confirmedCount = facts.filter((fact) =>
-    isFactConfirmed(proposal, { entryId: entry.ids.entryId, fact })
+    isFactConfirmed(version, { entryId: entry.ids.entryId, fact })
   ).length;
 
   return (
@@ -234,12 +241,12 @@ export function EntryFacts({ proposal }: { proposal: Proposal }) {
           {confirmedCount} of {facts.length}
         </Text>
       </div>
-      <FactRows proposal={proposal} entry={entry} />
+      <FactRows proposal={proposal} version={version} entry={entry} />
       <div className="mt-2.25">
-        <EntryBullets proposal={proposal} entry={entry} />
+        <EntryBullets proposal={proposal} version={version} entry={entry} />
       </div>
-      <NumbersToFillLine proposal={proposal} />
-      <SuggestionFlags flags={readWholeChangeFlags(proposal)} />
+      <NumbersToFillLine version={version} />
+      <SuggestionFlags flags={readWholeChangeFlags(version)} />
     </div>
   );
 }

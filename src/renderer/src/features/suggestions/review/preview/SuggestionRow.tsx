@@ -4,6 +4,7 @@ import { AppButton, Text } from '@/components/ui-kit';
 import { cn } from '@/lib/utils';
 import type { Proposal, ProposalChange } from '@/types/agentProposal';
 import { labelSuggestionKind } from '../../proposals/describeSuggestion';
+import { readActiveVersion } from '../../proposals/proposalVersions';
 import { FLAG_LABELS, needsNumber, readSuggestionState, STATE_TONES } from '../../suggestionState';
 
 /** What a row is about: its bullet or entry, or for a new entry, the entry's own name. */
@@ -24,7 +25,8 @@ interface SuggestionRowProps {
 /** One suggestion in the inspector's list: where it stands, what and where, its flags. */
 export function SuggestionRow({ proposal, number, place, onClick, children }: SuggestionRowProps) {
   const state = readSuggestionState(proposal);
-  const flags = state === 'stale' || state === 'dropped' ? [] : proposal.flags;
+  const { change, flags: versionFlags } = readActiveVersion(proposal);
+  const flags = state === 'stale' || state === 'dropped' ? [] : versionFlags;
   const isBlocked = needsNumber(proposal);
   const FlagIcon = isBlocked ? Lock : TriangleAlert;
   return (
@@ -37,7 +39,7 @@ export function SuggestionRow({ proposal, number, place, onClick, children }: Su
       <span className={cn('size-1.75 shrink-0 rounded-full', STATE_TONES[state].dot)} />
       <span className="min-w-0 flex-1">
         <Text as="span" variant="body" className="block truncate font-control text-foreground">
-          {labelSuggestionKind(proposal.change)}, {nameRowTarget(proposal.change, place)}
+          {labelSuggestionKind(change)}, {nameRowTarget(change, place)}
         </Text>
         <Text as="span" variant="secondary" className="block truncate text-ink-muted">
           {state === 'stale' ? 'Out of date' : place.at(-2)}

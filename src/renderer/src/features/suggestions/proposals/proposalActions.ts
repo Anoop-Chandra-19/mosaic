@@ -6,7 +6,7 @@ import type {
   ProposalFlag,
   ProposalReview,
   ProposalSource,
-  ProposalStatus,
+  ProposalVersion,
 } from '@/types/agentProposal';
 import {
   findAnchorMismatch,
@@ -23,6 +23,13 @@ import { checkProposal } from './checks/checkProposal';
 import { fillSuggestion, findSuggestionToFill } from './fillSuggestion';
 import { canRewordSuggestion, readTextEdit, rewordChange, type TextEdit } from './rewordSuggestion';
 import { createNewContentIds } from './newContentIds';
+import {
+  keepVersion,
+  readActiveVersion,
+  replaceVersion,
+  returnToWaiting,
+  updateActiveVersion,
+} from './proposalVersions';
 import { recheckOpenProposals, watchProposalAnchors } from './recheckProposals';
 import {
   canKeepProposal,
@@ -50,19 +57,24 @@ import { buildCopyBefore, buildWorkingCopy, findRequiredIds, findTextWriter } fr
  * When a change adds an entry or a line to a section that a waiting suggestion made, or a
  * bullet to an entry that one made, `fillSuggestion.ts` puts it into that suggestion.
  *
- * The user keeps, drops or edits proposals. Their edits are stored in `review`, apart from
- * the assistant's `change`, and `reviewedChange.ts` combines the two. `recheckProposals`
- * marks a suggestion stale when it no longer fits the copy built from the suggestions
- * before it, and current when it fits again.
+ * Each suggestion has one or more versions (`proposalVersions.ts`). The page, Preview and
+ * Apply use the version the user kept, or the newest when they haven't kept one.
+ *
+ * The user keeps, drops or edits proposals. Their edits are stored in each version's
+ * `review`, apart from the assistant's `change`, and `reviewedChange.ts` combines the two.
+ * `recheckProposals` marks a suggestion stale when it no longer fits the copy built from
+ * the suggestions before it, and current when it fits again.
  *
  * In `apply/`, `planApply` works out what Apply would do. `applyAcceptedProposals` does
- * it as one undo step and saves a version before and after.
+ * it as one undo step and saves a version of the resume before and after.
  *
- * Other modules use this file, `workingCopy.ts`, `apply/planApply.ts`,
- * `apply/applyAcceptedProposals.ts`, `reviewedChange.ts` and `describeSuggestion.ts`. The
- * assistant's tools also use `validateProposal.ts` and `checks/checkProposal.ts`, to check a
- * change before they stage it, and `listEmptySectionIds` in `fillSuggestion.ts`. The state
- * is in `stores/proposalStore.ts`, and only these files write to it.
+ * Other modules use this file, `proposalVersions.ts`, `workingCopy.ts`,
+ * `apply/planApply.ts`, `apply/applyAcceptedProposals.ts`, `reviewedChange.ts` and
+ * `describeSuggestion.ts`. The assistant's tools also use `validateProposal.ts` and
+ * `checks/checkProposal.ts`, to check a change before they stage it,
+ * `apply/applyProposalsToResume.ts`, to keep their own copy of the resume up to date, and
+ * `listEmptySectionIds` in `fillSuggestion.ts`. The state is in `stores/proposalStore.ts`,
+ * and only these files write to it.
  */
 
 export interface StagedChange {
@@ -136,36 +148,45 @@ function findSuggestionToReword(
 const joinRequestText = (earlier: string, later: string) =>
   earlier.includes(later) ? earlier : [earlier, later].filter(Boolean).join('\n');
 
-/** Run the checks on a suggestion as the user reviewed it, against the copy before it. */
-const checkReviewedProposal = (copyBefore: ResumeData, proposal: Proposal): ProposalFlag[] =>
+/**
+ * Run the checks on a version, with the user's edits in it. `copyBefore` is the resume with
+ * the earlier suggestions applied, so the checks compare against the text the user sees.
+ */
+const checkReviewedVersion = (copyBefore: ResumeData, version: ProposalVersion): ProposalFlag[] =>
   checkProposal(
     copyBefore,
-    resolveChange(proposal),
-    reviewedRequestText(proposal),
-    resolveNewContentIds(proposal)
+    resolveChange(version),
+    reviewedRequestText(version),
+    resolveNewContentIds(version)
   );
 
-/**
- * Put new wording into the suggestion that wrote the text, and run its checks again. The
- * checks compare against the copy built from the suggestions before it, which holds the
- * user's text.
- */
+/** Change a suggestion's active version with `update`, then run the checks on it again. */
+function updateAndCheckVersion(
+  draft: ResumeData,
+  proposals: readonly Proposal[],
+  proposal: Proposal,
+  update: (version: ProposalVersion) => ProposalVersion
+): Proposal {
+  const updated = update(readActiveVersion(proposal));
+  const copyBefore = buildCopyBefore(draft, proposals, proposal.id);
+  return replaceVersion(proposal, { ...updated, flags: checkReviewedVersion(copyBefore, updated) });
+}
+
+/** Put new wording into the suggestion that wrote the text, and run its checks again. */
 function rewordSuggestion(
   draft: ResumeData,
   proposals: readonly Proposal[],
   { writer, edit }: { writer: Proposal; edit: TextEdit },
   requestText: string
 ): Omit<RewordedSuggestion, 'index'> {
-  const change = rewordChange(writer, edit);
+  const change = rewordChange(readActiveVersion(writer), edit);
   if (!change) return { before: writer, proposal: writer, isRemoved: true };
-  const reworded = {
-    ...writer,
+  const reworded = updateAndCheckVersion(draft, proposals, writer, (version) => ({
+    ...version,
     change,
-    requestText: joinRequestText(writer.requestText, requestText),
-  };
-  const copyBefore = buildCopyBefore(draft, proposals, writer.id);
-  const flags = checkReviewedProposal(copyBefore, reworded);
-  return { before: writer, proposal: { ...reworded, flags }, isRemoved: false };
+    requestText: joinRequestText(version.requestText, requestText),
+  }));
+  return { before: writer, proposal: reworded, isRemoved: false };
 }
 
 /**
@@ -179,15 +200,13 @@ function fillWaitingSuggestion(
   change: ProposalChange,
   { requestText, isLate }: { requestText: string; isLate: boolean }
 ): Omit<FilledSuggestion, 'index' | 'filledFlags'> {
-  const { filledIds, ...filled } = fillSuggestion(suggestion, change, isLate);
-  const next = {
-    ...suggestion,
+  const { filledIds, ...filled } = fillSuggestion(readActiveVersion(suggestion), change, isLate);
+  const next = updateAndCheckVersion(draft, proposals, suggestion, (version) => ({
+    ...version,
     ...filled,
-    requestText: joinRequestText(suggestion.requestText, requestText),
-  };
-  const copyBefore = buildCopyBefore(draft, proposals, suggestion.id);
-  const flags = checkReviewedProposal(copyBefore, next);
-  return { before: suggestion, proposal: { ...next, flags }, filledIds };
+    requestText: joinRequestText(version.requestText, requestText),
+  }));
+  return { before: suggestion, proposal: next, filledIds };
 }
 
 /**
@@ -245,15 +264,21 @@ export function stageProposals(
       id: crypto.randomUUID(),
       templateId,
       source,
-      change,
-      newContentIds,
+      versions: [
+        {
+          id: crypto.randomUUID(),
+          change,
+          newContentIds,
+          review: {},
+          flags: checkProposal(copy, change, requestText, newContentIds),
+          reason,
+          requestText,
+          createdAt: Date.now(),
+        },
+      ],
+      keptVersionId: null,
       status: 'pending',
-      review: {},
       isStale: false,
-      flags: checkProposal(copy, change, requestText, newContentIds),
-      reason,
-      requestText,
-      createdAt: Date.now(),
     };
     result.proposals.push(proposal);
     proposals = [...proposals, proposal];
@@ -283,9 +308,16 @@ export function acceptProposals(ids: readonly string[]): void {
   const keepableRequiredIds = findOpenProposals(requiredIds)
     .filter(canKeepProposal)
     .map((proposal) => proposal.id);
-  useProposalStore
-    .getState()
-    .setStatus(openTemplateId(), [...keepableIds, ...keepableRequiredIds], 'accepted');
+  const kept = findOpenProposals([...keepableIds, ...keepableRequiredIds]).map((proposal) =>
+    keepVersion(proposal)
+  );
+  useProposalStore.getState().replaceProposals(openTemplateId(), kept);
+}
+
+/** Set these proposals back to waiting, with nothing kept. */
+function returnOpenProposalsToWaiting(ids: readonly string[]): void {
+  const waiting = findOpenProposals(ids).map(returnToWaiting);
+  useProposalStore.getState().replaceProposals(openTemplateId(), waiting);
 }
 
 /** Drop the proposals. Later suggestions that changed their text become out of date. */
@@ -305,7 +337,7 @@ function returnKeptThatNeedWaiting(): void {
     .filter((proposal) => proposal.status === 'accepted' && !proposal.isStale)
     .filter((proposal) => findRequiredIds(draft, proposals, [proposal.id]).length > 0)
     .map((proposal) => proposal.id);
-  if (ids.length) useProposalStore.getState().setStatus(openTemplateId(), ids, 'pending');
+  if (ids.length) returnOpenProposalsToWaiting(ids);
 }
 
 /**
@@ -313,7 +345,7 @@ function returnKeptThatNeedWaiting(): void {
  * change their text go back to waiting with them.
  */
 export function returnProposals(ids: readonly string[]): void {
-  useProposalStore.getState().setStatus(openTemplateId(), ids, 'pending');
+  returnOpenProposalsToWaiting(ids);
   recheckOpenProposals();
   returnKeptThatNeedWaiting();
 }
@@ -337,7 +369,10 @@ export function discardEmptySections(ids: readonly string[]): string[] {
   const removedIds: string[] = [];
   for (const [templateId, proposals] of Object.entries(byTemplate)) {
     const emptyIds = proposals
-      .filter((proposal) => ids.includes(proposal.id) && isEmptyNewSection(proposal.change))
+      .filter(
+        (proposal) =>
+          ids.includes(proposal.id) && isEmptyNewSection(readActiveVersion(proposal).change)
+      )
       .map((proposal) => proposal.id);
     if (!emptyIds.length) continue;
     removeProposals(templateId, emptyIds);
@@ -381,34 +416,59 @@ function reviewProposal(
   const copyBefore = buildCopyBefore(getResumeSnapshot(), listOpenProposals(), id);
   const next = update(proposal, copyBefore);
   if (!next) return false;
-  const change = resolveChange(next);
+  const version = readActiveVersion(next);
+  const change = resolveChange(version);
   const isStale = findAnchorMismatch(copyBefore, change) !== null;
   if (!isStale && validateProposal(copyBefore, change)) return false;
-  const flags = checkReviewedProposal(copyBefore, next);
-  useProposalStore.getState().replaceProposals(openTemplateId(), [{ ...next, isStale, flags }]);
+  const checked = replaceVersion(next, {
+    ...version,
+    flags: checkReviewedVersion(copyBefore, version),
+  });
+  useProposalStore.getState().replaceProposals(openTemplateId(), [{ ...checked, isStale }]);
   recheckOpenProposals();
   if (proposal.status === 'accepted' && next.status === 'pending') returnKeptThatNeedWaiting();
   return true;
 }
 
+/** Some edits in review also keep the suggestion, or set it back to waiting. */
+type ReviewDecision = 'keep' | 'returnToWaiting';
+
+const DECIDE: Record<ReviewDecision, (proposal: Proposal) => Proposal> = {
+  keep: (proposal) => keepVersion(proposal),
+  returnToWaiting,
+};
+
+/** What the user has done so far to the suggestion's active version. */
+const readReview = (proposal: Proposal): ProposalReview => readActiveVersion(proposal).review;
+
+/**
+ * Return a function that saves `patch` into the active version's review. With `decision`,
+ * it also keeps the suggestion or sets it back to waiting.
+ */
 const withReview =
-  (patch: ProposalReview, status?: ProposalStatus) =>
-  (proposal: Proposal): Proposal => ({
-    ...proposal,
-    review: { ...proposal.review, ...patch },
-    status: status ?? proposal.status,
-  });
+  (patch: ProposalReview, decision?: ReviewDecision) =>
+  (proposal: Proposal): Proposal => {
+    const reviewed = updateActiveVersion(proposal, (version) => ({
+      ...version,
+      review: { ...version.review, ...patch },
+    }));
+    return decision ? DECIDE[decision](reviewed) : reviewed;
+  };
 
 /** Save the user's own wording for the text a suggestion writes. Editing also keeps it. */
 export function editProposal(id: string, text: string): boolean {
-  return reviewProposal(id, withReview({ userText: text.trim() }, 'accepted'));
+  return reviewProposal(id, withReview({ userText: text.trim() }, 'keep'));
 }
 
-/** Return the flags the checks would give the user's wording. Called as they type. */
-export function checkProposalEdit(proposal: Proposal, text: string): ProposalFlag[] {
-  const edited = withReview({ userText: text.trim() })(proposal);
+/** Run the checks on the user's wording while they type it into a version. Nothing is saved. */
+export function checkProposalEdit(
+  proposal: Proposal,
+  version: ProposalVersion,
+  text: string
+): ProposalFlag[] {
+  const edited = { ...version, review: { ...version.review, userText: text.trim() } };
   const copyBefore = buildCopyBefore(getResumeSnapshot(), listOpenProposals(), proposal.id);
-  return checkReviewedProposal(copyBefore, edited);
+  return checkReviewedVersion(copyBefore, edited);
 }
 
 /** Remove the user's wording, so the suggestion writes the assistant's text again. */
@@ -424,17 +484,17 @@ export function fillProposalNumber(id: string, number: string): boolean {
   const filled = number.trim() || undefined;
   return reviewProposal(
     id,
-    withReview({ filledNumber: filled, isWithoutNumber: false }, filled ? 'accepted' : undefined)
+    withReview({ filledNumber: filled, isWithoutNumber: false }, filled ? 'keep' : undefined)
   );
 }
 
-/** Choose the version that needs no number, or go back to the version with the gap. */
-export function chooseVersionWithoutNumber(id: string, isWithout: boolean): boolean {
+/** Choose the text that needs no number, or go back to the text with the gap. */
+export function chooseTextWithoutNumber(id: string, isWithout: boolean): boolean {
   return reviewProposal(
     id,
     withReview(
       { isWithoutNumber: isWithout, filledNumber: undefined },
-      isWithout ? 'accepted' : undefined
+      isWithout ? 'keep' : undefined
     )
   );
 }
@@ -446,7 +506,7 @@ export function chooseVersionWithoutNumber(id: string, isWithout: boolean): bool
  */
 export function fillBulletNumber(id: string, bulletId: string, number: string): boolean {
   return reviewProposal(id, (proposal) => {
-    const filledNumbers = { ...proposal.review.filledNumbers };
+    const filledNumbers = { ...readReview(proposal).filledNumbers };
     const filled = number.trim();
     if (filled) filledNumbers[bulletId] = filled;
     else delete filledNumbers[bulletId];
@@ -464,8 +524,9 @@ export function chooseBulletWithoutNumber(
   isWithout: boolean
 ): boolean {
   return reviewProposal(id, (proposal) => {
-    const others = (proposal.review.withoutNumberIds ?? []).filter((each) => each !== bulletId);
-    const filledNumbers = { ...proposal.review.filledNumbers };
+    const review = readReview(proposal);
+    const others = (review.withoutNumberIds ?? []).filter((each) => each !== bulletId);
+    const filledNumbers = { ...review.filledNumbers };
     delete filledNumbers[bulletId];
     return withReview({
       withoutNumberIds: isWithout ? [...others, bulletId] : others,
@@ -480,7 +541,7 @@ function setFactConfirmed(
   { entryId, fact }: EntryFactPlace,
   isConfirmed: boolean
 ): ProposalReview['confirmedFacts'] {
-  const confirmedFacts = proposal.review.confirmedFacts ?? {};
+  const confirmedFacts = readReview(proposal).confirmedFacts ?? {};
   const others = (confirmedFacts[entryId] ?? []).filter((each) => each !== fact);
   return { ...confirmedFacts, [entryId]: isConfirmed ? [...others, fact] : others };
 }
@@ -496,8 +557,8 @@ export function confirmProposalFact(
 ): boolean {
   return reviewProposal(id, (proposal) => {
     const confirmedFacts = setFactConfirmed(proposal, place, isConfirmed);
-    const status = !isConfirmed && proposal.status === 'accepted' ? 'pending' : undefined;
-    return withReview({ confirmedFacts }, status)(proposal);
+    const decision = !isConfirmed && proposal.status === 'accepted' ? 'returnToWaiting' : undefined;
+    return withReview({ confirmedFacts }, decision)(proposal);
   });
 }
 
@@ -505,7 +566,7 @@ export function confirmProposalFact(
 export function editProposalFact(id: string, place: EntryFactPlace, text: string): boolean {
   return reviewProposal(id, (proposal) => {
     const confirmedFacts = setFactConfirmed(proposal, place, true);
-    const { factEdits = {} } = proposal.review;
+    const { factEdits = {} } = readReview(proposal);
     const entryEdits = { ...factEdits[place.entryId], [place.fact]: text.trim() };
     return withReview({ confirmedFacts, factEdits: { ...factEdits, [place.entryId]: entryEdits } })(
       proposal
@@ -520,7 +581,9 @@ export function editProposalFact(id: string, place: EntryFactPlace, text: string
  */
 export function leaveEntryOut(id: string, entryId: string): boolean {
   return reviewProposal(id, (proposal) => {
-    const entriesNotLeftOut = listNewEntries(proposal).filter((entry) => !entry.isLeftOut);
+    const entriesNotLeftOut = listNewEntries(readActiveVersion(proposal)).filter(
+      (entry) => !entry.isLeftOut
+    );
     const isAlreadyLeftOut = !entriesNotLeftOut.some((entry) => entry.ids.entryId === entryId);
     if (isAlreadyLeftOut) return null;
     if (entriesNotLeftOut.length === 1) {
@@ -528,7 +591,7 @@ export function leaveEntryOut(id: string, entryId: string): boolean {
         `Cannot leave out entry "${entryId}" of suggestion "${id}": it is the only entry not left out`
       );
     }
-    const leftOutEntryIds = [...(proposal.review.leftOutEntryIds ?? []), entryId];
+    const leftOutEntryIds = [...(readReview(proposal).leftOutEntryIds ?? []), entryId];
     return withReview({ leftOutEntryIds })(proposal);
   });
 }
@@ -536,7 +599,7 @@ export function leaveEntryOut(id: string, entryId: string): boolean {
 /** Put a left-out entry back into its new section. */
 export function putEntryBack(id: string, entryId: string): boolean {
   return reviewProposal(id, (proposal) => {
-    const leftOutEntryIds = (proposal.review.leftOutEntryIds ?? []).filter(
+    const leftOutEntryIds = (readReview(proposal).leftOutEntryIds ?? []).filter(
       (each) => each !== entryId
     );
     return withReview({ leftOutEntryIds })(proposal);
@@ -570,17 +633,17 @@ function readRebasedBefore(
  */
 export function placeProposalLast(id: string): boolean {
   return reviewProposal(id, (proposal, copyBefore) => {
-    const { change } = proposal;
+    const { change } = readActiveVersion(proposal);
     if (change.kind !== 'add') return null;
     const among = readAddedAmong(copyBefore, change.place);
     if (!among) return null;
-    return withReview({ placedAfterId: among.at(-1) ?? null }, 'pending')(proposal);
+    return withReview({ placedAfterId: among.at(-1) ?? null }, 'returnToWaiting')(proposal);
   });
 }
 
 /** Undo `placeProposalLast`. Its original place is gone, so it is out of date again. */
 export function cancelPlacedLast(id: string): boolean {
-  return reviewProposal(id, withReview({ placedAfterId: undefined }, 'pending'));
+  return reviewProposal(id, withReview({ placedAfterId: undefined }, 'returnToWaiting'));
 }
 
 /** Save the user's wording for a new section's heading. A heading is not a fact, so it needs no confirming. */
@@ -596,9 +659,9 @@ export function renameProposedSection(id: string, label: string): boolean {
  */
 export function reviewStaleProposalAnyway(id: string): boolean {
   return reviewProposal(id, (proposal, copyBefore) => {
-    const rebasedBefore = readRebasedBefore(proposal.change, copyBefore);
+    const rebasedBefore = readRebasedBefore(readActiveVersion(proposal).change, copyBefore);
     if (!rebasedBefore) return null;
-    return withReview({ rebasedBefore, userText: undefined }, 'pending')(proposal);
+    return withReview({ rebasedBefore, userText: undefined }, 'returnToWaiting')(proposal);
   });
 }
 
@@ -606,7 +669,7 @@ export function reviewStaleProposalAnyway(id: string): boolean {
 export function cancelStaleReview(id: string): boolean {
   return reviewProposal(
     id,
-    withReview({ rebasedBefore: undefined, userText: undefined }, 'pending')
+    withReview({ rebasedBefore: undefined, userText: undefined }, 'returnToWaiting')
   );
 }
 
@@ -615,6 +678,6 @@ export function setDropReasons(ids: readonly string[], reasons: DropReason[], no
   const dropReasons = { reasons, note: note?.trim() || undefined };
   useProposalStore.getState().replaceProposals(
     openTemplateId(),
-    findOpenProposals(ids).map((proposal) => withReview({ dropReasons })(proposal))
+    findOpenProposals(ids).map((proposal) => ({ ...proposal, dropReasons }))
   );
 }

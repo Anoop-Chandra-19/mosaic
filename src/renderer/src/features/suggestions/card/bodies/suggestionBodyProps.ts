@@ -1,9 +1,11 @@
-import type { Proposal } from '@/types/agentProposal';
+import type { Proposal, ProposalVersion } from '@/types/agentProposal';
 import type { ResumeData } from '@shared/types/resume';
 
-/** What every body is drawn from: the suggestion, and the draft it was made for. */
+/** The props every card body takes: the suggestion, the version to show, and the draft. */
 export interface SuggestionBodyProps {
   proposal: Proposal;
+  /** The version of the suggestion that the card shows. */
+  version: ProposalVersion;
   /** The draft as it is now, for what its text says today. */
   draft: ResumeData;
   isEditing: boolean;

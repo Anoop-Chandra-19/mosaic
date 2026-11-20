@@ -2,6 +2,7 @@ import { readChangedIds } from '@/lib/resume/proposalAnchor';
 import type { Proposal } from '@/types/agentProposal';
 import type { ResumeData } from '@shared/types/resume';
 import { applyProposalsToResume } from './applyProposalsToResume';
+import { readActiveVersion } from '../proposalVersions';
 import { resolveChange, resolveProposal } from '../reviewedChange';
 
 export interface SkippedProposal {
@@ -23,7 +24,7 @@ export interface ApplyPlan {
 }
 
 const needsNumber = (proposal: Proposal) =>
-  proposal.flags.some((flag) => flag.kind === 'unfilledGap');
+  readActiveVersion(proposal).flags.some((flag) => flag.kind === 'unfilledGap');
 
 /**
  * Plan what Apply would do. Kept proposals are applied in the order they were made. A
@@ -39,13 +40,11 @@ export function planApply(doc: ResumeData, proposals: readonly Proposal[]): Appl
   const result = applyProposalsToResume(doc, ready.map(resolveProposal));
   const byId = new Map(ready.map((proposal) => [proposal.id, proposal]));
   const landed = result.appliedIds.map((id) => byId.get(id)!);
+  const readTouchedIds = (proposal: Proposal) =>
+    readChangedIds(resolveChange(readActiveVersion(proposal)));
   const changedBy = (proposal: Proposal) => {
-    const touched = readChangedIds(resolveChange(proposal));
-    return (
-      landed.find((other) =>
-        readChangedIds(resolveChange(other)).some((id) => touched.includes(id))
-      ) ?? null
-    );
+    const touched = readTouchedIds(proposal);
+    return landed.find((other) => readTouchedIds(other).some((id) => touched.includes(id))) ?? null;
   };
   return {
     landed,

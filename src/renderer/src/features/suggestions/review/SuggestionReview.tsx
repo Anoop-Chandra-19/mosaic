@@ -18,6 +18,7 @@ import { useViewPlaceStore } from '@/stores/viewPlaceStore';
 import type { ResumePreviewMeta } from '@/types/preview';
 import type { Proposal } from '@/types/agentProposal';
 import { acceptProposals, rejectProposals, returnProposals } from '../proposals/proposalActions';
+import { readActiveVersion } from '../proposals/proposalVersions';
 import { ApplyBar } from './apply/ApplyBar';
 import { ApplyResult } from './apply/ApplyResult';
 import { useApplySuggestions } from './apply/useApplySuggestions';
@@ -90,7 +91,11 @@ export function SuggestionReview({ openOn }: { openOn?: string }) {
   );
   // A new section stays out of review until the assistant has put something in it.
   const proposals = useMemo(
-    () => stored.filter((p) => p.status !== 'applied' && !isEmptyNewSection(p.change)),
+    () =>
+      stored.filter(
+        (proposal) =>
+          proposal.status !== 'applied' && !isEmptyNewSection(readActiveVersion(proposal).change)
+      ),
     [stored]
   );
   const applying = useApplySuggestions(proposals, draft);

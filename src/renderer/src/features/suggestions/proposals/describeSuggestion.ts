@@ -1,5 +1,6 @@
 import { findEntry, findSection } from '@/lib/resume/proposalAnchor';
 import type { Proposal, ProposalChange, TextPlace } from '@/types/agentProposal';
+import { readActiveVersion } from './proposalVersions';
 import type { ResumeData, ResumeEntry, ResumeSection } from '@shared/types/resume';
 
 /*
@@ -152,15 +153,16 @@ function nameWhere(doc: ResumeData, change: ProposalChange): string {
  * Labs and Lantern Geo", or "in 3 places".
  */
 export function describeLandedSuggestions(doc: ResumeData, landed: readonly Proposal[]): string {
-  if (landed.length === 1) {
-    const { change } = landed[0];
+  const changes = landed.map((proposal) => readActiveVersion(proposal).change);
+  if (changes.length === 1) {
+    const [change] = changes;
     if (change.kind === 'section') return `${labelSuggestionKind(change)}, ${change.section.label}`;
     const [section, ...rest] = placeSuggestion(doc, change);
     // Within an entry, the entry names it; otherwise the section does ("Summary, line 2").
     const where = readEntryId(change) ? rest : [section, ...rest];
     return `${labelSuggestionKind(change)} in ${where.join(', ')}`;
   }
-  const entries = [...new Set(landed.map((proposal) => nameWhere(doc, proposal.change)))];
+  const entries = [...new Set(changes.map((change) => nameWhere(doc, change)))];
   const where = entries.length <= 2 ? entries.join(' and ') : `${entries.length} places`;
-  return `${landed.length} suggestions in ${where}`;
+  return `${changes.length} suggestions in ${where}`;
 }

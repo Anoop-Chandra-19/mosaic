@@ -4,6 +4,7 @@ import { ReadBoundary } from '@/components/ReadBoundary';
 import { showPlace } from '@/features/navigation/showPlace';
 import { placeSuggestion } from '@/features/suggestions/proposals/describeSuggestion';
 import { discardRunProposals } from '@/features/suggestions/proposals/proposalActions';
+import { readActiveVersion } from '@/features/suggestions/proposals/proposalVersions';
 import { cn } from '@/lib/utils';
 import { versionLabel } from '@/lib/versionLabel';
 import { useProposalStore } from '@/stores/proposalStore';
@@ -71,7 +72,9 @@ function WhereTheyAre({ staged }: { staged: readonly Proposal[] }) {
   const contact = useResumeStore((s) => s.contact);
   const sections = useResumeStore((s) => s.sections);
   const draft = { schemaVersion, contact, sections };
-  const names = listSections(staged, templateId, ({ change }) => placeSuggestion(draft, change));
+  const names = listSections(staged, templateId, (proposal) =>
+    placeSuggestion(draft, readActiveVersion(proposal).change)
+  );
   if (names.length === 0) return null;
   return (
     <div className="flex flex-wrap gap-1.25 px-2.75 pt-2.25">

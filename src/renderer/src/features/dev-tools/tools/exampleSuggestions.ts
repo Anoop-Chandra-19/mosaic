@@ -1,4 +1,5 @@
 import type { StagedChange } from '@/features/suggestions/proposals/proposalActions';
+import { readActiveVersion } from '@/features/suggestions/proposals/proposalVersions';
 import type { Proposal, ProposalChange } from '@/types/agentProposal';
 import { createExampleResume, EXAMPLE_IDS } from './exampleResume';
 
@@ -295,10 +296,9 @@ export const createExampleSuggestions = (): StagedChange[] => [
  * section's suggestion isn't among `proposals`.
  */
 export function createExampleBulletWithNumber(proposals: readonly Proposal[]): StagedChange[] {
-  const certifications = proposals.find(
-    (proposal) =>
-      proposal.change.kind === 'section' && proposal.change.section.label === 'Certifications'
-  );
+  const certifications = proposals
+    .map(readActiveVersion)
+    .find(({ change }) => change.kind === 'section' && change.section.label === 'Certifications');
   const ids = certifications?.newContentIds;
   if (ids?.kind !== 'section' || ids.contents?.layout !== 'entries') return [];
   const entry = ids.contents.entries.at(-1);

@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import type { Proposal, ProposalChange, ProposalStatus } from '@/types/agentProposal';
+import type {
+  Proposal,
+  ProposalChange,
+  ProposalStatus,
+  ProposalVersion,
+} from '@/types/agentProposal';
 import {
   addText,
   makeProposal,
@@ -15,8 +20,8 @@ const proposal = (
   id: string,
   change: ProposalChange,
   status: ProposalStatus = 'pending',
-  extra: Partial<Proposal> = {}
-): Proposal => ({ ...makeProposal(change, id), status, ...extra });
+  version: Partial<ProposalVersion> = {}
+): Proposal => ({ ...makeProposal(change, id, version), status });
 
 const bulletsOf = (doc: ReturnType<typeof makeResume>) =>
   doc.sections[0].items[0].bullets.map((bullet) => bullet.text);
@@ -102,9 +107,10 @@ describe('buildSuggestionPreview, What you kept', () => {
         proposal('kept', rewrite('b1', B1, 'Led the billing migration to Postgres'), 'accepted'),
         gapped('accepted'),
         proposal('wait', rewrite('b3', 'Wrote the on-call runbook for the payments team', 'x')),
-        proposal('old', rewrite('b4', 'Built tile caching for the Oslo office', 'y'), 'pending', {
+        {
+          ...proposal('old', rewrite('b4', 'Built tile caching for the Oslo office', 'y')),
           isStale: true,
-        }),
+        },
       ],
       'kept'
     );

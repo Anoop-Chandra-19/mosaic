@@ -3,8 +3,8 @@ import { readSplitHalves } from '@/lib/resume/splitHalves';
 import { Caption, CaptionTag, Lines } from './BodyParts';
 import type { SuggestionBodyProps } from './suggestionBodyProps';
 
-export function SplitBody({ proposal }: SuggestionBodyProps) {
-  const { change } = proposal;
+export function SplitBody({ version }: SuggestionBodyProps) {
+  const { change } = version;
   if (change.kind !== 'split') return null;
   const parts = [change.before.slice(0, change.at), change.before.slice(change.at)];
   return (

@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { MosaicDb, MosaicDbBridge } from '@shared/types/dbBridge';
-import type { ProposalChange } from '@/types/agentProposal';
+import type { Proposal, ProposalChange } from '@/types/agentProposal';
 // The real main-process database code over SQLite in memory, minus the IPC hop.
 import { openDatabase, type Database } from '../../../../../../main/db/connection';
 import { createDbHandlers, settle } from '../../../../../../main/ipc/dbHandlers';
@@ -35,6 +35,7 @@ const {
 const { applyAcceptedProposals } = await import('../apply/applyAcceptedProposals');
 const { listNewContentIds } = await import('../newContentIds');
 const { findUnconfirmedFacts, resolveChange } = await import('../reviewedChange');
+const { readActiveVersion } = await import('../proposalVersions');
 
 let sqlite: Database;
 
@@ -59,6 +60,13 @@ const bulletText = (bulletId: string) =>
     .flatMap((entry) => entry.bullets)
     .find((bullet) => bullet.id === bulletId)?.text;
 const proposals = () => useProposalStore.getState().byTemplate[resume().templateId!] ?? [];
+const activeVersions = () => proposals().map(readActiveVersion);
+
+/** The id staging gave a suggested new entry. */
+function readNewEntryId(proposal: Proposal): string {
+  const { newContentIds } = readActiveVersion(proposal);
+  return newContentIds?.kind === 'entry' ? newContentIds.entry.entryId : '';
+}
 
 const B1 = 'Assisted in migrating billing to Postgres';
 const B2 = 'Reduced p99 latency from 18% to 3% of requests';
@@ -76,7 +84,7 @@ describe('ids of what a suggestion adds', () => {
       at: 'Reduced p99 latency'.length,
     };
     const [staged] = stageProposals('', [{ source: 'split', change: split }]).proposals;
-    const secondHalfId = listNewContentIds(staged.newContentIds)[0];
+    const secondHalfId = listNewContentIds(readActiveVersion(staged).newContentIds)[0];
     expect(secondHalfId).toEqual(expect.any(String));
 
     acceptProposals([staged.id]);
@@ -132,10 +140,12 @@ describe('a run of suggestions, start to finish', () => {
       { index: 4, refusal: expect.objectContaining({ code: 'unknown-target' }) },
     ]);
     const [led, doubled, gap, replace] = staged.proposals;
-    expect(led.flags.map((flag) => flag.kind)).toEqual(['claimsMore']);
-    expect(doubled.flags.map((flag) => flag.kind)).toEqual(['doubledWords']);
-    expect(gap.flags.map((flag) => flag.kind)).toContain('unfilledGap');
-    expect(replace.flags).toEqual([{ kind: 'newNames', words: ['Bergen'] }]);
+    const flagKinds = (proposal: Proposal) =>
+      readActiveVersion(proposal).flags.map((flag) => flag.kind);
+    expect(flagKinds(led)).toEqual(['claimsMore']);
+    expect(flagKinds(doubled)).toEqual(['doubledWords']);
+    expect(flagKinds(gap)).toContain('unfilledGap');
+    expect(readActiveVersion(replace).flags).toEqual([{ kind: 'newNames', words: ['Bergen'] }]);
     // Nothing touches the draft until it is applied.
     expect(bulletText('b1')).toBe(B1);
 
@@ -187,7 +197,8 @@ describe('review', () => {
     const [gap] = stageProposals('', [SPIKE_LIKE_CHANGES[2]]).proposals;
 
     expect(fillProposalNumber(gap.id, '30')).toBe(true);
-    expect(proposals()[0]).toMatchObject({ status: 'accepted', flags: [] });
+    expect(proposals()[0].status).toBe('accepted');
+    expect(activeVersions()[0].flags).toEqual([]);
     await applyAcceptedProposals();
 
     expect(bulletText('b3')).toBe('Wrote the on-call runbook that cut pages by 30%');
@@ -206,7 +217,7 @@ describe('review', () => {
       },
     ]).proposals;
 
-    const entryId = entry.newContentIds?.kind === 'entry' ? entry.newContentIds.entry.entryId : '';
+    const entryId = readNewEntryId(entry);
     acceptProposals([entry.id]);
     expect(proposals()[0].status).toBe('pending');
     confirmProposalFact(entry.id, { entryId, fact: 'title' }, true);
@@ -225,7 +236,7 @@ describe('review', () => {
         change: { kind: 'entry', sectionId: 's1', frame: { title: 'Mentor' }, bullets: [] },
       },
     ]).proposals;
-    const entryId = entry.newContentIds?.kind === 'entry' ? entry.newContentIds.entry.entryId : '';
+    const entryId = readNewEntryId(entry);
     const added = stageProposals('add my mentoring', [
       {
         source: 'add',
@@ -241,7 +252,7 @@ describe('review', () => {
     expect(added.filled).toHaveLength(1);
     const { filledIds } = added.filled[0];
     const bulletId = filledIds.kind === 'add' ? filledIds.id : '';
-    expect(proposals()[0].flags).toEqual([
+    expect(activeVersions()[0].flags).toEqual([
       { kind: 'unfilledGap', words: ['{{?}}'], textId: bulletId },
     ]);
 
@@ -251,7 +262,8 @@ describe('review', () => {
     expect(bulletText(bulletId)).toBeUndefined();
 
     expect(fillBulletNumber(entry.id, bulletId, '4')).toBe(true);
-    expect(proposals()[0]).toMatchObject({ status: 'accepted', flags: [] });
+    expect(proposals()[0].status).toBe('accepted');
+    expect(activeVersions()[0].flags).toEqual([]);
     await applyAcceptedProposals();
     expect(bulletText(bulletId)).toBe('Mentored 4 new engineers');
   });
@@ -263,7 +275,7 @@ describe('review', () => {
         change: { kind: 'entry', sectionId: 's1', frame: { title: 'Mentor' }, bullets: [] },
       },
     ]).proposals;
-    const entryId = entry.newContentIds?.kind === 'entry' ? entry.newContentIds.entry.entryId : '';
+    const entryId = readNewEntryId(entry);
     const { filled } = stageProposals('', [
       {
         source: 'add',
@@ -278,18 +290,18 @@ describe('review', () => {
     ]);
     const bulletId = filled[0].filledIds.kind === 'add' ? filled[0].filledIds.id : '';
     const bulletsOf = () => {
-      const change = resolveChange(proposals()[0]);
+      const change = resolveChange(activeVersions()[0]);
       return change.kind === 'entry' ? change.bullets : [];
     };
 
     fillBulletNumber(entry.id, bulletId, '4');
     chooseBulletWithoutNumber(entry.id, bulletId, true);
     expect(bulletsOf()).toEqual(['Mentored new engineers']);
-    expect(proposals()[0].flags).toEqual([]);
+    expect(activeVersions()[0].flags).toEqual([]);
 
     chooseBulletWithoutNumber(entry.id, bulletId, false);
     expect(bulletsOf()).toEqual(['Mentored {{?}} new engineers']);
-    expect(proposals()[0].flags.map((flag) => flag.kind)).toEqual(['unfilledGap']);
+    expect(activeVersions()[0].flags.map((flag) => flag.kind)).toEqual(['unfilledGap']);
   });
 
   it('a new section keeps the entries still on it: one left out is not applied, and the last can’t be', async () => {
@@ -310,7 +322,7 @@ describe('review', () => {
         },
       },
     ]).proposals;
-    const ids = section.newContentIds;
+    const ids = readActiveVersion(section).newContentIds;
     const [mentorIds, organizerIds] =
       ids?.kind === 'section' && ids.contents?.layout === 'entries' ? ids.contents.entries : [];
 
@@ -347,7 +359,7 @@ describe('review', () => {
         },
       },
     ]).proposals;
-    const ids = section.newContentIds;
+    const ids = readActiveVersion(section).newContentIds;
     const [mentorIds, organizerIds] =
       ids?.kind === 'section' && ids.contents?.layout === 'entries' ? ids.contents.entries : [];
     confirmProposalFact(section.id, { entryId: mentorIds.entryId, fact: 'title' }, true);
@@ -356,7 +368,7 @@ describe('review', () => {
     expect(proposals()[0].status).toBe('accepted');
 
     putEntryBack(section.id, organizerIds.entryId);
-    expect(findUnconfirmedFacts(proposals()[0])).toEqual([
+    expect(findUnconfirmedFacts(activeVersions()[0])).toEqual([
       { entryId: organizerIds.entryId, fact: 'title' },
     ]);
   });

@@ -1,8 +1,9 @@
 import { findMoves } from '@/lib/resume/changes/findMoves';
 import { readShowPlaceId, readTextPlaceId } from '@/lib/resume/proposalAnchor';
-import type { Proposal, ProposalChange, ShowPlace } from '@/types/agentProposal';
+import type { Proposal, ProposalChange, ProposalVersion, ShowPlace } from '@/types/agentProposal';
 import type { ResumeData } from '@shared/types/resume';
 import { layInProposal } from '../../proposals/apply/layInProposal';
+import { readActiveVersion } from '../../proposals/proposalVersions';
 import {
   findUnconfirmedFacts,
   listNewEntries,
@@ -148,7 +149,7 @@ function readLook(change: ProposalChange): SuggestionLook {
  * no longer fits the page.
  */
 function layIn(page: SuggestionPage, proposal: Proposal): boolean {
-  const change = resolveChange(proposal);
+  const change = resolveChange(readActiveVersion(proposal));
   const laidIn = isLeaving(change)
     ? { doc: page.doc, createdIds: [] }
     : layInProposal(page.doc, proposal);
@@ -166,7 +167,7 @@ function layIn(page: SuggestionPage, proposal: Proposal): boolean {
   if (change.kind === 'section') {
     markNewSection(page, proposal, laidIn.createdIds);
   } else if (change.kind === 'entry') {
-    const dots = readNewEntryDots(proposal);
+    const dots = readNewEntryDots(readActiveVersion(proposal));
     for (const id of laidIn.createdIds) {
       page.marks.set(id, { proposal, look: 'add', block: 'new', dot: dots.get(id) });
     }
@@ -183,13 +184,11 @@ function layIn(page: SuggestionPage, proposal: Proposal): boolean {
  * heading gets a round dot when it has facts to confirm or a bullet to check; a bullet gets
  * a square one while it still needs its number. Lines that need nothing get no dot.
  */
-function readNewEntryDots(proposal: Proposal): Map<string, 'round' | 'square'> {
+function readNewEntryDots(version: ProposalVersion): Map<string, 'round' | 'square'> {
   const dots = new Map<string, 'round' | 'square'>();
-  const entriesWithFactsLeft = new Set(
-    findUnconfirmedFacts(proposal).map((place) => place.entryId)
-  );
-  for (const { ids } of listNewEntries(proposal)) {
-    const { numbersToFill, toCheck } = readBulletFlags(proposal, ids.bulletIds);
+  const entriesWithFactsLeft = new Set(findUnconfirmedFacts(version).map((place) => place.entryId));
+  for (const { ids } of listNewEntries(version)) {
+    const { numbersToFill, toCheck } = readBulletFlags(version, ids.bulletIds);
     if (entriesWithFactsLeft.has(ids.entryId) || toCheck.length) dots.set(ids.entryId, 'round');
     for (const flag of numbersToFill) if (flag.textId) dots.set(flag.textId, 'square');
   }
@@ -202,16 +201,17 @@ function readNewEntryDots(proposal: Proposal): Map<string, 'round' | 'square'> {
  */
 function markNewSection(page: SuggestionPage, proposal: Proposal, createdIds: string[]): void {
   const [sectionId] = createdIds;
+  const version = readActiveVersion(proposal);
   const entryById = new Map<string, { id: string; isHeading: boolean }>();
-  for (const { ids } of listNewEntries(proposal)) {
+  for (const { ids } of listNewEntries(version)) {
     entryById.set(ids.entryId, { id: ids.entryId, isHeading: true });
     for (const bulletId of ids.bulletIds) {
       entryById.set(bulletId, { id: ids.entryId, isHeading: false });
     }
   }
-  const dots = readNewEntryDots(proposal);
+  const dots = readNewEntryDots(version);
   // The checks on a section's lines are about all of them, so they mark its heading.
-  if (readWholeChangeFlags(proposal).length) dots.set(sectionId, 'round');
+  if (readWholeChangeFlags(version).length) dots.set(sectionId, 'round');
   for (const id of createdIds) {
     const entry = entryById.get(id);
     page.marks.set(id, { proposal, look: 'add', block: 'newSection', entry, dot: dots.get(id) });
@@ -260,7 +260,7 @@ function rankBlock(change: ProposalChange, unit: 'entry' | 'section'): number {
  */
 function markBlocks(page: SuggestionPage, proposals: readonly Proposal[]): void {
   const blocks = proposals.flatMap((proposal) => {
-    const change = resolveChange(proposal);
+    const change = resolveChange(readActiveVersion(proposal));
     const place = readBlockPlace(change);
     return place ? [{ proposal, change, place, rank: rankBlock(change, place.unit) }] : [];
   });
@@ -298,7 +298,7 @@ export function buildSuggestionPage(
   // A dropped or out-of-date suggestion marks the draft's own text, so the user can find
   // its card. A shown suggestion's mark on the same text is kept.
   for (const proposal of open.filter((each) => !isShown(each))) {
-    for (const id of readMarkedIds(proposal.change)) {
+    for (const id of readMarkedIds(readActiveVersion(proposal).change)) {
       if (readTextById(page.doc, id) !== undefined && !page.marks.has(id)) {
         page.marks.set(id, { proposal, look: 'edit' });
       }

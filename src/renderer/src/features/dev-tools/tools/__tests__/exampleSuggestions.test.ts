@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { makeProposal } from '@/features/suggestions/proposals/__tests__/proposalFixtures';
 import { applyProposalsToResume } from '@/features/suggestions/proposals/apply/applyProposalsToResume';
 import { checkProposal } from '@/features/suggestions/proposals/checks/checkProposal';
+import { resolveProposal } from '@/features/suggestions/proposals/reviewedChange';
 import { validateProposal } from '@/features/suggestions/proposals/validateProposal';
 import type { ProposalFlagKind } from '@/types/agentProposal';
 import { createExampleResume } from '../exampleResume';
@@ -15,7 +16,7 @@ function stageInOrder() {
   return EXAMPLE_SUGGESTIONS.map(({ change }, index) => {
     const refusal = validateProposal(copy, change);
     const flags = checkProposal(copy, change, EXAMPLE_REQUEST);
-    copy = applyProposalsToResume(copy, [makeProposal(change, `p${index}`)]).doc;
+    copy = applyProposalsToResume(copy, [resolveProposal(makeProposal(change, `p${index}`))]).doc;
     return { refusal, flags };
   });
 }

@@ -161,8 +161,10 @@ describe('groupSuggestionsByPlace', () => {
   });
 
   it('shows the name the user gave a new section', () => {
-    const renamed = proposal('section', newSectionAfterSummary);
-    renamed.review = { sectionLabel: 'Teaching' };
+    const renamed: Proposal = {
+      ...makeProposal(newSectionAfterSummary, 'section', { review: { sectionLabel: 'Teaching' } }),
+      status: 'pending',
+    };
 
     expect(groupOnPage([renamed])[0].title).toBe('Teaching');
   });
@@ -199,9 +201,11 @@ describe('groupSuggestionsByPlace', () => {
 });
 
 describe('the place tally', () => {
-  const flagged = (id: string) => ({
-    ...proposal(id, rewrite('b1', B1, 'Led the billing migration of 40 services')),
-    flags: [{ kind: 'newNumbers' as const, words: ['40'] }],
+  const flagged = (id: string): Proposal => ({
+    ...makeProposal(rewrite('b1', B1, 'Led the billing migration of 40 services'), id, {
+      flags: [{ kind: 'newNumbers', words: ['40'] }],
+    }),
+    status: 'pending',
   });
 
   it('counts each state, and the waiting ones that need a look', () => {

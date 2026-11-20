@@ -2,6 +2,7 @@ import { findAnchorMismatch } from '@/lib/resume/proposalAnchor';
 import type { Proposal } from '@/types/agentProposal';
 import type { ResumeData } from '@shared/types/resume';
 import { applyProposalsToResume, type AppliedProposals } from './apply/applyProposalsToResume';
+import { readActiveVersion } from './proposalVersions';
 import { listWrittenTextIds } from './rewordSuggestion';
 import { resolveChange, resolveProposal } from './reviewedChange';
 
@@ -62,7 +63,9 @@ export function findTextWriter(
   const active = proposals.filter(isActive);
   const { appliedIds } = replayProposals(draft, active);
   const writers = active.filter(
-    (proposal) => appliedIds.includes(proposal.id) && listWrittenTextIds(proposal).includes(textId)
+    (proposal) =>
+      appliedIds.includes(proposal.id) &&
+      listWrittenTextIds(readActiveVersion(proposal)).includes(textId)
   );
   return writers.at(-1) ?? null;
 }
@@ -99,7 +102,7 @@ export function findRequiredIds(
     const index = proposals.findIndex((proposal) => proposal.id === idsToCheck[0]);
     idsToCheck.shift();
     if (index < 0) continue;
-    const change = resolveChange(proposals[index]);
+    const change = resolveChange(readActiveVersion(proposals[index]));
     const earlier = proposals.slice(0, index).filter(isActive);
     // An out-of-date suggestion fits no copy, so removing an earlier one proves nothing.
     if (findAnchorMismatch(replayProposals(draft, earlier).doc, change)) continue;

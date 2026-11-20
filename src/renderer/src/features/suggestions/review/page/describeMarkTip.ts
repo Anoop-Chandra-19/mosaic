@@ -1,6 +1,7 @@
 import { diffTextsAsPhrases } from '@/lib/resume/changes/diffTextsAsPhrases';
 import { GAP_MARK } from '../../proposals/checks/unfilledGap';
 import { labelSuggestionKind } from '../../proposals/describeSuggestion';
+import { readActiveVersion } from '../../proposals/proposalVersions';
 import { readSuggestionState, type SuggestionState } from '../../suggestionState';
 import type { SuggestionMark, SuggestionMove } from './suggestionPage';
 
@@ -40,10 +41,11 @@ export function describeMarkTip(mark: SuggestionMark | undefined, move?: Suggest
   if (!proposal) return '';
   const state = readSuggestionState(proposal);
   const isInPlay = state !== 'dropped' && state !== 'stale';
+  const { change, flags } = readActiveVersion(proposal);
   const parts = [
-    `${labelSuggestionKind(proposal.change)}, ${STATE_WORDS[state]}.`,
+    `${labelSuggestionKind(change)}, ${STATE_WORDS[state]}.`,
     isInPlay && mark?.words ? describeWords(mark.words) : null,
-    isInPlay && mark ? describeChecks(proposal.flags.length) : null,
+    isInPlay && mark ? describeChecks(flags.length) : null,
     mark?.block === 'back' ? 'Back on the page, as you left it.' : null,
     !mark && move ? `Moved from ${move.from} to ${move.to}.` : null,
   ];

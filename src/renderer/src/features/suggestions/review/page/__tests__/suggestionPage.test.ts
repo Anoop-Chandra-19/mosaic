@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import type { Proposal, ProposalChange, ProposalStatus } from '@/types/agentProposal';
+import type {
+  Proposal,
+  ProposalChange,
+  ProposalStatus,
+  ProposalVersion,
+} from '@/types/agentProposal';
 import {
   addText,
   makeProposal,
@@ -11,10 +16,12 @@ import { buildSuggestionPage } from '../suggestionPage';
 const B1 = 'Assisted in migrating billing to Postgres';
 const B2 = 'Reduced p99 latency from 18% to 3% of requests';
 
-const proposal = (id: string, change: ProposalChange, status: ProposalStatus = 'pending') => ({
-  ...makeProposal(change, id),
-  status,
-});
+const proposal = (
+  id: string,
+  change: ProposalChange,
+  status: ProposalStatus = 'pending',
+  version: Partial<ProposalVersion> = {}
+): Proposal => ({ ...makeProposal(change, id, version), status });
 const textOf = (doc: ReturnType<typeof makeResume>, entryIndex = 0) =>
   doc.sections[0].items[entryIndex].bullets.map((b) => b.text);
 
@@ -210,8 +217,9 @@ describe('buildSuggestionPage, new sections and headings', () => {
   it('gives a new section of entries one bar, ties each line to its entry, and dots the headings that need facts', () => {
     // The fixture's ids: the section is v-new1, Mentor v-new2 with bullet v-new3, and
     // Organizer v-new4 with bullet v-new5.
-    const volunteering: Proposal = {
-      ...proposal('v', {
+    const volunteering = proposal(
+      'v',
+      {
         kind: 'section',
         afterSectionId: 's1',
         section: { kind: 'volunteering', layout: 'entries', label: 'Volunteering' },
@@ -222,9 +230,10 @@ describe('buildSuggestionPage, new sections and headings', () => {
             { frame: { title: 'Organizer' }, bullets: ['Ran the monthly meetup'] },
           ],
         },
-      }),
-      review: { confirmedFacts: { 'v-new2': ['title'] } },
-    };
+      },
+      'pending',
+      { review: { confirmedFacts: { 'v-new2': ['title'] } } }
+    );
     const page = buildSuggestionPage(makeResume(), [volunteering]);
 
     expect(page.blocks.get('v-new1')).toMatchObject({ isNewSection: true, isLeaving: false });
@@ -245,19 +254,23 @@ describe('buildSuggestionPage, new sections and headings', () => {
 
   it("dots a new entry's heading for a bullet to check, and a bullet waiting on its number with a square", () => {
     // The fixture's ids: the entry is n-new1, with bullets n-new2 and n-new3.
-    const mentor: Proposal = {
-      ...proposal('n', {
+    const mentor = proposal(
+      'n',
+      {
         kind: 'entry',
         sectionId: 's1',
         frame: {},
         bullets: ['Mentored {{?}} engineers', 'Ran the Kubernetes reading group'],
         gaps: { 'n-new2': { withoutNumber: 'Mentored engineers' } },
-      }),
-      flags: [
-        { kind: 'unfilledGap', words: ['{{?}}'], textId: 'n-new2' },
-        { kind: 'newNames', words: ['Kubernetes'], textId: 'n-new3' },
-      ],
-    };
+      },
+      'pending',
+      {
+        flags: [
+          { kind: 'unfilledGap', words: ['{{?}}'], textId: 'n-new2' },
+          { kind: 'newNames', words: ['Kubernetes'], textId: 'n-new3' },
+        ],
+      }
+    );
     const page = buildSuggestionPage(makeResume(), [mentor]);
 
     expect(page.marks.get('n-new1')).toMatchObject({ block: 'new', dot: 'round' });
@@ -266,8 +279,9 @@ describe('buildSuggestionPage, new sections and headings', () => {
   });
 
   it('leaves a left-out entry off the page', () => {
-    const volunteering: Proposal = {
-      ...proposal('v', {
+    const volunteering = proposal(
+      'v',
+      {
         kind: 'section',
         afterSectionId: 's1',
         section: { kind: 'volunteering', layout: 'entries', label: 'Volunteering' },
@@ -278,9 +292,10 @@ describe('buildSuggestionPage, new sections and headings', () => {
             { frame: { title: 'Organizer' }, bullets: [] },
           ],
         },
-      }),
-      review: { leftOutEntryIds: ['v-new2'] },
-    };
+      },
+      'pending',
+      { review: { leftOutEntryIds: ['v-new2'] } }
+    );
     const page = buildSuggestionPage(makeResume(), [volunteering]);
     const section = page.doc.sections.find((each) => each.id === 'v-new1');
     expect(section?.items.map((item) => item.title)).toEqual(['Organizer']);

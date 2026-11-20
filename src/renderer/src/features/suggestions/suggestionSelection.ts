@@ -1,5 +1,6 @@
 import { createContext } from 'react';
 import type { Proposal } from '@/types/agentProposal';
+import { readActiveVersion } from './proposals/proposalVersions';
 import { findUnconfirmedFacts, listNewEntries } from './proposals/reviewedChange';
 
 /**
@@ -28,9 +29,12 @@ export const SuggestionSelection = createContext<SuggestionSelectionValue>({
 });
 
 const listEntryIdsNotLeftOut = (proposal: Proposal) =>
-  listNewEntries(proposal)
+  listNewEntries(readActiveVersion(proposal))
     .filter((entry) => !entry.isLeftOut)
     .map((entry) => entry.ids.entryId);
+
+const findEntryIdsWithFactsLeft = (proposal: Proposal) =>
+  findUnconfirmedFacts(readActiveVersion(proposal)).map((place) => place.entryId);
 
 /**
  * Return the id of the entry that is open on a new section's card: the one the user
@@ -41,7 +45,7 @@ export function readOpenEntryId(
   openEntryIds: Readonly<Record<string, string | null>>
 ): string | null {
   const openedId = openEntryIds[proposal.id];
-  if (openedId === undefined) return findUnconfirmedFacts(proposal)[0]?.entryId ?? null;
+  if (openedId === undefined) return findEntryIdsWithFactsLeft(proposal)[0] ?? null;
   // An entry the user opened and then left out is no longer shown open.
   return openedId !== null && listEntryIdsNotLeftOut(proposal).includes(openedId) ? openedId : null;
 }
@@ -59,7 +63,7 @@ export function findNextEntryToOpen(proposal: Proposal, finishedEntryId: string)
     ...entryIds.slice(position + 1),
     ...entryIds.slice(0, Math.max(position, 0)),
   ];
-  const idsWithFactsLeft = new Set(findUnconfirmedFacts(proposal).map((place) => place.entryId));
+  const idsWithFactsLeft = new Set(findEntryIdsWithFactsLeft(proposal));
   return (
     entryIdsInOrder.find(
       (entryId) => entryId !== finishedEntryId && idsWithFactsLeft.has(entryId)

@@ -9,6 +9,7 @@ import {
   discardRunProposals,
 } from '../../../../suggestions/proposals/proposalActions';
 import { makeResumeWithLines } from '../../../../suggestions/proposals/__tests__/proposalFixtures';
+import { readActiveVersion } from '../../../../suggestions/proposals/proposalVersions';
 import { findUnconfirmedFacts } from '../../../../suggestions/proposals/reviewedChange';
 import { buildWorkingCopy } from '../../../../suggestions/proposals/workingCopy';
 import { countSuggestions } from '../../../../suggestions/suggestionState';
@@ -24,6 +25,10 @@ const openDraft = (doc: ResumeData) =>
   useResumeStore.getState().loadDraft({ templateId: 't1', doc, rev: 3 });
 
 const stagedSuggestions = () => useProposalStore.getState().byTemplate.t1 ?? [];
+/** The active version of each staged suggestion. In these tests each one has only one version. */
+const stagedVersions = () => stagedSuggestions().map(readActiveVersion);
+const stagedChanges = () => stagedVersions().map((version) => version.change);
+const stagedKinds = () => stagedChanges().map((change) => change.kind);
 
 const readWorkingCopy = () => buildWorkingCopy(getResumeSnapshot(), stagedSuggestions());
 
@@ -53,14 +58,12 @@ describe('propose_section', () => {
     expect(result.content).toBe(
       'a new section, Languages: suggested. It is s4, and it is empty: add its lines with propose_add (into s4). Checks: none.'
     );
-    expect(stagedSuggestions()[0]).toMatchObject({
-      source: 'section',
-      change: {
-        kind: 'section',
-        afterSectionId: 's3',
-        section: { kind: 'languages', layout: 'lines', label: 'Languages' },
-        contents: null,
-      },
+    expect(stagedSuggestions()[0].source).toBe('section');
+    expect(stagedChanges()[0]).toEqual({
+      kind: 'section',
+      afterSectionId: 's3',
+      section: { kind: 'languages', layout: 'lines', label: 'Languages' },
+      contents: null,
     });
   });
 
@@ -80,7 +83,7 @@ describe('propose_section', () => {
 
   it('uses the heading given for a preset', async () => {
     await callTool('propose_section', { kind: 'skills', label: 'Tools' });
-    expect(stagedSuggestions()[0].change).toMatchObject({
+    expect(stagedChanges()[0]).toMatchObject({
       section: { kind: 'skills', layout: 'lines', label: 'Tools' },
     });
   });
@@ -97,7 +100,7 @@ describe('propose_section', () => {
   it('takes a custom section named as a preset as that preset, and says so', async () => {
     const result = await callTool('propose_section', { kind: 'custom', label: 'Projects' });
     expect(result.content).toContain('Took custom "Projects" as the projects preset.');
-    expect(stagedSuggestions()[0].change).toMatchObject({
+    expect(stagedChanges()[0]).toMatchObject({
       section: { kind: 'projects', layout: 'entries', label: 'Projects' },
     });
   });
@@ -127,16 +130,13 @@ describe('propose_section', () => {
     await callTool('propose_reorder', { order: ['s3', 's1', 's2'] });
     const result = await callTool('propose_section', { kind: 'skills', label: 'Tools' });
     expect(result.content).toContain('s3, Skills, is a skills section too.');
-    expect(stagedSuggestions().at(-1)?.change).toMatchObject({ afterSectionId: 's3' });
+    expect(stagedChanges().at(-1)).toMatchObject({ afterSectionId: 's3' });
   });
 
   it('places the section first with "start", and after a section handle', async () => {
     await callTool('propose_section', { kind: 'languages', after: 'start' });
     await callTool('propose_section', { kind: 'interests', after: 's1' });
-    expect(stagedSuggestions().map((proposal) => proposal.change)).toMatchObject([
-      { afterSectionId: null },
-      { afterSectionId: 's1' },
-    ]);
+    expect(stagedChanges()).toMatchObject([{ afterSectionId: null }, { afterSectionId: 's1' }]);
   });
 
   it('refuses the same section again while the first is waiting, pointing to it', async () => {
@@ -158,7 +158,7 @@ describe('filling a new section', () => {
     await callTool('propose_add', { into: 's4', after: 'l5', text: 'German, basic' });
 
     expect(stagedSuggestions()).toHaveLength(1);
-    expect(stagedSuggestions()[0].change).toMatchObject({
+    expect(stagedChanges()[0]).toMatchObject({
       contents: {
         layout: 'lines',
         lines: ['Spanish, fluent', 'German, basic', 'Norwegian, basic'],
@@ -178,7 +178,7 @@ describe('filling a new section', () => {
     });
     expect(result.content).toContain('a new entry in s4: suggested. It is e3, with bullets b5.');
     expect(stagedSuggestions()).toHaveLength(1);
-    expect(stagedSuggestions()[0].change).toMatchObject({
+    expect(stagedChanges()[0]).toMatchObject({
       contents: {
         layout: 'entries',
         entries: [{ frame: { title: 'Tidewatch' }, bullets: ['Built a tide chart app in Kotlin'] }],
@@ -193,7 +193,7 @@ describe('filling a new section', () => {
     const bullet = await callTool('propose_add', { into: 'e3', text: 'Built it in Kotlin' });
     expect(bullet.content).toContain('a new bullet in e3: suggested. It is b5.');
     expect(stagedSuggestions()).toHaveLength(1);
-    expect(stagedSuggestions()[0].change).toMatchObject({
+    expect(stagedChanges()[0]).toMatchObject({
       contents: {
         entries: [
           { frame: { title: 'Tidewatch' }, bullets: ['Built it in Kotlin'] },
@@ -215,7 +215,7 @@ describe('filling a new section', () => {
     });
     await callTool('propose_rewrite', { id: 'b5', text: 'Drew the harbor map in Leaflet' });
     expect(stagedSuggestions()).toHaveLength(1);
-    expect(stagedSuggestions()[0].change).toMatchObject({
+    expect(stagedChanges()[0]).toMatchObject({
       contents: { entries: [{ bullets: [] }, { bullets: ['Drew the harbor map in Leaflet'] }] },
     });
   });
@@ -223,13 +223,13 @@ describe('filling a new section', () => {
   it('tags only what a later run put into a waiting suggestion as just added', async () => {
     await callTool('propose_section', { kind: 'projects' });
     await callTool('propose_entry', { sectionId: 's4', title: 'Tidewatch' });
-    expect(stagedSuggestions()[0].lateIds).toBeUndefined();
+    expect(stagedVersions()[0].lateIds).toBeUndefined();
 
     run = createAgentToolRun('Add another project');
     await callTool('read_document');
     await callTool('propose_entry', { sectionId: 's4', title: 'Harbor Map', after: 'e3' });
     await callTool('propose_add', { into: 'e3', text: 'Built it in Kotlin' });
-    const [section] = stagedSuggestions();
+    const [section] = stagedVersions();
     const ids = section.newContentIds;
     const entryIds =
       ids?.kind === 'section' && ids.contents?.layout === 'entries' ? ids.contents.entries : [];
@@ -240,23 +240,24 @@ describe('filling a new section', () => {
     await callTool('propose_entry', { sectionId: 's1', title: 'Volunteer Mentor' });
     await callTool('propose_add', { into: 'e3', text: 'Mentored first-time contributors' });
     expect(stagedSuggestions()).toHaveLength(1);
-    expect(stagedSuggestions()[0].change).toMatchObject({
+    expect(stagedChanges()[0]).toMatchObject({
       kind: 'entry',
       bullets: ['Mentored first-time contributors'],
     });
 
     const [entry] = stagedSuggestions();
-    const entryId = entry.newContentIds?.kind === 'entry' ? entry.newContentIds.entry.entryId : '';
+    const { newContentIds } = readActiveVersion(entry);
+    const entryId = newContentIds?.kind === 'entry' ? newContentIds.entry.entryId : '';
     confirmProposalFact(entry.id, { entryId, fact: 'title' }, true);
     acceptProposals([entry.id]);
     await callTool('propose_add', { into: 'e3', text: 'Ran the weekend sprints' });
-    expect(stagedSuggestions().map((proposal) => proposal.change.kind)).toEqual(['entry', 'add']);
+    expect(stagedKinds()).toEqual(['entry', 'add']);
   });
 
   it('lets an empty custom section take lines', async () => {
     await callTool('propose_section', { kind: 'custom', label: 'Talks' });
     await callTool('propose_add', { into: 's4', text: 'Speaker at the Bergen Go meetup, 2024' });
-    expect(stagedSuggestions()[0].change).toMatchObject({
+    expect(stagedChanges()[0]).toMatchObject({
       section: { kind: 'custom', layout: 'lines' },
       contents: { layout: 'lines', lines: ['Speaker at the Bergen Go meetup, 2024'] },
     });
@@ -266,7 +267,7 @@ describe('filling a new section', () => {
     await callTool('propose_section', { kind: 'custom', label: 'Talks' });
     const result = await callTool('propose_entry', { sectionId: 's4', title: 'Bergen Go meetup' });
     expect(result.isError).toBe(false);
-    expect(stagedSuggestions()[0].change).toMatchObject({
+    expect(stagedChanges()[0]).toMatchObject({
       section: { kind: 'custom', layout: 'entries' },
       contents: { layout: 'entries' },
     });
@@ -287,7 +288,7 @@ describe('filling a new section', () => {
     await callTool('propose_rewrite', { id: 'l4', text: 'Spanish, native' });
     await callTool('propose_rename', { sectionId: 's4', label: 'Spoken languages' });
     expect(stagedSuggestions()).toHaveLength(1);
-    expect(stagedSuggestions()[0].change).toMatchObject({
+    expect(stagedChanges()[0]).toMatchObject({
       section: { label: 'Spoken languages' },
       contents: { lines: ['Spanish, native'] },
     });
@@ -298,20 +299,19 @@ describe('filling a new section', () => {
     await callTool('propose_add', { into: 's4', text: 'Spanish, fluent' });
     acceptProposals([stagedSuggestions()[0].id]);
     await callTool('propose_add', { into: 's4', text: 'Norwegian, basic' });
-    expect(stagedSuggestions().map((proposal) => proposal.change.kind)).toEqual(['section', 'add']);
+    expect(stagedKinds()).toEqual(['section', 'add']);
   });
 
   it('adds an entry to a section the user already kept as a suggestion of its own', async () => {
     await callTool('propose_section', { kind: 'projects' });
     await callTool('propose_entry', { sectionId: 's4', title: 'Tidewatch' });
     const [section] = stagedSuggestions();
-    for (const place of findUnconfirmedFacts(section)) confirmProposalFact(section.id, place, true);
+    for (const place of findUnconfirmedFacts(readActiveVersion(section))) {
+      confirmProposalFact(section.id, place, true);
+    }
     acceptProposals([section.id]);
     await callTool('propose_entry', { sectionId: 's4', title: 'Harbor Map', after: 'e3' });
-    expect(stagedSuggestions().map((proposal) => proposal.change.kind)).toEqual([
-      'section',
-      'entry',
-    ]);
+    expect(stagedKinds()).toEqual(['section', 'entry']);
   });
 });
 

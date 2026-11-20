@@ -8,6 +8,7 @@ import {
   readEntryId,
   readSectionId,
 } from '../../proposals/describeSuggestion';
+import { readActiveVersion } from '../../proposals/proposalVersions';
 import { findUnconfirmedFacts, resolveChange } from '../../proposals/reviewedChange';
 import { readSuggestionState } from '../../suggestionState';
 
@@ -128,7 +129,7 @@ function findNewEntryOnPage(
   proposal: Proposal,
   change: Extract<ProposalChange, { kind: 'entry' }>
 ): PagePosition {
-  const { newContentIds } = proposal;
+  const { newContentIds } = readActiveVersion(proposal);
   const newEntryId = newContentIds?.kind === 'entry' ? newContentIds.entry.entryId : undefined;
   const laidIn = findEntryOnPage(page, change.sectionId, newEntryId);
   if (laidIn) return laidIn;
@@ -166,7 +167,7 @@ function findNewSectionOnPage(
   proposal: Proposal,
   change: Extract<ProposalChange, { kind: 'section' }>
 ): PagePosition {
-  const { newContentIds } = proposal;
+  const { newContentIds } = readActiveVersion(proposal);
   const newSectionId = newContentIds?.kind === 'section' ? newContentIds.sectionId : null;
   const laidInIndex = findSectionIndex(page, newSectionId);
   if (laidInIndex >= 0) return [laidInIndex, 0, 0];
@@ -212,7 +213,7 @@ function locateMissingPlace(proposalId: string, change: ProposalChange): Located
  */
 function locateSuggestion(draft: ResumeData, page: ResumeData, proposal: Proposal): LocatedPlace {
   // Use the change as the user reviewed it, so a new section or entry shows the name they gave it.
-  const change = resolveChange(proposal);
+  const change = resolveChange(readActiveVersion(proposal));
   if (change.kind === 'section') return locateNewSection(draft, page, proposal, change);
   const sectionId = readSectionId(change);
   if (sectionId === null) return SECTION_ORDER_PLACE;
@@ -259,8 +260,9 @@ export function groupSuggestionsByPlace(
  * ("Rewrite, bullet 3"). The card already names the entry or section.
  */
 export function nameSuggestionInPlace(draft: ResumeData, proposal: Proposal): string {
-  const target = placeSuggestion(draft, proposal.change).at(-1);
-  const kind = labelSuggestionKind(proposal.change);
+  const { change } = readActiveVersion(proposal);
+  const target = placeSuggestion(draft, change).at(-1);
+  const kind = labelSuggestionKind(change);
   return target ? `${kind}, ${target}` : kind;
 }
 
@@ -272,8 +274,10 @@ export const orderSuggestionsByPlace = (places: readonly SuggestionPlace[]): Pro
 export const isDecided = (proposal: Proposal) => readSuggestionState(proposal) !== 'waiting';
 
 /** Check whether a waiting suggestion has flags from the checks or facts to confirm. */
-const hasSomethingToCheck = (proposal: Proposal) =>
-  proposal.flags.length > 0 || findUnconfirmedFacts(proposal).length > 0;
+function hasSomethingToCheck(proposal: Proposal): boolean {
+  const version = readActiveVersion(proposal);
+  return version.flags.length > 0 || findUnconfirmedFacts(version).length > 0;
+}
 
 /**
  * Return the waiting suggestions that can be kept without a closer look: no flags from the

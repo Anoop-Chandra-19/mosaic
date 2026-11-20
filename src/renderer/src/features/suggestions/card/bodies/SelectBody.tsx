@@ -6,7 +6,7 @@ import { Caption, SuggestedText, TagLine } from './BodyParts';
 import type { SuggestionBodyProps } from './suggestionBodyProps';
 
 export function SelectBody(props: SuggestionBodyProps) {
-  const { change } = props.proposal;
+  const { change } = props.version;
   if (change.kind !== 'select') return null;
   if (change.place.unit === 'entry' || change.place.unit === 'section') {
     return <BlockBody {...props} />;

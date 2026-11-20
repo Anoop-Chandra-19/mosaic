@@ -1,22 +1,28 @@
 import { AppButton, Text } from '@/components/ui-kit';
-import type { Proposal } from '@/types/agentProposal';
-import { chooseVersionWithoutNumber } from '../../proposals/proposalActions';
+import type { ProposalVersion } from '@/types/agentProposal';
+import { chooseTextWithoutNumber } from '../../proposals/proposalActions';
 import { BackLink, Caption } from './BodyParts';
+
+interface WithoutNumberChoiceProps {
+  proposalId: string;
+  /** The version of the suggestion that the card shows. */
+  version: ProposalVersion;
+}
 
 /**
  * Show the assistant's alternative text that needs no number, with a button to use it.
  * After the user chooses it, show a link that returns to the text with the number.
  * Render nothing if the assistant gave no alternative or the user wrote their own text.
  */
-export function WithoutNumberChoice({ proposal }: { proposal: Proposal }) {
-  const { change, review } = proposal;
+export function WithoutNumberChoice({ proposalId, version }: WithoutNumberChoiceProps) {
+  const { change, review } = version;
   const hasGap = change.kind === 'rewrite' || change.kind === 'add';
   const withoutNumber = hasGap && review.userText === undefined ? change.gap?.withoutNumber : null;
   if (!withoutNumber) return null;
   if (review.isWithoutNumber) {
     return (
-      <BackLink onClick={() => chooseVersionWithoutNumber(proposal.id, false)}>
-        Back to the version with a number
+      <BackLink onClick={() => chooseTextWithoutNumber(proposalId, false)}>
+        Back to the wording with a number
       </BackLink>
     );
   }
@@ -30,9 +36,9 @@ export function WithoutNumberChoice({ proposal }: { proposal: Proposal }) {
         variant="outline"
         size="xs"
         className="mt-2"
-        onClick={() => chooseVersionWithoutNumber(proposal.id, true)}
+        onClick={() => chooseTextWithoutNumber(proposalId, true)}
       >
-        Use this one
+        Use this wording
       </AppButton>
     </div>
   );

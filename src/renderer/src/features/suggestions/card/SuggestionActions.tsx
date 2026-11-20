@@ -10,6 +10,7 @@ import {
   returnProposals,
   reviewStaleProposalAnyway,
 } from '../proposals/proposalActions';
+import { readActiveVersion } from '../proposals/proposalVersions';
 import { findUnconfirmedFacts } from '../proposals/reviewedChange';
 import { canEditSuggestion } from '../suggestionState';
 
@@ -29,7 +30,7 @@ export function SuggestionActions({
   const dropKeys = useShortcutLabel('dropSuggestion');
   const editKeys = useShortcutLabel('editSuggestion');
   if (proposal.isStale) return <StaleActions proposal={proposal} />;
-  const factsLeft = findUnconfirmedFacts(proposal).length;
+  const factsLeft = findUnconfirmedFacts(readActiveVersion(proposal)).length;
   return (
     <>
       {proposal.status === 'rejected' ? (
@@ -90,7 +91,7 @@ export function SuggestionActions({
 
 /** Its way back while out of date: looked at again against the edit, or put last. */
 function readStaleRecovery(proposal: Proposal) {
-  switch (proposal.change.kind) {
+  switch (readActiveVersion(proposal).change.kind) {
     case 'rewrite':
     case 'merge':
     case 'rename':
