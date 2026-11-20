@@ -29,20 +29,36 @@ import { SuggestionPreviewPage } from './preview/SuggestionPreviewPage';
 import { ReviewBar } from './ReviewBar';
 import { ReviewInspector, type ReviewMode } from './ReviewInspector';
 import { DropReasons } from '../card/DropReasons';
-import { SuggestionCards } from './SuggestionCards';
+import {
+  groupSuggestionsByPlace,
+  isPlaceFolded,
+  orderSuggestionsByPlace,
+  type SuggestionPlace,
+} from './place/placeSuggestions';
+import type { PlaceViewProps } from './place/PlaceSuggestion';
+import { SuggestionDocument } from './place/SuggestionDocument';
 import { SuggestionSelection } from './suggestionSelection';
 import { canEditSuggestion } from '../suggestionState';
 
 /*
- * The review of the assistant's suggestions: a surface over the whole window but the status
- * bar. On the left, the page as Apply would leave it (`page/`: `ReviewPage`, its marks from
- * `suggestionPage.ts`), or every suggestion as a card (`SuggestionCards`, "Compare all").
- * Or Preview (`preview/`): the page as it would print, all suggested or only what was kept,
- * the inspector a list saying why each is or isn't on it (`PreviewList`).
- * On the right, the inspector at the assistant pane's width (`ReviewInspector`). One
- * selection between them. `ReviewBar` sits on top. The inspector and the cards draw one
- * suggestion from the same parts (`../card/`: its body per kind, actions, drop reasons).
- * Opened from the status bar's count.
+ * The review of the assistant's suggestions: a surface over the whole window except the
+ * status bar. It opens from the status bar's count.
+ *
+ * The suggestions are grouped by their place on the page (`place/placeSuggestions.ts`): an
+ * entry, a section, the order of the sections, or a new entry or section.
+ *
+ * On the left is one of three views:
+ * - the page as Apply would leave it (`page/`: `ReviewPage`, with marks from
+ *   `suggestionPage.ts`);
+ * - "Compare all", every suggestion open and read as a document, place by place
+ *   (`place/SuggestionDocument`);
+ * - Preview (`preview/`), the page as it would print, with all suggestions or only the kept
+ *   ones. Its inspector is a list saying why each one is or isn't on the page (`PreviewList`).
+ *
+ * On the right is the inspector, as wide as the assistant pane (`ReviewInspector`): a card
+ * for each place, with the selected suggestion open inside it. The left and right sides
+ * share one selection. `ReviewBar` sits on top. Every view draws a suggestion from the same
+ * parts (`../card/`: its body for each kind, its actions, its drop reasons).
  */
 
 /** Long enough for the page to land and its marks to wash in (see `animate-mark-in`). */
@@ -84,7 +100,25 @@ export function SuggestionReview({ openOn }: { openOn?: string }) {
     () => buildSuggestionPage(draft, result ? [] : proposals),
     [draft, proposals, result]
   );
-  const [selectedId, setSelectedId] = useState<string | null>(openOn ?? proposals[0]?.id ?? null);
+  const places = useMemo(
+    () => groupSuggestionsByPlace(draft, page.doc, proposals),
+    [draft, page, proposals]
+  );
+  // The order the keys move in: place by place, down the page.
+  const proposalsByPlace = orderSuggestionsByPlace(places);
+  // Rows are numbered in the order the assistant made the suggestions, as the view's address counts them.
+  const numbers = new Map(proposals.map((proposal, index) => [proposal.id, index + 1]));
+  const [selectedId, setSelectedId] = useState<string | null>(
+    openOn ?? proposalsByPlace[0]?.id ?? null
+  );
+  // The places the user folded (true) or opened (false) themselves, by place key.
+  const [foldedByUser, setFoldedByUser] = useState<Record<string, boolean>>({});
+  const readPlaceFolded = (place: SuggestionPlace) =>
+    isPlaceFolded(place, selectedId, foldedByUser[place.key]);
+  const changePlaceFolded = (key: string, isFolded: boolean) =>
+    setFoldedByUser((folded) => ({ ...folded, [key]: isFolded }));
+  // The row of drop reasons is offered once for each drop. Once closed, it stays closed for that suggestion.
+  const [dismissedReasonIds, setDismissedReasonIds] = useState<string[]>([]);
   const [openEntryIds, setOpenEntryIds] = useState<Record<string, string | null>>({});
   const openEntry = (proposalId: string, entryId: string | null) =>
     setOpenEntryIds((opened) => ({ ...opened, [proposalId]: entryId }));
@@ -152,8 +186,21 @@ export function SuggestionReview({ openOn }: { openOn?: string }) {
     if (id && entryId) openEntry(id, entryId);
   };
   const selection = { selectedId, select, openEntryIds, openEntry };
+  const placeView: PlaceViewProps = {
+    draft,
+    selectedId,
+    onSelect: select,
+    editingId,
+    onEditingChange: setEditingId,
+    numbers,
+    dismissedReasonIds,
+    onDismissReasons: (id) => setDismissedReasonIds((ids) => [...ids, id]),
+  };
   const step = (offset: number) => {
-    const next = proposals[Math.max(0, Math.min(proposals.length - 1, selectedIndex + offset))];
+    const positionByPlace = proposalsByPlace.findIndex((proposal) => proposal.id === selectedId);
+    const lastPosition = proposalsByPlace.length - 1;
+    const nextPosition = Math.max(0, Math.min(lastPosition, positionByPlace + offset));
+    const next = proposalsByPlace[nextPosition];
     if (next) select(next.id);
   };
   const selected = proposals[selectedIndex];
@@ -265,13 +312,11 @@ export function SuggestionReview({ openOn }: { openOn?: string }) {
               />
             )}
             {shownView === 'cards' && (
-              <SuggestionCards
-                proposals={proposals}
-                draft={draft}
-                selectedId={selectedId}
-                onSelect={select}
-                editingId={editingId}
-                onEditingChange={setEditingId}
+              <SuggestionDocument
+                places={places}
+                isPlaceFolded={readPlaceFolded}
+                onFoldedChange={changePlaceFolded}
+                view={placeView}
               />
             )}
             {shownView === 'page' && (
@@ -347,13 +392,11 @@ export function SuggestionReview({ openOn }: { openOn?: string }) {
             )}
             {!preview && !result && proposals.length > 0 && (
               <ReviewInspector
-                proposals={proposals}
-                draft={draft}
+                places={places}
                 mode={mode}
-                selectedId={selectedId}
-                onSelect={select}
-                editingId={editingId}
-                onEditingChange={setEditingId}
+                isPlaceFolded={readPlaceFolded}
+                onFoldedChange={changePlaceFolded}
+                view={placeView}
               />
             )}
             {!result && proposals.length === 0 && <NothingWaiting onBack={close} />}
