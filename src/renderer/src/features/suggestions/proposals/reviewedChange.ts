@@ -3,6 +3,7 @@ import type {
   EntryFact,
   NewContentIds,
   NewEntryIds,
+  NumberGap,
   Proposal,
   ProposalChange,
 } from '@/types/agentProposal';
@@ -67,6 +68,54 @@ export function listNewEntries({ change, newContentIds, review }: Proposal): New
 const listEntriesNotLeftOut = (proposal: Proposal) =>
   listNewEntries(proposal).filter((entry) => !entry.isLeftOut);
 
+/** A bullet of a new entry, with what the user did about its number. */
+export interface NewBullet {
+  id: string;
+  /** The assistant's text, or its version without a number when the user took that. */
+  text: string;
+  /** Set while the shown text still has a `{{?}}` to fill. */
+  gap?: NumberGap;
+  /** The number the user typed into the gap. */
+  filledNumber?: string;
+  /** The user took the version without a number. It is only set when there is one. */
+  isWithoutNumber: boolean;
+}
+
+/** List a new entry's bullets with what the user did about each one's number. */
+export function listNewBullets({ review }: Proposal, { ids, draft }: NewEntry): NewBullet[] {
+  return draft.bullets.map((assistantText, index) => {
+    const id = ids.bulletIds[index];
+    const gap = draft.gaps?.[id];
+    const isWithoutNumber = !!gap && (review.withoutNumberIds?.includes(id) ?? false);
+    const text = isWithoutNumber ? gap.withoutNumber : assistantText;
+    return {
+      id,
+      text,
+      gap: text.includes(GAP_MARK) ? gap : undefined,
+      filledNumber: isWithoutNumber ? undefined : review.filledNumbers?.[id],
+      isWithoutNumber,
+    };
+  });
+}
+
+/**
+ * Return the new entry with each bullet as the user reviewed it: with the number they typed
+ * in, or the version without a number they chose.
+ */
+function resolveEntryDraft(proposal: Proposal, entry: NewEntry): EntryDraft {
+  const bullets = listNewBullets(proposal, entry);
+  const written = bullets.map(({ text, filledNumber }) =>
+    filledNumber ? text.replace(GAP_MARK, filledNumber) : text
+  );
+  // A bullet keeps its gap only while its text still has a {{?}} to fill.
+  const gaps = Object.fromEntries(
+    bullets.flatMap(({ id, gap }, index) =>
+      gap && written[index].includes(GAP_MARK) ? [[id, gap]] : []
+    )
+  );
+  return { ...entry.draft, bullets: written, gaps: Object.keys(gaps).length ? gaps : undefined };
+}
+
 /**
  * The change as the user reviewed it: what checks, staleness and apply all read, so they
  * never disagree. The assistant's own `change` is left as it was. The entries the user left
@@ -98,7 +147,7 @@ export function resolveChange(proposal: Proposal): ProposalChange {
     }
     case 'entry': {
       const [entry] = listNewEntries(proposal);
-      return entry ? { ...change, ...entry.draft } : change;
+      return entry ? { ...change, ...resolveEntryDraft(proposal, entry) } : change;
     }
     case 'section': {
       const section = { ...change.section, label: review.sectionLabel ?? change.section.label };
@@ -106,7 +155,9 @@ export function resolveChange(proposal: Proposal): ProposalChange {
         change.contents?.layout === 'entries'
           ? {
               ...change.contents,
-              entries: listEntriesNotLeftOut(proposal).map(({ draft }) => draft),
+              entries: listEntriesNotLeftOut(proposal).map((entry) =>
+                resolveEntryDraft(proposal, entry)
+              ),
             }
           : change.contents;
       return { ...change, section, contents };
@@ -136,7 +187,10 @@ export const resolveProposal = (proposal: Proposal): Proposal => ({
 
 /** What the user asked, plus every word they wrote in review: their own numbers are theirs. */
 export function reviewedRequestText({ requestText, review }: Proposal): string {
-  return [requestText, review.userText, review.filledNumber].filter(Boolean).join('\n');
+  const bulletNumbers = Object.values(review.filledNumbers ?? {});
+  return [requestText, review.userText, review.filledNumber, ...bulletNumbers]
+    .filter(Boolean)
+    .join('\n');
 }
 
 /** One fact of one new entry. */

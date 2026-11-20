@@ -28,10 +28,23 @@ export type OrderPlace =
   | { unit: 'items'; sectionId: string }
   | { unit: 'bullets'; sectionId: string; entryId: string };
 
+/**
+ * A number only the user knows, which the text leaves as `{{?}}` for them to fill.
+ * `withoutNumber` is the same text written so that it needs no number.
+ */
+export interface NumberGap {
+  withoutNumber: string;
+}
+
 /** A new entry's facts and its bullets, which the user confirms field by field. */
 export interface EntryDraft {
   frame: Pick<ResumeEntry, EntryFact>;
   bullets: string[];
+  /**
+   * The bullets that hold a `{{?}}` for the user to fill, by the bullet's new id. The ids
+   * are set at staging, so a bullet put in before another doesn't move its gap.
+   */
+  gaps?: Record<string, NumberGap>;
 }
 
 /** What a new section holds: entries for an entries section, lines for a lines section. */
@@ -50,7 +63,7 @@ export type ProposalChange =
       before: string;
       after: string;
       /** The rewrite holds a `{{?}}` the user fills; this is the version that needs none. */
-      gap?: { withoutNumber: string };
+      gap?: NumberGap;
     }
   | {
       kind: 'split';
@@ -94,7 +107,7 @@ export type ProposalChange =
       afterId: string | null;
       text: string;
       /** Set when `text` contains a `{{?}}` for the user to fill. It is the text that needs no number. */
-      gap?: { withoutNumber: string };
+      gap?: NumberGap;
     }
   | {
       kind: 'entry';
@@ -104,6 +117,8 @@ export type ProposalChange =
       /** Facts the user confirms field by field before it applies. */
       frame: Pick<ResumeEntry, EntryFact>;
       bullets: string[];
+      /** The bullets that hold a `{{?}}`, by the bullet's new id, as in `EntryDraft`. */
+      gaps?: Record<string, NumberGap>;
     }
   | {
       kind: 'section';
@@ -171,10 +186,14 @@ export interface ProposalReview {
    * (null when the list is empty).
    */
   placedAfterId?: string | null;
-  /** The number they typed into the gap. */
+  /** The number they typed into the gap of a rewrite or added text. */
   filledNumber?: string;
-  /** They took the version that needs no number. */
+  /** They took the version of a rewrite or added text that needs no number. */
   isWithoutNumber?: boolean;
+  /** The numbers they typed into the gaps of a new entry's bullets, by bullet id. */
+  filledNumbers?: Record<string, string>;
+  /** The bullets of a new entry whose version without a number they took. */
+  withoutNumberIds?: string[];
   /**
    * The facts they confirmed, by the id of the new entry they belong to. The entry is a new
    * entry on its own, or one of a new section's entries.
@@ -213,6 +232,11 @@ export interface ProposalFlag {
   kind: ProposalFlagKind;
   /** The words or numbers it is about, as they appear in the text. */
   words: string[];
+  /**
+   * The id of the new entry's bullet it is about. Absent when it is about the whole change:
+   * any change other than a new entry or a new section of entries.
+   */
+  textId?: string;
 }
 
 export interface Proposal {

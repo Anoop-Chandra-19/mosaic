@@ -18,6 +18,19 @@ export type SuggestionState = 'waiting' | 'kept' | 'held' | 'dropped' | 'stale';
 export const needsNumber = (proposal: Proposal) =>
   proposal.flags.some((flag) => flag.kind === 'unfilledGap');
 
+/** Split the flags on the given bullets of a new entry into numbers to fill and other things to check. */
+export function readBulletFlags(proposal: Proposal, bulletIds: readonly string[]) {
+  const flags = proposal.flags.filter((flag) => flag.textId && bulletIds.includes(flag.textId));
+  return {
+    numbersToFill: flags.filter((flag) => flag.kind === 'unfilledGap'),
+    toCheck: flags.filter((flag) => flag.kind !== 'unfilledGap'),
+  };
+}
+
+/** The flags about the whole change, not about one bullet of a new entry. */
+export const readWholeChangeFlags = (proposal: Proposal) =>
+  proposal.flags.filter((flag) => !flag.textId);
+
 export function readSuggestionState(proposal: Proposal): SuggestionState {
   if (proposal.isStale) return 'stale';
   if (proposal.status === 'rejected') return 'dropped';

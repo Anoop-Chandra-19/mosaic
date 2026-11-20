@@ -52,6 +52,12 @@ export const proposeEntry: ProposeTool<'propose_entry'> = (context, args) => {
   }
   const previousEntry = findPreviousEntry(context, section, args.after);
   if (isProblem(previousEntry)) return previousEntry;
+  // A bullet given here can't come with a version without a number, but propose_add can.
+  // So a bullet that needs a number is refused here and goes through propose_add.
+  const bullets = (args.bullets ?? []).map((bullet) => bullet.trim()).filter(Boolean);
+  if (bullets.some((bullet) => bullet.includes('{{?}}'))) {
+    return { problem: TOOL_FACTS.gapInEntryBullet };
+  }
 
   const frame: Partial<Record<EntryFact, string>> = {};
   for (const fact of ENTRY_FACTS) {
@@ -63,7 +69,7 @@ export const proposeEntry: ProposeTool<'propose_entry'> = (context, args) => {
     sectionId: section.id,
     afterEntryId: previousEntry.id,
     frame,
-    bullets: (args.bullets ?? []).map((bullet) => bullet.trim()).filter(Boolean),
+    bullets,
   };
   return oneReading({ change, source: 'entry', reason: args.reason });
 };

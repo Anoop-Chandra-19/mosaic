@@ -228,19 +228,41 @@ describe('buildSuggestionPage, new sections and headings', () => {
     const page = buildSuggestionPage(makeResume(), [volunteering]);
 
     expect(page.blocks.get('v-new1')).toMatchObject({ isNewSection: true, isLeaving: false });
-    expect(page.marks.get('v-new1')).toMatchObject({ block: 'newSection', hasDot: false });
+    expect(page.marks.get('v-new1')).toMatchObject({ block: 'newSection', dot: undefined });
     expect(page.marks.get('v-new2')).toMatchObject({
       entry: { id: 'v-new2', isHeading: true },
-      hasDot: false,
+      dot: undefined,
     });
     expect(page.marks.get('v-new3')).toMatchObject({
       entry: { id: 'v-new2', isHeading: false },
-      hasDot: false,
+      dot: undefined,
     });
     expect(page.marks.get('v-new4')).toMatchObject({
       entry: { id: 'v-new4', isHeading: true },
-      hasDot: true,
+      dot: 'round',
     });
+  });
+
+  it("dots a new entry's heading for a bullet to check, and a bullet waiting on its number with a square", () => {
+    // The fixture's ids: the entry is n-new1, with bullets n-new2 and n-new3.
+    const mentor: Proposal = {
+      ...proposal('n', {
+        kind: 'entry',
+        sectionId: 's1',
+        frame: {},
+        bullets: ['Mentored {{?}} engineers', 'Ran the Kubernetes reading group'],
+        gaps: { 'n-new2': { withoutNumber: 'Mentored engineers' } },
+      }),
+      flags: [
+        { kind: 'unfilledGap', words: ['{{?}}'], textId: 'n-new2' },
+        { kind: 'newNames', words: ['Kubernetes'], textId: 'n-new3' },
+      ],
+    };
+    const page = buildSuggestionPage(makeResume(), [mentor]);
+
+    expect(page.marks.get('n-new1')).toMatchObject({ block: 'new', dot: 'round' });
+    expect(page.marks.get('n-new2')).toMatchObject({ dot: 'square' });
+    expect(page.marks.get('n-new3')).toMatchObject({ dot: undefined });
   });
 
   it('leaves a left-out entry off the page', () => {

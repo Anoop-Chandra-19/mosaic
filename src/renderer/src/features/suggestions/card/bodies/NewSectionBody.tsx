@@ -7,10 +7,12 @@ import type { Proposal } from '@/types/agentProposal';
 import type { ResumeData } from '@shared/types/resume';
 import { renameProposedSection } from '../../proposals/proposalActions';
 import { listNewEntries, resolveChange } from '../../proposals/reviewedChange';
+import { readWholeChangeFlags } from '../../suggestionState';
 import { readFlaggedWords } from '../text/describeFlag';
 import { SuggestionFlags } from '../text/SuggestionFlags';
 import { FlaggedText } from '../text/SuggestionText';
 import { Caption, CaptionNote, Hint, SuggestedText } from './BodyParts';
+import { NumbersToFillLine } from './EntryFacts';
 import { NewEntryStack } from './NewEntryStack';
 import type { SuggestionBodyProps } from './suggestionBodyProps';
 
@@ -149,8 +151,12 @@ export function NewSectionBody({ proposal, draft }: SuggestionBodyProps) {
           <NewEntryStack proposal={proposal} />
         </>
       )}
-      {/* The checks look at the whole section at once, so their findings show once, here. */}
-      <SuggestionFlags flags={proposal.flags} />
+      {/*
+       * The checks on an entry's bullets show on each bullet. The ones on a section's lines
+       * look at all the lines at once, so they show once, here.
+       */}
+      <NumbersToFillLine proposal={proposal} />
+      <SuggestionFlags flags={readWholeChangeFlags(proposal)} />
       <Hint>
         {isLines
           ? 'Keeping it keeps all of it. You can change any part in the editor after you apply.'

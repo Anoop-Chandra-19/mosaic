@@ -93,6 +93,8 @@ export const TOOL_FACTS = {
     `In ${list}, ${listHandles(between)} ${between.length > 1 ? 'sit' : 'sits'} between ${listHandles(named)}, so their new order can be read more than one way. ${list} holds ${listHandles(holds)}: give all of them in the new order.`,
   gapWithoutNumber:
     'With {{?}} in text, give withoutNumber too: the same text written to need no number.',
+  gapInEntryBullet:
+    "bullets can't hold {{?}}. Propose the entry without that bullet, then add the bullet with propose_add into the new entry, with withoutNumber.",
   phraseNotInBullet: (phrase: string, bullet: string) =>
     `"${phrase}" is not in ${bullet}. Copy it exactly.`,
   termInNoText: (find: string) =>

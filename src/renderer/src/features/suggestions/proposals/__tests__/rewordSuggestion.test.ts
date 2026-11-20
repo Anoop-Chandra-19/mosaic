@@ -172,6 +172,30 @@ describe('a rewrite of text that another kind of waiting suggestion wrote', () =
     ]);
   });
 
+  it('moves a number to fill with the new wording of a new entry’s bullet', () => {
+    const [entryId, firstBulletId] = stageAndListNewIds({
+      kind: 'entry',
+      sectionId: 's1',
+      frame: { title: 'Mentor' },
+      bullets: ['Mentored new engineers'],
+    });
+
+    const gapped = rewriteBullet(entryId, firstBulletId, 'Mentored {{?}} new engineers');
+    if (gapped.kind === 'rewrite') {
+      gapped.gap = { withoutNumber: 'Mentored new engineers each year' };
+    }
+    stage(gapped);
+    expect(changes()).toMatchObject([
+      { gaps: { [firstBulletId]: { withoutNumber: 'Mentored new engineers each year' } } },
+    ]);
+
+    stage(rewriteBullet(entryId, firstBulletId, 'Mentored the new engineers'));
+    expect(changes()[0]).toMatchObject({
+      bullets: ['Mentored the new engineers'],
+      gaps: undefined,
+    });
+  });
+
   it('changes a line and the heading of a new section', () => {
     const [sectionId, lineId] = stageAndListNewIds({
       kind: 'section',

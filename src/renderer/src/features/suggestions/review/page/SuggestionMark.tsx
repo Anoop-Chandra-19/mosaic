@@ -10,6 +10,7 @@ import {
 import { measureGutterReach, type MarkGutter } from '@/features/document-diff/pageMarks';
 import type { ChangeTone } from '@/lib/resume/changes/resumeChange';
 import { cn } from '@/lib/utils';
+import type { Proposal } from '@/types/agentProposal';
 import { FlaggedText, MarkedText } from '../../card/text/SuggestionText';
 import { needsNumber, readSuggestionState, type SuggestionState } from '../../suggestionState';
 import { readOpenEntryId, SuggestionSelection } from '../suggestionSelection';
@@ -51,7 +52,12 @@ const COMES_IN =
   'contents group-data-landing/review:**:animate-flag-in motion-reduce:**:animate-none';
 
 const FLAG = 'pointer-events-none absolute top-1 size-1.5';
-const ROUND_DOT = 'rounded-full bg-paper-flag shadow-[0_0_0_2px_white]';
+
+/** A round dot: something to look at. A hollow square: a number to fill. */
+const DOT_LOOKS: Record<NonNullable<Mark['dot']>, string> = {
+  round: 'rounded-full bg-paper-flag shadow-[0_0_0_2px_white]',
+  square: 'rounded-[0.0625rem] bg-white shadow-[inset_0_0_0_1.5px_var(--paper-flag)]',
+};
 
 /** The outline on the heading of the entry that is open on the selected new section's card. */
 const OPEN_ENTRY = 'outline-1 outline-offset-2 outline-paper-changed outline-dashed';
@@ -77,23 +83,20 @@ function MarginFlag({ mark, gutter }: { mark: Mark; gutter: MarkGutter }) {
     );
   }
   if (state === 'dropped') return null;
-  // In a new section, only the lines that need the user get a dot, not every line.
-  if (mark.block === 'newSection') {
-    return mark.hasDot ? <span aria-hidden className={cn(FLAG, ROUND_DOT)} style={style} /> : null;
-  }
-  if (proposal.flags.length === 0) return null;
-  return (
-    <span
-      aria-hidden
-      className={cn(
-        FLAG,
-        needsNumber(proposal)
-          ? 'rounded-[0.0625rem] bg-white shadow-[inset_0_0_0_1.5px_var(--paper-flag)]'
-          : ROUND_DOT
-      )}
-      style={style}
-    />
-  );
+  // In a new entry or section, only the lines that need the user get a dot, not every line.
+  const isNewBlock = mark.block === 'new' || mark.block === 'newSection';
+  const dot = isNewBlock ? mark.dot : readSuggestionDot(proposal);
+  if (!dot) return null;
+  return <span aria-hidden className={cn(FLAG, DOT_LOOKS[dot])} style={style} />;
+}
+
+/**
+ * The dot for a suggestion that changes one bullet, line or heading: square when it needs a
+ * number, round when the checks found anything else.
+ */
+function readSuggestionDot(proposal: Proposal): Mark['dot'] {
+  if (proposal.flags.length === 0) return undefined;
+  return needsNumber(proposal) ? 'square' : 'round';
 }
 
 /** The words of a line a suggestion marks. A line split across pages prints part of its text. */

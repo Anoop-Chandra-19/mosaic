@@ -68,22 +68,50 @@ export function buildSuggestionPreview(
 function takeAsKept(proposal: Proposal, notes: Map<string, PreviewNote>): Proposal {
   if (proposal.isStale || proposal.status === 'rejected') return proposal;
   const kept: Proposal = { ...proposal, status: 'accepted' };
+  const noteParts: string[] = [];
   const unconfirmed = findUnconfirmedFacts(proposal).length;
   if (unconfirmed) {
     const written = findWrittenFacts(proposal).length;
-    notes.set(proposal.id, {
-      isOnPage: true,
-      text: `shown with ${unconfirmed} of ${written} facts unconfirmed`,
-    });
+    noteParts.push(`with ${unconfirmed} of ${written} facts unconfirmed`);
   }
-  const { change } = proposal;
-  const hasGap = (change.kind === 'rewrite' || change.kind === 'add') && !!change.gap;
-  if (!needsNumber(proposal) || !hasGap) return kept;
-  notes.set(proposal.id, { isOnPage: true, text: 'shown without its number' });
+  const withoutNumbers = takeWithoutNumbers(kept);
+  if (withoutNumbers) noteParts.push(withoutNumbers.note);
+  if (noteParts.length) {
+    notes.set(proposal.id, { isOnPage: true, text: `shown ${noteParts.join(', and ')}` });
+  }
+  return withoutNumbers?.proposal ?? kept;
+}
+
+/**
+ * Use the version without a number for each text that still needs its number, and return
+ * the words for the preview's note. Returns null when no text needs a number.
+ */
+function takeWithoutNumbers(proposal: Proposal): { proposal: Proposal; note: string } | null {
+  if (!needsNumber(proposal)) return null;
+  const flags = proposal.flags.filter((flag) => flag.kind !== 'unfilledGap');
+  const { change, review } = proposal;
+  if ((change.kind === 'rewrite' || change.kind === 'add') && change.gap) {
+    return {
+      proposal: {
+        ...proposal,
+        flags,
+        review: { ...review, isWithoutNumber: true, filledNumber: undefined },
+      },
+      note: 'without its number',
+    };
+  }
+  // Otherwise the texts are bullets of new entries, each one still needing its number.
+  const bulletIds = proposal.flags.flatMap((flag) =>
+    flag.kind === 'unfilledGap' && flag.textId ? [flag.textId] : []
+  );
+  if (!bulletIds.length) return null;
+  const withoutNumberIds = [...(review.withoutNumberIds ?? []), ...bulletIds];
   return {
-    ...kept,
-    review: { ...proposal.review, isWithoutNumber: true, filledNumber: undefined },
-    flags: proposal.flags.filter((flag) => flag.kind !== 'unfilledGap'),
+    proposal: { ...proposal, flags, review: { ...review, withoutNumberIds } },
+    note:
+      bulletIds.length === 1
+        ? 'a bullet without its number'
+        : `${bulletIds.length} bullets without their numbers`,
   };
 }
 

@@ -19,9 +19,11 @@ const { DEFAULT_PREFERENCES, useUiStore } = await import('@/stores/uiStore');
 const { useProposalStore } = await import('@/stores/proposalStore');
 const {
   acceptProposals,
+  chooseBulletWithoutNumber,
   confirmProposalFact,
   editProposal,
   editProposalFact,
+  fillBulletNumber,
   fillProposalNumber,
   leaveEntryOut,
   putEntryBack,
@@ -32,7 +34,7 @@ const {
 } = await import('../proposalActions');
 const { applyAcceptedProposals } = await import('../apply/applyAcceptedProposals');
 const { listNewContentIds } = await import('../newContentIds');
-const { findUnconfirmedFacts } = await import('../reviewedChange');
+const { findUnconfirmedFacts, resolveChange } = await import('../reviewedChange');
 
 let sqlite: Database;
 
@@ -214,6 +216,80 @@ describe('review', () => {
 
     confirmProposalFact(entry.id, { entryId, fact: 'title' }, false);
     expect(proposals()[0].status).toBe('pending');
+  });
+
+  it('a bullet added to a new entry keeps its number to fill, which holds the entry back until it is filled', async () => {
+    const [entry] = stageProposals('add my mentoring', [
+      {
+        source: 'entry',
+        change: { kind: 'entry', sectionId: 's1', frame: { title: 'Mentor' }, bullets: [] },
+      },
+    ]).proposals;
+    const entryId = entry.newContentIds?.kind === 'entry' ? entry.newContentIds.entry.entryId : '';
+    const added = stageProposals('add my mentoring', [
+      {
+        source: 'add',
+        change: {
+          kind: 'add',
+          place: { unit: 'bullet', sectionId: 's1', entryId },
+          afterId: null,
+          text: 'Mentored {{?}} new engineers',
+          gap: { withoutNumber: 'Mentored new engineers' },
+        },
+      },
+    ]);
+    expect(added.filled).toHaveLength(1);
+    const { filledIds } = added.filled[0];
+    const bulletId = filledIds.kind === 'add' ? filledIds.id : '';
+    expect(proposals()[0].flags).toEqual([
+      { kind: 'unfilledGap', words: ['{{?}}'], textId: bulletId },
+    ]);
+
+    confirmProposalFact(entry.id, { entryId, fact: 'title' }, true);
+    acceptProposals([entry.id]);
+    await applyAcceptedProposals();
+    expect(bulletText(bulletId)).toBeUndefined();
+
+    expect(fillBulletNumber(entry.id, bulletId, '4')).toBe(true);
+    expect(proposals()[0]).toMatchObject({ status: 'accepted', flags: [] });
+    await applyAcceptedProposals();
+    expect(bulletText(bulletId)).toBe('Mentored 4 new engineers');
+  });
+
+  it('a bullet of a new entry can take its version without a number, and go back', () => {
+    const [entry] = stageProposals('add my mentoring', [
+      {
+        source: 'entry',
+        change: { kind: 'entry', sectionId: 's1', frame: { title: 'Mentor' }, bullets: [] },
+      },
+    ]).proposals;
+    const entryId = entry.newContentIds?.kind === 'entry' ? entry.newContentIds.entry.entryId : '';
+    const { filled } = stageProposals('', [
+      {
+        source: 'add',
+        change: {
+          kind: 'add',
+          place: { unit: 'bullet', sectionId: 's1', entryId },
+          afterId: null,
+          text: 'Mentored {{?}} new engineers',
+          gap: { withoutNumber: 'Mentored new engineers' },
+        },
+      },
+    ]);
+    const bulletId = filled[0].filledIds.kind === 'add' ? filled[0].filledIds.id : '';
+    const bulletsOf = () => {
+      const change = resolveChange(proposals()[0]);
+      return change.kind === 'entry' ? change.bullets : [];
+    };
+
+    fillBulletNumber(entry.id, bulletId, '4');
+    chooseBulletWithoutNumber(entry.id, bulletId, true);
+    expect(bulletsOf()).toEqual(['Mentored new engineers']);
+    expect(proposals()[0].flags).toEqual([]);
+
+    chooseBulletWithoutNumber(entry.id, bulletId, false);
+    expect(bulletsOf()).toEqual(['Mentored {{?}} new engineers']);
+    expect(proposals()[0].flags.map((flag) => flag.kind)).toEqual(['unfilledGap']);
   });
 
   it('a new section keeps the entries still on it: one left out is not applied, and the last can’t be', async () => {

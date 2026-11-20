@@ -1,19 +1,28 @@
 import { useState } from 'react';
-import { Check } from 'lucide-react';
+import { Check, Lock } from 'lucide-react';
 import { AppButton, AppInput, Text } from '@/components/ui-kit';
 import { cn } from '@/lib/utils';
 import type { EntryFact, Proposal } from '@/types/agentProposal';
-import { confirmProposalFact, editProposalFact } from '../../proposals/proposalActions';
+import {
+  chooseBulletWithoutNumber,
+  confirmProposalFact,
+  editProposalFact,
+  fillBulletNumber,
+} from '../../proposals/proposalActions';
 import {
   isFactConfirmed,
+  listNewBullets,
   listNewEntries,
   listWrittenFacts,
+  type NewBullet,
   type NewEntry,
 } from '../../proposals/reviewedChange';
+import { readWholeChangeFlags } from '../../suggestionState';
 import { readFlaggedWords } from '../text/describeFlag';
+import { GapField } from '../text/GapField';
 import { SuggestionFlags } from '../text/SuggestionFlags';
 import { FlaggedText } from '../text/SuggestionText';
-import { CardTag, SuggestedText } from './BodyParts';
+import { BackLink, CardTag, SuggestedText, TagLine } from './BodyParts';
 
 const FACT_LABELS: Record<EntryFact, string> = {
   title: 'Title',
@@ -120,23 +129,87 @@ export function FactRows({ proposal, entry, onEntryConfirmed, className }: FactR
  * A new entry's bullets. Words the checks flagged are marked. A bullet that a later run
  * added is labelled "just added".
  */
-export function EntryBullets({ proposal, entry }: { proposal: Proposal; entry: NewEntry }) {
-  const flaggedWords = readFlaggedWords(proposal.flags);
-  return entry.draft.bullets.map((bullet, index) => {
-    const bulletId = entry.ids.bulletIds[index];
-    const isJustAdded = proposal.lateIds?.includes(bulletId) ?? false;
-    return (
-      <div key={bulletId} className="flex items-start gap-1.75 [&+&]:mt-1">
+/**
+ * One bullet of a new entry: its own checks under it, and a number to fill as a field in
+ * the sentence, with the version without a number one click away.
+ */
+function EntryBullet({ proposal, bullet }: { proposal: Proposal; bullet: NewBullet }) {
+  const flags = proposal.flags.filter((flag) => flag.textId === bullet.id);
+  const isJustAdded = proposal.lateIds?.includes(bullet.id) ?? false;
+  return (
+    <div className="[&+&]:mt-1.5">
+      <div className="flex items-start gap-1.75">
         <Text variant="meta" className="min-w-2.5 text-ink-faint">
           •
         </Text>
         <SuggestedText>
-          <FlaggedText text={bullet} words={flaggedWords} />
+          <FlaggedText
+            text={bullet.text}
+            words={readFlaggedWords(flags)}
+            gap={
+              <GapField
+                value={bullet.filledNumber}
+                onFill={(number) => fillBulletNumber(proposal.id, bullet.id, number)}
+              />
+            }
+          />
           {isJustAdded && <CardTag className="ml-1.5 align-px">just added</CardTag>}
         </SuggestedText>
       </div>
-    );
-  });
+      {/* Indented so it lines up with the bullet's text, not its bullet mark. */}
+      <div className="pl-4.25">
+        <SuggestionFlags flags={flags} isCompact />
+        {bullet.isWithoutNumber ? (
+          <BackLink onClick={() => chooseBulletWithoutNumber(proposal.id, bullet.id, false)}>
+            Back to the version with a number
+          </BackLink>
+        ) : (
+          bullet.gap && (
+            <AppButton
+              variant="quiet"
+              size="xs"
+              onClick={() => chooseBulletWithoutNumber(proposal.id, bullet.id, true)}
+              className="mt-1 -ml-2"
+            >
+              Use the version without a number
+            </AppButton>
+          )
+        )}
+      </div>
+    </div>
+  );
+}
+
+export function EntryBullets({ proposal, entry }: { proposal: Proposal; entry: NewEntry }) {
+  return listNewBullets(proposal, entry).map((bullet) => (
+    <EntryBullet key={bullet.id} proposal={proposal} bullet={bullet} />
+  ));
+}
+
+/** What happens at Apply while a bullet waits on its number, and what the user can do about it. */
+const HELD_BACK_ADVICE: Record<'section' | 'entry', string> = {
+  section:
+    'If you keep the section now, Apply holds it back. Fill in the number, use the version without one, or leave that entry out.',
+  entry:
+    'If you keep the entry now, Apply holds it back. Fill in the number, or use the version without one.',
+};
+
+/**
+ * Tell the user how many bullets still need a number, and that Apply holds the section or
+ * entry back until each one has a number or uses the version without one. Shows nothing
+ * when no bullet needs a number.
+ */
+export function NumbersToFillLine({ proposal }: { proposal: Proposal }) {
+  const count = proposal.flags.filter((flag) => flag.kind === 'unfilledGap' && flag.textId).length;
+  if (!count) return null;
+  const waiting =
+    count === 1 ? 'A bullet still needs a number.' : `${count} bullets still need numbers.`;
+  const holder = proposal.change.kind === 'section' ? 'section' : 'entry';
+  return (
+    <TagLine icon={Lock}>
+      {waiting} {HELD_BACK_ADVICE[holder]}
+    </TagLine>
+  );
 }
 
 /**
@@ -165,7 +238,8 @@ export function EntryFacts({ proposal }: { proposal: Proposal }) {
       <div className="mt-2.25">
         <EntryBullets proposal={proposal} entry={entry} />
       </div>
-      <SuggestionFlags flags={proposal.flags} />
+      <NumbersToFillLine proposal={proposal} />
+      <SuggestionFlags flags={readWholeChangeFlags(proposal)} />
     </div>
   );
 }
