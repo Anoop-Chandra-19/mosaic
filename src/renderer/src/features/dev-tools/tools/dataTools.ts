@@ -10,7 +10,11 @@ import { loadProfile } from '../profiles/loadProfile';
 import { makeHistory, type HistorySpec } from '../profiles/makeHistory';
 import { PROFILE_NAMES, PROFILES, type ProfileName } from '../profiles/profiles';
 import { createExampleResume, EXAMPLE_IDS, EXAMPLE_TEMPLATE_NAME } from './exampleResume';
-import { createExampleSuggestions, EXAMPLE_REQUEST } from './exampleSuggestions';
+import {
+  createExampleBulletWithNumber,
+  createExampleSuggestions,
+  EXAMPLE_REQUEST,
+} from './exampleSuggestions';
 
 const isExampleOpen = () =>
   getResumeSnapshot().sections.some((section) => section.id === EXAMPLE_IDS.experience);
@@ -25,7 +29,10 @@ async function openExampleResume(): Promise<string> {
 async function stageExampleSuggestions(): Promise<string> {
   if (!isExampleOpen()) await openExampleResume();
   const { proposals, refusals } = stageProposals(EXAMPLE_REQUEST, createExampleSuggestions());
-  const refused = refusals.length ? `, ${refusals.length} refused` : '';
+  // A second call, as the assistant makes one: it fills a bullet into a suggested entry.
+  const later = stageProposals(EXAMPLE_REQUEST, createExampleBulletWithNumber(proposals));
+  const refusedCount = refusals.length + later.refusals.length;
+  const refused = refusedCount ? `, ${refusedCount} refused` : '';
   const agentSettings = useAgentSettingsStore.getState();
   const turnedOn = agentSettings.enabled ? '' : '. Turned the assistant on to show them';
   agentSettings.setEnabled(true);

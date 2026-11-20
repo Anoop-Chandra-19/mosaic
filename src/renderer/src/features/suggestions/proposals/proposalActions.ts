@@ -28,6 +28,7 @@ import {
   canKeepProposal,
   listNewEntries,
   resolveChange,
+  resolveNewContentIds,
   reviewedRequestText,
   type EntryFactPlace,
 } from './reviewedChange';
@@ -133,6 +134,15 @@ function findSuggestionToReword(
 const joinRequestText = (earlier: string, later: string) =>
   earlier.includes(later) ? earlier : [earlier, later].filter(Boolean).join('\n');
 
+/** Run the checks on a suggestion as the user reviewed it, against the copy before it. */
+const checkReviewedProposal = (copyBefore: ResumeData, proposal: Proposal): ProposalFlag[] =>
+  checkProposal(
+    copyBefore,
+    resolveChange(proposal),
+    reviewedRequestText(proposal),
+    resolveNewContentIds(proposal)
+  );
+
 /**
  * Put new wording into the suggestion that wrote the text, and run its checks again. The
  * checks compare against the copy built from the suggestions before it, which holds the
@@ -152,7 +162,7 @@ function rewordSuggestion(
     requestText: joinRequestText(writer.requestText, requestText),
   };
   const copyBefore = buildCopyBefore(draft, proposals, writer.id);
-  const flags = checkProposal(copyBefore, resolveChange(reworded), reviewedRequestText(reworded));
+  const flags = checkReviewedProposal(copyBefore, reworded);
   return { before: writer, proposal: { ...reworded, flags }, isRemoved: false };
 }
 
@@ -174,7 +184,7 @@ function fillWaitingSuggestion(
     requestText: joinRequestText(suggestion.requestText, requestText),
   };
   const copyBefore = buildCopyBefore(draft, proposals, suggestion.id);
-  const flags = checkProposal(copyBefore, resolveChange(next), reviewedRequestText(next));
+  const flags = checkReviewedProposal(copyBefore, next);
   return { before: suggestion, proposal: { ...next, flags }, filledIds };
 }
 
@@ -213,7 +223,7 @@ export function stageProposals(
         requestText,
         isLate: !isMadeNow(toFill.id),
       });
-      const filledFlags = checkProposal(copy, change, requestText);
+      const filledFlags = checkProposal(copy, change, requestText, filled.filledIds);
       result.filled.push({ index, ...filled, filledFlags });
       proposals = proposals.map((each) => (each.id === toFill.id ? filled.proposal : each));
       return;
@@ -228,16 +238,17 @@ export function stageProposals(
         : proposals.map((each) => (each.id === id ? reworded.proposal : each));
       return;
     }
+    const newContentIds = createNewContentIds(change);
     const proposal: Proposal = {
       id: crypto.randomUUID(),
       templateId,
       source,
       change,
-      newContentIds: createNewContentIds(change),
+      newContentIds,
       status: 'pending',
       review: {},
       isStale: false,
-      flags: checkProposal(copy, change, requestText),
+      flags: checkProposal(copy, change, requestText, newContentIds),
       reason,
       requestText,
       createdAt: Date.now(),
@@ -371,7 +382,7 @@ function reviewProposal(
   const change = resolveChange(next);
   const isStale = findAnchorMismatch(copyBefore, change) !== null;
   if (!isStale && validateProposal(copyBefore, change)) return false;
-  const flags = checkProposal(copyBefore, change, reviewedRequestText(next));
+  const flags = checkReviewedProposal(copyBefore, next);
   useProposalStore.getState().replaceProposals(openTemplateId(), [{ ...next, isStale, flags }]);
   recheckOpenProposals();
   if (proposal.status === 'accepted' && next.status === 'pending') returnKeptThatNeedWaiting();
@@ -395,7 +406,7 @@ export function editProposal(id: string, text: string): boolean {
 export function checkProposalEdit(proposal: Proposal, text: string): ProposalFlag[] {
   const edited = withReview({ userText: text.trim() })(proposal);
   const copyBefore = buildCopyBefore(getResumeSnapshot(), listOpenProposals(), proposal.id);
-  return checkProposal(copyBefore, resolveChange(edited), reviewedRequestText(edited));
+  return checkReviewedProposal(copyBefore, edited);
 }
 
 /** Remove the user's wording, so the suggestion writes the assistant's text again. */
@@ -424,6 +435,41 @@ export function chooseVersionWithoutNumber(id: string, isWithout: boolean): bool
       isWithout ? 'accepted' : undefined
     )
   );
+}
+
+/**
+ * Save the number the user typed into the gap of a new entry's bullet. Unlike a rewrite's
+ * number, this doesn't keep the suggestion: the entry's facts may still wait on the user.
+ * An empty number takes the gap back to unfilled.
+ */
+export function fillBulletNumber(id: string, bulletId: string, number: string): boolean {
+  return reviewProposal(id, (proposal) => {
+    const filledNumbers = { ...proposal.review.filledNumbers };
+    const filled = number.trim();
+    if (filled) filledNumbers[bulletId] = filled;
+    else delete filledNumbers[bulletId];
+    return withReview({ filledNumbers })(proposal);
+  });
+}
+
+/**
+ * Choose the version of a new entry's bullet that needs no number, or go back to the
+ * version with the gap. Either way, a number typed into the gap is cleared.
+ */
+export function chooseBulletWithoutNumber(
+  id: string,
+  bulletId: string,
+  isWithout: boolean
+): boolean {
+  return reviewProposal(id, (proposal) => {
+    const others = (proposal.review.withoutNumberIds ?? []).filter((each) => each !== bulletId);
+    const filledNumbers = { ...proposal.review.filledNumbers };
+    delete filledNumbers[bulletId];
+    return withReview({
+      withoutNumberIds: isWithout ? [...others, bulletId] : others,
+      filledNumbers,
+    })(proposal);
+  });
 }
 
 /** Return the facts confirmed for one new entry, with `fact` added or taken out. */

@@ -1,5 +1,5 @@
 import type { StagedChange } from '@/features/suggestions/proposals/proposalActions';
-import type { ProposalChange } from '@/types/agentProposal';
+import type { Proposal, ProposalChange } from '@/types/agentProposal';
 import { createExampleResume, EXAMPLE_IDS } from './exampleResume';
 
 export const EXAMPLE_REQUEST =
@@ -287,3 +287,33 @@ export const createExampleSuggestions = (): StagedChange[] => [
     },
   },
 ];
+
+/**
+ * A bullet with a number to fill, added to the last entry of the suggested Certifications
+ * section, as the assistant adds one in a later call. It needs that entry's id, which only
+ * staging gives, so it is staged after the suggestions above. Returns nothing when the
+ * section's suggestion isn't among `proposals`.
+ */
+export function createExampleBulletWithNumber(proposals: readonly Proposal[]): StagedChange[] {
+  const certifications = proposals.find(
+    (proposal) =>
+      proposal.change.kind === 'section' && proposal.change.section.label === 'Certifications'
+  );
+  const ids = certifications?.newContentIds;
+  if (ids?.kind !== 'section' || ids.contents?.layout !== 'entries') return [];
+  const entry = ids.contents.entries.at(-1);
+  if (!entry) return [];
+  return [
+    {
+      source: 'add',
+      reason: 'You mentioned the clusters. Only you know how many.',
+      change: {
+        kind: 'add',
+        place: { unit: 'bullet', sectionId: ids.sectionId, entryId: entry.entryId },
+        afterId: entry.bulletIds.at(-1) ?? null,
+        text: 'Kept {{?}} staging clusters patched and upgraded',
+        gap: { withoutNumber: 'Kept the staging clusters patched and upgraded' },
+      },
+    },
+  ];
+}

@@ -1,5 +1,12 @@
 import { use } from 'react';
-import { Check, ChevronDown, ChevronRight } from 'lucide-react';
+import {
+  Check,
+  ChevronDown,
+  ChevronRight,
+  Lock,
+  TriangleAlert,
+  type LucideIcon,
+} from 'lucide-react';
 import { AppButton, Text } from '@/components/ui-kit';
 import { cn } from '@/lib/utils';
 import type { Proposal } from '@/types/agentProposal';
@@ -16,6 +23,7 @@ import {
   readOpenEntryId,
   SuggestionSelection,
 } from '../../review/suggestionSelection';
+import { readBulletFlags } from '../../suggestionState';
 import { CardTag, Hint } from './BodyParts';
 import { EntryBullets, FactRows } from './EntryFacts';
 
@@ -128,6 +136,29 @@ function LeftOutRow({ proposal, entry }: { proposal: Proposal; entry: NewEntry }
   );
 }
 
+/** A count in an entry's row of what its bullets need: numbers to fill, or things to check. */
+function BulletFlagCount({
+  icon: Icon,
+  count,
+  title,
+}: {
+  icon: LucideIcon;
+  count: number;
+  title: string;
+}) {
+  if (!count) return null;
+  return (
+    <Text
+      variant="meta"
+      className="inline-flex shrink-0 items-center gap-0.75 text-warn"
+      title={title}
+    >
+      <Icon className="size-2.5" />
+      {count}
+    </Text>
+  );
+}
+
 interface EntryRowProps {
   proposal: Proposal;
   entry: NewEntry;
@@ -152,6 +183,7 @@ function EntryRow({
   onLeaveOut,
 }: EntryRowProps) {
   const factCount = listWrittenFacts(entry.draft).length;
+  const { numbersToFill, toCheck } = readBulletFlags(proposal, entry.ids.bulletIds);
   const isJustAdded = proposal.lateIds?.includes(entry.ids.entryId) ?? false;
   const Chevron = isOpen ? ChevronDown : ChevronRight;
   return (
@@ -176,6 +208,20 @@ function EntryRow({
           </Text>
         </span>
         {isJustAdded && <CardTag>just added</CardTag>}
+        <BulletFlagCount
+          icon={Lock}
+          count={numbersToFill.length}
+          title={
+            numbersToFill.length === 1
+              ? 'A number to fill'
+              : `${numbersToFill.length} numbers to fill`
+          }
+        />
+        <BulletFlagCount
+          icon={TriangleAlert}
+          count={toCheck.length}
+          title={`${toCheck.length} ${plural(toCheck.length, 'thing', 'things')} to check in its bullets`}
+        />
         {factsLeftCount ? (
           <Text
             variant="meta"

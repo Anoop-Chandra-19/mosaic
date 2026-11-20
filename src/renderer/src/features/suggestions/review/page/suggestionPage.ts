@@ -8,6 +8,7 @@ import {
   listNewEntries,
   resolveChange,
 } from '../../proposals/reviewedChange';
+import { readBulletFlags, readWholeChangeFlags } from '../../suggestionState';
 
 /** How a mark is drawn on the page: changed words, added text, or text being hidden. */
 export type SuggestionLook = 'edit' | 'add' | 'hide';
@@ -32,10 +33,12 @@ export interface SuggestionMark {
    */
   entry?: { id: string; isHeading: boolean };
   /**
-   * Set on the lines of a new section. True when the line gets a dot: the heading of an
-   * entry with facts to confirm, or the section's heading when the checks found something.
+   * Set on the lines of a new entry or new section that need the user; the other lines get
+   * no dot. Round: the heading of an entry with facts to confirm or a bullet to check, or
+   * a new section's heading when the checks found something in its lines. Square: a bullet
+   * waiting on its number.
    */
-  hasDot?: boolean;
+  dot?: 'round' | 'square';
 }
 
 /** A whole entry or section that one suggestion hides, shows or adds. It gets one outline when selected. */
@@ -162,16 +165,35 @@ function layIn(page: SuggestionPage, proposal: Proposal): boolean {
   // half. For a new entry or section, the first created id is the entry or section itself.
   if (change.kind === 'section') {
     markNewSection(page, proposal, laidIn.createdIds);
-  } else {
-    const isNewEntry = change.kind === 'entry';
-    const block = isNewEntry ? 'new' : undefined;
-    for (const id of laidIn.createdIds) page.marks.set(id, { proposal, look: 'add', block });
-    if (isNewEntry) {
-      page.blocks.set(laidIn.createdIds[0], { proposal, isLeaving: false, isNewSection: false });
+  } else if (change.kind === 'entry') {
+    const dots = readNewEntryDots(proposal);
+    for (const id of laidIn.createdIds) {
+      page.marks.set(id, { proposal, look: 'add', block: 'new', dot: dots.get(id) });
     }
+    page.blocks.set(laidIn.createdIds[0], { proposal, isLeaving: false, isNewSection: false });
+  } else {
+    for (const id of laidIn.createdIds) page.marks.set(id, { proposal, look: 'add' });
   }
   for (const [id, move] of readMoves(proposal, change)) page.moves.set(id, move);
   return true;
+}
+
+/**
+ * Return the dot each line of a suggestion's new entries gets, by the line's id. An entry's
+ * heading gets a round dot when it has facts to confirm or a bullet to check; a bullet gets
+ * a square one while it still needs its number. Lines that need nothing get no dot.
+ */
+function readNewEntryDots(proposal: Proposal): Map<string, 'round' | 'square'> {
+  const dots = new Map<string, 'round' | 'square'>();
+  const entriesWithFactsLeft = new Set(
+    findUnconfirmedFacts(proposal).map((place) => place.entryId)
+  );
+  for (const { ids } of listNewEntries(proposal)) {
+    const { numbersToFill, toCheck } = readBulletFlags(proposal, ids.bulletIds);
+    if (entriesWithFactsLeft.has(ids.entryId) || toCheck.length) dots.set(ids.entryId, 'round');
+    for (const flag of numbersToFill) if (flag.textId) dots.set(flag.textId, 'square');
+  }
+  return dots;
 }
 
 /**
@@ -187,16 +209,12 @@ function markNewSection(page: SuggestionPage, proposal: Proposal, createdIds: st
       entryById.set(bulletId, { id: ids.entryId, isHeading: false });
     }
   }
-  const entriesWithFactsLeft = new Set(
-    findUnconfirmedFacts(proposal).map((place) => place.entryId)
-  );
+  const dots = readNewEntryDots(proposal);
+  // The checks on a section's lines are about all of them, so they mark its heading.
+  if (readWholeChangeFlags(proposal).length) dots.set(sectionId, 'round');
   for (const id of createdIds) {
     const entry = entryById.get(id);
-    const hasDot =
-      id === sectionId
-        ? proposal.flags.length > 0
-        : entry?.isHeading === true && entriesWithFactsLeft.has(entry.id);
-    page.marks.set(id, { proposal, look: 'add', block: 'newSection', entry, hasDot });
+    page.marks.set(id, { proposal, look: 'add', block: 'newSection', entry, dot: dots.get(id) });
   }
   page.blocks.set(sectionId, { proposal, isLeaving: false, isNewSection: true });
 }

@@ -376,6 +376,34 @@ describe('the rules every change goes through', () => {
       's3 holds lines, not entries; propose_add adds a line. The sections that hold entries are s1.'
     );
   });
+
+  it('refuse a new entry’s bullet with a number to fill, and keep it when propose_add adds it to the entry', async () => {
+    await readTheResume();
+    const refused = await callTool('propose_entry', {
+      sectionId: 's1',
+      title: 'Mentor',
+      bullets: ['Mentored {{?}} new engineers'],
+    });
+    expect(refused).toMatchObject({ isError: true });
+    expect(refused.content).toContain('propose_add into the new entry, with withoutNumber');
+    expect(stagedSuggestions()).toEqual([]);
+
+    const made = await callTool('propose_entry', { sectionId: 's1', title: 'Mentor' });
+    const [entryHandle] = made.content.match(/\be\d+\b/) ?? [];
+    await callTool('propose_add', {
+      into: entryHandle,
+      text: 'Mentored {{?}} new engineers',
+      withoutNumber: 'Mentored new engineers',
+    });
+    const [entry] = stagedSuggestions();
+    const bulletId =
+      entry.newContentIds?.kind === 'entry' ? entry.newContentIds.entry.bulletIds[0] : '';
+    expect(entry.change).toMatchObject({
+      bullets: ['Mentored {{?}} new engineers'],
+      gaps: { [bulletId]: { withoutNumber: 'Mentored new engineers' } },
+    });
+    expect(entry.flags).toEqual([{ kind: 'unfilledGap', words: ['{{?}}'], textId: bulletId }]);
+  });
 });
 
 describe('the propose tools, showing and placing', () => {

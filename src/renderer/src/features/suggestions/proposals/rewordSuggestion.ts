@@ -1,6 +1,12 @@
 import { readTextPlaceId } from '@/lib/resume/proposalAnchor';
 import { cutSplitHalves, readSplitHalves } from '@/lib/resume/splitHalves';
-import type { EntryDraft, NewEntryIds, Proposal, ProposalChange } from '@/types/agentProposal';
+import type {
+  EntryDraft,
+  NewEntryIds,
+  NumberGap,
+  Proposal,
+  ProposalChange,
+} from '@/types/agentProposal';
 import { resolveChange } from './reviewedChange';
 
 /*
@@ -22,7 +28,7 @@ export interface TextEdit {
   textId: string;
   text: string;
   /** Set when `text` holds a `{{?}}`. It is the version that needs no number. */
-  gap?: { withoutNumber: string };
+  gap?: NumberGap;
 }
 
 /** Return the new wording a rewrite or rename gives. Returns null for any other change. */
@@ -76,6 +82,8 @@ function isUserWording({ review, newContentIds }: Proposal, textId: string): boo
   if (newContentIds?.kind === 'section' && newContentIds.sectionId === textId) {
     return review.sectionLabel !== undefined;
   }
+  // A new entry's bullet whose number the user filled, or whose version without one they took.
+  if (review.filledNumbers?.[textId] || review.withoutNumberIds?.includes(textId)) return true;
   return review.userText !== undefined || !!review.filledNumber || !!review.isWithoutNumber;
 }
 
@@ -96,14 +104,26 @@ function failToFindText(proposal: Proposal, textId: string): never {
 const replaceAt = (texts: readonly string[], index: number, text: string) =>
   texts.map((each, position) => (position === index ? text : each));
 
-/** Return a new entry with one bullet reworded. Returns null when the bullet isn't in it. */
+/**
+ * Return a new entry with one bullet reworded. Its gap follows the new wording: kept when
+ * the new wording has a number to fill, gone when it hasn't. Returns null when the bullet
+ * isn't in the entry.
+ */
 function rewordEntryBullet<T extends EntryDraft>(
   entry: T,
   ids: NewEntryIds,
   edit: TextEdit
 ): T | null {
   const index = ids.bulletIds.indexOf(edit.textId);
-  return index < 0 ? null : { ...entry, bullets: replaceAt(entry.bullets, index, edit.text) };
+  if (index < 0) return null;
+  const gaps = { ...entry.gaps };
+  if (edit.gap) gaps[edit.textId] = edit.gap;
+  else delete gaps[edit.textId];
+  return {
+    ...entry,
+    bullets: replaceAt(entry.bullets, index, edit.text),
+    gaps: Object.keys(gaps).length ? gaps : undefined,
+  };
 }
 
 type SectionChange = Extract<ProposalChange, { kind: 'section' }>;

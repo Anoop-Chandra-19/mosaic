@@ -145,7 +145,7 @@ function fillWithLine(
 
 function fillWithEntry(
   { change, newContentIds }: SectionSuggestion,
-  { frame, bullets, afterEntryId }: EntryChange,
+  { frame, bullets, gaps, afterEntryId }: EntryChange,
   entryIds: EntryIds
 ): Filled {
   const entries = change.contents?.layout === 'entries' ? change.contents.entries : [];
@@ -160,7 +160,10 @@ function fillWithEntry(
       ...change,
       // An empty custom section holds whatever goes in first, so it now holds entries.
       section: { ...change.section, layout: 'entries' },
-      contents: { layout: 'entries', entries: insertAt(entries, index, { frame, bullets }) },
+      contents: {
+        layout: 'entries',
+        entries: insertAt(entries, index, { frame, bullets, gaps }),
+      },
     },
     newContentIds: {
       ...newContentIds,
@@ -169,15 +172,23 @@ function fillWithEntry(
   };
 }
 
-/** Return the entry and its ids with the bullet added after `afterId`. */
+/**
+ * Return the entry and its ids with the bullet added after `afterId`. A bullet with a
+ * number to fill keeps its version without a number, under its new id.
+ */
 function addBulletToEntry(
   entry: { draft: EntryDraft; ids: NewEntryIds },
   bullet: AddChange,
   bulletIds: AddIds
 ): { draft: EntryDraft; ids: NewEntryIds } {
   const index = readPositionAfter(entry.ids.bulletIds, bullet.afterId);
+  const { gaps } = entry.draft;
   return {
-    draft: { ...entry.draft, bullets: insertAt(entry.draft.bullets, index, bullet.text) },
+    draft: {
+      ...entry.draft,
+      bullets: insertAt(entry.draft.bullets, index, bullet.text),
+      gaps: bullet.gap ? { ...gaps, [bulletIds.id]: bullet.gap } : gaps,
+    },
     ids: { ...entry.ids, bulletIds: insertAt(entry.ids.bulletIds, index, bulletIds.id) },
   };
 }
@@ -193,7 +204,7 @@ function fillEntryWithBullet(
     bulletIds
   );
   return {
-    change: { ...change, bullets: draft.bullets },
+    change: { ...change, bullets: draft.bullets, gaps: draft.gaps },
     newContentIds: { ...newContentIds, entry: ids },
   };
 }

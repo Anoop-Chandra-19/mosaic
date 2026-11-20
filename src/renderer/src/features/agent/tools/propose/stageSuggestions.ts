@@ -8,6 +8,7 @@ import {
 import { replayProposals } from '@/features/suggestions/proposals/workingCopy';
 import type { Proposal } from '@/types/agentProposal';
 import type { AgentToolRun, ToolAnswer, ToolCallContext } from '../tool-run/agentToolRun';
+import { handleFor } from '../tool-run/resumeHandles';
 import type { CompiledCall } from './compileProposeCall';
 import { describeFlag, describeResultWeWrote, describeTarget } from './describeForModel';
 import { diagnose, formatToolAnswer, type Diagnostic } from './toolDiagnostics';
@@ -87,7 +88,12 @@ function applyToReceipt(run: AgentToolRun, made: Proposal[], filled: FilledSugge
 
 /** Describe a staged change and its checks, including any code-generated result text. */
 function describeStaged(run: AgentToolRun, proposal: Proposal): Diagnostic {
-  const checks = proposal.flags.map(describeFlag);
+  // A flag on one bullet of a new entry names that bullet, so the model can fix only that bullet.
+  const checks = proposal.flags.map((flag) =>
+    flag.textId
+      ? `In ${handleFor(run.handles, 'bullet', flag.textId)}: ${describeFlag(flag)}`
+      : describeFlag(flag)
+  );
   const text = [
     'suggested.',
     describeResultWeWrote(run, proposal),

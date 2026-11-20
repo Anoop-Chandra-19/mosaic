@@ -58,6 +58,23 @@ describe('checkProposal, new content', () => {
     ).toEqual([]);
   });
 
+  it('checks each bullet of a new entry on its own, and names the bullet once staging gave it an id', () => {
+    const mentor: ProposalChange = {
+      kind: 'entry',
+      sectionId: 's1',
+      frame: { title: 'Mentor' },
+      bullets: ['Mentored 12 engineers', 'Ran a reading group', 'Cut onboarding by {{?}} days'],
+    };
+    const ids = {
+      kind: 'entry' as const,
+      entry: { entryId: 'n1', bulletIds: ['n2', 'n3', 'n4'] },
+    };
+    expect(checkProposal(doc, mentor, 'Add my mentoring', ids)).toEqual([
+      { kind: 'newNumbers', words: ['12'], textId: 'n2' },
+      { kind: 'unfilledGap', words: ['{{?}}'], textId: 'n4' },
+    ]);
+  });
+
   it("reads a new entry's bullets against its own facts: they are not new there", () => {
     const frame = { title: 'Volunteer Mentor', organization: 'Code for Portland', dates: '2021' };
     const bullets = ['Mentored contributors at Code for Portland since 2021'];
