@@ -264,8 +264,9 @@ export interface ProposalVersion {
   createdAt: number;
   /**
    * The ids of entries and bullets that a later run added to this version while it was
-   * waiting. The card labels them "just added". Additions from the run that made the
-   * version aren't listed, because the user hadn't seen it yet.
+   * waiting, or that a version adds to the one the user kept. The card labels them "just
+   * added", or "new in version 3". Additions from the run that made the first version
+   * aren't listed, because the user hadn't seen it yet.
    */
   lateIds?: string[];
 }

@@ -7,6 +7,7 @@ import type {
   ProposalVersion,
 } from '@/types/agentProposal';
 import { createNewContentIds } from './newContentIds';
+import { findVersionToChange } from './nextVersion';
 import { readActiveVersion } from './proposalVersions';
 
 /*
@@ -17,11 +18,11 @@ import { readActiveVersion } from './proposalVersions';
  * additions is written into the suggestion for the new section or entry, so the user
  * reviews the section or entry and everything in it together.
  *
- * This happens only while that suggestion is waiting and not out of date. Once the user
- * has kept it, an addition becomes a suggestion of its own.
+ * This happens while that suggestion is waiting or kept, and not out of date. Once the user
+ * has kept it, the addition goes into a new version (`nextVersion.ts`), not the kept one.
  *
  * For each change, staging calls `findSuggestionToFill`. When it returns a suggestion,
- * staging calls `fillSuggestion` to write the change into that suggestion's version.
+ * staging calls `fillSuggestion` to write the change into one of that suggestion's versions.
  */
 
 type SectionChange = Extract<ProposalChange, { kind: 'section' }>;
@@ -56,8 +57,6 @@ const isSectionVersion = (version: ProposalVersion): version is SectionVersion =
 const isEntryVersion = (version: ProposalVersion): version is EntryVersion =>
   version.change.kind === 'entry' && version.newContentIds?.kind === 'entry';
 
-const isWaiting = (proposal: Proposal) => proposal.status === 'pending' && !proposal.isStale;
-
 /** Return the ids of the new entries a version makes, alone or in a new section. */
 function listMadeEntryIds({ newContentIds: ids }: ProposalVersion): string[] {
   if (ids?.kind === 'entry') return [ids.entry.entryId];
@@ -85,10 +84,11 @@ function isFillTarget(version: ProposalVersion, change: ProposalChange): boolean
 }
 
 /**
- * Find the waiting suggestion that this change should be added to: the suggestion for the
- * new section or new entry the change adds to. Returns null when there is none, when the
- * user already kept that suggestion, or when the change doesn't fit there (for example, a
- * line added to a section that holds entries).
+ * Find the suggestion that this change should be added to: the waiting or kept suggestion
+ * for the new section or new entry the change adds to. Returns null when there is none,
+ * when the user dropped it or it is out of date, or when the change doesn't fit there (for
+ * example, a line added to a section that holds entries). It looks at each suggestion's
+ * active version, because that is the version the assistant reads.
  */
 export function findSuggestionToFill(
   proposals: readonly Proposal[],
@@ -96,7 +96,7 @@ export function findSuggestionToFill(
 ): Proposal | null {
   return (
     proposals
-      .filter(isWaiting)
+      .filter((proposal) => findVersionToChange(proposal) !== null)
       .find((proposal) => isFillTarget(readActiveVersion(proposal), change)) ?? null
   );
 }

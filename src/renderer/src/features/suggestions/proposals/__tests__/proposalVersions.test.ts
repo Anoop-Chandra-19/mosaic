@@ -1,11 +1,17 @@
 import { describe, expect, it } from 'vitest';
 import type { Proposal } from '@/types/agentProposal';
 import {
+  addVersion,
+  findVersion,
   keepVersion,
-  readNewestVersion,
   readActiveVersion,
+  readKeptVersion,
+  readNewestVersion,
+  readShownVersion,
+  readVersionNumber,
   replaceVersion,
   returnToWaiting,
+  undoDecision,
 } from '../proposalVersions';
 import { makeProposal, makeResume, rewrite } from './proposalFixtures';
 
@@ -46,6 +52,43 @@ describe('keepVersion and returnToWaiting', () => {
     const waiting = returnToWaiting(keepVersion(makeTwoVersions(), 'p1-v1'));
     expect(waiting).toMatchObject({ status: 'pending', keptVersionId: null });
     expect(readActiveVersion(waiting).id).toBe('p1-v2');
+  });
+});
+
+describe('undoDecision', () => {
+  it('brings back the kept version, still kept, when a drop is undone', () => {
+    const dropped: Proposal = { ...keepVersion(makeTwoVersions(), 'p1-v1'), status: 'rejected' };
+    expect(undoDecision(dropped)).toMatchObject({ status: 'accepted', keptVersionId: 'p1-v1' });
+  });
+
+  it('sets a suggestion back to waiting when a keep is undone, or a drop of nothing kept', () => {
+    const kept = keepVersion(makeTwoVersions(), 'p1-v1');
+    expect(undoDecision(kept)).toMatchObject({ status: 'pending', keptVersionId: null });
+    const dropped: Proposal = { ...makeTwoVersions(), status: 'rejected' };
+    expect(undoDecision(dropped)).toMatchObject({ status: 'pending', keptVersionId: null });
+  });
+});
+
+describe('the versions a card shows and acts on', () => {
+  it('shows the version chosen, or the newest when none is chosen or it is gone', () => {
+    const proposal = keepVersion(makeTwoVersions(), 'p1-v1');
+    expect(readShownVersion(proposal, 'p1-v1').id).toBe('p1-v1');
+    expect(readShownVersion(proposal).id).toBe('p1-v2');
+    expect(readShownVersion(proposal, 'gone').id).toBe('p1-v2');
+  });
+
+  it('acts on the version named, or the active one without a name', () => {
+    const proposal = keepVersion(makeTwoVersions(), 'p1-v1');
+    expect(findVersion(proposal, 'p1-v2').id).toBe('p1-v2');
+    expect(findVersion(proposal).id).toBe('p1-v1');
+  });
+
+  it('numbers versions from 1, oldest first, and adds a new one last', () => {
+    const proposal = makeTwoVersions();
+    const third = { ...proposal.versions[1], id: 'p1-v3' };
+    expect(readVersionNumber(proposal, 'p1-v2')).toBe(2);
+    expect(readVersionNumber(addVersion(proposal, third), 'p1-v3')).toBe(3);
+    expect(readKeptVersion(proposal)).toBeNull();
   });
 });
 

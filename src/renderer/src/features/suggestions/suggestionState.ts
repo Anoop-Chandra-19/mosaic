@@ -5,7 +5,11 @@ import type {
   ProposalFlagKind,
   ProposalVersion,
 } from '@/types/agentProposal';
-import { readActiveVersion } from './proposals/proposalVersions';
+import {
+  readActiveVersion,
+  readNewestVersion,
+  readVersionNumber,
+} from './proposals/proposalVersions';
 
 /** Each check's name, as the card and the list show it. */
 export const FLAG_LABELS: Record<ProposalFlagKind, string> = {
@@ -56,13 +60,32 @@ const EDITABLE_KINDS: ReadonlySet<ProposalChangeKind> = new Set<ProposalChangeKi
 export const canEditSuggestion = (proposal: Proposal) =>
   !proposal.isStale && EDITABLE_KINDS.has(readActiveVersion(proposal).change.kind);
 
-/** The words a card or row shows for where it stands. */
+/**
+ * The words a card or row shows for where it stands. A kept suggestion with a newer
+ * version names both: "kept, version 1 · version 3 waiting".
+ */
 export function labelSuggestionState(proposal: Proposal): string {
   const state = readSuggestionState(proposal);
-  if (state !== 'kept') return STATE_LABELS[state];
-  const { review } = readActiveVersion(proposal);
-  if (review.rebasedBefore) return 'kept · replaces your edit';
-  return review.userText !== undefined ? 'kept · edited' : 'kept';
+  if (state !== 'kept' && state !== 'held') return STATE_LABELS[state];
+  const kept = readActiveVersion(proposal);
+  const newest = readNewestVersion(proposal);
+  if (newest.id !== kept.id) {
+    const number = (version: ProposalVersion) => readVersionNumber(proposal, version.id);
+    return `kept, version ${number(kept)} · version ${number(newest)} waiting`;
+  }
+  if (state === 'held') return STATE_LABELS.held;
+  if (kept.review.rebasedBefore) return 'kept · replaces your edit';
+  return kept.review.userText !== undefined ? 'kept · edited' : 'kept';
+}
+
+/**
+ * The label on an entry or bullet that was added to a version later. In a suggestion's
+ * first version it reads "just added". In a later version it reads "new in version 3",
+ * because the entry or bullet is in that version but not in the one the user kept.
+ */
+export function labelLateAddition(proposal: Proposal, version: ProposalVersion): string {
+  const number = readVersionNumber(proposal, version.id);
+  return number > 1 ? `new in version ${number}` : 'just added';
 }
 
 const STATE_LABELS: Record<SuggestionState, string> = {

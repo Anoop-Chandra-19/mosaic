@@ -17,8 +17,12 @@ import { AGENT_PANE_WIDTH, useUiStore } from '@/stores/uiStore';
 import { useViewPlaceStore } from '@/stores/viewPlaceStore';
 import type { ResumePreviewMeta } from '@/types/preview';
 import type { Proposal } from '@/types/agentProposal';
-import { acceptProposals, rejectProposals, returnProposals } from '../proposals/proposalActions';
-import { readActiveVersion } from '../proposals/proposalVersions';
+import {
+  keepProposalVersion,
+  rejectProposals,
+  returnProposals,
+} from '../proposals/proposalActions';
+import { readActiveVersion, readShownVersion } from '../proposals/proposalVersions';
 import { ApplyBar } from './apply/ApplyBar';
 import { ApplyResult } from './apply/ApplyResult';
 import { useApplySuggestions } from './apply/useApplySuggestions';
@@ -65,11 +69,17 @@ import { canEditSuggestion } from '../suggestionState';
 /** Long enough for the page to land and its marks to wash in (see `animate-mark-in`). */
 const LANDING_MS = 600;
 
-/** A keep or drop pressed again takes it back. */
-function toggleDecision(proposal: Proposal, status: 'accepted' | 'rejected') {
-  if (proposal.status === status) returnProposals([proposal.id]);
-  else if (status === 'accepted') acceptProposals([proposal.id]);
+/** Drop the suggestion, or undo the drop when it is already dropped. */
+function toggleDrop(proposal: Proposal) {
+  if (proposal.status === 'rejected') returnProposals([proposal.id]);
   else rejectProposals([proposal.id]);
+}
+
+/** Keep the version the card shows, or undo the keep when that version is already kept. */
+function toggleKeep(proposal: Proposal, shownVersionId: string) {
+  const isShownKept = proposal.status === 'accepted' && proposal.keptVersionId === shownVersionId;
+  if (isShownKept) returnProposals([proposal.id]);
+  else keepProposalVersion(proposal.id, shownVersionId);
 }
 
 export function SuggestionReview({ openOn }: { openOn?: string }) {
@@ -127,6 +137,9 @@ export function SuggestionReview({ openOn }: { openOn?: string }) {
   const [openEntryIds, setOpenEntryIds] = useState<Record<string, string | null>>({});
   const openEntry = (proposalId: string, entryId: string | null) =>
     setOpenEntryIds((opened) => ({ ...opened, [proposalId]: entryId }));
+  const [shownVersionIds, setShownVersionIds] = useState<Record<string, string>>({});
+  const showVersion = (proposalId: string, versionId: string) =>
+    setShownVersionIds((shown) => ({ ...shown, [proposalId]: versionId }));
   const close = () => closeSurface('review');
 
   // Suggestions exist only while AI is on; turned off, there is nothing to review.
@@ -190,7 +203,7 @@ export function SuggestionReview({ openOn }: { openOn?: string }) {
     setEditingId(null);
     if (id && entryId) openEntry(id, entryId);
   };
-  const selection = { selectedId, select, openEntryIds, openEntry };
+  const selection = { selectedId, select, openEntryIds, openEntry, shownVersionIds, showVersion };
   const placeView: PlaceViewProps = {
     draft,
     selectedId,
@@ -216,11 +229,16 @@ export function SuggestionReview({ openOn }: { openOn?: string }) {
       id: 'keepSuggestion',
       run: () => {
         if (!selected) return;
-        toggleDecision(selected, 'accepted');
+        // Preview's card shows the active version, the one it prints; the others show the chosen one.
+        const shown =
+          mode === 'preview'
+            ? readActiveVersion(selected)
+            : readShownVersion(selected, shownVersionIds[selected.id]);
+        toggleKeep(selected, shown.id);
         step(1);
       },
     },
-    { id: 'dropSuggestion', run: () => selected && toggleDecision(selected, 'rejected') },
+    { id: 'dropSuggestion', run: () => selected && toggleDrop(selected) },
     {
       id: 'editSuggestion',
       run: () => selected && canEditSuggestion(selected) && setEditingId(selected.id),

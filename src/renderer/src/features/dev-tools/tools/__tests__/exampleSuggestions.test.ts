@@ -6,7 +6,11 @@ import { resolveProposal } from '@/features/suggestions/proposals/reviewedChange
 import { validateProposal } from '@/features/suggestions/proposals/validateProposal';
 import type { ProposalFlagKind } from '@/types/agentProposal';
 import { createExampleResume } from '../exampleResume';
-import { createExampleSuggestions, EXAMPLE_REQUEST } from '../exampleSuggestions';
+import {
+  createExampleSecondVersion,
+  createExampleSuggestions,
+  EXAMPLE_REQUEST,
+} from '../exampleSuggestions';
 
 const EXAMPLE_SUGGESTIONS = createExampleSuggestions();
 
@@ -26,6 +30,16 @@ describe('the example suggestions', () => {
     const refused = stageInOrder().map(({ refusal }) => refusal);
 
     expect(refused).toEqual(EXAMPLE_SUGGESTIONS.map(() => null));
+  });
+
+  it('leave the first suggestion’s text for its second version to rewrite', () => {
+    const proposals = EXAMPLE_SUGGESTIONS.map(({ change }, index) =>
+      resolveProposal(makeProposal(change, `p${index}`))
+    );
+    const copy = applyProposalsToResume(createExampleResume(), proposals).doc;
+    const [second] = createExampleSecondVersion();
+
+    expect(validateProposal(copy, second.change)).toBeNull();
   });
 
   it('cover every kind and every check', () => {

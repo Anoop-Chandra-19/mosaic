@@ -6,6 +6,9 @@ import { createExampleResume, EXAMPLE_IDS } from './exampleResume';
 export const EXAMPLE_REQUEST =
   'Tighten my experience bullets, put the AWS work first, and add my Code for Portland volunteering.';
 
+/** The text the first example suggestion writes, which its second version starts from. */
+const EXAMPLE_KEPT_TEXT = 'Led the billing migration to Postgres';
+
 const { experience: sectionId, harbor, lantern } = EXAMPLE_IDS;
 
 /** Return a bullet's text from the example resume, so a change's `before` matches the draft exactly. */
@@ -70,7 +73,7 @@ export const createExampleSuggestions = (): StagedChange[] => [
   {
     source: 'rewrite',
     reason: 'Starts on the verb and drops the filler.',
-    change: rewrite(harbor, 'ex-b1', 'Led the billing migration to Postgres'),
+    change: rewrite(harbor, 'ex-b1', EXAMPLE_KEPT_TEXT),
   },
   {
     source: 'rewrite',
@@ -286,6 +289,23 @@ export const createExampleSuggestions = (): StagedChange[] => [
       section: { kind: 'custom', layout: 'lines', label: 'Talks' },
       contents: { layout: 'lines', lines: ['Postgres at scale, PDX Backend Meetup, 2024'] },
     },
+  },
+];
+
+/**
+ * A rewrite of the text the first example suggestion wrote, as the assistant makes one in
+ * a later call. Staged once the user has kept that suggestion, it is the card's version 2.
+ */
+export const createExampleSecondVersion = (): StagedChange[] => [
+  {
+    source: 'rewrite',
+    reason: 'Says the part you did, not that you led it.',
+    change: rewriteFrom(
+      harbor,
+      'ex-b1',
+      EXAMPLE_KEPT_TEXT,
+      'Designed the schema for the billing migration to Postgres'
+    ),
   },
 ];
 

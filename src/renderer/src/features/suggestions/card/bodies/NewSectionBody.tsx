@@ -24,10 +24,18 @@ function readAround(draft: ResumeData, afterSectionId: string | null) {
 }
 
 /** The new section's heading: the user's words, changed in place, nothing to confirm. */
-function HeadingField({ proposalId, label }: { proposalId: string; label: string }) {
+function HeadingField({
+  proposalId,
+  versionId,
+  label,
+}: {
+  proposalId: string;
+  versionId: string;
+  label: string;
+}) {
   const [isOpen, setIsOpen] = useState(false);
   const save = (value: string) => {
-    renameProposedSection(proposalId, value);
+    renameProposedSection(proposalId, value, versionId);
     setIsOpen(false);
   };
   if (isOpen) {
@@ -124,7 +132,7 @@ export function NewSectionBody({ proposal, version, draft }: SuggestionBodyProps
         </CaptionNote>
       </Caption>
       <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5 rounded-sm border border-add-line bg-add-soft px-2.25 py-1.75">
-        <HeadingField proposalId={proposal.id} label={section.label} />
+        <HeadingField proposalId={proposal.id} versionId={version.id} label={section.label} />
         <Text variant="secondary" className="text-ink-muted">
           {isLines ? 'Holds lines, like Skills' : 'Holds entries, like Experience'}
         </Text>

@@ -43,7 +43,7 @@ export function RenameBody({ proposal, version, isEditing, onEditingChange }: Su
         <Hint>Your words, not a fact, so there is nothing to check. Only the heading changes.</Hint>
       )}
       {!isEditing && isInTheirWords && (
-        <BackLink onClick={() => clearProposalEdit(proposal.id)}>
+        <BackLink onClick={() => clearProposalEdit(proposal.id, version.id)}>
           Back to the assistant’s wording
         </BackLink>
       )}

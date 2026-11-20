@@ -89,11 +89,16 @@ describe('a rewrite of text that a waiting rewrite wrote', () => {
   });
 
   it('puts a dropped suggestion that started from the old wording out of date', () => {
-    const [first] = stage(rewrite('b1', B1, LED)).proposals;
-    acceptProposals([first.id]);
-    const [stacked] = stage(rewrite('b1', LED, 'Led billing')).proposals;
+    stage(rewrite('b1', B1, LED));
+    const [stacked] = stage({
+      kind: 'split',
+      sectionId: 's1',
+      entryId: 'e1',
+      bulletId: 'b1',
+      before: LED,
+      at: LED.indexOf('to Postgres'),
+    }).proposals;
     rejectProposals([stacked.id]);
-    returnProposals([first.id]);
 
     stage(rewrite('b1', LED, 'Ran the billing migration'));
 
@@ -102,14 +107,29 @@ describe('a rewrite of text that a waiting rewrite wrote', () => {
 });
 
 describe('a rewrite of text that the user kept or worded themselves', () => {
-  it('is a new suggestion on a kept one', () => {
+  it('is a new version of a kept one, from the same bullet', () => {
     const [first] = stage(rewrite('b1', B1, LED)).proposals;
     acceptProposals([first.id]);
 
     const result = stage(rewrite('b1', LED, 'Led billing'));
 
+    expect(result.proposals).toEqual([]);
+    expect(result.reworded).toMatchObject([{ isNewVersion: true }]);
+    expect(proposals()).toHaveLength(1);
+    expect(proposals()[0].versions.map((version) => version.change)).toMatchObject([
+      { before: B1, after: LED },
+      { before: B1, after: 'Led billing' },
+    ]);
+  });
+
+  it('is a new suggestion of its own when it puts back the text a kept one replaced', () => {
+    const [first] = stage(rewrite('b1', B1, LED)).proposals;
+    acceptProposals([first.id]);
+
+    const result = stage(rewrite('b1', LED, B1));
+
     expect(result.reworded).toEqual([]);
-    expect(changes()).toMatchObject([{ after: LED }, { before: LED, after: 'Led billing' }]);
+    expect(changes()).toMatchObject([{ after: LED }, { before: LED, after: B1 }]);
   });
 
   it('is a new suggestion that starts from the user’s own wording on a waiting card', () => {

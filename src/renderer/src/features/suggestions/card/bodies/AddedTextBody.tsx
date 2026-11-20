@@ -114,7 +114,7 @@ export function AddedTextBody({
                 gap={
                   <GapField
                     value={review.filledNumber}
-                    onFill={(number) => fillProposalNumber(proposal.id, number)}
+                    onFill={(number) => fillProposalNumber(proposal.id, number, version.id)}
                   />
                 }
               />
@@ -132,7 +132,7 @@ export function AddedTextBody({
       {!isEditing && <SuggestionFlags flags={flags} />}
       {!isEditing && <WithoutNumberChoice proposalId={proposal.id} version={version} />}
       {!isEditing && review.userText !== undefined && (
-        <BackLink onClick={() => clearProposalEdit(proposal.id)}>
+        <BackLink onClick={() => clearProposalEdit(proposal.id, version.id)}>
           Back to the assistant’s wording
         </BackLink>
       )}

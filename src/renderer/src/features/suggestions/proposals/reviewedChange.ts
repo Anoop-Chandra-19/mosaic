@@ -234,12 +234,16 @@ export function findUnconfirmedFacts(version: ProposalVersion): EntryFactPlace[]
 }
 
 /**
- * Check whether a suggestion can be kept. It can when it is not out of date, every fact in
- * its active version is confirmed, and it isn't a new section that is still empty. A number
- * still to fill doesn't stop the keep; Apply holds the suggestion back until it is filled.
+ * Check whether a version of a suggestion can be kept. It can when the suggestion is not
+ * out of date, every fact in the version is confirmed, and the version isn't a new section
+ * that is still empty. A number still to fill doesn't stop the keep; Apply holds the
+ * suggestion back until it is filled.
  */
-export function canKeepProposal(proposal: Proposal): boolean {
-  const version = readActiveVersion(proposal);
+export function canKeepVersion(proposal: Proposal, version: ProposalVersion): boolean {
   if (proposal.isStale || isEmptyNewSection(version.change)) return false;
   return findUnconfirmedFacts(version).length === 0;
 }
+
+/** Check whether a suggestion's active version can be kept. */
+export const canKeepProposal = (proposal: Proposal): boolean =>
+  canKeepVersion(proposal, readActiveVersion(proposal));

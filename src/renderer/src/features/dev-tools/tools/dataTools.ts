@@ -1,8 +1,13 @@
-import { discardProposals, stageProposals } from '@/features/suggestions/proposals/proposalActions';
+import {
+  acceptProposals,
+  discardProposals,
+  stageProposals,
+} from '@/features/suggestions/proposals/proposalActions';
 import { chooseBackup } from '@/features/backup/backupFiles';
 import { useAgentSettingsStore } from '@/stores/agentSettingsStore';
 import { useOverlayStore } from '@/stores/overlayStore';
-import { getResumeSnapshot } from '@/stores/resumeStore';
+import { useProposalStore } from '@/stores/proposalStore';
+import { getResumeSnapshot, useResumeStore } from '@/stores/resumeStore';
 import { useTemplateStore } from '@/stores/templateStore';
 import type { DevToolArgs } from '@shared/types/devTools';
 import type { DevTool, DevToolStep } from './devTool';
@@ -12,6 +17,7 @@ import { PROFILE_NAMES, PROFILES, type ProfileName } from '../profiles/profiles'
 import { createExampleResume, EXAMPLE_IDS, EXAMPLE_TEMPLATE_NAME } from './exampleResume';
 import {
   createExampleBulletWithNumber,
+  createExampleSecondVersion,
   createExampleSuggestions,
   EXAMPLE_REQUEST,
 } from './exampleSuggestions';
@@ -33,10 +39,36 @@ async function stageExampleSuggestions(): Promise<string> {
   const later = stageProposals(EXAMPLE_REQUEST, createExampleBulletWithNumber(proposals));
   const refusedCount = refusals.length + later.refusals.length;
   const refused = refusedCount ? `, ${refusedCount} refused` : '';
+  return `Staged ${proposals.length} example suggestions${refused}${turnAssistantOn()}`;
+}
+
+/** Turn the assistant on, so staged suggestions show. Returns what to add to the tool's answer. */
+function turnAssistantOn(): string {
   const agentSettings = useAgentSettingsStore.getState();
   const turnedOn = agentSettings.enabled ? '' : '. Turned the assistant on to show them';
   agentSettings.setEnabled(true);
-  return `Staged ${proposals.length} example suggestions${refused}${turnedOn}`;
+  return turnedOn;
+}
+
+/**
+ * Stage the example suggestions, keep the first, then rewrite the text it wrote in a later
+ * call, as the assistant does, so that card has a kept version 1 and a waiting version 2.
+ */
+async function stageExampleVersions(): Promise<string> {
+  await stageExampleSuggestions();
+  const [first] = useProposalStore.getState().byTemplate[openTemplateIdOrThrow()] ?? [];
+  if (first) acceptProposals([first.id]);
+  const { reworded, refusals } = stageProposals(EXAMPLE_REQUEST, createExampleSecondVersion());
+  if (refusals.length || !reworded[0]?.isNewVersion) {
+    throw new Error('Expected the example rewrite to make version 2 of the kept suggestion');
+  }
+  return 'Staged the example suggestions, kept the first, and made its version 2';
+}
+
+function openTemplateIdOrThrow(): string {
+  const { templateId } = useResumeStore.getState();
+  if (templateId === null) throw new Error('Expected a template to be open after staging');
+  return templateId;
 }
 
 async function clearStagedSuggestions(): Promise<string> {
@@ -121,6 +153,14 @@ export const DATA_TOOLS: DevTool[] = [
     description:
       'Every kind of suggestion and check, on the example resume. Turns the assistant on.',
     run: stageExampleSuggestions,
+  },
+  {
+    id: 'stageSuggestionVersions',
+    group: 'Data',
+    label: 'Stage a kept suggestion with a second version',
+    description:
+      'The example suggestions, with the first kept and then rewritten, so its card has two versions.',
+    run: stageExampleVersions,
   },
   {
     id: 'clearSuggestions',

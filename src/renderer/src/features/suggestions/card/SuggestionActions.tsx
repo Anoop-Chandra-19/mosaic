@@ -2,27 +2,34 @@ import { Check, Pencil, RotateCcw, Trash2, Undo2, X, type LucideIcon } from 'luc
 import { AppButton, Text } from '@/components/ui-kit';
 import { useShortcutLabel } from '@/stores/shortcutBindings';
 import { cn } from '@/lib/utils';
-import type { Proposal } from '@/types/agentProposal';
+import type { Proposal, ProposalVersion } from '@/types/agentProposal';
 import {
-  acceptProposals,
+  keepProposalVersion,
   placeProposalLast,
   rejectProposals,
   returnProposals,
   reviewStaleProposalAnyway,
 } from '../proposals/proposalActions';
-import { readActiveVersion } from '../proposals/proposalVersions';
+import { readActiveVersion, readVersionNumber } from '../proposals/proposalVersions';
 import { findUnconfirmedFacts } from '../proposals/reviewedChange';
 import { canEditSuggestion } from '../suggestionState';
 
 interface SuggestionActionsProps {
   proposal: Proposal;
+  /** The version the card shows. Keep keeps this version. */
+  version: ProposalVersion;
   isEditing: boolean;
   onEditingChange: (isEditing: boolean) => void;
 }
 
-/** Drop, Edit and Keep: Keep and Drop are toggles that name their state and, on hover, the undo. */
+/**
+ * Drop, Edit and Keep: Keep and Drop are toggles that name their state and, on hover, the
+ * undo. Keep keeps the version the card shows. When another version is kept, the button
+ * reads "Keep version 3".
+ */
 export function SuggestionActions({
   proposal,
+  version,
   isEditing,
   onEditingChange,
 }: SuggestionActionsProps) {
@@ -30,7 +37,10 @@ export function SuggestionActions({
   const dropKeys = useShortcutLabel('dropSuggestion');
   const editKeys = useShortcutLabel('editSuggestion');
   if (proposal.isStale) return <StaleActions proposal={proposal} />;
-  const factsLeft = findUnconfirmedFacts(readActiveVersion(proposal)).length;
+  const factsLeft = findUnconfirmedFacts(version).length;
+  const isAccepted = proposal.status === 'accepted';
+  const isShownKept = isAccepted && proposal.keptVersionId === version.id;
+  const keepLabel = isAccepted ? `Keep version ${readVersionNumber(proposal, version.id)}` : 'Keep';
   return (
     <>
       {proposal.status === 'rejected' ? (
@@ -65,7 +75,7 @@ export function SuggestionActions({
           Edit
         </AppButton>
       )}
-      {proposal.status === 'accepted' ? (
+      {isShownKept ? (
         <DecidedToggle
           variant="kept"
           title={`Kept. Click to undo  ${keepKeys}`.trim()}
@@ -78,11 +88,11 @@ export function SuggestionActions({
           variant="outline"
           size="sm"
           disabled={factsLeft > 0}
-          title={factsLeft ? 'Confirm the facts first' : `Keep  ${keepKeys}`.trim()}
-          onClick={() => acceptProposals([proposal.id])}
+          title={factsLeft ? 'Confirm the facts first' : `${keepLabel}  ${keepKeys}`.trim()}
+          onClick={() => keepProposalVersion(proposal.id, version.id)}
         >
           <Check />
-          {factsLeft ? `Confirm ${factsLeft} more` : 'Keep'}
+          {factsLeft ? `Confirm ${factsLeft} more` : keepLabel}
         </AppButton>
       )}
     </>

@@ -1,14 +1,19 @@
-import { ChevronUp } from 'lucide-react';
+import { use } from 'react';
+import { ChevronUp, Info } from 'lucide-react';
 import { AppButton, Text } from '@/components/ui-kit';
 import { cn } from '@/lib/utils';
-import type { Proposal } from '@/types/agentProposal';
+import type { Proposal, ProposalChange } from '@/types/agentProposal';
 import type { ResumeData } from '@shared/types/resume';
 import { placeSuggestion } from '../../proposals/describeSuggestion';
-import { readActiveVersion } from '../../proposals/proposalVersions';
+import { readShownVersion } from '../../proposals/proposalVersions';
 import { DropReasons } from '../../card/DropReasons';
 import { SuggestionActions } from '../../card/SuggestionActions';
 import { SuggestionBody } from '../../card/SuggestionBody';
 import { SuggestionKindChip } from '../../card/SuggestionKindChip';
+import { VersionCaption } from '../../card/versions/VersionCaption';
+import { VersionList } from '../../card/versions/VersionList';
+import { describeVersionConsequence } from '../../card/versions/versionWords';
+import { SuggestionSelection } from '../../suggestionSelection';
 import { labelSuggestionState, readSuggestionState, STATE_TONES } from '../../suggestionState';
 
 /**
@@ -33,7 +38,18 @@ interface OpenSuggestionProps {
   onDismissReasons: () => void;
 }
 
-/** One suggestion, open: its kind and place, the change itself, the reason, and the actions. */
+/**
+ * Check whether the body for this kind of change draws its own version caption.
+ * `RewriteBody` draws "Version 3" below the text it replaces, in place of its "Suggested"
+ * caption. For every other kind, this card draws the version caption above the body.
+ */
+const hasOwnVersionCaption = (change: ProposalChange) =>
+  change.kind === 'rewrite' || change.kind === 'merge';
+
+/**
+ * One suggestion, open: its kind and place, its versions when it has several, the version
+ * it shows, the reason, what a click will do to the versions, and the actions.
+ */
 export function OpenSuggestion({
   proposal,
   number,
@@ -46,8 +62,10 @@ export function OpenSuggestion({
   isOfferingReasons,
   onDismissReasons,
 }: OpenSuggestionProps) {
+  const { shownVersionIds, showVersion } = use(SuggestionSelection);
   const state = readSuggestionState(proposal);
-  const version = readActiveVersion(proposal);
+  const version = readShownVersion(proposal, shownVersionIds[proposal.id]);
+  const consequence = describeVersionConsequence(proposal, version);
   const isDocument = look === 'document';
   // Editing selects the suggestion too, so the keys act on the one being edited.
   const setEditing = (isOn: boolean) => {
@@ -95,6 +113,14 @@ export function OpenSuggestion({
         )}
       </div>
       <div className={cn('pt-0.5 pb-2.5', isDocument ? '' : 'px-3.25')}>
+        <VersionList
+          proposal={proposal}
+          shown={version}
+          onShow={(versionId) => showVersion(proposal.id, versionId)}
+        />
+        {!proposal.isStale && !hasOwnVersionCaption(version.change) && (
+          <VersionCaption proposal={proposal} version={version} />
+        )}
         <SuggestionBody
           proposal={proposal}
           version={version}
@@ -106,6 +132,19 @@ export function OpenSuggestion({
       {isOfferingReasons && (
         <DropReasons proposals={[proposal]} look="one" onDismiss={onDismissReasons} />
       )}
+      {consequence && (
+        <div
+          className={cn(
+            'mb-2 flex items-start gap-1.75 border-t border-line py-1.75',
+            isDocument ? '' : 'px-3.25'
+          )}
+        >
+          <Info className="mt-0.75 size-3 shrink-0 text-ink-faint" />
+          <Text variant="secondary" className="text-pretty text-ink-muted">
+            {consequence}
+          </Text>
+        </div>
+      )}
       <div
         className={cn('flex flex-wrap items-center gap-1.5 pb-2.5', isDocument ? '' : 'px-3.25')}
       >
@@ -114,7 +153,12 @@ export function OpenSuggestion({
             {version.reason}
           </Text>
         )}
-        <SuggestionActions proposal={proposal} isEditing={isEditing} onEditingChange={setEditing} />
+        <SuggestionActions
+          proposal={proposal}
+          version={version}
+          isEditing={isEditing}
+          onEditingChange={setEditing}
+        />
       </div>
     </div>
   );

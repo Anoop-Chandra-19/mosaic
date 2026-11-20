@@ -6,7 +6,11 @@ import {
   type StagingResult,
 } from '@/features/suggestions/proposals/proposalActions';
 import { applyProposalsToResume } from '@/features/suggestions/proposals/apply/applyProposalsToResume';
-import { readActiveVersion } from '@/features/suggestions/proposals/proposalVersions';
+import {
+  findVersion,
+  readActiveVersion,
+  readVersionNumber,
+} from '@/features/suggestions/proposals/proposalVersions';
 import type { Proposal } from '@/types/agentProposal';
 import type { AgentToolRun, ToolAnswer, ToolCallContext } from '../tool-run/agentToolRun';
 import { handleFor } from '../tool-run/resumeHandles';
@@ -18,16 +22,22 @@ import {
   type ChangeAsAsked,
 } from './describeForModel';
 import { diagnose, formatToolAnswer, type Diagnostic } from './toolDiagnostics';
+import { TOOL_FACTS } from './toolFacts';
 
 /*
  * Finish a compiled propose call by staging accepted changes through
  * `suggestions/proposals/`. Then apply the staged changes to the run's receipt, and
  * report each result and its check findings to the model.
  *
- * A rewrite of text that a waiting suggestion wrote changes that suggestion. The model
+ * A rewrite of text that an earlier suggestion wrote changes that suggestion. The model
  * gets the same answer as for a new suggestion, with the changed suggestion's checks. An
- * entry, line or bullet for a section or entry that a waiting suggestion made goes into
+ * entry, line or bullet for a section or entry that an earlier suggestion made goes into
  * that suggestion, and is answered the same way.
+ *
+ * Once the user has kept a version of that suggestion, the change goes into a newer version
+ * that waits for them. The working copy, and so read_document, still shows the kept
+ * version. The receipt has to match the working copy, so the change is not applied to the
+ * receipt. Instead, the answer tells the model which version it made.
  */
 
 const NOTHING_STAGED: StagingResult = { proposals: [], reworded: [], filled: [], refusals: [] };
@@ -39,24 +49,37 @@ function readNewAsAsked(proposal: Proposal): ChangeAsAsked {
 }
 
 /**
- * Return the rewrite the model asked for, with the checks of the suggestion it changed.
+ * Return the rewrite the model asked for, with the checks of the version it changed.
  * The receipt and the answer need the rewrite as the model made it. The changed
  * suggestion can't be used for that, because it starts from the user's text and the
  * receipt holds the text the model last wrote.
  */
 const readRewriteAsAsked = (
-  { proposal }: RewordedSuggestion,
+  { proposal, versionId }: RewordedSuggestion,
   asked: StagedChange
 ): ChangeAsAsked => ({
   proposalId: proposal.id,
   source: asked.source,
   change: asked.change,
   newContentIds: null,
-  flags: readActiveVersion(proposal).flags,
+  flags: findVersion(proposal, versionId).flags,
 });
 
 /**
- * Return the entry, line or bullet the model asked for, which went into a waiting
+ * Return what to tell the model when its change went into a version newer than the one
+ * the user kept. Returns null when the change is in the version the working copy shows.
+ */
+function describeWaitingVersion({
+  proposal,
+  versionId,
+}: RewordedSuggestion | FilledSuggestion): string | null {
+  if (proposal.status !== 'accepted' || proposal.keptVersionId === versionId) return null;
+  const kept = readVersionNumber(proposal, proposal.keptVersionId ?? '');
+  return TOOL_FACTS.newerThanKept(kept, readVersionNumber(proposal, versionId));
+}
+
+/**
+ * Return the entry, line or bullet the model asked for, which went into an earlier
  * suggestion. The receipt and the answer need it as the model made it, with its own ids
  * and its own checks.
  */
@@ -100,8 +123,15 @@ function applyToReceipt(run: AgentToolRun, made: ChangeAsAsked[], filled: Filled
   run.receipt = { ...run.receipt, doc };
 }
 
-/** Describe a staged change and its checks, including any code-generated result text. */
-function describeStaged(run: AgentToolRun, staged: ChangeAsAsked): Diagnostic {
+/**
+ * Describe a staged change and its checks, including any code-generated result text.
+ * `waitingVersion` says which version the change made, when it is newer than the kept one.
+ */
+function describeStaged(
+  run: AgentToolRun,
+  staged: ChangeAsAsked,
+  waitingVersion: string | null = null
+): Diagnostic {
   // A flag on one bullet of a new entry names that bullet, so the model can fix only that bullet.
   const checks = staged.flags.map((flag) =>
     flag.textId
@@ -111,6 +141,7 @@ function describeStaged(run: AgentToolRun, staged: ChangeAsAsked): Diagnostic {
   const text = [
     'suggested.',
     describeResultWeWrote(run, staged),
+    waitingVersion,
     `Checks: ${checks.length ? checks.join(' ') : 'none.'}`,
   ];
   return diagnose('ok', describeTarget(run, staged.change), text.filter(Boolean).join(' '));
@@ -133,16 +164,24 @@ export function stageCompiledCall(context: ToolCallContext, compiled: CompiledCa
   const rewrites = staging.reworded.map((reworded) => ({
     isRemoved: reworded.isRemoved,
     rewrite: readRewriteAsAsked(reworded, compiled.toStage[reworded.index]),
+    waitingVersion: describeWaitingVersion(reworded),
   }));
-  const fillings = staging.filled.map((filled) =>
-    readFillingAsAsked(filled, compiled.toStage[filled.index])
-  );
+  const fillings = staging.filled.map((filled) => ({
+    filling: readFillingAsAsked(filled, compiled.toStage[filled.index]),
+    waitingVersion: describeWaitingVersion(filled),
+  }));
   const made = staging.proposals.map(readNewAsAsked);
   recordStagedIds(run, staging);
+  // A version newer than the kept one isn't in the working copy, so it stays out of the receipt.
+  const isShown = (each: { waitingVersion: string | null }) => each.waitingVersion === null;
   applyToReceipt(
     run,
-    [...made, ...rewrites.map(({ rewrite }) => rewrite), ...fillings],
-    staging.filled
+    [
+      ...made,
+      ...rewrites.filter(isShown).map(({ rewrite }) => rewrite),
+      ...fillings.filter(isShown).map(({ filling }) => filling),
+    ],
+    staging.filled.filter((_, index) => isShown(fillings[index]))
   );
   const refused = staging.refusals.map(({ index, refusal }) =>
     diagnose(
@@ -154,10 +193,10 @@ export function stageCompiledCall(context: ToolCallContext, compiled: CompiledCa
   return formatToolAnswer([
     ...compiled.diagnostics,
     ...made.map((staged) => describeStaged(run, staged)),
-    ...rewrites.map(({ rewrite, isRemoved }) =>
-      isRemoved ? describeRemoved(run, rewrite) : describeStaged(run, rewrite)
+    ...rewrites.map(({ rewrite, isRemoved, waitingVersion }) =>
+      isRemoved ? describeRemoved(run, rewrite) : describeStaged(run, rewrite, waitingVersion)
     ),
-    ...fillings.map((filling) => describeStaged(run, filling)),
+    ...fillings.map(({ filling, waitingVersion }) => describeStaged(run, filling, waitingVersion)),
     ...refused,
   ]);
 }
