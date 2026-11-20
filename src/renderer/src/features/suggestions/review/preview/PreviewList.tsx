@@ -67,6 +67,8 @@ export function PreviewList({
           const isOpen = proposal.id === openId;
           const isEditing = editingId === proposal.id;
           const setEditing = (isOn: boolean) => onEditingChange(isOn ? proposal.id : null);
+          // Preview prints the active version, so its card shows that one.
+          const version = readActiveVersion(proposal);
           return (
             <div
               key={proposal.id}
@@ -82,7 +84,7 @@ export function PreviewList({
               <SuggestionRow
                 proposal={proposal}
                 number={index + 1}
-                place={placeSuggestion(draft, readActiveVersion(proposal).change)}
+                place={placeSuggestion(draft, version.change)}
                 onClick={() => onOpen(isOpen ? null : proposal.id)}
               >
                 <NoteTag note={notes.get(proposal.id)} />
@@ -95,7 +97,7 @@ export function PreviewList({
                   >
                     <SuggestionBody
                       proposal={proposal}
-                      version={readActiveVersion(proposal)}
+                      version={version}
                       draft={draft}
                       isEditing={isEditing}
                       onEditingChange={setEditing}
@@ -104,6 +106,7 @@ export function PreviewList({
                   <div className="flex flex-wrap items-center gap-2 pr-3.5 pb-2.5 pl-8.5">
                     <SuggestionActions
                       proposal={proposal}
+                      version={version}
                       isEditing={isEditing}
                       onEditingChange={setEditing}
                     />

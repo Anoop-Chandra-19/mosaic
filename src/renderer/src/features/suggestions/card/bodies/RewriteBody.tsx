@@ -1,12 +1,15 @@
+import { useState } from 'react';
 import { Info } from 'lucide-react';
-import { AppButton, Text } from '@/components/ui-kit';
+import { AppButton, AppToggleGroup, AppToggleGroupItem, Text } from '@/components/ui-kit';
 import type { Proposal, ProposalVersion } from '@/types/agentProposal';
 import {
   cancelStaleReview,
   clearProposalEdit,
   fillProposalNumber,
 } from '../../proposals/proposalActions';
+import { readKeptVersion, readVersionNumber } from '../../proposals/proposalVersions';
 import { resolveChange } from '../../proposals/reviewedChange';
+import { VersionCaption } from '../versions/VersionCaption';
 import { readFlaggedWords, readLostWords } from '../text/describeFlag';
 import { GapField } from '../text/GapField';
 import { SuggestionEditor } from '../text/SuggestionEditor';
@@ -34,6 +37,9 @@ const NOW_CAPTIONS: Record<TextNoun, string> = {
   summary: 'Now, your summary',
 };
 
+/** Which text the marked changes are compared with: the user's text, or the kept version. */
+type MarksAgainst = 'yours' | 'kept';
+
 export function RewriteBody({
   proposal,
   version,
@@ -41,38 +47,65 @@ export function RewriteBody({
   isEditing,
   onEditingChange,
 }: SuggestionBodyProps) {
+  const [marksAgainst, setMarksAgainst] = useState<MarksAgainst>('yours');
   const change = resolveChange(version);
   if (change.kind !== 'rewrite' && change.kind !== 'merge') return null;
-  const { review, flags } = version;
+  const { review } = version;
   const isMerge = change.kind === 'merge';
   const noun = isMerge ? 'bullet' : nameTextPlace(draft, change.place);
   const isRebased = review.rebasedBefore !== undefined;
-  const before = isMerge ? change.before : [change.before];
+  const kept = proposal.status === 'accepted' ? readKeptVersion(proposal) : null;
+  const otherKept = kept && kept.id !== version.id ? kept : null;
+  const keptNumber = otherKept ? readVersionNumber(proposal, otherKept.id) : 0;
+  const isAgainstKept = otherKept !== null && marksAgainst === 'kept';
+  const before = isAgainstKept ? [readWrittenText(otherKept)] : [change.before].flat();
+  // Compared with the kept version, the marks show what changed between the two versions.
+  // The checks compare with the user's text, so their flags are hidden here.
+  const flags = isAgainstKept ? [] : version.flags;
   const lost = readLostWords(flags);
   const gap = (
     <GapField
       value={review.filledNumber}
-      onFill={(number) => fillProposalNumber(proposal.id, number)}
+      onFill={(number) => fillProposalNumber(proposal.id, number, version.id)}
     />
   );
+  const nowCaption = isAgainstKept
+    ? `Version ${keptNumber}, kept`
+    : readNowCaption(isMerge, isRebased, noun);
 
   return (
     <>
       {isRebased && <RebasedNote proposal={proposal} noun={noun} />}
-      <Caption>{readNowCaption(isMerge, isRebased, noun)}</Caption>
+      <Caption>{nowCaption}</Caption>
       <div>
         <Lines
-          isNumbered={isMerge}
+          isNumbered={isMerge && !isAgainstKept}
           look="now"
           lines={before.map((text) => (
             <FlaggedText key={text} text={text} words={lost} />
           ))}
         />
       </div>
-      <Caption>
-        {isMerge ? 'Suggested, one bullet' : 'Suggested'}
+      <VersionCaption
+        proposal={proposal}
+        version={version}
+        label={isMerge ? 'Suggested, one bullet' : 'Suggested'}
+      >
         {review.userText !== undefined && !isEditing && <CaptionTag>in your words</CaptionTag>}
-      </Caption>
+      </VersionCaption>
+      {otherKept && (
+        <AppToggleGroup
+          type="single"
+          size="sm"
+          aria-label="Mark the changes"
+          value={marksAgainst}
+          onValueChange={(value) => value && setMarksAgainst(value as MarksAgainst)}
+          className="mb-1.5"
+        >
+          <AppToggleGroupItem value="yours">Against your {noun}</AppToggleGroupItem>
+          <AppToggleGroupItem value="kept">Changes from version {keptNumber}</AppToggleGroupItem>
+        </AppToggleGroup>
+      )}
       {isEditing ? (
         <SuggestionEditor
           proposal={proposal}
@@ -92,7 +125,7 @@ export function RewriteBody({
           <SuggestionFlags flags={flags} />
           <WithoutNumberChoice proposalId={proposal.id} version={version} />
           {review.userText !== undefined && (
-            <BackLink onClick={() => clearProposalEdit(proposal.id)}>
+            <BackLink onClick={() => clearProposalEdit(proposal.id, version.id)}>
               Back to the assistant’s wording
             </BackLink>
           )}
@@ -100,6 +133,12 @@ export function RewriteBody({
       )}
     </>
   );
+}
+
+/** The text a version writes, with the user's edits in it. */
+function readWrittenText(version: ProposalVersion): string {
+  const change = resolveChange(version);
+  return change.kind === 'rewrite' || change.kind === 'merge' ? change.after : '';
 }
 
 function readNowCaption(isMerge: boolean, isRebased: boolean, noun: TextNoun): string {

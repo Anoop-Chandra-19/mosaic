@@ -23,7 +23,7 @@ import {
   readOpenEntryId,
   SuggestionSelection,
 } from '../../suggestionSelection';
-import { readBulletFlags } from '../../suggestionState';
+import { labelLateAddition, readBulletFlags } from '../../suggestionState';
 import { CardTag, Hint } from './BodyParts';
 import { EntryBullets, FactRows } from './EntryFacts';
 
@@ -108,7 +108,15 @@ function CountLine({
 }
 
 /** The row of an entry the user left out: its title crossed out, and a Put back link. */
-function LeftOutRow({ proposal, entry }: { proposal: Proposal; entry: NewEntry }) {
+function LeftOutRow({
+  proposal,
+  version,
+  entry,
+}: {
+  proposal: Proposal;
+  version: ProposalVersion;
+  entry: NewEntry;
+}) {
   return (
     <div className="flex min-w-0 items-center gap-2 py-1.5 pr-2.25 pl-7.25">
       <span className="flex min-w-0 flex-1 flex-col">
@@ -127,7 +135,7 @@ function LeftOutRow({ proposal, entry }: { proposal: Proposal; entry: NewEntry }
         variant="link"
         size="xs"
         shape="text"
-        onClick={() => putEntryBack(proposal.id, entry.ids.entryId)}
+        onClick={() => putEntryBack(proposal.id, entry.ids.entryId, version.id)}
         className="shrink-0 p-0"
       >
         Put back
@@ -210,7 +218,7 @@ function EntryRow({
             {describeEntry(entry)}
           </Text>
         </span>
-        {isJustAdded && <CardTag>just added</CardTag>}
+        {isJustAdded && <CardTag>{labelLateAddition(proposal, version)}</CardTag>}
         <BulletFlagCount
           icon={Lock}
           count={numbersToFill.length}
@@ -291,12 +299,12 @@ export function NewEntryStack({
   const entries = listNewEntries(version);
   const entriesNotLeftOut = entries.filter((entry) => !entry.isLeftOut);
   const factsLeft = findUnconfirmedFacts(version);
-  const openId = readOpenEntryId(proposal, openEntryIds);
+  const openId = readOpenEntryId(proposal, openEntryIds, version);
   const countFactsLeft = (entryId: string) =>
     factsLeft.filter((place) => place.entryId === entryId).length;
 
   const openNextAfter = (entryId: string) =>
-    openEntry(proposal.id, findNextEntryToOpen(proposal, entryId));
+    openEntry(proposal.id, findNextEntryToOpen(version, entryId));
 
   return (
     <>
@@ -310,7 +318,7 @@ export function NewEntryStack({
         {entries.map((entry) => {
           const { entryId } = entry.ids;
           if (entry.isLeftOut) {
-            return <LeftOutRow key={entryId} proposal={proposal} entry={entry} />;
+            return <LeftOutRow key={entryId} proposal={proposal} version={version} entry={entry} />;
           }
           const isOpen = openId === entryId;
           return (
@@ -325,7 +333,7 @@ export function NewEntryStack({
               onToggle={() => openEntry(proposal.id, isOpen ? null : entryId)}
               onEntryConfirmed={() => openNextAfter(entryId)}
               onLeaveOut={() => {
-                if (leaveEntryOut(proposal.id, entryId)) openNextAfter(entryId);
+                if (leaveEntryOut(proposal.id, entryId, version.id)) openNextAfter(entryId);
               }}
             />
           );

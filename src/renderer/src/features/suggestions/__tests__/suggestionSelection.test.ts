@@ -41,21 +41,27 @@ describe('readOpenEntryId', () => {
     const leftOut = volunteering({ leftOutEntryIds: ['v-new3'] });
     expect(readOpenEntryId(leftOut, { v: 'v-new3' })).toBeNull();
   });
+
+  it('reads the version the card shows, not the active one', () => {
+    const kept = volunteering({ confirmedFacts: { 'v-new2': ['title'] } });
+    const shown = { ...kept.versions[0], id: 'v2', review: {} };
+    expect(readOpenEntryId(kept, {}, shown)).toBe('v-new2');
+  });
 });
 
 describe('findNextEntryToOpen', () => {
   it('goes on to the next entry with facts left, round to the start', () => {
-    const proposal = volunteering({ confirmedFacts: { 'v-new3': ['title'] } });
-    expect(findNextEntryToOpen(proposal, 'v-new2')).toBe('v-new4');
-    expect(findNextEntryToOpen(proposal, 'v-new4')).toBe('v-new2');
+    const [version] = volunteering({ confirmedFacts: { 'v-new3': ['title'] } }).versions;
+    expect(findNextEntryToOpen(version, 'v-new2')).toBe('v-new4');
+    expect(findNextEntryToOpen(version, 'v-new4')).toBe('v-new2');
   });
 
   it('skips left-out entries, and opens nothing when no other entry needs the user', () => {
-    const proposal = volunteering({
+    const [version] = volunteering({
       confirmedFacts: { 'v-new4': ['title'] },
       leftOutEntryIds: ['v-new3'],
-    });
-    expect(findNextEntryToOpen(proposal, 'v-new4')).toBe('v-new2');
-    expect(findNextEntryToOpen(proposal, 'v-new2')).toBeNull();
+    }).versions;
+    expect(findNextEntryToOpen(version, 'v-new4')).toBe('v-new2');
+    expect(findNextEntryToOpen(version, 'v-new2')).toBeNull();
   });
 });

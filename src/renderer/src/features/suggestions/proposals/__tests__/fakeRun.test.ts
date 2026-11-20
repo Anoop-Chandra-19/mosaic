@@ -25,6 +25,7 @@ const {
   editProposalFact,
   fillBulletNumber,
   fillProposalNumber,
+  keepProposalVersion,
   leaveEntryOut,
   putEntryBack,
   rejectProposals,
@@ -404,28 +405,122 @@ describe('review', () => {
 });
 
 describe('a second rewrite of a bullet that a kept rewrite already changed', () => {
+  const REWRITTEN = 'Led the billing migration to Postgres';
   const SHORTER = 'Led billing to Postgres';
   /** Stage a rewrite of b1 and keep it, then stage a rewrite of the text the first one wrote. */
   const stageTwoRewrites = () => {
     const [first] = stageProposals('', [SPIKE_LIKE_CHANGES[0]]).proposals;
     acceptProposals([first.id]);
-    const secondChange = rewrite('b1', 'Led the billing migration to Postgres', SHORTER);
+    const secondChange = rewrite('b1', REWRITTEN, SHORTER);
     const staged = stageProposals('', [{ source: 'rewrite', change: secondChange }]);
-    return { first, second: staged.proposals[0], refusals: staged.refusals };
+    return { first, staged };
   };
+  const card = (id: string) => proposals().find((each) => each.id === id)!;
 
-  it('is staged against the working copy, and both apply in the order they were made', async () => {
-    const { first, second, refusals } = stageTwoRewrites();
-    expect(refusals).toEqual([]);
+  it('is a second version of the same card, built on the kept one, and the kept one still applies', async () => {
+    const { first, staged } = stageTwoRewrites();
+    expect(staged.proposals).toEqual([]);
+    expect(staged.reworded).toMatchObject([{ isNewVersion: true, isRemoved: false }]);
 
-    acceptProposals([first.id, second.id]);
+    const { versions, keptVersionId } = card(first.id);
+    expect(versions.map((version) => version.change)).toMatchObject([
+      { kind: 'rewrite', before: B1, after: REWRITTEN },
+      { kind: 'rewrite', before: B1, after: SHORTER },
+    ]);
+    expect(keptVersionId).toBe(versions[0].id);
+
+    await applyAcceptedProposals();
+    expect(bulletText('b1')).toBe(REWRITTEN);
+  });
+
+  it('applies the second version once the user keeps it instead', async () => {
+    const { first } = stageTwoRewrites();
+    const second = card(first.id).versions[1];
+
+    expect(keepProposalVersion(first.id, second.id)).toBe(true);
+    expect(card(first.id)).toMatchObject({ status: 'accepted', keptVersionId: second.id });
     await applyAcceptedProposals();
 
     expect(bulletText('b1')).toBe(SHORTER);
   });
 
-  it('goes out of date when the first is dropped, and is current again when the drop is undone', () => {
-    const { first, second } = stageTwoRewrites();
+  it('goes into the waiting second version, not a third, while the first stays kept', () => {
+    const { first } = stageTwoRewrites();
+    const again = rewrite('b1', REWRITTEN, 'Moved billing to Postgres');
+    stageProposals('', [{ source: 'rewrite', change: again }]);
+
+    const { versions, keptVersionId } = card(first.id);
+    expect(versions).toHaveLength(2);
+    expect(versions[1].change).toMatchObject({ after: 'Moved billing to Postgres' });
+    expect(keptVersionId).toBe(versions[0].id);
+  });
+
+  it('falls back to the newest version on Undo keep, and back to the kept one on Undo drop', () => {
+    const { first } = stageTwoRewrites();
+    const [kept, newest] = card(first.id).versions;
+
+    rejectProposals([first.id]);
+    returnProposals([first.id]);
+    expect(card(first.id)).toMatchObject({ status: 'accepted', keptVersionId: kept.id });
+
+    returnProposals([first.id]);
+    expect(card(first.id)).toMatchObject({ status: 'pending', keptVersionId: null });
+    expect(readActiveVersion(card(first.id)).id).toBe(newest.id);
+  });
+
+  it('keeps the version the user edits, and checks it against your bullet', () => {
+    const { first } = stageTwoRewrites();
+    const second = card(first.id).versions[1];
+
+    expect(editProposal(first.id, 'Led billing', second.id)).toBe(true);
+    expect(card(first.id)).toMatchObject({
+      isStale: false,
+      status: 'accepted',
+      keptVersionId: second.id,
+    });
+    expect(resolveChange(card(first.id).versions[1])).toMatchObject({
+      before: B1,
+      after: 'Led billing',
+    });
+  });
+
+  it('carries the number the user gave into the new version, so it is not flagged as new', () => {
+    const [first] = stageProposals('', [
+      {
+        source: 'rewrite',
+        change: {
+          ...rewrite('b1', B1, 'Led the billing migration to Postgres for {{?}} customers'),
+          gap: { withoutNumber: REWRITTEN },
+        },
+      },
+    ]).proposals;
+    fillProposalNumber(first.id, '40');
+    const withNumber = 'Led the billing migration to Postgres for 40 customers';
+    stageProposals('', [
+      { source: 'rewrite', change: rewrite('b1', withNumber, 'Moved 40 customers to Postgres') },
+    ]);
+
+    const second = card(first.id).versions[1];
+    expect(second.flags.filter((flag) => flag.kind === 'newNumbers')).toEqual([]);
+    expect(second.review).toEqual({});
+  });
+});
+
+describe('a split of a bullet that a kept rewrite already changed', () => {
+  const REWRITTEN = 'Led the billing migration to Postgres';
+
+  it('goes out of date when the rewrite is dropped, and is current again when the drop is undone', () => {
+    const [first] = stageProposals('', [SPIKE_LIKE_CHANGES[0]]).proposals;
+    acceptProposals([first.id]);
+    const split: ProposalChange = {
+      kind: 'split',
+      sectionId: 's1',
+      entryId: 'e1',
+      bulletId: 'b1',
+      before: REWRITTEN,
+      at: REWRITTEN.indexOf('to Postgres'),
+    };
+    const [second] = stageProposals('', [{ source: 'split', change: split }]).proposals;
     const isSecondStale = () => proposals().find((each) => each.id === second.id)?.isStale;
 
     rejectProposals([first.id]);
@@ -433,6 +528,10 @@ describe('a second rewrite of a bullet that a kept rewrite already changed', () 
 
     returnProposals([first.id]);
     expect(isSecondStale()).toBe(false);
+
+    acceptProposals([second.id]);
+    returnProposals([first.id]);
+    expect(proposals().find((each) => each.id === second.id)?.status).toBe('pending');
   });
 
   it('keeps a waiting rewrite when a split of its text is kept, and no unrelated suggestion', () => {
@@ -454,27 +553,6 @@ describe('a second rewrite of a bullet that a kept rewrite already changed', () 
     const statusOf = (id: string) => proposals().find((each) => each.id === id)?.status;
     expect(statusOf(first.id)).toBe('accepted');
     expect(statusOf(unrelated.id)).toBe('pending');
-  });
-
-  it('goes back to waiting when it is kept and the first is set back to waiting', async () => {
-    const { first, second } = stageTwoRewrites();
-    acceptProposals([second.id]);
-    returnProposals([first.id]);
-
-    expect(proposals().find((each) => each.id === second.id)?.status).toBe('pending');
-    const outcome = await applyAcceptedProposals();
-
-    expect(outcome.kind).toBe('nothing');
-    expect(bulletText('b1')).toBe(B1);
-  });
-
-  it('is checked against the first rewrite’s text when the user edits it', () => {
-    const { second } = stageTwoRewrites();
-    expect(editProposal(second.id, 'Led billing')).toBe(true);
-    expect(proposals().find((each) => each.id === second.id)).toMatchObject({
-      isStale: false,
-      status: 'accepted',
-    });
   });
 });
 

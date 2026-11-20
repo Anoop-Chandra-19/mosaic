@@ -7,6 +7,7 @@ import {
   confirmProposalFact,
   discardEmptySections,
   discardRunProposals,
+  keepProposalVersion,
 } from '../../../../suggestions/proposals/proposalActions';
 import { makeResumeWithLines } from '../../../../suggestions/proposals/__tests__/proposalFixtures';
 import { readActiveVersion } from '../../../../suggestions/proposals/proposalVersions';
@@ -236,7 +237,7 @@ describe('filling a new section', () => {
     expect(section.lateIds).toEqual([entryIds[1].entryId, entryIds[0].bulletIds[0]]);
   });
 
-  it('puts a bullet into a waiting new entry alone, and makes one for a kept entry its own', async () => {
+  it('puts a bullet into a waiting new entry alone, and into a new version of a kept entry', async () => {
     await callTool('propose_entry', { sectionId: 's1', title: 'Volunteer Mentor' });
     await callTool('propose_add', { into: 'e3', text: 'Mentored first-time contributors' });
     expect(stagedSuggestions()).toHaveLength(1);
@@ -251,7 +252,16 @@ describe('filling a new section', () => {
     confirmProposalFact(entry.id, { entryId, fact: 'title' }, true);
     acceptProposals([entry.id]);
     await callTool('propose_add', { into: 'e3', text: 'Ran the weekend sprints' });
-    expect(stagedKinds()).toEqual(['entry', 'add']);
+    expect(stagedKinds()).toEqual(['entry']);
+    const [kept, newest] = stagedSuggestions()[0].versions;
+    expect(kept.change).toMatchObject({ bullets: ['Mentored first-time contributors'] });
+    expect(newest.change).toMatchObject({
+      bullets: ['Mentored first-time contributors', 'Ran the weekend sprints'],
+    });
+    // The new version keeps the facts the user confirmed, and labels the bullet as new.
+    expect(findUnconfirmedFacts(newest)).toEqual([]);
+    const ids = newest.newContentIds;
+    expect(newest.lateIds).toEqual(ids?.kind === 'entry' ? [ids.entry.bulletIds[1]] : []);
   });
 
   it('lets an empty custom section take lines', async () => {
@@ -294,15 +304,20 @@ describe('filling a new section', () => {
     });
   });
 
-  it('adds to a section the user already kept as a suggestion of its own', async () => {
+  it('adds to a section the user already kept as a new version of it', async () => {
     await callTool('propose_section', { kind: 'languages' });
     await callTool('propose_add', { into: 's4', text: 'Spanish, fluent' });
     acceptProposals([stagedSuggestions()[0].id]);
-    await callTool('propose_add', { into: 's4', text: 'Norwegian, basic' });
-    expect(stagedKinds()).toEqual(['section', 'add']);
+    const result = await callTool('propose_add', { into: 's4', text: 'Norwegian, basic' });
+    expect(stagedKinds()).toEqual(['section']);
+    expect(stagedSuggestions()[0].versions.map((version) => version.change)).toMatchObject([
+      { contents: { lines: ['Spanish, fluent'] } },
+      { contents: { lines: ['Spanish, fluent', 'Norwegian, basic'] } },
+    ]);
+    expect(result.content).toContain('version 2');
   });
 
-  it('adds an entry to a section the user already kept as a suggestion of its own', async () => {
+  it('adds an entry to a section the user already kept as a new version of it', async () => {
     await callTool('propose_section', { kind: 'projects' });
     await callTool('propose_entry', { sectionId: 's4', title: 'Tidewatch' });
     const [section] = stagedSuggestions();
@@ -311,7 +326,23 @@ describe('filling a new section', () => {
     }
     acceptProposals([section.id]);
     await callTool('propose_entry', { sectionId: 's4', title: 'Harbor Map', after: 'e3' });
-    expect(stagedKinds()).toEqual(['section', 'entry']);
+    expect(stagedKinds()).toEqual(['section']);
+    const [kept, newest] = stagedSuggestions()[0].versions;
+    expect(stagedSuggestions()[0].keptVersionId).toBe(kept.id);
+    // Only the new entry's facts wait for the user: the kept entry's stay confirmed.
+    const ids = newest.newContentIds;
+    const entryIds =
+      ids?.kind === 'section' && ids.contents?.layout === 'entries' ? ids.contents.entries : [];
+    const factsLeftIn = new Set(findUnconfirmedFacts(newest).map((place) => place.entryId));
+    expect([...factsLeftIn]).toEqual([entryIds[1].entryId]);
+    // It can't be kept until its new entry's facts are confirmed.
+    expect(keepProposalVersion(section.id, newest.id)).toBe(false);
+    for (const place of findUnconfirmedFacts(newest)) {
+      confirmProposalFact(section.id, place, true, newest.id);
+    }
+    expect(stagedSuggestions()[0].keptVersionId).toBe(kept.id);
+    expect(keepProposalVersion(section.id, newest.id)).toBe(true);
+    expect(stagedSuggestions()[0].keptVersionId).toBe(newest.id);
   });
 });
 

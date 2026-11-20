@@ -17,7 +17,7 @@ import {
   type NewBullet,
   type NewEntry,
 } from '../../proposals/reviewedChange';
-import { readWholeChangeFlags } from '../../suggestionState';
+import { labelLateAddition, readWholeChangeFlags } from '../../suggestionState';
 import { readFlaggedWords } from '../text/describeFlag';
 import { GapField } from '../text/GapField';
 import { SuggestionFlags } from '../text/SuggestionFlags';
@@ -54,12 +54,12 @@ export function FactRows({ proposal, version, entry, onEntryConfirmed, className
   const isLastFactLeft = (fact: EntryFact) =>
     facts.every((other) => other === fact || isFactConfirmed(version, { entryId, fact: other }));
   const confirm = (fact: EntryFact, isConfirmed: boolean) => {
-    const isSaved = confirmProposalFact(proposal.id, { entryId, fact }, isConfirmed);
+    const isSaved = confirmProposalFact(proposal.id, { entryId, fact }, isConfirmed, version.id);
     if (isSaved && isConfirmed && isLastFactLeft(fact)) onEntryConfirmed?.();
   };
   const saveEdit = (fact: EntryFact, text: string) => {
     const wasConfirmed = isFactConfirmed(version, { entryId, fact });
-    const isSaved = editProposalFact(proposal.id, { entryId, fact }, text);
+    const isSaved = editProposalFact(proposal.id, { entryId, fact }, text, version.id);
     if (isSaved && !wasConfirmed && isLastFactLeft(fact)) onEntryConfirmed?.();
   };
 
@@ -133,11 +133,13 @@ export function FactRows({ proposal, version, entry, onEntryConfirmed, className
 /**
  * One bullet of a new entry: its own checks under it, and a number to fill as a field in
  * the sentence, with the wording without a number one click away. A bullet that a later
- * run added is labelled "just added".
+ * run added is labelled "just added", or "new in version 3".
  */
 function EntryBullet({ proposal, version, bullet }: ShownVersionProps & { bullet: NewBullet }) {
   const flags = version.flags.filter((flag) => flag.textId === bullet.id);
   const isJustAdded = version.lateIds?.includes(bullet.id) ?? false;
+  const choose = (isWithout: boolean) =>
+    chooseBulletWithoutNumber(proposal.id, bullet.id, isWithout, version.id);
   return (
     <div className="[&+&]:mt-1.5">
       <div className="flex items-start gap-1.75">
@@ -151,26 +153,26 @@ function EntryBullet({ proposal, version, bullet }: ShownVersionProps & { bullet
             gap={
               <GapField
                 value={bullet.filledNumber}
-                onFill={(number) => fillBulletNumber(proposal.id, bullet.id, number)}
+                onFill={(number) => fillBulletNumber(proposal.id, bullet.id, number, version.id)}
               />
             }
           />
-          {isJustAdded && <CardTag className="ml-1.5 align-px">just added</CardTag>}
+          {isJustAdded && (
+            <CardTag className="ml-1.5 align-px">{labelLateAddition(proposal, version)}</CardTag>
+          )}
         </SuggestedText>
       </div>
       {/* Indented so it lines up with the bullet's text, not its bullet mark. */}
       <div className="pl-4.25">
         <SuggestionFlags flags={flags} isCompact />
         {bullet.isWithoutNumber ? (
-          <BackLink onClick={() => chooseBulletWithoutNumber(proposal.id, bullet.id, false)}>
-            Back to the wording with a number
-          </BackLink>
+          <BackLink onClick={() => choose(false)}>Back to the wording with a number</BackLink>
         ) : (
           bullet.gap && (
             <AppButton
               variant="quiet"
               size="xs"
-              onClick={() => chooseBulletWithoutNumber(proposal.id, bullet.id, true)}
+              onClick={() => choose(true)}
               className="mt-1 -ml-2"
             >
               Use the wording without a number

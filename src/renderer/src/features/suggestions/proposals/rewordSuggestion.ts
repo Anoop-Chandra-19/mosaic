@@ -4,24 +4,22 @@ import type {
   EntryDraft,
   NewEntryIds,
   NumberGap,
-  Proposal,
   ProposalChange,
   ProposalVersion,
 } from '@/types/agentProposal';
-import { readActiveVersion } from './proposalVersions';
 import { resolveChange } from './reviewedChange';
 
 /*
- * Change the text of a waiting suggestion when the assistant rewrites it.
+ * Change the text of a suggestion when the assistant rewrites it.
  *
- * The assistant can rewrite text that a waiting suggestion wrote. That rewrite does not
- * become a second suggestion. It changes the text in the first one. The card then shows
- * the user's text beside the newest wording, and the checks compare against the user's
- * text.
+ * The assistant can rewrite text that a suggestion wrote. That rewrite does not become a
+ * second suggestion. It changes the text in an existing version of the suggestion, or in a
+ * new version (`nextVersion.ts` decides which). The card then shows the user's text beside
+ * the newest wording, and the checks compare against the user's text.
  *
  * Staging calls `readTextEdit` to see whether a change rewrites text. It calls
- * `findTextWriter` in `workingCopy.ts` to find the suggestion that wrote the text. It
- * calls `canRewordSuggestion` and `rewordChange` to change that suggestion.
+ * `findTextWriter` in `workingCopy.ts` to find the suggestion that wrote the text, and
+ * `rewordChange` to change the version.
  */
 
 /** New wording for one bullet, line or section heading. */
@@ -78,24 +76,6 @@ export function listWrittenTextIds({ change, newContentIds }: ProposalVersion): 
       return [];
   }
 }
-
-/** Check whether the user wrote this text on the card themselves, in review. */
-function isUserWording({ review, newContentIds }: ProposalVersion, textId: string): boolean {
-  if (newContentIds?.kind === 'section' && newContentIds.sectionId === textId) {
-    return review.sectionLabel !== undefined;
-  }
-  // A new entry's bullet whose number the user filled, or whose version without one they took.
-  if (review.filledNumbers?.[textId] || review.withoutNumberIds?.includes(textId)) return true;
-  return review.userText !== undefined || !!review.filledNumber || !!review.isWithoutNumber;
-}
-
-/**
- * Check whether a rewrite of this text changes the suggestion that wrote it. It does when
- * the suggestion is waiting and the text is the assistant's. A rewrite of a kept
- * suggestion's text, or of the user's own wording on a card, is a new suggestion.
- */
-export const canRewordSuggestion = (proposal: Proposal, textId: string) =>
-  proposal.status === 'pending' && !isUserWording(readActiveVersion(proposal), textId);
 
 function failToFindText(version: ProposalVersion, textId: string): never {
   throw new Error(

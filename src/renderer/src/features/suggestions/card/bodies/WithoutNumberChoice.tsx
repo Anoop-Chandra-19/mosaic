@@ -21,7 +21,7 @@ export function WithoutNumberChoice({ proposalId, version }: WithoutNumberChoice
   if (!withoutNumber) return null;
   if (review.isWithoutNumber) {
     return (
-      <BackLink onClick={() => chooseTextWithoutNumber(proposalId, false)}>
+      <BackLink onClick={() => chooseTextWithoutNumber(proposalId, false, version.id)}>
         Back to the wording with a number
       </BackLink>
     );
@@ -36,7 +36,7 @@ export function WithoutNumberChoice({ proposalId, version }: WithoutNumberChoice
         variant="outline"
         size="xs"
         className="mt-2"
-        onClick={() => chooseTextWithoutNumber(proposalId, true)}
+        onClick={() => chooseTextWithoutNumber(proposalId, true, version.id)}
       >
         Use this wording
       </AppButton>

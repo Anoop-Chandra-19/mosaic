@@ -99,4 +99,6 @@ export const TOOL_FACTS = {
     `"${phrase}" is not in ${bullet}. Copy it exactly.`,
   termInNoText: (find: string) =>
     `"${find}" is in no bullet or line. Copy find exactly as the resume writes it.`,
+  newerThanKept: (kept: number, waiting: number) =>
+    `The user kept version ${kept} of this suggestion, so this is version ${waiting}, which waits for them. read_document shows version ${kept} until they keep version ${waiting}.`,
 };

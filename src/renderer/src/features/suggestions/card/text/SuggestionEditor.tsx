@@ -47,7 +47,7 @@ interface SuggestionEditorProps {
   onDone: () => void;
 }
 
-/** A suggestion in the user's words, checked as they type. Saving keeps it. */
+/** A suggestion in the user's words, checked as they type. Saving also keeps the version they edited. */
 export function SuggestionEditor({ proposal, version, onDone }: SuggestionEditorProps) {
   const [text, setText] = useState(() => readEditableText(resolveChange(version)));
   const [isOnTextWithoutNumber] = useState(
@@ -65,7 +65,7 @@ export function SuggestionEditor({ proposal, version, onDone }: SuggestionEditor
 
   const save = () => {
     if (!written) return;
-    editProposal(proposal.id, written);
+    editProposal(proposal.id, written, version.id);
     onDone();
   };
 
