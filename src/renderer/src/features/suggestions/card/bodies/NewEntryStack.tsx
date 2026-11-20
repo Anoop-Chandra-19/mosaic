@@ -22,7 +22,7 @@ import {
   findNextEntryToOpen,
   readOpenEntryId,
   SuggestionSelection,
-} from '../../review/suggestionSelection';
+} from '../../suggestionSelection';
 import { readBulletFlags } from '../../suggestionState';
 import { CardTag, Hint } from './BodyParts';
 import { EntryBullets, FactRows } from './EntryFacts';

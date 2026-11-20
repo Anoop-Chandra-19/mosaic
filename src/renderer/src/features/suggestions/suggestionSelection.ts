@@ -1,10 +1,11 @@
 import { createContext } from 'react';
 import type { Proposal } from '@/types/agentProposal';
-import { findUnconfirmedFacts, listNewEntries } from '../proposals/reviewedChange';
+import { findUnconfirmedFacts, listNewEntries } from './proposals/reviewedChange';
 
 /**
  * The selected suggestion, and the open entry on each new section's card. The page's marks
- * read it, so selecting a suggestion doesn't lay the page out again.
+ * read it, so selecting a suggestion doesn't lay the page out again. It sits at the root of
+ * suggestions because the review sets it and the cards read it.
  */
 export interface SuggestionSelectionValue {
   selectedId: string | null;

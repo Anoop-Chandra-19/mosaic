@@ -13,7 +13,7 @@ import { cn } from '@/lib/utils';
 import type { Proposal } from '@/types/agentProposal';
 import { FlaggedText, MarkedText } from '../../card/text/SuggestionText';
 import { needsNumber, readSuggestionState, type SuggestionState } from '../../suggestionState';
-import { readOpenEntryId, SuggestionSelection } from '../suggestionSelection';
+import { readOpenEntryId, SuggestionSelection } from '../../suggestionSelection';
 import { describeMarkTip } from './describeMarkTip';
 import type { SuggestionMark as Mark, SuggestionLook, SuggestionMove } from './suggestionPage';
 

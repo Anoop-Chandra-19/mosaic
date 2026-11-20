@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { ProposalChange, ProposalReview } from '@/types/agentProposal';
-import { makeProposal } from '../../proposals/__tests__/proposalFixtures';
+import { makeProposal } from '../proposals/__tests__/proposalFixtures';
 import { findNextEntryToOpen, readOpenEntryId } from '../suggestionSelection';
 
 /*

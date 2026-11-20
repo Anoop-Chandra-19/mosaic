@@ -1,8 +1,7 @@
 import { Check, Undo2 } from 'lucide-react';
 import { AppButton, Text } from '@/components/ui-kit';
-import { ShortcutKeys } from '@/components/ShortcutKeys';
-import { getShortcutCombos } from '@/stores/shortcutBindings';
 import type { Proposal } from '@/types/agentProposal';
+import { KeyHint } from '../../KeyHint';
 import type { ApplyPlan } from '../../proposals/apply/planApply';
 import { HistoryRail } from './HistoryRail';
 import type { HistoryRow } from './planHistoryRows';
@@ -67,7 +66,7 @@ export function ApplyResult({ result, onUndo, onReviewAgain, onDone }: ApplyResu
           className="flex flex-wrap items-center gap-1 text-ink-muted"
         >
           One undo step: <b className="font-control text-ink-soft">{describeApplied(landed)}</b>
-          <ShortcutKeys combos={getShortcutCombos('undo').slice(0, 1)} />
+          <KeyHint id="undo" />
         </Text>
       </div>
       <div className="min-h-0 flex-1 overflow-y-auto px-3 pt-1.5 pb-3">

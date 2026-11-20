@@ -1,7 +1,7 @@
 import { AppButton, Text } from '@/components/ui-kit';
 import type { Proposal } from '@/types/agentProposal';
 import { chooseVersionWithoutNumber } from '../../proposals/proposalActions';
-import { BackLink, Caption } from '../bodies/BodyParts';
+import { BackLink, Caption } from './BodyParts';
 
 /**
  * Show the assistant's alternative text that needs no number, with a button to use it.
