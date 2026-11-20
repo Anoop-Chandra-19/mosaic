@@ -85,7 +85,9 @@ export function SuggestionReview({ openOn }: { openOn?: string }) {
     [draft, proposals, result]
   );
   const [selectedId, setSelectedId] = useState<string | null>(openOn ?? proposals[0]?.id ?? null);
-  const selection = useMemo(() => ({ selectedId, select: setSelectedId }), [selectedId]);
+  const [openEntryIds, setOpenEntryIds] = useState<Record<string, string | null>>({});
+  const openEntry = (proposalId: string, entryId: string | null) =>
+    setOpenEntryIds((opened) => ({ ...opened, [proposalId]: entryId }));
   const close = () => closeSurface('review');
 
   // Suggestions exist only while AI is on; turned off, there is nothing to review.
@@ -144,10 +146,12 @@ export function SuggestionReview({ openOn }: { openOn?: string }) {
     useViewPlaceStore.setState({ reviewSuggestion: selectedIndex >= 0 ? selectedIndex + 1 : null });
   }, [selectedIndex]);
   useEffect(() => () => useViewPlaceStore.setState({ reviewSuggestion: null }), []);
-  const select = (id: string | null) => {
+  const select = (id: string | null, entryId?: string) => {
     setSelectedId(id);
     setEditingId(null);
+    if (id && entryId) openEntry(id, entryId);
   };
+  const selection = { selectedId, select, openEntryIds, openEntry };
   const step = (offset: number) => {
     const next = proposals[Math.max(0, Math.min(proposals.length - 1, selectedIndex + offset))];
     if (next) select(next.id);

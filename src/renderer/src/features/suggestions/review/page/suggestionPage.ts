@@ -3,7 +3,11 @@ import { readShowPlaceId, readTextPlaceId } from '@/lib/resume/proposalAnchor';
 import type { Proposal, ProposalChange, ShowPlace } from '@/types/agentProposal';
 import type { ResumeData } from '@shared/types/resume';
 import { layInProposal } from '../../proposals/apply/layInProposal';
-import { resolveChange } from '../../proposals/reviewedChange';
+import {
+  findUnconfirmedFacts,
+  listNewEntries,
+  resolveChange,
+} from '../../proposals/reviewedChange';
 
 /** How a mark is drawn on the page: changed words, added text, or text being hidden. */
 export type SuggestionLook = 'edit' | 'add' | 'hide';
@@ -15,16 +19,31 @@ export interface SuggestionMark {
   words?: { before: string; after: string };
   /**
    * Set when the mark is one line of a whole entry or section that a suggestion hides
-   * ('leaving'), shows again ('back') or adds ('new'). A hidden block has every line
-   * struck through and one bar down its side. Not set for a single bullet's or line's mark.
+   * ('leaving'), shows again ('back'), adds as a new entry ('new') or adds as a new section
+   * ('newSection'). Every line of a hidden block is crossed out. A hidden block and a new
+   * section each get one bar down their side, so their lines get no bar of their own. Not
+   * set when the suggestion is about a single bullet or line.
    */
-  block?: 'leaving' | 'back' | 'new';
+  block?: 'leaving' | 'back' | 'new' | 'newSection';
+  /**
+   * Set on the lines of an entry in a new section. `id` is the entry the line belongs to:
+   * clicking the line opens that entry on the card. `isHeading` is true for the entry's
+   * heading line.
+   */
+  entry?: { id: string; isHeading: boolean };
+  /**
+   * Set on the lines of a new section. True when the line gets a dot: the heading of an
+   * entry with facts to confirm, or the section's heading when the checks found something.
+   */
+  hasDot?: boolean;
 }
 
 /** A whole entry or section that one suggestion hides, shows or adds. It gets one outline when selected. */
 export interface SuggestionBlock {
   proposal: Proposal;
   isLeaving: boolean;
+  /** True for a new section. Like a hidden block, it gets one bar down its whole side. */
+  isNewSection: boolean;
 }
 
 /** An item that a reorder moves, with its position before and after. Positions start at 1. */
@@ -141,12 +160,45 @@ function layIn(page: SuggestionPage, proposal: Proposal): boolean {
   }
   // Everything the suggestion created is marked as added, including a split's second
   // half. For a new entry or section, the first created id is the entry or section itself.
-  const isNewBlock = change.kind === 'entry' || change.kind === 'section';
-  const block = isNewBlock ? 'new' : undefined;
-  for (const id of laidIn.createdIds) page.marks.set(id, { proposal, look: 'add', block });
-  if (isNewBlock) page.blocks.set(laidIn.createdIds[0], { proposal, isLeaving: false });
+  if (change.kind === 'section') {
+    markNewSection(page, proposal, laidIn.createdIds);
+  } else {
+    const isNewEntry = change.kind === 'entry';
+    const block = isNewEntry ? 'new' : undefined;
+    for (const id of laidIn.createdIds) page.marks.set(id, { proposal, look: 'add', block });
+    if (isNewEntry) {
+      page.blocks.set(laidIn.createdIds[0], { proposal, isLeaving: false, isNewSection: false });
+    }
+  }
   for (const [id, move] of readMoves(proposal, change)) page.moves.set(id, move);
   return true;
+}
+
+/**
+ * Mark a new section's lines. Each line of an entry records which entry it belongs to, so
+ * clicking it can open that entry on the card. Only lines that need the user get a dot.
+ */
+function markNewSection(page: SuggestionPage, proposal: Proposal, createdIds: string[]): void {
+  const [sectionId] = createdIds;
+  const entryById = new Map<string, { id: string; isHeading: boolean }>();
+  for (const { ids } of listNewEntries(proposal)) {
+    entryById.set(ids.entryId, { id: ids.entryId, isHeading: true });
+    for (const bulletId of ids.bulletIds) {
+      entryById.set(bulletId, { id: ids.entryId, isHeading: false });
+    }
+  }
+  const entriesWithFactsLeft = new Set(
+    findUnconfirmedFacts(proposal).map((place) => place.entryId)
+  );
+  for (const id of createdIds) {
+    const entry = entryById.get(id);
+    const hasDot =
+      id === sectionId
+        ? proposal.flags.length > 0
+        : entry?.isHeading === true && entriesWithFactsLeft.has(entry.id);
+    page.marks.set(id, { proposal, look: 'add', block: 'newSection', entry, hasDot });
+  }
+  page.blocks.set(sectionId, { proposal, isLeaving: false, isNewSection: true });
 }
 
 /** Return the entry or section a change hides or shows. Returns null for any other change. */
@@ -197,7 +249,7 @@ function markBlocks(page: SuggestionPage, proposals: readonly Proposal[]): void 
   for (const { proposal, change, place } of blocks.sort((a, b) => a.rank - b.rank)) {
     const blockId = readShowPlaceId(place);
     const isOnItsWay = isLeaving(change);
-    page.blocks.set(blockId, { proposal, isLeaving: isOnItsWay });
+    page.blocks.set(blockId, { proposal, isLeaving: isOnItsWay, isNewSection: false });
     for (const id of listBlockIds(page.doc, blockId)) {
       const block = isOnItsWay ? 'leaving' : 'back';
       page.marks.set(id, { proposal, look: readLook(change), block });

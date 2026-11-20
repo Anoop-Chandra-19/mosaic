@@ -3,7 +3,7 @@ import type { Proposal } from '@/types/agentProposal';
 import type { ResumeData } from '@shared/types/resume';
 import { applyProposalsToResume, type AppliedProposals } from './apply/applyProposalsToResume';
 import { listWrittenTextIds } from './rewordSuggestion';
-import { resolveChange } from './reviewedChange';
+import { resolveChange, resolveProposal } from './reviewedChange';
 
 /*
  * The working copy is the draft with the active suggestions applied in the order they
@@ -20,17 +20,12 @@ import { resolveChange } from './reviewedChange';
 export const isActive = (proposal: Proposal) =>
   proposal.status === 'pending' || proposal.status === 'accepted';
 
-const withReviewedChange = (proposal: Proposal): Proposal => ({
-  ...proposal,
-  change: resolveChange(proposal),
-});
-
 /** Apply the proposals to the draft in the order given, with the user's review edits. */
 export function replayProposals(
   draft: ResumeData,
   proposals: readonly Proposal[]
 ): AppliedProposals {
-  return applyProposalsToResume(draft, proposals.map(withReviewedChange));
+  return applyProposalsToResume(draft, proposals.map(resolveProposal));
 }
 
 export function buildWorkingCopy(draft: ResumeData, proposals: readonly Proposal[]): ResumeData {
@@ -81,7 +76,7 @@ export function findOutOfDateIds(draft: ResumeData, proposals: readonly Proposal
   let copy = draft;
   for (const proposal of proposals) {
     if (proposal.status === 'applied') continue;
-    const reviewed = withReviewedChange(proposal);
+    const reviewed = resolveProposal(proposal);
     if (findAnchorMismatch(copy, reviewed.change)) outOfDateIds.add(proposal.id);
     else if (isActive(proposal)) copy = applyProposalsToResume(copy, [reviewed]).doc;
   }

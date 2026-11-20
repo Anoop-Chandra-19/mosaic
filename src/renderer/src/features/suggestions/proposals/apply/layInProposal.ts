@@ -2,7 +2,7 @@ import type { Proposal } from '@/types/agentProposal';
 import type { ResumeData } from '@shared/types/resume';
 import { applyProposalsToResume } from './applyProposalsToResume';
 import { listNewContentIds } from '../newContentIds';
-import { resolveChange } from '../reviewedChange';
+import { resolveProposal } from '../reviewedChange';
 
 /** Collect every section, entry, line and bullet id in a document. */
 function listDocumentIds(doc: ResumeData): Set<string> {
@@ -26,7 +26,7 @@ export function layInProposal(
   doc: ResumeData,
   proposal: Proposal
 ): { doc: ResumeData; createdIds: string[] } | null {
-  const laidIn = applyProposalsToResume(doc, [{ ...proposal, change: resolveChange(proposal) }]);
+  const laidIn = applyProposalsToResume(doc, [resolveProposal(proposal)]);
   if (!laidIn.appliedIds.length) return null;
   const idsNow = listDocumentIds(laidIn.doc);
   return {

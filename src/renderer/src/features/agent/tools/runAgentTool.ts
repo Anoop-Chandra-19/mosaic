@@ -1,4 +1,4 @@
-import { listEmptySectionIds } from '@/features/suggestions/proposals/fillSuggestedSection';
+import { listEmptySectionIds } from '@/features/suggestions/proposals/fillSuggestion';
 import { buildWorkingCopy } from '@/features/suggestions/proposals/workingCopy';
 import { useProposalStore } from '@/stores/proposalStore';
 import { getResumeSnapshot, useResumeStore } from '@/stores/resumeStore';

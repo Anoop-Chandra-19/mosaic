@@ -82,7 +82,11 @@ describe('buildSuggestionPreview, All suggested', () => {
     };
     const preview = buildSuggestionPreview(
       makeResume(),
-      [proposal('new', entry, 'pending', { review: { confirmedFacts: ['title'] } })],
+      [
+        proposal('new', entry, 'pending', {
+          review: { confirmedFacts: { 'new-new1': ['title'] } },
+        }),
+      ],
       'all'
     );
     expect(preview.doc.sections[0].items[2].title).toBe('Mentor');

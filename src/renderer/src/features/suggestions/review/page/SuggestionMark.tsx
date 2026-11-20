@@ -12,7 +12,7 @@ import type { ChangeTone } from '@/lib/resume/changes/resumeChange';
 import { cn } from '@/lib/utils';
 import { FlaggedText, MarkedText } from '../../card/text/SuggestionText';
 import { needsNumber, readSuggestionState, type SuggestionState } from '../../suggestionState';
-import { SuggestionSelection } from '../suggestionSelection';
+import { readOpenEntryId, SuggestionSelection } from '../suggestionSelection';
 import { describeMarkTip } from './describeMarkTip';
 import type { SuggestionMark as Mark, SuggestionLook, SuggestionMove } from './suggestionPage';
 
@@ -51,6 +51,13 @@ const COMES_IN =
   'contents group-data-landing/review:**:animate-flag-in motion-reduce:**:animate-none';
 
 const FLAG = 'pointer-events-none absolute top-1 size-1.5';
+const ROUND_DOT = 'rounded-full bg-paper-flag shadow-[0_0_0_2px_white]';
+
+/** The outline on the heading of the entry that is open on the selected new section's card. */
+const OPEN_ENTRY = 'outline-1 outline-offset-2 outline-paper-changed outline-dashed';
+
+/** Blocks that draw one bar down their whole side, so their lines draw no bar of their own. */
+const BLOCKS_WITH_ONE_BAR: ReadonlySet<Mark['block']> = new Set(['leaving', 'newSection']);
 
 /** The flag lane: a dot to look at, a square for a number to fill, a ring for out of date. */
 function MarginFlag({ mark, gutter }: { mark: Mark; gutter: MarkGutter }) {
@@ -69,7 +76,12 @@ function MarginFlag({ mark, gutter }: { mark: Mark; gutter: MarkGutter }) {
       />
     );
   }
-  if (state === 'dropped' || proposal.flags.length === 0) return null;
+  if (state === 'dropped') return null;
+  // In a new section, only the lines that need the user get a dot, not every line.
+  if (mark.block === 'newSection') {
+    return mark.hasDot ? <span aria-hidden className={cn(FLAG, ROUND_DOT)} style={style} /> : null;
+  }
+  if (proposal.flags.length === 0) return null;
   return (
     <span
       aria-hidden
@@ -77,7 +89,7 @@ function MarginFlag({ mark, gutter }: { mark: Mark; gutter: MarkGutter }) {
         FLAG,
         needsNumber(proposal)
           ? 'rounded-[0.0625rem] bg-white shadow-[inset_0_0_0_1.5px_var(--paper-flag)]'
-          : 'rounded-full bg-paper-flag shadow-[0_0_0_2px_white]'
+          : ROUND_DOT
       )}
       style={style}
     />
@@ -137,13 +149,18 @@ interface SuggestionLineProps {
  * entry or section have no outline of their own, and those leaving no bar: the block draws them.
  */
 export function SuggestionLine({ mark, move, text, gutter }: SuggestionLineProps) {
-  const { selectedId, select } = use(SuggestionSelection);
+  const { selectedId, select, openEntryIds } = use(SuggestionSelection);
   const proposal = mark?.proposal ?? move?.proposal;
   if (!proposal) return text;
   const { fill, lineClassName } = STATE_LINES[readSuggestionState(proposal)];
+  const isSelected = selectedId === proposal.id;
+  const isOpenEntryHeading =
+    isSelected &&
+    mark?.entry?.isHeading === true &&
+    readOpenEntryId(proposal, openEntryIds) === mark.entry.id;
   const selectLine = (event: MouseEvent) => {
     event.stopPropagation();
-    select(proposal.id);
+    select(proposal.id, mark?.entry?.id);
   };
   const lineMoveGlyph = move && (
     <MoveGlyph aria-hidden direction={readDirection(move)} gutter={gutter} />
@@ -153,7 +170,7 @@ export function SuggestionLine({ mark, move, text, gutter }: SuggestionLineProps
       <span className={COMES_IN}>
         <GutterMarks
           tone={mark ? LOOK_TONES[mark.look] : 'edit'}
-          fill={mark?.block === 'leaving' ? null : fill}
+          fill={BLOCKS_WITH_ONE_BAR.has(mark?.block) ? null : fill}
           moveGlyph={mark && move ? <MoveTarget move={move} gutter={gutter} /> : lineMoveGlyph}
           gutter={gutter}
         />
@@ -165,10 +182,10 @@ export function SuggestionLine({ mark, move, text, gutter }: SuggestionLineProps
         isWholeLine
         isOutlined={!mark?.block}
         data-suggestion-id={proposal.id}
-        aria-current={selectedId === proposal.id || undefined}
+        aria-current={isSelected || undefined}
         onClick={selectLine}
         // The scroll margin keeps a selected line clear of the floating apply bar.
-        className={cn('scroll-mb-20', WASHES_IN, lineClassName)}
+        className={cn('scroll-mb-20', WASHES_IN, lineClassName, isOpenEntryHeading && OPEN_ENTRY)}
       >
         {mark ? <MarkedWords mark={mark} text={text} /> : text}
       </MarkTarget>
@@ -186,7 +203,7 @@ export function SuggestionDates({ mark, dates }: { mark: Mark; dates: string }) 
       isOutlined={false}
       onClick={(event) => {
         event.stopPropagation();
-        select(mark.proposal.id);
+        select(mark.proposal.id, mark.entry?.id);
       }}
       className={WASHES_IN}
     >

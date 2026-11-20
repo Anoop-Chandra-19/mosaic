@@ -1,6 +1,5 @@
 import type {
   DropReason,
-  EntryFact,
   NewContentIds,
   Proposal,
   ProposalChange,
@@ -21,11 +20,17 @@ import { useProposalStore } from '@/stores/proposalStore';
 import { getResumeSnapshot, useResumeStore } from '@/stores/resumeStore';
 import type { ResumeData } from '@shared/types/resume';
 import { checkProposal } from './checks/checkProposal';
-import { fillSection, findSectionToFill } from './fillSuggestedSection';
+import { fillSuggestion, findSuggestionToFill } from './fillSuggestion';
 import { canRewordSuggestion, readTextEdit, rewordChange, type TextEdit } from './rewordSuggestion';
 import { createNewContentIds } from './newContentIds';
 import { recheckOpenProposals, watchProposalAnchors } from './recheckProposals';
-import { canKeepProposal, resolveChange, reviewedRequestText } from './reviewedChange';
+import {
+  canKeepProposal,
+  listNewEntries,
+  resolveChange,
+  reviewedRequestText,
+  type EntryFactPlace,
+} from './reviewedChange';
 import { validateProposal, type ProposalRefusal } from './validateProposal';
 import { buildCopyBefore, buildWorkingCopy, findRequiredIds, findTextWriter } from './workingCopy';
 
@@ -41,8 +46,8 @@ import { buildCopyBefore, buildWorkingCopy, findRequiredIds, findTextWriter } fr
  * working copy, `newContentIds` assigns ids for additions, and `checks/checkProposal`
  * flags what the user should look at. When a change rewrites text that a waiting
  * suggestion wrote, `rewordSuggestion.ts` changes that suggestion and no new one is made.
- * When a change adds a line or a first entry to a section that a waiting suggestion made,
- * `fillSuggestedSection.ts` puts it into that suggestion.
+ * When a change adds an entry or a line to a section that a waiting suggestion made, or a
+ * bullet to an entry that one made, `fillSuggestion.ts` puts it into that suggestion.
  *
  * The user keeps, drops or edits proposals. Their edits are stored in `review`, apart from
  * the assistant's `change`, and `reviewedChange.ts` combines the two. `recheckProposals`
@@ -75,17 +80,17 @@ export interface RewordedSuggestion {
   isRemoved: boolean;
 }
 
-/** A waiting suggestion for a new section that a staged line or entry went into. */
+/** A staged entry, line or bullet that was added to a waiting suggestion for a new section or entry. */
 export interface FilledSuggestion {
   /** The position of that change in the staged list. */
   index: number;
-  /** The section's suggestion as it was before the change. */
+  /** The suggestion as it was before the change. */
   before: Proposal;
-  /** The section's suggestion with the new contents. */
+  /** The suggestion with the new contents. */
   proposal: Proposal;
-  /** The ids of the line or entry that went in. */
+  /** The ids of the entry, line or bullet that went in. */
   filledIds: NewContentIds;
-  /** What the checks found in the line or entry that went in. */
+  /** What the checks found in the entry, line or bullet that went in. */
   filledFlags: ProposalFlag[];
 }
 
@@ -152,39 +157,49 @@ function rewordSuggestion(
 }
 
 /**
- * Put a line or an entry into the suggestion that made its section, and run that
- * suggestion's checks again.
+ * Add an entry, line or bullet to the waiting suggestion for the new section or entry it
+ * goes in, then run that suggestion's checks again.
  */
-function fillSuggestedSection(
+function fillWaitingSuggestion(
   draft: ResumeData,
   proposals: readonly Proposal[],
-  section: Proposal,
+  suggestion: Proposal,
   change: ProposalChange,
-  requestText: string
+  { requestText, isLate }: { requestText: string; isLate: boolean }
 ): Omit<FilledSuggestion, 'index' | 'filledFlags'> {
-  const { filledIds, ...filled } = fillSection(section, change);
+  const { filledIds, ...filled } = fillSuggestion(suggestion, change, isLate);
   const next = {
-    ...section,
+    ...suggestion,
     ...filled,
-    requestText: joinRequestText(section.requestText, requestText),
+    requestText: joinRequestText(suggestion.requestText, requestText),
   };
-  const copyBefore = buildCopyBefore(draft, proposals, section.id);
+  const copyBefore = buildCopyBefore(draft, proposals, suggestion.id);
   const flags = checkProposal(copyBefore, resolveChange(next), reviewedRequestText(next));
-  return { before: section, proposal: { ...next, flags }, filledIds };
+  return { before: suggestion, proposal: { ...next, flags }, filledIds };
 }
 
 /**
  * Stage changes as proposals for the open draft. Each change is checked against the
  * working copy, which includes the changes staged before it in this call. A change that
- * doesn't fit is refused. Two kinds of change go into a waiting suggestion, and no new one
- * is made: a rewrite of text the suggestion wrote, and a line or first entry for a
- * section the suggestion made.
+ * doesn't fit is refused. Two kinds of change update a waiting suggestion instead of
+ * making a new one: a rewrite of text that the suggestion wrote, and an entry, line or
+ * bullet added to a new section or entry that the suggestion makes.
+ *
+ * `isFromThisRun` says whether the run staging these changes made a given suggestion.
+ * When a change is added to a suggestion that an earlier run made, the card labels the
+ * addition "just added".
  */
-export function stageProposals(requestText: string, changes: StagedChange[]): StagingResult {
+export function stageProposals(
+  requestText: string,
+  changes: StagedChange[],
+  isFromThisRun: (proposalId: string) => boolean = () => true
+): StagingResult {
   const templateId = openTemplateId();
   const draft = getResumeSnapshot();
   let proposals = listOpenProposals();
   const result: StagingResult = { proposals: [], reworded: [], filled: [], refusals: [] };
+  const isMadeNow = (proposalId: string) =>
+    isFromThisRun(proposalId) || result.proposals.some((each) => each.id === proposalId);
   changes.forEach(({ change, source, reason }, index) => {
     const copy = buildWorkingCopy(draft, proposals);
     const refusal = validateProposal(copy, change);
@@ -192,12 +207,15 @@ export function stageProposals(requestText: string, changes: StagedChange[]): St
       result.refusals.push({ index, refusal });
       return;
     }
-    const sectionToFill = findSectionToFill(proposals, change);
-    if (sectionToFill) {
-      const filled = fillSuggestedSection(draft, proposals, sectionToFill, change, requestText);
+    const toFill = findSuggestionToFill(proposals, change);
+    if (toFill) {
+      const filled = fillWaitingSuggestion(draft, proposals, toFill, change, {
+        requestText,
+        isLate: !isMadeNow(toFill.id),
+      });
       const filledFlags = checkProposal(copy, change, requestText);
       result.filled.push({ index, ...filled, filledFlags });
-      proposals = proposals.map((each) => (each.id === sectionToFill.id ? filled.proposal : each));
+      proposals = proposals.map((each) => (each.id === toFill.id ? filled.proposal : each));
       return;
     }
     const toReword = findSuggestionToReword(draft, proposals, change);
@@ -408,28 +426,72 @@ export function chooseVersionWithoutNumber(id: string, isWithout: boolean): bool
   );
 }
 
+/** Return the facts confirmed for one new entry, with `fact` added or taken out. */
+function setFactConfirmed(
+  proposal: Proposal,
+  { entryId, fact }: EntryFactPlace,
+  isConfirmed: boolean
+): ProposalReview['confirmedFacts'] {
+  const confirmedFacts = proposal.review.confirmedFacts ?? {};
+  const others = (confirmedFacts[entryId] ?? []).filter((each) => each !== fact);
+  return { ...confirmedFacts, [entryId]: isConfirmed ? [...others, fact] : others };
+}
+
 /**
  * Confirm one fact of a new entry, or undo the confirmation. Undoing it sets a kept
- * entry back to waiting.
+ * suggestion back to waiting.
  */
-export function confirmProposalFact(id: string, fact: EntryFact, isConfirmed: boolean): boolean {
+export function confirmProposalFact(
+  id: string,
+  place: EntryFactPlace,
+  isConfirmed: boolean
+): boolean {
   return reviewProposal(id, (proposal) => {
-    const others = (proposal.review.confirmedFacts ?? []).filter((each) => each !== fact);
-    const confirmedFacts = isConfirmed ? [...others, fact] : others;
+    const confirmedFacts = setFactConfirmed(proposal, place, isConfirmed);
     const status = !isConfirmed && proposal.status === 'accepted' ? 'pending' : undefined;
     return withReview({ confirmedFacts }, status)(proposal);
   });
 }
 
 /** Save one fact of a new entry in the user's words. This also confirms the fact. */
-export function editProposalFact(id: string, fact: EntryFact, text: string): boolean {
+export function editProposalFact(id: string, place: EntryFactPlace, text: string): boolean {
   return reviewProposal(id, (proposal) => {
-    const confirmedFacts = [
-      ...(proposal.review.confirmedFacts ?? []).filter((each) => each !== fact),
-      fact,
-    ];
-    const factEdits = { ...proposal.review.factEdits, [fact]: text.trim() };
-    return withReview({ confirmedFacts, factEdits })(proposal);
+    const confirmedFacts = setFactConfirmed(proposal, place, true);
+    const { factEdits = {} } = proposal.review;
+    const entryEdits = { ...factEdits[place.entryId], [place.fact]: text.trim() };
+    return withReview({ confirmedFacts, factEdits: { ...factEdits, [place.entryId]: entryEdits } })(
+      proposal
+    );
+  });
+}
+
+/**
+ * Leave one entry out of a suggested new section, keeping the other entries. Throws when
+ * it is the last remaining entry, because the card never offers that: to leave out the
+ * whole section, the user drops the suggestion.
+ */
+export function leaveEntryOut(id: string, entryId: string): boolean {
+  return reviewProposal(id, (proposal) => {
+    const entriesNotLeftOut = listNewEntries(proposal).filter((entry) => !entry.isLeftOut);
+    const isAlreadyLeftOut = !entriesNotLeftOut.some((entry) => entry.ids.entryId === entryId);
+    if (isAlreadyLeftOut) return null;
+    if (entriesNotLeftOut.length === 1) {
+      throw new Error(
+        `Cannot leave out entry "${entryId}" of suggestion "${id}": it is the only entry not left out`
+      );
+    }
+    const leftOutEntryIds = [...(proposal.review.leftOutEntryIds ?? []), entryId];
+    return withReview({ leftOutEntryIds })(proposal);
+  });
+}
+
+/** Put a left-out entry back into its new section. */
+export function putEntryBack(id: string, entryId: string): boolean {
+  return reviewProposal(id, (proposal) => {
+    const leftOutEntryIds = (proposal.review.leftOutEntryIds ?? []).filter(
+      (each) => each !== entryId
+    );
+    return withReview({ leftOutEntryIds })(proposal);
   });
 }
 
