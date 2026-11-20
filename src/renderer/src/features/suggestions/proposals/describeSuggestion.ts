@@ -26,7 +26,7 @@ export function labelSuggestionKind(change: ProposalChange): string {
 }
 
 /** An entry as the user knows it: where, else what, else its place in the section. */
-function nameEntry(entry: ResumeEntry, index: number): string {
+export function nameEntry(entry: ResumeEntry, index: number): string {
   return entry.organization?.trim() || entry.title?.trim() || `entry ${index + 1}`;
 }
 
@@ -49,7 +49,7 @@ function nameWithin(doc: ResumeData, section: ResumeSection) {
 }
 
 /** The section a change is in; a new section and the sections' order are in none. */
-function readSectionId(change: ProposalChange): string | null {
+export function readSectionId(change: ProposalChange): string | null {
   switch (change.kind) {
     case 'rewrite':
     case 'select':
@@ -124,7 +124,7 @@ export function placeSuggestion(doc: ResumeData, change: ProposalChange): string
 }
 
 /** The entry a change is inside, if it is inside one: a bullet's, or an entry's own. */
-function readEntryId(change: ProposalChange): string | null {
+export function readEntryId(change: ProposalChange): string | null {
   switch (change.kind) {
     case 'rewrite':
     case 'select':

@@ -1,4 +1,4 @@
-import { expect, type Page } from '@playwright/test';
+import { expect, type Locator, type Page } from '@playwright/test';
 import { runDevTool } from '../harness/devTools';
 import { test, withApp } from '../harness/launch';
 
@@ -9,6 +9,10 @@ async function stageExampleSuggestions(page: Page) {
   await runDevTool(page, 'stageSuggestions');
 }
 
+/** The suggestion open in the inspector: the selected one. */
+const findOpenSuggestion = (inspector: Locator) =>
+  inspector.locator('[data-suggestion-row][aria-current="true"]');
+
 test('suggestions are reviewed from the status bar, kept and dropped with the keys', async () => {
   const { page, errors } = mosaic();
   await stageExampleSuggestions(page);
@@ -17,21 +21,21 @@ test('suggestions are reviewed from the status bar, kept and dropped with the ke
   const review = page.getByRole('region', { name: 'Suggestion review' });
   await expect(review.getByRole('heading', { name: 'Reviewing 21 suggestions' })).toBeVisible();
   const inspector = review.getByRole('complementary', { name: 'Suggestions' });
-  await expect(inspector.getByText('1 / 21')).toBeVisible();
+  await expect(inspector.getByText(/^21 suggestions in \d+ places on your resume$/)).toBeVisible();
   // The opening transition holds input while it runs, so the keys wait for it.
   await page.waitForFunction(() => !document.documentElement.matches(':active-view-transition'));
 
-  // Keep moves on to the next; drop stays.
+  // Keep moves on to the next suggestion down the page. Drop stays on the same one.
   await page.keyboard.press('a');
-  await expect(inspector.getByText('2 / 21')).toBeVisible();
+  await expect(inspector.getByText(/^1 kept\./)).toBeVisible();
   await page.keyboard.press('r');
   await expect(inspector.getByRole('button', { name: 'Dropped' })).toBeVisible();
   await page.keyboard.press('k');
   await expect(inspector.getByRole('button', { name: 'Kept' })).toBeVisible();
 
-  // Esc steps back to the list, then back to the draft, which nothing has touched.
+  // Esc closes the open suggestion, then goes back to the draft, which nothing has changed.
   await page.keyboard.press('Escape');
-  await expect(inspector.getByText('21 suggestions', { exact: true })).toBeVisible();
+  await expect(findOpenSuggestion(inspector)).toHaveCount(0);
   await page.keyboard.press('Escape');
   await expect(review).toBeHidden();
   await expect(page.getByRole('button', { name: '20 suggestions waiting' })).toBeVisible();
@@ -45,10 +49,11 @@ test('a number is filled in, a rewrite put in your words, and a new entry confir
   await page.getByRole('button', { name: '21 suggestions waiting' }).click();
   const review = page.getByRole('region', { name: 'Suggestion review' });
   const inspector = review.getByRole('complementary', { name: 'Suggestions' });
-  const status = inspector.getByText(/^(waiting|kept)/).first();
+  const status = findOpenSuggestion(inspector)
+    .getByText(/^(waiting|kept)/)
+    .first();
 
   // The number only you know: typed into the sentence, it keeps the suggestion.
-  await inspector.getByRole('button', { name: 'All suggestions' }).click();
   await inspector
     .getByRole('button', { name: /^Rewrite, bullet 3/ })
     .first()
@@ -76,8 +81,8 @@ test('a number is filled in, a rewrite put in your words, and a new entry confir
   for (const fact of ['title', 'organization', 'place', 'dates']) {
     await inspector.getByRole('button', { name: `Confirm ${fact}` }).click();
   }
-  await inspector.getByRole('button', { name: 'Keep' }).click();
-  await expect(inspector.getByRole('button', { name: 'Kept' })).toBeVisible();
+  await inspector.getByRole('button', { name: 'Keep', exact: true }).click();
+  await expect(inspector.getByRole('button', { name: 'Kept', exact: true })).toBeVisible();
   expect(errors).toEqual([]);
 });
 
@@ -87,6 +92,10 @@ test('what was kept applies as one step, which undo takes back to review', async
   await page.getByRole('button', { name: '21 suggestions waiting' }).click();
   const review = page.getByRole('region', { name: 'Suggestion review' });
   const inspector = review.getByRole('complementary', { name: 'Suggestions' });
+  await inspector
+    .getByRole('button', { name: /^Rewrite, bullet 1/ })
+    .first()
+    .click();
   await inspector.getByRole('button', { name: 'Keep', exact: true }).click();
 
   await page.keyboard.press('Control+Enter');
@@ -129,7 +138,7 @@ test('editing a bullet puts its suggestion out of date, undo brings it back, and
   const inspector = page
     .getByRole('region', { name: 'Suggestion review' })
     .getByRole('complementary', { name: 'Suggestions' });
-  await expect(inspector.getByText('2 / 21')).toBeVisible();
+  await expect(findOpenSuggestion(inspector)).toContainText('p99');
   expect(errors).toEqual([]);
 });
 
