@@ -6,15 +6,16 @@ import type {
   NumberGap,
   Proposal,
   ProposalChange,
+  ProposalVersion,
 } from '@/types/agentProposal';
 import { isEmptyNewSection } from '@/lib/resume/proposalAnchor';
 import { GAP_MARK } from './checks/unfilledGap';
+import { readActiveVersion } from './proposalVersions';
 
 export const ENTRY_FACTS: EntryFact[] = ['title', 'organization', 'location', 'dates'];
 
-/** The text a suggestion writes: the user's wording, the version without a number, or the gap filled. */
-function reviewedText(proposal: Proposal, after: string): string {
-  const { review, change } = proposal;
+/** The text a version writes: the user's wording, the version without a number, or the gap filled. */
+function reviewedText({ review, change }: ProposalVersion, after: string): string {
   if (review.userText !== undefined) return review.userText;
   const hasGap = change.kind === 'rewrite' || change.kind === 'add';
   if (hasGap && change.gap && review.isWithoutNumber) return change.gap.withoutNumber;
@@ -53,10 +54,10 @@ function pairEntries(
 }
 
 /**
- * List the new entries a suggestion adds, in order, with the user's corrections to their
+ * List the new entries a version adds, in order, with the user's corrections to their
  * facts. Entries the user left out are listed too, with `isLeftOut` set.
  */
-export function listNewEntries({ change, newContentIds, review }: Proposal): NewEntry[] {
+export function listNewEntries({ change, newContentIds, review }: ProposalVersion): NewEntry[] {
   const leftOutIds = review.leftOutEntryIds ?? [];
   return pairEntries(change, newContentIds).map(({ ids, draft }) => ({
     ids,
@@ -65,8 +66,8 @@ export function listNewEntries({ change, newContentIds, review }: Proposal): New
   }));
 }
 
-const listEntriesNotLeftOut = (proposal: Proposal) =>
-  listNewEntries(proposal).filter((entry) => !entry.isLeftOut);
+const listEntriesNotLeftOut = (version: ProposalVersion) =>
+  listNewEntries(version).filter((entry) => !entry.isLeftOut);
 
 /** A bullet of a new entry, with what the user did about its number. */
 export interface NewBullet {
@@ -82,7 +83,7 @@ export interface NewBullet {
 }
 
 /** List a new entry's bullets with what the user did about each one's number. */
-export function listNewBullets({ review }: Proposal, { ids, draft }: NewEntry): NewBullet[] {
+export function listNewBullets({ review }: ProposalVersion, { ids, draft }: NewEntry): NewBullet[] {
   return draft.bullets.map((assistantText, index) => {
     const id = ids.bulletIds[index];
     const gap = draft.gaps?.[id];
@@ -102,8 +103,8 @@ export function listNewBullets({ review }: Proposal, { ids, draft }: NewEntry): 
  * Return the new entry with each bullet as the user reviewed it: with the number they typed
  * in, or the version without a number they chose.
  */
-function resolveEntryDraft(proposal: Proposal, entry: NewEntry): EntryDraft {
-  const bullets = listNewBullets(proposal, entry);
+function resolveEntryDraft(version: ProposalVersion, entry: NewEntry): EntryDraft {
+  const bullets = listNewBullets(version, entry);
   const written = bullets.map(({ text, filledNumber }) =>
     filledNumber ? text.replace(GAP_MARK, filledNumber) : text
   );
@@ -122,22 +123,22 @@ function resolveEntryDraft(proposal: Proposal, entry: NewEntry): EntryDraft {
  * out of a new section are not in it. Apply pairs it with `resolveNewContentIds`, which
  * leaves out the same entries' ids.
  */
-export function resolveChange(proposal: Proposal): ProposalChange {
-  const { change, review } = proposal;
+export function resolveChange(version: ProposalVersion): ProposalChange {
+  const { change, review } = version;
   switch (change.kind) {
     case 'rewrite': {
-      const after = reviewedText(proposal, change.after);
+      const after = reviewedText(version, change.after);
       const before =
         typeof review.rebasedBefore === 'string' ? review.rebasedBefore : change.before;
       return { ...change, before, after, gap: after.includes(GAP_MARK) ? change.gap : undefined };
     }
     case 'merge': {
       const before = Array.isArray(review.rebasedBefore) ? review.rebasedBefore : change.before;
-      return { ...change, before, after: reviewedText(proposal, change.after) };
+      return { ...change, before, after: reviewedText(version, change.after) };
     }
     case 'add': {
       const afterId = review.placedAfterId !== undefined ? review.placedAfterId : change.afterId;
-      const text = reviewedText(proposal, change.text);
+      const text = reviewedText(version, change.text);
       return { ...change, afterId, text, gap: text.includes(GAP_MARK) ? change.gap : undefined };
     }
     case 'rename': {
@@ -146,8 +147,8 @@ export function resolveChange(proposal: Proposal): ProposalChange {
       return { ...change, before, after: review.userText ?? change.after };
     }
     case 'entry': {
-      const [entry] = listNewEntries(proposal);
-      return entry ? { ...change, ...resolveEntryDraft(proposal, entry) } : change;
+      const [entry] = listNewEntries(version);
+      return entry ? { ...change, ...resolveEntryDraft(version, entry) } : change;
     }
     case 'section': {
       const section = { ...change.section, label: review.sectionLabel ?? change.section.label };
@@ -155,8 +156,8 @@ export function resolveChange(proposal: Proposal): ProposalChange {
         change.contents?.layout === 'entries'
           ? {
               ...change.contents,
-              entries: listEntriesNotLeftOut(proposal).map((entry) =>
-                resolveEntryDraft(proposal, entry)
+              entries: listEntriesNotLeftOut(version).map((entry) =>
+                resolveEntryDraft(version, entry)
               ),
             }
           : change.contents;
@@ -171,22 +172,35 @@ export function resolveChange(proposal: Proposal): ProposalChange {
  * Return the ids of what the reviewed change adds. The ids of entries the user left out of
  * a new section are not included.
  */
-export function resolveNewContentIds(proposal: Proposal): NewContentIds | null {
-  const ids = proposal.newContentIds;
+export function resolveNewContentIds(version: ProposalVersion): NewContentIds | null {
+  const ids = version.newContentIds;
   if (ids?.kind !== 'section' || ids.contents?.layout !== 'entries') return ids;
-  const entries = listEntriesNotLeftOut(proposal).map((entry) => entry.ids);
+  const entries = listEntriesNotLeftOut(version).map((entry) => entry.ids);
   return { ...ids, contents: { ...ids.contents, entries } };
 }
 
-/** Return the suggestion with its change as the user reviewed it, and the matching ids. */
-export const resolveProposal = (proposal: Proposal): Proposal => ({
-  ...proposal,
-  change: resolveChange(proposal),
-  newContentIds: resolveNewContentIds(proposal),
-});
+/**
+ * A change ready to apply: a suggestion's change with the user's edits in it, and the ids
+ * of what it adds.
+ */
+export interface ReviewedChange {
+  proposalId: string;
+  change: ProposalChange;
+  newContentIds: NewContentIds | null;
+}
+
+/** Return the change of a suggestion's active version, with the user's edits in it. */
+export function resolveProposal(proposal: Proposal): ReviewedChange {
+  const version = readActiveVersion(proposal);
+  return {
+    proposalId: proposal.id,
+    change: resolveChange(version),
+    newContentIds: resolveNewContentIds(version),
+  };
+}
 
 /** What the user asked, plus every word they wrote in review: their own numbers are theirs. */
-export function reviewedRequestText({ requestText, review }: Proposal): string {
+export function reviewedRequestText({ requestText, review }: ProposalVersion): string {
   const bulletNumbers = Object.values(review.filledNumbers ?? {});
   return [requestText, review.userText, review.filledNumber, ...bulletNumbers]
     .filter(Boolean)
@@ -204,26 +218,28 @@ export const listWrittenFacts = ({ frame }: EntryDraft): EntryFact[] =>
   ENTRY_FACTS.filter((fact) => frame[fact]?.trim());
 
 /** Check whether the user confirmed this fact of this entry. */
-export const isFactConfirmed = (proposal: Proposal, { entryId, fact }: EntryFactPlace) =>
-  proposal.review.confirmedFacts?.[entryId]?.includes(fact) ?? false;
+export const isFactConfirmed = ({ review }: ProposalVersion, { entryId, fact }: EntryFactPlace) =>
+  review.confirmedFacts?.[entryId]?.includes(fact) ?? false;
 
 /** Return the facts that have text, in every new entry the user hasn't left out. */
-export function findWrittenFacts(proposal: Proposal): EntryFactPlace[] {
-  return listEntriesNotLeftOut(proposal).flatMap(({ ids, draft }) =>
+export function findWrittenFacts(version: ProposalVersion): EntryFactPlace[] {
+  return listEntriesNotLeftOut(version).flatMap(({ ids, draft }) =>
     listWrittenFacts(draft).map((fact) => ({ entryId: ids.entryId, fact }))
   );
 }
 
 /** Return the facts that have text and aren't confirmed yet, in every new entry the user hasn't left out. */
-export function findUnconfirmedFacts(proposal: Proposal): EntryFactPlace[] {
-  return findWrittenFacts(proposal).filter((place) => !isFactConfirmed(proposal, place));
+export function findUnconfirmedFacts(version: ProposalVersion): EntryFactPlace[] {
+  return findWrittenFacts(version).filter((place) => !isFactConfirmed(version, place));
 }
 
 /**
- * Can be kept: current, with every fact confirmed, and not a new section that is still
- * empty. A gap still to fill is held back on apply.
+ * Check whether a suggestion can be kept. It can when it is not out of date, every fact in
+ * its active version is confirmed, and it isn't a new section that is still empty. A number
+ * still to fill doesn't stop the keep; Apply holds the suggestion back until it is filled.
  */
 export function canKeepProposal(proposal: Proposal): boolean {
-  if (proposal.isStale || isEmptyNewSection(proposal.change)) return false;
-  return findUnconfirmedFacts(proposal).length === 0;
+  const version = readActiveVersion(proposal);
+  if (proposal.isStale || isEmptyNewSection(version.change)) return false;
+  return findUnconfirmedFacts(version).length === 0;
 }

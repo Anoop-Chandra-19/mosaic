@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils';
 import type { Proposal } from '@/types/agentProposal';
 import type { ResumeData } from '@shared/types/resume';
 import { placeSuggestion } from '../../proposals/describeSuggestion';
+import { readActiveVersion } from '../../proposals/proposalVersions';
 import { SuggestionActions } from '../../card/SuggestionActions';
 import { SuggestionBody } from '../../card/SuggestionBody';
 import { KeyHint } from '../../KeyHint';
@@ -81,7 +82,7 @@ export function PreviewList({
               <SuggestionRow
                 proposal={proposal}
                 number={index + 1}
-                place={placeSuggestion(draft, proposal.change)}
+                place={placeSuggestion(draft, readActiveVersion(proposal).change)}
                 onClick={() => onOpen(isOpen ? null : proposal.id)}
               >
                 <NoteTag note={notes.get(proposal.id)} />
@@ -94,6 +95,7 @@ export function PreviewList({
                   >
                     <SuggestionBody
                       proposal={proposal}
+                      version={readActiveVersion(proposal)}
                       draft={draft}
                       isEditing={isEditing}
                       onEditingChange={setEditing}

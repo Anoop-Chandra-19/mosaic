@@ -3,6 +3,7 @@ import { AppButton, Text } from '@/components/ui-kit';
 import { cn } from '@/lib/utils';
 import type { Proposal } from '@/types/agentProposal';
 import type { ResumeData } from '@shared/types/resume';
+import { readActiveVersion } from '../../proposals/proposalVersions';
 import { findUnconfirmedFacts } from '../../proposals/reviewedChange';
 import {
   FLAG_LABELS,
@@ -24,8 +25,9 @@ interface PlaceRowProps {
 /** A suggestion folded to one line: where it stands, what it changes, and what it needs. */
 export function PlaceRow({ proposal, draft, isSelected, onClick, className }: PlaceRowProps) {
   const state = readSuggestionState(proposal);
-  const flags = state === 'stale' || state === 'dropped' ? [] : proposal.flags;
-  const factsLeft = state === 'waiting' ? findUnconfirmedFacts(proposal).length : 0;
+  const version = readActiveVersion(proposal);
+  const flags = state === 'stale' || state === 'dropped' ? [] : version.flags;
+  const factsLeft = state === 'waiting' ? findUnconfirmedFacts(version).length : 0;
   const FlagIcon = needsNumber(proposal) ? Lock : TriangleAlert;
   return (
     <AppButton

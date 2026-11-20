@@ -77,8 +77,8 @@ function describeWhatGoes(block: Block, isBack: boolean): string {
  * A whole entry or section leaving the page, or coming back. Named by its heading; what
  * goes with it is counted and listed, never struck line by line.
  */
-export function BlockBody({ proposal, draft }: SuggestionBodyProps) {
-  const { change } = proposal;
+export function BlockBody({ version, draft }: SuggestionBodyProps) {
+  const { change } = version;
   if (change.kind !== 'select') return null;
   const block = readBlock(draft, change.place);
   if (!block) return null;

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Check } from 'lucide-react';
 import { AppButton, AppTextarea, Text } from '@/components/ui-kit';
 import { ShortcutKeys } from '@/components/ShortcutKeys';
-import type { Proposal, ProposalChange } from '@/types/agentProposal';
+import type { Proposal, ProposalChange, ProposalVersion } from '@/types/agentProposal';
 import { GAP_MARK } from '../../proposals/checks/unfilledGap';
 import { checkProposalEdit, editProposal } from '../../proposals/proposalActions';
 import { resolveChange } from '../../proposals/reviewedChange';
@@ -12,18 +12,17 @@ import { SuggestionFlags } from './SuggestionFlags';
 const TYPED_GAP = '[?]';
 
 /**
- * Return the version without a number when the text still has a number to fill, so the
- * user has nothing to type over. Returns null when there is no such version.
+ * Return the wording without a number when the text still has a number to fill, so the
+ * user has nothing to type over. Returns null when the assistant gave no such wording.
  */
-function readVersionWithoutNumber(change: ProposalChange): string | null {
+function readTextWithoutNumber(change: ProposalChange): string | null {
   const hasGap = change.kind === 'rewrite' || change.kind === 'add';
   if (!hasGap || !change.gap) return null;
   return readWrittenText(change).includes(GAP_MARK) ? change.gap.withoutNumber : null;
 }
 
-function readEditableText(proposal: Proposal): string {
-  const change = resolveChange(proposal);
-  const withoutNumber = readVersionWithoutNumber(change);
+function readEditableText(change: ProposalChange): string {
+  const withoutNumber = readTextWithoutNumber(change);
   return withoutNumber ?? readWrittenText(change).replaceAll(GAP_MARK, TYPED_GAP);
 }
 
@@ -41,15 +40,22 @@ function readWrittenText(change: ProposalChange): string {
   }
 }
 
+interface SuggestionEditorProps {
+  proposal: Proposal;
+  /** The version of the suggestion being edited. */
+  version: ProposalVersion;
+  onDone: () => void;
+}
+
 /** A suggestion in the user's words, checked as they type. Saving keeps it. */
-export function SuggestionEditor({ proposal, onDone }: { proposal: Proposal; onDone: () => void }) {
-  const [text, setText] = useState(() => readEditableText(proposal));
-  const [isOnVersionWithoutNumber] = useState(
-    () => readVersionWithoutNumber(resolveChange(proposal)) !== null
+export function SuggestionEditor({ proposal, version, onDone }: SuggestionEditorProps) {
+  const [text, setText] = useState(() => readEditableText(resolveChange(version)));
+  const [isOnTextWithoutNumber] = useState(
+    () => readTextWithoutNumber(resolveChange(version)) !== null
   );
   const fieldRef = useRef<HTMLTextAreaElement>(null);
   const written = text.trim().replaceAll(TYPED_GAP, GAP_MARK);
-  const flags = checkProposalEdit(proposal, written);
+  const flags = checkProposalEdit(proposal, version, written);
 
   useEffect(() => {
     const field = fieldRef.current;
@@ -84,9 +90,9 @@ export function SuggestionEditor({ proposal, onDone }: { proposal: Proposal; onD
         className="border-add-line shadow-[0_0_0_3px_var(--add-soft)] focus-visible:border-add-line"
       />
       <SuggestionFlags flags={flags} isCompact />
-      {isOnVersionWithoutNumber && (
+      {isOnTextWithoutNumber && (
         <Text as="p" variant="secondary" className="mt-1.5 text-ink-muted">
-          This is the version without a number. If you know the number, type it in. To keep the
+          This is the wording without a number. If you know the number, type it in. To keep the
           assistant’s wording instead, cancel and fill in the ? on the card.
         </Text>
       )}

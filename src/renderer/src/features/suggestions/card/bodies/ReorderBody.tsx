@@ -25,8 +25,8 @@ function nameReordered(
   return section?.layout === 'lines' ? item?.text : nameEntry(item);
 }
 
-export function ReorderBody({ proposal, draft }: SuggestionBodyProps) {
-  const { change } = proposal;
+export function ReorderBody({ version, draft }: SuggestionBodyProps) {
+  const { change } = version;
   if (change.kind !== 'reorder') return null;
   const moved = findMoves(change.before, change.after).map(({ id }) => id);
   return (

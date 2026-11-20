@@ -18,6 +18,7 @@ import {
   placeSuggestion,
 } from '../../proposals/describeSuggestion';
 import { planApply } from '../../proposals/apply/planApply';
+import { readActiveVersion } from '../../proposals/proposalVersions';
 import type { AppliedResult } from './ApplyResult';
 import {
   chooseDefaultHistory,
@@ -31,7 +32,8 @@ import type { NameSuggestion } from './SuggestionLines';
 
 /** Names read from a draft: the kind, then where below the section. */
 function nameSuggestionsIn(draft: ResumeData): NameSuggestion {
-  return ({ change }: Proposal) => {
+  return (proposal: Proposal) => {
+    const { change } = readActiveVersion(proposal);
     const place = placeSuggestion(draft, change);
     return { kind: labelSuggestionKind(change), where: place.slice(1).join(' › ') || place[0] };
   };

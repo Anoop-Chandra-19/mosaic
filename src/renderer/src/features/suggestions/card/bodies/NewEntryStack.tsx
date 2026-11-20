@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 import { AppButton, Text } from '@/components/ui-kit';
 import { cn } from '@/lib/utils';
-import type { Proposal } from '@/types/agentProposal';
+import type { Proposal, ProposalVersion } from '@/types/agentProposal';
 import { leaveEntryOut, putEntryBack } from '../../proposals/proposalActions';
 import {
   findUnconfirmedFacts,
@@ -161,6 +161,8 @@ function BulletFlagCount({
 
 interface EntryRowProps {
   proposal: Proposal;
+  /** The version of the suggestion that the card shows. */
+  version: ProposalVersion;
   entry: NewEntry;
   factsLeftCount: number;
   isOpen: boolean;
@@ -174,6 +176,7 @@ interface EntryRowProps {
 /** The row of an entry the user hasn't left out. When open, it also shows the entry's facts and bullets. */
 function EntryRow({
   proposal,
+  version,
   entry,
   factsLeftCount,
   isOpen,
@@ -183,8 +186,8 @@ function EntryRow({
   onLeaveOut,
 }: EntryRowProps) {
   const factCount = listWrittenFacts(entry.draft).length;
-  const { numbersToFill, toCheck } = readBulletFlags(proposal, entry.ids.bulletIds);
-  const isJustAdded = proposal.lateIds?.includes(entry.ids.entryId) ?? false;
+  const { numbersToFill, toCheck } = readBulletFlags(version, entry.ids.bulletIds);
+  const isJustAdded = version.lateIds?.includes(entry.ids.entryId) ?? false;
   const Chevron = isOpen ? ChevronDown : ChevronRight;
   return (
     <div className={cn(isOpen && 'bg-add-soft shadow-[inset_2px_0_0_var(--add)]')}>
@@ -238,13 +241,14 @@ function EntryRow({
         <div className="pt-0.5 pr-2.5 pb-2.5 pl-7.25">
           <FactRows
             proposal={proposal}
+            version={version}
             entry={entry}
             onEntryConfirmed={onEntryConfirmed}
             className="bg-pane"
           />
           {entry.draft.bullets.length > 0 ? (
             <div className="mt-2.5">
-              <EntryBullets proposal={proposal} entry={entry} />
+              <EntryBullets proposal={proposal} version={version} entry={entry} />
             </div>
           ) : (
             <Hint>
@@ -276,11 +280,17 @@ function EntryRow({
 }
 
 /** A suggested new section's entries: the count of facts left to confirm, then one row per entry. */
-export function NewEntryStack({ proposal }: { proposal: Proposal }) {
+export function NewEntryStack({
+  proposal,
+  version,
+}: {
+  proposal: Proposal;
+  version: ProposalVersion;
+}) {
   const { openEntryIds, openEntry } = use(SuggestionSelection);
-  const entries = listNewEntries(proposal);
+  const entries = listNewEntries(version);
   const entriesNotLeftOut = entries.filter((entry) => !entry.isLeftOut);
-  const factsLeft = findUnconfirmedFacts(proposal);
+  const factsLeft = findUnconfirmedFacts(version);
   const openId = readOpenEntryId(proposal, openEntryIds);
   const countFactsLeft = (entryId: string) =>
     factsLeft.filter((place) => place.entryId === entryId).length;
@@ -307,6 +317,7 @@ export function NewEntryStack({ proposal }: { proposal: Proposal }) {
             <EntryRow
               key={entryId}
               proposal={proposal}
+              version={version}
               entry={entry}
               factsLeftCount={countFactsLeft(entryId)}
               isOpen={isOpen}

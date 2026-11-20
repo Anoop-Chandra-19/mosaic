@@ -1,5 +1,11 @@
 import { isEmptyNewSection } from '@/lib/resume/proposalAnchor';
-import type { Proposal, ProposalChangeKind, ProposalFlagKind } from '@/types/agentProposal';
+import type {
+  Proposal,
+  ProposalChangeKind,
+  ProposalFlagKind,
+  ProposalVersion,
+} from '@/types/agentProposal';
+import { readActiveVersion } from './proposals/proposalVersions';
 
 /** Each check's name, as the card and the list show it. */
 export const FLAG_LABELS: Record<ProposalFlagKind, string> = {
@@ -15,12 +21,13 @@ export const FLAG_LABELS: Record<ProposalFlagKind, string> = {
 /** Where a suggestion stands in review. */
 export type SuggestionState = 'waiting' | 'kept' | 'held' | 'dropped' | 'stale';
 
+/** Check whether the suggestion still has a number for the user to fill. */
 export const needsNumber = (proposal: Proposal) =>
-  proposal.flags.some((flag) => flag.kind === 'unfilledGap');
+  readActiveVersion(proposal).flags.some((flag) => flag.kind === 'unfilledGap');
 
 /** Split the flags on the given bullets of a new entry into numbers to fill and other things to check. */
-export function readBulletFlags(proposal: Proposal, bulletIds: readonly string[]) {
-  const flags = proposal.flags.filter((flag) => flag.textId && bulletIds.includes(flag.textId));
+export function readBulletFlags(version: ProposalVersion, bulletIds: readonly string[]) {
+  const flags = version.flags.filter((flag) => flag.textId && bulletIds.includes(flag.textId));
   return {
     numbersToFill: flags.filter((flag) => flag.kind === 'unfilledGap'),
     toCheck: flags.filter((flag) => flag.kind !== 'unfilledGap'),
@@ -28,8 +35,8 @@ export function readBulletFlags(proposal: Proposal, bulletIds: readonly string[]
 }
 
 /** The flags about the whole change, not about one bullet of a new entry. */
-export const readWholeChangeFlags = (proposal: Proposal) =>
-  proposal.flags.filter((flag) => !flag.textId);
+export const readWholeChangeFlags = (version: ProposalVersion) =>
+  version.flags.filter((flag) => !flag.textId);
 
 export function readSuggestionState(proposal: Proposal): SuggestionState {
   if (proposal.isStale) return 'stale';
@@ -47,14 +54,15 @@ const EDITABLE_KINDS: ReadonlySet<ProposalChangeKind> = new Set<ProposalChangeKi
 ]);
 
 export const canEditSuggestion = (proposal: Proposal) =>
-  !proposal.isStale && EDITABLE_KINDS.has(proposal.change.kind);
+  !proposal.isStale && EDITABLE_KINDS.has(readActiveVersion(proposal).change.kind);
 
 /** The words a card or row shows for where it stands. */
 export function labelSuggestionState(proposal: Proposal): string {
   const state = readSuggestionState(proposal);
   if (state !== 'kept') return STATE_LABELS[state];
-  if (proposal.review.rebasedBefore) return 'kept · replaces your edit';
-  return proposal.review.userText !== undefined ? 'kept · edited' : 'kept';
+  const { review } = readActiveVersion(proposal);
+  if (review.rebasedBefore) return 'kept · replaces your edit';
+  return review.userText !== undefined ? 'kept · edited' : 'kept';
 }
 
 const STATE_LABELS: Record<SuggestionState, string> = {
@@ -80,8 +88,11 @@ export const STATE_TONES: Record<SuggestionState, { text: string; dot: string }>
  */
 export function countSuggestions(proposals: readonly Proposal[]) {
   const open = proposals.filter(
-    (p) => p.status !== 'applied' && p.status !== 'rejected' && !isEmptyNewSection(p.change)
+    (proposal) =>
+      proposal.status !== 'applied' &&
+      proposal.status !== 'rejected' &&
+      !isEmptyNewSection(readActiveVersion(proposal).change)
   );
-  const stale = open.filter((p) => p.isStale).length;
+  const stale = open.filter((proposal) => proposal.isStale).length;
   return { waiting: open.length - stale, stale };
 }

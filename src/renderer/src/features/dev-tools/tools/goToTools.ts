@@ -2,6 +2,7 @@ import {
   labelSuggestionKind,
   placeSuggestion,
 } from '@/features/suggestions/proposals/describeSuggestion';
+import { readActiveVersion } from '@/features/suggestions/proposals/proposalVersions';
 import { versionLabel } from '@/lib/versionLabel';
 import { GETTING_STARTED_STEPS } from '@/features/onboarding/getting-started/gettingStartedSteps';
 import { HISTORY_TOUR_STEPS } from '@/features/onboarding/history/historyTourSteps';
@@ -110,7 +111,7 @@ const SUGGESTION_STEP: DevToolStep = {
     const doc = getResumeSnapshot();
     return [
       { value: 0, label: 'None, the whole review', isDefault: true },
-      ...proposals.map(({ change }, index) => ({
+      ...proposals.map(readActiveVersion).map(({ change }, index) => ({
         value: index + 1,
         label: labelSuggestionKind(change),
         detail: placeSuggestion(doc, change).join(', '),

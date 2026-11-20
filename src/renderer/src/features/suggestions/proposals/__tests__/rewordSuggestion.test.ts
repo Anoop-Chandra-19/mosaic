@@ -3,6 +3,7 @@ import { useProposalStore } from '@/stores/proposalStore';
 import { getResumeSnapshot, useResumeStore } from '@/stores/resumeStore';
 import type { ProposalChange, TextPlace } from '@/types/agentProposal';
 import { listNewContentIds } from '../newContentIds';
+import { readActiveVersion } from '../proposalVersions';
 import {
   acceptProposals,
   editProposal,
@@ -24,14 +25,15 @@ beforeEach(() => {
 });
 
 const proposals = () => useProposalStore.getState().byTemplate.t1 ?? [];
-const changes = () => proposals().map((proposal) => proposal.change);
+const changes = () => proposals().map((proposal) => readActiveVersion(proposal).change);
+const firstFlagKinds = () => readActiveVersion(proposals()[0]).flags.map((flag) => flag.kind);
 
 const stage = (change: ProposalChange, requestText = '') =>
   stageProposals(requestText, [{ source: change.kind, change } as StagedChange]);
 
 /** Stage a change and return the ids of what it adds, parent first. */
 const stageAndListNewIds = (change: ProposalChange) =>
-  listNewContentIds(stage(change).proposals[0].newContentIds);
+  listNewContentIds(readActiveVersion(stage(change).proposals[0]).newContentIds);
 
 /** Return the text of a bullet or line in the working copy. */
 function readWorkingText(id: string): string | undefined {
@@ -65,7 +67,7 @@ describe('a rewrite of text that a waiting rewrite wrote', () => {
     stage(rewrite('b1', B1, 'Migrated billing to Postgres'));
     stage(rewrite('b1', 'Migrated billing to Postgres', LED));
 
-    expect(proposals()[0].flags.map((flag) => flag.kind)).toEqual(['claimsMore']);
+    expect(firstFlagKinds()).toEqual(['claimsMore']);
   });
 
   it('does not flag a number the user gave in the later request', () => {
@@ -75,7 +77,7 @@ describe('a rewrite of text that a waiting rewrite wrote', () => {
       'Say it was 40 tables'
     );
 
-    expect(proposals()[0].flags.map((flag) => flag.kind)).not.toContain('newNumbers');
+    expect(firstFlagKinds()).not.toContain('newNumbers');
   });
 
   it('removes the suggestion when it puts the user’s text back', () => {
@@ -146,7 +148,7 @@ describe('a rewrite of text that another kind of waiting suggestion wrote', () =
         after: 'Migrated billing to Postgres, cutting p99 latency',
       },
     ]);
-    expect(proposals()[0].flags.map((flag) => flag.kind)).toContain('removedDetail');
+    expect(firstFlagKinds()).toContain('removedDetail');
   });
 
   it('changes an added bullet’s text', () => {
@@ -256,7 +258,7 @@ describe('a rewrite of one bullet of a waiting split', () => {
 
     stage(rewriteBullet('e1', 'b2', 'Reduced p99 latency by 83%'));
 
-    expect(proposals()[0].flags.map((flag) => flag.kind)).toEqual(['calculatedNumbers']);
+    expect(firstFlagKinds()).toEqual(['calculatedNumbers']);
   });
 
   it('is a plain cut again when the bullet is put back as it was cut', () => {

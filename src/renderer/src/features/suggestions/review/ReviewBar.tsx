@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils';
 import type { ResumePreviewMeta } from '@/types/preview';
 import type { Proposal } from '@/types/agentProposal';
 import { acceptProposals, rejectProposals } from '../proposals/proposalActions';
+import { readActiveVersion } from '../proposals/proposalVersions';
 import type { PreviewLook } from './preview/suggestionPreview';
 import type { ReviewMode } from './ReviewInspector';
 import { readSuggestionState, type SuggestionState } from '../suggestionState';
@@ -61,7 +62,8 @@ function describeReview(proposals: Proposal[], applied: ReviewBarProps['applied'
   if (!proposals.length) {
     return { title: 'Suggestions', sub: 'Nothing waiting for this template' };
   }
-  const request = proposals.at(-1)?.requestText.trim();
+  const newest = proposals.at(-1);
+  const request = newest && readActiveVersion(newest).requestText.trim();
   return {
     title: `Reviewing ${countSuggestions(proposals.length)}`,
     sub: `${request ? `“${request}” · ` : ''}your draft is unchanged until you apply`,

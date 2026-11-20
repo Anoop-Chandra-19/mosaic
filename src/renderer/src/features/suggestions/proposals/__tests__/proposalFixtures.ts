@@ -1,7 +1,8 @@
-import type { Proposal, ProposalChange } from '@/types/agentProposal';
+import type { Proposal, ProposalChange, ProposalVersion } from '@/types/agentProposal';
 import { createEmptyResume } from '@shared/resume/defaultResume';
 import type { ResumeData } from '@shared/types/resume';
 import { createNewContentIds } from '../newContentIds';
+import { resolveProposal, type ReviewedChange } from '../reviewedChange';
 
 /** A fictional resume with fixed ids: one experience entry of three bullets, and a second entry. */
 export function makeResume(): ResumeData {
@@ -92,22 +93,40 @@ export function rewrite(
 }
 
 /**
- * Build a proposal the way staging does, for tests that start after staging. Ids for what
- * it adds come from its own id: `p1-new1`, `p1-new2`, in `listNewContentIds` order.
+ * Build a kept proposal with one version, the way staging does, for tests that start after
+ * staging. Ids for what it adds come from its own id: `p1-new1`, `p1-new2`, in
+ * `listNewContentIds` order. Its version's id is `p1-v1`. `version` sets the version's own
+ * fields, such as the user's review or the flags.
  */
-export function makeProposal(change: ProposalChange, id: string): Proposal {
+export function makeProposal(
+  change: ProposalChange,
+  id: string,
+  version: Partial<ProposalVersion> = {}
+): Proposal {
   let generatedIdCount = 0;
+  const versionId = `${id}-v1`;
   return {
     id,
     templateId: 't1',
     source: change.kind,
-    change,
-    newContentIds: createNewContentIds(change, () => `${id}-new${++generatedIdCount}`),
+    versions: [
+      {
+        id: versionId,
+        change,
+        newContentIds: createNewContentIds(change, () => `${id}-new${++generatedIdCount}`),
+        review: {},
+        flags: [],
+        requestText: '',
+        createdAt: 0,
+        ...version,
+      },
+    ],
+    keptVersionId: versionId,
     status: 'accepted',
-    review: {},
     isStale: false,
-    flags: [],
-    requestText: '',
-    createdAt: 0,
   };
 }
+
+/** Build a change ready to apply, with the ids `makeProposal` gives it. */
+export const makeReviewedChange = (change: ProposalChange, id: string): ReviewedChange =>
+  resolveProposal(makeProposal(change, id));

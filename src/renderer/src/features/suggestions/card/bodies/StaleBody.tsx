@@ -83,8 +83,8 @@ const canUseAnyway = (change: ProposalChange) =>
   change.kind === 'rewrite' || change.kind === 'merge' || change.kind === 'rename';
 
 /** Out of date: what changed under it, what it was for, and the ways back to it. */
-export function StaleBody({ proposal, draft }: SuggestionBodyProps) {
-  const { change } = proposal;
+export function StaleBody({ version, draft }: SuggestionBodyProps) {
+  const { change } = version;
   const now = readTextNow(draft, change);
   const texts = readWasAndWould(change);
   const noun = nameNoun(draft, change);

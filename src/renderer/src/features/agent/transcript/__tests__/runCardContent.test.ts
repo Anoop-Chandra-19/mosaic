@@ -14,7 +14,12 @@ const suggestion = (id: string, status: ProposalStatus = 'pending', isStale = fa
     status,
     isStale,
     templateId: 't1',
-    change: { kind: 'rename', sectionId: 's1', before: 'Experience', after: 'Work history' },
+    versions: [
+      {
+        id: `${id}-v1`,
+        change: { kind: 'rename', sectionId: 's1', before: 'Experience', after: 'Work history' },
+      },
+    ],
   }) as Proposal;
 
 const FINISHED = { isCancelled: false, isStopDecided: false };

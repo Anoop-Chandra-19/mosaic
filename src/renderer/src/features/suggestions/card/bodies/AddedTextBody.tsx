@@ -58,13 +58,14 @@ function Neighbour({ text, marker }: { text: string; marker: string }) {
  */
 export function AddedTextBody({
   proposal,
+  version,
   draft,
   isEditing,
   onEditingChange,
 }: SuggestionBodyProps) {
-  const change = resolveChange(proposal);
+  const change = resolveChange(version);
   if (change.kind !== 'add') return null;
-  const { review, flags } = proposal;
+  const { review, flags } = version;
   const isLine = change.place.unit === 'line';
   const marker = isLine ? '' : '•';
   const among = readAmong(draft, change.place);
@@ -95,7 +96,11 @@ export function AddedTextBody({
           )}
           {isEditing ? (
             <div className="min-w-0 flex-1">
-              <SuggestionEditor proposal={proposal} onDone={() => onEditingChange(false)} />
+              <SuggestionEditor
+                proposal={proposal}
+                version={version}
+                onDone={() => onEditingChange(false)}
+              />
             </div>
           ) : (
             <Text
@@ -125,7 +130,7 @@ export function AddedTextBody({
         </TagLine>
       )}
       {!isEditing && <SuggestionFlags flags={flags} />}
-      {!isEditing && <WithoutNumberChoice proposal={proposal} />}
+      {!isEditing && <WithoutNumberChoice proposalId={proposal.id} version={version} />}
       {!isEditing && review.userText !== undefined && (
         <BackLink onClick={() => clearProposalEdit(proposal.id)}>
           Back to the assistant’s wording

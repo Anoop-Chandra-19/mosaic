@@ -4,6 +4,7 @@ import type { Proposal, ProposalChange } from '@/types/agentProposal';
 import type { ResumeData } from '@shared/types/resume';
 import { layInProposal } from '../../proposals/apply/layInProposal';
 import { planApply, type ApplyPlan } from '../../proposals/apply/planApply';
+import { keepVersion, readActiveVersion, replaceVersion } from '../../proposals/proposalVersions';
 import {
   findUnconfirmedFacts,
   findWrittenFacts,
@@ -61,17 +62,18 @@ export function buildSuggestionPreview(
 }
 
 /**
- * A suggestion as All suggested shows it: kept, a number to fill swapped for the version
+ * A suggestion as All suggested shows it: kept, a number to fill swapped for the wording
  * that needs none, facts still to confirm shown as written. Dropped and out-of-date ones
  * stay as they are.
  */
 function takeAsKept(proposal: Proposal, notes: Map<string, PreviewNote>): Proposal {
   if (proposal.isStale || proposal.status === 'rejected') return proposal;
-  const kept: Proposal = { ...proposal, status: 'accepted' };
+  const kept = keepVersion(proposal);
+  const version = readActiveVersion(kept);
   const noteParts: string[] = [];
-  const unconfirmed = findUnconfirmedFacts(proposal).length;
+  const unconfirmed = findUnconfirmedFacts(version).length;
   if (unconfirmed) {
-    const written = findWrittenFacts(proposal).length;
+    const written = findWrittenFacts(version).length;
     noteParts.push(`with ${unconfirmed} of ${written} facts unconfirmed`);
   }
   const withoutNumbers = takeWithoutNumbers(kept);
@@ -83,31 +85,36 @@ function takeAsKept(proposal: Proposal, notes: Map<string, PreviewNote>): Propos
 }
 
 /**
- * Use the version without a number for each text that still needs its number, and return
+ * Use the wording without a number for each text that still needs its number, and return
  * the words for the preview's note. Returns null when no text needs a number.
  */
 function takeWithoutNumbers(proposal: Proposal): { proposal: Proposal; note: string } | null {
   if (!needsNumber(proposal)) return null;
-  const flags = proposal.flags.filter((flag) => flag.kind !== 'unfilledGap');
-  const { change, review } = proposal;
+  const version = readActiveVersion(proposal);
+  const flags = version.flags.filter((flag) => flag.kind !== 'unfilledGap');
+  const { change, review } = version;
   if ((change.kind === 'rewrite' || change.kind === 'add') && change.gap) {
     return {
-      proposal: {
-        ...proposal,
+      proposal: replaceVersion(proposal, {
+        ...version,
         flags,
         review: { ...review, isWithoutNumber: true, filledNumber: undefined },
-      },
+      }),
       note: 'without its number',
     };
   }
   // Otherwise the texts are bullets of new entries, each one still needing its number.
-  const bulletIds = proposal.flags.flatMap((flag) =>
+  const bulletIds = version.flags.flatMap((flag) =>
     flag.kind === 'unfilledGap' && flag.textId ? [flag.textId] : []
   );
   if (!bulletIds.length) return null;
   const withoutNumberIds = [...(review.withoutNumberIds ?? []), ...bulletIds];
   return {
-    proposal: { ...proposal, flags, review: { ...review, withoutNumberIds } },
+    proposal: replaceVersion(proposal, {
+      ...version,
+      flags,
+      review: { ...review, withoutNumberIds },
+    }),
     note:
       bulletIds.length === 1
         ? 'a bullet without its number'
@@ -134,7 +141,7 @@ function noteWhatIsLeftOut(
     );
   }
   for (const proposal of plan.waiting) {
-    const facts = findUnconfirmedFacts(proposal).length;
+    const facts = findUnconfirmedFacts(readActiveVersion(proposal)).length;
     leaveOff(
       proposal,
       facts ? `waiting, ${facts} ${facts === 1 ? 'fact' : 'facts'} to confirm` : 'waiting'
@@ -154,7 +161,7 @@ function layInLanded(draft: ResumeData, landed: readonly Proposal[]) {
   }
   const targets = new Map<string, PreviewTarget[]>();
   for (const proposal of landed) {
-    const change = resolveChange(proposal);
+    const change = resolveChange(readActiveVersion(proposal));
     const ids = [...readAboutIds(change), ...(createdIdsByProposal.get(proposal.id) ?? [])];
     targets.set(proposal.id, [
       ...readHeadingIds(change).map((id) => ({ part: 'heading' as const, id })),

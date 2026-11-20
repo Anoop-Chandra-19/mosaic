@@ -4,6 +4,7 @@ import {
   acceptProposals,
   confirmProposalFact,
 } from '@/features/suggestions/proposals/proposalActions';
+import { readActiveVersion } from '@/features/suggestions/proposals/proposalVersions';
 import { findUnconfirmedFacts } from '@/features/suggestions/proposals/reviewedChange';
 import { agentService } from '@/lib/services/agentService';
 import { useAgentSettingsStore } from '@/stores/agentSettingsStore';
@@ -66,7 +67,9 @@ async function keepAndApplyAll(): Promise<string> {
     (proposal) => proposal.status === 'pending' && !proposal.isStale
   );
   for (const proposal of waiting) {
-    for (const fact of findUnconfirmedFacts(proposal)) confirmProposalFact(proposal.id, fact, true);
+    for (const fact of findUnconfirmedFacts(readActiveVersion(proposal))) {
+      confirmProposalFact(proposal.id, fact, true);
+    }
   }
   acceptProposals(waiting.map((proposal) => proposal.id));
   const outcome = await applyAcceptedProposals();

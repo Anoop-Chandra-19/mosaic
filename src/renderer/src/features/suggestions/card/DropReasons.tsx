@@ -43,7 +43,7 @@ interface DropReasonsProps {
  * ignoring it are the same. The assistant reads it next turn.
  */
 export function DropReasons({ proposals, look, onDismiss, className }: DropReasonsProps) {
-  const { reasons = [], note } = proposals[0]?.review.dropReasons ?? {};
+  const { reasons = [], note } = proposals[0]?.dropReasons ?? {};
   const [isNoteOpen, setIsNoteOpen] = useState(!!note);
   const ids = proposals.map((proposal) => proposal.id);
   const toggle = (reason: DropReason) => {

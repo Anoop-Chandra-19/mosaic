@@ -4,8 +4,10 @@ import type {
   NewEntryIds,
   Proposal,
   ProposalChange,
+  ProposalVersion,
 } from '@/types/agentProposal';
 import { createNewContentIds } from './newContentIds';
+import { readActiveVersion } from './proposalVersions';
 
 /*
  * Add to a suggested new section or new entry instead of making another suggestion.
@@ -19,7 +21,7 @@ import { createNewContentIds } from './newContentIds';
  * has kept it, an addition becomes a suggestion of its own.
  *
  * For each change, staging calls `findSuggestionToFill`. When it returns a suggestion,
- * staging calls `fillSuggestion` to write the change into it.
+ * staging calls `fillSuggestion` to write the change into that suggestion's version.
  */
 
 type SectionChange = Extract<ProposalChange, { kind: 'section' }>;
@@ -29,18 +31,18 @@ type EntryIds = Extract<NewContentIds, { kind: 'entry' }>;
 type AddChange = Extract<ProposalChange, { kind: 'add' }>;
 type AddIds = Extract<NewContentIds, { kind: 'add' }>;
 
-/** A waiting suggestion for a new section, with the ids staging gave it. */
-type SectionSuggestion = Proposal & { change: SectionChange; newContentIds: SectionIds };
+/** A version that adds a new section, with the ids staging gave it. */
+type SectionVersion = ProposalVersion & { change: SectionChange; newContentIds: SectionIds };
 
-/** A waiting suggestion for a new entry alone, with the ids staging gave it. */
-type EntrySuggestion = Proposal & { change: EntryChange; newContentIds: EntryIds };
+/** A version that adds a new entry alone, with the ids staging gave it. */
+type EntryVersion = ProposalVersion & { change: EntryChange; newContentIds: EntryIds };
 
-type FillableSuggestion = SectionSuggestion | EntrySuggestion;
+type FillableVersion = SectionVersion | EntryVersion;
 
 export interface FilledContents {
-  /** The suggestion's change, now including the added entry, line or bullet. */
+  /** The version's change, now including the added entry, line or bullet. */
   change: ProposalChange;
-  /** The suggestion's ids, now including the ids of the added entry, line or bullet. */
+  /** The version's ids, now including the ids of the added entry, line or bullet. */
   newContentIds: NewContentIds;
   /** The ids of the entries and bullets that later runs added, labelled "just added". */
   lateIds: string[] | undefined;
@@ -48,17 +50,16 @@ export interface FilledContents {
   filledIds: NewContentIds;
 }
 
-const isSectionSuggestion = (proposal: Proposal): proposal is SectionSuggestion =>
-  proposal.change.kind === 'section' && proposal.newContentIds?.kind === 'section';
+const isSectionVersion = (version: ProposalVersion): version is SectionVersion =>
+  version.change.kind === 'section' && version.newContentIds?.kind === 'section';
 
-const isEntrySuggestion = (proposal: Proposal): proposal is EntrySuggestion =>
-  proposal.change.kind === 'entry' && proposal.newContentIds?.kind === 'entry';
+const isEntryVersion = (version: ProposalVersion): version is EntryVersion =>
+  version.change.kind === 'entry' && version.newContentIds?.kind === 'entry';
 
 const isWaiting = (proposal: Proposal) => proposal.status === 'pending' && !proposal.isStale;
 
-/** Return the ids of the new entries a suggestion makes, alone or in a new section. */
-function listMadeEntryIds(proposal: Proposal): string[] {
-  const ids = proposal.newContentIds;
+/** Return the ids of the new entries a version makes, alone or in a new section. */
+function listMadeEntryIds({ newContentIds: ids }: ProposalVersion): string[] {
   if (ids?.kind === 'entry') return [ids.entry.entryId];
   if (ids?.kind === 'section' && ids.contents?.layout === 'entries') {
     return ids.contents.entries.map((entry) => entry.entryId);
@@ -66,10 +67,21 @@ function listMadeEntryIds(proposal: Proposal): string[] {
   return [];
 }
 
-/** Check whether a suggested section can take contents of this layout: it is empty, or already holds that layout. */
-function canSectionHold(suggestion: SectionSuggestion, layout: 'entries' | 'lines'): boolean {
-  const { contents } = suggestion.change;
-  return contents === null || contents.layout === layout;
+/** Check whether a new section can take contents of this layout: it is empty, or already holds that layout. */
+function canSectionHold({ change }: SectionVersion, layout: 'entries' | 'lines'): boolean {
+  return change.contents === null || change.contents.layout === layout;
+}
+
+/** Check whether a change goes into the new section or new entry that this version makes. */
+function isFillTarget(version: ProposalVersion, change: ProposalChange): boolean {
+  const isSectionFor = (sectionId: string, layout: 'entries' | 'lines') =>
+    isSectionVersion(version) &&
+    version.newContentIds.sectionId === sectionId &&
+    canSectionHold(version, layout);
+  if (change.kind === 'entry') return isSectionFor(change.sectionId, 'entries');
+  if (change.kind !== 'add') return false;
+  if (change.place.unit === 'line') return isSectionFor(change.place.sectionId, 'lines');
+  return listMadeEntryIds(version).includes(change.place.entryId);
 }
 
 /**
@@ -81,37 +93,24 @@ function canSectionHold(suggestion: SectionSuggestion, layout: 'entries' | 'line
 export function findSuggestionToFill(
   proposals: readonly Proposal[],
   change: ProposalChange
-): FillableSuggestion | null {
-  const waiting = proposals.filter(isWaiting);
-  const findSection = (sectionId: string, layout: 'entries' | 'lines') =>
-    waiting.find(
-      (proposal): proposal is SectionSuggestion =>
-        isSectionSuggestion(proposal) &&
-        proposal.newContentIds.sectionId === sectionId &&
-        canSectionHold(proposal, layout)
-    ) ?? null;
-  if (change.kind === 'entry') return findSection(change.sectionId, 'entries');
-  if (change.kind !== 'add') return null;
-  if (change.place.unit === 'line') return findSection(change.place.sectionId, 'lines');
-  const { entryId } = change.place;
+): Proposal | null {
   return (
-    waiting.find(
-      (proposal): proposal is FillableSuggestion =>
-        (isSectionSuggestion(proposal) || isEntrySuggestion(proposal)) &&
-        listMadeEntryIds(proposal).includes(entryId)
-    ) ?? null
+    proposals
+      .filter(isWaiting)
+      .find((proposal) => isFillTarget(readActiveVersion(proposal), change)) ?? null
   );
 }
 
 /** Return the ids of the new sections that waiting suggestions made and that are still empty. */
 export function listEmptySectionIds(proposals: readonly Proposal[]): Set<string> {
-  const empty = proposals.filter(
-    (proposal): proposal is SectionSuggestion =>
-      isSectionSuggestion(proposal) &&
-      proposal.status === 'pending' &&
-      proposal.change.contents === null
-  );
-  return new Set(empty.map((proposal) => proposal.newContentIds.sectionId));
+  const emptySections = proposals
+    .filter((proposal) => proposal.status === 'pending')
+    .map(readActiveVersion)
+    .filter(
+      (version): version is SectionVersion =>
+        isSectionVersion(version) && version.change.contents === null
+    );
+  return new Set(emptySections.map((version) => version.newContentIds.sectionId));
 }
 
 const insertAt = <T>(list: readonly T[], index: number, value: T) => [
@@ -127,7 +126,7 @@ const readPositionAfter = (ids: readonly string[], afterId: string | null | unde
 type Filled = Pick<FilledContents, 'change' | 'newContentIds'>;
 
 function fillWithLine(
-  { change, newContentIds }: SectionSuggestion,
+  { change, newContentIds }: SectionVersion,
   line: AddChange,
   lineIds: AddIds
 ): Filled {
@@ -144,7 +143,7 @@ function fillWithLine(
 }
 
 function fillWithEntry(
-  { change, newContentIds }: SectionSuggestion,
+  { change, newContentIds }: SectionVersion,
   { frame, bullets, gaps, afterEntryId }: EntryChange,
   entryIds: EntryIds
 ): Filled {
@@ -194,7 +193,7 @@ function addBulletToEntry(
 }
 
 function fillEntryWithBullet(
-  { change, newContentIds }: EntrySuggestion,
+  { change, newContentIds }: EntryVersion,
   bullet: AddChange,
   bulletIds: AddIds
 ): Filled {
@@ -210,7 +209,7 @@ function fillEntryWithBullet(
 }
 
 function fillSectionEntryWithBullet(
-  { change, newContentIds }: SectionSuggestion,
+  { change, newContentIds }: SectionVersion,
   bullet: AddChange & { place: { unit: 'bullet' } },
   bulletIds: AddIds
 ): Filled | null {
@@ -238,23 +237,23 @@ function fillSectionEntryWithBullet(
   };
 }
 
-/** Write the change into the suggestion. Returns null when the change doesn't fit there. */
+/** Write the change into the version. Returns null when the change doesn't fit there. */
 function fillWith(
-  suggestion: FillableSuggestion,
+  version: FillableVersion,
   change: ProposalChange,
   filledIds: NewContentIds | null
 ): Filled | null {
-  if (change.kind === 'entry' && filledIds?.kind === 'entry' && isSectionSuggestion(suggestion)) {
-    return fillWithEntry(suggestion, change, filledIds);
+  if (change.kind === 'entry' && filledIds?.kind === 'entry' && isSectionVersion(version)) {
+    return fillWithEntry(version, change, filledIds);
   }
   if (change.kind !== 'add' || filledIds?.kind !== 'add') return null;
   const { place } = change;
   if (place.unit === 'line') {
-    return isSectionSuggestion(suggestion) ? fillWithLine(suggestion, change, filledIds) : null;
+    return isSectionVersion(version) ? fillWithLine(version, change, filledIds) : null;
   }
-  return isEntrySuggestion(suggestion)
-    ? fillEntryWithBullet(suggestion, change, filledIds)
-    : fillSectionEntryWithBullet(suggestion, { ...change, place }, filledIds);
+  return isEntryVersion(version)
+    ? fillEntryWithBullet(version, change, filledIds)
+    : fillSectionEntryWithBullet(version, { ...change, place }, filledIds);
 }
 
 /** Return the id to label "just added": the added entry or bullet. An added line gets no label. */
@@ -264,25 +263,25 @@ function readTaggedId(filledIds: NewContentIds): string | null {
 }
 
 /**
- * Write the change into the suggestion and return the result. `findSuggestionToFill` must
- * have returned this suggestion for this change. Set `isLate` when the change comes from a
- * later run than the one that made the suggestion. The added entry or bullet is then
- * labelled "just added" on the card.
+ * Write the change into a version of a suggestion and return the result.
+ * `findSuggestionToFill` must have returned that suggestion for this change. Set `isLate`
+ * when the change comes from a later run than the one that made the version. The added
+ * entry or bullet is then labelled "just added" on the card.
  */
 export function fillSuggestion(
-  suggestion: Proposal,
+  version: ProposalVersion,
   change: ProposalChange,
   isLate: boolean
 ): FilledContents {
   const filledIds = createNewContentIds(change);
-  const isFillable = isSectionSuggestion(suggestion) || isEntrySuggestion(suggestion);
-  const filled = isFillable ? fillWith(suggestion, change, filledIds) : null;
+  const isFillable = isSectionVersion(version) || isEntryVersion(version);
+  const filled = isFillable ? fillWith(version, change, filledIds) : null;
   if (!filled || !filledIds) {
     throw new Error(
-      `Expected an entry, line or bullet that fits the "${suggestion.change.kind}" suggestion "${suggestion.id}", received "${change.kind}"`
+      `Expected an entry, line or bullet that fits the "${version.change.kind}" suggestion version "${version.id}", received "${change.kind}"`
     );
   }
   const taggedId = isLate ? readTaggedId(filledIds) : null;
-  const lateIds = taggedId ? [...(suggestion.lateIds ?? []), taggedId] : suggestion.lateIds;
+  const lateIds = taggedId ? [...(version.lateIds ?? []), taggedId] : version.lateIds;
   return { ...filled, lateIds, filledIds };
 }

@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils';
 import type { Proposal } from '@/types/agentProposal';
 import type { ResumeData } from '@shared/types/resume';
 import { placeSuggestion } from '../../proposals/describeSuggestion';
+import { readActiveVersion } from '../../proposals/proposalVersions';
 import { DropReasons } from '../../card/DropReasons';
 import { SuggestionActions } from '../../card/SuggestionActions';
 import { SuggestionBody } from '../../card/SuggestionBody';
@@ -46,6 +47,7 @@ export function OpenSuggestion({
   onDismissReasons,
 }: OpenSuggestionProps) {
   const state = readSuggestionState(proposal);
+  const version = readActiveVersion(proposal);
   const isDocument = look === 'document';
   // Editing selects the suggestion too, so the keys act on the one being edited.
   const setEditing = (isOn: boolean) => {
@@ -71,9 +73,9 @@ export function OpenSuggestion({
         <Text variant="meta" className="text-ink-faint">
           {String(number).padStart(2, '0')}
         </Text>
-        <SuggestionKindChip change={proposal.change} />
+        <SuggestionKindChip change={version.change} />
         <Text variant="secondary" className="min-w-0 truncate text-ink-soft">
-          {placeSuggestion(draft, proposal.change).at(-1)}
+          {placeSuggestion(draft, version.change).at(-1)}
         </Text>
         <span className="flex-1" />
         <Text variant="secondary" className={cn('whitespace-nowrap', STATE_TONES[state].text)}>
@@ -95,6 +97,7 @@ export function OpenSuggestion({
       <div className={cn('pt-0.5 pb-2.5', isDocument ? '' : 'px-3.25')}>
         <SuggestionBody
           proposal={proposal}
+          version={version}
           draft={draft}
           isEditing={isEditing}
           onEditingChange={setEditing}
@@ -106,9 +109,9 @@ export function OpenSuggestion({
       <div
         className={cn('flex flex-wrap items-center gap-1.5 pb-2.5', isDocument ? '' : 'px-3.25')}
       >
-        {proposal.reason && (
+        {version.reason && (
           <Text as="p" variant="secondary" className="mb-1 basis-full text-ink-muted">
-            {proposal.reason}
+            {version.reason}
           </Text>
         )}
         <SuggestionActions proposal={proposal} isEditing={isEditing} onEditingChange={setEditing} />

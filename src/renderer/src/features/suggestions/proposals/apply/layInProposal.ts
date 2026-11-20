@@ -2,6 +2,7 @@ import type { Proposal } from '@/types/agentProposal';
 import type { ResumeData } from '@shared/types/resume';
 import { applyProposalsToResume } from './applyProposalsToResume';
 import { listNewContentIds } from '../newContentIds';
+import { readActiveVersion } from '../proposalVersions';
 import { resolveProposal } from '../reviewedChange';
 
 /** Collect every section, entry, line and bullet id in a document. */
@@ -29,8 +30,9 @@ export function layInProposal(
   const laidIn = applyProposalsToResume(doc, [resolveProposal(proposal)]);
   if (!laidIn.appliedIds.length) return null;
   const idsNow = listDocumentIds(laidIn.doc);
+  const { newContentIds } = readActiveVersion(proposal);
   return {
     doc: laidIn.doc,
-    createdIds: listNewContentIds(proposal.newContentIds).filter((id) => idsNow.has(id)),
+    createdIds: listNewContentIds(newContentIds).filter((id) => idsNow.has(id)),
   };
 }

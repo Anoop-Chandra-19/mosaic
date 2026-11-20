@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Version, VersionMeta } from '@shared/types/db';
 import type { ResumeData } from '@shared/types/resume';
+import { readActiveVersion } from '../../../suggestions/proposals/proposalVersions';
 import {
   makeResume,
   makeResumeWithLines,
@@ -29,6 +30,9 @@ const openDraft = (doc: ResumeData, templateId = 't1', rev = 3) =>
   useResumeStore.getState().loadDraft({ templateId, doc, rev });
 
 const stagedSuggestions = () => useProposalStore.getState().byTemplate.t1 ?? [];
+/** The active version of each staged suggestion. In these tests each one has only one version. */
+const stagedVersions = () => stagedSuggestions().map(readActiveVersion);
+const stagedChanges = () => stagedVersions().map((version) => version.change);
 
 /** The resume with one bullet's text changed, as an edit since the read would leave it. */
 function withBulletText(bulletId: string, text: string): ResumeData {
@@ -140,8 +144,8 @@ describe('the propose tools', () => {
       reason: 'Shorter',
     });
     expect(result).toMatchObject({ isError: false, content: expect.stringContaining('b1') });
-    expect(stagedSuggestions()[0]).toMatchObject({
-      source: 'rewrite',
+    expect(stagedSuggestions()[0].source).toBe('rewrite');
+    expect(stagedVersions()[0]).toMatchObject({
       reason: 'Shorter',
       requestText: 'Tighten my bullets',
       change: {
@@ -186,7 +190,7 @@ describe('the propose tools', () => {
       text: 'Wrote the runbook that cut pages by {{?}}%',
       withoutNumber: 'Wrote the runbook for payments',
     });
-    expect(stagedSuggestions()[0].change).toMatchObject({
+    expect(stagedChanges()[0]).toMatchObject({
       gap: { withoutNumber: 'Wrote the runbook for payments' },
     });
   });
@@ -198,7 +202,7 @@ describe('the propose tools', () => {
       replace: 'for our',
     });
     expect(result.isError).toBe(false);
-    expect(stagedSuggestions().map((proposal) => proposal.change)).toMatchObject([
+    expect(stagedChanges()).toMatchObject([
       { place: { bulletId: 'b3' }, after: 'Wrote the on-call runbook for our payments team' },
       { place: { bulletId: 'b4' }, after: 'Built tile caching for our Oslo office' },
     ]);
@@ -208,7 +212,7 @@ describe('the propose tools', () => {
   it('rename every use in a bullet, never inside a word, and say when no bullet has it', async () => {
     await readTheResume();
     await callTool('propose_replace_everywhere', { find: 'the', replace: 'our' });
-    expect(stagedSuggestions().map((proposal) => proposal.change)).toMatchObject([
+    expect(stagedChanges()).toMatchObject([
       { place: { bulletId: 'b3' }, after: 'Wrote our on-call runbook for our payments team' },
       { place: { bulletId: 'b4' }, after: 'Built tile caching for our Oslo office' },
     ]);
@@ -223,7 +227,7 @@ describe('the propose tools', () => {
   it('split where the second bullet starts', async () => {
     await readTheResume();
     await callTool('propose_split', { bulletId: 'b2', secondStartsWith: 'from 18%' });
-    expect(stagedSuggestions()[0].change).toMatchObject({
+    expect(stagedChanges()[0]).toMatchObject({
       kind: 'split',
       at: 'Reduced p99 latency '.length,
     });
@@ -240,7 +244,7 @@ describe('the propose tools', () => {
       secondBulletId: 'b2',
       text: 'Moved billing to Postgres and cut p99 latency',
     });
-    expect(stagedSuggestions()[0].change).toMatchObject({
+    expect(stagedChanges()[0]).toMatchObject({
       kind: 'merge',
       firstId: 'b1',
       secondId: 'b2',
@@ -251,7 +255,7 @@ describe('the propose tools', () => {
     await readTheResume();
     await callTool('propose_reorder', { order: ['e2', 'e1'] });
     await callTool('propose_reorder', { order: '["b3","b1","b2"]' });
-    expect(stagedSuggestions().map((proposal) => proposal.change)).toMatchObject([
+    expect(stagedChanges()).toMatchObject([
       { kind: 'reorder', place: { unit: 'items', sectionId: 's1' }, after: ['e2', 'e1'] },
       { kind: 'reorder', place: { unit: 'bullets', entryId: 'e1' }, after: ['b3', 'b1', 'b2'] },
     ]);
@@ -265,7 +269,7 @@ describe('the propose tools', () => {
       text: 'Cut p99 latency and wrote the runbook',
     });
     expect(result.content).toMatch(/^Took them in the order they sit: b2, then b3\.\n/);
-    expect(stagedSuggestions()[0].change).toMatchObject({ firstId: 'b2', secondId: 'b3' });
+    expect(stagedChanges()[0]).toMatchObject({ firstId: 'b2', secondId: 'b3' });
   });
 
   it('refuse a merge of bullets apart or in two entries, with the facts', async () => {
@@ -300,7 +304,7 @@ describe('the order compiler', () => {
     expect(result.content).toBe(
       "Took order as e1's bullets: b3, b1, b2.\ne1: suggested. Checks: none."
     );
-    expect(stagedSuggestions().map((proposal) => proposal.change)).toMatchObject([
+    expect(stagedChanges()).toMatchObject([
       { place: { unit: 'bullets', entryId: 'e1' }, after: ['b3', 'b1', 'b2'] },
     ]);
   });
@@ -308,13 +312,13 @@ describe('the order compiler', () => {
   it('reorders items that sit side by side among their own places', async () => {
     await readTheResume();
     await reorder('b3', 'b2');
-    expect(stagedSuggestions()[0].change).toMatchObject({ after: ['b1', 'b3', 'b2'] });
+    expect(stagedChanges()[0]).toMatchObject({ after: ['b1', 'b3', 'b2'] });
   });
 
   it('stages each list that changes', async () => {
     await readTheResume();
     await reorder('e2', 'e1', 'b2', 'b1', 'b3');
-    expect(stagedSuggestions().map((proposal) => proposal.change)).toMatchObject([
+    expect(stagedChanges()).toMatchObject([
       { place: { unit: 'items' }, after: ['e2', 'e1'] },
       { place: { unit: 'bullets' }, after: ['b2', 'b1', 'b3'] },
     ]);
@@ -395,7 +399,7 @@ describe('the rules every change goes through', () => {
       text: 'Mentored {{?}} new engineers',
       withoutNumber: 'Mentored new engineers',
     });
-    const [entry] = stagedSuggestions();
+    const [entry] = stagedVersions();
     const bulletId =
       entry.newContentIds?.kind === 'entry' ? entry.newContentIds.entry.bulletIds[0] : '';
     expect(entry.change).toMatchObject({
@@ -410,7 +414,7 @@ describe('the propose tools, showing and placing', () => {
   it('hide a bullet, taking "false" as false', async () => {
     await readTheResume();
     await callTool('propose_select', { id: 'b2', show: 'false' });
-    expect(stagedSuggestions()[0].change).toMatchObject({ kind: 'select', selected: false });
+    expect(stagedChanges()[0]).toMatchObject({ kind: 'select', selected: false });
   });
 
   it('draft a new entry with only the facts given', async () => {
@@ -423,7 +427,7 @@ describe('the propose tools, showing and placing', () => {
       location: '',
       bullets: ['Mapped bus stops for the transit app'],
     });
-    expect(stagedSuggestions()[0].change).toEqual({
+    expect(stagedChanges()[0]).toEqual({
       kind: 'entry',
       sectionId: 's1',
       afterEntryId: 'e1',
@@ -436,10 +440,7 @@ describe('the propose tools, showing and placing', () => {
     await readTheResume();
     await callTool('propose_entry', { sectionId: 's1', title: 'Volunteer' });
     await callTool('propose_entry', { sectionId: 's1', after: 'start', title: 'Founder' });
-    expect(stagedSuggestions().map((proposal) => proposal.change)).toMatchObject([
-      { afterEntryId: 'e2' },
-      { afterEntryId: undefined },
-    ]);
+    expect(stagedChanges()).toMatchObject([{ afterEntryId: 'e2' }, { afterEntryId: undefined }]);
     expect((await callTool('propose_entry', { sectionId: 's1', after: 'e7' })).content).toBe(
       'No entry "e7". Use an entry handle from the resume, such as e1.'
     );
@@ -452,7 +453,7 @@ describe('the propose tools, on lines, entries and sections', () => {
   it('rewrite a line, and point a heading to propose_rename', async () => {
     await readTheResume();
     await callTool('propose_rewrite', { id: 'l2', text: 'Go, Python, PostgreSQL' });
-    expect(stagedSuggestions()[0].change).toEqual({
+    expect(stagedChanges()[0]).toEqual({
       kind: 'rewrite',
       place: { unit: 'line', sectionId: 's3', lineId: 'l2' },
       before: 'Go, Python, Postgres',
@@ -466,16 +467,19 @@ describe('the propose tools, on lines, entries and sections', () => {
   it("rename a section's heading", async () => {
     await readTheResume();
     await callTool('propose_rename', { sectionId: 's1', label: 'Work history' });
-    expect(stagedSuggestions()[0]).toMatchObject({
-      source: 'rename',
-      change: { kind: 'rename', sectionId: 's1', before: 'Experience', after: 'Work history' },
+    expect(stagedSuggestions()[0].source).toBe('rename');
+    expect(stagedChanges()[0]).toEqual({
+      kind: 'rename',
+      sectionId: 's1',
+      before: 'Experience',
+      after: 'Work history',
     });
   });
 
   it('hide a line, an entry or a section, with what the user sees of it', async () => {
     await readTheResume();
     for (const id of ['l3', 'e2', 's2']) await callTool('propose_select', { id, show: false });
-    expect(stagedSuggestions().map((proposal) => proposal.change)).toMatchObject([
+    expect(stagedChanges()).toMatchObject([
       { place: { unit: 'line', lineId: 'l3' }, before: 'Docker, Terraform' },
       { place: { unit: 'entry', entryId: 'e2' }, before: 'Intern, Lantern Maps' },
       { place: { unit: 'section', sectionId: 's2' }, before: 'Summary' },
@@ -486,7 +490,7 @@ describe('the propose tools, on lines, entries and sections', () => {
     await readTheResume();
     await callTool('propose_reorder', { order: ['s3', 's1', 's2'] });
     await callTool('propose_reorder', { order: ['l3', 'l2'] });
-    expect(stagedSuggestions().map((proposal) => proposal.change)).toMatchObject([
+    expect(stagedChanges()).toMatchObject([
       { place: { unit: 'sections' }, before: ['s1', 's2', 's3'], after: ['s3', 's1', 's2'] },
       { place: { unit: 'items', sectionId: 's3' }, after: ['l3', 'l2'] },
     ]);
@@ -495,7 +499,7 @@ describe('the propose tools, on lines, entries and sections', () => {
   it('replace a term in lines too, never in a heading', async () => {
     await readTheResume();
     await callTool('propose_replace_everywhere', { find: 'Postgres', replace: 'PostgreSQL' });
-    expect(stagedSuggestions().map((proposal) => proposal.change)).toMatchObject([
+    expect(stagedChanges()).toMatchObject([
       { place: { bulletId: 'b1' }, after: 'Assisted in migrating billing to PostgreSQL' },
       { place: { lineId: 'l2' }, after: 'Go, Python, PostgreSQL' },
     ]);
@@ -517,25 +521,25 @@ describe('propose_add', () => {
   it('adds a bullet last in an entry and answers with its handle', async () => {
     const result = await callTool('propose_add', { into: 'e1', text: NEW_BULLET });
     expect(result.content).toContain('a new bullet in e1: suggested. It is b5.');
-    expect(stagedSuggestions()[0]).toMatchObject({
-      source: 'add',
-      change: { kind: 'add', place: E1_BULLETS, afterId: 'b3', text: NEW_BULLET },
+    expect(stagedSuggestions()[0].source).toBe('add');
+    expect(stagedChanges()[0]).toMatchObject({
+      kind: 'add',
+      place: E1_BULLETS,
+      afterId: 'b3',
+      text: NEW_BULLET,
     });
   });
 
   it('places a bullet first with "start", and after a handle of the same list', async () => {
     await callTool('propose_add', { into: 'e1', after: 'start', text: NEW_BULLET });
     await callTool('propose_add', { into: 'e1', after: 'b1', text: 'Reviewed billing code' });
-    expect(stagedSuggestions().map((proposal) => proposal.change)).toMatchObject([
-      { afterId: null },
-      { afterId: 'b1' },
-    ]);
+    expect(stagedChanges()).toMatchObject([{ afterId: null }, { afterId: 'b1' }]);
   });
 
   it('takes the words of one bullet as the bullet to go after, and says so', async () => {
     const result = await callTool('propose_add', { into: 'e1', after: B2, text: NEW_BULLET });
     expect(result.content).toContain(`Took ${JSON.stringify(B2)} as "b2".`);
-    expect(stagedSuggestions()[0].change).toMatchObject({ afterId: 'b2' });
+    expect(stagedChanges()[0]).toMatchObject({ afterId: 'b2' });
   });
 
   it('refuses a handle of another list, naming the handles the list holds', async () => {
@@ -552,7 +556,7 @@ describe('propose_add', () => {
   it('adds a line to a section that holds lines', async () => {
     const result = await callTool('propose_add', { into: 's3', after: 'l2', text: 'Kafka, Redis' });
     expect(result.content).toContain('a new line in s3: suggested. It is l4.');
-    expect(stagedSuggestions()[0].change).toEqual({
+    expect(stagedChanges()[0]).toEqual({
       kind: 'add',
       place: { unit: 'line', sectionId: 's3' },
       afterId: 'l2',
@@ -581,20 +585,18 @@ describe('propose_add', () => {
       section: 'Experience',
       entry: 'Harbor Freight Labs',
     });
-    expect(stagedSuggestions()[0].change).toMatchObject({ place: E1_BULLETS, afterId: 'b3' });
+    expect(stagedChanges()[0]).toMatchObject({ place: E1_BULLETS, afterId: 'b3' });
   });
 
   it('adds an item to a line that lists things, as a rewrite of the line, and answers with the line', async () => {
     const result = await callTool('propose_add', { into: 'l2', after: 'Go', text: 'Rust' });
     expect(result.content).toContain('l2: suggested. It reads: "Go, Rust, Python, Postgres".');
-    expect(stagedSuggestions()[0]).toMatchObject({
-      source: 'add',
-      change: {
-        kind: 'rewrite',
-        place: { unit: 'line', sectionId: 's3', lineId: 'l2' },
-        before: 'Go, Python, Postgres',
-        after: 'Go, Rust, Python, Postgres',
-      },
+    expect(stagedSuggestions()[0].source).toBe('add');
+    expect(stagedChanges()[0]).toMatchObject({
+      kind: 'rewrite',
+      place: { unit: 'line', sectionId: 's3', lineId: 'l2' },
+      before: 'Go, Python, Postgres',
+      after: 'Go, Rust, Python, Postgres',
     });
   });
 
@@ -631,9 +633,7 @@ describe('propose_add', () => {
   it('lets the new bullet be rewritten by its handle, which changes the same suggestion', async () => {
     await callTool('propose_add', { into: 'e1', text: NEW_BULLET });
     await callTool('propose_rewrite', { id: 'b5', text: 'Mentored two interns' });
-    expect(stagedSuggestions().map((proposal) => proposal.change)).toMatchObject([
-      { kind: 'add', text: 'Mentored two interns' },
-    ]);
+    expect(stagedChanges()).toMatchObject([{ kind: 'add', text: 'Mentored two interns' }]);
   });
 
   it('keeps the version without a number for text with a gap, and refuses a gap without one', async () => {
@@ -642,7 +642,7 @@ describe('propose_add', () => {
       'give withoutNumber too'
     );
     await callTool('propose_add', { into: 'e1', text, withoutNumber: 'Cut build time' });
-    expect(stagedSuggestions()[0].change).toMatchObject({
+    expect(stagedChanges()[0]).toMatchObject({
       kind: 'add',
       text,
       gap: { withoutNumber: 'Cut build time' },
@@ -687,7 +687,7 @@ describe("checking the model's work", () => {
 
     const second = await callTool('propose_rewrite', doubled);
     expect(second.isError).toBe(false);
-    expect(stagedSuggestions()[0].flags.map((flag) => flag.kind)).toContain('doubledWords');
+    expect(stagedVersions()[0].flags.map((flag) => flag.kind)).toContain('doubledWords');
   });
 
   it('checks each change against the run’s earlier suggestions, without reading again', async () => {
@@ -695,7 +695,7 @@ describe("checking the model's work", () => {
     await callTool('propose_rewrite', { id: 'b3', text: 'Wrote the payments runbook' });
     await callTool('propose_select', { id: 'b3', show: false });
     await callTool('propose_rewrite', { id: 'b3', text: 'Wrote the on-call runbook' });
-    expect(stagedSuggestions().map((proposal) => proposal.change)).toMatchObject([
+    expect(stagedChanges()).toMatchObject([
       { kind: 'rewrite', before: B3, after: 'Wrote the on-call runbook' },
       { kind: 'select', place: { bulletId: 'b3' } },
     ]);
@@ -728,7 +728,7 @@ describe('the working copy', () => {
       isError: false,
       content: expect.stringContaining('b1: suggested.'),
     });
-    expect(stagedSuggestions().map((proposal) => proposal.change)).toMatchObject([
+    expect(stagedChanges()).toMatchObject([
       { kind: 'rewrite', before: B1, after: 'Moved billing to Postgres' },
     ]);
 
@@ -748,16 +748,14 @@ describe('the working copy', () => {
     const laterRun = createAgentToolRun('Shorter.', run);
     await runAgentTool(laterRun, 'propose_rewrite', { id: 'b1', text: 'Moved billing' });
     await runAgentTool(laterRun, 'propose_rewrite', { id: 'b3', text: 'Wrote the runbook' });
-    expect(stagedSuggestions().map((proposal) => proposal.change)).toMatchObject([
+    expect(stagedChanges()).toMatchObject([
       { after: 'Moved billing' },
       { after: 'Wrote the runbook' },
     ]);
 
     discardRunProposals([...laterRun.stagedIds], [...laterRun.suggestionsBeforeRun.values()]);
 
-    expect(stagedSuggestions().map((proposal) => proposal.change)).toMatchObject([
-      { before: B1, after: waitingRewrite.text },
-    ]);
+    expect(stagedChanges()).toMatchObject([{ before: B1, after: waitingRewrite.text }]);
   });
 
   it('removes a suggestion the run made and then changed when the run is discarded', async () => {
@@ -774,7 +772,7 @@ describe('the working copy', () => {
     await readTheResume();
     await callTool('propose_split', { bulletId: 'b2', secondStartsWith: 'from 18%' });
     await callTool('propose_rewrite', { id: 'b5', text: 'Took it from 18% to 3% of requests' });
-    expect(stagedSuggestions().map((proposal) => proposal.change)).toMatchObject([
+    expect(stagedChanges()).toMatchObject([
       { kind: 'split', halves: ['Reduced p99 latency', 'Took it from 18% to 3% of requests'] },
     ]);
     const { content } = await readTheResume();
@@ -1002,7 +1000,7 @@ describe('any call', () => {
 describe('reading the arguments the one way they can be read', () => {
   beforeEach(() => openDraft(makeResumeWithLines()));
 
-  const lastChange = () => stagedSuggestions().at(-1)?.change;
+  const lastChange = () => stagedChanges().at(-1);
 
   it('takes a handle in another case, inside other text, or at the end of its path', async () => {
     await readTheResume();
@@ -1014,7 +1012,7 @@ describe('reading the arguments the one way they can be read', () => {
       const result = await callTool('propose_select', { id, show });
       expect(result.content).toMatch(/^Took ".*" as "b\d"\.\n/);
     }
-    expect(stagedSuggestions().map((proposal) => proposal.change)).toMatchObject([
+    expect(stagedChanges()).toMatchObject([
       { place: { bulletId: 'b2' } },
       { place: { bulletId: 'b3' } },
       { place: { bulletId: 'b1' } },

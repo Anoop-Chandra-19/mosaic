@@ -9,10 +9,10 @@ import type { SuggestionBodyProps } from './suggestionBodyProps';
 import { SuggestionEditor } from '../text/SuggestionEditor';
 
 /** A heading is short and the user's own words: old → new in full, never a word diff. */
-export function RenameBody({ proposal, isEditing, onEditingChange }: SuggestionBodyProps) {
-  const change = resolveChange(proposal);
+export function RenameBody({ proposal, version, isEditing, onEditingChange }: SuggestionBodyProps) {
+  const change = resolveChange(version);
   if (change.kind !== 'rename') return null;
-  const isInTheirWords = proposal.review.userText !== undefined;
+  const isInTheirWords = version.review.userText !== undefined;
   return (
     <>
       <Caption>
@@ -20,7 +20,11 @@ export function RenameBody({ proposal, isEditing, onEditingChange }: SuggestionB
         {isInTheirWords && !isEditing && <CaptionTag>in your words</CaptionTag>}
       </Caption>
       {isEditing ? (
-        <SuggestionEditor proposal={proposal} onDone={() => onEditingChange(false)} />
+        <SuggestionEditor
+          proposal={proposal}
+          version={version}
+          onDone={() => onEditingChange(false)}
+        />
       ) : (
         <div
           className="flex flex-wrap items-center gap-x-2.25 gap-y-1.5"

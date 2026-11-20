@@ -1,8 +1,9 @@
 import type {
-  Proposal,
+  NewContentIds,
   ProposalChange,
   ProposalFlag,
   ProposalFlagKind,
+  ProposalSource,
 } from '@/types/agentProposal';
 import { hasSameWords } from '@/lib/resume/hasSameWords';
 import {
@@ -22,6 +23,21 @@ import { TOOL_FACTS } from './toolFacts';
  * Describe suggestion targets, check findings, generated results, and no-op changes
  * to the model so it can revise its work without reading the resume again.
  */
+
+/**
+ * A change exactly as the model sent it, with its new ids and what the checks found. The
+ * answer to the model and the run's copy of the resume use this. They can't use the
+ * suggestion it went into, because that suggestion may hold the user's edits or earlier
+ * changes too.
+ */
+export interface ChangeAsAsked {
+  /** The id of the suggestion the change went into. */
+  proposalId: string;
+  source: ProposalSource;
+  change: ProposalChange;
+  newContentIds: NewContentIds | null;
+  flags: ProposalFlag[];
+}
 
 const knownHandle = (run: AgentToolRun, id: string) => run.handles.handleById.get(id) ?? id;
 
@@ -101,7 +117,7 @@ export function describeNoChange(
  */
 export function describeResultWeWrote(
   run: AgentToolRun,
-  { change, source, newContentIds }: Proposal
+  { change, source, newContentIds }: ChangeAsAsked
 ): string | null {
   const newBullet = (id: string) => handleFor(run.handles, 'bullet', id);
   if (change.kind === 'split' && newContentIds?.kind === 'split') {

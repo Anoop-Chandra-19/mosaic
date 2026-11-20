@@ -6,7 +6,9 @@ import type {
   NumberGap,
   Proposal,
   ProposalChange,
+  ProposalVersion,
 } from '@/types/agentProposal';
+import { readActiveVersion } from './proposalVersions';
 import { resolveChange } from './reviewedChange';
 
 /*
@@ -43,8 +45,8 @@ export function readTextEdit(change: ProposalChange): TextEdit | null {
   }
 }
 
-/** Return the ids of the bullets, lines and section headings whose text a suggestion writes. */
-export function listWrittenTextIds({ change, newContentIds }: Proposal): string[] {
+/** Return the ids of the bullets, lines and section headings whose text a version writes. */
+export function listWrittenTextIds({ change, newContentIds }: ProposalVersion): string[] {
   switch (change.kind) {
     case 'rewrite':
       return [readTextPlaceId(change.place)];
@@ -78,7 +80,7 @@ export function listWrittenTextIds({ change, newContentIds }: Proposal): string[
 }
 
 /** Check whether the user wrote this text on the card themselves, in review. */
-function isUserWording({ review, newContentIds }: Proposal, textId: string): boolean {
+function isUserWording({ review, newContentIds }: ProposalVersion, textId: string): boolean {
   if (newContentIds?.kind === 'section' && newContentIds.sectionId === textId) {
     return review.sectionLabel !== undefined;
   }
@@ -93,11 +95,11 @@ function isUserWording({ review, newContentIds }: Proposal, textId: string): boo
  * suggestion's text, or of the user's own wording on a card, is a new suggestion.
  */
 export const canRewordSuggestion = (proposal: Proposal, textId: string) =>
-  proposal.status === 'pending' && !isUserWording(proposal, textId);
+  proposal.status === 'pending' && !isUserWording(readActiveVersion(proposal), textId);
 
-function failToFindText(proposal: Proposal, textId: string): never {
+function failToFindText(version: ProposalVersion, textId: string): never {
   throw new Error(
-    `Expected suggestion "${proposal.id}" (${proposal.change.kind}) to write text "${textId}", found no such text in it`
+    `Expected suggestion version "${version.id}" (${version.change.kind}) to write text "${textId}", found no such text in it`
   );
 }
 
@@ -129,8 +131,8 @@ function rewordEntryBullet<T extends EntryDraft>(
 type SectionChange = Extract<ProposalChange, { kind: 'section' }>;
 
 /** Reword a new section's heading, one of its lines, or one bullet of one of its entries. */
-function rewordSection(change: SectionChange, proposal: Proposal, edit: TextEdit) {
-  const ids = proposal.newContentIds;
+function rewordSection(change: SectionChange, version: ProposalVersion, edit: TextEdit) {
+  const ids = version.newContentIds;
   if (ids?.kind !== 'section') return null;
   if (ids.sectionId === edit.textId) {
     return { ...change, section: { ...change.section, label: edit.text } };
@@ -174,16 +176,16 @@ function rewordSplitHalf(change: SplitChange, edit: TextEdit): SplitChange {
  * Return the suggestion's change with the new wording in it. Returns null when the new
  * wording is the text the suggestion replaced, because then nothing is left to suggest.
  */
-export function rewordChange(proposal: Proposal, edit: TextEdit): ProposalChange | null {
-  const { change } = proposal;
+export function rewordChange(version: ProposalVersion, edit: TextEdit): ProposalChange | null {
+  const { change } = version;
   switch (change.kind) {
     case 'rewrite': {
-      const reviewed = resolveChange(proposal);
+      const reviewed = resolveChange(version);
       const isUndone = reviewed.kind === 'rewrite' && edit.text.trim() === reviewed.before;
       return isUndone ? null : { ...change, after: edit.text, gap: edit.gap };
     }
     case 'rename': {
-      const reviewed = resolveChange(proposal);
+      const reviewed = resolveChange(version);
       const isUndone = reviewed.kind === 'rename' && edit.text.trim() === reviewed.before;
       return isUndone ? null : { ...change, after: edit.text };
     }
@@ -194,14 +196,14 @@ export function rewordChange(proposal: Proposal, edit: TextEdit): ProposalChange
     case 'split':
       return rewordSplitHalf(change, edit);
     case 'entry': {
-      const ids = proposal.newContentIds;
+      const ids = version.newContentIds;
       const reworded = ids?.kind === 'entry' ? rewordEntryBullet(change, ids.entry, edit) : null;
-      return reworded ?? failToFindText(proposal, edit.textId);
+      return reworded ?? failToFindText(version, edit.textId);
     }
     case 'section':
-      return rewordSection(change, proposal, edit) ?? failToFindText(proposal, edit.textId);
+      return rewordSection(change, version, edit) ?? failToFindText(version, edit.textId);
     case 'reorder':
     case 'select':
-      return failToFindText(proposal, edit.textId);
+      return failToFindText(version, edit.textId);
   }
 }

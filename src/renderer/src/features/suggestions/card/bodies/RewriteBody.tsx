@@ -1,6 +1,6 @@
 import { Info } from 'lucide-react';
 import { AppButton, Text } from '@/components/ui-kit';
-import type { Proposal } from '@/types/agentProposal';
+import type { Proposal, ProposalVersion } from '@/types/agentProposal';
 import {
   cancelStaleReview,
   clearProposalEdit,
@@ -17,8 +17,8 @@ import { WithoutNumberChoice } from './WithoutNumberChoice';
 import { BackLink, Caption, CaptionTag, Lines, SuggestedText } from './BodyParts';
 import type { SuggestionBodyProps } from './suggestionBodyProps';
 
-/** What the suggestion writes before the gap is filled: the user's words, or the assistant's. */
-function readShownAfter({ change, review }: Proposal): string {
+/** What the version writes before the gap is filled: the user's words, or the assistant's. */
+function readShownAfter({ change, review }: ProposalVersion): string {
   if (change.kind !== 'rewrite' && change.kind !== 'merge') return '';
   if (review.userText !== undefined) return review.userText;
   if (change.kind === 'rewrite' && change.gap && review.isWithoutNumber) {
@@ -34,10 +34,16 @@ const NOW_CAPTIONS: Record<TextNoun, string> = {
   summary: 'Now, your summary',
 };
 
-export function RewriteBody({ proposal, draft, isEditing, onEditingChange }: SuggestionBodyProps) {
-  const change = resolveChange(proposal);
+export function RewriteBody({
+  proposal,
+  version,
+  draft,
+  isEditing,
+  onEditingChange,
+}: SuggestionBodyProps) {
+  const change = resolveChange(version);
   if (change.kind !== 'rewrite' && change.kind !== 'merge') return null;
-  const { review, flags } = proposal;
+  const { review, flags } = version;
   const isMerge = change.kind === 'merge';
   const noun = isMerge ? 'bullet' : nameTextPlace(draft, change.place);
   const isRebased = review.rebasedBefore !== undefined;
@@ -68,19 +74,23 @@ export function RewriteBody({ proposal, draft, isEditing, onEditingChange }: Sug
         {review.userText !== undefined && !isEditing && <CaptionTag>in your words</CaptionTag>}
       </Caption>
       {isEditing ? (
-        <SuggestionEditor proposal={proposal} onDone={() => onEditingChange(false)} />
+        <SuggestionEditor
+          proposal={proposal}
+          version={version}
+          onDone={() => onEditingChange(false)}
+        />
       ) : (
         <>
           <SuggestedText className="text-pretty" onDoubleClick={() => onEditingChange(true)}>
             <MarkedText
               before={before.join(' ')}
-              after={readShownAfter(proposal)}
+              after={readShownAfter(version)}
               words={readFlaggedWords(flags)}
               gap={gap}
             />
           </SuggestedText>
           <SuggestionFlags flags={flags} />
-          <WithoutNumberChoice proposal={proposal} />
+          <WithoutNumberChoice proposalId={proposal.id} version={version} />
           {review.userText !== undefined && (
             <BackLink onClick={() => clearProposalEdit(proposal.id)}>
               Back to the assistant’s wording

@@ -4,6 +4,7 @@ import { useResumeStore } from '@/stores/resumeStore';
 import { useRunStore } from '@/stores/runStore';
 import type { AgentToolResult } from '@shared/agent-tools/agentTools';
 import type { AgentRunEnvelope, AgentStart, AgentToolCall } from '@shared/types/agentBridge';
+import { readActiveVersion } from '../../../suggestions/proposals/proposalVersions';
 import { makeResume } from '../../../suggestions/proposals/__tests__/proposalFixtures';
 import { answerAgentToolCalls, askAgent, carryOnAgent } from '../agentRunTools';
 
@@ -149,7 +150,7 @@ describe('the page’s side of a run', () => {
     await rewrite(11, 'Led the billing rework');
 
     const waiting = useProposalStore.getState().byTemplate.t1;
-    expect(waiting.map((proposal) => proposal.change)).toMatchObject([
+    expect(waiting.map((proposal) => readActiveVersion(proposal).change)).toMatchObject([
       { kind: 'rewrite', after: 'Led the billing rework' },
     ]);
   });

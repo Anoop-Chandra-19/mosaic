@@ -12,6 +12,7 @@ import type { ChangeTone } from '@/lib/resume/changes/resumeChange';
 import { cn } from '@/lib/utils';
 import type { Proposal } from '@/types/agentProposal';
 import { FlaggedText, MarkedText } from '../../card/text/SuggestionText';
+import { readActiveVersion } from '../../proposals/proposalVersions';
 import { needsNumber, readSuggestionState, type SuggestionState } from '../../suggestionState';
 import { readOpenEntryId, SuggestionSelection } from '../../suggestionSelection';
 import { describeMarkTip } from './describeMarkTip';
@@ -95,7 +96,7 @@ function MarginFlag({ mark, gutter }: { mark: Mark; gutter: MarkGutter }) {
  * number, round when the checks found anything else.
  */
 function readSuggestionDot(proposal: Proposal): Mark['dot'] {
-  if (proposal.flags.length === 0) return undefined;
+  if (readActiveVersion(proposal).flags.length === 0) return undefined;
   return needsNumber(proposal) ? 'square' : 'round';
 }
 

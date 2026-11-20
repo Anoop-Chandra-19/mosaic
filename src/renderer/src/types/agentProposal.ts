@@ -208,7 +208,12 @@ export interface ProposalReview {
    * (both texts for a merge), which the suggestion replaces instead.
    */
   rebasedBefore?: string | [string, string];
-  dropReasons?: { reasons: DropReason[]; note?: string };
+}
+
+/** Why the user dropped a suggestion, and any note they wrote. The assistant reads it next turn. */
+export interface DropReasons {
+  reasons: DropReason[];
+  note?: string;
 }
 
 export type ProposalChangeKind = ProposalChange['kind'];
@@ -239,17 +244,18 @@ export interface ProposalFlag {
   textId?: string;
 }
 
-export interface Proposal {
+/**
+ * One version of a suggestion: the change, and the user's edits to it. A suggestion gets a
+ * new version when the assistant changes something the user already kept. These are not
+ * the saved versions of a resume in its history.
+ */
+export interface ProposalVersion {
   id: string;
-  templateId: string;
-  source: ProposalSource;
   change: ProposalChange;
   /** Null when the change adds nothing new. */
   newContentIds: NewContentIds | null;
-  status: ProposalStatus;
+  /** The user's edits to this version. */
   review: ProposalReview;
-  /** Its anchor no longer matches the draft. Rechecked both ways: an undo can bring it back. */
-  isStale: boolean;
   flags: ProposalFlag[];
   /** The model's one-line reason, shown on the card. */
   reason?: string;
@@ -257,9 +263,31 @@ export interface Proposal {
   requestText: string;
   createdAt: number;
   /**
-   * The ids of entries and bullets that a later run added to this suggestion while it was
+   * The ids of entries and bullets that a later run added to this version while it was
    * waiting. The card labels them "just added". Additions from the run that made the
-   * suggestion aren't listed, because the user hadn't seen the suggestion yet.
+   * version aren't listed, because the user hadn't seen it yet.
    */
   lateIds?: string[];
+}
+
+export interface Proposal {
+  id: string;
+  templateId: string;
+  source: ProposalSource;
+  /** Oldest first. Never empty. */
+  versions: ProposalVersion[];
+  /**
+   * The version the user kept. It stays set while the suggestion is dropped, so undoing the
+   * drop brings that version back as kept. Null when they haven't kept one.
+   */
+  keptVersionId: string | null;
+  /**
+   * `pending`: nothing is kept. `accepted`: the version `keptVersionId` names is kept.
+   * `rejected`: the user dropped the whole suggestion.
+   */
+  status: ProposalStatus;
+  /** Its anchor no longer matches the draft. Rechecked both ways: an undo can bring it back. */
+  isStale: boolean;
+  /** Why the user dropped it, when they said. It belongs to the suggestion, since a drop drops every version. */
+  dropReasons?: DropReasons;
 }

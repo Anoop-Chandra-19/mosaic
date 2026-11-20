@@ -18,7 +18,7 @@ import type { SuggestionBodyProps } from './bodies/suggestionBodyProps';
 
 export function SuggestionBody(props: SuggestionBodyProps) {
   if (props.proposal.isStale) return <StaleBody {...props} />;
-  const Body = KIND_BODIES[props.proposal.change.kind];
+  const Body = KIND_BODIES[props.version.change.kind];
   return <Body {...props} />;
 }
 
@@ -29,7 +29,7 @@ const KIND_BODIES: Record<ProposalChangeKind, (props: SuggestionBodyProps) => Re
   reorder: ReorderBody,
   select: SelectBody,
   add: AddedTextBody,
-  entry: ({ proposal }) => <EntryFacts proposal={proposal} />,
+  entry: ({ proposal, version }) => <EntryFacts proposal={proposal} version={version} />,
   section: NewSectionBody,
   rename: RenameBody,
 };

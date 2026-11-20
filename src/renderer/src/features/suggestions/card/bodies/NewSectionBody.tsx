@@ -3,7 +3,7 @@ import { Pencil } from 'lucide-react';
 import { AppButton, AppInput, Text } from '@/components/ui-kit';
 import { ADDED_ROW } from '@/features/document-diff/diffMarks';
 import { cn } from '@/lib/utils';
-import type { Proposal } from '@/types/agentProposal';
+import type { ProposalVersion } from '@/types/agentProposal';
 import type { ResumeData } from '@shared/types/resume';
 import { renameProposedSection } from '../../proposals/proposalActions';
 import { listNewEntries, resolveChange } from '../../proposals/reviewedChange';
@@ -87,8 +87,8 @@ function SectionPlace({
 }
 
 /** The caption over the entries: how many there are, and how many the user left out. */
-function EntriesCaption({ proposal }: { proposal: Proposal }) {
-  const entries = listNewEntries(proposal);
+function EntriesCaption({ version }: { version: ProposalVersion }) {
+  const entries = listNewEntries(version);
   const leftOutCount = entries.filter((entry) => entry.isLeftOut).length;
   const onCardCount = entries.length - leftOutCount;
   return (
@@ -104,8 +104,8 @@ function EntriesCaption({ proposal }: { proposal: Proposal }) {
  * keeps or drops it all at once. For a section of entries, they confirm each entry's facts
  * and can leave out some entries while keeping the rest.
  */
-export function NewSectionBody({ proposal, draft }: SuggestionBodyProps) {
-  const change = resolveChange(proposal);
+export function NewSectionBody({ proposal, version, draft }: SuggestionBodyProps) {
+  const change = resolveChange(version);
   if (change.kind !== 'section') return null;
   const { section, contents } = change;
   // A section with nothing in it yet is not shown in review.
@@ -141,22 +141,22 @@ export function NewSectionBody({ proposal, draft }: SuggestionBodyProps) {
           </Caption>
           {contents.lines.map((line, index) => (
             <SuggestedText key={index} className="[&+&]:mt-1">
-              <FlaggedText text={line} words={readFlaggedWords(proposal.flags)} />
+              <FlaggedText text={line} words={readFlaggedWords(version.flags)} />
             </SuggestedText>
           ))}
         </>
       ) : (
         <>
-          <EntriesCaption proposal={proposal} />
-          <NewEntryStack proposal={proposal} />
+          <EntriesCaption version={version} />
+          <NewEntryStack proposal={proposal} version={version} />
         </>
       )}
       {/*
        * The checks on an entry's bullets show on each bullet. The ones on a section's lines
        * look at all the lines at once, so they show once, here.
        */}
-      <NumbersToFillLine proposal={proposal} />
-      <SuggestionFlags flags={readWholeChangeFlags(proposal)} />
+      <NumbersToFillLine version={version} />
+      <SuggestionFlags flags={readWholeChangeFlags(version)} />
       <Hint>
         {isLines
           ? 'Keeping it keeps all of it. You can change any part in the editor after you apply.'

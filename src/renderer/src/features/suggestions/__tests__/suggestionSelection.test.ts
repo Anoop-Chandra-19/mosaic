@@ -21,10 +21,7 @@ const VOLUNTEERING: ProposalChange = {
   },
 };
 
-const volunteering = (review: ProposalReview) => ({
-  ...makeProposal(VOLUNTEERING, 'v'),
-  review,
-});
+const volunteering = (review: ProposalReview) => makeProposal(VOLUNTEERING, 'v', { review });
 
 describe('readOpenEntryId', () => {
   it('opens the first entry with facts to confirm until the user opens one', () => {

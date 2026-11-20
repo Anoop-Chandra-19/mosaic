@@ -3,7 +3,7 @@ import type { ProposalChange } from '@/types/agentProposal';
 import { applyProposalsToResume } from '../applyProposalsToResume';
 import {
   addText,
-  makeProposal,
+  makeReviewedChange,
   makeResume,
   makeResumeWithLines,
   rewrite,
@@ -24,10 +24,10 @@ describe('applyProposalsToResume', () => {
     { newContentIds: null, received: 'none' },
     { newContentIds: { kind: 'split' as const, secondBulletId: 'b5' }, received: 'split' },
   ])('reports the expected ID kind when it receives $received', ({ newContentIds, received }) => {
-    const proposal = makeProposal(addText('bullet', 'b1', 'Ran the on-call rotation'), 'p1');
-    proposal.newContentIds = newContentIds;
+    const reviewed = makeReviewedChange(addText('bullet', 'b1', 'Ran the on-call rotation'), 'p1');
+    reviewed.newContentIds = newContentIds;
 
-    expect(() => applyProposalsToResume(makeResume(), [proposal])).toThrow(
+    expect(() => applyProposalsToResume(makeResume(), [reviewed])).toThrow(
       `Expected new content IDs for "add", received "${received}"`
     );
   });
@@ -66,7 +66,7 @@ describe('applyProposalsToResume', () => {
     ];
     const result = applyProposalsToResume(
       doc,
-      changes.map((change, index) => makeProposal(change, `p${index}`))
+      changes.map((change, index) => makeReviewedChange(change, `p${index}`))
     );
 
     expect(result.skippedIds).toEqual([]);
@@ -98,7 +98,7 @@ describe('applyProposalsToResume', () => {
       before: [b1.text, b2.text],
       after: 'Moved billing to Postgres, cutting slow requests from 18% to 3%',
     };
-    const result = applyProposalsToResume(doc, [makeProposal(merge, 'p1')]);
+    const result = applyProposalsToResume(doc, [makeReviewedChange(merge, 'p1')]);
     expect(bulletsOf(result.doc).map((bullet) => bullet.id)).toEqual(['b1', 'b3']);
     expect(bulletsOf(result.doc)[0].text).toBe(merge.after);
   });
@@ -111,8 +111,8 @@ describe('applyProposalsToResume', () => {
       selected: false,
     };
     const result = applyProposalsToResume(makeResume(), [
-      makeProposal(rewrite('b1', B1, 'Led the migration'), 'p1'),
-      makeProposal(hide, 'p2'),
+      makeReviewedChange(rewrite('b1', B1, 'Led the migration'), 'p1'),
+      makeReviewedChange(hide, 'p2'),
     ]);
     expect(result.appliedIds).toEqual(['p1', 'p2']);
     expect(bulletsOf(result.doc)[0]).toMatchObject({ text: 'Led the migration', selected: false });
@@ -120,9 +120,9 @@ describe('applyProposalsToResume', () => {
 
   it('skips a change an earlier one moved past, instead of forcing it', () => {
     const result = applyProposalsToResume(makeResume(), [
-      makeProposal(rewrite('b1', B1, 'Led the migration'), 'p1'),
-      makeProposal(rewrite('b1', B1, 'Owned the migration'), 'p2'),
-      makeProposal(
+      makeReviewedChange(rewrite('b1', B1, 'Led the migration'), 'p1'),
+      makeReviewedChange(rewrite('b1', B1, 'Owned the migration'), 'p2'),
+      makeReviewedChange(
         { kind: 'split', sectionId: 's1', entryId: 'e1', bulletId: 'b1', before: B1, at: 8 },
         'p3'
       ),
@@ -139,8 +139,8 @@ describe('added text and lines', () => {
 
   it('adds a bullet after the one named, or first, with a new id', () => {
     const result = applyProposalsToResume(makeResume(), [
-      makeProposal(addText('bullet', 'b1', 'Ran the on-call rotation'), 'after'),
-      makeProposal(addText('bullet', null, 'Led weekly design reviews'), 'first'),
+      makeReviewedChange(addText('bullet', 'b1', 'Ran the on-call rotation'), 'after'),
+      makeReviewedChange(addText('bullet', null, 'Led weekly design reviews'), 'first'),
     ]);
     expect(bulletsOf(result.doc).map(({ id, text }) => [id, text])).toEqual([
       ['first-new1', 'Led weekly design reviews'],
@@ -172,7 +172,7 @@ describe('added text and lines', () => {
     ];
     const result = applyProposalsToResume(
       doc,
-      changes.map((change, index) => makeProposal(change, `p${index}`))
+      changes.map((change, index) => makeReviewedChange(change, `p${index}`))
     );
     expect(result.skippedIds).toEqual([]);
     expect(linesOf(result.doc, 's3')).toEqual([
@@ -184,7 +184,7 @@ describe('added text and lines', () => {
   });
 
   it('skips added text whose place is gone', () => {
-    const gone = makeProposal(addText('bullet', 'b9', 'Ran the on-call rotation'), 'gone');
+    const gone = makeReviewedChange(addText('bullet', 'b9', 'Ran the on-call rotation'), 'gone');
     expect(applyProposalsToResume(makeResume(), [gone]).skippedIds).toEqual(['gone']);
   });
 });
@@ -215,7 +215,7 @@ describe('whole entries and sections', () => {
     ];
     const result = applyProposalsToResume(
       doc,
-      changes.map((change, index) => makeProposal(change, `p${index}`))
+      changes.map((change, index) => makeReviewedChange(change, `p${index}`))
     );
     expect(result.skippedIds).toEqual([]);
     expect(result.doc.sections[0].items[1].selected).toBe(false);
@@ -230,7 +230,9 @@ describe('whole entries and sections', () => {
       before: ['s1', 's2', 's3'],
       after: ['s3', 's1', 's2'],
     };
-    const { doc } = applyProposalsToResume(makeResumeWithLines(), [makeProposal(change, 'p1')]);
+    const { doc } = applyProposalsToResume(makeResumeWithLines(), [
+      makeReviewedChange(change, 'p1'),
+    ]);
     const printed = [...doc.sections].sort((a, b) => a.order - b.order).map((s) => s.label);
     expect(printed).toEqual(['Skills', 'Experience', 'Summary']);
   });
@@ -243,7 +245,7 @@ describe('new sections and headings', () => {
   it.each(['lines', 'entries'] as const)(
     'reports mismatched ID layouts for a new %s section',
     (layout) => {
-      const proposal = makeProposal(
+      const reviewed = makeReviewedChange(
         {
           kind: 'section',
           afterSectionId: 's1',
@@ -264,9 +266,9 @@ describe('new sections and headings', () => {
         layout === 'lines'
           ? { layout: 'entries' as const, entries: [{ entryId: 'e3', bulletIds: ['b5'] }] }
           : { layout: 'lines' as const, lineIds: ['l1'] };
-      proposal.newContentIds = { kind: 'section', sectionId: 's4', contents };
+      reviewed.newContentIds = { kind: 'section', sectionId: 's4', contents };
 
-      expect(() => applyProposalsToResume(makeResume(), [proposal])).toThrow(
+      expect(() => applyProposalsToResume(makeResume(), [reviewed])).toThrow(
         `Expected new content IDs for section layout "${layout}", received "${contents.layout}"`
       );
     }
@@ -295,8 +297,8 @@ describe('new sections and headings', () => {
       contents: { layout: 'lines', lines: ['Postgres at scale, 2024', ''] },
     };
     const { doc } = applyProposalsToResume(makeResumeWithLines(), [
-      makeProposal(entries, 'p1'),
-      makeProposal(lines, 'p2'),
+      makeReviewedChange(entries, 'p1'),
+      makeReviewedChange(lines, 'p2'),
     ]);
     expect(printed(doc)).toEqual(['Talks', 'Experience', 'Certifications', 'Summary', 'Skills']);
     const talks = doc.sections.find((section) => section.label === 'Talks')!;
@@ -328,7 +330,7 @@ describe('new sections and headings', () => {
       before: 'Experience',
       after: 'Work Experience',
     };
-    const { doc } = applyProposalsToResume(makeResume(), [makeProposal(rename, 'p1')]);
+    const { doc } = applyProposalsToResume(makeResume(), [makeReviewedChange(rename, 'p1')]);
     expect(doc.sections[0].label).toBe('Work Experience');
   });
 });

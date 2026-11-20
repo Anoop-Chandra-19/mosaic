@@ -3,6 +3,7 @@ import { readShowPlaceId, readTextPlaceId } from '@/lib/resume/proposalAnchor';
 import type { Proposal, ProposalChange } from '@/types/agentProposal';
 import { useAgentSettingsStore } from '@/stores/agentSettingsStore';
 import { selectTemplateProposals, useProposalStore } from '@/stores/proposalStore';
+import { readActiveVersion } from './proposals/proposalVersions';
 import { useResumeStore } from '@/stores/resumeStore';
 
 /** The suggestion an editor bullet, line, entry or section points to, and why. */
@@ -66,7 +67,7 @@ export function findSuggestionDot(
   const waiting = proposals
     .filter((proposal) => proposal.status === 'pending' || proposal.status === 'accepted')
     .flatMap((proposal) =>
-      readDots(proposal.change)
+      readDots(readActiveVersion(proposal).change)
         .filter(([dotId]) => dotId === id)
         .map(([, text]) => ({ proposal, text }))
     );

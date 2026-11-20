@@ -16,7 +16,7 @@ const notYours = (words: readonly string[]) =>
   `You didn’t write ${quoteAll(words)} here, or ask for ${itOrThem(words)}.`;
 
 const FLAG_SENTENCES: Record<ProposalFlagKind, (words: string[]) => string> = {
-  unfilledGap: () => 'Only you know this number. Fill it in, or take the version without one.',
+  unfilledGap: () => 'Only you know this number. Fill it in, or use the wording without one.',
   claimsMore: ([from, to]) =>
     `${quote(capitalize(from))} became ${quote(capitalize(to))}. Keep it only if you led it.`,
   newNumbers: notYours,

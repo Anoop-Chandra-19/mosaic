@@ -4,12 +4,12 @@ import type {
   EntryDraft,
   NewEntryIds,
   NewContentIds,
-  Proposal,
   ProposalChange,
   ShowPlace,
   TextPlace,
 } from '@/types/agentProposal';
 import type { ResumeData, ResumeEntry, ResumeSection } from '@shared/types/resume';
+import type { ReviewedChange } from '../reviewedChange';
 
 export interface AppliedProposals {
   doc: ResumeData;
@@ -216,23 +216,23 @@ function applyChange(doc: ResumeData, change: ProposalChange, ids: NewContentIds
 }
 
 /**
- * Apply the proposals to a copy of the document, in the order given. The input document
- * is not changed. Each proposal is checked against the copy after the earlier proposals
- * were applied. A proposal that no longer fits is skipped, for example a rewrite of text
- * that an earlier proposal already changed.
+ * Apply the suggestions' changes to a copy of the document, in the order given. The input
+ * document is not changed. Each change is checked against the copy after the earlier
+ * changes were applied. A change that no longer fits is skipped, for example a rewrite of
+ * text that an earlier suggestion already changed.
  */
 export function applyProposalsToResume(
   doc: ResumeData,
-  proposals: readonly Proposal[]
+  changes: readonly ReviewedChange[]
 ): AppliedProposals {
   const result: AppliedProposals = { doc: structuredClone(doc), appliedIds: [], skippedIds: [] };
-  for (const proposal of proposals) {
-    if (findAnchorMismatch(result.doc, proposal.change)) {
-      result.skippedIds.push(proposal.id);
+  for (const { proposalId, change, newContentIds } of changes) {
+    if (findAnchorMismatch(result.doc, change)) {
+      result.skippedIds.push(proposalId);
       continue;
     }
-    applyChange(result.doc, proposal.change, proposal.newContentIds);
-    result.appliedIds.push(proposal.id);
+    applyChange(result.doc, change, newContentIds);
+    result.appliedIds.push(proposalId);
   }
   return result;
 }
