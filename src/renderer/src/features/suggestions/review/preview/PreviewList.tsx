@@ -4,11 +4,11 @@ import { cn } from '@/lib/utils';
 import type { Proposal } from '@/types/agentProposal';
 import type { ResumeData } from '@shared/types/resume';
 import { placeSuggestion } from '../../proposals/describeSuggestion';
-import { KeyHint } from '../ReviewInspector';
 import { SuggestionActions } from '../../card/SuggestionActions';
 import { SuggestionBody } from '../../card/SuggestionBody';
-import { SuggestionRow } from '../SuggestionRow';
+import { KeyHint } from '../../KeyHint';
 import type { PreviewNote } from './suggestionPreview';
+import { SuggestionRow } from './SuggestionRow';
 
 interface PreviewListProps {
   proposals: Proposal[];

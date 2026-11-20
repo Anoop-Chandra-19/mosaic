@@ -19,7 +19,7 @@ import { SuggestionEditor } from '../text/SuggestionEditor';
 import { SuggestionFlags } from '../text/SuggestionFlags';
 import { FlaggedText } from '../text/SuggestionText';
 import { nameAddedContainer } from '../text/suggestionWords';
-import { WithoutNumberChoice } from '../text/WithoutNumberChoice';
+import { WithoutNumberChoice } from './WithoutNumberChoice';
 
 /** The bullets or lines new text goes among, as the draft holds them. */
 function readAmong(draft: ResumeData, place: AddPlace): { id: string; text: string }[] {

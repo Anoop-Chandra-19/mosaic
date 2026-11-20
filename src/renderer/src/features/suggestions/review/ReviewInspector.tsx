@@ -1,9 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { Text } from '@/components/ui-kit';
-import { ShortcutKeys } from '@/components/ShortcutKeys';
 import { formatCount } from '@/lib/formatCount';
-import { getShortcutCombos } from '@/stores/shortcutBindings';
-import type { ShortcutId } from '@/lib/shortcutCatalog';
+import { KeyHint } from '../KeyHint';
 import { countSuggestions } from '../suggestionState';
 import { PlaceCard } from './place/PlaceCard';
 import { tallyPlace, type SuggestionPlace } from './place/placeSuggestions';
@@ -90,8 +88,4 @@ export function ReviewInspector({
       </Text>
     </>
   );
-}
-
-export function KeyHint({ id }: { id: ShortcutId }) {
-  return <ShortcutKeys combos={getShortcutCombos(id).slice(0, 1)} />;
 }

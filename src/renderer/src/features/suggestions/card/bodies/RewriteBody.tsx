@@ -13,7 +13,7 @@ import { SuggestionEditor } from '../text/SuggestionEditor';
 import { SuggestionFlags } from '../text/SuggestionFlags';
 import { FlaggedText, MarkedText } from '../text/SuggestionText';
 import { nameTextPlace, type TextNoun } from '../text/suggestionWords';
-import { WithoutNumberChoice } from '../text/WithoutNumberChoice';
+import { WithoutNumberChoice } from './WithoutNumberChoice';
 import { BackLink, Caption, CaptionTag, Lines, SuggestedText } from './BodyParts';
 import type { SuggestionBodyProps } from './suggestionBodyProps';
 

@@ -60,7 +60,9 @@ import { buildCopyBefore, buildWorkingCopy, findRequiredIds, findTextWriter } fr
  *
  * Other modules use this file, `workingCopy.ts`, `apply/planApply.ts`,
  * `apply/applyAcceptedProposals.ts`, `reviewedChange.ts` and `describeSuggestion.ts`. The
- * state is in `stores/proposalStore.ts`, and only these files write to it.
+ * assistant's tools also use `validateProposal.ts` and `checks/checkProposal.ts`, to check a
+ * change before they stage it, and `listEmptySectionIds` in `fillSuggestion.ts`. The state
+ * is in `stores/proposalStore.ts`, and only these files write to it.
  */
 
 export interface StagedChange {

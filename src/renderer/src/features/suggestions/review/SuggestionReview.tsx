@@ -37,7 +37,7 @@ import {
 } from './place/placeSuggestions';
 import type { PlaceViewProps } from './place/PlaceSuggestion';
 import { SuggestionDocument } from './place/SuggestionDocument';
-import { SuggestionSelection } from './suggestionSelection';
+import { SuggestionSelection } from '../suggestionSelection';
 import { canEditSuggestion } from '../suggestionState';
 
 /*

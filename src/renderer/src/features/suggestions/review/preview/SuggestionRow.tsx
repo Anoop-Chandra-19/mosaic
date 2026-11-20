@@ -3,8 +3,8 @@ import { Lock, TriangleAlert } from 'lucide-react';
 import { AppButton, Text } from '@/components/ui-kit';
 import { cn } from '@/lib/utils';
 import type { Proposal, ProposalChange } from '@/types/agentProposal';
-import { labelSuggestionKind } from '../proposals/describeSuggestion';
-import { FLAG_LABELS, needsNumber, readSuggestionState, STATE_TONES } from '../suggestionState';
+import { labelSuggestionKind } from '../../proposals/describeSuggestion';
+import { FLAG_LABELS, needsNumber, readSuggestionState, STATE_TONES } from '../../suggestionState';
 
 /** What a row is about: its bullet or entry, or for a new entry, the entry's own name. */
 function nameRowTarget(change: ProposalChange, place: string[]): string | undefined {
