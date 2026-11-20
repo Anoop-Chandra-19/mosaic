@@ -34,9 +34,9 @@ export interface EntryDraft {
   bullets: string[];
 }
 
-/** What a new section holds: one entry for an entries section, lines for a lines section. */
+/** What a new section holds: entries for an entries section, lines for a lines section. */
 export type SectionContents =
-  | { layout: 'entries'; entry: EntryDraft }
+  | { layout: 'entries'; entries: EntryDraft[] }
   | { layout: 'lines'; lines: string[] };
 
 /**
@@ -112,7 +112,7 @@ export type ProposalChange =
       /** A preset of the Add section menu, or `custom` with the layout its contents need. */
       section: { kind: SectionKind; layout: SectionLayout; label: string };
       /**
-       * Its first entry or its lines. Null while the assistant has made the section but
+       * Its entries or its lines. Null while the assistant has made the section but
        * put nothing in it yet. An empty section is not shown in review and can't be kept.
        * An empty custom section has the lines layout until its first contents decide.
        */
@@ -144,9 +144,9 @@ export type NewContentIds =
   | {
       kind: 'section';
       sectionId: string;
-      /** One id per line, or the ids of the first entry. Null while the section is empty. */
+      /** One id per line, or the ids of each entry. Null while the section is empty. */
       contents:
-        | { layout: 'entries'; entry: NewEntryIds }
+        | { layout: 'entries'; entries: NewEntryIds[] }
         | { layout: 'lines'; lineIds: string[] }
         | null;
     };
@@ -175,10 +175,15 @@ export interface ProposalReview {
   filledNumber?: string;
   /** They took the version that needs no number. */
   isWithoutNumber?: boolean;
-  /** A new entry's facts they confirmed, alone or as a new section's first. */
-  confirmedFacts?: EntryFact[];
-  /** A new entry's facts as they corrected them. */
-  factEdits?: Partial<Record<EntryFact, string>>;
+  /**
+   * The facts they confirmed, by the id of the new entry they belong to. The entry is a new
+   * entry on its own, or one of a new section's entries.
+   */
+  confirmedFacts?: Record<string, EntryFact[]>;
+  /** The facts they corrected, by the id of the new entry they belong to. */
+  factEdits?: Record<string, Partial<Record<EntryFact, string>>>;
+  /** The entries of a new section they left out. The rest of the section is kept or dropped. */
+  leftOutEntryIds?: string[];
   /**
    * Out of date, but they chose to review it against their edited bullet: its text now
    * (both texts for a merge), which the suggestion replaces instead.
@@ -227,4 +232,10 @@ export interface Proposal {
   /** The user's words for the request: a number they gave is not new. */
   requestText: string;
   createdAt: number;
+  /**
+   * The ids of entries and bullets that a later run added to this suggestion while it was
+   * waiting. The card labels them "just added". Additions from the run that made the
+   * suggestion aren't listed, because the user hadn't seen the suggestion yet.
+   */
+  lateIds?: string[];
 }

@@ -23,6 +23,8 @@ const {
   editProposal,
   editProposalFact,
   fillProposalNumber,
+  leaveEntryOut,
+  putEntryBack,
   rejectProposals,
   returnProposals,
   reviewStaleProposalAnyway,
@@ -30,6 +32,7 @@ const {
 } = await import('../proposalActions');
 const { applyAcceptedProposals } = await import('../apply/applyAcceptedProposals');
 const { listNewContentIds } = await import('../newContentIds');
+const { findUnconfirmedFacts } = await import('../reviewedChange');
 
 let sqlite: Database;
 
@@ -201,15 +204,85 @@ describe('review', () => {
       },
     ]).proposals;
 
+    const entryId = entry.newContentIds?.kind === 'entry' ? entry.newContentIds.entry.entryId : '';
     acceptProposals([entry.id]);
     expect(proposals()[0].status).toBe('pending');
-    confirmProposalFact(entry.id, 'title', true);
-    editProposalFact(entry.id, 'dates', '2021 – Present');
+    confirmProposalFact(entry.id, { entryId, fact: 'title' }, true);
+    editProposalFact(entry.id, { entryId, fact: 'dates' }, '2021 – Present');
     acceptProposals([entry.id]);
     expect(proposals()[0].status).toBe('accepted');
 
-    confirmProposalFact(entry.id, 'title', false);
+    confirmProposalFact(entry.id, { entryId, fact: 'title' }, false);
     expect(proposals()[0].status).toBe('pending');
+  });
+
+  it('a new section keeps the entries still on it: one left out is not applied, and the last can’t be', async () => {
+    const [section] = stageProposals('add my volunteering', [
+      {
+        source: 'section',
+        change: {
+          kind: 'section',
+          afterSectionId: 's1',
+          section: { kind: 'volunteering', layout: 'entries', label: 'Volunteering' },
+          contents: {
+            layout: 'entries',
+            entries: [
+              { frame: { title: 'Mentor' }, bullets: ['Mentored new contributors'] },
+              { frame: { title: 'Organizer' }, bullets: ['Ran the monthly meetup'] },
+            ],
+          },
+        },
+      },
+    ]).proposals;
+    const ids = section.newContentIds;
+    const [mentorIds, organizerIds] =
+      ids?.kind === 'section' && ids.contents?.layout === 'entries' ? ids.contents.entries : [];
+
+    expect(leaveEntryOut(section.id, organizerIds.entryId)).toBe(true);
+    expect(() => leaveEntryOut(section.id, mentorIds.entryId)).toThrow(
+      /it is the only entry not left out/
+    );
+    // A left-out entry's facts need nothing: only the mentor's title is left to confirm.
+    confirmProposalFact(section.id, { entryId: mentorIds.entryId, fact: 'title' }, true);
+    acceptProposals([section.id]);
+    await applyAcceptedProposals();
+
+    const volunteering = resume().sections.find((each) => each.label === 'Volunteering');
+    expect(volunteering?.items.map(({ id, title }) => [id, title])).toEqual([
+      [mentorIds.entryId, 'Mentor'],
+    ]);
+  });
+
+  it('a left-out entry put back needs its facts again', () => {
+    const [section] = stageProposals('add my volunteering', [
+      {
+        source: 'section',
+        change: {
+          kind: 'section',
+          afterSectionId: 's1',
+          section: { kind: 'volunteering', layout: 'entries', label: 'Volunteering' },
+          contents: {
+            layout: 'entries',
+            entries: [
+              { frame: { title: 'Mentor' }, bullets: [] },
+              { frame: { title: 'Organizer' }, bullets: [] },
+            ],
+          },
+        },
+      },
+    ]).proposals;
+    const ids = section.newContentIds;
+    const [mentorIds, organizerIds] =
+      ids?.kind === 'section' && ids.contents?.layout === 'entries' ? ids.contents.entries : [];
+    confirmProposalFact(section.id, { entryId: mentorIds.entryId, fact: 'title' }, true);
+    leaveEntryOut(section.id, organizerIds.entryId);
+    acceptProposals([section.id]);
+    expect(proposals()[0].status).toBe('accepted');
+
+    putEntryBack(section.id, organizerIds.entryId);
+    expect(findUnconfirmedFacts(proposals()[0])).toEqual([
+      { entryId: organizerIds.entryId, fact: 'title' },
+    ]);
   });
 
   it('an out-of-date rewrite can be reviewed against the edited bullet, and then replaces it', async () => {

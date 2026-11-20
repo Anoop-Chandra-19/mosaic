@@ -3,14 +3,15 @@ import { Pencil } from 'lucide-react';
 import { AppButton, AppInput, Text } from '@/components/ui-kit';
 import { ADDED_ROW } from '@/features/document-diff/diffMarks';
 import { cn } from '@/lib/utils';
+import type { Proposal } from '@/types/agentProposal';
 import type { ResumeData } from '@shared/types/resume';
 import { renameProposedSection } from '../../proposals/proposalActions';
-import { resolveChange } from '../../proposals/reviewedChange';
+import { listNewEntries, resolveChange } from '../../proposals/reviewedChange';
 import { readFlaggedWords } from '../text/describeFlag';
 import { SuggestionFlags } from '../text/SuggestionFlags';
 import { FlaggedText } from '../text/SuggestionText';
 import { Caption, CaptionNote, Hint, SuggestedText } from './BodyParts';
-import { EntryFacts } from './EntryFacts';
+import { NewEntryStack } from './NewEntryStack';
 import type { SuggestionBodyProps } from './suggestionBodyProps';
 
 /** The sections around where a new one goes: the one before it, and the one after. */
@@ -83,9 +84,23 @@ function SectionPlace({
   );
 }
 
+/** The caption over the entries: how many there are, and how many the user left out. */
+function EntriesCaption({ proposal }: { proposal: Proposal }) {
+  const entries = listNewEntries(proposal);
+  const leftOutCount = entries.filter((entry) => entry.isLeftOut).length;
+  const onCardCount = entries.length - leftOutCount;
+  return (
+    <Caption>
+      With {onCardCount} {onCardCount === 1 ? 'entry' : 'entries'}
+      {leftOutCount > 0 && <CaptionNote>{leftOutCount} left out</CaptionNote>}
+    </Caption>
+  );
+}
+
 /**
- * A new section arrives with what goes in it: one decision for its heading, place and
- * contents. Its first entry's facts are confirmed one by one, as a new entry's are.
+ * A suggested new section: its heading, where it goes, and its lines or entries. The user
+ * keeps or drops it all at once. For a section of entries, they confirm each entry's facts
+ * and can leave out some entries while keeping the rest.
  */
 export function NewSectionBody({ proposal, draft }: SuggestionBodyProps) {
   const change = resolveChange(proposal);
@@ -117,24 +132,30 @@ export function NewSectionBody({ proposal, draft }: SuggestionBodyProps) {
         <CaptionNote>{previous ? `after ${previous}` : 'first'}</CaptionNote>
       </Caption>
       <SectionPlace label={section.label} previous={previous} next={next} />
-      <Caption>
-        {isLines
-          ? `With ${contents.lines.length} ${contents.lines.length === 1 ? 'line' : 'lines'}`
-          : 'With its first entry'}
-      </Caption>
       {isLines ? (
         <>
+          <Caption>
+            With {contents.lines.length} {contents.lines.length === 1 ? 'line' : 'lines'}
+          </Caption>
           {contents.lines.map((line, index) => (
             <SuggestedText key={index} className="[&+&]:mt-1">
               <FlaggedText text={line} words={readFlaggedWords(proposal.flags)} />
             </SuggestedText>
           ))}
-          <SuggestionFlags flags={proposal.flags} />
         </>
       ) : (
-        <EntryFacts proposal={proposal} />
+        <>
+          <EntriesCaption proposal={proposal} />
+          <NewEntryStack proposal={proposal} />
+        </>
       )}
-      <Hint>Keeping it keeps all of it. Change any part in the editor once it lands.</Hint>
+      {/* The checks look at the whole section at once, so their findings show once, here. */}
+      <SuggestionFlags flags={proposal.flags} />
+      <Hint>
+        {isLines
+          ? 'Keeping it keeps all of it. You can change any part in the editor after you apply.'
+          : 'Keeping it keeps every entry you didn’t leave out. You can change any part in the editor after you apply.'}
+      </Hint>
     </>
   );
 }

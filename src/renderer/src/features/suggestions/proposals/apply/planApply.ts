@@ -2,7 +2,7 @@ import { readChangedIds } from '@/lib/resume/proposalAnchor';
 import type { Proposal } from '@/types/agentProposal';
 import type { ResumeData } from '@shared/types/resume';
 import { applyProposalsToResume } from './applyProposalsToResume';
-import { resolveChange } from '../reviewedChange';
+import { resolveChange, resolveProposal } from '../reviewedChange';
 
 export interface SkippedProposal {
   proposal: Proposal;
@@ -36,10 +36,7 @@ export function planApply(doc: ResumeData, proposals: readonly Proposal[]): Appl
   const current = open.filter((proposal) => !proposal.isStale);
   const kept = current.filter((proposal) => proposal.status === 'accepted');
   const ready = kept.filter((proposal) => !needsNumber(proposal));
-  const result = applyProposalsToResume(
-    doc,
-    ready.map((proposal) => ({ ...proposal, change: resolveChange(proposal) }))
-  );
+  const result = applyProposalsToResume(doc, ready.map(resolveProposal));
   const byId = new Map(ready.map((proposal) => [proposal.id, proposal]));
   const landed = result.appliedIds.map((id) => byId.get(id)!);
   const changedBy = (proposal: Proposal) => {

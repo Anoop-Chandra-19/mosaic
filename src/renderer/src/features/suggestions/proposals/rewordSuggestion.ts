@@ -60,7 +60,9 @@ export function listWrittenTextIds({ change, newContentIds }: Proposal): string[
       if (contents === null) return [sectionId];
       return [
         sectionId,
-        ...(contents.layout === 'lines' ? contents.lineIds : contents.entry.bulletIds),
+        ...(contents.layout === 'lines'
+          ? contents.lineIds
+          : contents.entries.flatMap((entry) => entry.bulletIds)),
       ];
     }
     case 'reorder':
@@ -106,7 +108,7 @@ function rewordEntryBullet<T extends EntryDraft>(
 
 type SectionChange = Extract<ProposalChange, { kind: 'section' }>;
 
-/** Reword a new section's heading, one of its lines, or one bullet of its entry. */
+/** Reword a new section's heading, one of its lines, or one bullet of one of its entries. */
 function rewordSection(change: SectionChange, proposal: Proposal, edit: TextEdit) {
   const ids = proposal.newContentIds;
   if (ids?.kind !== 'section') return null;
@@ -121,8 +123,15 @@ function rewordSection(change: SectionChange, proposal: Proposal, edit: TextEdit
     return { ...change, contents: { ...contents, lines } };
   }
   if (contents?.layout === 'entries' && ids.contents?.layout === 'entries') {
-    const entry = rewordEntryBullet(contents.entry, ids.contents.entry, edit);
-    return entry && { ...change, contents: { ...contents, entry } };
+    const entryIds = ids.contents.entries;
+    const index = entryIds.findIndex((each) => each.bulletIds.includes(edit.textId));
+    if (index < 0) return null;
+    const reworded = rewordEntryBullet(contents.entries[index], entryIds[index], edit);
+    if (!reworded) return null;
+    const entries = contents.entries.map((entry, position) =>
+      position === index ? reworded : entry
+    );
+    return { ...change, contents: { ...contents, entries } };
   }
   return null;
 }

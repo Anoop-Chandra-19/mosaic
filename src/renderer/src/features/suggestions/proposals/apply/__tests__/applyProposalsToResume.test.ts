@@ -253,14 +253,16 @@ describe('new sections and headings', () => {
               ? { layout: 'lines', lines: ['Organized community events'] }
               : {
                   layout: 'entries',
-                  entry: { frame: { title: 'Volunteer' }, bullets: ['Organized community events'] },
+                  entries: [
+                    { frame: { title: 'Volunteer' }, bullets: ['Organized community events'] },
+                  ],
                 },
         },
         'p1'
       );
       const contents =
         layout === 'lines'
-          ? { layout: 'entries' as const, entry: { entryId: 'e3', bulletIds: ['b5'] } }
+          ? { layout: 'entries' as const, entries: [{ entryId: 'e3', bulletIds: ['b5'] }] }
           : { layout: 'lines' as const, lineIds: ['l1'] };
       proposal.newContentIds = { kind: 'section', sectionId: 's4', contents };
 
@@ -270,17 +272,20 @@ describe('new sections and headings', () => {
     }
   );
 
-  it('adds a section after the one named, with its first entry or its lines', () => {
+  it('adds a section after the one named, with its entries or its lines', () => {
     const entries: ProposalChange = {
       kind: 'section',
       afterSectionId: 's1',
       section: { kind: 'certifications', layout: 'entries', label: 'Certifications' },
       contents: {
         layout: 'entries',
-        entry: {
-          frame: { title: 'Solutions Architect', organization: 'Amazon Web Services' },
-          bullets: [' '],
-        },
+        entries: [
+          {
+            frame: { title: 'Solutions Architect', organization: 'Amazon Web Services' },
+            bullets: [' '],
+          },
+          { frame: { title: 'Kubernetes Administrator' }, bullets: ['Passed first time'] },
+        ],
       },
     };
     const lines: ProposalChange = {
@@ -307,6 +312,11 @@ describe('new sections and headings', () => {
         title: 'Solutions Architect',
         organization: 'Amazon Web Services',
         bullets: [],
+      },
+      {
+        id: 'p1-new4',
+        title: 'Kubernetes Administrator',
+        bullets: [{ id: 'p1-new5', text: 'Passed first time' }],
       },
     ]);
   });

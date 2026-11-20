@@ -66,7 +66,7 @@ describe('checkProposal, new content', () => {
       kind: 'section',
       afterSectionId: null,
       section: { kind: 'volunteering', layout: 'entries', label: 'Volunteering' },
-      contents: { layout: 'entries', entry: { frame, bullets } },
+      contents: { layout: 'entries', entries: [{ frame, bullets }] },
     };
     expect(kindsAndWords(volunteering)).toEqual([]);
   });

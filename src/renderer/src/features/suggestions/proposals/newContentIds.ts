@@ -24,7 +24,10 @@ function createSectionContentIds(
 ): SectionContentIds {
   if (contents === null) return null;
   return contents.layout === 'entries'
-    ? { layout: 'entries', entry: createEntryIds(contents.entry, createId) }
+    ? {
+        layout: 'entries',
+        entries: contents.entries.map((entry) => createEntryIds(entry, createId)),
+      }
     : { layout: 'lines', lineIds: contents.lines.map(createId) };
 }
 
@@ -56,7 +59,7 @@ export function createNewContentIds(
 const listEntryIds = ({ entryId, bulletIds }: NewEntryIds) => [entryId, ...bulletIds];
 
 /**
- * List the ids, parent first: a section before its lines or entry, an entry before its
+ * List the ids, parent first: a section before its lines or entries, an entry before its
  * bullets. Ids for empty bullets and lines are included, though apply skips those.
  */
 export function listNewContentIds(ids: NewContentIds | null): string[] {
@@ -74,7 +77,9 @@ export function listNewContentIds(ids: NewContentIds | null): string[] {
       if (contents === null) return [sectionId];
       return [
         sectionId,
-        ...(contents.layout === 'entries' ? listEntryIds(contents.entry) : contents.lineIds),
+        ...(contents.layout === 'entries'
+          ? contents.entries.flatMap(listEntryIds)
+          : contents.lineIds),
       ];
     }
   }

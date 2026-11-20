@@ -63,8 +63,12 @@ function readCheckedText(
       if (contents.layout === 'lines') {
         return { before: '', after: contents.lines.join('\n'), context: '' };
       }
-      const { entry } = contents;
-      return { before: '', after: entry.bullets.join('\n'), context: readEntryFacts(entry) };
+      const { entries } = contents;
+      return {
+        before: '',
+        after: entries.flatMap((entry) => entry.bullets).join('\n'),
+        context: entries.map(readEntryFacts).join('\n'),
+      };
     }
     default:
       // A heading is the user's words, not a claim; the rest write no new words.

@@ -248,21 +248,31 @@ export const createExampleSuggestions = (): StagedChange[] => [
   },
   {
     source: 'section',
-    reason: 'You mentioned the certificate. Its facts need you.',
+    reason: 'You mentioned both certificates. Their facts need you.',
     change: {
       kind: 'section',
       afterSectionId: 'ex-education',
       section: { kind: 'certifications', layout: 'entries', label: 'Certifications' },
       contents: {
         layout: 'entries',
-        entry: {
-          frame: {
-            title: 'Solutions Architect, Associate',
-            organization: 'Amazon Web Services',
-            dates: '2023',
+        entries: [
+          {
+            frame: {
+              title: 'Solutions Architect, Associate',
+              organization: 'Amazon Web Services',
+              dates: '2023',
+            },
+            bullets: [],
           },
-          bullets: [],
-        },
+          {
+            frame: {
+              title: 'Certified Kubernetes Administrator',
+              organization: 'Cloud Native Computing Foundation',
+              dates: '2022',
+            },
+            bullets: ['Passed on the first attempt while running the staging clusters'],
+          },
+        ],
       },
     },
   },

@@ -206,4 +206,62 @@ describe('buildSuggestionPage, new sections and headings', () => {
     expect(page.doc.sections[0].label).toBe('Work');
     expect(page.marks.get('s1')).toMatchObject({ look: 'edit' });
   });
+
+  it('gives a new section of entries one bar, ties each line to its entry, and dots the headings that need facts', () => {
+    // The fixture's ids: the section is v-new1, Mentor v-new2 with bullet v-new3, and
+    // Organizer v-new4 with bullet v-new5.
+    const volunteering: Proposal = {
+      ...proposal('v', {
+        kind: 'section',
+        afterSectionId: 's1',
+        section: { kind: 'volunteering', layout: 'entries', label: 'Volunteering' },
+        contents: {
+          layout: 'entries',
+          entries: [
+            { frame: { title: 'Mentor' }, bullets: ['Mentored new contributors'] },
+            { frame: { title: 'Organizer' }, bullets: ['Ran the monthly meetup'] },
+          ],
+        },
+      }),
+      review: { confirmedFacts: { 'v-new2': ['title'] } },
+    };
+    const page = buildSuggestionPage(makeResume(), [volunteering]);
+
+    expect(page.blocks.get('v-new1')).toMatchObject({ isNewSection: true, isLeaving: false });
+    expect(page.marks.get('v-new1')).toMatchObject({ block: 'newSection', hasDot: false });
+    expect(page.marks.get('v-new2')).toMatchObject({
+      entry: { id: 'v-new2', isHeading: true },
+      hasDot: false,
+    });
+    expect(page.marks.get('v-new3')).toMatchObject({
+      entry: { id: 'v-new2', isHeading: false },
+      hasDot: false,
+    });
+    expect(page.marks.get('v-new4')).toMatchObject({
+      entry: { id: 'v-new4', isHeading: true },
+      hasDot: true,
+    });
+  });
+
+  it('leaves a left-out entry off the page', () => {
+    const volunteering: Proposal = {
+      ...proposal('v', {
+        kind: 'section',
+        afterSectionId: 's1',
+        section: { kind: 'volunteering', layout: 'entries', label: 'Volunteering' },
+        contents: {
+          layout: 'entries',
+          entries: [
+            { frame: { title: 'Mentor' }, bullets: [] },
+            { frame: { title: 'Organizer' }, bullets: [] },
+          ],
+        },
+      }),
+      review: { leftOutEntryIds: ['v-new2'] },
+    };
+    const page = buildSuggestionPage(makeResume(), [volunteering]);
+    const section = page.doc.sections.find((each) => each.id === 'v-new1');
+    expect(section?.items.map((item) => item.title)).toEqual(['Organizer']);
+    expect(page.marks.has('v-new2')).toBe(false);
+  });
 });

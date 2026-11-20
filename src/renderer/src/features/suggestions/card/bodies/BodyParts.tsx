@@ -55,6 +55,21 @@ export function CaptionTag({ children }: { children: ReactNode }) {
   );
 }
 
+/** A small label beside a line of a suggestion's body, such as "just added" or "left out". */
+export function CardTag({ className, children }: { className?: string; children: ReactNode }) {
+  return (
+    <Text
+      variant="tag"
+      className={cn(
+        'inline-flex h-4 shrink-0 items-center rounded-[0.25rem] bg-line px-1.25 text-ink-soft',
+        className
+      )}
+    >
+      {children}
+    </Text>
+  );
+}
+
 /** Words in a caption that say where, in the ordinary case: "after “Reduced p99…”". */
 export function CaptionNote({ children }: { children: ReactNode }) {
   return (

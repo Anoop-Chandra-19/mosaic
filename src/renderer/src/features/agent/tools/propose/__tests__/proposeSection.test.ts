@@ -4,10 +4,12 @@ import { useProposalStore } from '@/stores/proposalStore';
 import { getResumeSnapshot, useResumeStore } from '@/stores/resumeStore';
 import {
   acceptProposals,
+  confirmProposalFact,
   discardEmptySections,
   discardRunProposals,
 } from '../../../../suggestions/proposals/proposalActions';
 import { makeResumeWithLines } from '../../../../suggestions/proposals/__tests__/proposalFixtures';
+import { findUnconfirmedFacts } from '../../../../suggestions/proposals/reviewedChange';
 import { buildWorkingCopy } from '../../../../suggestions/proposals/workingCopy';
 import { countSuggestions } from '../../../../suggestions/suggestionState';
 import { runAgentTool } from '../../runAgentTool';
@@ -179,22 +181,76 @@ describe('filling a new section', () => {
     expect(stagedSuggestions()[0].change).toMatchObject({
       contents: {
         layout: 'entries',
-        entry: { frame: { title: 'Tidewatch' }, bullets: ['Built a tide chart app in Kotlin'] },
+        entries: [{ frame: { title: 'Tidewatch' }, bullets: ['Built a tide chart app in Kotlin'] }],
       },
     });
   });
 
-  it('makes a second entry, and a bullet in the first, suggestions of their own', async () => {
+  it('puts a second entry, and a bullet in the first, into the section’s suggestion', async () => {
     await callTool('propose_section', { kind: 'projects' });
     await callTool('propose_entry', { sectionId: 's4', title: 'Tidewatch' });
-    await callTool('propose_entry', { sectionId: 's4', title: 'Harbor Map' });
-    await callTool('propose_add', { into: 'e3', text: 'Built it in Kotlin' });
-    expect(stagedSuggestions().map((proposal) => proposal.change.kind)).toEqual([
-      'section',
-      'entry',
-      'add',
-    ]);
+    await callTool('propose_entry', { sectionId: 's4', title: 'Harbor Map', after: 'e3' });
+    const bullet = await callTool('propose_add', { into: 'e3', text: 'Built it in Kotlin' });
+    expect(bullet.content).toContain('a new bullet in e3: suggested. It is b5.');
+    expect(stagedSuggestions()).toHaveLength(1);
+    expect(stagedSuggestions()[0].change).toMatchObject({
+      contents: {
+        entries: [
+          { frame: { title: 'Tidewatch' }, bullets: ['Built it in Kotlin'] },
+          { frame: { title: 'Harbor Map' }, bullets: [] },
+        ],
+      },
+    });
     expect(readSections().at(-1)).toBe('Projects: Tidewatch | Harbor Map');
+  });
+
+  it('rewrites a bullet of a later entry inside the section’s suggestion', async () => {
+    await callTool('propose_section', { kind: 'projects' });
+    await callTool('propose_entry', { sectionId: 's4', title: 'Tidewatch' });
+    await callTool('propose_entry', {
+      sectionId: 's4',
+      title: 'Harbor Map',
+      after: 'e3',
+      bullets: ['Drew the harbor map'],
+    });
+    await callTool('propose_rewrite', { id: 'b5', text: 'Drew the harbor map in Leaflet' });
+    expect(stagedSuggestions()).toHaveLength(1);
+    expect(stagedSuggestions()[0].change).toMatchObject({
+      contents: { entries: [{ bullets: [] }, { bullets: ['Drew the harbor map in Leaflet'] }] },
+    });
+  });
+
+  it('tags only what a later run put into a waiting suggestion as just added', async () => {
+    await callTool('propose_section', { kind: 'projects' });
+    await callTool('propose_entry', { sectionId: 's4', title: 'Tidewatch' });
+    expect(stagedSuggestions()[0].lateIds).toBeUndefined();
+
+    run = createAgentToolRun('Add another project');
+    await callTool('read_document');
+    await callTool('propose_entry', { sectionId: 's4', title: 'Harbor Map', after: 'e3' });
+    await callTool('propose_add', { into: 'e3', text: 'Built it in Kotlin' });
+    const [section] = stagedSuggestions();
+    const ids = section.newContentIds;
+    const entryIds =
+      ids?.kind === 'section' && ids.contents?.layout === 'entries' ? ids.contents.entries : [];
+    expect(section.lateIds).toEqual([entryIds[1].entryId, entryIds[0].bulletIds[0]]);
+  });
+
+  it('puts a bullet into a waiting new entry alone, and makes one for a kept entry its own', async () => {
+    await callTool('propose_entry', { sectionId: 's1', title: 'Volunteer Mentor' });
+    await callTool('propose_add', { into: 'e3', text: 'Mentored first-time contributors' });
+    expect(stagedSuggestions()).toHaveLength(1);
+    expect(stagedSuggestions()[0].change).toMatchObject({
+      kind: 'entry',
+      bullets: ['Mentored first-time contributors'],
+    });
+
+    const [entry] = stagedSuggestions();
+    const entryId = entry.newContentIds?.kind === 'entry' ? entry.newContentIds.entry.entryId : '';
+    confirmProposalFact(entry.id, { entryId, fact: 'title' }, true);
+    acceptProposals([entry.id]);
+    await callTool('propose_add', { into: 'e3', text: 'Ran the weekend sprints' });
+    expect(stagedSuggestions().map((proposal) => proposal.change.kind)).toEqual(['entry', 'add']);
   });
 
   it('lets an empty custom section take lines', async () => {
@@ -243,6 +299,19 @@ describe('filling a new section', () => {
     acceptProposals([stagedSuggestions()[0].id]);
     await callTool('propose_add', { into: 's4', text: 'Norwegian, basic' });
     expect(stagedSuggestions().map((proposal) => proposal.change.kind)).toEqual(['section', 'add']);
+  });
+
+  it('adds an entry to a section the user already kept as a suggestion of its own', async () => {
+    await callTool('propose_section', { kind: 'projects' });
+    await callTool('propose_entry', { sectionId: 's4', title: 'Tidewatch' });
+    const [section] = stagedSuggestions();
+    for (const place of findUnconfirmedFacts(section)) confirmProposalFact(section.id, place, true);
+    acceptProposals([section.id]);
+    await callTool('propose_entry', { sectionId: 's4', title: 'Harbor Map', after: 'e3' });
+    expect(stagedSuggestions().map((proposal) => proposal.change.kind)).toEqual([
+      'section',
+      'entry',
+    ]);
   });
 });
 

@@ -18,9 +18,9 @@ import { diagnose, formatToolAnswer, type Diagnostic } from './toolDiagnostics';
  * report each result and its check findings to the model.
  *
  * A rewrite of text that a waiting suggestion wrote changes that suggestion. The model
- * gets the same answer as for a new suggestion, with the changed suggestion's checks. A
- * line or first entry for a section that a waiting suggestion made goes into that
- * suggestion, and is answered the same way.
+ * gets the same answer as for a new suggestion, with the changed suggestion's checks. An
+ * entry, line or bullet for a section or entry that a waiting suggestion made goes into
+ * that suggestion, and is answered the same way.
  */
 
 const NOTHING_STAGED: StagingResult = { proposals: [], reworded: [], filled: [], refusals: [] };
@@ -40,7 +40,7 @@ const readRewriteAsAsked = ({ proposal }: RewordedSuggestion, asked: StagedChang
 });
 
 /**
- * Return the line or entry the model asked for, which went into a new section's
+ * Return the entry, line or bullet the model asked for, which went into a waiting
  * suggestion. The receipt and the answer need it as the model made it, with its own ids
  * and its own checks.
  */
@@ -105,8 +105,10 @@ const describeRemoved = (run: AgentToolRun, rewrite: Proposal): Diagnostic =>
 
 export function stageCompiledCall(context: ToolCallContext, compiled: CompiledCall): ToolAnswer {
   const { run } = context;
+  // This run made a suggestion if it staged it and the suggestion didn't exist before the run.
+  const isFromThisRun = (id: string) => run.stagedIds.has(id) && !run.suggestionsBeforeRun.has(id);
   const staging = compiled.toStage.length
-    ? stageProposals(run.requestText, compiled.toStage)
+    ? stageProposals(run.requestText, compiled.toStage, isFromThisRun)
     : NOTHING_STAGED;
   const rewrites = staging.reworded.map((reworded) => ({
     isRemoved: reworded.isRemoved,

@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import type { ProposalChange, ProposalReview } from '@/types/agentProposal';
-import { findUnconfirmedFacts, resolveChange, reviewedRequestText } from '../reviewedChange';
+import {
+  findUnconfirmedFacts,
+  listNewEntries,
+  resolveChange,
+  resolveNewContentIds,
+  reviewedRequestText,
+} from '../reviewedChange';
 import { addText, makeProposal, rewrite } from './proposalFixtures';
 
 const B3 = 'Wrote the on-call runbook for the payments team';
@@ -52,16 +58,19 @@ describe('resolveChange', () => {
   });
 
   it('takes the user’s corrections to a new entry’s facts', () => {
-    const change = resolveChange(reviewed(ENTRY, { factEdits: { dates: '2022 – Present' } }));
+    // A new entry's id is the first id the fixture makes for it.
+    const factEdits = { 'p1-new1': { dates: '2022 – Present' } };
+    const change = resolveChange(reviewed(ENTRY, { factEdits }));
     expect(change).toMatchObject({ frame: { title: 'Volunteer Mentor', dates: '2022 – Present' } });
   });
 });
 
 describe('findUnconfirmedFacts', () => {
   it('lists the facts with text the user hasn’t vouched for', () => {
-    expect(findUnconfirmedFacts(reviewed(ENTRY, { confirmedFacts: ['title'] }))).toEqual([
-      'organization',
-      'dates',
+    const confirmedFacts = { 'p1-new1': ['title' as const] };
+    expect(findUnconfirmedFacts(reviewed(ENTRY, { confirmedFacts }))).toEqual([
+      { entryId: 'p1-new1', fact: 'organization' },
+      { entryId: 'p1-new1', fact: 'dates' },
     ]);
     expect(findUnconfirmedFacts(reviewed(GAPPED, {}))).toEqual([]);
   });
@@ -101,34 +110,74 @@ describe('resolveChange, added text', () => {
   });
 });
 
-describe('resolveChange, a new section', () => {
-  it('takes the heading the user gave, and their facts, which they confirm one by one', () => {
-    const proposal = {
-      ...makeProposal(
-        {
-          kind: 'section',
-          afterSectionId: 's1',
-          section: { kind: 'certifications', layout: 'entries', label: 'Certifications' },
-          contents: {
-            layout: 'entries',
-            entry: {
-              frame: { title: 'Solutions Architect', organization: 'Amazon Web Services' },
-              bullets: [' '],
-            },
-          },
-        },
-        'p1'
-      ),
-      review: {
-        sectionLabel: 'Certificates',
-        factEdits: { title: 'Solutions Architect, Associate' },
-        confirmedFacts: ['title' as const],
+/*
+ * A new section of two entries. The fixture's ids: the section is p1-new1, the first entry
+ * p1-new2 with its bullet p1-new3, and the second entry p1-new4 with its bullet p1-new5.
+ */
+const CERTIFICATIONS: ProposalChange = {
+  kind: 'section',
+  afterSectionId: 's1',
+  section: { kind: 'certifications', layout: 'entries', label: 'Certifications' },
+  contents: {
+    layout: 'entries',
+    entries: [
+      {
+        frame: { title: 'Solutions Architect', organization: 'Amazon Web Services' },
+        bullets: [' '],
       },
-    };
+      {
+        frame: { title: 'Kubernetes Administrator', organization: 'CNCF' },
+        bullets: ['Passed on the first attempt'],
+      },
+    ],
+  },
+};
+
+describe('resolveChange, a new section', () => {
+  it('takes the heading the user gave, and their facts for each entry, which they confirm one by one', () => {
+    const proposal = reviewed(CERTIFICATIONS, {
+      sectionLabel: 'Certificates',
+      factEdits: { 'p1-new2': { title: 'Solutions Architect, Associate' } },
+      confirmedFacts: { 'p1-new2': ['title'], 'p1-new4': ['title', 'organization'] },
+    });
     expect(resolveChange(proposal)).toMatchObject({
       section: { label: 'Certificates' },
-      contents: { entry: { frame: { title: 'Solutions Architect, Associate' } } },
+      contents: {
+        entries: [
+          { frame: { title: 'Solutions Architect, Associate' } },
+          { frame: { title: 'Kubernetes Administrator' } },
+        ],
+      },
     });
-    expect(findUnconfirmedFacts(proposal)).toEqual(['organization']);
+    expect(findUnconfirmedFacts(proposal)).toEqual([{ entryId: 'p1-new2', fact: 'organization' }]);
+  });
+
+  it('leaves out the entries the user left out, with their ids, and their facts need nothing', () => {
+    const proposal = reviewed(CERTIFICATIONS, { leftOutEntryIds: ['p1-new2'] });
+    const change = resolveChange(proposal);
+    expect(change.kind === 'section' && change.contents).toEqual({
+      layout: 'entries',
+      entries: [
+        {
+          frame: { title: 'Kubernetes Administrator', organization: 'CNCF' },
+          bullets: ['Passed on the first attempt'],
+        },
+      ],
+    });
+    expect(resolveNewContentIds(proposal)).toMatchObject({
+      contents: { entries: [{ entryId: 'p1-new4', bulletIds: ['p1-new5'] }] },
+    });
+    expect(findUnconfirmedFacts(proposal).map((place) => place.entryId)).toEqual([
+      'p1-new4',
+      'p1-new4',
+    ]);
+  });
+
+  it('lists every entry with its ids, the left-out ones marked', () => {
+    const entries = listNewEntries(reviewed(CERTIFICATIONS, { leftOutEntryIds: ['p1-new4'] }));
+    expect(entries.map(({ ids, isLeftOut }) => [ids.entryId, isLeftOut])).toEqual([
+      ['p1-new2', false],
+      ['p1-new4', true],
+    ]);
   });
 });

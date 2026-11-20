@@ -62,7 +62,9 @@ function findSectionProblem(
   const isFilled =
     contents.layout === 'lines'
       ? contents.lines.some(hasText)
-      : Object.values(contents.entry.frame).some(hasText) || contents.entry.bullets.some(hasText);
+      : contents.entries.some(
+          (entry) => Object.values(entry.frame).some(hasText) || entry.bullets.some(hasText)
+        );
   return isFilled ? null : 'empty-text';
 }
 

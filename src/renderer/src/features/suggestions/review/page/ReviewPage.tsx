@@ -11,12 +11,24 @@ import { readSuggestionState } from '../../suggestionState';
 /** A whole entry or section one suggestion is about: one outline when it is selected. */
 const BLOCK =
   'rounded-[2px] has-[[aria-current=true]]:outline-[1.5px] has-[[aria-current=true]]:outline-offset-[3px] has-[[aria-current=true]]:outline-paper-changed';
-/** Leaving, it has one bar down its side, in the bar's lane: dashed until it is kept. */
-const LEAVING_BLOCK =
+/**
+ * A block being hidden, and a new section, get one bar down their whole left side, where
+ * line bars go. The bar is dashed while the suggestion waits, and solid once it is kept.
+ */
+const BARRED_BLOCK =
   'relative before:pointer-events-none before:absolute before:top-0.75 before:bottom-0.75 before:-left-6 before:w-[2.5px] before:rounded-[2px]';
-const LEAVING_WAITING =
-  'before:bg-[repeating-linear-gradient(to_bottom,var(--paper-del)_0_3px,transparent_3px_5.5px)]';
-const LEAVING_KEPT = 'before:bg-paper-del';
+const BAR_FILLS = {
+  leaving: {
+    waiting:
+      'before:bg-[repeating-linear-gradient(to_bottom,var(--paper-del)_0_3px,transparent_3px_5.5px)]',
+    decided: 'before:bg-paper-del',
+  },
+  adding: {
+    waiting:
+      'before:bg-[repeating-linear-gradient(to_bottom,var(--paper-add)_0_3px,transparent_3px_5.5px)]',
+    decided: 'before:bg-paper-add',
+  },
+};
 
 /** The page's marks, built once per page so selecting one never lays the page out again. */
 function decorateSuggestions(page: SuggestionPage): PageDecorations {
@@ -40,9 +52,10 @@ function decorateSuggestions(page: SuggestionPage): PageDecorations {
     blockClassName: (id) => {
       const block = page.blocks.get(id);
       if (!block) return undefined;
-      if (!block.isLeaving) return BLOCK;
+      if (!block.isLeaving && !block.isNewSection) return BLOCK;
+      const fills = BAR_FILLS[block.isLeaving ? 'leaving' : 'adding'];
       const isWaiting = readSuggestionState(block.proposal) === 'waiting';
-      return cn(BLOCK, LEAVING_BLOCK, isWaiting ? LEAVING_WAITING : LEAVING_KEPT);
+      return cn(BLOCK, BARRED_BLOCK, isWaiting ? fills.waiting : fills.decided);
     },
   };
 }
